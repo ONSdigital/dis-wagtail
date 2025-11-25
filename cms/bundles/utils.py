@@ -1,26 +1,92 @@
 import logging
 import time
 import uuid
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from functools import cache
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from django.urls import reverse
+from django.utils.dateparse import parse_datetime
 from wagtail.coreutils import resolve_model_string
 from wagtail.log_actions import log
 from wagtail.models import Page, get_page_models
 
-from cms.bundles.enums import ACTIVE_BUNDLE_STATUSES, BundleStatus
-from cms.bundles.permissions import user_can_manage_bundles
 from cms.core.fields import StreamField
 from cms.release_calendar.enums import ReleaseStatus
+
+from .enums import ACTIVE_BUNDLE_STATUSES, BundleStatus
+from .permissions import user_can_manage_bundles
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser
 
-    from cms.bundles.models import Bundle
     from cms.users.models import User
+
+    from .models import Bundle
+
+
+@dataclass
+class BundleAPIBundleMetadata:
+    """BundleAPIBundleMetadata is the core dataclass that normalizes bundle metadata
+    for comparison between CMS and Bundle API.
+
+    It normalizes:
+    - preview_teams: None -> [], sorted by id for consistent comparison
+    - scheduled_at: datetime/string -> UTC ISO-8601 format (no microseconds)
+    - bundle_type: Auto-set to SCHEDULED if scheduled_at present, else MANUAL
+    - managed_by: Defaults to WAGTAIL
+
+    This normalization ensures that equivalent bundle data from different sources
+    (CMS Bundle, Bundle API JSON) can be reliably compared for sync decisions.
+    """
+
+    title: str | None = None
+    bundle_type: Literal["MANUAL", "SCHEDULED"] | None = None
+    state: str | None = None
+    managed_by: Literal["WAGTAIL"] | None = None
+    preview_teams: list[dict[Literal["id"], str]] | None = None
+    scheduled_at: datetime | str | None = None
+
+    def __post_init__(self) -> None:
+        self.preview_teams = sorted(
+            self.preview_teams or [],
+            key=lambda team: team.get("id", ""),  # Ensure consistent ordering for equality checks
+        )
+        self.scheduled_at = _normalise_date(self.scheduled_at)
+        if not self.bundle_type:
+            self.bundle_type = "SCHEDULED" if self.scheduled_at else "MANUAL"
+
+        if not self.managed_by:
+            self.managed_by = "WAGTAIL"
+
+    def as_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_bundle(cls, bundle: "Bundle") -> "BundleAPIBundleMetadata":
+        """Return a BundleAPIBundleMetadata instance populated from a Bundle instance."""
+        return cls(
+            title=bundle.name,
+            state=str(bundle.status),
+            managed_by="WAGTAIL",
+            preview_teams=_get_preview_teams_for_bundle(bundle),
+            scheduled_at=bundle.scheduled_publication_date,
+        )
+
+    @classmethod
+    def from_api_response(cls, api_response: dict[str, Any]) -> "BundleAPIBundleMetadata":
+        """Return a BundleAPIBundleMetadata instance populated from a Bundle API response."""
+        return cls(
+            title=api_response.get("title"),
+            bundle_type=api_response.get("bundle_type"),
+            state=api_response.get("state"),
+            managed_by=api_response.get("managed_by"),
+            preview_teams=api_response.get("preview_teams") or [],
+            scheduled_at=api_response.get("scheduled_at"),
+        )
 
 
 @cache
@@ -170,29 +236,34 @@ def get_preview_items_for_bundle(bundle: "Bundle", page_id: int, pages_in_bundle
     return preview_items
 
 
-def get_preview_teams_for_bundle(bundle: "Bundle") -> list[dict[Literal["id"], str]]:
+def _get_preview_teams_for_bundle(bundle: "Bundle") -> list[dict[Literal["id"], str]]:
     """Get formatted preview teams for a bundle for API usage."""
     team_identifiers = bundle.teams.values_list("team__identifier", flat=True)
     return [{"id": identifier} for identifier in team_identifiers]
 
 
-def build_bundle_data_for_api(bundle: "Bundle") -> dict[str, Any]:
-    """Build the dictionary of bundle data for the API."""
-    # Determine bundle_type based on scheduling
-    bundle_type = "SCHEDULED" if bundle.scheduled_publication_date else "MANUAL"
+def _normalise_date(value: str | datetime | None) -> str | None:
+    """Return the datetime in UTC ISO-8601 format (no microseconds).
+    If a string can't be parsed, it is returned unchanged.
+    """
+    if value is None:
+        return None
 
-    # Get preview teams
-    preview_teams = get_preview_teams_for_bundle(bundle)
+    # Convert string > datetime where possible
+    if isinstance(value, str):
+        dt = parse_datetime(value)
+        if dt is None:
+            return value
+    else:
+        dt = value
 
-    return {
-        "title": bundle.name,
-        "bundle_type": bundle_type,
-        "state": bundle.status,
-        "managed_by": "WAGTAIL",
-        "preview_teams": preview_teams,
-        "scheduled_at": bundle.scheduled_publication_date.isoformat() if bundle.scheduled_publication_date else None,
-        "e_tag": bundle.bundle_api_etag,
-    }
+    # Add timezone if missing
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+
+    # Normalise to UTC and strip microseconds
+    dt = dt.astimezone(UTC).replace(microsecond=0)
+    return dt.isoformat()
 
 
 def get_page_title_with_workflow_status(page: Page) -> str:
@@ -274,3 +345,72 @@ def publish_bundle(bundle: "Bundle", *, update_status: bool = True) -> None:
     notifications.notify_slack_of_publish_end(bundle, publish_duration, url=bundle.full_inspect_url)
 
     log(action="wagtail.publish.scheduled", instance=bundle)
+
+
+def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
+    """Build a content item dict for a dataset following Bundle API swagger spec.
+
+    Args:
+        dataset: A Dataset instance with namespace, edition, and version fields
+
+    Returns:
+        A dictionary representing a ContentItem for the Bundle API
+    """
+    return {
+        "content_type": "DATASET",
+        "metadata": {
+            "dataset_id": dataset.namespace,
+            "edition_id": dataset.edition,
+            "version_id": dataset.version,
+        },
+        "links": {
+            "edit": get_data_admin_action_url("edit", dataset.namespace, dataset.edition, dataset.version),
+            "preview": get_data_admin_action_url("preview", dataset.namespace, dataset.edition, dataset.version),
+        },
+    }
+
+
+def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: Any) -> str | None:
+    """Extract content_id from Bundle API response for a specific dataset.
+
+    Args:
+        response: Bundle API response
+        dataset: Dataset instance to find in the response
+
+    Returns:
+        The content_id if found, None otherwise
+    """
+    metadata = response.get("metadata", {})
+    if (
+        metadata.get("dataset_id") == dataset.namespace
+        and metadata.get("edition_id") == dataset.edition
+        and metadata.get("version_id") == dataset.version
+    ):
+        content_id = response.get("id")
+        return content_id if content_id is not None else None
+
+    return None
+
+
+def get_data_admin_action_url(
+    action: Literal["edit", "preview"], dataset_id: str, edition_id: str, version_id: str
+) -> str:
+    """Generate a relative URL for dataset actions in the ONS Data Admin interface.
+
+    This function constructs relative URLs for dataset operations in the ONS Data Admin
+    system, which is used for editing and previewing datasets.
+
+    Args:
+        action: The action to perform ("edit", "preview")
+        dataset_id: The unique identifier for the dataset
+        edition_id: The edition identifier for the dataset
+        version_id: The version identifier for the dataset
+
+    Returns:
+        A relative URL string for the specified dataset action
+
+    Example:
+        >>> get_data_admin_action_url("edit", "cpih", "time-series", "1")
+        "/edit/datasets/cpih/editions/time-series/versions/1"
+    """
+    return f"/{action}/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"

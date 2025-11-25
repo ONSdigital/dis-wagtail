@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 from django import forms
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.db import DEFAULT_DB_ALIAS
 from django.db.models import Q, QuerySet
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
@@ -22,7 +23,7 @@ from wagtail.admin.viewsets.chooser import ChooserViewSet
 
 from cms.datasets.models import Dataset, ONSDataset
 from cms.datasets.permissions import user_can_access_unpublished_datasets
-from cms.datasets.utils import deconstruct_dataset_compound_id, get_dataset_for_published_state
+from cms.datasets.utils import deconstruct_chooser_dataset_compound_id, get_dataset_for_published_state
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse
@@ -164,7 +165,7 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, DatasetRetrievalMi
         # create the dataset object from the API response
 
         # The provided PK is actually a combination of dataset_id, edition and version
-        dataset_id, edition, version, published = deconstruct_dataset_compound_id(str(pk))
+        dataset_id, edition, version, published = deconstruct_chooser_dataset_compound_id(str(pk))
 
         # Get the auth token from the request
         access_token = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
@@ -200,7 +201,7 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
         # TODO: update when we can fetch items in bulk from the dataset API or use the cached listing view?
         for pk in pks:
             # The provided PK is actually a combination of dataset_id, edition and version
-            dataset_id, edition, version, published = deconstruct_dataset_compound_id(str(pk))
+            dataset_id, edition, version, published = deconstruct_chooser_dataset_compound_id(str(pk))
 
             item_from_api = self.retrieve_dataset(dataset_id=dataset_id, published=published, access_token=access_token)
 
@@ -240,7 +241,10 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
 
         if datasets_to_create_instances:
             Dataset.objects.bulk_create(datasets_to_create_instances)
-        return Dataset.objects.filter(existing_query)
+
+        # Return the existing and newly created datasets, using the DEFAULT_DB_ALIAS to ensure we read from the default
+        # database instance, as the newly created datasets may not yet be replicated to read replicas.
+        return Dataset.objects.using(DEFAULT_DB_ALIAS).filter(existing_query)
 
 
 class DatasetChosenMultipleView(DatasetChosenMultipleViewMixin, ChosenResponseMixin, View): ...

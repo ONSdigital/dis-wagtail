@@ -11,7 +11,7 @@ from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalAr
 from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, BundleStatus
 from cms.bundles.models import Bundle
-from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
+from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory, BundleTeamFactory
 from cms.bundles.viewsets.bundle_chooser import BundleChooserWidget
 from cms.datasets.tests.factories import DatasetFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
@@ -77,6 +77,29 @@ class BundleAdminFormTestCase(TestCase):
             "bundled_pages": inline_formset([{"page": self.page.id}]),
             "teams": inline_formset([]),
             "bundled_datasets": inline_formset([]),
+        }
+
+    def _setup_bundle(self, ready_to_publish: bool = True) -> dict[str, Any]:
+        """Sets up the bundle and returns raw form data."""
+        page = StatisticalArticlePageFactory(title="A Page")
+        if ready_to_publish:
+            mark_page_as_ready_to_publish(page, self.approver)
+
+        dataset = DatasetFactory(id=123)
+        team = TeamFactory(id=123)
+
+        bundled_page = BundlePageFactory(parent=self.bundle, page=page)
+        bundled_dataset = BundleDatasetFactory(parent=self.bundle, dataset=dataset)
+        bundled_team = BundleTeamFactory(parent=self.bundle, team=team)
+
+        return {
+            "name": self.bundle.name,
+            "status": self.bundle.status,
+            "bundled_pages": inline_formset([{"id": bundled_page.id, "page": page.id, "ORDER": "1"}], initial=1),
+            "bundled_datasets": inline_formset(
+                [{"id": bundled_dataset.id, "dataset": dataset.id, "ORDER": "1"}], initial=1
+            ),
+            "teams": inline_formset([{"id": bundled_team.id, "team": team.id, "ORDER": "1"}], initial=1),
         }
 
     def test_form_init__status_choices(self):
@@ -151,19 +174,24 @@ class BundleAdminFormTestCase(TestCase):
             form, None, ["'Release Calendar Page' is already set as the Release Calendar page for this bundle."]
         )
 
-    def test_clean__sets_approved_by_and_approved_at(self):
-        raw_data = self.raw_form_data()
-        raw_data["bundled_pages"] = inline_formset([{"page": self.page_ready_to_publish.id}])
+    def test_clean__sets_approved_by_and_approved_at_when_no_other_changes(self):
+        # Given
+        raw_data = self._setup_bundle()
+
+        # When
         raw_data["status"] = BundleStatus.APPROVED
+
+        # Then
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
-        self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data["approved_by"], self.approver)
+        self.assertIsNotNone(form.cleaned_data["approved_at"])
 
     def test_clean__validates_page_must_be_ready_for_review(self):
-        data = self.form_data
+        data = self._setup_bundle(ready_to_publish=False)
         data["status"] = BundleStatus.APPROVED
-        form = self.form_class(instance=self.bundle, data=data, for_user=self.bundle.created_by)
+        form = self.form_class(instance=self.bundle, data=nested_form_data(data), for_user=self.bundle.created_by)
 
         self.assertFalse(form.is_valid())
 
@@ -234,7 +262,7 @@ class BundleAdminFormTestCase(TestCase):
         data = self.form_data
 
         data["release_calendar_page"] = release_calendar_page.id
-        data["status"] = BundleStatus.APPROVED
+        data["status"] = BundleStatus.DRAFT
         form = self.form_class(instance=self.bundle, data=data)
         self.assertFalse(form.is_valid())
 
@@ -245,7 +273,7 @@ class BundleAdminFormTestCase(TestCase):
     def test_clean_validates_release_date_is_in_future(self):
         data = self.form_data
         data["publication_date"] = timezone.now() - timedelta(hours=2)
-        data["status"] = BundleStatus.APPROVED
+        data["status"] = BundleStatus.DRAFT
         form = self.form_class(instance=self.bundle, data=data)
         self.assertFalse(form.is_valid())
 
@@ -322,3 +350,192 @@ class BundleAdminFormTestCase(TestCase):
 
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["publication_date"], self.bundle.publication_date)
+
+    def test_clean__rejects_other_field_changes_when_approving(self):
+        """Approving while changing another field should raise a validation error."""
+        # Given
+        raw_data = self._setup_bundle()
+
+        # When
+        raw_data["name"] = "Renamed Bundle"  # disallowed concurrent change
+        raw_data["publication_date"] = timezone.now() + timedelta(days=2)  # disallowed concurrent change
+        raw_data["status"] = BundleStatus.APPROVED
+
+        # Then
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertFalse(form.is_valid())
+        for field in ["name", "publication_date"]:
+            self.assertFormError(
+                form,
+                field,
+                "You cannot make changes to this field when approving a bundle. "
+                "Please save your changes first, then Approve the bundle in a separate step.",
+            )
+        self.assertEqual(form.cleaned_data.get("status"), self.bundle.status)
+        self.assertIsNone(form.cleaned_data.get("approved_by"))
+        self.assertIsNone(form.cleaned_data.get("approved_at"))
+
+    def test_clean__rejects_formset_addition_when_approving(self):
+        """Approving while adding to a formset in the same submit should raise a validation error."""
+        # Given
+        raw_data = self._setup_bundle()
+        raw_data["status"] = BundleStatus.APPROVED
+
+        cases = [
+            # formset_name, field_name, extra_instance
+            ("bundled_pages", "page", StatisticalArticlePageFactory(title="New Page")),
+            ("bundled_datasets", "dataset", DatasetFactory(id=456)),
+            ("teams", "team", TeamFactory(id=456)),
+        ]
+
+        for formset_name, field_name, extra_instance in cases:
+            with self.subTest(formset=formset_name):
+                existing_field = getattr(self.bundle, formset_name).first()
+                existing_field_id = getattr(existing_field, field_name).id
+
+                # When
+                # Add a new item to the formset alongside the existing one
+                raw_data[formset_name] = inline_formset(
+                    [{field_name: existing_field_id}, {field_name: extra_instance.id}]
+                )
+
+                # Then
+                form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+                self.assertFalse(form.is_valid())
+                self.assertFormError(
+                    form,
+                    None,
+                    "You cannot make changes to pages, datasets, or teams when approving a bundle. "
+                    "Please save your changes first, then Approve the bundle in a separate step.",
+                )
+                self.assertEqual(form.cleaned_data.get("status"), self.bundle.status)
+                self.assertIsNone(form.cleaned_data.get("approved_by"))
+                self.assertIsNone(form.cleaned_data.get("approved_at"))
+
+    def test_clean__rejects_formset_deletion_when_approving(self):
+        """Approving while deleting a formset item in the same submit should raise a validation error."""
+        # Given
+        raw_data = self._setup_bundle()
+        raw_data["status"] = BundleStatus.APPROVED
+
+        cases = [
+            # formset_name, field_name
+            ("bundled_pages", "page"),
+            ("bundled_datasets", "dataset"),
+            ("teams", "team"),
+        ]
+
+        for formset_name, field_name in cases:
+            with self.subTest(formset=formset_name):
+                existing_field = getattr(self.bundle, formset_name).first()
+                existing_field_id = getattr(existing_field, field_name).id
+
+                # When
+                # Mark the existing item for deletion in the formset
+                raw_data[formset_name] = inline_formset([{field_name: existing_field_id, "DELETE": True}])
+
+                # Then
+                form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+                self.assertFalse(form.is_valid())
+                self.assertFormError(
+                    form,
+                    None,
+                    "You cannot make changes to pages, datasets, or teams when approving a bundle. "
+                    "Please save your changes first, then Approve the bundle in a separate step.",
+                )
+                self.assertEqual(form.cleaned_data.get("status"), self.bundle.status)
+                self.assertIsNone(form.cleaned_data.get("approved_by"))
+                self.assertIsNone(form.cleaned_data.get("approved_at"))
+
+    def test_clean__approval_error_preserves_non_status_fields(self):
+        """When approval raises ValidationError, keep other fields as submitted and reset status to original."""
+        # Given
+        raw_data = self._setup_bundle()
+        raw_data["status"] = BundleStatus.APPROVED
+
+        # When
+        # Change a disallowed field alongside approving to trigger the guard
+        submitted_name = "Renamed Bundle"
+        publication_date = timezone.now() + timedelta(days=2)
+        raw_data["name"] = submitted_name
+        raw_data["publication_date"] = publication_date
+
+        # Then
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertFalse(form.is_valid())
+
+        # Status is reset back to the original instance value
+        self.assertEqual(form.cleaned_data.get("status"), self.bundle.status)
+
+        # Other submitted fields persist
+        self.assertEqual(form.data.get("name"), submitted_name)
+        self.assertEqual(form.data.get("publication_date"), publication_date)
+
+        # Assert fields other than status are not disabled. Approval disables form fields to prevent changes.
+        self.assertFalse(form.fields["name"].disabled)
+        self.assertFalse(form.fields["publication_date"].disabled)
+        self.assertFalse(form.fields["release_calendar_page"].disabled)
+
+    # test to validate approval validation is run before other clean logic
+    def test_clean__approval_validated_before_other_logic(self):
+        """When approving, approval validation should run before other clean logic like field validation."""
+        # Given
+        raw_data = self._setup_bundle()
+
+        # Add publication date in the past to trigger validation error
+        raw_data["publication_date"] = timezone.now() - timedelta(days=2)
+
+        for status in [BundleStatus.DRAFT, BundleStatus.APPROVED]:
+            with self.subTest(status=status):
+                raw_data["status"] = status
+
+                form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+                self.assertFalse(form.is_valid())
+                if status == BundleStatus.APPROVED:
+                    error_msg = (
+                        "You cannot make changes to this field when approving a bundle. "
+                        "Please save your changes first, then Approve the bundle in a separate step."
+                    )
+                else:
+                    error_msg = "The release date cannot be in the past."
+
+                self.assertFormError(form, "publication_date", [error_msg])
+
+    def test_clean__no_changes_allowed_on_already_approved_bundle(self):
+        """No changes should be allowed on an already approved bundle.
+
+        This is to guard against any changes slipping through after approval.
+        """
+        # Given an already Approved bundle
+        raw_data = self._setup_bundle()
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.approved_by = self.approver
+        self.bundle.approved_at = timezone.now()
+        self.bundle.save()
+
+        # When
+        # Attempt to change various fields
+        raw_data["name"] = "Renamed Bundle"
+        raw_data["publication_date"] = timezone.now() + timedelta(days=2)
+        raw_data["bundled_pages"] = inline_formset(
+            [{"page": self.bundle.bundled_pages.first().page.id}, {"page": StatisticalArticlePageFactory().id}]
+        )
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        # Then
+        self.assertTrue(form.is_valid())
+
+        # All attempted changes are rejected, original values preserved
+        self.assertEqual(form.cleaned_data.get("name"), self.bundle.name)
+        self.assertEqual(form.cleaned_data.get("publication_date"), self.bundle.publication_date)
+        self.assertEqual(form.cleaned_data.get("approved_by"), self.bundle.approved_by)
+        self.assertEqual(form.cleaned_data.get("approved_at"), self.bundle.approved_at)
+
+        # assert bundled_pages not in formsets
+        self.assertEqual(form.formsets, {})

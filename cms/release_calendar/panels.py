@@ -74,9 +74,9 @@ class ChangesToReleaseDateFieldPanel(FieldPanel):
         template_name = "wagtailadmin/panels/previous_release_date_data.html"
 
         def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
-            from cms.release_calendar.models import (  # pylint: disable=cyclic-import,import-outside-toplevel
-                ReleaseCalendarPage,
-            )
+            # To avoid circular import
+            # pylint: disable=cyclic-import,import-outside-toplevel
+            from cms.release_calendar.models import ReleaseCalendarPage
 
             context = super().get_context_data(parent_context)
 

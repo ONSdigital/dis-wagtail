@@ -19,6 +19,7 @@ from cms.articles.tests.factories import (
     ArticlesIndexPageFactory,
     StatisticalArticlePageFactory,
 )
+from cms.core.tests.factories import ContactDetailsFactory
 from cms.core.tests.utils import extract_response_jsonld
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
@@ -88,6 +89,7 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         )
 
 
+# pylint: disable=too-many-lines
 class StatisticalArticlePageTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
@@ -584,7 +586,7 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertIn(self.page.related_data_display_title, content)
         self.assertIn(lookup_dataset.title, content)
         self.assertIn(lookup_dataset.description, content)
-        self.assertIn(lookup_dataset.website_url, content)
+        self.assertIn(lookup_dataset.url_path, content)
         self.assertIn(manual_dataset["title"], content)
         self.assertIn(manual_dataset["description"], content)
         self.assertIn(manual_dataset["url"], content)
@@ -925,6 +927,34 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
         self.assertContains(response, "Bar")
         self.assertContains(response, "1234")
         self.assertContains(response, "1337")
+
+    def test_contact_details_mailto_link(self):
+        """Test that the contact details email is rendered as a mailto protocol link."""
+        contact_details = ContactDetailsFactory(email="test@example.com")
+        self.page.contact_details = contact_details
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(
+            response,
+            f'<a href="mailto:{self.page.contact_details.email}">{self.page.contact_details.email}</a>',
+            html=True,
+        )
+
+    def test_contact_details_tel_link(self):
+        """Test that the contact details phone number is rendered as a tel protocol link."""
+        contact_details = ContactDetailsFactory(phone="01234567890")
+        self.page.contact_details = contact_details
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(
+            response,
+            f'<a href="tel:{self.page.contact_details.phone}">{self.page.contact_details.phone}</a>',
+            html=True,
+        )
 
 
 class GeneralPageTests(WagtailPageTestCase):

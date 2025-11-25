@@ -70,6 +70,6 @@
     "webpack-dev-server": "^5.2.1"
   },
   "dependencies": {
-    "dis-authorisation-client-js": "^1.0.0"
+    "dis-authorisation-client-js": "^1.0.1"
   }
 }

@@ -9,7 +9,11 @@ from django.db import models
 from django.db.models import UniqueConstraint
 from queryish.rest import APIModel, APIQuerySet
 
-from cms.datasets.utils import construct_dataset_compound_id, convert_old_dataset_format, get_published_from_state
+from cms.datasets.utils import (
+    construct_chooser_dataset_compound_id,
+    convert_old_dataset_format,
+    get_published_from_state,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +23,8 @@ class ONSDatasetApiQuerySet(APIQuerySet):
     def __init__(self, *args: object, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)
         self.token: str | None = None
+        self.timeout: int = settings.HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS
+        self.limit: int = settings.DATASETS_API_DEFAULT_PAGE_SIZE
 
     def with_token(self, token: str) -> "ONSDatasetApiQuerySet":
         """Return a cloned queryset with the given authentication token.
@@ -58,7 +64,8 @@ class ONSDatasetApiQuerySet(APIQuerySet):
         is_detail_request = url.startswith(ONSDataset.Meta.detail_url.split("%s", maxsplit=1)[0])
 
         try:
-            response = requests.get(url, params=params, headers=headers, timeout=30)
+            logger.debug("Fetching datasets from API", extra={"url": url, "params": params})
+            response = requests.get(url, params=params, headers=headers, timeout=self.timeout)
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
@@ -154,7 +161,7 @@ class ONSDataset(APIModel):
             # workaround so that the published state can be determined from the id alone.
             # This is necessary because we need to know which version to extract when using
             # the detail endpoint which returns "current" and "next" versions.
-            id=construct_dataset_compound_id(
+            id=construct_chooser_dataset_compound_id(
                 dataset_id=dataset_id, edition=edition, version_id=version_id, published=published
             ),
             dataset_id=dataset_id,
@@ -202,5 +209,16 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
         return f"/datasets/{self.namespace}"
 
     @property
-    def website_url(self) -> str:
-        return f"{settings.ONS_WEBSITE_BASE_URL}{self.url_path}"
+    def compound_id(self) -> str:
+        """Return the compound ID for this local Dataset instance.
+
+        Format: "<namespace>,<edition>,<version>"
+
+        This identifier is used within the CMS for uniquely identifying datasets
+        in the local database.
+
+        Do not confuse this with the chooser dataset compound ID (see
+        `construct_chooser_dataset_compound_id`), which includes an additional
+        `published` flag used only for distinguishing API datasets (ONSDataset).
+        """
+        return f"{self.namespace},{self.edition},{self.version}"

@@ -39,4 +39,4 @@ class TestUtils(TestCase):
 
     def test_get_topic_search_url_returns_correct_url(self):
         result = get_topic_search_url(self.topic, self.suffix)
-        self.assertEqual(result, "https://www.ons.gov.uk/my-topic/search")
+        self.assertEqual(result, "/my-topic/search")

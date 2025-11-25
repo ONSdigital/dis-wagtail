@@ -33,7 +33,7 @@ def get_jwks() -> dict[str, str]:
     """Retrieves and caches JSON Web Key Sets (JWKS) for token verification."""
     jwks_url = f"{settings.IDENTITY_API_BASE_URL}/jwt-keys"
 
-    response = requests.get(jwks_url, timeout=5)
+    response = requests.get(jwks_url, timeout=settings.HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS)
     response.raise_for_status()
     return cast(dict[str, str], response.json())
 

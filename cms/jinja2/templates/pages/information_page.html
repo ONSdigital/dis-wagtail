@@ -1,5 +1,6 @@
 {% extends "templates/base_page.html" %}
 
+{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
 
@@ -23,6 +24,13 @@
 {% block header_area %}
     {# fmt:off #}
     {{
+        onsBreadcrumbs({
+            "ariaLabel": breadcrumbs_aria_label,
+            "itemsList": page.get_breadcrumbs(request=request),
+            "variant": 'grey'
+        })
+    }}
+    {{
         onsHero({
             "title": page.title,
             "variants": 'grey',
@@ -34,10 +42,6 @@
                 "descriptionCol": "6",
                 "itemsList": [last_updated_item] | selectattr('term') | list,
             },
-            "breadcrumbs": {
-                "ariaLabel": breadcrumbs_label,
-                "itemsList": page.get_breadcrumbs(request=request),
-            }
         })
     }}
     {# fmt:on #}
