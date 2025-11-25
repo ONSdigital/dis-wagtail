@@ -259,3 +259,11 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
         self.assert_base_fields(result, page)
         self.assertIn("uri_old", result)
         self.assertEqual(result["uri_old"], "/info-page")  # old_url_path without the /home prefix
+
+    def test_standard_information_page_without_old_url_path(self):
+        """Negative: no old_url_path arg => 'uri_old' must be absent."""
+        page = self.info_page
+        result = build_resource_dict(page)
+
+        self.assert_base_fields(result, page)
+        self.assertNotIn("uri_old", result)
