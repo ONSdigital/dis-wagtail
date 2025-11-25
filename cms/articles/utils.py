@@ -1,5 +1,7 @@
+import csv
 from typing import TYPE_CHECKING
 
+from django.http import HttpResponse
 from django.utils.translation import gettext_lazy as _
 
 from cms.core.custom_date_format import ons_date_format
@@ -34,3 +36,24 @@ def serialize_correction_or_notice(entry: "StreamChild", *, superseded_url: str 
         content["urlText"] = _("View superseded version")
 
     return content
+
+
+def create_data_csv_download_response_from_data(data: list, *, filename: str) -> HttpResponse:
+    """Creates a Django HttpResponse for downloading a CSV file from JSON string data.
+
+    Args:
+        data (list): The list of data rows to be converted to CSV.
+        filename (str): The desired filename for the downloaded CSV file.
+
+    Returns:
+        HttpResponse: A Django HttpResponse object configured for CSV file download.
+    """
+    response = HttpResponse(
+        content_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}.csv"',
+        },
+    )
+    writer = csv.writer(response)
+    writer.writerows(data)
+    return response

@@ -1,3 +1,4 @@
+import json
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from bs4 import BeautifulSoup
@@ -5,7 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models
-from django.http import Http404
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.html import strip_tags
@@ -21,11 +22,12 @@ from wagtailschemaorg.utils import extend
 from cms.articles.enums import SortingChoices
 from cms.articles.forms import StatisticalArticlePageAdminForm
 from cms.articles.panels import HeadlineFiguresFieldPanel
-from cms.articles.utils import serialize_correction_or_notice
+from cms.articles.utils import create_data_csv_download_response_from_data, serialize_correction_or_notice
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, bool_to_yes_no, format_date_for_gtm
 from cms.core.blocks.headline_figures import HeadlineFiguresItemBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
+from cms.core.blocks.section_blocks import SectionContentBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
@@ -40,12 +42,19 @@ from cms.datavis.blocks.featured_charts import FeaturedChartBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponse
     from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
 
 
 FIGURE_ID_SEPARATOR = ","
+
+
+def _get_chart_block_types() -> set[str]:
+    """Get all chart block types that inherit from BaseChartBlock."""
+    return {name for name, block in SectionContentBlock().child_blocks.items() if isinstance(block, BaseChartBlock)}
+
+
+CHART_BLOCK_TYPES = _get_chart_block_types()
 
 
 class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
@@ -159,6 +168,18 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     @path("editions/<str:slug>/versions/<int:version>/")
     def release_with_versions(self, request: "HttpRequest", slug: str, version: int) -> "HttpResponse":
         return cast("HttpResponse", self.release(request, slug, version=version))
+
+    @path("editions/<str:slug>/download-chart/<str:chart_id>/")
+    def download_chart(self, request: "HttpRequest", slug: str, chart_id: str) -> "HttpResponse":
+        if not (edition := StatisticalArticlePage.objects.live().child_of(self).filter(slug=slug).first()):
+            raise Http404
+        return cast("HttpResponse", edition.download_chart(request, chart_id))
+
+    @path("editions/<str:slug>/versions/<int:version>/download-chart/<str:chart_id>/")
+    def download_chart_with_version(
+        self, request: "HttpRequest", slug: str, version: int, chart_id: str
+    ) -> "HttpResponse":
+        return cast("HttpResponse", self.release(request, slug, version=version, chart_id=chart_id))
 
 
 # pylint: disable=too-many-public-methods
@@ -378,6 +399,36 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         for figure in self.headline_figures:
             if figure.value["figure_id"] == figure_id:
                 return dict(figure.value)
+
+        return {}
+
+    def get_chart(self, chart_id: str) -> dict[str, Any]:
+        """Finds a chart block by its unique block ID in content or featured_chart.
+
+        Args:
+            chart_id: The unique block ID of the chart to find
+
+        Returns:
+            The chart block's value as a dictionary, or an empty dict if not found
+
+        Note:
+            Block IDs are automatically assigned by Wagtail when content is created
+            through the admin interface. Blocks without IDs (e.g., programmatically
+            created test data) cannot be retrieved by this method.
+        """
+        # Search in content sections
+        if self.content:
+            for section_block in self.content:
+                if section_block.block_type != "section":
+                    continue
+                section_content = section_block.value.get("content", [])
+                for content_block in section_content:
+                    if (
+                        content_block.block_type in CHART_BLOCK_TYPES
+                        and content_block.id is not None
+                        and str(content_block.id) == chart_id
+                    ):
+                        return dict(content_block.value)
 
         return {}
 
@@ -604,7 +655,9 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
 
     @path("versions/<int:version>/")
-    def previous_version(self, request: "HttpRequest", version: int) -> "TemplateResponse":
+    def previous_version(
+        self, request: "HttpRequest", version: int, **kwargs: Any
+    ) -> "TemplateResponse | HttpResponse":
         if version <= 0 or not self.corrections:
             raise Http404
 
@@ -619,6 +672,12 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])
 
         page = revision.as_object()
+
+        chart_id = kwargs.pop("chart_id", None)
+
+        if chart_id:
+            download_response: HttpResponse = page.download_chart(request, chart_id)
+            return download_response
 
         # Get corrections and notices for this specific version
         corrections, notices = page.get_serialized_corrections_and_notices(request)
@@ -666,6 +725,28 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             },
             template="templates/pages/statistical_article_page--related_data.html",
         )
+        return response
+
+    @path("download-chart/<str:chart_id>/")
+    def download_chart(self, request: "HttpRequest", chart_id: str) -> "HttpResponse":
+        """Serves a chart download request for a specific chart in the article.
+
+        Args:
+            request: The HTTP request object.
+            chart_id: The unique block ID of the chart to download.
+
+        Returns:
+            An HTTP response with the chart download.
+        """
+        chart_data = self.get_chart(chart_id)
+        if not chart_data:
+            raise Http404
+        try:
+            data = json.loads(chart_data["table"]["table_data"])["data"]
+        except (KeyError, json.JSONDecodeError) as e:
+            raise Http404 from e
+
+        response = create_data_csv_download_response_from_data(data, filename=chart_data.get("title", "chart"))
         return response
 
     def get_url_parts(self, request: Optional["HttpRequest"] = None) -> tuple[int, str | None, str | None] | None:
