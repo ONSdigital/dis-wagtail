@@ -271,10 +271,6 @@ class PreviewBundleViewTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(ModelLogEntry.objects.filter(action="bundles.preview").count(), 0)
 
 
-@override_settings(
-    DIS_DATASETS_BUNDLE_API_ENABLED=True,
-    DIS_DATASETS_BUNDLE_API_BASE_URL="https://test-api.example.com",
-)
 class DeleteBundleViewTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -286,120 +282,37 @@ class DeleteBundleViewTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
         self.bundle = BundleFactory(name="A Bundle", created_by=self.publishing_officer)
         self.client.force_login(self.publishing_officer)
-        self.base_url = settings.DIS_DATASETS_BUNDLE_API_BASE_URL
+
+    @responses.activate
+    @override_settings(
+        DIS_DATASETS_BUNDLE_API_ENABLED=True, DIS_DATASETS_BUNDLE_API_BASE_URL="https://test-api.example.com"
+    )
+    def test_bundle_delete_bundle_api_call_includes_access_token(self):
+        # Set up the bundle with a bundle_api_bundle_id so there is something to call to delete
+        self.bundle.bundle_api_bundle_id = "bundle-content-id-123"
+        self.bundle.save()
+
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
 
-    def _set_api_id(self, value: str | None):
-        self.bundle.refresh_from_db()
-        self.bundle.bundle_api_bundle_id = value or ""
-        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+        # Mock the response from the dataset bundle API
+        response_mock = responses.delete(
+            f"{settings.DIS_DATASETS_BUNDLE_API_BASE_URL}/bundles/{self.bundle.bundle_api_bundle_id}",
+            status=HTTPStatus.NO_CONTENT,
+        )
 
-    def _delete_url(self) -> str:
-        return reverse("bundle:delete", args=[self.bundle.pk])
+        # Post the admin bundle delete request
+        bundle_delete_url = reverse("bundle:delete", args=[self.bundle.pk])
+        response = self.client.post(bundle_delete_url, follow=True, data={"action-delete": "delete"})
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    def _post_delete(self):
-        return self.client.post(self._delete_url(), follow=True, data={"action-delete": "delete"})
-
-    def _api_url(self, api_id: str) -> str:
-        return f"{self.base_url}/bundles/{api_id}"
-
-    def _assert_deleted(self, pk: int):
+        # Check the bundle is deleted
         with self.assertRaises(Bundle.DoesNotExist):
-            Bundle.objects.get(pk=pk)
+            Bundle.objects.get(pk=self.bundle.pk)
 
-    @responses.activate
-    def test_sync_bundle_deletion_with_bundle_api__successful_deletion(self):
-        """Bundle is deleted in CMS and remote when API call is successful."""
-        # Given
-        self._set_api_id("bundle-content-id-123")
-        bundle_api_mock = responses.delete(
-            self._api_url(self.bundle.bundle_api_bundle_id), status=HTTPStatus.NO_CONTENT
-        )
-
-        # When
-        response = self._post_delete()
-
-        # Then
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self._assert_deleted(self.bundle.pk)
-
-        # API called exactly once with token header
-        self.assertEqual(bundle_api_mock.call_count, 1)
-        call = bundle_api_mock.calls[0]
-        self.assertEqual(call.request.headers["Authorization"], "the-access-token")
-
-    @responses.activate
-    def test_sync_bundle_deletion_with_bundle_api__handles_404_error(self):
-        """404 error from remote API should not prevent CMS delete."""
-        # Given
-        self._set_api_id("bundle-api-id-789")
-        bundle_api_mock = responses.delete(
-            self._api_url(self.bundle.bundle_api_bundle_id),
-            status=HTTPStatus.NOT_FOUND,
-            json={"message": "Bundle not found"},
-        )
-
-        # When
-        response = self._post_delete()
-
-        # Then
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self._assert_deleted(self.bundle.pk)
-        self.assertEqual(bundle_api_mock.call_count, 1)
-
-    @responses.activate
-    def test_sync_bundle_deletion_with_bundle_api__non_404_error_prevents_deletion(self):
-        """Non-404 error from remote API prevents CMS delete."""
-        # Given
-        self._set_api_id("bundle-api-id-500")
-        bundle_api_mock = responses.delete(
-            self._api_url(self.bundle.bundle_api_bundle_id),
-            status=HTTPStatus.INTERNAL_SERVER_ERROR,
-            json={"message": "Internal server error"},
-        )
-
-        # When
-        response = self._post_delete()
-
-        # Then
-        self.assertRedirects(response, reverse("bundle:index"))
-        self.assertContains(response, "The bundle could not be deleted due to errors")
-        self.assertContains(response, "Failed to delete bundle from Bundle API")
-
-        bundle = Bundle.objects.get(pk=self.bundle.pk)
-        self.assertEqual(bundle.name, "A Bundle")
-        self.assertEqual(bundle.bundle_api_bundle_id, "bundle-api-id-500")
-        self.assertEqual(bundle_api_mock.call_count, 1)
-
-    @responses.activate
-    def test_sync_bundle_deletion_with_bundle_api__skips_when_no_bundle_api_id(self):
-        """When no API ID, delete locally and make no HTTP calls."""
-        # Given
-        self._set_api_id(None)
-
-        # When
-        response = self._post_delete()
-
-        # Then
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self._assert_deleted(self.bundle.pk)
-        # No HTTP calls at all
-        self.assertEqual(len(responses.calls), 0)
-
-    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
-    @responses.activate
-    def test_sync_bundle_deletion_with_bundle_api__skips_when_api_disabled(self):
-        """When API integration is disabled, delete locally and make no HTTP calls."""
-        # Given
-        self._set_api_id("bundle-api-id-disabled")
-
-        # When
-        response = self._post_delete()
-
-        # Then
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self._assert_deleted(self.bundle.pk)
-        self.assertEqual(len(responses.calls), 0)
+        # Check the bundle API was called with the correct Authorization header
+        self.assertEqual(response_mock.call_count, 1)
+        bundle_delete_call = response_mock.calls[0]
+        self.assertEqual(bundle_delete_call.request.headers["Authorization"], "the-access-token")
 
 
 class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):

@@ -1,6 +1,5 @@
 import json
 import re
-
 from datetime import datetime, time, timedelta
 
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
@@ -11,12 +10,16 @@ from playwright.sync_api import expect
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
-from cms.bundles.models import BundleTeam
-from cms.bundles.tests.factories import BundleFactory
+from cms.bundles.models import BundlePage, BundleTeam
+from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.core.custom_date_format import ons_date_format
+from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
+from cms.topics.models import TopicPage
 from cms.users.tests.factories import UserFactory
+from cms.workflows.tests.utils import mark_page_as_ready_to_publish
+from functional_tests.step_helpers.users import create_user
 from functional_tests.steps.release_page import click_add_child_page, navigate_to_release_calendar_page
 
 tomorrow = timezone.now() + timedelta(days=1)
@@ -136,7 +139,6 @@ def bundle_inspect_show(context: Context) -> None:
 
 
 # To test release calendar page panel
-@given("a release calendar page with a future release date exists")
 @given('a release calendar page with a "{status}" status and future release date exists')
 def release_calendar_page_with_status_and_future_date_exists(context: Context, status: str = "Provisional") -> None:
     context.release_calendar_page = ReleaseCalendarPageFactory(
@@ -271,22 +273,29 @@ def a_user_exists_by_role(context: Context, user_role: str) -> None:
     context.users[user_role] = create_user(user_role)
 
 
-@given("there is a Statistical Analysis page")
-def statistical_analysis(
-    context: Context,
-) -> None:
+@given("there is a Statistical Analysis page approved by {user_role}")
+def statistical_analysis(context: Context, user_role: str) -> None:
+    user = context.users[user_role]["user"]
     context.article_series_page = ArticleSeriesPageFactory(title="PSF")
-    article = StatisticalArticlePageFactory(parent=context.article_series_page)
-    mark_page_as_ready_to_publish(article, UserFactory())
+    context.topic_page = TopicPage.objects.ancestor_of(context.article_series_page).first()
+    article = StatisticalArticlePageFactory(parent=context.article_series_page, title="Bundles UI Articale for PSF")
+    mark_page_as_ready_to_publish(article,user)
     context.statistical_article_page = article
 
 
-@given("there is a release calendar page")
-def release_calendar(context: Context) -> None:
+@given("there is a release calendar page approved by {user_role}")
+def release_calendar(context: Context, user_role: str) -> None:
     nowish = timezone.now() + timedelta(minutes=20)
-    context.release_calendar_page = ReleaseCalendarPageFactory(
-        release_date=nowish, title="Release Calendar Page bundles UI", status=ReleaseStatus.CONFIRMED
+    user = context.users[user_role]["user"]
+
+    release_calendar_page =  ReleaseCalendarPageFactory(
+        release_date=nowish,
+        title="Release Calendar Page bundles UI",
+        status=ReleaseStatus.CONFIRMED
     )
+    mark_page_as_ready_to_publish(release_calendar_page,user)
+    release_calendar_page.save_revision().publish()
+    context.release_calendar_page = release_calendar_page
 
 
 @given("there is a preview team")
@@ -341,7 +350,6 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
 
             if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_page"):
                 page = context.release_calendar_page
-
                 bundle.release_calendar_page = context.release_calendar_page
                 BundlePage.objects.create(parent=bundle, page=page)
                 context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
@@ -353,14 +361,14 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
             if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_page"):
                 page = context.statistical_article_page
                 BundlePage.objects.create(parent=bundle, page=page)
-                context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
+                # context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
             bundle.save()
             context.bundles.append(bundle)
         sorted(context.bundles, key=lambda x: x.name)
 
 
 # Bundles UI Triggers
-@when("the {user_role} logs in")
+@step("the {user_role} logs in")
 def log_in_user_by_role(context: Context, user_role: str) -> None:
     context.page.goto(f"{context.base_url}/admin/login/")
     context.page.get_by_placeholder("Enter your username").fill(context.users[user_role]["username"])
@@ -390,7 +398,7 @@ def fail_to_save_bundle_name(context: Context) -> None:
     expect(context.page.locator("#panel-child-name-errors")).to_contain_text("This field is required.")
 
 
-@then("the logged in user fails to create a bundle due to duplicate release dates")
+@then("the logged in user fails to save a bundle due to duplicate release dates")
 def fail_to_save_bundle_release(context: Context) -> None:
     now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
     bundle_name = "Bundle UI Test Bundle"
@@ -578,3 +586,26 @@ def send_to_moderation(context: Context) -> None:
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Save to preview").click()
     expect(context.page.get_by_text(bundle_status)).to_be_visible()
+
+
+@then("the {role} can preview the Release Calendar page")
+def preview_release_calendar_page(context: Context, role:str) -> None:
+    context.page.goto(context.base_url + "/admin/pages/")
+    context.page.get_by_role("button", name="Show filters").click()
+    context.page.get_by_role("button", name="Page type").click()
+    context.page.get_by_text("Release calendar page").click()
+    context.page.get_by_role("button", name="Show filters").click()
+    context.page.get_by_role("button", name="Locale").click()
+    context.page.locator("#id_locale").get_by_text("English").click()
+
+
+
+@then("the {role} can preview the Statistical Analysis page")
+def preview_statistical_analysis_page(context: Context, role:str) -> None:
+    context.page.goto(context.base_url + "/admin/pages/")
+    context.page.get_by_role("button", name="Show filters").click()
+    context.page.get_by_role("button", name="Page type").click()
+    context.page.get_by_text("Release calendar page").click()
+    context.page.get_by_role("button", name="Show filters").click()
+    context.page.get_by_role("button", name="Locale").click()
+    context.page.locator("#id_locale").get_by_text("English").click()

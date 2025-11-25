@@ -1,5 +1,4 @@
 import logging
-import textwrap
 import time
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
@@ -21,7 +20,7 @@ from wagtail.admin.widgets import HeaderButton, ListingButton
 from wagtail.log_actions import log
 
 from cms.bundles.action_menu import BundleActionMenu
-from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError, BundleAPIClientError404
+from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
@@ -35,7 +34,6 @@ from cms.datasets.models import Dataset
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
-    from django.forms import BaseForm
     from django.http import HttpResponseBase
     from django.template.response import TemplateResponse
     from django.utils.safestring import SafeString
@@ -44,25 +42,8 @@ if TYPE_CHECKING:
     from cms.bundles.forms import BundleAdminForm
     from cms.bundles.models import BundlesQuerySet
 
+
 logger = logging.getLogger(__name__)
-
-
-def add_exception_cause_to_form(exception: Exception, *, form: "BaseForm") -> None:
-    """Adds errors from a BundleAPIClientError exception cause to the form errors."""
-    cause = getattr(exception, "__cause__", None)
-    if not cause:
-        return
-
-    # Currently only handle BundleAPIClientError causes
-    if not isinstance(cause, BundleAPIClientError):
-        return
-
-    for error in cause.errors:
-        desc = error.get("description") or "Unknown API Error"
-        form.add_error(
-            field=None,
-            error=textwrap.shorten(desc, width=250, placeholder="..."),  # limit chars to avoid overly long errors
-        )
 
 
 class BundleCreateView(CreateView):
@@ -82,8 +63,7 @@ class BundleCreateView(CreateView):
                 self.object = self.save_instance()  # pylint: disable=attribute-defined-outside-init
         except Exception as e:  # pylint: disable=broad-exception-caught
             error = getattr(e, "message", str(e))
-            error_message = f"{self.get_error_message()} {error}."
-            add_exception_cause_to_form(e, form=form)
+            error_message = f"Could not create the bundle due to one or more Bundle API errors: {error}"
             messages.validation_error(self.request, error_message, form)
             error_response: HttpResponseBase = self.render_to_response(self.get_context_data(form=form))
             return error_response
@@ -170,9 +150,7 @@ class BundleEditView(EditView):
             with transaction.atomic():
                 self.object = self.save_instance()  # pylint: disable=attribute-defined-outside-init
         except Exception as e:  # pylint: disable=broad-exception-caught
-            error = getattr(e, "message", str(e))
-            error_message = f"{self.get_error_message()} {error}."
-            add_exception_cause_to_form(e, form=form)
+            error_message = f"Could not update bundle due to one or more errors: {getattr(e, 'message', str(e))}"
             messages.validation_error(self.request, error_message, form)
             error_response: HttpResponseBase = self.render_to_response(self.get_context_data(form=form))
             return error_response
@@ -505,7 +483,7 @@ class BundleInspectView(InspectView):
                 format_html_join(
                     "\n",
                     '<li><a href="{}" target="_blank" rel="noopener">{}</a></li>',
-                    ((bundled_dataset.url_path, bundled_dataset) for bundled_dataset in datasets),
+                    ((bundled_dataset.website_url, bundled_dataset) for bundled_dataset in datasets),
                 ),
             )
         return "No datasets in bundle"
@@ -516,9 +494,7 @@ class BundleDeleteView(DeleteView):
 
     @datasets_bundle_api_enabled
     def sync_bundle_deletion_with_bundle_api(self, instance: Bundle) -> None:
-        """Syncs the deletion of the Bundle in the CMS with the Bundle API by deleting the corresponding Bundle API
-        bundle.
-        """
+        """Handle when a bundle is deleted."""
         if not instance.bundle_api_bundle_id:
             return
 
@@ -527,20 +503,10 @@ class BundleDeleteView(DeleteView):
 
         try:
             client.delete_bundle(instance.bundle_api_bundle_id)
-            logger.info(
-                "Deleted bundle from Bundle API",
-                extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id},
-            )
-        except BundleAPIClientError404:
-            logger.warning(
-                "Bundle not found in Bundle API when deleting CMS bundle",
-                extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id},
-            )
-            # No need to save fields or raise an error as we are about to delete the CMS bundle anyway
+            logger.info("Deleted bundle %s from Bundle API", instance.pk)
         except BundleAPIClientError as e:
-            msg = "Failed to delete bundle from Bundle API"
-            logger.exception(msg, extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id})
-            raise ValidationError(msg) from e
+            logger.exception("Failed to delete bundle %s from Bundle API: %s", instance.pk, e)
+            raise ValidationError("Could not communicate with the Bundle API") from e
 
     def delete_action(self) -> None:
         with transaction.atomic():
@@ -554,8 +520,7 @@ class BundleDeleteView(DeleteView):
             response: HttpResponseBase = super().form_valid(form)
             return response
         except ValidationError as e:
-            error = getattr(e, "message", str(e))
-            error_message = f"The bundle could not be deleted due to errors. {error}."
+            error_message = f"Could not delete bundle due to one or more errors: {getattr(e, 'message', str(e))}"
             messages.error(self.request, error_message)
             return redirect(reverse(self.index_url_name))
 

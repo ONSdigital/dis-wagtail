@@ -1,16 +1,12 @@
 Feature: UI Bundle Happy Paths
     """
     User role Bundle Life Cycle Happy Path 1 bundle Authorisation summary
-                                 | Bundles Search | Dashboard Search | Create | Edit | Preview | Approve |
-        Publishing Admin         | Can            |                  | Can    | Can  | Can     | Can     !
-            As Creator of Bundle | N/A            | N/A              | N/A    | N/A  | N/A     | Cannot  |
-            Not Creator          | N/A            | N/A              | N/A    | N/A  | N/A     | Can     |
-        Publishing Officer       | Can            | N/A              | Can    | Can  | Can     | N/A     |
-            As Creator of Bundle | N/A            | N/A              | N/A    | N/A  | N/A     | Cannot  |
-            Not Creator          | N/A            | N/A              | N/A    | N/A  | N/A     | Can     |
-        Viewer                   | N/A            | N/A              | Cannot | N/A  | N/A     | N/A     |
-            not in preview team  | Cannot         | N/A              | N/A    | N/A  | Cannot  | N/A     |
-            in preview team      | Can            | N/A              | N/A    | N/A  | Can     | N/A     |
+                                 | Bundles Search | Create | Edit | Preview | Approve |
+        Publishing Admin         | Can            | Can    | Can  | Can     | Can     !
+        Publishing Officer       | Can            | Can    | Can  | Can     | Can     |
+        Viewer                   | N/A            | Cannot | N/A  | N/A     | N/A     |
+            not in preview team  | Cannot         | N/A    | N/A  | Cannot  | N/A     |
+            in preview team      | Can            | N/A    | N/A  | Can     | N/A     |
     """
 
 #---- Bundle Create UI Tests -----
@@ -56,24 +52,25 @@ Scenario Outline: A User cannot create a bundle due to already existing
        | 1                 | Publishing Admin           | Publishing Officer  | {"role": "Publishing Admin",   "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
        | 1                 | Publishing Officer         | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
 
-Scenario Outline: A User cannot create a bundle due to duplicate schedule
+Scenario Outline: A User cannot save a bundle due to duplicate schedule
     Given there is a <role> user
-    And there is a release calendar page
+    And there is a Release Calendar page approved by <creator_role>
     When the <role> logs in
-    Then the logged in user fails to create a bundle due to duplicate release dates
+    Then the logged in user fails to save a bundle due to duplicate release dates
 
     Examples: bundles
-       | role               |
-       | Publishing Admin   |
-       | Publishing Officer |
+       | role               | creator_role      |
+       | Publishing Officer |Publishing Admin   |
+       | Publishing Admin   |Publishing Officer |
+
 
 
 #---- Bundle UI Edit-----
 Scenario Outline: A User can edit a bundle
     Given there is a <role> user
     And there is a <creator_role> user
-    And there is a Statistical Analysis page
-    And there is a release calendar page
+    And there is a Statistical Analysis page approved by <creator_role>
+    And there is a Release Calendar page approved by <creator_role>
     And there is a preview team
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
@@ -95,7 +92,8 @@ Scenario Outline: A User can edit a bundle
 Scenario Outline: A User can edit a bundle
     Given there is a <role> user
     And there is a <creator_role> user
-    And there is a Statistical Analysis page
+    And there is a Statistical Analysis page approved by <creator_role>
+    And there is a Release Calendar page approved by <creator_role>
     And there is a preview team
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
@@ -121,8 +119,8 @@ Scenario Outline: A User can edit a bundle
 Scenario Outline: A User can preview a bundle
     Given there is a <role> user
     And there is a <creator_role> user
-    And there is a Statistical Analysis page
-    And there is a release calendar page
+    And there is a Statistical Analysis page approved by <creator_role>
+    And there is a Release Calendar page approved by <creator_role>
     And there is a preview team
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
@@ -143,8 +141,8 @@ Scenario Outline: A User can preview a bundle
 Scenario Outline: A User cannot preview a bundle due to not member of  associated preview-team
     Given there is a <role> user
     And there is a <creator_role> user
-    And there is a Statistical Analysis page
-    And there is a release calendar page
+    And there is a Statistical Analysis page approved by <creator_role>
+    And there is a Release Calendar page approved by <creator_role>
     And there is a preview team
     And there are <number_of_bundles> bundles with <bundle_details>
     When the <role> logs in
@@ -153,7 +151,6 @@ Scenario Outline: A User cannot preview a bundle due to not member of  associate
  Examples: bundles
      | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                       |
      | 1                 | Viewer                     | Publishing Admin    | {"role": "Viewer",             "creator_role": "Publishing Admin", "status": "In_Review", "preview_teams": false,  "add_rel_cal": true, "add_stat_page": true}|
-     | 1                 | Publishing Officer         | Publishing Officer  | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "In_Review", "preview_teams": false,  "add_rel_cal": true, "add_stat_page": true} |
 
 
 #----- Bundle Approve UI Tests -----
@@ -161,13 +158,16 @@ Scenario Outline: A User cannot preview a bundle due to not member of  associate
 Scenario Outline: A user can approve a bundle
     Given there is a <role> user
     And there is a <creator_role> user
-    And there is a Statistical Analysis page
-    And there is a release calendar page
+    And there is a Statistical Analysis page approved by <creator_role>
+    And there is a Release Calendar page approved by <creator_role>
     And there is a preview team
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
     When the <role> logs in
-    Then the logged in user can approve a bundle
+    Then the <role> can preview the Release Calendar page
+    And the <role> can preview the Statistical Analysis page
+    And the <role> can preview bundle
+    And the logged in user can approve a bundle
 
     Examples: bundles
         | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                                 |
@@ -182,8 +182,8 @@ Scenario Outline: A user can approve a bundle
 Scenario Outline: A user cannot approve a bundle due to authorisation
     Given there is a <role> user
     And there is a <creator_role> user
-    And there is a Statistical Analysis page
-    And there is a release calendar page
+    And there is a Statistical Analysis page approved by <creator_role>
+    And there is a Release Calendar page approved by <creator_role>
     And there is a preview team
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
@@ -203,7 +203,7 @@ Scenario Outline: A user cannot approve a bundle due to lack of pages or dataset
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
     When the <role> logs in
-    Then the logged in user can find the bundle
+    Then the <role> can preview bundle
     And the logged in user cannot approve a bundle due to lack of pages
 
     Examples: bundles

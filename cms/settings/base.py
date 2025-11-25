@@ -973,11 +973,6 @@ TOPIC_API_BASE_URL = env.get("TOPIC_API_BASE_URL", f"{ONS_API_BASE_URL}/topics")
 # Feature flag to enable/disable interaction with the ONS Bundle API
 DIS_DATASETS_BUNDLE_API_ENABLED = env.get("DIS_DATASETS_BUNDLE_API_ENABLED", "false").lower() == "true"
 
-# Feature flag to enable/disable validation of bundled datasets status on bundle approval
-BUNDLE_DATASET_STATUS_VALIDATION_ENABLED = (
-    env.get("BUNDLE_DATASET_STATUS_VALIDATION_ENABLED", "false").lower() == "true"
-)
-
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
 
@@ -1073,8 +1068,4 @@ CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH = env.get("CMS_SEARCH_NOTIFY_ON_DELETE_
 # Domain-based locale configuration
 CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "true").lower() == "true"
 
-# This must remain lower than the Gunicorn worker timeout.
-# Note, the Gunicorn timeout may itself be overridden in deployment config (e.g. gunicorn.conf.py, Helm chart values).
-HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS = int(env.get("HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS", 10))
-
-DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "100"))
+DIS_DATASETS_BUNDLE_API_REQUEST_TIMEOUT_SECONDS = int(env.get("DIS_DATASETS_BUNDLE_API_REQUEST_TIMEOUT_SECONDS", 10))
