@@ -27,7 +27,6 @@ from cms.bundles.mixins import BundledPageMixin
 from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, bool_to_yes_no, format_date_for_gtm
 from cms.core.blocks.headline_figures import HeadlineFiguresItemBlock
 from cms.core.blocks.panels import CorrectionBlock, NoticeBlock
-from cms.core.blocks.section_blocks import SectionContentBlock
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
@@ -39,6 +38,7 @@ from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
 from cms.datavis.blocks.base import BaseChartBlock
 from cms.datavis.blocks.featured_charts import FeaturedChartBlock
+from cms.datavis.constants import CHART_BLOCK_TYPES
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -47,14 +47,6 @@ if TYPE_CHECKING:
 
 
 FIGURE_ID_SEPARATOR = ","
-
-
-def _get_chart_block_types() -> set[str]:
-    """Get all chart block types that inherit from BaseChartBlock."""
-    return {name for name, block in SectionContentBlock().child_blocks.items() if isinstance(block, BaseChartBlock)}
-
-
-CHART_BLOCK_TYPES = _get_chart_block_types()
 
 
 class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
