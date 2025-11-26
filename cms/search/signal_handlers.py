@@ -69,7 +69,7 @@ def on_page_slug_changed(sender: "type[Page]", instance: "Page", instance_before
     "instance" is the updated Page object, "instance_before" is the Page object before the slug change.
     We need to update the search index for pages descendants whose URL paths have changed as a result.
     This will also send an update for the page itself, which will be mostly identical to the event from page_published
-    signal, but is needed to additionally include the `old_uri` to ensure the old URL path is removed from the search
+    signal, but is needed to additionally include the `uri_old` to ensure the old URL path is removed from the search
     index.
     """
     _update_for_page_and_descendant_paths(

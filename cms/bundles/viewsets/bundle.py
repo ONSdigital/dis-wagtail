@@ -1,4 +1,5 @@
 import logging
+import textwrap
 import time
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
@@ -20,20 +21,20 @@ from wagtail.admin.widgets import HeaderButton, ListingButton
 from wagtail.log_actions import log
 
 from cms.bundles.action_menu import BundleActionMenu
-from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError
+from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError, BundleAPIClientError404
 from cms.bundles.decorators import datasets_bundle_api_enabled
-from cms.bundles.enums import BundleStatus
+from cms.bundles.enums import BundleContentItemState, BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import (
     notify_slack_of_status_change,
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
-from cms.bundles.utils import publish_bundle
+from cms.bundles.utils import get_data_admin_action_url, publish_bundle
 from cms.core.custom_date_format import ons_date_format
-from cms.datasets.models import Dataset
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
+    from django.forms import BaseForm
     from django.http import HttpResponseBase
     from django.template.response import TemplateResponse
     from django.utils.safestring import SafeString
@@ -41,9 +42,30 @@ if TYPE_CHECKING:
 
     from cms.bundles.forms import BundleAdminForm
     from cms.bundles.models import BundlesQuerySet
-
+    from cms.datasets.models import Dataset
 
 logger = logging.getLogger(__name__)
+
+# Fallback value for missing dataset metadata
+MISSING_VALUE = "Data missing"
+
+
+def add_exception_cause_to_form(exception: Exception, *, form: "BaseForm") -> None:
+    """Adds errors from a BundleAPIClientError exception cause to the form errors."""
+    cause = getattr(exception, "__cause__", None)
+    if not cause:
+        return
+
+    # Currently only handle BundleAPIClientError causes
+    if not isinstance(cause, BundleAPIClientError):
+        return
+
+    for error in cause.errors:
+        desc = error.get("description") or "Unknown API Error"
+        form.add_error(
+            field=None,
+            error=textwrap.shorten(desc, width=250, placeholder="..."),  # limit chars to avoid overly long errors
+        )
 
 
 class BundleCreateView(CreateView):
@@ -63,7 +85,8 @@ class BundleCreateView(CreateView):
                 self.object = self.save_instance()  # pylint: disable=attribute-defined-outside-init
         except Exception as e:  # pylint: disable=broad-exception-caught
             error = getattr(e, "message", str(e))
-            error_message = f"Could not create the bundle due to one or more Bundle API errors: {error}"
+            error_message = f"{self.get_error_message()} {error}."
+            add_exception_cause_to_form(e, form=form)
             messages.validation_error(self.request, error_message, form)
             error_response: HttpResponseBase = self.render_to_response(self.get_context_data(form=form))
             return error_response
@@ -150,7 +173,9 @@ class BundleEditView(EditView):
             with transaction.atomic():
                 self.object = self.save_instance()  # pylint: disable=attribute-defined-outside-init
         except Exception as e:  # pylint: disable=broad-exception-caught
-            error_message = f"Could not update bundle due to one or more errors: {getattr(e, 'message', str(e))}"
+            error = getattr(e, "message", str(e))
+            error_message = f"{self.get_error_message()} {error}."
+            add_exception_cause_to_form(e, form=form)
             messages.validation_error(self.request, error_message, form)
             error_response: HttpResponseBase = self.render_to_response(self.get_context_data(form=form))
             return error_response
@@ -474,7 +499,151 @@ class BundleInspectView(InspectView):
         value: str = self.object.bundle_api_bundle_id
         return value
 
-    def get_bundled_datasets_display_value(self) -> str:
+    @staticmethod
+    def get_human_readable_state(state: str) -> str:
+        """Converts a machine-readable state string to a human-readable format."""
+        if not state or state == MISSING_VALUE:
+            return MISSING_VALUE
+        match state:
+            case BundleContentItemState.APPROVED:
+                return "Approved"
+            case BundleContentItemState.PUBLISHED:
+                return "Published"
+            case _:
+                return state.replace("_", " ").title()
+
+    def _get_api_items_by_content_id(self) -> dict[str, dict[str, Any]]:
+        """Fetch Bundle API contents and build a lookup dict by content_id."""
+        client = BundleAPIClient(access_token=self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME))
+        bundle_contents = client.get_bundle_contents(self.object.bundle_api_bundle_id)
+
+        api_items: dict[str, dict[str, Any]] = {}
+        for content_item in bundle_contents.get("items", []):
+            if content_item.get("content_type") == "DATASET" and (content_id := content_item.get("id")):
+                api_items[content_id] = content_item
+        return api_items
+
+    @staticmethod
+    def _extract_api_fields(api_item: dict[str, Any] | None) -> tuple[str, str, str | None]:
+        """Extract state, edit_url, and preview_url from API item.
+
+        Returns:
+            Tuple of (state, edit_url, preview_url)
+        """
+        if not api_item:
+            return "", "#", None
+
+        links = api_item.get("links", {})
+        return (
+            api_item.get("state", ""),
+            links.get("edit") or "#",
+            links.get("preview"),
+        )
+
+    def _build_action_button(self, state: str, preview_url: str | None, dataset: "Dataset") -> "SafeString | str":
+        """Build the action button HTML based on dataset state."""
+        if state == BundleContentItemState.PUBLISHED:
+            view_url = get_data_admin_action_url("preview", dataset.namespace, dataset.edition, str(dataset.version))
+            return format_html(
+                '<a href="{}" class="button button-small button-secondary">View Live</a>',
+                view_url,
+            )
+        if preview_url:
+            cms_preview_url = reverse(
+                "bundles:preview_dataset",
+                args=[self.object.pk, dataset.namespace, dataset.edition, dataset.version],
+            )
+            return format_html(
+                '<a href="{}" class="button button-small button-secondary">Preview</a>',
+                cms_preview_url,
+            )
+        return ""
+
+    def _get_processed_datasets(self) -> list[dict[str, "SafeString | str"]]:
+        """Processes dataset information by hydrating local DB records with API data.
+
+        Uses local database records as the source of truth, then enriches them with
+        state and edit URL information from the Bundle API.
+        """
+        try:
+            api_items_by_content_id = self._get_api_items_by_content_id()
+        except BundleAPIClientError:
+            api_items_by_content_id = {}
+
+        processed_data = []
+        for bundled_dataset in self.object.bundled_datasets.select_related("dataset").all():
+            if not bundled_dataset.dataset:
+                continue
+
+            dataset = bundled_dataset.dataset
+            api_item = api_items_by_content_id.get(bundled_dataset.bundle_api_content_id)
+            state, edit_url, preview_url = self._extract_api_fields(api_item)
+
+            item: dict[str, SafeString | str] = {
+                "title": dataset.title,
+                "edition": dataset.formatted_edition or MISSING_VALUE,
+                "version": str(dataset.version) if dataset.version else MISSING_VALUE,
+                "state": self.get_human_readable_state(state),
+                "action_button": self._build_action_button(state, preview_url, dataset),
+                "edit_url": edit_url,
+            }
+
+            processed_data.append(item)
+
+        return processed_data
+
+    def _render_datasets_table(self, include_edit_links: bool) -> "SafeString | str":
+        """Renders datasets as an HTML table.
+
+        Args:
+            include_edit_links: If True, titles are hyperlinked to data admin.
+                            If False, titles are plain text.
+        """
+        processed_datasets = self._get_processed_datasets()
+
+        if not processed_datasets:
+            return "No datasets in bundle"
+
+        row_html_list: list[SafeString] = []
+        for item in processed_datasets:
+            if include_edit_links:
+                title_col = format_html(
+                    '<td class="title"><strong><a href="{}">{}</a></strong></td>',
+                    item["edit_url"],
+                    item["title"],
+                )
+            else:
+                title_col = format_html('<td class="title"><strong>{}</strong></td>', item["title"])
+
+            other_cols = format_html(
+                "<td>{}</td><td>{}</td><td>{}</td><td>{}</td>",
+                item["edition"],
+                item["version"],
+                item["state"],
+                item["action_button"],
+            )
+
+            row_html_list.append(format_html("<tr>{}{}</tr>", title_col, other_cols))
+
+        dataset_data = format_html_join("\n", "{}", ((row,) for row in row_html_list))
+
+        return format_html(
+            "<table class='listing'>"
+            "<thead><tr><th>Title</th><th>Edition</th><th>Version</th><th>State</th><th>Actions</th></tr></thead>"
+            "<tbody>{}</tbody>"
+            "</table>",
+            dataset_data,
+        )
+
+    def get_datasets_for_manager(self) -> "SafeString | str":
+        """Returns all the bundle datasets for managers with edit links."""
+        return self._render_datasets_table(include_edit_links=True)
+
+    def get_datasets_for_viewer(self) -> "SafeString | str":
+        """Returns all the bundle datasets for viewers without edit links."""
+        return self._render_datasets_table(include_edit_links=False)
+
+    def get_bundled_datasets_display_value(self) -> "SafeString | str":
         """Returns formatted markup for datasets linked to the Bundle."""
         if self.object.bundled_datasets.exists():
             datasets = Dataset.objects.filter(pk__in=self.object.bundled_datasets.values_list("dataset__pk", flat=True))
@@ -483,10 +652,18 @@ class BundleInspectView(InspectView):
                 format_html_join(
                     "\n",
                     '<li><a href="{}" target="_blank" rel="noopener">{}</a></li>',
-                    ((bundled_dataset.website_url, bundled_dataset) for bundled_dataset in datasets),
+                    ((bundled_dataset.url_path, bundled_dataset) for bundled_dataset in datasets),
                 ),
             )
         return "No datasets in bundle"
+
+        if not self.object.bundle_api_bundle_id:
+            return "Unable to use the Dataset API to display datasets."
+
+        if self.can_manage:
+            return self.get_datasets_for_manager()
+
+        return self.get_datasets_for_viewer()
 
 
 class BundleDeleteView(DeleteView):
@@ -494,7 +671,9 @@ class BundleDeleteView(DeleteView):
 
     @datasets_bundle_api_enabled
     def sync_bundle_deletion_with_bundle_api(self, instance: Bundle) -> None:
-        """Handle when a bundle is deleted."""
+        """Syncs the deletion of the Bundle in the CMS with the Bundle API by deleting the corresponding Bundle API
+        bundle.
+        """
         if not instance.bundle_api_bundle_id:
             return
 
@@ -503,7 +682,16 @@ class BundleDeleteView(DeleteView):
 
         try:
             client.delete_bundle(instance.bundle_api_bundle_id)
-            logger.info("Deleted bundle %s from Bundle API", instance.pk)
+            logger.info(
+                "Deleted bundle from Bundle API",
+                extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id},
+            )
+        except BundleAPIClientError404:
+            logger.warning(
+                "Bundle not found in Bundle API when deleting CMS bundle",
+                extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id},
+            )
+            # No need to save fields or raise an error as we are about to delete the CMS bundle anyway
         except BundleAPIClientError as e:
             logger.exception("Failed to delete bundle %s from Bundle API: %s", instance.pk, e)
             raise ValidationError("Could not communicate with the Bundle API") from e
@@ -520,7 +708,8 @@ class BundleDeleteView(DeleteView):
             response: HttpResponseBase = super().form_valid(form)
             return response
         except ValidationError as e:
-            error_message = f"Could not delete bundle due to one or more errors: {getattr(e, 'message', str(e))}"
+            error = getattr(e, "message", str(e))
+            error_message = f"The bundle could not be deleted due to errors. {error}."
             messages.error(self.request, error_message)
             return redirect(reverse(self.index_url_name))
 
