@@ -57,7 +57,7 @@ def build_release_specific_fields(page: "Page") -> dict:
 def build_resource_dict(page: "Page", old_url_path: str | None = None) -> dict:
     """Single entry point that decides if we build standard or release payload.
     Returns a dict shaped according to the resource_metadata.yml spec.
-    old_url_path is optional, if provided it will be used to populate the old_uri field, which is used to remove
+    old_url_path is optional, if provided it will be used to populate the uri_old field, which is used to remove
     old URIs from the search index.
     """
     base_data = build_standard_resource_dict(page)
@@ -68,7 +68,7 @@ def build_resource_dict(page: "Page", old_url_path: str | None = None) -> dict:
         base_data.update(release_data)
 
     if old_url_path:
-        base_data["old_uri"] = build_uri_from_url_path(old_url_path)
+        base_data["uri_old"] = build_uri_from_url_path(old_url_path)
 
     return base_data
 
