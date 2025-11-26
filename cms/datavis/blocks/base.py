@@ -355,7 +355,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         if superseded_version is not None:
             version_part = f"/versions/{superseded_version}"
 
-        return f"{base_url}{version_part}/download-chart/{block_id}/"
+        return f"{base_url}{version_part}/download-chart/{block_id}"
 
     def get_footnotes_config(self, value: "StructValue") -> dict["_StrOrPromise", Any]:
         if footnotes := value.get("footnotes"):

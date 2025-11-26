@@ -38,15 +38,15 @@ def serialize_correction_or_notice(entry: "StreamChild", *, superseded_url: str 
     return content
 
 
-def create_data_csv_download_response_from_data(data: list, *, filename: str) -> HttpResponse:
-    """Creates a Django HttpResponse for downloading a CSV file from JSON string data.
+def create_data_csv_download_response_from_data(data: list[list[str | int | float]], *, filename: str) -> HttpResponse:
+    """Creates a Django HttpResponse for downloading a CSV file from table data.
 
     Args:
-        data (list): The list of data rows to be converted to CSV.
-        filename (str): The desired filename for the downloaded CSV file.
+        data: The list of data rows to be converted to CSV, where each row is a list of values.
+        filename: The desired filename for the downloaded CSV file (without extension).
 
     Returns:
-        HttpResponse: A Django HttpResponse object configured for CSV file download.
+        A Django HttpResponse object configured for CSV file download.
     """
     response = HttpResponse(
         content_type="text/csv",
