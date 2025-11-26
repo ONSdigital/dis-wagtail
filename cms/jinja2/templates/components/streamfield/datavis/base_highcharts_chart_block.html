@@ -1,21 +1,4 @@
 {% from "components/chart/_macro.njk" import onsChart %}
 
 {%- do chart_config.update(id=block_id) -%}
-{%- set base_url = page.url.rstrip('/') -%}
-{%- if '/versions/' in request.path -%}
-    {# Extract version from current path #}
-    {%- set path_parts = request.path.split('/versions/') -%}
-    {%- set version_part = path_parts[1].split('/')[0] -%}
-    {%- set download_url = base_url ~ '/versions/' ~ version_part ~ '/download-chart/' ~ block_id ~ '/' -%}
-{%- else -%}
-    {%- set download_url = base_url ~ '/download-chart/' ~ block_id ~ '/' -%}
-{%- endif -%}
-{# fmt:off #}
-{%- do chart_config.download.update(itemsList=[
-    {
-        "text": "Download CSV",
-        "url": download_url,
-    },
-]) -%}
-{# fmt:on #}
 {{ onsChart(chart_config) }}
