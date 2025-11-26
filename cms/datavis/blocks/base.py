@@ -14,7 +14,6 @@ from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 from cms.datavis.constants import AxisType, HighChartsChartType, HighchartsTheme
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
     from django.utils.functional import _StrOrPromise
 
     from cms.core.models import BasePage
@@ -322,10 +321,10 @@ class BaseChartBlock(BaseVisualisationBlock):
         # CSV download - only include if we have a valid URL
         if parent_context and block_id:
             page: Optional[BasePage] = parent_context.get("page")
-            request: Optional[HttpRequest] = parent_context.get("request")
-            if page and request:
+            if page:
                 suffix = f" ({get_approximate_file_size_in_kb(rows)})" if rows else ""
-                csv_url = self._build_chart_download_url(page, request, block_id)
+                superseded_version: Optional[int] = parent_context.get("superseded_version")
+                csv_url = self._build_chart_download_url(page, block_id, superseded_version)
                 items_list.append(
                     {
                         "text": f"Download CSV{suffix}",
@@ -338,17 +337,25 @@ class BaseChartBlock(BaseVisualisationBlock):
             "itemsList": items_list,
         }
 
-    def _build_chart_download_url(self, page: "BasePage", request: "HttpRequest", block_id: str) -> str:
-        """Build the chart download URL, handling versioned pages."""
+    @staticmethod
+    def _build_chart_download_url(page: "BasePage", block_id: str, superseded_version: Optional[int] = None) -> str:
+        """Build the chart download URL, handling versioned pages.
+
+        Args:
+            page: The page containing the chart.
+            block_id: The unique block ID of the chart.
+            superseded_version: If viewing a superseded version, the version number.
+
+        Returns:
+            The URL to download the chart data as CSV.
+        """
         base_url = page.url.rstrip("/")
+        version_part = ""
 
-        # Check if viewing a previous version
-        if "/versions/" in request.path:
-            # Extract version number from path
-            version_part = request.path.split("/versions/")[1].split("/")[0]
-            return f"{base_url}/versions/{version_part}/download-chart/{block_id}/"
+        if superseded_version is not None:
+            version_part = f"/versions/{superseded_version}"
 
-        return f"{base_url}/download-chart/{block_id}/"
+        return f"{base_url}{version_part}/download-chart/{block_id}/"
 
     def get_footnotes_config(self, value: "StructValue") -> dict["_StrOrPromise", Any]:
         if footnotes := value.get("footnotes"):

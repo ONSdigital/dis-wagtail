@@ -692,6 +692,8 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
                 "corrections_and_notices": corrections + notices,
                 "has_corrections": bool(corrections),
                 "has_notices": bool(notices),
+                # Used by chart blocks to build versioned download URLs
+                "superseded_version": version,
             },
         )
 

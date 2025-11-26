@@ -8,6 +8,7 @@ from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.datasets.blocks import DatasetStoryBlock
+from cms.datavis.tests.factories import TableDataFactory
 
 
 class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
@@ -225,3 +226,318 @@ class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
             f'<link rel="alternate" href="{welsh_article.url}" hreflang="cy" />',
             html=True,
         )
+
+
+class ArticleSeriesChartDownloadTestCase(WagtailTestUtils, TestCase):
+    """Test chart download routes via ArticleSeriesPage evergreen paths."""
+
+    def setUp(self):
+        self.series = ArticleSeriesPageFactory()
+        table_data = TableDataFactory(
+            table_data=[
+                ["Category", "Value 1", "Value 2"],
+                ["2020", "100", "150"],
+                ["2021", "120", "180"],
+            ]
+        )
+        self.article = StatisticalArticlePageFactory(parent=self.series)
+        self.article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Test Chart Title",
+                                "subtitle": "Chart subtitle",
+                                "theme": "primary",
+                                "table": table_data,
+                            },
+                            "id": "test-chart-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.article.save_revision().publish()
+
+    def test_download_chart_success(self):
+        """Test successful chart download via series evergreen path."""
+        response = self.client.get(f"{self.series.url}/editions/{self.article.slug}/download-chart/test-chart-id")
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("Test Chart Title.csv", response["Content-Disposition"])
+        # Check CSV content
+        content = response.content.decode("utf-8")
+        self.assertIn("Category", content)
+        self.assertIn("2020", content)
+
+    def test_download_chart_404_no_edition(self):
+        """Test 404 when edition slug doesn't match a live edition."""
+        response = self.client.get(f"{self.series.url}/editions/nonexistent-edition/download-chart/test-chart-id")
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_download_chart_404_invalid_chart_id(self):
+        """Test 404 when chart_id doesn't exist in the article."""
+        response = self.client.get(
+            f"{self.series.url}/editions/{self.article.slug}/download-chart/nonexistent-chart-id"
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+
+class ArticleSeriesChartDownloadWithVersionTestCase(WagtailTestUtils, TestCase):
+    """Test chart download with version routes via ArticleSeriesPage.
+
+    This covers the use case where an article has been corrected and the user
+    wants to download a chart from a previous version.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.series = ArticleSeriesPageFactory()
+        cls.original_table_data = TableDataFactory(
+            table_data=[
+                ["Category", "Original Value"],
+                ["2020", "100"],
+            ]
+        )
+        cls.corrected_table_data = TableDataFactory(
+            table_data=[
+                ["Category", "Corrected Value"],
+                ["2020", "999"],
+            ]
+        )
+
+    def test_download_chart_with_version_success(self):
+        """Test downloading a chart from a previous (corrected) version."""
+        # Create article with original chart data
+        article = StatisticalArticlePageFactory(parent=self.series)
+        article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Original Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": self.original_table_data,
+                            },
+                            "id": "chart-to-download",
+                        }
+                    ],
+                },
+            }
+        ]
+        article.save_revision().publish()
+        original_revision_id = article.latest_revision_id
+
+        # Create a correction with updated chart data
+        article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Corrected Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": self.corrected_table_data,
+                            },
+                            "id": "chart-to-download",
+                        }
+                    ],
+                },
+            }
+        ]
+        article.corrections = [
+            {
+                "type": "correction",
+                "value": {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "date": "2024-01-15",
+                    "text": "Data correction",
+                },
+            }
+        ]
+        article.save_revision().publish()
+
+        # Download the chart from version 1 (the superseded version)
+        response = self.client.get(
+            f"{self.series.url}/editions/{article.slug}/versions/1/download-chart/chart-to-download"
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        # The version 1 chart should have the original data
+        content = response.content.decode("utf-8")
+        self.assertIn("Original Value", content)
+        self.assertIn("100", content)
+        self.assertNotIn("Corrected Value", content)
+
+        # Download the chart from the latest (corrected) version via the main article path
+        latest_response = self.client.get(f"{self.series.url}/editions/{article.slug}/download-chart/chart-to-download")
+
+        self.assertEqual(latest_response.status_code, HTTPStatus.OK)
+        # The latest chart should have the corrected data
+        latest_content = latest_response.content.decode("utf-8")
+        self.assertIn("Corrected Value", latest_content)
+        self.assertIn("999", latest_content)
+        self.assertNotIn("Original Value", latest_content)
+
+    def test_download_chart_with_version_404_no_edition(self):
+        """Test 404 when edition slug doesn't match a live edition."""
+        response = self.client.get(
+            f"{self.series.url}/editions/nonexistent-edition/versions/1/download-chart/test-chart-id"
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_download_chart_with_version_404_invalid_version(self):
+        """Test 404 when version doesn't exist."""
+        article = StatisticalArticlePageFactory(parent=self.series)
+        article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Test Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": self.original_table_data,
+                            },
+                            "id": "chart-to-download",
+                        }
+                    ],
+                },
+            }
+        ]
+        article.save_revision().publish()
+
+        # No corrections exist, so version 1 doesn't exist
+        response = self.client.get(
+            f"{self.series.url}/editions/{article.slug}/versions/1/download-chart/chart-to-download"
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_download_chart_with_version_404_invalid_chart_id(self):
+        """Test 404 when chart_id doesn't exist in the versioned article."""
+        article = StatisticalArticlePageFactory(parent=self.series)
+        article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Original Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": self.original_table_data,
+                            },
+                            "id": "existing-chart-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        article.save_revision().publish()
+        original_revision_id = article.latest_revision_id
+
+        # Add a correction
+        article.corrections = [
+            {
+                "type": "correction",
+                "value": {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "date": "2024-01-15",
+                    "text": "Minor correction",
+                },
+            }
+        ]
+        article.save_revision().publish()
+
+        # Try to download a chart that doesn't exist
+        response = self.client.get(
+            f"{self.series.url}/editions/{article.slug}/versions/1/download-chart/nonexistent-chart-id"
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_download_chart_with_version_404_chart_added_in_correction(self):
+        """Test 404 when chart was added in the correction and doesn't exist in the old version."""
+        # Create article without any charts
+        article = StatisticalArticlePageFactory(parent=self.series)
+        article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Text Only Section",
+                    "content": [
+                        {
+                            "type": "rich_text",
+                            "value": "<p>Original content without charts</p>",
+                        }
+                    ],
+                },
+            }
+        ]
+        article.save_revision().publish()
+        original_revision_id = article.latest_revision_id
+
+        # Add a chart as part of a correction
+        article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "New Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": self.corrected_table_data,
+                            },
+                            "id": "new-chart-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        article.corrections = [
+            {
+                "type": "correction",
+                "value": {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "date": "2024-01-15",
+                    "text": "Added missing chart",
+                },
+            }
+        ]
+        article.save_revision().publish()
+
+        # The chart exists in the latest version
+        latest_response = self.client.get(f"{self.series.url}/editions/{article.slug}/download-chart/new-chart-id")
+        self.assertEqual(latest_response.status_code, HTTPStatus.OK)
+
+        # But the chart doesn't exist in version 1 (the original version without charts)
+        response = self.client.get(f"{self.series.url}/editions/{article.slug}/versions/1/download-chart/new-chart-id")
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
