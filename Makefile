@@ -22,7 +22,6 @@ clean: ## Clean the temporary files.
 	rm -rf .coverage
 	rm -rf .ruff_cache
 	rm -rf megalinter-reports
-	rm -rf tmp-traces
 
 .PHONY: format
 format: format-py format-html format-frontend ## Format the code.
