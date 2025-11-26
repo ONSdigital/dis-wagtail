@@ -403,7 +403,7 @@ class BundleInspectView(InspectView):
         return "N/A"
 
     def get_pages_for_manager(self) -> "SafeString":
-        """Returns all the bundle page.
+        """Returns all the bundle pages.
         Publishing Admins / Officers can see everything when inspecting the bundle.
         """
         pages = self.object.get_bundled_pages().specific().defer_streamfields()
@@ -645,17 +645,8 @@ class BundleInspectView(InspectView):
 
     def get_bundled_datasets_display_value(self) -> "SafeString | str":
         """Returns formatted markup for datasets linked to the Bundle."""
-        if self.object.bundled_datasets.exists():
-            datasets = Dataset.objects.filter(pk__in=self.object.bundled_datasets.values_list("dataset__pk", flat=True))
-            return format_html(
-                "<ol>{}</ol>",
-                format_html_join(
-                    "\n",
-                    '<li><a href="{}" target="_blank" rel="noopener">{}</a></li>',
-                    ((bundled_dataset.url_path, bundled_dataset) for bundled_dataset in datasets),
-                ),
-            )
-        return "No datasets in bundle"
+        if not self.object.has_datasets:
+            return "No datasets in bundle"
 
         if not self.object.bundle_api_bundle_id:
             return "Unable to use the Dataset API to display datasets."
@@ -693,8 +684,9 @@ class BundleDeleteView(DeleteView):
             )
             # No need to save fields or raise an error as we are about to delete the CMS bundle anyway
         except BundleAPIClientError as e:
-            logger.exception("Failed to delete bundle %s from Bundle API: %s", instance.pk, e)
-            raise ValidationError("Could not communicate with the Bundle API") from e
+            msg = "Failed to delete bundle from Bundle API"
+            logger.exception(msg, extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id})
+            raise ValidationError(msg) from e
 
     def delete_action(self) -> None:
         with transaction.atomic():
