@@ -68,6 +68,7 @@ class BundleAPIClient:
         data: dict[str, Any] | None = None,
         params: dict[str, str] | None = None,
         etag: str | None = None,
+        timeout: float | int | None = None,
     ) -> dict[str, Any]:
         """Make a request to the API and handle common errors.
 
@@ -135,15 +136,16 @@ class BundleAPIClient:
                 "status": "accepted",
                 "location": response.headers.get("Location", ""),
                 "message": BundleAPIMessage.REQUEST_ACCEPTED,
+                "etag_header": etag,
             }
 
         # Handle 204 responses (no content)
         if response.status_code == HTTPStatus.NO_CONTENT:
-            return {"status": "success", "message": BundleAPIMessage.OPERATION_SUCCESS}
+            return {"status": "success", "message": BundleAPIMessage.OPERATION_SUCCESS, "etag_header": etag}
 
         json_data: dict[str, Any] = response.json()
         # ETag is usually returned as a header, so inject it in the response JSON
-        json_data["etag_header"] = response.headers.get("etag", "")
+        json_data["etag_header"] = etag
         return json_data
 
     @staticmethod
@@ -260,18 +262,17 @@ class BundleAPIClient:
         # The swagger spec expects a JSON object with a 'state' field
         return self._make_request("PUT", f"/bundles/{bundle_id}/state", data={"state": state}, etag=etag)
 
-    def add_content_to_bundle(self, bundle_id: str, content_item: dict[str, Any], etag: str) -> dict[str, Any]:
+    def add_content_to_bundle(self, bundle_id: str, content_item: dict[str, Any]) -> dict[str, Any]:
         """Add a content item to a bundle.
 
         Args:
             bundle_id: The ID of the bundle to add content to.
             content_item: The content item to add.
-            etag: The bundle ETag
 
         Returns:
             API response data
         """
-        return self._make_request("POST", f"/bundles/{bundle_id}/contents", data=content_item, etag=etag)
+        return self._make_request("POST", f"/bundles/{bundle_id}/contents", data=content_item)
 
     def delete_content_from_bundle(self, bundle_id: str, content_id: str) -> dict[str, Any]:
         """Delete a content item from a bundle.
@@ -285,24 +286,22 @@ class BundleAPIClient:
         """
         return self._make_request("DELETE", f"/bundles/{bundle_id}/contents/{content_id}")
 
-    def get_bundle_contents(self, bundle_id: str, limit: int = 20, offset: int = 0) -> dict[str, Any]:
-        """Get the list of contents for a specific bundle.
+    def get_bundle_contents(self, bundle_id: str, limit: int | None = None, offset: int = 0) -> dict[str, Any]:
+        """Get the list of all contents for a specific bundle.
 
         Args:
             bundle_id: The ID of the bundle to get contents for.
-            limit: The maximum number of items to return. Defaults to 20.
+            limit: The maximum number of items to return. Defaults to DEFAULT_PAGE_LIMIT.
             offset: The starting index of the items to return. Defaults to 0.
 
         Returns:
             API response data containing the list of contents.
         """
-        if limit <= 0:
-            raise ValueError("limit must be a positive integer")
-        if offset < 0:
-            raise ValueError("offset must be a non-negative integer")
+        page_limit = self._normalise_limit(limit)
+        start_offset = max(0, offset)
 
-        params: dict[str, str] = {"limit": str(limit), "offset": str(offset)}
-        return self._make_request("GET", f"/bundles/{bundle_id}/contents", params=params)
+        params = {"limit": str(page_limit), "offset": str(start_offset)}
+        return self._aggregate_paginated(path=f"/bundles/{bundle_id}/contents", params=params)
 
     def delete_bundle(self, bundle_id: str) -> dict[str, Any]:
         """Delete a bundle via the API.
