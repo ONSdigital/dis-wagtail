@@ -96,3 +96,8 @@ Feature: Users can create localised content in the CMS
         And the user clicks "View Live" on the publish confirmation banner
         And the user switches the page language to English
         Then the published information page is displayed with English content
+
+    Scenario: The user is not able to create a Welsh page first
+        Given the user navigates to the admin page navigator
+        When the user navigates to the "Welsh" homepage in the page navigator
+        Then the user has no option to create a child page
