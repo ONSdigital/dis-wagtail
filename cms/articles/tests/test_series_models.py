@@ -287,6 +287,139 @@ class ArticleSeriesChartDownloadTestCase(WagtailTestUtils, TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
+    def test_download_chart_multiple_charts_in_article(self):
+        """Test that correct chart is returned when article has multiple charts."""
+        # Create table data for both charts
+        first_table_data = TableDataFactory(
+            table_data=[
+                ["Category", "Value 1", "Value 2"],
+                ["2020", "100", "150"],
+                ["2021", "120", "180"],
+            ]
+        )
+        second_table_data = TableDataFactory(
+            table_data=[
+                ["Month", "Sales"],
+                ["January", "500"],
+                ["February", "750"],
+            ]
+        )
+        self.article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Test Chart Title",
+                                "subtitle": "Chart subtitle",
+                                "theme": "primary",
+                                "table": first_table_data,
+                            },
+                            "id": "test-chart-id",
+                        },
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Second Chart Title",
+                                "subtitle": "Second chart subtitle",
+                                "theme": "primary",
+                                "table": second_table_data,
+                            },
+                            "id": "second-chart-id",
+                        },
+                    ],
+                },
+            }
+        ]
+        self.article.save_revision().publish()
+
+        # Download first chart
+        first_response = self.client.get(f"{self.series.url}/editions/{self.article.slug}/download-chart/test-chart-id")
+        self.assertEqual(first_response.status_code, HTTPStatus.OK)
+        first_content = first_response.content.decode("utf-8")
+
+        # Download second chart
+        second_response = self.client.get(
+            f"{self.series.url}/editions/{self.article.slug}/download-chart/second-chart-id"
+        )
+        self.assertEqual(second_response.status_code, HTTPStatus.OK)
+        second_content = second_response.content.decode("utf-8")
+
+        # Verify first chart has its data
+        self.assertIn("Category", first_content)
+        self.assertIn("2020", first_content)
+        self.assertNotIn("Month", first_content)
+        self.assertNotIn("January", first_content)
+
+        # Verify second chart has its data
+        self.assertIn("Month", second_content)
+        self.assertIn("January", second_content)
+        self.assertIn("500", second_content)
+        self.assertNotIn("Category", second_content)
+        self.assertNotIn("2020", second_content)
+
+    def test_download_chart_same_id_different_articles(self):
+        """Test that same chart_id in different articles returns correct data for each."""
+        # Create a second article with a chart using the same ID but different data
+        second_article_table_data = TableDataFactory(
+            table_data=[
+                ["Region", "Population"],
+                ["London", "9000000"],
+                ["Manchester", "550000"],
+            ]
+        )
+        second_article = StatisticalArticlePageFactory(parent=self.series)
+        second_article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Second Article Chart",
+                                "subtitle": "Different data",
+                                "theme": "primary",
+                                "table": second_article_table_data,
+                            },
+                            "id": "test-chart-id",  # Same ID as first article's chart
+                        }
+                    ],
+                },
+            }
+        ]
+        second_article.save_revision().publish()
+
+        # Download chart from first article
+        first_response = self.client.get(f"{self.series.url}/editions/{self.article.slug}/download-chart/test-chart-id")
+        self.assertEqual(first_response.status_code, HTTPStatus.OK)
+        first_content = first_response.content.decode("utf-8")
+
+        # Download chart from second article
+        second_response = self.client.get(
+            f"{self.series.url}/editions/{second_article.slug}/download-chart/test-chart-id"
+        )
+        self.assertEqual(second_response.status_code, HTTPStatus.OK)
+        second_content = second_response.content.decode("utf-8")
+
+        # Verify first article's chart has its data
+        self.assertIn("Category", first_content)
+        self.assertIn("2020", first_content)
+        self.assertIn("100", first_content)
+        self.assertNotIn("Region", first_content)
+        self.assertNotIn("London", first_content)
+
+        # Verify second article's chart has its data
+        self.assertIn("Region", second_content)
+        self.assertIn("London", second_content)
+        self.assertIn("9000000", second_content)
+        self.assertNotIn("Category", second_content)
+        self.assertNotIn("2020", second_content)
+
 
 class ArticleSeriesChartDownloadWithVersionTestCase(WagtailTestUtils, TestCase):
     """Test chart download with version routes via ArticleSeriesPage.
