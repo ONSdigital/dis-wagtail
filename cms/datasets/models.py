@@ -23,6 +23,8 @@ class ONSDatasetApiQuerySet(APIQuerySet):
     def __init__(self, *args: object, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)
         self.token: str | None = None
+        self.timeout: int = settings.HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS
+        self.limit: int = settings.DATASETS_API_DEFAULT_PAGE_SIZE
 
     def with_token(self, token: str) -> "ONSDatasetApiQuerySet":
         """Return a cloned queryset with the given authentication token.
@@ -62,7 +64,8 @@ class ONSDatasetApiQuerySet(APIQuerySet):
         is_detail_request = url.startswith(ONSDataset.Meta.detail_url.split("%s", maxsplit=1)[0])
 
         try:
-            response = requests.get(url, params=params, headers=headers, timeout=30)
+            logger.debug("Fetching datasets from API", extra={"url": url, "params": params})
+            response = requests.get(url, params=params, headers=headers, timeout=self.timeout)
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == HTTPStatus.TOO_MANY_REQUESTS:

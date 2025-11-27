@@ -59,7 +59,7 @@ class BundleAPIClient:
         self.session = requests.Session()
         self.is_enabled = getattr(settings, "DIS_DATASETS_BUNDLE_API_ENABLED", False)
         # Sensible default timeout for outbound HTTP calls. Overridable via settings.
-        self.timeout = settings.DIS_DATASETS_BUNDLE_API_REQUEST_TIMEOUT_SECONDS
+        self.timeout = settings.HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS
 
         # Set default headers for all requests
         headers = {

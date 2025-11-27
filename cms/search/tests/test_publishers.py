@@ -9,6 +9,7 @@ from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.search.publishers import BasePublisher, IAMKafkaTokenProvider, KafkaPublisher, LogPublisher
 from cms.search.tests.helpers import ResourceDictAssertions
+from cms.search.utils import build_page_uri
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 
 
@@ -63,7 +64,7 @@ class BasePublisherTests(TestCase, WagtailTestUtils, ResourceDictAssertions):
 
             self.assertEqual(channel_called, "search-content-deleted")
             self.assertIn("uri", message_called)
-            self.assertEqual(message_called["uri"], page.url_path)
+            self.assertEqual(message_called["uri"], build_page_uri(page))
 
             mock_method.reset_mock()
 
@@ -132,7 +133,7 @@ class KafkaPublisherTests(TestCase, ResourceDictAssertions):
 
         self.assertEqual(channel_called, "search-content-deleted")
         self.assertIn("uri", message_called)
-        self.assertEqual(message_called["uri"], page.url_path)
+        self.assertEqual(message_called["uri"], build_page_uri(page))
 
         mock_future.get.assert_called_once_with(timeout=10)
 
@@ -192,4 +193,4 @@ class LogPublisherTests(TestCase, ResourceDictAssertions):
 
         msg_dict = last_call_args[2]
         self.assertIn("uri", msg_dict, "Payload dict missing expected key 'uri'")
-        self.assertEqual(msg_dict["uri"], self.information_page.url_path)
+        self.assertEqual(msg_dict["uri"], build_page_uri(self.information_page))
