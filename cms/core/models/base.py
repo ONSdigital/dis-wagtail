@@ -15,7 +15,7 @@ from wagtailschemaorg.utils import extend
 from cms.core.analytics_utils import format_date_for_gtm
 from cms.core.cache import get_default_cache_control_decorator
 from cms.core.forms import DeduplicateTopicsAdminForm, ONSCopyForm
-from cms.core.permissions import BasePagePermissionTester
+from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.query import order_by_pk_position
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 
@@ -40,6 +40,8 @@ if TYPE_CHECKING:
 
     class WagtailBaseGenericSetting(_WagtailBaseGenericSetting, models.Model):
         """Explicit class definition for type checking. Indicates we're inheriting from Django's model."""
+
+    from cms.users.models import User
 else:
     from wagtail.contrib.settings.models import (
         BaseGenericSetting as WagtailBaseGenericSetting,
@@ -110,7 +112,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         return edit_handler.bind_to_model(cls)
 
-    def permissions_for_user(self, user) -> "PagePermissionTester":
+    def permissions_for_user(self, user: "User") -> "PagePermissionTester":
         """Override the permission tester class to use for our page models."""
         return BasePagePermissionTester(user, self)
 

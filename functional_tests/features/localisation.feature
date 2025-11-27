@@ -101,3 +101,8 @@ Feature: Users can create localised content in the CMS
         Given the user navigates to the admin page navigator
         When the user navigates to the "Welsh" homepage in the page navigator
         Then the user has no option to create a child page
+
+    Scenario: The user is able to create an English page first
+        Given the user navigates to the admin page navigator
+        When the user navigates to the "English" homepage in the page navigator
+        Then the user has the option to create a child page under the "Home" page
