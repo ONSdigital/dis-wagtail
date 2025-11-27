@@ -10,10 +10,13 @@ from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
+from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 from cms.datavis.constants import AxisType, HighChartsChartType, HighchartsTheme
 
 if TYPE_CHECKING:
     from django.utils.functional import _StrOrPromise
+
+    from cms.core.models import BasePage
 
 
 AnnotationsList = list[dict[str, Any]]
@@ -109,7 +112,9 @@ class BaseChartBlock(BaseVisualisationBlock):
     def get_context(self, value: "StructValue", parent_context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
 
-        context["chart_config"] = self.get_component_config(value)
+        context["chart_config"] = self.get_component_config(
+            value, parent_context=parent_context, block_id=context.get("block_id")
+        )
         return context
 
     def get_highcharts_chart_type(self, value: "StructValue") -> str:
@@ -118,7 +123,13 @@ class BaseChartBlock(BaseVisualisationBlock):
             return cast(str, chart_type)
         return self.highcharts_chart_type.value
 
-    def get_component_config(self, value: "StructValue") -> dict[str, Any]:
+    def get_component_config(
+        self,
+        value: "StructValue",
+        *,
+        parent_context: Optional[dict[str, Any]] = None,
+        block_id: Optional[str] = None,
+    ) -> dict[str, Any]:
         rows, series = self.get_series_data(value)
 
         config = {
@@ -134,7 +145,12 @@ class BaseChartBlock(BaseVisualisationBlock):
             "yAxis": self.get_y_axis_config(value.get("y_axis")),
             "series": series,
             "useStackedLayout": value.get("use_stacked_layout"),
-            "download": self.get_download_config(value),
+            "download": self.get_download_config(
+                value,
+                parent_context=parent_context,
+                block_id=block_id,
+                rows=rows,
+            ),
             "footnotes": self.get_footnotes_config(value),
         }
 
@@ -286,24 +302,60 @@ class BaseChartBlock(BaseVisualisationBlock):
 
         return options
 
-    def get_download_config(self, value: "StructValue") -> dict[str, Any]:
+    def get_download_config(
+        self,
+        value: "StructValue",
+        *,
+        parent_context: Optional[dict[str, Any]] = None,
+        block_id: Optional[str] = None,
+        rows: Optional[list[list[str | int | float]]] = None,
+    ) -> dict[str, Any]:
+        items_list = [
+            {
+                # Placeholder for image download (not implemented yet)
+                "text": "Download image (18KB)",
+                "url": "xyz",
+            }
+        ]
+
+        # CSV download - only include if we have a valid URL
+        if parent_context and block_id:
+            page: Optional[BasePage] = parent_context.get("page")
+            if page:
+                suffix = f" ({get_approximate_file_size_in_kb(rows)})" if rows else ""
+                superseded_version: Optional[int] = parent_context.get("superseded_version")
+                csv_url = self._build_chart_download_url(page, block_id, superseded_version)
+                items_list.append(
+                    {
+                        "text": f"Download CSV{suffix}",
+                        "url": csv_url,
+                    }
+                )
+
         return {
-            "title": f"Download: {value['title'][:30]} ... ",  # TODO work on download metadata
-            "itemsList": [
-                {
-                    "text": "Download image (18KB)",
-                    "url": "xyz",
-                },
-                {
-                    "text": "Download CSV (25KB)",
-                    "url": "xyz",
-                },
-                {
-                    "text": "Download Excel (25KB)",
-                    "url": "xyz",
-                },
-            ],
+            "title": f"Download: {value['title'][:30]} ... ",
+            "itemsList": items_list,
         }
+
+    @staticmethod
+    def _build_chart_download_url(page: "BasePage", block_id: str, superseded_version: Optional[int] = None) -> str:
+        """Build the chart download URL, handling versioned pages.
+
+        Args:
+            page: The page containing the chart.
+            block_id: The unique block ID of the chart.
+            superseded_version: If viewing a superseded version, the version number.
+
+        Returns:
+            The URL to download the chart data as CSV.
+        """
+        base_url = page.url.rstrip("/")
+        version_part = ""
+
+        if superseded_version is not None:
+            version_part = f"/versions/{superseded_version}"
+
+        return f"{base_url}{version_part}/download-chart/{block_id}"
 
     def get_footnotes_config(self, value: "StructValue") -> dict["_StrOrPromise", Any]:
         if footnotes := value.get("footnotes"):

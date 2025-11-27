@@ -51,3 +51,19 @@ class TextInputFloatBlock(blocks.FloatBlock):
             validators=kwargs.get("validators", ()),
             help_text=help_text or "",
         )
+
+
+def get_approximate_file_size_in_kb(data: Any, *, minimum: int = 1) -> str:
+    """Get the approximate file size in kilobytes (KB) as a string.
+
+    Args:
+        data (Any): The data to calculate the size for.
+        minimum (int): The minimum size in KB to return.
+
+    Returns:
+        str: The approximate file size in KB, e.g. "18KB".
+    """
+    # CSV exports will use UTF-8 encoding, so we calculate the size accordingly
+    size_in_bytes = len(bytes(str(data), "utf-8"))
+    size_in_kb = max(minimum, round(size_in_bytes / 1024))
+    return f"{size_in_kb}KB"
