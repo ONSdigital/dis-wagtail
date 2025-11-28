@@ -13,4 +13,5 @@ class BasePagePermissionTester(PagePermissionTester):
         """
         if self.page.locale.language_code != settings.LANGUAGE_CODE:
             return False
-        return super().can_add_subpage()
+        can_add: bool = super().can_add_subpage()
+        return can_add
