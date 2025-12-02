@@ -165,13 +165,15 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     def download_chart(self, request: "HttpRequest", slug: str, chart_id: str) -> "HttpResponse":
         if not (edition := StatisticalArticlePage.objects.live().child_of(self).filter(slug=slug).first()):
             raise Http404
-        return cast("HttpResponse", edition.download_chart(request, chart_id))
+        response: HttpResponse = edition.download_chart(request, chart_id)
+        return response
 
     @path("editions/<str:slug>/versions/<int:version>/download-chart/<str:chart_id>/")
     def download_chart_with_version(
         self, request: "HttpRequest", slug: str, version: int, chart_id: str
     ) -> "HttpResponse":
-        return cast("HttpResponse", self.release(request, slug, version=version, chart_id=chart_id))
+        response: HttpResponse = self.release(request, slug, version=version, chart_id=chart_id)
+        return response
 
 
 # pylint: disable=too-many-public-methods
