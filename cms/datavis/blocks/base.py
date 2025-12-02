@@ -323,8 +323,15 @@ class BaseChartBlock(BaseVisualisationBlock):
             page: Optional[BasePage] = parent_context.get("page")
             if page:
                 suffix = f" ({get_approximate_file_size_in_kb(rows)})" if rows else ""
-                superseded_version: Optional[int] = parent_context.get("superseded_version")
-                csv_url = self._build_chart_download_url(page, block_id, superseded_version)
+                request = parent_context.get("request")
+                is_preview = getattr(request, "is_preview", False) if request else False
+
+                if is_preview:
+                    csv_url = "#"
+                else:
+                    superseded_version: Optional[int] = parent_context.get("superseded_version")
+                    csv_url = self._build_chart_download_url(page, block_id, superseded_version)
+
                 items_list.append(
                     {
                         "text": f"Download CSV{suffix}",
