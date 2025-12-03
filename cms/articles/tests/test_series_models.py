@@ -287,6 +287,48 @@ class ArticleSeriesChartDownloadTestCase(WagtailTestUtils, TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
+    def test_download_chart_404_unpublished_article(self):
+        """Test 404 when attempting to download chart from an unpublished article."""
+        # Create an article with a chart
+        table_data = TableDataFactory(
+            table_data=[
+                ["Category", "Value"],
+                ["2020", "100"],
+            ]
+        )
+        unpublished_article = StatisticalArticlePageFactory(parent=self.series)
+        unpublished_article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Unpublished Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": table_data,
+                            },
+                            "id": "unpublished-chart-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        unpublished_article.save_revision().publish()
+
+        # Now unpublish the article
+        unpublished_article.live = False
+        unpublished_article.save()
+
+        # Attempt to download the chart - should return 404
+        response = self.client.get(
+            f"{self.series.url}/editions/{unpublished_article.slug}/download-chart/unpublished-chart-id"
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
     def test_download_chart_multiple_charts_in_article(self):
         """Test that correct chart is returned when article has multiple charts."""
         # Create table data for both charts
