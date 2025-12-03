@@ -1,4 +1,15 @@
-{% image(value.image, "width-1000", 'loading="lazy"' %}
-{% if value.caption %}
-    <p>{{ value.caption }}</p>
-{% endif %}
+<!--
+    What is considered a large vs small image can vary based on the context of use.
+-->
+{% set large_img = image(value.image, "width-800") %}
+{% set small_img = image(value.image, "width-400") %}
+
+{% from "components/image/_macro.njk" import onsImage %}
+{{
+    onsImage({
+        "image": {
+            "smallSrc": small_img.url,
+            "largeSrc": large_img.url
+        },
+    })
+}}
