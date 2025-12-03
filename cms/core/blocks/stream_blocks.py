@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, ClassVar
 
 from wagtail.blocks import RichTextBlock, StreamBlock
-from wagtail.images.blocks import ImageChooserBlock
 
 from cms.core.blocks import (
     AccordionBlock,
@@ -15,6 +14,7 @@ from cms.core.blocks import (
     VideoEmbedBlock,
     WarningPanelBlock,
 )
+from cms.core.blocks.embeddable import ImageBlock
 from cms.core.blocks.equation import EquationBlock
 from cms.core.blocks.section_blocks import SectionBlock
 from cms.datavis.blocks.charts import IframeBlock
@@ -47,7 +47,7 @@ class CoreStoryBlock(StreamBlock):
     announcement_panel = AnnouncementPanelBlock()
     accordion = AccordionBlock()
     video_embed = VideoEmbedBlock(group="Media")
-    image = ImageChooserBlock(group="Media")
+    image = ImageBlock(group="Media")
     documents = DocumentsBlock(group="Media")
     related_links = RelatedLinksBlock(add_heading=True)  # Add a heading as this is outside of a section block
     table = ONSTableBlock(group="DataVis", allow_links=True)
