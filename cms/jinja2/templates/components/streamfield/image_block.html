@@ -1,15 +1,53 @@
 <!--
     What is considered a large vs small image can vary based on the context of use.
 -->
+{# templates/components/streamfield/image_block.html #}
 {% set large_img = image(value.image, "width-800") %}
 {% set small_img = image(value.image, "width-400") %}
 
 {% from "components/image/_macro.njk" import onsImage %}
-{{
-    onsImage({
-        "image": {
-            "smallSrc": small_img.url,
-            "largeSrc": large_img.url
-        },
-    })
-}}
+
+<figure class="ons-u-mb-l">
+    {# Figure Title #}
+    {% if value.figure_title %}
+        <h3 class="ons-chart__download-title">{{ value.figure_title }}</h3>
+    {% endif %}
+
+    {# Figure Subtitle #}
+    {% if value.figure_subtitle %}
+        <p>{{ value.figure_subtitle }}</p>
+    {% endif %}
+
+    {# Image #}
+    {{
+        onsImage({
+            "image": {
+                "smallSrc": small_img.url,
+                "largeSrc": large_img.url
+            },
+            "alt": value.image.description,})
+    }}
+
+    {# Source #}
+    {% if value.supporting_text %}
+        <figcaption class="ons-chart__caption">
+            Source - {{ value.supporting_text }}
+        </figcaption>
+    {% endif %}
+
+    {# Notes #}
+    {% if value.notes_section %}
+        <div class="ons-u-mt-s">
+            <h4 class="ons-u-fs-r--b ons-u-mb-2xs">Notes</h4>
+            <p>{{ value.notes_section|richtext }}</p>
+        </div>
+    {% endif %}
+
+    {# Download #}
+    {% if value.download %}
+        <div class="ons-u-mt-s">
+            <h5 class="ons-u-fs-r--b ons-u-mb-2xs">Download {{ value.figure_title or 'image' }}</h5>
+            <a href="{{ large_img.url }}" download>JPG</a>
+        </div>
+    {% endif %}
+</figure>
