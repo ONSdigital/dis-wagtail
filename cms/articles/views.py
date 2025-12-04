@@ -30,7 +30,7 @@ def user_can_access_chart_download(user: "User") -> bool:
     if user_has_any_page_permission(user):
         return True
     # Bundle viewers can also access chart downloads
-    return bool(user.has_perm(get_bundle_permission("view")))
+    return user.has_perm(get_bundle_permission("view"))
 
 
 @method_decorator(user_passes_test(user_can_access_chart_download), name="dispatch")
