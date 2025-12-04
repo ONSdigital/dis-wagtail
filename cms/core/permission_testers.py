@@ -15,3 +15,14 @@ class BasePagePermissionTester(PagePermissionTester):
             return False
         can_add: bool = super().can_add_subpage()
         return can_add
+
+    def can_copy(self) -> bool:
+        """Determine if this can be copied.
+        Return False if the page's language doesn't match the default site language (English).
+        This enforces that English pages must be created first, then translated, disallowing creation of pages in other
+        languages first via copying.
+        """
+        if self.page.locale.language_code != settings.LANGUAGE_CODE:
+            return False
+        can_copy_page: bool = super().can_copy()
+        return can_copy_page

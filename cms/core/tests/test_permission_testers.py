@@ -6,6 +6,8 @@ from wagtail.test.utils import WagtailTestUtils
 from cms.bundles.tests.utils import grant_all_page_permissions
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.home.models import HomePage
+from cms.standard_pages.models import InformationPage
+from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.users.tests.factories import GroupFactory, UserFactory
 
 
@@ -16,16 +18,28 @@ class TestBasePagePermissionTester(TestCase):
         grant_all_page_permissions(cls.publishing_admin_group)
         cls.publishing_admin = UserFactory(username="publishing_admin")
         cls.publishing_admin.groups.add(cls.publishing_admin_group)
+        cls.english_home_page = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
+        cls.welsh_home_page = HomePage.objects.get(locale__language_code="cy")
 
     def test_can_add_subpage_english(self):
-        english_home_page = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
-        tester = BasePagePermissionTester(user=self.publishing_admin, page=english_home_page)
+        tester = BasePagePermissionTester(user=self.publishing_admin, page=self.english_home_page)
         self.assertTrue(tester.can_add_subpage())
 
     def test_can_add_subpage_welsh(self):
-        welsh_home_page = HomePage.objects.get(locale__language_code="cy")
-        tester = BasePagePermissionTester(user=self.publishing_admin, page=welsh_home_page)
+        """Test that can_add_subpage returns False for a Welsh page."""
+        tester = BasePagePermissionTester(user=self.publishing_admin, page=self.welsh_home_page)
         self.assertFalse(tester.can_add_subpage())
+
+    def test_can_copy_english(self):
+        english_info_page = InformationPageFactory(parent=self.english_home_page)
+        tester = BasePagePermissionTester(user=self.publishing_admin, page=english_info_page)
+        self.assertTrue(tester.can_copy())
+
+    def test_can_copy_welsh(self):
+        """Test that can_copy returns False for a Welsh page."""
+        welsh_info_page = InformationPageFactory(parent=self.welsh_home_page)
+        tester = BasePagePermissionTester(user=self.publishing_admin, page=welsh_info_page)
+        self.assertFalse(tester.can_copy())
 
 
 class TestCustomPagePermissions(WagtailTestUtils, TestCase):
@@ -58,3 +72,40 @@ class TestCustomPagePermissions(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, self.permission_denied_message)
+
+    def test_user_cannot_copy_welsh_page(self):
+        welsh_info_page = InformationPageFactory(
+            parent=HomePage.objects.get(locale__language_code="cy"),
+        )
+        new_slug = welsh_info_page.slug + "-copy"
+        response = self.client.post(
+            reverse("wagtailadmin_pages:copy", args=(welsh_info_page.pk,)),
+            data={
+                "new_title": welsh_info_page.title + " Copy",
+                "new_slug": welsh_info_page,
+                "new_parent_page": welsh_info_page.get_parent().pk,
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "You do not have permission")
+        with self.assertRaises(InformationPage.DoesNotExist):
+            InformationPage.objects.get(slug=new_slug)
+
+    def test_user_can_copy_english_page(self):
+        english_info_page = InformationPageFactory(
+            parent=HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE),
+        )
+        new_slug = english_info_page.slug + "-copy"
+        new_title = english_info_page.title + " Copy"
+        response = self.client.post(
+            reverse("wagtailadmin_pages:copy", args=(english_info_page.pk,)),
+            data={"new_title": new_title, "new_slug": new_slug, "new_parent_page": english_info_page.get_parent().pk},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        new_copy_page = InformationPage.objects.get(slug=new_slug)
+        self.assertEqual(new_copy_page.title, new_title)
+        self.assertEqual(new_copy_page.get_parent().pk, english_info_page.get_parent().pk)
