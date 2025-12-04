@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from django.conf import settings
 from django.forms.widgets import RadioSelect
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
@@ -14,6 +15,7 @@ from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 from cms.datavis.constants import AxisType, HighChartsChartType, HighchartsTheme
 
 if TYPE_CHECKING:
+    from django.http import HttpRequest
     from django.utils.functional import _StrOrPromise
 
     from cms.core.models import BasePage
@@ -323,11 +325,11 @@ class BaseChartBlock(BaseVisualisationBlock):
             page: Optional[BasePage] = parent_context.get("page")
             if page:
                 suffix = f" ({get_approximate_file_size_in_kb(rows)})" if rows else ""
-                request = parent_context.get("request")
+                request: Optional[HttpRequest] = parent_context.get("request")
                 is_preview = getattr(request, "is_preview", False) if request else False
 
                 if is_preview:
-                    csv_url = "#"
+                    csv_url = self._build_preview_chart_download_url(page, block_id, request)
                 else:
                     superseded_version: Optional[int] = parent_context.get("superseded_version")
                     csv_url = self._build_chart_download_url(page, block_id, superseded_version)
@@ -363,6 +365,40 @@ class BaseChartBlock(BaseVisualisationBlock):
             version_part = f"/versions/{superseded_version}"
 
         return f"{base_url}{version_part}/download-chart/{block_id}"
+
+    @staticmethod
+    def _build_preview_chart_download_url(
+        page: "BasePage", block_id: str, request: Optional["HttpRequest"] = None
+    ) -> str:
+        """Build the chart download URL for preview mode.
+
+        In preview mode, we need to use an admin URL that can access the draft revision.
+
+        Args:
+            page: The page containing the chart.
+            block_id: The unique block ID of the chart.
+            request: The HTTP request object (used to get revision_id from resolver_match).
+
+        Returns:
+            The admin URL to download the chart data as CSV, or "#" if unable to build URL.
+        """
+        # Try to get the revision_id from the request's resolver_match
+        revision_id = None
+        if request and hasattr(request, "resolver_match") and request.resolver_match:
+            revision_id = request.resolver_match.kwargs.get("revision_id")
+
+        # Fall back to the page's latest revision if not available from URL
+        if revision_id is None and hasattr(page, "latest_revision_id"):
+            revision_id = page.latest_revision_id
+
+        if revision_id is None:
+            # Cannot build preview URL without a revision ID
+            return "#"
+
+        return reverse(
+            "articles:revision_chart_download",
+            kwargs={"page_id": page.pk, "revision_id": revision_id, "chart_id": block_id},
+        )
 
     def get_footnotes_config(self, value: "StructValue") -> dict["_StrOrPromise", Any]:
         if footnotes := value.get("footnotes"):

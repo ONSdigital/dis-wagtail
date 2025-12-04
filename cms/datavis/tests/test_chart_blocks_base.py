@@ -203,13 +203,36 @@ class GetDownloadConfigTests(SimpleTestCase):
         csv_item = config["itemsList"][1]
         self.assertEqual(csv_item["url"], "/articles/test/versions/1/download-chart/test-block-id")
 
-    def test_download_config_in_preview_mode_uses_hash_url(self):
-        """In preview mode, CSV URL should be '#' instead of the actual download URL."""
+    def test_download_config_in_preview_mode_uses_admin_url(self):
+        """In preview mode, CSV URL should use the admin revision download URL."""
         value = self.block.to_python(self.raw_data)
         page = Mock()
+        page.pk = 123
+        page.url = "/articles/test/"
+        page.latest_revision_id = 456
+        request = Mock()
+        request.is_preview = True
+        request.resolver_match = None  # No revision_id in URL, so falls back to latest_revision_id
+
+        config = self.block.get_download_config(
+            value,
+            parent_context={"page": page, "request": request},
+            block_id="test-block-id",
+        )
+
+        csv_item = config["itemsList"][1]
+        # Should use the admin URL for revision chart download
+        self.assertEqual(csv_item["url"], "/admin/articles/pages/123/revisions/456/download-chart/test-block-id/")
+
+    def test_download_config_in_preview_mode_without_revision_uses_hash(self):
+        """In preview mode without revision info, CSV URL should fall back to '#'."""
+        value = self.block.to_python(self.raw_data)
+        page = Mock(spec=["pk", "url"])  # No latest_revision_id
+        page.pk = 123
         page.url = "/articles/test/"
         request = Mock()
         request.is_preview = True
+        request.resolver_match = None
 
         config = self.block.get_download_config(
             value,
