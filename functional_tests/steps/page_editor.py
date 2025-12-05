@@ -13,7 +13,7 @@ def user_clicks_action_menu_toggle(context: Context) -> None:
     context.page.get_by_role("button", name="More actions").click()
 
 
-@when('the user clicks "Publish"')
+@step('the user clicks "Publish"')
 @when("publishes the page")
 def user_clicks_publish(context: Context) -> None:
     # Focus on the Status button to prevent overlap when trying to click the Publish button
@@ -215,3 +215,18 @@ def user_clicks_view_live(context: Context) -> None:
 @step("the user returns to editing the published page")
 def user_returns_to_editing_the_published_page(context: Context) -> None:
     context.page.get_by_role("link", name="Edit").click()
+
+
+@step("the user opens the page actions menu")
+def user_open_page_actions_menu(context: Context) -> None:
+    context.page.locator("#w-slim-header-buttons").get_by_role("button", name="Actions").click()
+
+
+@step("the user has no option to copy the page")
+def user_has_no_option_to_copy_page(context: Context) -> None:
+    expect(context.page.get_by_role("link", name=f"Copy page '{context.page_title}'")).not_to_be_visible()
+
+
+@step("the user has the option to copy the page")
+def user_has_option_to_copy_page(context: Context) -> None:
+    expect(context.page.get_by_role("link", name=f"Copy page '{context.page_title}'")).to_be_visible()
