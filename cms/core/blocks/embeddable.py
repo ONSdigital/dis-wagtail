@@ -18,7 +18,13 @@ class ImageBlock(blocks.StructBlock):
     """Image block with caption."""
 
     image = ImageChooserBlock()
-    caption = blocks.CharBlock(required=False)
+    figure_title = blocks.CharBlock(required=False)
+    figure_subtitle = blocks.CharBlock(required=False)
+    supporting_text = blocks.TextBlock(required=False, label="Supporting text (source)")
+    # TODO: Should this be called footnotes? JIRA card says "Notes section" Elsewhere in the codebase
+    # we use Footnotes to refer to a figure
+    notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
+    download = blocks.BooleanBlock(required=False, label="Show download link for image")
 
     class Meta:
         icon = "image"
