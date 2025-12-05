@@ -158,7 +158,10 @@ class TopicHeadlineFigureBlock(StructBlock):
             if latest_article and (figure := latest_article.get_headline_figure(value["figure_id"])):
                 figure["url"] = latest_article.get_url(request=context.get("request")) or ""
                 context["figure"] = figure
-
+            else:
+                # Fallback on just providing the figure ID if the figure can't be found,
+                # allowing the block to error gracefully and still include the ID
+                context["figure"] = {"figure_id": value["figure_id"]}
         return context
 
     class Meta:

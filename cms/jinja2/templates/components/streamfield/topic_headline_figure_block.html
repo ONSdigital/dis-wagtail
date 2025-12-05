@@ -1,5 +1,8 @@
 {% from "components/card/_macro.njk" import onsCard %}
 
+{% set error_text = _("Error") %}
+{% set error_supporting_text = _("Error retrieving figure") %}
+
 {# fmt:off #}
     {{
         onsCard({
@@ -7,13 +10,13 @@
             "title": {
                 "id": figure.figure_id + "-card",
                 "headingLevel": 3,
-                "text": figure.title,
-                "url": figure.url,
+                "text": figure.title if figure.title else error_text,
+                "url": figure.url if figure.url else "",
             },
             "body":{
                 "id": figure.figure_id + "-text",
-                "figure": figure.figure,
-                "text": figure.supporting_text
+                "figure": figure.figure if figure.figure else error_text,
+                "text": figure.supporting_text if figure.supporting_text else error_supporting_text,
             }
         })
     }}
