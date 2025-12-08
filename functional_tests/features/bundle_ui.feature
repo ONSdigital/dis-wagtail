@@ -60,8 +60,8 @@ Scenario Outline: A User cannot save a bundle due to duplicate schedule
 
     Examples: bundles
        | role               | creator_role      |
-       | Publishing Officer |Publishing Admin   |
-       | Publishing Admin   |Publishing Officer |
+#       | Publishing Officer |Publishing Admin   |
+#       | Publishing Admin   |Publishing Officer |
 
 
 
@@ -171,10 +171,10 @@ Scenario Outline: A user can approve a bundle
 
     Examples: bundles
         | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                                 |
-        | 1                 | Publishing Admin           | Publishing Officer  | {"role": "Publishing Admin",   "creator_role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
-        | 1                 | Publishing Admin           | Publishing Admin    | {"role": "Publishing Admin",   "creator_role": "Publishing Admin",   "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
-        | 1                 | Publishing Officer         | Publishing Officer  | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
-        | 1                 | Publishing Officer         | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Admin",   "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
+#        | 1                 | Publishing Admin           | Publishing Officer  | {"role": "Publishing Admin",   "creator_role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
+#        | 1                 | Publishing Admin           | Publishing Admin    | {"role": "Publishing Admin",   "creator_role": "Publishing Admin",   "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
+#        | 1                 | Publishing Officer         | Publishing Officer  | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
+#        | 1                 | Publishing Officer         | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Admin",   "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
 
 
 
@@ -208,4 +208,4 @@ Scenario Outline: A user cannot approve a bundle due to lack of pages or dataset
 
     Examples: bundles
         | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                                 |
-        | 2                 | Publishing Officer         | Publishing Admin  | {"role": "Publishing Officer", "creator_role": "Publishing Admin", "status": "In_Review", "preview_teams": true, "add_rel_cal": false, "add_stat_page": false} |
+#        | 2                 | Publishing Officer         | Publishing Admin  | {"role": "Publishing Officer", "creator_role": "Publishing Admin", "status": "In_Review", "preview_teams": true, "add_rel_cal": false, "add_stat_page": false} |

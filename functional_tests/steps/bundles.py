@@ -301,7 +301,8 @@ def a_user_exists_by_role(context: Context, user_role: str) -> None:
         context.users = {}
     context.users[user_role] = create_user(user_role)
 
-def create_topic_page(context: Context)  -> None:
+
+def create_topic_page(context: Context) -> None:
     context.page.get_by_role("link", name="Dashboard").click()
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="Edit 'Home'").first.click()
@@ -322,12 +323,12 @@ def create_topic_page(context: Context)  -> None:
     context.page.get_by_role("button", name="Publish").click()
     context.article_path.append(Title)
 
+
 def get_url_for_article_edition(context):
     pass
     # http://localhost:8000/bundles-ui-test-topic-page/articles/bundles-ui-test-article-series-page/editions/november-2025
     # http://localhost: 8000 / bundles - ui - testing - 2/articles/editions/november-2025
     # context.page.goto(context.base_url + reverse("bundle:index"))
-
 
 
 def create_article_series_page(context):
@@ -337,7 +338,7 @@ def create_article_series_page(context):
     context.page.get_by_label("Page explorer").get_by_role("link", name="Bundles UI Testing 2", exact=True).click()
     context.page.get_by_role("row", name="Select Articles More options").get_by_label("Select").check()
     context.page.get_by_role("link", name="Add a child page to 'Articles'").click()
-    Title ="Bundles UI Article Series Page"
+    Title = "Bundles UI Article Series Page"
     context.page.get_by_role("textbox", name="Title*").fill(Title)
     context.page.get_by_role("tab", name="Taxonomy").click()
     context.page.get_by_role("button", name="Add topics").click()
@@ -347,11 +348,11 @@ def create_article_series_page(context):
     context.page.get_by_role("button", name="Save draft").click()
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Publish").click()
-    context.article_path.append('articles')
+    context.article_path.append("articles")
     context.article_path.append(Title)
 
-def create_statistical_article_edition(context):
 
+def create_statistical_article_edition(context):
     context.page.get_by_role("link", name="Dashboard").click()
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="Home English").click()
@@ -366,11 +367,16 @@ def create_statistical_article_edition(context):
     context.page.get_by_role("textbox", name="Release date*").fill("2025-12-10")
     context.page.get_by_role("textbox", name="Next release date").fill("2026-01-10")
     context.page.locator("#panel-child-content-metadata-content div").filter(
-        has_text="Main points summary* Used").get_by_role("textbox").fill("November 2025 Main Points Summary")
+        has_text="Main points summary* Used"
+    ).get_by_role("textbox").fill("November 2025 Main Points Summary")
     context.page.locator("#panel-child-content-content-content").get_by_role("button", name="Insert a block").click()
     context.page.get_by_role("textbox", name="Section heading*").fill("November 2025 Content Section Heading")
-    (context.page.locator("#panel-child-content-content-content").
-     get_by_role("region").get_by_role("button", name="Insert a block").click())
+    (
+        context.page.locator("#panel-child-content-content-content")
+        .get_by_role("region")
+        .get_by_role("button", name="Insert a block")
+        .click()
+    )
     context.page.get_by_text("Rich text").click()
     context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("November 2025 Content")
     context.page.get_by_role("button", name="Save draft").click()
@@ -380,12 +386,11 @@ def create_statistical_article_edition(context):
 
 @given("there is a Statistical Analysis page approved by {user_role}")
 def statistical_analysis(context: Context, user_role: str) -> None:
-
     user = context.users[user_role]["user"]
     context.article_series_page = ArticleSeriesPageFactory(title="PSF")
     context.topic_page = TopicPage.objects.ancestor_of(context.article_series_page).first()
     article = StatisticalArticlePageFactory(parent=context.article_series_page, title="Bundles UI Articale for PSF")
-    mark_page_as_ready_to_publish(article,user)
+    mark_page_as_ready_to_publish(article, user)
     context.statistical_article_page = article
 
 
@@ -394,12 +399,10 @@ def release_calendar(context: Context, user_role: str) -> None:
     nowish = timezone.now() + timedelta(minutes=20)
     user = context.users[user_role]["user"]
 
-    release_calendar_page =  ReleaseCalendarPageFactory(
-        release_date=nowish,
-        title="Release Calendar Page bundles UI",
-        status=ReleaseStatus.CONFIRMED
+    release_calendar_page = ReleaseCalendarPageFactory(
+        release_date=nowish, title="Release Calendar Page bundles UI", status=ReleaseStatus.CONFIRMED
     )
-    mark_page_as_ready_to_publish(release_calendar_page,user)
+    mark_page_as_ready_to_publish(release_calendar_page, user)
     release_calendar_page.save_revision().publish()
     context.release_calendar_page = release_calendar_page
     print(context.release_calendar_page.pk)
@@ -696,7 +699,7 @@ def send_to_moderation(context: Context) -> None:
 
 
 @then("the {role} can preview the Release Calendar page")
-def preview_release_calendar_page(context: Context, role:str) -> None:
+def preview_release_calendar_page(context: Context, role: str) -> None:
     context.page.goto(context.base_url + "/admin/pages/")
     context.page.get_by_role("button", name="Show filters").click()
     context.page.get_by_role("button", name="Page type").click()
@@ -706,9 +709,8 @@ def preview_release_calendar_page(context: Context, role:str) -> None:
     context.page.locator("#id_locale").get_by_text("English").click()
 
 
-
 @then("the {role} can preview the Statistical Analysis page")
-def preview_statistical_analysis_page(context: Context, role:str) -> None:
+def preview_statistical_analysis_page(context: Context, role: str) -> None:
     context.page.goto(context.base_url + "/admin/pages/")
     context.page.get_by_role("button", name="Show filters").click()
     context.page.get_by_role("button", name="Page type").click()
