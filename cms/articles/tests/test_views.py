@@ -73,7 +73,7 @@ class RevisionChartDownloadViewTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response["Content-Type"], "text/csv")
-        self.assertIn("Test Chart Title.csv", response["Content-Disposition"])
+        self.assertIn("test-chart-title.csv", response["Content-Disposition"])
 
         content = response.content.decode("utf-8")
         self.assertIn("Category", content)
@@ -184,7 +184,7 @@ class RevisionChartDownloadViewTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response["Content-Type"], "text/csv")
-        self.assertIn("Draft Chart.csv", response["Content-Disposition"])
+        self.assertIn("draft-chart.csv", response["Content-Disposition"])
 
         content = response.content.decode("utf-8")
         self.assertIn("Month", content)
