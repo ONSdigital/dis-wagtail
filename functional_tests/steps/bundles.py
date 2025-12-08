@@ -301,9 +301,86 @@ def a_user_exists_by_role(context: Context, user_role: str) -> None:
         context.users = {}
     context.users[user_role] = create_user(user_role)
 
+def create_topic_page(context: Context)  -> None:
+    context.page.get_by_role("link", name="Dashboard").click()
+    context.page.get_by_role("button", name="Pages").click()
+    context.page.get_by_role("link", name="Edit 'Home'").first.click()
+    context.page.get_by_role("button", name="Actions", exact=True).click()
+    context.page.get_by_role("link", name="Add a child page to 'Home'").click()
+    context.page.get_by_role("link", name="Topic page . A specific topic").click()
+    Title = "Bundles UI Testing"
+    Summary = f"{Title} Summary"
+    context.page.get_by_role("textbox", name="Title*").fill(Title)
+    context.page.locator("#panel-child-content-summary-content").get_by_role("textbox").locator("div").nth(2).click()
+    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill(Summary)
+    context.page.get_by_role("tab", name="Taxonomy").click()
+    context.page.get_by_role("button", name="Choose a topic").click()
+    context.page.get_by_role("textbox", name="Search term").fill("Envi")
+    context.page.get_by_role("link", name="Environmental accounts").click()
+    context.page.get_by_role("button", name="Save draft").click()
+    context.page.get_by_role("button", name="More actions").click()
+    context.page.get_by_role("button", name="Publish").click()
+    context.article_path.append(Title)
+
+def get_url_for_article_edition(context):
+    pass
+    # http://localhost:8000/bundles-ui-test-topic-page/articles/bundles-ui-test-article-series-page/editions/november-2025
+    # http://localhost: 8000 / bundles - ui - testing - 2/articles/editions/november-2025
+    # context.page.goto(context.base_url + reverse("bundle:index"))
+
+
+
+def create_article_series_page(context):
+    context.page.get_by_role("link", name="Dashboard").click()
+    context.page.get_by_role("button", name="Pages").click()
+    context.page.get_by_role("link", name="View child pages of 'Home'").first.click()
+    context.page.get_by_label("Page explorer").get_by_role("link", name="Bundles UI Testing 2", exact=True).click()
+    context.page.get_by_role("row", name="Select Articles More options").get_by_label("Select").check()
+    context.page.get_by_role("link", name="Add a child page to 'Articles'").click()
+    Title ="Bundles UI Article Series Page"
+    context.page.get_by_role("textbox", name="Title*").fill(Title)
+    context.page.get_by_role("tab", name="Taxonomy").click()
+    context.page.get_by_role("button", name="Add topics").click()
+    context.page.get_by_role("textbox", name="Search term").fill("En")
+    context.page.get_by_text("Environmental accounts").click()
+    context.page.get_by_role("button", name="Confirm selection").click()
+    context.page.get_by_role("button", name="Save draft").click()
+    context.page.get_by_role("button", name="More actions").click()
+    context.page.get_by_role("button", name="Publish").click()
+    context.article_path.append('articles')
+    context.article_path.append(Title)
+
+def create_statistical_article_edition(context):
+
+    context.page.get_by_role("link", name="Dashboard").click()
+    context.page.get_by_role("button", name="Pages").click()
+    context.page.get_by_role("link", name="Home English").click()
+    context.page.get_by_role("button", name="Show filters").click()
+    context.page.get_by_role("button", name="Page type").click()
+    context.page.get_by_text("Article series page").click()
+    context.page.get_by_role("link", name="Explore child pages of 'Bundles UI Article Series Page'").click()
+    context.page.get_by_role("link", name="Add child page").click()
+
+    context.page.get_by_role("textbox", name="Release Edition*").fill("November 2025")
+    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("November 2025 Summary")
+    context.page.get_by_role("textbox", name="Release date*").fill("2025-12-10")
+    context.page.get_by_role("textbox", name="Next release date").fill("2026-01-10")
+    context.page.locator("#panel-child-content-metadata-content div").filter(
+        has_text="Main points summary* Used").get_by_role("textbox").fill("November 2025 Main Points Summary")
+    context.page.locator("#panel-child-content-content-content").get_by_role("button", name="Insert a block").click()
+    context.page.get_by_role("textbox", name="Section heading*").fill("November 2025 Content Section Heading")
+    (context.page.locator("#panel-child-content-content-content").
+     get_by_role("region").get_by_role("button", name="Insert a block").click())
+    context.page.get_by_text("Rich text").click()
+    context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("November 2025 Content")
+    context.page.get_by_role("button", name="Save draft").click()
+    context.page.get_by_role("button", name="More actions").click()
+    context.page.get_by_role("button", name="Submit to Release review").click()
+
 
 @given("there is a Statistical Analysis page approved by {user_role}")
 def statistical_analysis(context: Context, user_role: str) -> None:
+
     user = context.users[user_role]["user"]
     context.article_series_page = ArticleSeriesPageFactory(title="PSF")
     context.topic_page = TopicPage.objects.ancestor_of(context.article_series_page).first()
@@ -325,6 +402,7 @@ def release_calendar(context: Context, user_role: str) -> None:
     mark_page_as_ready_to_publish(release_calendar_page,user)
     release_calendar_page.save_revision().publish()
     context.release_calendar_page = release_calendar_page
+    print(context.release_calendar_page.pk)
 
 
 @given("there is a preview team")
