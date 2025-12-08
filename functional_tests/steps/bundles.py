@@ -309,11 +309,11 @@ def create_topic_page(context: Context) -> None:
     context.page.get_by_role("button", name="Actions", exact=True).click()
     context.page.get_by_role("link", name="Add a child page to 'Home'").click()
     context.page.get_by_role("link", name="Topic page . A specific topic").click()
-    Title = "Bundles UI Testing"
-    Summary = f"{Title} Summary"
-    context.page.get_by_role("textbox", name="Title*").fill(Title)
+    title = "Bundles UI Testing"
+    summary = f"{title} Summary"
+    context.page.get_by_role("textbox", name="Title*").fill(title)
     context.page.locator("#panel-child-content-summary-content").get_by_role("textbox").locator("div").nth(2).click()
-    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill(Summary)
+    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill(summary)
     context.page.get_by_role("tab", name="Taxonomy").click()
     context.page.get_by_role("button", name="Choose a topic").click()
     context.page.get_by_role("textbox", name="Search term").fill("Envi")
@@ -321,7 +321,7 @@ def create_topic_page(context: Context) -> None:
     context.page.get_by_role("button", name="Save draft").click()
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Publish").click()
-    context.article_path.append(Title)
+    context.article_path.append(title)
 
 
 def get_url_for_article_edition(context):
@@ -338,8 +338,8 @@ def create_article_series_page(context):
     context.page.get_by_label("Page explorer").get_by_role("link", name="Bundles UI Testing 2", exact=True).click()
     context.page.get_by_role("row", name="Select Articles More options").get_by_label("Select").check()
     context.page.get_by_role("link", name="Add a child page to 'Articles'").click()
-    Title = "Bundles UI Article Series Page"
-    context.page.get_by_role("textbox", name="Title*").fill(Title)
+    title = "Bundles UI Article Series Page"
+    context.page.get_by_role("textbox", name="Title*").fill(title)
     context.page.get_by_role("tab", name="Taxonomy").click()
     context.page.get_by_role("button", name="Add topics").click()
     context.page.get_by_role("textbox", name="Search term").fill("En")
@@ -349,7 +349,7 @@ def create_article_series_page(context):
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Publish").click()
     context.article_path.append("articles")
-    context.article_path.append(Title)
+    context.article_path.append(title)
 
 
 def create_statistical_article_edition(context):
