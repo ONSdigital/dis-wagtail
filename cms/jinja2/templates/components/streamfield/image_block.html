@@ -7,6 +7,7 @@
 
 {% from "components/image/_macro.njk" import onsImage %}
 
+{# fmt:off #}
 {# Figure Title #}
 {% if value.figure_title %}
     <h3 class="ons-chart__title">{{ value.figure_title }}</h3>
@@ -49,3 +50,4 @@
         <a href="{{ large_img.url }}" download>JPG</a>
     </div>
 {% endif %}
+{# fmt:off #}
