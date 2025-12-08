@@ -13,6 +13,8 @@ from cms.search.utils import get_model_by_name
 
 logger = logging.getLogger(__name__)
 
+INCLUDED_LOCALES = [code.strip().lower() for code in settings.SEARCH_INDEX_INCLUDED_LANGUAGES if code.strip()]
+
 
 @cache
 def get_publisher() -> KafkaPublisher | LogPublisher:
@@ -31,6 +33,7 @@ def on_page_published(sender: "type[Page]", instance: "Page", **kwargs: Any) -> 
     if (
         instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
         and not instance.get_view_restrictions().exists()
+        and instance.locale.language_code.lower() in INCLUDED_LOCALES
     ):
         get_publisher().publish_created_or_updated(instance)
 
@@ -44,6 +47,7 @@ def on_page_unpublished(sender: "type[Page]", instance: "Page", **kwargs: Any) -
         settings.CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH
         and instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
         and not instance.get_view_restrictions().exists()
+        and instance.locale.language_code.lower() in INCLUDED_LOCALES
     ):
         get_publisher().publish_deleted(instance)
 
@@ -59,6 +63,7 @@ def on_page_deleted(sender: "type[Page]", instance: "Page", **kwargs: Any) -> No
         and instance.live
         and instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
         and not instance.get_view_restrictions().exists()
+        and instance.locale.language_code.lower() in INCLUDED_LOCALES
     ):
         get_publisher().publish_deleted(instance)
 
@@ -97,7 +102,11 @@ def _update_for_page_and_descendant_paths(*, instance: "Page", old_url_path: str
         # Pages with view restrictions should not be exposed in search
         # this is inherited by descendants, so nothing more to do
         return
-    if instance.live and instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
+    if (
+        instance.live
+        and instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
+        and instance.locale.language_code.lower() in INCLUDED_LOCALES
+    ):
         try:
             get_publisher().publish_created_or_updated(instance.specific_deferred, old_url_path=old_url_path)
         except Exception:  # pylint: disable=broad-except
@@ -108,7 +117,7 @@ def _update_for_page_and_descendant_paths(*, instance: "Page", old_url_path: str
 
     for descendant in (
         instance.get_descendants()
-        .filter(live=True)
+        .filter(live=True, locale__language_code__in=INCLUDED_LOCALES)
         .public()
         .not_exact_type(*(get_model_by_name(page_type) for page_type in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES))
         .specific(defer=True)
