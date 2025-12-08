@@ -324,14 +324,15 @@ def create_topic_page(context: Context) -> None:
     context.article_path.append(title)
 
 
-def get_url_for_article_edition(context):
-    pass
+# def get_url_for_article_edition(context) -> None:
+#     print(context.url)
+#     pass
     # http://localhost:8000/bundles-ui-test-topic-page/articles/bundles-ui-test-article-series-page/editions/november-2025
     # http://localhost: 8000 / bundles - ui - testing - 2/articles/editions/november-2025
     # context.page.goto(context.base_url + reverse("bundle:index"))
 
 
-def create_article_series_page(context):
+def create_article_series_page(context) -> None:
     context.page.get_by_role("link", name="Dashboard").click()
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="View child pages of 'Home'").first.click()
@@ -352,7 +353,7 @@ def create_article_series_page(context):
     context.article_path.append(title)
 
 
-def create_statistical_article_edition(context):
+def create_statistical_article_edition(context) -> None:
     context.page.get_by_role("link", name="Dashboard").click()
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="Home English").click()
