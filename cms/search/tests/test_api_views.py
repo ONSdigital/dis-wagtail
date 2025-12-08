@@ -3,6 +3,7 @@ from unittest.mock import patch
 import factory
 from django.conf import settings
 from django.test import TestCase, override_settings
+from wagtail.models import Locale
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.home.models import HomePage
@@ -43,10 +44,28 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
             IndexPageFactory(slug="custom-slug-1"),
         ]
 
+        cls.en = Locale.get_default()
+        if cls.en.language_code != "en-gb":
+            cls.en.language_code = "en-gb"
+            cls.en.save()
+        cls.cy, _ = Locale.objects.get_or_create(language_code="cy")
+
+        # English pages
+        cls.en_info = InformationPageFactory(locale=cls.en)
+        cls.en_method = MethodologyPageFactory(locale=cls.en)
+
+        # Welsh pages
+        cls.cy_info = InformationPageFactory(locale=cls.cy)
+        cls.cy_method = MethodologyPageFactory(locale=cls.cy)
+
     @staticmethod
     def get_page_dict(data, page):
         """Retrieve a specific page dict from the items by matching URI."""
         return next((item for item in data["items"] if item.get("uri") == build_page_uri(page)), None)
+
+    @staticmethod
+    def get_uris(data):
+        return {item["uri"] for item in data["items"]}
 
     def test_resources_returns_200_and_lists_various_page_types(self):
         """Endpoint should return 200 and include all included_pages in the items."""
@@ -93,6 +112,49 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         """When CMS_RESOURCES_ENDPOINT_ENABLED is False, endpoint should return 404 regardless of IS_EXTERNAL_ENV."""
         response = self.call_view_as_external(RESOURCE_ENDPOINT)
         self.assertEqual(response.status_code, 404)
+
+    @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb"])
+    def test_only_english_pages_when_en_gb(self):
+        response = self.client.get(RESOURCE_ENDPOINT)
+        self.assertEqual(response.status_code, 200)
+        data = self.parse_json(response)
+
+        en_info_item = self.get_page_dict(data, self.en_info)
+        en_method_item = self.get_page_dict(data, self.en_method)
+        cy_info_item = self.get_page_dict(data, self.cy_info)
+        cy_method_item = self.get_page_dict(data, self.cy_method)
+
+        self.assertIsNotNone(en_info_item)
+        self.assertIsNotNone(en_method_item)
+        self.assertIsNone(cy_info_item)
+        self.assertIsNone(cy_method_item)
+
+    @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["cy"])
+    def test_only_welsh_pages_when_cy(self):
+        response = self.client.get(RESOURCE_ENDPOINT)
+        self.assertEqual(response.status_code, 200)
+        data = self.parse_json(response)
+
+        en_info_item = self.get_page_dict(data, self.en_info)
+        en_method_item = self.get_page_dict(data, self.en_method)
+        cy_info_item = self.get_page_dict(data, self.cy_info)
+        cy_method_item = self.get_page_dict(data, self.cy_method)
+
+        self.assertIsNone(en_info_item)
+        self.assertIsNone(en_method_item)
+        self.assertIsNotNone(cy_info_item)
+        self.assertIsNotNone(cy_method_item)
+
+    @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb", "cy"])
+    def test_both_locales_when_en_gb_and_cy(self):
+        response = self.client.get(RESOURCE_ENDPOINT)
+        self.assertEqual(response.status_code, 200)
+        data = self.parse_json(response)
+
+        for page in (self.en_info, self.en_method, self.cy_info, self.cy_method):
+            item = self.get_page_dict(data, page)
+            self.assertIsNotNone(item)
+            self.assert_base_fields(item, page)
 
 
 @override_settings(IS_EXTERNAL_ENV=False)
