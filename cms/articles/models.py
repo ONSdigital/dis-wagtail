@@ -742,7 +742,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         except (KeyError, json.JSONDecodeError) as e:
             raise Http404 from e
 
-        response = create_data_csv_download_response_from_data(data, filename=chart_data.get("title", "chart"))
+        response = create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))
         return response
 
     def get_url_parts(self, request: Optional["HttpRequest"] = None) -> tuple[int, str | None, str | None] | None:
@@ -792,6 +792,9 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             view, _view_args, view_kwargs = self.resolve_subpage(f"/versions/{version}/")
             serve_kwargs = {**kwargs, **view_kwargs}
             return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
+
+        if version == 0:
+            raise Http404
 
         return cast("HttpResponse", super().serve(request, *args, **kwargs))
 

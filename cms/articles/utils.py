@@ -2,6 +2,7 @@ import csv
 from typing import TYPE_CHECKING
 
 from django.http import HttpResponse
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from cms.core.custom_date_format import ons_date_format
@@ -38,16 +39,17 @@ def serialize_correction_or_notice(entry: "StreamChild", *, superseded_url: str 
     return content
 
 
-def create_data_csv_download_response_from_data(data: list[list[str | int | float]], *, filename: str) -> HttpResponse:
+def create_data_csv_download_response_from_data(data: list[list[str | int | float]], *, title: str) -> HttpResponse:
     """Creates a Django HttpResponse for downloading a CSV file from table data.
 
     Args:
         data: The list of data rows to be converted to CSV, where each row is a list of values.
-        filename: The desired filename for the downloaded CSV file (without extension).
+        title: The title for the CSV file, which will be slugified to create the filename.
 
     Returns:
         A Django HttpResponse object configured for CSV file download.
     """
+    filename = slugify(title) or "chart"
     response = HttpResponse(
         content_type="text/csv",
         headers={

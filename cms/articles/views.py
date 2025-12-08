@@ -90,4 +90,4 @@ class RevisionChartDownloadView(View):
         except (KeyError, json.JSONDecodeError) as e:
             raise Http404 from e
 
-        return create_data_csv_download_response_from_data(data, filename=chart_data.get("title", "chart"))
+        return create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))

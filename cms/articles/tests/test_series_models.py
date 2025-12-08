@@ -329,6 +329,85 @@ class ArticleSeriesChartDownloadTestCase(WagtailTestUtils, TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
+    def test_download_chart_404_draft_chart_in_published_article(self):
+        """Test 404 when attempting to download chart from draft version of a published article."""
+        # Create an article with a chart and publish it
+        published_table_data = TableDataFactory(
+            table_data=[
+                ["Category", "Value"],
+                ["2020", "100"],
+            ]
+        )
+        article = StatisticalArticlePageFactory(parent=self.series)
+        article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Published Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": published_table_data,
+                            },
+                            "id": "published-chart-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        article.save_revision().publish()
+
+        # Now create a draft revision with a new chart
+        draft_table_data = TableDataFactory(
+            table_data=[
+                ["Category", "Value"],
+                ["2021", "200"],
+            ]
+        )
+        article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Published Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": published_table_data,
+                            },
+                            "id": "published-chart-id",
+                        },
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Draft Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": draft_table_data,
+                            },
+                            "id": "draft-chart-id",
+                        },
+                    ],
+                },
+            }
+        ]
+        article.save_revision()
+
+        # Attempt to download the published chart - should succeed
+        response = self.client.get(f"{self.series.url}/editions/{article.slug}/download-chart/published-chart-id")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Attempt to download the draft chart - should return 404
+        response = self.client.get(f"{self.series.url}/editions/{article.slug}/download-chart/draft-chart-id")
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
     def test_download_chart_multiple_charts_in_article(self):
         """Test that correct chart is returned when article has multiple charts."""
         # Create table data for both charts
@@ -715,4 +794,32 @@ class ArticleSeriesChartDownloadWithVersionTestCase(WagtailTestUtils, TestCase):
 
         # But the chart doesn't exist in version 1 (the original version without charts)
         response = self.client.get(f"{self.series.url}/editions/{article.slug}/versions/1/download-chart/new-chart-id")
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_download_with_version_zero_returns_404(self):
+        """Test that requesting version 0 returns 404."""
+        article = StatisticalArticlePageFactory(parent=self.series)
+        article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Test Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": self.original_table_data,
+                            },
+                            "id": "chart-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        article.save_revision().publish()
+
+        response = self.client.get(f"{self.series.url}/editions/{article.slug}/versions/0/download-chart/chart-id")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
