@@ -529,9 +529,7 @@ class SearchSignalsTest(TestCase):
         self.mock_publisher.publish_created_or_updated.reset_mock()
         page_slug_changed.send(sender=type(page), instance=page, instance_before=page_before)
 
-        self.mock_publisher.publish_created_or_updated.assert_called_once_with(
-            page, old_url_path=page_before.url_path
-        )
+        self.mock_publisher.publish_created_or_updated.assert_called_once_with(page, old_url_path=page_before.url_path)
 
     @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb"])
     def test_slug_changed_welsh_ignored_when_only_english_locale(self):
@@ -559,9 +557,7 @@ class SearchSignalsTest(TestCase):
         self.mock_publisher.publish_created_or_updated.reset_mock()
         page_slug_changed.send(sender=type(page), instance=page, instance_before=page_before)
 
-        self.mock_publisher.publish_created_or_updated.assert_called_once_with(
-            page, old_url_path=page_before.url_path
-        )
+        self.mock_publisher.publish_created_or_updated.assert_called_once_with(page, old_url_path=page_before.url_path)
 
     @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb", "cy"])
     def test_slug_changed_both_locales(self):
@@ -626,47 +622,45 @@ class SearchSignalsTest(TestCase):
             ]
         )
 
-    # @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb"])
-    # def test_slug_changed_with_welsh_alias_only_english_locale(self):
-    #     # EN source + CY alias. Alias should not trigger when only EN included.
-    #     en_page = InformationPageFactory(locale=self.en, slug="old-en")
-    #     cy_alias = en_page.copy_for_translation(locale=self.cy, copy_parents=True, alias=True)
-    #     en_page.save_revision().publish()
+    @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb"])
+    def test_slug_changed_with_welsh_alias_only_english_locale(self):
+        # EN source + CY alias. Alias should not trigger when only EN included.
+        en_page = InformationPageFactory(locale=self.en, slug="old-en")
+        cy_alias = en_page.copy_for_translation(locale=self.cy, copy_parents=True, alias=True)
+        en_page.save_revision().publish()
 
-    #     # Change slug on source; publish revision to create instance_before
-    #     en_page.slug = "new-en"
-    #     en_page.save_revision().publish()
-    #     en_page.refresh_from_db()
-    #     en_before = en_page.revisions.order_by("-created_at")[1].as_object()
+        # Change slug on source; publish revision to create instance_before
+        en_page.slug = "new-en"
+        en_page.save_revision().publish()
+        en_page.refresh_from_db()
+        en_before = en_page.revisions.order_by("-created_at")[1].as_object()
 
-    #     self.mock_publisher.publish_created_or_updated.reset_mock()
-    #     page_slug_changed.send(sender=type(en_page), instance=en_page, instance_before=en_before)
-    #     page_slug_changed.send(sender=type(cy_alias), instance=cy_alias, instance_before=en_before)  # alias mirrors
+        self.mock_publisher.publish_created_or_updated.reset_mock()
+        page_slug_changed.send(sender=type(en_page), instance=en_page, instance_before=en_before)
+        page_slug_changed.send(sender=type(cy_alias), instance=cy_alias, instance_before=en_before)  # alias mirrors
 
-    #     # Expect only EN publish; CY alias ignored by allow-list
-    #     self.mock_publisher.publish_created_or_updated.assert_called_once_with(
-    #         en_page, old_url_path=en_before.url_path
-    #     )
+        # Expect only EN publish; CY alias ignored by allow-list
+        self.mock_publisher.publish_created_or_updated.assert_called_once_with(en_page, old_url_path=en_before.url_path)
 
-    # @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb", "cy"])
-    # def test_slug_changed_with_welsh_alias_both_locales(self):
-    #     en_page = InformationPageFactory(locale=self.en, slug="old-en")
-    #     cy_alias = en_page.copy_for_translation(locale=self.cy, copy_parents=True, alias=True)
-    #     en_page.save_revision().publish()
+    @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb", "cy"])
+    def test_slug_changed_with_welsh_alias_both_locales(self):
+        en_page = InformationPageFactory(locale=self.en, slug="old-en")
+        cy_alias = en_page.copy_for_translation(locale=self.cy, copy_parents=True, alias=True)
+        en_page.save_revision().publish()
 
-    #     en_page.slug = "new-en"
-    #     en_page.save_revision().publish()
-    #     en_page.refresh_from_db()
-    #     en_before = en_page.revisions.order_by("-created_at")[1].as_object()
+        en_page.slug = "new-en"
+        en_page.save_revision().publish()
+        en_page.refresh_from_db()
+        en_before = en_page.revisions.order_by("-created_at")[1].as_object()
 
-    #     self.mock_publisher.publish_created_or_updated.reset_mock()
-    #     page_slug_changed.send(sender=type(en_page), instance=en_page, instance_before=en_before)
-    #     page_slug_changed.send(sender=type(cy_alias), instance=cy_alias, instance_before=en_before)
+        self.mock_publisher.publish_created_or_updated.reset_mock()
+        page_slug_changed.send(sender=type(en_page), instance=en_page, instance_before=en_before)
+        page_slug_changed.send(sender=type(cy_alias), instance=cy_alias, instance_before=en_before)
 
-    #     self.assertEqual(self.mock_publisher.publish_created_or_updated.call_count, 2)
-    #     self.mock_publisher.publish_created_or_updated.assert_has_calls(
-    #         [
-    #             call(en_page, old_url_path=en_before.url_path),
-    #             call(cy_alias, old_url_path=en_before.url_path),
-    #         ]
-    #     )
+        self.assertEqual(self.mock_publisher.publish_created_or_updated.call_count, 2)
+        self.mock_publisher.publish_created_or_updated.assert_has_calls(
+            [
+                call(en_page, old_url_path=en_before.url_path),
+                call(cy_alias, old_url_path=en_before.url_path),
+            ]
+        )
