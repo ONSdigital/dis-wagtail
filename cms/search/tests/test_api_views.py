@@ -45,18 +45,15 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         ]
 
         cls.en = Locale.get_default()
-        if cls.en.language_code != "en-gb":
-            cls.en.language_code = "en-gb"
-            cls.en.save()
         cls.cy, _ = Locale.objects.get_or_create(language_code="cy")
 
         # English pages
-        cls.en_info = InformationPageFactory(locale=cls.en)
-        cls.en_method = MethodologyPageFactory(locale=cls.en)
+        cls.en_information_page = InformationPageFactory(locale=cls.en)
+        cls.en_methodology_page = MethodologyPageFactory(locale=cls.en)
 
         # Welsh pages
-        cls.cy_info = InformationPageFactory(locale=cls.cy)
-        cls.cy_method = MethodologyPageFactory(locale=cls.cy)
+        cls.cy_information_page = InformationPageFactory(locale=cls.cy)
+        cls.cy_methodology_page = MethodologyPageFactory(locale=cls.cy)
 
     @staticmethod
     def get_page_dict(data, page):
@@ -119,15 +116,15 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         self.assertEqual(response.status_code, 200)
         data = self.parse_json(response)
 
-        en_info_item = self.get_page_dict(data, self.en_info)
-        en_method_item = self.get_page_dict(data, self.en_method)
-        cy_info_item = self.get_page_dict(data, self.cy_info)
-        cy_method_item = self.get_page_dict(data, self.cy_method)
+        en_information_page_item = self.get_page_dict(data, self.en_information_page)
+        en_methodology_page_item = self.get_page_dict(data, self.en_methodology_page)
+        cy_information_page_item = self.get_page_dict(data, self.cy_information_page)
+        cy_methodology_page_item = self.get_page_dict(data, self.cy_methodology_page)
 
-        self.assertIsNotNone(en_info_item)
-        self.assertIsNotNone(en_method_item)
-        self.assertIsNone(cy_info_item)
-        self.assertIsNone(cy_method_item)
+        self.assertIsNotNone(en_information_page_item)
+        self.assertIsNotNone(en_methodology_page_item)
+        self.assertIsNone(cy_information_page_item)
+        self.assertIsNone(cy_methodology_page_item)
 
     @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["cy"])
     def test_only_welsh_pages_when_cy(self):
@@ -135,15 +132,15 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         self.assertEqual(response.status_code, 200)
         data = self.parse_json(response)
 
-        en_info_item = self.get_page_dict(data, self.en_info)
-        en_method_item = self.get_page_dict(data, self.en_method)
-        cy_info_item = self.get_page_dict(data, self.cy_info)
-        cy_method_item = self.get_page_dict(data, self.cy_method)
+        en_information_page_item = self.get_page_dict(data, self.en_information_page)
+        en_methodology_page_item = self.get_page_dict(data, self.en_methodology_page)
+        cy_information_page_item = self.get_page_dict(data, self.cy_information_page)
+        cy_methodology_page_item = self.get_page_dict(data, self.cy_methodology_page)
 
-        self.assertIsNone(en_info_item)
-        self.assertIsNone(en_method_item)
-        self.assertIsNotNone(cy_info_item)
-        self.assertIsNotNone(cy_method_item)
+        self.assertIsNone(en_information_page_item)
+        self.assertIsNone(en_methodology_page_item)
+        self.assertIsNotNone(cy_information_page_item)
+        self.assertIsNotNone(cy_methodology_page_item)
 
     @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb", "cy"])
     def test_both_locales_when_en_gb_and_cy(self):
@@ -151,7 +148,12 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         self.assertEqual(response.status_code, 200)
         data = self.parse_json(response)
 
-        for page in (self.en_info, self.en_method, self.cy_info, self.cy_method):
+        for page in (
+            self.en_information_page,
+            self.en_methodology_page,
+            self.cy_information_page,
+            self.cy_methodology_page,
+        ):
             item = self.get_page_dict(data, page)
             self.assertIsNotNone(item)
             self.assert_base_fields(item, page)
