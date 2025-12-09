@@ -1,3 +1,4 @@
+import os
 import re
 from typing import TYPE_CHECKING, ClassVar
 from urllib.parse import urlparse
@@ -25,6 +26,26 @@ class ImageBlock(blocks.StructBlock):
     # we use Footnotes to refer to a figure
     notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
     download = blocks.BooleanBlock(required=False, label="Show download link for image")
+
+    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+        context: dict = super().get_context(value, parent_context)
+
+        if value.get("image"):
+            image = value["image"]
+            # Get file extension (uppercase, without the dot)
+            _, ext = os.path.splitext(image.file.name)
+            file_type = ext.lstrip(".").upper() or "IMG"
+
+            # Get file size in KB (rounded)
+            try:
+                file_size_kb = round(image.file.size / 1024)
+            except AttributeError:
+                file_size_kb = None
+
+            context["file_type"] = file_type
+            context["file_size_kb"] = file_size_kb
+
+        return context
 
     class Meta:
         icon = "image"
