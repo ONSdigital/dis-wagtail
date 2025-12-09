@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from bs4 import BeautifulSoup
@@ -45,6 +46,8 @@ if TYPE_CHECKING:
     from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
 
+
+logger = logging.getLogger(__name__)
 
 FIGURE_ID_SEPARATOR = ","
 
@@ -397,7 +400,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         return {}
 
     def get_chart(self, chart_id: str) -> dict[str, Any]:
-        """Finds a chart block by its unique block ID in content
+        """Finds a chart block by its unique block ID in content.
 
         Args:
             chart_id: The unique block ID of the chart to find
@@ -740,6 +743,14 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         try:
             data = json.loads(chart_data["table"]["table_data"])["data"]
         except (KeyError, json.JSONDecodeError) as e:
+            logger.warning(
+                "Failed to parse chart data: %s",
+                e,
+                extra={
+                    "chart_id": chart_id,
+                    "chart_data": chart_data,
+                },
+            )
             raise Http404 from e
 
         response = create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))
