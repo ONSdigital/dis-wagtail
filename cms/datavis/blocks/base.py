@@ -151,7 +151,7 @@ class BaseChartBlock(BaseVisualisationBlock):
                 value,
                 parent_context=parent_context,
                 block_id=block_id,
-                rows=rows,
+                rows=series + rows,
             ),
             "footnotes": self.get_footnotes_config(value),
         }
