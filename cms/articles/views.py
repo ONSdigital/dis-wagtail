@@ -67,7 +67,7 @@ class RevisionChartDownloadView(View):
 
         # Check bundle preview permissions (only if page is bundled)
         has_bundle_preview = False
-        if isinstance(page, BundledPageMixin):
+        if not has_page_perms and isinstance(page, BundledPageMixin):
             has_bundle_preview = any(user_can_preview_bundle(request.user, bundle) for bundle in page.bundles.all())
 
         if not (has_page_perms or has_bundle_preview):
