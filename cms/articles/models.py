@@ -397,7 +397,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         return {}
 
     def get_chart(self, chart_id: str) -> dict[str, Any]:
-        """Finds a chart block by its unique block ID in content or featured_chart.
+        """Finds a chart block by its unique block ID in content
 
         Args:
             chart_id: The unique block ID of the chart to find
