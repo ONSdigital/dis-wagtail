@@ -414,18 +414,18 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             created test data) cannot be retrieved by this method.
         """
         # Search in content sections
-        if self.content:
-            for section_block in self.content:
-                if section_block.block_type != "section":
-                    continue
-                section_content = section_block.value.get("content", [])
-                for content_block in section_content:
-                    if (
-                        content_block.block_type in CHART_BLOCK_TYPES
-                        and content_block.id is not None
-                        and str(content_block.id) == chart_id
-                    ):
-                        return dict(content_block.value)
+
+        for section_block in self.content or []:
+            if section_block.block_type != "section":
+                continue
+            section_content = section_block.value.get("content", [])
+            for content_block in section_content:
+                if (
+                    content_block.block_type in CHART_BLOCK_TYPES
+                    and content_block.id is not None
+                    and str(content_block.id) == chart_id
+                ):
+                    return dict(content_block.value)
 
         return {}
 
