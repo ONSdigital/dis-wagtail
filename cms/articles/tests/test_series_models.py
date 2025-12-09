@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from http import HTTPStatus
 
 from django.test import RequestFactory, TestCase, override_settings
@@ -823,3 +824,297 @@ class ArticleSeriesChartDownloadWithVersionTestCase(WagtailTestUtils, TestCase):
 
         response = self.client.get(f"{self.series.url}/editions/{article.slug}/versions/0/download-chart/chart-id")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+
+class ArticleSeriesChartDownloadMultilingualTestCase(WagtailTestUtils, TestCase):
+    """Test chart download with multi-lingual support (Welsh translations and aliases)."""
+
+    def setUp(self):
+        self.series = ArticleSeriesPageFactory()
+        self.table_data = TableDataFactory(
+            table_data=[
+                ["Category", "Value"],
+                ["2020", "100"],
+                ["2021", "200"],
+            ]
+        )
+        self.article = StatisticalArticlePageFactory(parent=self.series)
+        self.article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Test Chart",
+                                "subtitle": "Chart subtitle",
+                                "theme": "primary",
+                                "table": self.table_data,
+                            },
+                            "id": "test-chart-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.article.save_revision().publish()
+
+    def test_download_chart_from_welsh_alias(self):
+        """Test that chart download works from Welsh alias article."""
+        # Create Welsh alias
+        welsh_article_alias = self.article.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"),
+            copy_parents=True,  # Ensure Welsh series is created
+            alias=True,
+        )
+
+        welsh_series = welsh_article_alias.get_parent().specific
+        response = self.client.get(
+            f"{welsh_series.url}/editions/{welsh_article_alias.slug}/download-chart/test-chart-id"
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("test-chart.csv", response["Content-Disposition"])
+
+        content = response.content.decode("utf-8")
+        self.assertIn("Category", content)
+        self.assertIn("2020", content)
+        self.assertIn("100", content)
+
+    def test_download_chart_from_welsh_translation(self):
+        """Test that chart download works from fully translated Welsh article."""
+        # Create Welsh translation (full translation, not just an alias)
+        welsh_article = self.article.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), copy_parents=True
+        )
+        welsh_article.save_revision().publish()
+
+        welsh_series = welsh_article.get_parent().specific
+        response = self.client.get(f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id")
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("test-chart.csv", response["Content-Disposition"])
+
+        content = response.content.decode("utf-8")
+        self.assertIn("Category", content)
+        self.assertIn("2020", content)
+        self.assertIn("100", content)
+
+    def test_download_chart_welsh_translation_with_different_data(self):
+        """Test that Welsh translation with different chart data returns the correct data."""
+        # Create a new English article with different data first
+        english_table_data_2 = TableDataFactory(
+            table_data=[
+                ["Category", "Value 2"],
+                ["2020", "300"],
+                ["2021", "400"],
+            ]
+        )
+        english_article_2 = StatisticalArticlePageFactory(parent=self.series)
+        english_article_2.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section 2",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Test Chart 2",
+                                "subtitle": "Chart subtitle 2",
+                                "theme": "primary",
+                                "table": english_table_data_2,
+                            },
+                            "id": "test-chart-id-2",
+                        }
+                    ],
+                },
+            }
+        ]
+        english_article_2.save_revision().publish()
+
+        # Create Welsh translation with different chart data
+        welsh_table_data = TableDataFactory(
+            table_data=[
+                ["Categori", "Gwerth"],
+                ["2020", "150"],
+                ["2021", "250"],
+            ]
+        )
+
+        welsh_article = english_article_2.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=False
+        )
+        welsh_article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Adran Siart",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Siart Prawf",
+                                "subtitle": "Is-deitl y siart",
+                                "theme": "primary",
+                                "table": welsh_table_data,
+                            },
+                            "id": "test-chart-id-2",
+                        }
+                    ],
+                },
+            }
+        ]
+        welsh_article.save_revision().publish()
+
+        # Download chart from English article
+        english_response = self.client.get(
+            f"{self.series.url}/editions/{english_article_2.slug}/download-chart/test-chart-id-2"
+        )
+        english_content = english_response.content.decode("utf-8")
+
+        # Download chart from Welsh article
+        welsh_series = welsh_article.get_parent().specific
+        welsh_response = self.client.get(
+            f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id-2"
+        )
+        welsh_content = welsh_response.content.decode("utf-8")
+
+        # Verify both downloads succeed
+        self.assertEqual(english_response.status_code, HTTPStatus.OK)
+        self.assertEqual(welsh_response.status_code, HTTPStatus.OK)
+
+        # Verify English article has English data
+        self.assertIn("Category", english_content)
+        self.assertIn("300", english_content)
+        self.assertNotIn("Categori", english_content)
+        self.assertNotIn("150", english_content)
+
+        # Verify Welsh article has Welsh data
+        self.assertIn("Categori", welsh_content)
+        self.assertIn("150", welsh_content)
+        self.assertNotIn("Value 2", welsh_content)
+        self.assertNotIn("300", welsh_content)
+
+    def test_download_chart_404_when_chart_not_in_welsh_translation(self):
+        """Test that 404 is returned when chart doesn't exist in Welsh translation."""
+        # Create Welsh translation without the chart
+        welsh_article = self.article.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=False
+        )
+        welsh_article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Adran Testun",
+                    "content": [
+                        {
+                            "type": "rich_text",
+                            "value": "<p>Dim siart yma</p>",
+                        }
+                    ],
+                },
+            }
+        ]
+        welsh_article.save_revision().publish()
+
+        # Attempt to download chart that doesn't exist in Welsh translation
+        welsh_series = welsh_article.get_parent().specific
+        response = self.client.get(f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id")
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_download_chart_welsh_translation_with_version(self):
+        """Test downloading versioned chart from fully translated Welsh article."""
+        # Create Welsh translation with original chart data
+        welsh_article = self.article.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=False
+        )
+        welsh_table_data = TableDataFactory(
+            table_data=[
+                ["Categori", "Gwerth"],
+                ["2020", "100"],
+            ]
+        )
+        welsh_article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Adran Siart",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Siart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": welsh_table_data,
+                            },
+                            "id": "test-chart-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        welsh_article.save_revision().publish()
+        original_revision_id = welsh_article.latest_revision_id
+
+        # Create a correction with updated Welsh chart data
+        corrected_welsh_table_data = TableDataFactory(
+            table_data=[
+                ["Categori", "Gwerth Cywir"],
+                ["2020", "999"],
+            ]
+        )
+        welsh_article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Adran Siart",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Siart Cywir",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": corrected_welsh_table_data,
+                            },
+                            "id": "test-chart-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        welsh_article.corrections = [
+            {
+                "type": "correction",
+                "value": {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "date": "2024-01-15",
+                    "text": "Cywiriad data",
+                },
+            }
+        ]
+        welsh_article.save_revision().publish()
+
+        # Get the Welsh series
+        welsh_series = welsh_article.get_parent().specific
+
+        # Download the original version (version 1)
+        response = self.client.get(
+            f"{welsh_series.url}/editions/{welsh_article.slug}/versions/1/download-chart/test-chart-id"
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Verify we get the original Welsh data, not the corrected data
+        content = response.content.decode("utf-8")
+        self.assertIn("Gwerth", content)
+        self.assertIn("100", content)
+        self.assertNotIn("Gwerth Cywir", content)
+        self.assertNotIn("999", content)

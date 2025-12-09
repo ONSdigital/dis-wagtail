@@ -151,7 +151,7 @@ class BaseChartBlock(BaseVisualisationBlock):
                 value,
                 parent_context=parent_context,
                 block_id=block_id,
-                rows=series + rows,
+                rows=rows,
             ),
             "footnotes": self.get_footnotes_config(value),
         }
@@ -324,7 +324,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         if parent_context and block_id:
             page: Optional[BasePage] = parent_context.get("page")
             if page:
-                suffix = f" ({get_approximate_file_size_in_kb(rows)})" if rows else ""
+                suffix = f" ({get_approximate_file_size_in_kb(rows or [])})"
                 request: Optional[HttpRequest] = parent_context.get("request")
                 is_preview = getattr(request, "is_preview", False) if request else False
 
