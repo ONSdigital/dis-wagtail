@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from wagtail.admin.mail import GroupApprovalTaskStateSubmissionEmailNotifier
 from wagtail.models import AbstractGroupApprovalTask
@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from django.db.models import Model
     from wagtail.models import TaskState
 
+    from cms.bundles.models import Bundle
     from cms.users.models import User
 
 
@@ -26,7 +27,8 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
     """Placeholder task model to use in the Bundle approval logic."""
 
     def locked_for_user(self, obj: Model, user: User) -> bool:
-        if getattr(obj, "active_bundle", None) is not None:
+        active_bundle: Optional[Bundle] = getattr(obj, "active_bundle", None)
+        if active_bundle is not None and active_bundle.is_ready_to_be_published:
             return True
 
         locked: bool = super().locked_for_user(obj, user)
