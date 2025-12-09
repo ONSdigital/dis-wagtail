@@ -57,5 +57,19 @@ def create_data_csv_download_response_from_data(data: list[list[str | int | floa
         },
     )
     writer = csv.writer(response)
-    writer.writerows(data)
+    writer.writerows(sanitize_data_for_csv(data))
     return response
+
+
+def sanitize_data_for_csv(data: list[list[str | int | float]]) -> list[list[str | int | float]]:
+    """Sanitize data for CSV export by escaping formula triggers.
+
+    Prevents CSV injection by prepending ' to strings starting with
+    =, +, -, @, or tab characters.
+    """
+    triggers = ("=", "+", "-", "@", "\t")
+
+    return [
+        [f"'{value}" if isinstance(value, str) and value.startswith(triggers) else value for value in row]
+        for row in data
+    ]
