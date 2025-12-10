@@ -749,6 +749,8 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
                 extra={
                     "chart_id": chart_id,
                     "chart_data": chart_data,
+                    "page_id": self.id,
+                    "page_slug": self.slug,
                 },
             )
             raise Http404 from e
