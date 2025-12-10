@@ -321,23 +321,25 @@ class BaseChartBlock(BaseVisualisationBlock):
     ) -> Optional[dict[str, str]]:
         # CSV download - only include if we have a valid URL
         if not (parent_context and block_id):
+            # Check separately to placate mypy
             return None
         page: Optional[BasePage] = parent_context.get("page")
-        if page:
-            suffix = f" ({get_approximate_file_size_in_kb(rows or [])})"
-            request: Optional[HttpRequest] = parent_context.get("request")
-            is_preview = getattr(request, "is_preview", False) if request else False
+        if not page:
+            return None
+        suffix = f" ({get_approximate_file_size_in_kb(rows or [])})"
+        request: Optional[HttpRequest] = parent_context.get("request")
+        is_preview = getattr(request, "is_preview", False) if request else False
 
-            if is_preview:
-                csv_url = self._build_preview_chart_download_url(page, block_id, request)
-            else:
-                superseded_version: Optional[int] = parent_context.get("superseded_version")
-                csv_url = self._build_chart_download_url(page, block_id, superseded_version)
+        if is_preview:
+            csv_url = self._build_preview_chart_download_url(page, block_id, request)
+        else:
+            superseded_version: Optional[int] = parent_context.get("superseded_version")
+            csv_url = self._build_chart_download_url(page, block_id, superseded_version)
 
-            return {
-                "text": f"Download CSV{suffix}",
-                "url": csv_url,
-            }
+        return {
+            "text": f"Download CSV{suffix}",
+            "url": csv_url,
+        }
 
     def get_download_config(
         self,
