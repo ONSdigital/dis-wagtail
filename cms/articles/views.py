@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import PermissionDenied
@@ -18,6 +19,8 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
 
     from cms.users.models import User
+
+logger = logging.getLogger(__name__)
 
 
 def user_can_access_chart_download(user: "User") -> bool:
@@ -89,6 +92,15 @@ class RevisionChartDownloadView(View):
         try:
             data = json.loads(chart_data["table"]["table_data"])["data"]
         except (KeyError, json.JSONDecodeError) as e:
+            logger.warning(
+                "Failed to parse chart data: %s",
+                e,
+                extra={
+                    "chart_id": chart_id,
+                    "page_id": page_id,
+                    "page_slug": page.slug,
+                },
+            )
             raise Http404 from e
 
         return create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))
