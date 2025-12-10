@@ -1,9 +1,8 @@
 from typing import TYPE_CHECKING
 
 from django.dispatch import receiver
-from wagtail.admin.signals import init_new_page
 from wagtail.models import Page
-from wagtail.signals import page_published
+from wagtail.signals import init_new_page, page_published
 
 from cms.articles.models import StatisticalArticlePage
 
