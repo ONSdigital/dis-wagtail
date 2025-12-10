@@ -221,3 +221,30 @@ class TopicPageTests(WagtailPageTestCase):
             },
             self.page.table_of_contents,
         )
+
+    def test_topic_page_displays_with_broken_headline_figures(self):
+        """Test that the topic page renders correctly even when it contains a broken headline figure reference."""
+        self.page.headline_figures.extend(
+            [
+                (
+                    "figure",
+                    {
+                        "series": self.series,
+                        "figure_id": "broken1",
+                    },
+                ),
+                (
+                    "figure",
+                    {
+                        "series": self.series,
+                        "figure_id": "broken2",
+                    },
+                ),
+            ]
+        )
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.page.title)
+        self.assertContains(response, "Error retrieving figure")
