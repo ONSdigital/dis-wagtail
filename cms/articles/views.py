@@ -12,6 +12,7 @@ from wagtail.models import Page, Revision
 from cms.articles.utils import create_data_csv_download_response_from_data
 from cms.bundles.mixins import BundledPageMixin
 from cms.bundles.permissions import get_bundle_permission, user_can_preview_bundle
+from cms.workflows.utils import is_page_ready_to_preview
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -67,7 +68,7 @@ class RevisionChartDownloadView(View):
 
         # Check bundle preview permissions (only if page is bundled)
         has_bundle_preview = False
-        if not has_page_perms and isinstance(page, BundledPageMixin):
+        if not has_page_perms and isinstance(page, BundledPageMixin) and is_page_ready_to_preview(page):
             has_bundle_preview = any(user_can_preview_bundle(request.user, bundle) for bundle in page.bundles.all())
 
         if not (has_page_perms or has_bundle_preview):

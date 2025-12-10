@@ -14,6 +14,7 @@ from cms.bundles.tests.utils import create_bundle_viewer
 from cms.datavis.tests.factories import TableDataFactory
 from cms.teams.tests.factories import TeamFactory
 from cms.users.tests.factories import UserFactory
+from cms.workflows.tests.utils import mark_page_as_ready_for_review
 
 
 class RevisionChartDownloadViewTestCase(WagtailTestUtils, TestCase):
@@ -241,7 +242,8 @@ class RevisionChartDownloadBundlePermissionsTestCase(WagtailTestUtils, TestCase)
 
     Bundle viewers (users with view_bundle permission) should be able to download
     chart CSVs from pages in bundles they can preview, even without page edit/publish
-    permissions.
+    permissions. The page must be in a previewable workflow state (GroupReviewTask or
+    ReadyToPublishGroupTask).
     """
 
     @classmethod
@@ -276,6 +278,9 @@ class RevisionChartDownloadBundlePermissionsTestCase(WagtailTestUtils, TestCase)
         ]
         cls.article.save_revision().publish()
         cls.revision_id = cls.article.latest_revision_id
+
+        # Put the article in a previewable workflow state
+        mark_page_as_ready_for_review(cls.article)
 
         # Create preview team and bundle
         cls.preview_team = TeamFactory(name="Preview Team")
@@ -353,6 +358,25 @@ class RevisionChartDownloadBundlePermissionsTestCase(WagtailTestUtils, TestCase)
         # User has basic admin access but no bundle view permission and no page permissions
 
         self.client.force_login(user)
+        response = self.client.get(self.get_download_url(), follow=True)
+
+        # Permission denied redirects with message (Wagtail standard behavior)
+        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+    def test_bundle_viewer_denied_when_page_not_in_previewable_workflow_state(self):
+        """Test that bundle viewer cannot download when page is not in a previewable workflow state.
+
+        Note: The test setup puts the page in a previewable state, so we cancel it here
+        to test the denial scenario.
+        """
+        viewer = create_bundle_viewer()
+        viewer.teams.add(self.preview_team)
+
+        # Cancel the workflow to remove the page from the previewable state
+        workflow_state = self.article.current_workflow_state
+        workflow_state.cancel(user=viewer)
+
+        self.client.force_login(viewer)
         response = self.client.get(self.get_download_url(), follow=True)
 
         # Permission denied redirects with message (Wagtail standard behavior)
