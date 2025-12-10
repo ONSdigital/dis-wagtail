@@ -18,6 +18,9 @@ class GroupReviewTask(AbstractGroupApprovalTask):
     def get_description(cls) -> str:
         return "A workflow review task that requires the approver to be different than the last editor."
 
+    def user_can_unlock(self, obj: Model, user: User) -> bool:
+        return user.has_perm("wagtailadmin.unlock_workflow_tasks")
+
     class Meta:
         verbose_name = "Group review task"
         verbose_name_plural = "Group review tasks"
@@ -26,7 +29,11 @@ class GroupReviewTask(AbstractGroupApprovalTask):
 class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
     """Placeholder task model to use in the Bundle approval logic."""
 
-    def locked_for_user(self, obj: Model, user: User) -> bool:
+    @classmethod
+    def get_description(cls) -> str:
+        return "Marks a page as ready to be published. Used by bundles."
+
+    def locked_for_user(self, obj: "Model", user: "User") -> bool:
         active_bundle: Optional[Bundle] = getattr(obj, "active_bundle", None)
         if active_bundle is not None and active_bundle.is_ready_to_be_published:
             return True
@@ -34,9 +41,8 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
         locked: bool = super().locked_for_user(obj, user)
         return locked
 
-    @classmethod
-    def get_description(cls) -> str:
-        return "Marks a page as ready to be published. Used by bundles."
+    def user_can_unlock(self, obj: "Model", user: "User") -> bool:
+        return user.has_perm("wagtailadmin.unlock_workflow_tasks")
 
     class Meta:
         verbose_name = "Ready to publish task"

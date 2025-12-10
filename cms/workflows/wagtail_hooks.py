@@ -1,6 +1,7 @@
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
+from django.contrib.auth.models import Permission
 from django.shortcuts import redirect
 from django.templatetags.static import static
 from django.utils.html import format_html
@@ -11,6 +12,7 @@ from wagtail.admin.action_menu import CancelWorkflowMenuItem
 from cms.bundles.mixins import BundledPageMixin
 
 if TYPE_CHECKING:
+    from django.db.models import QuerySet
     from django.http import HttpRequest, HttpResponse
     from wagtail.admin.action_menu import ActionMenuItem
     from wagtail.models import Page
@@ -51,3 +53,9 @@ def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
 @hooks.register("insert_editor_js")
 def insert_workflow_tweaks_js() -> str:
     return format_html('<script src="{}"></script>', static("js/workflow-tweaks.js"))
+
+
+@hooks.register("register_permissions")
+def register_submit_translation_permission() -> "QuerySet[Permission]":
+    """Register the 'Unlock any workflow tasks' permission so it shows in the UI."""
+    return Permission.objects.filter(content_type__app_label="wagtailadmin", codename="unlock_workflow_tasks")
