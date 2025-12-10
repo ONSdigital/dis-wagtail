@@ -6,7 +6,7 @@ import os
 import sys
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
@@ -487,12 +487,9 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
 PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get("PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5)
 
 # Logging
-# This logging is configured to be used with Sentry and console logs. Console
+# This logging is configured to be used with ONS logging and console logs. Console
 # logs are widely used by platforms offering Docker deployments, e.g. Heroku.
-# We use Sentry to only send error logs so we're notified about errors that are
-# not Python exceptions.
-# We do not use default mail or file handlers because they are of no use for
-# us.
+# We do not use default mail or file handlers because they are of no use for us.
 # https://docs.djangoproject.com/en/stable/topics/logging/
 LOGGING = {
     "version": 1,
@@ -614,35 +611,6 @@ if "SERVER_EMAIL" in env:
 
 # Do not include superusers in all moderation notifications.
 WAGTAILADMIN_NOTIFICATION_INCLUDE_SUPERUSERS = False
-
-# Sentry configuration.
-is_in_shell = len(sys.argv) > 1 and sys.argv[1] in ["shell", "shell_plus"]
-
-if "SENTRY_DSN" in env and not is_in_shell:
-    import sentry_sdk
-    from sentry_sdk.integrations.django import DjangoIntegration
-    from sentry_sdk.utils import get_default_release
-
-    sentry_kwargs: dict[str, str | list[Any] | None] = {
-        "dsn": env["SENTRY_DSN"],
-        "integrations": [DjangoIntegration()],
-    }
-
-    # There's a chooser to toggle between environments at the top right corner on sentry.io
-    # Values are typically 'staging' or 'production' but can be set to anything else if needed.
-    # `heroku config:set SENTRY_ENVIRONMENT=production`
-    if sentry_environment := env.get("SENTRY_ENVIRONMENT"):
-        sentry_kwargs.update({"environment": sentry_environment})
-
-    release = get_default_release()
-    if release is None:
-        # Assume this is a Heroku-hosted app with the "runtime-dyno-metadata" lab enabled.
-        # see https://devcenter.heroku.com/articles/dyno-metadata
-        # `heroku labs:enable runtime-dyno-metadata`
-        release = env.get("HEROKU_RELEASE_VERSION", None)
-
-    sentry_kwargs.update({"release": release})
-    sentry_sdk.init(**sentry_kwargs)  # type: ignore[arg-type]
 
 
 # Front-end cache
@@ -796,28 +764,6 @@ if "CSP_DEFAULT_SRC" in env:
         CONTENT_SECURITY_POLICY_REPORT_ONLY = {"DIRECTIVES": CSP_DIRECTIVES}
     else:
         CONTENT_SECURITY_POLICY = {"DIRECTIVES": CSP_DIRECTIVES}
-
-
-# Basic authentication settings
-# These are settings to configure the third-party library:
-# https://gitlab.com/tmkn/django-basic-auth-ip-whitelist
-if env.get("BASIC_AUTH_ENABLED", "false").lower().strip() == "true":
-    # Insert basic auth as a first middleware to be checked first, before
-    # anything else.
-    MIDDLEWARE.insert(0, "baipw.middleware.BasicAuthIPWhitelistMiddleware")
-
-    # This is the credentials users will have to use to access the site.
-    BASIC_AUTH_LOGIN = env.get("BASIC_AUTH_LOGIN", "tbx")
-    BASIC_AUTH_PASSWORD = env.get("BASIC_AUTH_PASSWORD", "tbx")
-
-    # Wagtail requires Authorization header to be present for the previews
-    BASIC_AUTH_DISABLE_CONSUMING_AUTHORIZATION_HEADER = True
-
-    # This is the list of hosts that website can be accessed without basic auth
-    # check. This may be useful to e.g. white-list "llamasavers.com" but not
-    # "llamasavers.production.onsdigital.com".
-    if "BASIC_AUTH_WHITELISTED_HTTP_HOSTS" in env:
-        BASIC_AUTH_WHITELISTED_HTTP_HOSTS = env["BASIC_AUTH_WHITELISTED_HTTP_HOSTS"].split(",")
 
 
 # Django REST framework settings

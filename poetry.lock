@@ -813,24 +813,6 @@ argon2 = ["argon2-cffi (>=19.1.0)"]
 bcrypt = ["bcrypt"]
 
 [[package]]
-name = "django-basic-auth-ip-whitelist"
-version = "0.8.0"
-description = "Hide your Django site behind basic authentication mechanism with IP whitelisting support."
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "django_basic_auth_ip_whitelist-0.8.0-py3-none-any.whl", hash = "sha256:e4e46c2c59b4dde3a318d8812b6640b4a714bc2d1a0647854dead7743f1202ee"},
-    {file = "django_basic_auth_ip_whitelist-0.8.0.tar.gz", hash = "sha256:edcff4ad789c9cf0c335c12366d5356f1f07d44172c2ecbfa5cb8ec914ea8252"},
-]
-
-[package.dependencies]
-Django = ">=4.2"
-
-[package.extras]
-lint = ["ruff (==0.9.6)"]
-
-[[package]]
 name = "django-cache-memoize"
 version = "0.2.1"
 description = "Django utility for a memoization decorator that uses the Django cache framework."
@@ -3061,63 +3043,6 @@ botocore = ">=1.37.4,<2.0a.0"
 crt = ["botocore[crt] (>=1.37.4,<2.0a.0)"]
 
 [[package]]
-name = "sentry-sdk"
-version = "2.29.1"
-description = "Python client for Sentry (https://sentry.io)"
-optional = false
-python-versions = ">=3.6"
-groups = ["main"]
-files = [
-    {file = "sentry_sdk-2.29.1-py2.py3-none-any.whl", hash = "sha256:90862fe0616ded4572da6c9dadb363121a1ae49a49e21c418f0634e9d10b4c19"},
-    {file = "sentry_sdk-2.29.1.tar.gz", hash = "sha256:8d4a0206b95fa5fe85e5e7517ed662e3888374bdc342c00e435e10e6d831aa6d"},
-]
-
-[package.dependencies]
-certifi = "*"
-urllib3 = ">=1.26.11"
-
-[package.extras]
-aiohttp = ["aiohttp (>=3.5)"]
-anthropic = ["anthropic (>=0.16)"]
-arq = ["arq (>=0.23)"]
-asyncpg = ["asyncpg (>=0.23)"]
-beam = ["apache-beam (>=2.12)"]
-bottle = ["bottle (>=0.12.13)"]
-celery = ["celery (>=3)"]
-celery-redbeat = ["celery-redbeat (>=2)"]
-chalice = ["chalice (>=1.16.0)"]
-clickhouse-driver = ["clickhouse-driver (>=0.2.0)"]
-django = ["django (>=1.8)"]
-falcon = ["falcon (>=1.4)"]
-fastapi = ["fastapi (>=0.79.0)"]
-flask = ["blinker (>=1.1)", "flask (>=0.11)", "markupsafe"]
-grpcio = ["grpcio (>=1.21.1)", "protobuf (>=3.8.0)"]
-http2 = ["httpcore[http2] (==1.*)"]
-httpx = ["httpx (>=0.16.0)"]
-huey = ["huey (>=2)"]
-huggingface-hub = ["huggingface_hub (>=0.22)"]
-langchain = ["langchain (>=0.0.210)"]
-launchdarkly = ["launchdarkly-server-sdk (>=9.8.0)"]
-litestar = ["litestar (>=2.0.0)"]
-loguru = ["loguru (>=0.5)"]
-openai = ["openai (>=1.0.0)", "tiktoken (>=0.3.0)"]
-openfeature = ["openfeature-sdk (>=0.7.1)"]
-opentelemetry = ["opentelemetry-distro (>=0.35b0)"]
-opentelemetry-experimental = ["opentelemetry-distro"]
-pure-eval = ["asttokens", "executing", "pure_eval"]
-pymongo = ["pymongo (>=3.1)"]
-pyspark = ["pyspark (>=2.4.4)"]
-quart = ["blinker (>=1.1)", "quart (>=0.16.1)"]
-rq = ["rq (>=0.6)"]
-sanic = ["sanic (>=0.8)"]
-sqlalchemy = ["sqlalchemy (>=1.2)"]
-starlette = ["starlette (>=0.19.1)"]
-starlite = ["starlite (>=1.48)"]
-statsig = ["statsig (>=0.55.3)"]
-tornado = ["tornado (>=6)"]
-unleash = ["UnleashClient (>=6.0.1)"]
-
-[[package]]
 name = "setuptools"
 version = "78.1.1"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
@@ -3760,4 +3685,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.13"
-content-hash = "6bf3c6979999a17aa9e55db1d4e296ae80d4659826c68e39d93a596584edc9a7"
+content-hash = "ead35564a9c59886ecad1a3ca192210a5d383b033495f4bd83a89c51bdbb7f7e"

@@ -15,7 +15,6 @@ python = "^3.13"
 django = "5.2.9"
 wagtail = "~7.2"
 dj-database-url = "~3.0.0"
-django-basic-auth-ip-whitelist = "~0.8"  # Torchbox dependency
 django-csp = "~4.0"
 django-defender = "~0.9.8"
 django-extensions = "~4.1"
@@ -24,7 +23,6 @@ django-redis = "~6.0"
 django-storages = { version = "~1.14", extras = ["s3"] }
 gunicorn = "~23.0"
 psycopg = "~3.3.2"
-sentry-sdk = "~2.29"  # Torchbox dependency
 wagtail-font-awesome-svg = "^2.0"
 apscheduler = "^3.11.0"
 wagtailmath = "~1.3.1"
@@ -189,7 +187,6 @@ omit = [
     "**/node_modules/*",
     "**/migrations/*",
     "**/tests/*",
-    "cms/core/management/commands/test_sentry.py",
     "cms/wsgi.py",
     "cms/urls.py",
     "cms/settings/*",
