@@ -304,6 +304,41 @@ class BaseChartBlock(BaseVisualisationBlock):
 
         return options
 
+    @staticmethod
+    def _get_image_download_item() -> dict[str, str]:
+        # Placeholder for future image download implementation
+        return {
+            "text": "Download image (18KB)",
+            "url": "xyz",
+        }
+
+    def _get_csv_download_item(
+        self,
+        *,
+        parent_context: Optional[dict[str, Any]] = None,
+        block_id: Optional[str] = None,
+        rows: Optional[list[list[str | int | float]]] = None,
+    ) -> Optional[dict[str, str]]:
+        # CSV download - only include if we have a valid URL
+        if not (parent_context and block_id):
+            return None
+        page: Optional[BasePage] = parent_context.get("page")
+        if page:
+            suffix = f" ({get_approximate_file_size_in_kb(rows or [])})"
+            request: Optional[HttpRequest] = parent_context.get("request")
+            is_preview = getattr(request, "is_preview", False) if request else False
+
+            if is_preview:
+                csv_url = self._build_preview_chart_download_url(page, block_id, request)
+            else:
+                superseded_version: Optional[int] = parent_context.get("superseded_version")
+                csv_url = self._build_chart_download_url(page, block_id, superseded_version)
+
+            return {
+                "text": f"Download CSV{suffix}",
+                "url": csv_url,
+            }
+
     def get_download_config(
         self,
         value: "StructValue",
@@ -312,34 +347,10 @@ class BaseChartBlock(BaseVisualisationBlock):
         block_id: Optional[str] = None,
         rows: Optional[list[list[str | int | float]]] = None,
     ) -> dict[str, Any]:
-        items_list = [
-            {
-                # Placeholder for image download (not implemented yet)
-                "text": "Download image (18KB)",
-                "url": "xyz",
-            }
-        ]
-
-        # CSV download - only include if we have a valid URL
-        if parent_context and block_id:
-            page: Optional[BasePage] = parent_context.get("page")
-            if page:
-                suffix = f" ({get_approximate_file_size_in_kb(rows or [])})"
-                request: Optional[HttpRequest] = parent_context.get("request")
-                is_preview = getattr(request, "is_preview", False) if request else False
-
-                if is_preview:
-                    csv_url = self._build_preview_chart_download_url(page, block_id, request)
-                else:
-                    superseded_version: Optional[int] = parent_context.get("superseded_version")
-                    csv_url = self._build_chart_download_url(page, block_id, superseded_version)
-
-                items_list.append(
-                    {
-                        "text": f"Download CSV{suffix}",
-                        "url": csv_url,
-                    }
-                )
+        items_list: list[dict[str, str]] = []
+        items_list.append(self._get_image_download_item())
+        if csv_item := self._get_csv_download_item(parent_context=parent_context, block_id=block_id, rows=rows):
+            items_list.append(csv_item)
 
         return {
             "title": f"Download: {value['title']}",
