@@ -5,8 +5,8 @@ from django.forms import Media
 from django.utils.functional import cached_property
 from django.utils.text import slugify
 from wagtail import blocks
+from wagtail.admin.telepath import register
 from wagtail.blocks.struct_block import StructBlockAdapter
-from wagtail.telepath import register
 
 from cms.core.blocks import BasicTableBlock, LinkBlock, LinkBlockWithDescription
 

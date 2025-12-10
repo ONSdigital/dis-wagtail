@@ -6,6 +6,7 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.functional import cached_property
+from wagtail.admin.telepath import register
 from wagtail.blocks import (
     CharBlock,
     PageChooserBlock,
@@ -18,7 +19,6 @@ from wagtail.blocks import (
 )
 from wagtail.blocks.struct_block import StructBlockAdapter
 from wagtail.images.blocks import ImageChooserBlock
-from wagtail.telepath import register
 
 from cms.articles.models import ArticleSeriesPage
 from cms.core.url_utils import normalise_url, validate_ons_url_struct_block

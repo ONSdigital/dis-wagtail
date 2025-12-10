@@ -1,8 +1,8 @@
 from django import forms
 from django.utils.functional import cached_property
+from wagtail.admin.telepath import register
 from wagtail.blocks import CharBlock, StructBlock
 from wagtail.blocks.struct_block import StructBlockAdapter
-from wagtail.telepath import register
 
 
 class HeadlineFiguresItemBlock(StructBlock):
