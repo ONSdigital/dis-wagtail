@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar
 from urllib.parse import ParseResult, urlparse
 
 from django.conf import settings
@@ -811,7 +811,7 @@ class IframeBlock(BaseVisualisationBlock):
 
         return config
 
-    def get_context(self, value: "StructValue", parent_context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    def get_context(self, value: "StructValue", parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
 
         context["chart_config"] = self.get_component_config(value)

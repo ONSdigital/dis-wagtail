@@ -152,7 +152,7 @@ def ons_date_format_filter(value: datetime | None, format_string: str) -> str:
 
 # Copy django's json_script filter
 @register.filter(is_safe=True)
-def json_script(value: dict[str, Any], element_id: Optional[str] = None) -> "SafeString":
+def json_script(value: dict[str, Any], element_id: str | None = None) -> "SafeString":
     """Output value JSON-encoded, wrapped in a <script type="application/json">
     tag (with an optional id).
     """

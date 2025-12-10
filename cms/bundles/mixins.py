@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, Optional
+from typing import TYPE_CHECKING, ClassVar
 
 from django.db.models import QuerySet
 from django.utils.functional import cached_property
@@ -51,7 +51,7 @@ class BundledPageMixin:
     def in_active_bundle(self) -> bool:
         return self.active_bundle is not None
 
-    def get_lock(self) -> Optional[BaseLock]:
+    def get_lock(self) -> BaseLock | None:
         if self.active_bundle and self.active_bundle.is_ready_to_be_published:
             return PageInBundleReadyToBePublishedLock(self)
 

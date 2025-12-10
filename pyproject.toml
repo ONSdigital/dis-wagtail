@@ -121,6 +121,8 @@ ignore = [
     "UP007",
     # Allow complex functions
     "C901",
+    # Allow non-top-level imports
+    "PLC0415",
 ]
 
 [tool.ruff.lint.pydocstyle]

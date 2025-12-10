@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
 from django.forms.widgets import RadioSelect
@@ -106,7 +106,7 @@ class BaseChartBlock(BaseVisualisationBlock):
 
     series_customisation = blocks.StaticBlock()
 
-    def get_context(self, value: "StructValue", parent_context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    def get_context(self, value: "StructValue", parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
 
         context["chart_config"] = self.get_component_config(value)

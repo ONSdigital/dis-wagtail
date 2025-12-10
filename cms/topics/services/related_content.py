@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Generic
+from typing import TYPE_CHECKING
 
 from django.db.models import OuterRef, Q, Subquery
 from django.db.models.functions import Coalesce
@@ -8,7 +8,7 @@ from django.db.models.functions import Coalesce
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.core.query import order_by_pk_position
 from cms.methodology.models import MethodologyPage
-from cms.topics.services.types import ArticleDict, InternalArticleDict, MethodologyDict, T
+from cms.topics.services.types import ArticleDict, InternalArticleDict, MethodologyDict
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from ..models import TopicPage, TopicPageRelatedArticle
 
 
-class BaseProcessor(ABC, Generic[T]):
+class BaseProcessor[T](ABC):
     """Abstract base class for processors handling related content for topic pages."""
 
     def __init__(self, topic_page: "TopicPage", max_items_per_section: int) -> None:
