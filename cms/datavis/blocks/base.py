@@ -342,7 +342,7 @@ class BaseChartBlock(BaseVisualisationBlock):
                 )
 
         return {
-            "title": f"Download: {value['title'][:30]} ... ",
+            "title": f"Download: {value['title']}",
             "itemsList": items_list,
         }
 
