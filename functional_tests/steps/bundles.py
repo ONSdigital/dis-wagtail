@@ -1,6 +1,7 @@
+# pylint: disable=not-callable
 from datetime import datetime, time, timedelta
 
-from behave import given, step, then, when  # pylint: disable=no-name-in-module
+from behave import given, step, then, when
 from behave.runner import Context
 from django.urls import reverse
 from django.utils import timezone
