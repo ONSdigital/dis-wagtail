@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import filesizeformat
+from django.urls import reverse
 from wagtail import blocks
 from wagtail.blocks import StructBlockValidationError
 from wagtail.documents.blocks import DocumentChooserBlock
@@ -30,20 +31,37 @@ class ImageBlock(blocks.StructBlock):
     def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context)
 
-        if value.get("image"):
-            image = value["image"]
+        if image := value.get("image"):
+            small = image.get_rendition("width-1024")
+            large = image.get_rendition("width-2048")
+
+            context["small_src"] = small.url
+            context["large_src"] = large.url
+
             # Get file extension (uppercase, without the dot)
             _, ext = os.path.splitext(image.file.name)
             file_type = ext.lstrip(".").upper() or "IMG"
 
             # Get file size in KB (rounded)
-            try:
-                file_size_kb = round(image.file.size / 1024)
-            except AttributeError:
-                file_size_kb = None
+            file_size_kb = round(large.file.size / 1024) if getattr(large.file, "size", None) else None
 
             context["file_type"] = file_type
             context["file_size_kb"] = file_size_kb
+
+            # Create safe download filename
+            title = value.get("figure_title") or "image"
+            # Replace non-alphanumeric chars with underscore
+            safe_filename = re.sub(r"[^\w\-]", "_", title)
+            # Collapse multiple underscores and remove leading/trailing underscores
+            safe_filename = re.sub(r"_+", "_", safe_filename).strip("_")
+            download_filename = f"{safe_filename}.{ext.lstrip('.').lower()}"
+
+            context["file_type"] = file_type
+            context["file_size_kb"] = file_size_kb
+            context["download_url"] = reverse(
+                "image_download",
+                kwargs={"image_id": image.pk, "filename": download_filename},
+            )
 
         return context
 

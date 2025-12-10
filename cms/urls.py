@@ -164,6 +164,11 @@ urlpatterns = (
             private_media_views.DocumentServeView.as_view(),
             name="wagtaildocs_serve",
         ),
+        path(
+            "images/download/<int:image_id>/<str:filename>",
+            private_media_views.download_image,
+            name="image_download",
+        ),
         re_path(
             r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$",
             private_media_views.ImageServeView.as_view(),
