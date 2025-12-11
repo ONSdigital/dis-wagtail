@@ -42,7 +42,7 @@ def before_delete_page(request: "HttpRequest", page: "Page") -> HttpResponseRedi
         if (
             page.specific_class == ArticleSeriesPage
             and (latest := page.get_latest())
-            and latest.has_figures_in_use_by_ancestor
+            and latest.figures_used_by_ancestor
         ):
             message = (
                 "This page cannot be deleted because one or more of its children contain headline figures"
@@ -68,7 +68,7 @@ def before_unpublish_page(request: "HttpRequest", page: "Page") -> HttpResponseR
         if (
             page.specific_class == ArticleSeriesPage
             and (latest := page.get_latest())
-            and latest.has_figures_in_use_by_ancestor
+            and latest.figures_used_by_ancestor
         ):
             message = (
                 "This page cannot be unpublished because one or more of its children contain headline figures"
