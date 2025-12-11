@@ -3,7 +3,11 @@ from unittest.mock import patch
 from django.test import TestCase, override_settings
 from wagtail.models import Page
 
-from cms.search.checks import check_kafka_settings, check_search_index_content_type
+from cms.search.checks import (
+    check_kafka_settings,
+    check_search_index_content_type,
+    check_search_index_included_languages,
+)
 
 
 class KafkaSettingsCheckTests(TestCase):
@@ -137,3 +141,52 @@ class SearchIndexContentTypeCheckTests(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("IncludedPage", errors[0].msg)
         self.assertEqual(errors[0].id, "search.E002")
+
+
+class SearchIndexIncludedLanguagesCheckTests(TestCase):
+    """Tests for the check_search_index_included_languages system check,
+    validating SEARCH_INDEX_INCLUDED_LANGUAGES is non-empty, lowercase, and within LANGUAGES.
+    """
+
+    @override_settings(
+        LANGUAGES=(("en-gb", "English"), ("cy", "Welsh")),
+        SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb"],
+    )
+    def test_valid_included_languages_no_errors(self):
+        errors = check_search_index_included_languages(app_configs=None)
+        self.assertEqual(errors, [])
+
+    @override_settings(
+        LANGUAGES=(("en-gb", "English"), ("cy", "Welsh")),
+        SEARCH_INDEX_INCLUDED_LANGUAGES=[],
+    )
+    def test_empty_included_languages_raises_error(self):
+        errors = check_search_index_included_languages(app_configs=None)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].id, "search.E003")
+        self.assertIn("non-empty list", errors[0].msg.lower())
+
+    @override_settings(
+        LANGUAGES=(("en-gb", "English"), ("cy", "Welsh")),
+        SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb", "fr"],
+    )
+    def test_invalid_codes_raises_error(self):
+        errors = check_search_index_included_languages(app_configs=None)
+        # Expect exactly one error for invalid codes
+        self.assertTrue(any(e.id == "search.E004" for e in errors))
+        invalid_error = next(e for e in errors if e.id == "search.E004")
+        self.assertIn("invalid codes", invalid_error.hint.lower())
+        self.assertIn("fr", invalid_error.hint)
+
+    @override_settings(
+        LANGUAGES=(("en-gb", "English"), ("cy", "Welsh")),
+        SEARCH_INDEX_INCLUDED_LANGUAGES=["EN-GB", "CY"],
+    )
+    def test_non_lowercase_codes_raises_error(self):
+        errors = check_search_index_included_languages(app_configs=None)
+        # Expect exactly one error for non-lowercase
+        self.assertTrue(any(e.id == "search.E005" for e in errors))
+        lowercase_error = next(e for e in errors if e.id == "search.E005")
+        self.assertIn("lowercase", lowercase_error.msg.lower())
+        self.assertIn("EN-GB", lowercase_error.hint)
+        self.assertIn("CY", lowercase_error.hint)

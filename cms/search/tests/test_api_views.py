@@ -60,10 +60,6 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         """Retrieve a specific page dict from the items by matching URI."""
         return next((item for item in data["items"] if item.get("uri") == build_page_uri(page)), None)
 
-    @staticmethod
-    def get_uris(data):
-        return {item["uri"] for item in data["items"]}
-
     def test_resources_returns_200_and_lists_various_page_types(self):
         """Endpoint should return 200 and include all included_pages in the items."""
         response = self.client.get(RESOURCE_ENDPOINT)
