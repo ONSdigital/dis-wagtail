@@ -174,3 +174,43 @@ class ArticleHeadlineFiguresHooksTestCase(WagtailTestUtils, TestCase):
         # Verify the page now unpublished/not live
         older_article_page.refresh_from_db()
         self.assertFalse(older_article_page.live)
+
+    def test_user_cannot_delete_series_containing_article_with_referenced_figures(self):
+        # When
+        data = nested_form_data({})
+        response = self.client.post(
+            reverse("wagtailadmin_pages:delete", args=(self.series_page.id,)), data, follow=True
+        )
+
+        # Then
+        # The response should be a redirect back to the delete confirmation page with a warning message
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "This page cannot be deleted because one or more of its children contain headline figures"
+            " that are referenced elsewhere.",
+        )
+
+        # Verify the page still exists, delete was prevented
+        self.series_page.refresh_from_db()
+        self.assertTrue(self.series_page.live)
+
+    def test_user_cannot_unpublish_series_containing_article_with_referenced_figures(self):
+        # When
+        data = nested_form_data({})
+        response = self.client.post(
+            reverse("wagtailadmin_pages:unpublish", args=(self.series_page.id,)), data, follow=True
+        )
+
+        # Then
+        # The response should be a redirect back to the unpublish confirmation page with a warning message
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "This page cannot be unpublished because one or more of its children contain headline figures that are"
+            " referenced elsewhere.",
+        )
+
+        # Verify the page is still live, unpublish was prevented
+        self.series_page.refresh_from_db()
+        self.assertTrue(self.series_page.live)
