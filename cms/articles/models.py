@@ -51,9 +51,11 @@ logger = logging.getLogger(__name__)
 
 FIGURE_ID_SEPARATOR = ","
 
-TABLE_BLOCK_TYPES = [
-    "table",
-]
+TABLE_BLOCK_TYPES: frozenset[str] = frozenset(
+    {
+        "table",
+    }
+)
 
 
 class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
@@ -417,7 +419,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         return {}
 
-    def _get_block_in_types_by_id(self, block_types: list[str] | frozenset[str], block_id: str) -> dict[str, Any]:
+    def _get_block_in_types_by_id(self, block_types: frozenset[str], block_id: str) -> dict[str, Any]:
         """Helper method to find a block by its unique block ID in content for specified block types.
 
         Args:
