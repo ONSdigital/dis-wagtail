@@ -35,7 +35,7 @@
     {# Notes #}
     {% if value.notes_section %}
         <div class="ons-u-mt-s">
-            <h4 class="ons-u-fs-r--b ons-u-mb-2xs">Notes</h4>
+            <h4 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Notes") }}</h4>
             <div>{{ value.notes_section|richtext }}</div>
         </div>
     {% endif %}
@@ -43,11 +43,11 @@
     {# Download #}
     {% if value.download %}
         <div class="ons-u-mt-s">
-            <h5 class="ons-u-fs-r--b ons-u-mb-2xs">Download {{ value.figure_title or 'image' }}</h5>
+            <h5 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Download") }} {{ value.figure_title or 'image' }}</h5>
             <a href= "{{ download_url }}">
                 {{ file_type }}{% if file_size_kb %} ({{ file_size_kb }}KB){% endif %}
             </a>
         </div>
     {% endif %}
-    {# fmt:off #}
 </div>
+{# fmt:off #}
