@@ -223,7 +223,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return format_datasets_as_document_list(self.datasets)
 
     @cached_property
-    def table_of_contents(self) -> list[dict[str, str | object]]:
+    def table_of_contents(self) -> list[dict[str, Any]]:
         """Table of contents formatted to Design System specs."""
         items = [{"url": "#summary", "text": _("Summary")}]
 
@@ -268,7 +268,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return bundle
 
     @property
-    def live_status(self) -> Optional[ReleaseStatus]:
+    def live_status(self) -> ReleaseStatus | None:
         if not self.pk:
             return None
         # We just want one field, so we don't use live_revision
@@ -277,7 +277,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return live_page.status if live_page else None
 
     @property
-    def live_notice(self) -> Optional[str]:
+    def live_notice(self) -> str | None:
         if not self.pk:
             return None
         live_page = ReleaseCalendarPage.objects.filter(pk=self.pk).live().only("notice").first()

@@ -21,6 +21,9 @@ class BundleContentItemState(StrEnum):
             return self.value.lower() == other.lower()
         return super().__eq__(other)
 
+    def __hash__(self) -> int:
+        return hash(self.value)
+
 
 ACTIVE_BUNDLE_STATUSES = [BundleStatus.DRAFT, BundleStatus.IN_REVIEW, BundleStatus.APPROVED]
 ACTIVE_BUNDLE_STATUS_CHOICES = [

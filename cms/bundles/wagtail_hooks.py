@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from typing import TYPE_CHECKING, Any, Union, cast
 
 from django.db.models import QuerySet
@@ -5,7 +6,7 @@ from django.urls import include, path
 from django.utils.functional import cached_property
 from wagtail import hooks
 from wagtail.admin.ui.components import Component
-from wagtail.admin.widgets import PageListingButton
+from wagtail.admin.ui.menus.pages import PageMenuItem
 from wagtail.log_actions import LogFormatter
 from wagtail.permission_policies import ModelPermissionPolicy
 
@@ -17,8 +18,6 @@ from .viewsets.bundle_chooser import bundle_chooser_viewset
 from .viewsets.bundle_page_chooser import bundle_page_chooser_viewset
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from django.http import HttpRequest
     from django.urls import URLPattern
     from django.urls.resolvers import URLResolver
@@ -38,21 +37,19 @@ def register_viewset() -> list:
     return [bundle_viewset, bundle_chooser_viewset, bundle_page_chooser_viewset]
 
 
-class PageAddToBundleButton(PageListingButton):
+class PageAddToBundleButton(PageMenuItem):
     """Defines the 'Add to Bundle' button to use in different contexts in the admin."""
 
     label = "Add to Bundle"
     icon_name = "boxes-stacked"
-    aria_label_format = "Add '%(title)s' to a bundle"
     url_name = "bundles:add_to_bundle"
 
-    @property
-    def permission_policy(self) -> ModelPermissionPolicy:
+    @cached_property
+    def bundle_permission_policy(self) -> ModelPermissionPolicy:
         """Informs the permission policy to use Bundle-derived model permissions."""
         return ModelPermissionPolicy(Bundle)
 
-    @property
-    def show(self) -> bool:
+    def is_shown(self, user: "User") -> bool:
         """Determines whether the button should be shown.
 
         We only want it for pages inheriting from BundledPageMixin that are not in an active bundle.
@@ -63,29 +60,39 @@ class PageAddToBundleButton(PageListingButton):
         if self.page.in_active_bundle:
             return False
 
+        page: Page = self.page  # needed to appease mypy
         # Note: limit to pages that are not in an active bundle
         can_show: bool = (
-            self.page_perms.can_edit() or self.page_perms.can_publish()
-        ) and self.permission_policy.user_has_any_permission(self.user, ["add", "change", "delete"])
+            page.permissions_for_user(user).can_edit() or page.permissions_for_user(user).can_publish()
+        ) and self.bundle_permission_policy.user_has_any_permission(user, ["add", "change", "delete"])
         return can_show
 
 
 @hooks.register("register_page_header_buttons")
-def page_header_buttons(page: "Page", user: "User", view_name: str, next_url: str | None = None) -> PageListingButton:  # pylint: disable=unused-argument
+def page_header_buttons(
+    page: "Page",
+    user: "User",  # pylint: disable=unused-argument
+    view_name: str,  # pylint: disable=unused-argument
+    next_url: str | None = None,
+) -> Generator[PageAddToBundleButton]:
     """Registers the add to bundle button in the buttons shown in the page add/edit header.
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-page-header-buttons.
     """
-    yield PageAddToBundleButton(page=page, user=user, priority=10, next_url=next_url)
+    yield PageAddToBundleButton(page=page, priority=10, next_url=next_url)
 
 
 @hooks.register("register_page_listing_buttons")
-def page_listing_buttons(page: "Page", user: "User", next_url: str | None = None) -> PageListingButton:
+def page_listing_buttons(
+    page: "Page",
+    user: "User",  # pylint: disable=unused-argument
+    next_url: str | None = None,
+) -> Generator[PageAddToBundleButton]:
     """Registers the add to bundle button in the buttons shown in the page listing.
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register_page_listing_buttons.
     """
-    yield PageAddToBundleButton(page=page, user=user, priority=10, next_url=next_url)
+    yield PageAddToBundleButton(page=page, priority=10, next_url=next_url)
 
 
 @hooks.register("register_admin_urls")
@@ -125,7 +132,7 @@ class LatestBundlesPanel(Component):
 
         return queryset
 
-    def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
+    def get_context_data(self, parent_context: "RenderContext | None" = None) -> "RenderContext | None":
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
@@ -172,7 +179,7 @@ class BundlesInReviewPanel(Component):
         # for everyone else, only bundles in the same preview team they are in
         return queryset.filter(teams__team__in=self.request.user.active_team_ids).distinct()  # type: ignore[union-attr]
 
-    def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
+    def get_context_data(self, parent_context: "RenderContext | None" = None) -> "RenderContext | None":
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request

@@ -1,5 +1,5 @@
 import typing
-from typing import Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from django.db import IntegrityError, models
 from django.db.models import QuerySet, UniqueConstraint
@@ -10,6 +10,9 @@ from wagtail.admin.panels import FieldPanel
 from wagtail.search import index
 
 BASE_TOPIC_DEPTH = 2
+
+if TYPE_CHECKING:
+    from django.db.models import BaseConstraint
 
 
 class TopicManager(models.Manager):
@@ -78,7 +81,7 @@ class Topic(index.Indexed, MP_Node):
         """
         if self.depth <= BASE_TOPIC_DEPTH:
             return None
-        return typing.cast(Optional[Topic], super().get_parent(*args, **kwargs))
+        return typing.cast(Topic | None, super().get_parent(*args, **kwargs))
 
     def get_base_parent(self) -> "Topic":
         """Return the base level parent topic (top level, with no parent topics), or self if this topic is base depth
@@ -121,6 +124,6 @@ class GenericPageToTaxonomyTopic(models.Model):
     panels: ClassVar[list[FieldPanel]] = [FieldPanel("topic")]
 
     class Meta:
-        constraints: ClassVar[list[UniqueConstraint]] = [
+        constraints: ClassVar[list["BaseConstraint"]] = [
             UniqueConstraint(fields=["page", "topic"], name="unique_generic_taxonomy")
         ]

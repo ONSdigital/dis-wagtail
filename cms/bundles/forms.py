@@ -63,10 +63,10 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 # no changes are made
                 self.formsets: dict[str, Any] = {}
             else:
-                # we're initializing the form with GET, tell th InlinePanel formsets they cannot
+                # we're initializing the form with GET, tell the InlinePanel formsets they cannot
                 # add more items, so the "Add X" button is not shown
                 for formset in self.formsets.values():
-                    formset.max_num = len(formset.forms)
+                    formset.max_num = formset.min_num = len(formset.forms)
 
         # fully hide and disable the approved_at/by fields to prevent form tampering
         self.fields["approved_at"].disabled = True

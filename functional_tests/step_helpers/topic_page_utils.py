@@ -20,14 +20,14 @@ class ArticleDataDict(TypedDict, total=False):
     series: str
     article: str
     release_date: str
-    topic: Optional[str]
+    topic: str | None
 
 
 class MethodologyDataDict(TypedDict, total=False):
     title: str
     methodology: str
     publication_date: str
-    topic: Optional[str]
+    topic: str | None
 
 
 class TopicContentBuilder:

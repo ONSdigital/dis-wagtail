@@ -1,4 +1,5 @@
-from behave import given, step, then, when  # pylint: disable=no-name-in-module
+# pylint: disable=not-callable
+from behave import given, step, then, when
 from behave.runner import Context
 from django.conf import settings
 from django.urls import reverse

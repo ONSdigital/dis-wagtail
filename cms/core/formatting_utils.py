@@ -47,7 +47,7 @@ def _format_external_link(page_dict: "ExternalArticleDict") -> DocumentListItem:
 
 
 def _format_page_object(
-    page: "Page", request: Optional["HttpRequest"] = None, custom_title: Optional[str] = None
+    page: "Page", request: Optional["HttpRequest"] = None, custom_title: str | None = None
 ) -> DocumentListItem:
     """Format page object into DocumentListItem."""
     page_datum: DocumentListItem = format_as_document_list_item(

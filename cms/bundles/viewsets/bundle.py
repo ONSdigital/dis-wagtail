@@ -93,7 +93,7 @@ class BundleCreateView(CreateView):
 
         response: HttpResponseBase = self.save_action()
 
-        hook_response: Optional[HttpResponseBase] = self.run_after_hook()
+        hook_response: HttpResponseBase | None = self.run_after_hook()
         if hook_response is not None:
             return hook_response
 
@@ -182,7 +182,7 @@ class BundleEditView(EditView):
 
         response: HttpResponseBase = self.save_action()
 
-        hook_response: Optional[HttpResponseBase] = self.run_after_hook()
+        hook_response: HttpResponseBase | None = self.run_after_hook()
         if hook_response is not None:
             return hook_response
 

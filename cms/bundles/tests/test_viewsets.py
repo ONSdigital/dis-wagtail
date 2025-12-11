@@ -479,13 +479,22 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.post_with_action_and_test("action-approve", BundleStatus.APPROVED, self.inspect_url)
 
         response = self.client.get(self.edit_url)
-        self.assertNotContains(response, "Choose Release Calendar page")
-        self.assertNotContains(response, "Add page")
-        self.assertNotContains(response, "Add dataset")
-        self.assertNotContains(response, "Add preview team")
 
-        self.assertContains(response, "Statistical article page")
-        self.assertContains(response, self.statistical_article_page.get_admin_display_title())
+        self.assertContains(response, "content-locked")
+        form = response.context["form"]
+        self.assertTrue(form.fields["name"].disabled)
+        self.assertTrue(form.fields["release_calendar_page"].disabled)
+        self.assertEqual(form.formsets["bundled_pages"].max_num, 1)
+        self.assertEqual(form.formsets["bundled_pages"].min_num, 1)
+        self.assertEqual(len(form.formsets["bundled_pages"].forms), 1)
+
+        self.assertEqual(form.formsets["bundled_datasets"].max_num, 0)
+        self.assertEqual(form.formsets["bundled_datasets"].min_num, 0)
+        self.assertEqual(len(form.formsets["bundled_datasets"].forms), 0)
+
+        self.assertEqual(form.formsets["teams"].max_num, 0)
+        self.assertEqual(form.formsets["teams"].min_num, 0)
+        self.assertEqual(len(form.formsets["teams"].forms), 0)
 
     def test_view_passes_access_token_to_form(self):
         response = self.client.get(self.edit_url)

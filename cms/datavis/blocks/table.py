@@ -6,8 +6,8 @@ from django.forms.widgets import Media
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
+from wagtail.admin.telepath import register
 from wagtail.blocks.struct_block import StructValue
-from wagtail.telepath import register
 from wagtailtables.blocks import TableAdapter, TableBlock
 
 from cms.datavis.utils import numberfy
