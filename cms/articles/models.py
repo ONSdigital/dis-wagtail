@@ -182,6 +182,20 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         response: HttpResponse = self.release(request, slug, version=version, chart_id=chart_id)
         return response
 
+    @path("editions/<str:slug>/download-table/<str:table_id>/")
+    def download_table(self, request: "HttpRequest", slug: str, table_id: str) -> "HttpResponse":
+        if not (edition := StatisticalArticlePage.objects.live().child_of(self).filter(slug=slug).first()):
+            raise Http404
+        response: HttpResponse = edition.download_table(request, table_id)
+        return response
+
+    @path("editions/<str:slug>/versions/<int:version>/download-table/<str:table_id>/")
+    def download_table_with_version(
+        self, request: "HttpRequest", slug: str, version: int, table_id: str
+    ) -> "HttpResponse":
+        response: HttpResponse = self.release(request, slug, version=version, table_id=table_id)
+        return response
+
 
 # pylint: disable=too-many-public-methods
 class StatisticalArticlePage(  # type: ignore[django-manager-missing]
@@ -403,11 +417,11 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         return {}
 
-    def _get_block_in_types_by_id(self, block_types: list[str], block_id: str) -> Optional[dict[str, Any]]:
+    def _get_block_in_types_by_id(self, block_types: list[str] | frozenset[str], block_id: str) -> dict[str, Any]:
         """Helper method to find a block by its unique block ID in content for specified block types.
 
         Args:
-            block_types: The list of block types to search within.
+            block_types: The list or frozenset of block types to search within.
             block_id: The unique block ID of the block to find.
 
         Returns:
@@ -453,6 +467,38 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             The data table block's value as a dictionary, or an empty dict if not found.
         """
         return self._get_block_in_types_by_id(TABLE_BLOCK_TYPES, table_id)
+
+    def get_table_data_for_csv(self, table_id: str) -> list[list[str | int | float]]:
+        """Extracts table data in CSV-ready format from TinyTableBlock.
+
+        Flattens structured cell data (headers + rows) into 2D array.
+        Extracts only the "value" field from each cell object.
+
+        Args:
+            table_id: The unique block ID of the table to extract data from.
+
+        Returns:
+            A 2D list of values suitable for CSV export (headers first, then rows).
+
+        Raises:
+            ValueError: If table not found or has no data.
+        """
+        table_data = self.get_table(table_id)
+        if not table_data:
+            raise ValueError(f"Table with ID {table_id} not found")
+
+        data_dict = table_data.get("data", {})
+        csv_data = []
+
+        # Headers first, then rows - extract only "value" from cell objects
+        for header_row in data_dict.get("headers", []):
+            csv_data.append([cell.get("value", "") for cell in header_row])
+        for row in data_dict.get("rows", []):
+            csv_data.append([cell.get("value", "") for cell in row])
+
+        if not csv_data:
+            raise ValueError(f"Table {table_id} has no data")
+        return csv_data
 
     @property
     def headline_figures_figure_ids_list(self) -> list[str]:
@@ -696,9 +742,14 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         page = revision.as_object()
 
         chart_id = kwargs.pop("chart_id", None)
+        table_id = kwargs.pop("table_id", None)
 
         if chart_id:
             download_response: HttpResponse = page.download_chart(request, chart_id)
+            return download_response
+
+        if table_id:
+            download_response = page.download_table(request, table_id)
             return download_response
 
         # Get corrections and notices for this specific version
@@ -779,8 +830,35 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             )
             raise Http404 from e
 
-        response = create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))
-        return response
+        return create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))
+
+    @path("download-table/<str:table_id>/")
+    def download_table(self, request: "HttpRequest", table_id: str) -> "HttpResponse":
+        """Serves a table download request for a specific table in the article.
+
+        Args:
+            request: The HTTP request object.
+            table_id: The unique block ID of the table to download.
+
+        Returns:
+            An HTTP response with the table CSV download.
+        """
+        try:
+            csv_data = self.get_table_data_for_csv(table_id)
+        except ValueError as e:
+            logger.warning(
+                "Failed to extract table data: %s",
+                e,
+                extra={
+                    "table_id": table_id,
+                    "page_id": self.id,
+                    "page_slug": self.slug,
+                },
+            )
+            raise Http404 from e
+        table_data = self.get_table(table_id)
+        title = table_data.get("title") or table_data.get("caption") or "table"
+        return create_data_csv_download_response_from_data(csv_data, title=title)
 
     def get_url_parts(self, request: Optional["HttpRequest"] = None) -> tuple[int, str | None, str | None] | None:
         url_parts = super().get_url_parts(request=request)
