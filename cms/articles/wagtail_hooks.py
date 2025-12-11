@@ -1,14 +1,18 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
+from django.urls import include, path
 from wagtail import hooks
 from wagtail.admin import messages
 
+from cms.articles import admin_urls
 from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage, StatisticalArticlePage
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse
+    from django.urls import URLPattern
+    from django.urls.resolvers import URLResolver
     from wagtail.models import Page
 
     from cms.topics.models import TopicPage
@@ -63,3 +67,12 @@ def after_create_topic_page(request: "HttpRequest", topic_page: "TopicPage") -> 
 
     for fn in hooks.get_hooks("after_create_page"):
         fn(request, articles_index)
+
+
+@hooks.register("register_admin_urls")
+def register_admin_urls() -> list[Union["URLPattern", "URLResolver"]]:
+    """Registers the admin urls for Articles.
+
+    @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-urls.
+    """
+    return [path("articles/", include(admin_urls))]
