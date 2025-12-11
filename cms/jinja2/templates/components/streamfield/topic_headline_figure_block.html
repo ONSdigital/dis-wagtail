@@ -10,13 +10,13 @@
             "title": {
                 "id": figure.figure_id + "-card",
                 "headingLevel": 3,
-                "text": figure.title if figure.title else error_text,
-                "url": figure.url if figure.url else "",
+                "text": figure.title or error_text,
+                "url": figure.url or "",
             },
             "body":{
                 "id": figure.figure_id + "-text",
-                "figure": figure.figure if figure.figure else error_text,
-                "text": figure.supporting_text if figure.supporting_text else error_supporting_text,
+                "figure": figure.figure or error_text,
+                "text": figure.supporting_text or error_supporting_text,
             }
         })
     }}
