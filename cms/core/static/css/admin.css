@@ -5,3 +5,7 @@
 .ons-padding-end {
     padding-inline-end: 1.5rem;
 }
+
+.editor-view.content-locked button[id$='-OPEN_MODAL'] {
+    display: none;
+}
