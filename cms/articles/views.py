@@ -37,6 +37,45 @@ def user_can_access_chart_download(user: "User") -> bool:
     return user.has_perm(get_bundle_permission("view"))
 
 
+def get_revision_page_for_request(request: "HttpRequest", page_id: int, revision_id: int) -> Page:
+    """Get the page as it was at the specified revision.
+
+    Args:
+        request: The HTTP request.
+        page_id: The ID of the page.
+        revision_id: The ID of the revision.
+
+    Returns:
+        The page object at the specified revision.
+
+    Raises:
+        PermissionDenied: If user lacks edit/publish permissions on the page
+            or bundle preview permissions.
+        Http404: If the page or revision does not exist.
+    """
+    # Get the page and check permissions
+    page = get_object_or_404(Page, id=page_id).specific
+
+    # Check standard Wagtail page permissions
+    perms = page.permissions_for_user(request.user)
+    has_page_perms = perms.can_publish() or perms.can_edit()
+
+    # Check bundle preview permissions (only if page is bundled)
+    has_bundle_preview = False
+    if not has_page_perms and isinstance(page, BundledPageMixin) and is_page_ready_to_preview(page):
+        has_bundle_preview = any(user_can_preview_bundle(request.user, bundle) for bundle in page.bundles.all())
+
+    if not (has_page_perms or has_bundle_preview):
+        raise PermissionDenied
+
+    # Get the revision - use object_id to match the page
+    # Revisions use object_id (as string) to reference the page
+    revision = get_object_or_404(Revision.page_revisions, id=revision_id, object_id=str(page_id))
+
+    # Get the page as it was at this revision
+    return revision.as_object()
+
+
 @method_decorator(user_passes_test(user_can_access_chart_download), name="dispatch")
 class RevisionChartDownloadView(View):
     """Admin view to download chart data from a page revision.
@@ -58,33 +97,10 @@ class RevisionChartDownloadView(View):
             CSV file download response.
 
         Raises:
-            PermissionDenied: If user lacks edit/publish permissions on the page
-                or bundle preview permissions.
-            Http404: If page, revision, or chart not found.
+            Http404: If chart not found or data is invalid.
         """
-        # Get the page and check permissions
-        page = get_object_or_404(Page, id=page_id).specific
-
-        # Check standard Wagtail page permissions
-        perms = page.permissions_for_user(request.user)
-        has_page_perms = perms.can_publish() or perms.can_edit()
-
-        # Check bundle preview permissions (only if page is bundled)
-        has_bundle_preview = False
-        if not has_page_perms and isinstance(page, BundledPageMixin) and is_page_ready_to_preview(page):
-            has_bundle_preview = any(user_can_preview_bundle(request.user, bundle) for bundle in page.bundles.all())
-
-        if not (has_page_perms or has_bundle_preview):
-            raise PermissionDenied
-
-        # Get the revision - use object_id to match the page
-        # Revisions use object_id (as string) to reference the page
-        revision = get_object_or_404(Revision.page_revisions, id=revision_id, object_id=str(page_id))
-
         # Get the page as it was at this revision
-        revision_page = revision.as_object()
-
-        # Get the chart data using the page's get_chart method
+        revision_page = get_revision_page_for_request(request, page_id, revision_id)
         chart_data = revision_page.get_chart(chart_id)
         if not chart_data:
             raise Http404
@@ -98,7 +114,7 @@ class RevisionChartDownloadView(View):
                 extra={
                     "chart_id": chart_id,
                     "page_id": page_id,
-                    "page_slug": page.slug,
+                    "page_slug": revision_page.slug,
                 },
             )
             raise Http404 from e

@@ -51,6 +51,10 @@ logger = logging.getLogger(__name__)
 
 FIGURE_ID_SEPARATOR = ","
 
+TABLE_BLOCK_TYPES = [
+    "table",
+]
+
 
 class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
     max_count_per_parent = 1
@@ -399,6 +403,35 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         return {}
 
+    def _get_block_in_types_by_id(self, block_types: list[str], block_id: str) -> Optional[dict[str, Any]]:
+        """Helper method to find a block by its unique block ID in content for specified block types.
+
+        Args:
+            block_types: The list of block types to search within.
+            block_id: The unique block ID of the block to find.
+
+        Returns:
+            The block's value as a dictionary, or an empty dict if not found.
+
+        Note:
+            Block IDs are automatically assigned by Wagtail when content is created
+            through the admin interface. Blocks without IDs (e.g., programmatically
+            created test data) cannot be retrieved by this method.
+        """
+        for section_block in self.content or []:
+            if section_block.block_type != "section":
+                continue
+            section_content = section_block.value.get("content", [])
+            for content_block in section_content:
+                if (
+                    content_block.block_type in block_types
+                    and content_block.id is not None
+                    and str(content_block.id) == block_id
+                ):
+                    return dict(content_block.value)
+
+        return {}
+
     def get_chart(self, chart_id: str) -> dict[str, Any]:
         """Finds a chart block by its unique block ID in content.
 
@@ -406,28 +439,20 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             chart_id: The unique block ID of the chart to find
 
         Returns:
-            The chart block's value as a dictionary, or an empty dict if not found
-
-        Note:
-            Block IDs are automatically assigned by Wagtail when content is created
-            through the admin interface. Blocks without IDs (e.g., programmatically
-            created test data) cannot be retrieved by this method.
+            The chart block's value as a dictionary, or an empty dict if not found.
         """
-        # Search in content sections
+        return self._get_block_in_types_by_id(CHART_BLOCK_TYPES, chart_id)
 
-        for section_block in self.content or []:
-            if section_block.block_type != "section":
-                continue
-            section_content = section_block.value.get("content", [])
-            for content_block in section_content:
-                if (
-                    content_block.block_type in CHART_BLOCK_TYPES
-                    and content_block.id is not None
-                    and str(content_block.id) == chart_id
-                ):
-                    return dict(content_block.value)
+    def get_table(self, table_id: str) -> dict[str, Any]:
+        """Finds a data table block by its unique block ID in content.
 
-        return {}
+        Args:
+            table_id: The unique block ID of the data table to find
+
+        Returns:
+            The data table block's value as a dictionary, or an empty dict if not found.
+        """
+        return self._get_block_in_types_by_id(TABLE_BLOCK_TYPES, table_id)
 
     @property
     def headline_figures_figure_ids_list(self) -> list[str]:
