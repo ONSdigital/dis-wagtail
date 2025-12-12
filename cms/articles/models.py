@@ -501,7 +501,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         ]
 
     @property
-    def figures_in_use_with_no_fallback(self) -> set[str]:
+    def figures_used_by_ancestor_with_no_fallback(self) -> set[str]:
         """Returns the set of figure IDs used by the ancestor topic page, for which there are no values to fall back on
         from the previous to latest article in the series.
         """
