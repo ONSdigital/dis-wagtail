@@ -40,7 +40,7 @@ class SearchSignalsTest(TestCase):
         cls.included_page = StatisticalArticlePageFactory()
 
         cls.en = Locale.get_default()
-        cls.cy, _ = Locale.objects.get_or_create(language_code="cy")
+        cls.cy = Locale.objects.get(language_code="cy")
         cls.en_page = InformationPageFactory(locale=cls.en)
         cls.cy_page = InformationPageFactory(locale=cls.cy)
 

@@ -45,7 +45,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
         ]
 
         cls.en = Locale.get_default()
-        cls.cy, _ = Locale.objects.get_or_create(language_code="cy")
+        cls.cy = Locale.objects.get(language_code="cy")
 
         # English pages
         cls.en_information_page = InformationPageFactory(locale=cls.en)
