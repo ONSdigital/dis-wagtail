@@ -1006,11 +1006,7 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = {
 }
 
 # Allow-list of language codes whose pages are included in search indexing
-SEARCH_INDEX_INCLUDED_LANGUAGES = [
-    code.strip().lower()
-    for code in env.get("SEARCH_INDEX_INCLUDED_LANGUAGES", LANGUAGE_CODE).split(",")
-    if code.strip() and code.strip().lower() in _valid_language_codes
-]
+SEARCH_INDEX_INCLUDED_LANGUAGES = env.get("SEARCH_INDEX_INCLUDED_LANGUAGES", LANGUAGE_CODE).split(",")
 
 # Allowed domains for linking to other parts of the ONS website (for datasets or time series)
 ONS_ALLOWED_LINK_DOMAINS = env.get("ONS_ALLOWED_LINK_DOMAINS", "ons.gov.uk").split(",")

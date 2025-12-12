@@ -177,16 +177,3 @@ class SearchIndexIncludedLanguagesCheckTests(TestCase):
         invalid_error = next(e for e in errors if e.id == "search.E004")
         self.assertIn("invalid codes", invalid_error.hint.lower())
         self.assertIn("fr", invalid_error.hint)
-
-    @override_settings(
-        LANGUAGES=(("en-gb", "English"), ("cy", "Welsh")),
-        SEARCH_INDEX_INCLUDED_LANGUAGES=["EN-GB", "CY"],
-    )
-    def test_non_lowercase_codes_raises_error(self):
-        errors = check_search_index_included_languages(app_configs=None)
-        # Expect exactly one error for non-lowercase
-        self.assertTrue(any(e.id == "search.E005" for e in errors))
-        lowercase_error = next(e for e in errors if e.id == "search.E005")
-        self.assertIn("lowercase", lowercase_error.msg.lower())
-        self.assertIn("EN-GB", lowercase_error.hint)
-        self.assertIn("CY", lowercase_error.hint)

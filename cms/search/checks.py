@@ -98,15 +98,12 @@ def check_search_index_included_languages(app_configs: Iterable["AppConfig"] | N
     # Valid codes from LANGUAGES (tuple of (code, name))
     valid_codes = {code for code, _ in getattr(settings, "LANGUAGES", [])}
 
-    # Check normalisation and membership
+    # Check membership
     invalid_codes: list[str] = []
-    non_lowercase: list[str] = []
 
     for code in included:
         if code not in valid_codes:
             invalid_codes.append(code)
-        if code != code.lower():
-            non_lowercase.append(code)
 
     if invalid_codes:
         errors.append(
@@ -117,18 +114,6 @@ def check_search_index_included_languages(app_configs: Iterable["AppConfig"] | N
                     f"Valid codes: {', '.join(sorted(valid_codes))}."
                 ),
                 id="search.E004",
-            )
-        )
-
-    if non_lowercase:
-        errors.append(
-            Error(
-                "SEARCH_INDEX_INCLUDED_LANGUAGES must be lowercase for consistent matching.",
-                hint=(
-                    f"Normalise these codes to lowercase: {', '.join(sorted(non_lowercase))}. "
-                    "Values are parsed and lowercased in settings, but a mismatched override may cause issues."
-                ),
-                id="search.E005",
             )
         )
 
