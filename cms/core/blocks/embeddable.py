@@ -55,7 +55,7 @@ class ImageBlock(blocks.StructBlock):
 
             context["file_type"] = file_type
             context["file_size_kb"] = file_size_kb
-            context["download_url"] = download_filename
+            context["download_filename"] = download_filename
 
         return context
 
