@@ -248,25 +248,3 @@ class DocumentServeView(View):
         response["X-Content-Type-Options"] = "nosniff"
 
         return response
-
-
-def download_image(request: "HttpRequest", image_id: int, filename: str) -> "FileResponse":
-    """Serve an image file as a download with a custom filename.
-
-    This allows the download attribute to work reliably by setting
-    Content-Disposition header server-side, bypassing browser restrictions
-    on cross-origin downloads.
-    """
-    image = get_object_or_404(get_image_model(), pk=image_id)
-
-    try:
-        image.file.open("rb")
-    except FileNotFoundError as exc:
-        raise Http404("Image file not found") from exc
-
-    response = FileResponse(image.file, as_attachment=True, filename=filename)
-    response["Content-Security-Policy"] = "default-src 'none'"
-    response["X-Content-Type-Options"] = "nosniff"
-    add_never_cache_headers(response)
-
-    return response

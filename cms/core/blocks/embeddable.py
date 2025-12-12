@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import filesizeformat
-from django.urls import reverse
 from wagtail import blocks
 from wagtail.blocks import StructBlockValidationError
 from wagtail.documents.blocks import DocumentChooserBlock
@@ -56,10 +55,7 @@ class ImageBlock(blocks.StructBlock):
 
             context["file_type"] = file_type
             context["file_size_kb"] = file_size_kb
-            context["download_url"] = reverse(
-                "image_download",
-                kwargs={"image_id": image.pk, "filename": download_filename},
-            )
+            context["download_url"] = download_filename
 
         return context
 
