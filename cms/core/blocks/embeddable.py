@@ -45,18 +45,6 @@ class ImageBlock(blocks.StructBlock):
             context["file_type"] = file_type
             context["file_size_kb"] = file_size_kb
 
-            # Create safe download filename
-            title = value.get("figure_title") or "image"
-            # Replace non-alphanumeric chars with underscore
-            safe_filename = re.sub(r"[^\w\-]", "_", title)
-            # Collapse multiple underscores and remove leading/trailing underscores
-            safe_filename = re.sub(r"_+", "_", safe_filename).strip("_")
-            download_filename = f"{safe_filename}.{ext.lstrip('.').lower()}"
-
-            context["file_type"] = file_type
-            context["file_size_kb"] = file_size_kb
-            context["download_filename"] = download_filename
-
         return context
 
     class Meta:
