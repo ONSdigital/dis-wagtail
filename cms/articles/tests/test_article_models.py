@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import math
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
@@ -21,6 +22,7 @@ from cms.core.tests.utils import extract_datalayer_pushed_values
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.datasets.tests.factories import DatasetFactory
+from cms.datavis.constants import CHART_BLOCK_TYPES
 from cms.datavis.tests.factories import TableDataFactory
 from cms.topics.models import TopicPage
 
@@ -629,6 +631,157 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         figure = self.page.get_headline_figure("invalid_id")
         self.assertEqual(figure, {})
 
+    def test_get_chart_from_content(self):
+        """Test get_chart returns the correct chart from content sections."""
+        table_data = TableDataFactory(
+            table_data=[
+                ["", "Series 1", "Series 2"],
+                ["2020", "100", "150"],
+                ["2021", "120", "180"],
+            ]
+        )
+
+        # Create a StreamValue with chart blocks
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Test Line Chart",
+                                "subtitle": "Line chart subtitle",
+                                "audio_description": "Chart showing trend over time",
+                                "table": table_data,
+                                "theme": "primary",
+                                "show_legend": True,
+                                "x_axis": {"title": "Year"},
+                                "y_axis": {"title": "Value"},
+                            },
+                            "id": "test-chart-id-1",
+                        },
+                        {
+                            "type": "bar_column_chart",
+                            "value": {
+                                "title": "Test Bar Chart",
+                                "subtitle": "Bar chart subtitle",
+                                "audio_description": "Chart showing comparison",
+                                "table": table_data,
+                                "theme": "secondary",
+                                "show_legend": False,
+                                "x_axis": {"title": "Category"},
+                                "y_axis": {"title": "Amount"},
+                            },
+                            "id": "test-chart-id-2",
+                        },
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        # Test retrieving the line chart
+        chart = self.page.get_chart("test-chart-id-1")
+        self.assertEqual(chart["title"], "Test Line Chart")
+        self.assertEqual(chart["subtitle"], "Line chart subtitle")
+        self.assertEqual(chart["theme"], "primary")
+
+        # Test retrieving the bar chart
+        chart = self.page.get_chart("test-chart-id-2")
+        self.assertEqual(chart["title"], "Test Bar Chart")
+        self.assertEqual(chart["theme"], "secondary")
+        self.assertEqual(chart["show_legend"], False)
+
+    def test_get_chart_not_found(self):
+        """Test get_chart returns empty dict when chart_id is not found."""
+        table_data = TableDataFactory()
+
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Test Chart",
+                                "audio_description": "Test description",
+                                "table": table_data,
+                                "theme": "primary",
+                                "show_legend": True,
+                                "x_axis": {"title": ""},
+                                "y_axis": {"title": ""},
+                            },
+                            "id": "known-chart-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        # Test with invalid chart_id
+        chart = self.page.get_chart("unknown-chart-id")
+        self.assertEqual(chart, {})
+
+    def test_get_chart_with_no_content(self):
+        """Test get_chart returns empty dict when page has no content."""
+        self.page.content = []
+        self.page.save_revision().publish()
+
+        chart = self.page.get_chart("any-chart-id")
+        self.assertEqual(chart, {})
+
+    def test_get_chart_with_multiple_chart_types(self):
+        """Test get_chart works with all chart types."""
+        table_data = TableDataFactory()
+
+        chart_types = [
+            "line_chart",
+            "bar_column_chart",
+            "bar_column_confidence_interval_chart",
+            "scatter_plot",
+            "area_chart",
+        ]
+
+        content_blocks = []
+        for i, chart_type in enumerate(chart_types):
+            content_blocks.append(
+                {
+                    "type": chart_type,
+                    "value": {
+                        "title": f"Chart {i}",
+                        "audio_description": f"Description {i}",
+                        "table": table_data,
+                        "theme": "primary",
+                        "show_legend": True,
+                        "x_axis": {"title": ""},
+                        "y_axis": {"title": ""},
+                    },
+                    "id": f"chart-id-{i}",
+                }
+            )
+
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Multiple Charts Section",
+                    "content": content_blocks,
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        # Test that each chart can be retrieved
+        for i in range(len(chart_types)):
+            chart = self.page.get_chart(f"chart-id-{i}")
+            self.assertEqual(chart["title"], f"Chart {i}")
+            self.assertEqual(chart["audio_description"], f"Description {i}")
+
     def test_headline_figures_shown(self):
         """Test that the headline figures are shown in the template."""
         response = self.client.get(self.page_url)
@@ -931,3 +1084,14 @@ class PreviousReleasesWithPaginationPagesTestCase(TestCase):
         for page, data in scenarios.items():
             with self.subTest(page=page):  # Helps identify which page scenario fails
                 self.assert_pagination(page, data["expected_contains"], data["expected_not_contains"])
+
+
+class ChartBlockTypesTestCase(TestCase):
+    """Test case to sense-check computed constant value."""
+
+    def test_known_type_in_chart_block_types(self):
+        self.assertIn("line_chart", CHART_BLOCK_TYPES)
+        self.assertIn("area_chart", CHART_BLOCK_TYPES)
+
+    def test_known_non_chart_type_not_in_chart_block_types(self):
+        self.assertNotIn("rich_text", CHART_BLOCK_TYPES)
