@@ -1,3 +1,4 @@
+import os
 import re
 from typing import TYPE_CHECKING, ClassVar
 from urllib.parse import urlparse
@@ -18,7 +19,33 @@ class ImageBlock(blocks.StructBlock):
     """Image block with caption."""
 
     image = ImageChooserBlock()
-    caption = blocks.CharBlock(required=False)
+    figure_title = blocks.CharBlock(required=False)
+    figure_subtitle = blocks.CharBlock(required=False)
+    supporting_text = blocks.TextBlock(required=False, label="Supporting text (source)")
+    notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
+    download = blocks.BooleanBlock(required=False, label="Show download link for image")
+
+    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+        context: dict = super().get_context(value, parent_context)
+
+        if image := value.get("image"):
+            small = image.get_rendition("width-1024")
+            large = image.get_rendition("width-2048")
+
+            context["small_src"] = small.url
+            context["large_src"] = large.url
+
+            # Get file extension (uppercase, without the dot)
+            _, ext = os.path.splitext(image.file.name)
+            file_type = ext.lstrip(".").upper() or "IMG"
+
+            # Get file size in KB (rounded)
+            file_size_kb = round(large.file.size / 1024) if getattr(large.file, "size", None) else None
+
+            context["file_type"] = file_type
+            context["file_size_kb"] = file_size_kb
+
+        return context
 
     class Meta:
         icon = "image"
