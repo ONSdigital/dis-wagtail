@@ -381,3 +381,122 @@ class RevisionChartDownloadBundlePermissionsTestCase(WagtailTestUtils, TestCase)
 
         # Permission denied redirects with message (Wagtail standard behavior)
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+
+class RevisionTableDownloadViewTestCase(WagtailTestUtils, TestCase):
+    """Test RevisionTableDownloadView for downloading tables from page revisions."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.series = ArticleSeriesPageFactory()
+        cls.article = StatisticalArticlePageFactory(parent=cls.series)
+        cls.article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": {
+                                "title": "Test Table Title",
+                                "caption": "Table caption",
+                                "data": {
+                                    "headers": [[{"value": "Year", "type": "th"}, {"value": "Value", "type": "th"}]],
+                                    "rows": [
+                                        [{"value": "2020", "type": "td"}, {"value": "100", "type": "td"}],
+                                        [{"value": "2021", "type": "td"}, {"value": "150", "type": "td"}],
+                                    ],
+                                },
+                            },
+                            "id": "test-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        cls.article.save_revision().publish()
+        cls.revision_id = cls.article.latest_revision_id
+
+    def setUp(self):
+        self.login()
+
+    def get_download_url(self, page_id=None, revision_id=None, table_id="test-table-id"):
+        """Helper to build the download URL."""
+        return reverse(
+            "articles:revision_table_download",
+            kwargs={
+                "page_id": page_id or self.article.pk,
+                "revision_id": revision_id or self.revision_id,
+                "table_id": table_id,
+            },
+        )
+
+    def test_get_with_valid_table_returns_csv(self):
+        """Test successful table download for superuser."""
+        response = self.client.get(self.get_download_url())
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("test-table-title.csv", response["Content-Disposition"])
+
+        content = response.content.decode("utf-8")
+        self.assertIn("Year", content)
+        self.assertIn("2020", content)
+        self.assertIn("100", content)
+
+    def test_get_with_missing_table_returns_404(self):
+        """Test 404 when table_id does not exist in the revision."""
+        response = self.client.get(self.get_download_url(table_id="nonexistent-table"))
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_get_with_invalid_data_returns_404(self):
+        """Test 404 when table has no data."""
+        self.article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Empty Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": {
+                                "title": "Empty Table",
+                                "data": {"headers": [], "rows": []},
+                            },
+                            "id": "empty-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        draft_revision = self.article.save_revision()
+
+        response = self.client.get(self.get_download_url(revision_id=draft_revision.pk, table_id="empty-table-id"))
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_permission_required(self):
+        """Test table download is denied for anonymous users."""
+        self.client.logout()
+
+        response = self.client.get(self.get_download_url())
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_bundle_preview_permission_allows_access(self):
+        """Test that a bundle viewer can download table CSVs from pages in their bundle."""
+        mark_page_as_ready_for_review(self.article)
+
+        preview_team = TeamFactory(name="Preview Team")
+        bundle = BundleFactory(in_review=True)
+        BundlePageFactory(parent=bundle, page=self.article)
+        BundleTeam.objects.create(parent=bundle, team=preview_team)
+
+        viewer = create_bundle_viewer()
+        viewer.teams.add(preview_team)
+
+        self.client.force_login(viewer)
+        response = self.client.get(self.get_download_url())
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
