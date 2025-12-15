@@ -5,11 +5,6 @@
 
         {{ onsTable(options) }}
 
-        {%- if download_config -%}
-            {% from "components/downloads/_macro.njk" import onsDownloads %}
-            {{ onsDownloads(download_config) }}
-        {%- endif -%}
-
         {%- if source %}<p><strong>{{ _("Source") }}</strong>: {{ source }}</p>{% endif -%}
 
         {%- if footnotes -%}

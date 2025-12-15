@@ -867,7 +867,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             self.assertListEqual(self.block._prepare_cells(cells), expected)  # pylint: disable=protected-access
 
     def test_ons_table_block_includes_download_config_with_context(self):
-        """Test that download_config is added to context when block_id and page are present."""
+        """Test that download config is added to options when block_id and page are present."""
         page = StatisticalArticlePageFactory()
         context = {
             "block_id": "test-block-id",
@@ -877,13 +877,14 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         result = self.block.get_context(self.full_data, parent_context=context)
 
-        self.assertIn("download_config", result)
-        self.assertIn("title", result["download_config"])
-        self.assertIn("itemsList", result["download_config"])
-        self.assertEqual(result["download_config"]["title"], "Download: The table")
-        self.assertEqual(len(result["download_config"]["itemsList"]), 1)
-        self.assertIn("CSV", result["download_config"]["itemsList"][0]["text"])
-        self.assertIn("url", result["download_config"]["itemsList"][0])
+        self.assertIn("options", result)
+        self.assertIn("download", result["options"])
+        self.assertIn("title", result["options"]["download"])
+        self.assertIn("itemsList", result["options"]["download"])
+        self.assertEqual(result["options"]["download"]["title"], "Download: The table")
+        self.assertEqual(len(result["options"]["download"]["itemsList"]), 1)
+        self.assertIn("CSV", result["options"]["download"]["itemsList"][0]["text"])
+        self.assertIn("url", result["options"]["download"]["itemsList"][0])
 
     def test_ons_table_block_builds_preview_url_correctly(self):
         """Test that preview URL is built correctly for draft content."""
@@ -903,7 +904,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         result = self.block.get_context(self.full_data, parent_context=context)
 
-        download_url = result["download_config"]["itemsList"][0]["url"]
+        download_url = result["options"]["download"]["itemsList"][0]["url"]
         self.assertIn("/admin/articles/pages/", download_url)
         self.assertIn("/revisions/456/", download_url)
         self.assertIn("/download-table/test-block-id/", download_url)
@@ -924,11 +925,11 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         result = self.block.get_context(self.full_data, parent_context=context)
 
-        download_url = result["download_config"]["itemsList"][0]["url"]
+        download_url = result["options"]["download"]["itemsList"][0]["url"]
         self.assertEqual(download_url, "/economy/articles/test-article/download-table/test-block-id")
 
     def test_ons_table_block_download_config_missing_without_page(self):
-        """Test that download_config is empty when page is missing from context."""
+        """Test that download is empty when page is missing from context."""
         context = {
             "block_id": "test-block-id",
             "page": None,
@@ -937,8 +938,8 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         result = self.block.get_context(self.full_data, parent_context=context)
 
-        # download_config will be added but should be empty dict
-        self.assertEqual(result.get("download_config"), {})
+        # download should be empty dict when page is missing
+        self.assertEqual(result["options"]["download"], {})
 
 
 class AccordionBlockTestCase(TestCase):

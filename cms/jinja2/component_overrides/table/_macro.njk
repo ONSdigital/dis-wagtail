@@ -4,9 +4,11 @@
         It is customised for the following reasons:
         - Allow multiple header rows (using the headers param, or converting the ths param to a list)
         - Accommodate merged cells, and allow for column headers
+        - Add download support (similar to onsChart component)
     #}
     {% from "components/button/_macro.njk" import onsButton %}
     {% from "components/icon/_macro.njk" import onsIcon %}
+    {% from "components/list/_macro.njk" import onsList %}
 
     {% set variants = params.variants if params.variants else '' %}
 
@@ -79,5 +81,18 @@
         {% if 'scrollable' in variants %}
         </div>
     </div>
+    {% endif %}
+
+    {% if params.download and params.download.title and params.download.itemsList | length > 0 %}
+        {% set headingLevel = params.headingLevel | default(3) %}
+        {% set openingDownloadTitleTag = "<h" ~ headingLevel %}
+        {% set closingDownloadTitleTag = "</h" ~ headingLevel ~ ">" %}
+        {{ openingDownloadTitleTag | safe }} class="ons-table__download-title">{{ params.download.title }}{{ closingDownloadTitleTag | safe }}
+        {{
+            onsList({
+                "element": "ol",
+                "itemsList": params.download.itemsList
+            })
+        }}
     {% endif %}
 {% endmacro %}

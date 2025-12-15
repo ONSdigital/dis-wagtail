@@ -500,3 +500,150 @@ class RevisionTableDownloadViewTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response["Content-Type"], "text/csv")
+
+
+class ChartAndTableDownloadTestCase(WagtailTestUtils, TestCase):
+    """Test downloading both chart and table CSVs from the same article."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.series = ArticleSeriesPageFactory()
+        cls.table_data = TableDataFactory(
+            table_data=[
+                ["Category", "Chart Value 1", "Chart Value 2"],
+                ["2020", "100", "150"],
+                ["2021", "120", "180"],
+            ]
+        )
+        cls.article = StatisticalArticlePageFactory(parent=cls.series)
+        cls.article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Mixed Content Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Population Growth Chart",
+                                "subtitle": "Annual growth rates",
+                                "theme": "primary",
+                                "table": cls.table_data,
+                            },
+                            "id": "population-chart",
+                        },
+                        {
+                            "type": "table",
+                            "value": {
+                                "title": "Regional Statistics Table",
+                                "caption": "Regional breakdown",
+                                "data": {
+                                    "headers": [[{"value": "Region", "type": "th"}, {"value": "Population", "type": "th"}]],
+                                    "rows": [
+                                        [{"value": "North", "type": "td"}, {"value": "5000000", "type": "td"}],
+                                        [{"value": "South", "type": "td"}, {"value": "7000000", "type": "td"}],
+                                    ],
+                                },
+                            },
+                            "id": "regional-table",
+                        },
+                    ],
+                },
+            }
+        ]
+        cls.article.save_revision().publish()
+        cls.revision_id = cls.article.latest_revision_id
+
+    def setUp(self):
+        self.login()
+
+    def get_chart_download_url(self, chart_id="population-chart"):
+        """Helper to build the chart download URL."""
+        return reverse(
+            "articles:revision_chart_download",
+            kwargs={
+                "page_id": self.article.pk,
+                "revision_id": self.revision_id,
+                "chart_id": chart_id,
+            },
+        )
+
+    def get_table_download_url(self, table_id="regional-table"):
+        """Helper to build the table download URL."""
+        return reverse(
+            "articles:revision_table_download",
+            kwargs={
+                "page_id": self.article.pk,
+                "revision_id": self.revision_id,
+                "table_id": table_id,
+            },
+        )
+
+    def test_chart_csv_download_has_correct_data(self):
+        """Test chart CSV contains chart-specific data."""
+        response = self.client.get(self.get_chart_download_url())
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("population-growth-chart.csv", response["Content-Disposition"])
+
+        content = response.content.decode("utf-8")
+        # Verify chart data is present
+        self.assertIn("Category", content)
+        self.assertIn("Chart Value 1", content)
+        self.assertIn("Chart Value 2", content)
+        self.assertIn("2020", content)
+        self.assertIn("100", content)
+        self.assertIn("150", content)
+
+        # Verify table data is NOT in chart CSV
+        self.assertNotIn("Region", content)
+        self.assertNotIn("North", content)
+        self.assertNotIn("5000000", content)
+
+    def test_table_csv_download_has_correct_data(self):
+        """Test table CSV contains table-specific data."""
+        response = self.client.get(self.get_table_download_url())
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("regional-statistics-table.csv", response["Content-Disposition"])
+
+        content = response.content.decode("utf-8")
+        # Verify table data is present
+        self.assertIn("Region", content)
+        self.assertIn("Population", content)
+        self.assertIn("North", content)
+        self.assertIn("South", content)
+        self.assertIn("5000000", content)
+        self.assertIn("7000000", content)
+
+        # Verify chart data is NOT in table CSV
+        self.assertNotIn("Category", content)
+        self.assertNotIn("Chart Value 1", content)
+        self.assertNotIn("2020", content)
+
+    def test_both_downloads_work_independently(self):
+        """Test that both chart and table can be downloaded without interference."""
+        # Download chart first
+        chart_response = self.client.get(self.get_chart_download_url())
+        self.assertEqual(chart_response.status_code, HTTPStatus.OK)
+        chart_content = chart_response.content.decode("utf-8")
+
+        # Download table second
+        table_response = self.client.get(self.get_table_download_url())
+        self.assertEqual(table_response.status_code, HTTPStatus.OK)
+        table_content = table_response.content.decode("utf-8")
+
+        # Verify both have distinct content
+        self.assertNotEqual(chart_content, table_content)
+        self.assertIn("Chart Value 1", chart_content)
+        self.assertIn("Region", table_content)
+
+        # Download chart again to ensure no state issues
+        chart_response_2 = self.client.get(self.get_chart_download_url())
+        self.assertEqual(chart_response_2.status_code, HTTPStatus.OK)
+        chart_content_2 = chart_response_2.content.decode("utf-8")
+
+        # Verify second chart download matches first
+        self.assertEqual(chart_content, chart_content_2)

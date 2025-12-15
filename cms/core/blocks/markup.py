@@ -164,24 +164,26 @@ class ONSTableBlock(TinyTableBlock):
         if not data.get("rows") and not data.get("headers"):
             return context
 
-        table_context = {
-            "title": value.get("title"),
-            "options": {
-                "caption": value.get("caption"),
-                "headers": [self._prepare_cells(header_row) for header_row in data.get("headers", [])],
-                "trs": [{"tds": self._prepare_cells(row)} for row in data.get("rows", [])],
-            },
-            "source": value.get("source"),
-            "footnotes": value.get("footnotes"),
-            **context,
+        options = {
+            "caption": value.get("caption"),
+            "headers": [self._prepare_cells(header_row) for header_row in data.get("headers", [])],
+            "trs": [{"tds": self._prepare_cells(row)} for row in data.get("rows", [])],
         }
 
         # Add download config if block_id and page context available
         block_id = context.get("block_id")
         if block_id and parent_context:
-            table_context["download_config"] = self._get_download_config(
+            options["download"] = self._get_download_config(
                 value=value, parent_context=parent_context, block_id=block_id, data=data
             )
+
+        table_context = {
+            "title": value.get("title"),
+            "options": options,
+            "source": value.get("source"),
+            "footnotes": value.get("footnotes"),
+            **context,
+        }
 
         return table_context
 
