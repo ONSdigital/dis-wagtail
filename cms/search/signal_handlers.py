@@ -9,7 +9,7 @@ from wagtail.models import Page
 from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move
 
 from cms.search.publishers import KafkaPublisher, LogPublisher
-from cms.search.utils import get_model_by_name
+from cms.search.utils import get_model_by_name, is_indexable_page
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +28,7 @@ def on_page_published(sender: "type[Page]", instance: "Page", **kwargs: Any) -> 
     """Called whenever a Wagtail Page is published (UI or code).
     instance is the published Page object.
     """
-    if (
-        instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
-        and not instance.get_view_restrictions().exists()
-    ):
+    if is_indexable_page(instance):
         get_publisher().publish_created_or_updated(instance)
 
 
@@ -40,11 +37,7 @@ def on_page_unpublished(sender: "type[Page]", instance: "Page", **kwargs: Any) -
     """Called whenever a Wagtail Page is unpublished (UI or code).
     instance is the unpublished Page object.
     """
-    if (
-        settings.CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH
-        and instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
-        and not instance.get_view_restrictions().exists()
-    ):
+    if settings.CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH and is_indexable_page(instance):
         get_publisher().publish_deleted(instance)
 
 
@@ -54,12 +47,7 @@ def on_page_deleted(sender: "type[Page]", instance: "Page", **kwargs: Any) -> No
     Only fires if the page is published and not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES.
     """
     # Only proceed if `sender` is a subclass of Wagtail Page and the page is published
-    if (
-        settings.CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH
-        and instance.live
-        and instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
-        and not instance.get_view_restrictions().exists()
-    ):
+    if settings.CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH and instance.live and is_indexable_page(instance):
         get_publisher().publish_deleted(instance)
 
 
@@ -97,7 +85,7 @@ def _update_for_page_and_descendant_paths(*, instance: "Page", old_url_path: str
         # Pages with view restrictions should not be exposed in search
         # this is inherited by descendants, so nothing more to do
         return
-    if instance.live and instance.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES:
+    if instance.live and is_indexable_page(instance):
         try:
             get_publisher().publish_created_or_updated(instance.specific_deferred, old_url_path=old_url_path)
         except Exception:  # pylint: disable=broad-except
@@ -108,7 +96,7 @@ def _update_for_page_and_descendant_paths(*, instance: "Page", old_url_path: str
 
     for descendant in (
         instance.get_descendants()
-        .filter(live=True)
+        .filter(live=True, locale__language_code__in=settings.SEARCH_INDEX_INCLUDED_LANGUAGES)
         .public()
         .not_exact_type(*(get_model_by_name(page_type) for page_type in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES))
         .specific(defer=True)

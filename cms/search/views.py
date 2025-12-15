@@ -43,6 +43,14 @@ class ResourceListView(APIView):
         excluding pages we do not want to index.
         """
         excluded_classes = [get_model_by_name(name) for name in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES]
-        qs: list[Page] = Page.objects.live().public().not_exact_type(*excluded_classes).specific().defer_streamfields()
+
+        qs: list[Page] = (
+            Page.objects.live()
+            .public()
+            .not_exact_type(*excluded_classes)
+            .filter(locale__language_code__in=settings.SEARCH_INDEX_INCLUDED_LANGUAGES)
+            .specific()
+            .defer_streamfields()
+        )
 
         return qs
