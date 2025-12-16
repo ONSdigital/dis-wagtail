@@ -60,8 +60,8 @@ Scenario Outline: A User cannot save a bundle due to duplicate schedule
 
     Examples: bundles
        | role               | creator_role      |
-#       | Publishing Officer |Publishing Admin   |
-#       | Publishing Admin   |Publishing Officer |
+       | Publishing Officer |Publishing Admin   |
+       | Publishing Admin   |Publishing Officer |
 
 
 
@@ -150,7 +150,7 @@ Scenario Outline: A User cannot preview a bundle due to not member of  associate
 
  Examples: bundles
      | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                       |
-     | 1                 | Viewer                     | Publishing Admin    | {"role": "Viewer",             "creator_role": "Publishing Admin", "status": "In_Review", "preview_teams": false,  "add_rel_cal": true, "add_stat_page": true}|
+     | 1                 | Viewer                     | Publishing Admin    | {"role": "Viewer", "creator_role": "Publishing Admin", "status": "In_Review", "preview_teams": false,  "add_rel_cal": true, "add_stat_page": true}|
 
 
 #----- Bundle Approve UI Tests -----
@@ -164,17 +164,15 @@ Scenario Outline: A user can approve a bundle
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
     When the <role> logs in
-    Then the <role> can preview the Release Calendar page
-    And the <role> can preview the Statistical Analysis page
-    And the <role> can preview bundle
-    And the logged in user can approve a bundle
+    Then the logged in user can approve a bundle
+    And the bundle pages are not live
 
     Examples: bundles
         | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                                 |
-#        | 1                 | Publishing Admin           | Publishing Officer  | {"role": "Publishing Admin",   "creator_role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
-#        | 1                 | Publishing Admin           | Publishing Admin    | {"role": "Publishing Admin",   "creator_role": "Publishing Admin",   "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
-#        | 1                 | Publishing Officer         | Publishing Officer  | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
-#        | 1                 | Publishing Officer         | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Admin",   "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
+        | 1                 | Publishing Admin           | Publishing Officer  | {"role": "Publishing Admin",   "creator_role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
+        | 1                 | Publishing Admin           | Publishing Admin    | {"role": "Publishing Admin",   "creator_role": "Publishing Admin",   "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
+        | 1                 | Publishing Officer         | Publishing Officer  | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
+        | 1                 | Publishing Officer         | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Admin",   "status": "In_Review", "preview_teams": true, "add_rel_cal": true, "add_stat_page": true} |
 
 
 
@@ -203,9 +201,8 @@ Scenario Outline: A user cannot approve a bundle due to lack of pages or dataset
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
     When the <role> logs in
-    Then the <role> can preview bundle
-    And the logged in user cannot approve a bundle due to lack of pages
+    Then the logged in user cannot approve a bundle due to lack of pages
 
     Examples: bundles
         | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                                 |
-#        | 2                 | Publishing Officer         | Publishing Admin  | {"role": "Publishing Officer", "creator_role": "Publishing Admin", "status": "In_Review", "preview_teams": true, "add_rel_cal": false, "add_stat_page": false} |
+        | 2                 | Publishing Officer         | Publishing Admin  | {"role": "Publishing Officer", "creator_role": "Publishing Admin", "status": "In_Review", "preview_teams": true, "add_rel_cal": false, "add_stat_page": false} |

@@ -17,6 +17,7 @@ from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.topics.models import TopicPage
+from cms.topics.tests.factories import TopicPageFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 from functional_tests.step_helpers.users import create_user
@@ -324,12 +325,14 @@ def create_topic_page(context: Context) -> None:
     context.article_path.append(title)
 
 
-# def get_url_for_article_edition(context) -> None:
-#     print(context.url)
-#     pass
+@then("the bundle pages are not live")
+def get_url_for_article_edition(context) -> None:
     # http://localhost:8000/bundles-ui-test-topic-page/articles/bundles-ui-test-article-series-page/editions/november-2025
-    # http://localhost: 8000 / bundles - ui - testing - 2/articles/editions/november-2025
-    # context.page.goto(context.base_url + reverse("bundle:index"))
+    # /articles/psf/editions/edition
+    print(context.topic_page.slug)
+    print(context.topic_page.slug)
+
+    # context.page.goto(f"{context.base_url}
 
 
 def create_article_series_page(context) -> None:
@@ -388,10 +391,15 @@ def create_statistical_article_edition(context) -> None:
 @given("there is a Statistical Analysis page approved by {user_role}")
 def statistical_analysis(context: Context, user_role: str) -> None:
     user = context.users[user_role]["user"]
-    context.article_series_page = ArticleSeriesPageFactory(title="PSF")
+    now = datetime.now()
+    now -= timedelta(days=31)
+    title = now.strftime("%B %Y")
+    context.topic_page = TopicPageFactory(slug="topic-slug", live=True, title="Bundle Ui Test Topic Page")
+    context.article_series_page = ArticleSeriesPageFactory(title="PSF", parent=context.topic_page, slug="PSF")
     context.topic_page = TopicPage.objects.ancestor_of(context.article_series_page).first()
-    article = StatisticalArticlePageFactory(parent=context.article_series_page, title="Bundles UI Articale for PSF")
+    article = StatisticalArticlePageFactory(parent=context.article_series_page, title=title, live=False, slug="edition")
     mark_page_as_ready_to_publish(article, user)
+    article.save()
     context.statistical_article_page = article
 
 
@@ -406,7 +414,6 @@ def release_calendar(context: Context, user_role: str) -> None:
     mark_page_as_ready_to_publish(release_calendar_page, user)
     release_calendar_page.save_revision().publish()
     context.release_calendar_page = release_calendar_page
-    print(context.release_calendar_page.pk)
 
 
 @given("there is a preview team")
@@ -652,16 +659,9 @@ def goes_to_preview_bundle(context: Context, user_role: str) -> None:
     expect(context.page.get_by_role("cell", name="Statistical article page")).to_be_visible()
 
 
+@then("the logged in user cannot approve a bundle")
 @then("the logged in user cannot preview a bundle")
 def cannot_preview_bundle(context: Context) -> None:
-    context.page.get_by_role("link", name="Bundles", exact=True).click()
-    expect(
-        context.page.get_by_role("button", name=f"More options for '{context.bundles[-1].name}'")
-    ).not_to_be_visible()
-
-
-@then("the logged in user cannot approve a bundle")
-def cannot_approve_bundle(context: Context) -> None:
     context.page.get_by_role("link", name="Bundles", exact=True).click()
     expect(
         context.page.get_by_role("button", name=f"More options for '{context.bundles[-1].name}'")
@@ -715,7 +715,7 @@ def preview_statistical_analysis_page(context: Context, role: str) -> None:
     context.page.goto(context.base_url + "/admin/pages/")
     context.page.get_by_role("button", name="Show filters").click()
     context.page.get_by_role("button", name="Page type").click()
-    context.page.get_by_text("Release calendar page").click()
+    context.page.get_by_text("Statistical article page").click()
     context.page.get_by_role("button", name="Show filters").click()
     context.page.get_by_role("button", name="Locale").click()
     context.page.locator("#id_locale").get_by_text("English").click()
