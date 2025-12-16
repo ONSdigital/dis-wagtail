@@ -538,7 +538,9 @@ class ChartAndTableDownloadTestCase(WagtailTestUtils, TestCase):
                                 "title": "Regional Statistics Table",
                                 "caption": "Regional breakdown",
                                 "data": {
-                                    "headers": [[{"value": "Region", "type": "th"}, {"value": "Population", "type": "th"}]],
+                                    "headers": [
+                                        [{"value": "Region", "type": "th"}, {"value": "Population", "type": "th"}]
+                                    ],
                                     "rows": [
                                         [{"value": "North", "type": "td"}, {"value": "5000000", "type": "td"}],
                                         [{"value": "South", "type": "td"}, {"value": "7000000", "type": "td"}],
