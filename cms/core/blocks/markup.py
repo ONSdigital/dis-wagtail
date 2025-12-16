@@ -8,6 +8,7 @@ from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
 
+from cms.core.utils import flatten_table_data
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 
 if TYPE_CHECKING:
@@ -194,12 +195,7 @@ class ONSTableBlock(TinyTableBlock):
             return {}
 
         # Flatten table data for size calculation
-        # TODO: Perhaps reuse some code from a different place for this?
-        csv_rows = []
-        for header_row in data.get("headers", []):
-            csv_rows.append([cell.get("value", "") for cell in header_row])
-        for row in data.get("rows", []):
-            csv_rows.append([cell.get("value", "") for cell in row])
+        csv_rows = flatten_table_data(data)
 
         size_suffix = f" ({get_approximate_file_size_in_kb(csv_rows)})"
 

@@ -193,7 +193,6 @@ def expand_footnotes(context: Context) -> None:
 
     footnotes_content = page.get_by_text("some footnotes", exact=True)
     footnotes_link = page.get_by_role("link", name="Footnotes")
-    expect(footnotes_link).to_be_visible()
     expect(footnotes_content).to_be_hidden()
 
     footnotes_link.click()

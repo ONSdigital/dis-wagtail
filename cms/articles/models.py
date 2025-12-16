@@ -33,7 +33,7 @@ from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
-from cms.core.utils import redirect_to_parent_listing
+from cms.core.utils import flatten_table_data, redirect_to_parent_listing
 from cms.core.widgets import date_widget
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
@@ -490,13 +490,9 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             raise ValueError(f"Table with ID {table_id} not found")
 
         data_dict = table_data.get("data", {})
-        csv_data = []
 
         # Headers first, then rows - extract only "value" from cell objects
-        for header_row in data_dict.get("headers", []):
-            csv_data.append([cell.get("value", "") for cell in header_row])
-        for row in data_dict.get("rows", []):
-            csv_data.append([cell.get("value", "") for cell in row])
+        csv_data = flatten_table_data(data_dict)
 
         if not csv_data:
             raise ValueError(f"Table {table_id} has no data")
