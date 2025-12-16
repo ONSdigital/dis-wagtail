@@ -511,7 +511,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         figures_in_use = set(self.figures_used_by_ancestor)
         if not figures_in_use:
-            return figures_in_use
+            return set()
 
         articles_headline_figures = (
             StatisticalArticlePage.objects.sibling_of(self)
