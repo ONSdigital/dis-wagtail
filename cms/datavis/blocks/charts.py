@@ -426,8 +426,14 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
     class Meta:
         icon = "chart-column"
 
-    def get_component_config(self, value: "StructValue") -> dict[str, Any]:
-        config = super().get_component_config(value)
+    def get_component_config(
+        self,
+        value: "StructValue",
+        *,
+        parent_context: Optional[dict[str, Any]] = None,
+        block_id: Optional[str] = None,
+    ) -> dict[str, Any]:
+        config = super().get_component_config(value, parent_context=parent_context, block_id=block_id)
         match value["select_chart_type"]:
             case BarColumnConfidenceIntervalChartTypeChoices.BAR:
                 config["isChartInverted"] = True
@@ -799,7 +805,14 @@ class IframeBlock(BaseVisualisationBlock):
             )
         return errors
 
-    def get_component_config(self, value: "StructValue") -> dict[str, Any]:
+    def get_component_config(
+        self,
+        value: "StructValue",
+        *,
+        # We don't call super() here, so these args are unused
+        parent_context: Optional[dict[str, Any]] = None,  # pylint: disable=unused-argument
+        block_id: Optional[str] = None,  # pylint: disable=unused-argument
+    ) -> dict[str, Any]:
         config = {
             "headingLevel": 3,
             "title": value.get("title"),
