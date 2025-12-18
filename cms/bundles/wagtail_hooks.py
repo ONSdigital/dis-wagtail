@@ -252,16 +252,6 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
             except KeyError:
                 return "Attempted to preview an item."
 
-    @actions.register_action("bundles.create")
-    class CreateBundle(LogFormatter):  # pylint: disable=unused-variable
-        """LogFormatter class for bundle creation actions."""
-
-        label = "Create bundle"
-
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
-            """Returns the formatted log message."""
-            return "Created bundle"
-
     @actions.register_action("bundles.team_added")
     class AddBundleTeam(LogFormatter):  # pylint: disable=unused-variable
         """LogFormatter class for adding preview teams to bundles."""

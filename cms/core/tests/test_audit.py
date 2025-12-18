@@ -43,16 +43,16 @@ class AuditSignalHandlerTestCase(WagtailTestUtils, TestCase):
         bundle = BundleFactory()
 
         with patch("cms.core.audit.audit_logger") as mock_logger:
-            log(action="bundles.create", instance=bundle)
+            log(action="wagtail.create", instance=bundle)
 
             # Verify audit logger was called
             mock_logger.info.assert_called_once()
             call_args: tuple[tuple[Any, ...], dict[str, Any]] = mock_logger.info.call_args
-            assert call_args[0][0] == "bundles.create"
+            assert call_args[0][0] == "wagtail.create"
 
             # Verify extra data
             extra: dict[str, Any] = call_args[1]["extra"]
-            assert extra["event"] == "bundles.create"
+            assert extra["event"] == "wagtail.create"
             assert extra["object_type"] == "bundle"
             assert extra["object_id"] == str(bundle.id)
             assert extra["object_label"] == str(bundle)
@@ -80,7 +80,7 @@ class AuditSignalHandlerTestCase(WagtailTestUtils, TestCase):
 
         with patch("cms.core.audit.audit_logger") as mock_logger:
             # Log without a user to test system actions
-            log(action="bundles.create", instance=bundle, user=None)
+            log(action="wagtail.create", instance=bundle, user=None)
 
             # Verify email is None when user is None
             call_args: tuple[tuple[Any, ...], dict[str, Any]] = mock_logger.info.call_args
@@ -94,7 +94,7 @@ class AuditSignalHandlerTestCase(WagtailTestUtils, TestCase):
 
         with patch("cms.core.audit.audit_logger") as mock_logger:
             # Create log entry
-            entry = log(action="bundles.create", instance=bundle)
+            entry = log(action="wagtail.create", instance=bundle)
 
             # Reset mock
             mock_logger.reset_mock()

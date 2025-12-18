@@ -105,10 +105,6 @@ class BundleCreateView(CreateView):
         instance: Bundle = super().save_instance()
         instance.created_by = self.request.user
         instance.save(update_fields=["created_by"])
-
-        # Log the bundle creation
-        log(action="bundles.create", instance=instance)
-
         return instance
 
     def get_success_url(self) -> str:
