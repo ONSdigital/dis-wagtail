@@ -91,7 +91,16 @@ def register_core_log_actions(actions: "LogActionRegistry") -> None:
         def format_message(self, log_entry: "ModelLogEntry") -> Any:
             """Returns the formatted log message."""
             try:
+                chart_title = log_entry.data.get("chart_title")
                 chart_id = log_entry.data.get("chart_id", "unknown")
-                return f"Downloaded chart CSV (chart ID: {chart_id})"
+                message = "Downloaded chart CSV for chart "
+
+                if chart_title:
+                    message += chart_title
+                else:
+                    message += f"with ID {chart_id}"
+
+                return message
+
             except (KeyError, AttributeError):
                 return "Downloaded chart CSV"

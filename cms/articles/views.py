@@ -104,14 +104,17 @@ class RevisionChartDownloadView(View):
             )
             raise Http404 from e
 
+        chart_title = chart_data.get("title")
+
         # Log the chart download for audit trail
         log(
             action="content.chart_download",
             instance=page,
             data={
+                "chart_title": chart_title,
                 "chart_id": chart_id,
                 "revision_id": revision_id,
             },
         )
 
-        return create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))
+        return create_data_csv_download_response_from_data(data, title=chart_title or "chart")

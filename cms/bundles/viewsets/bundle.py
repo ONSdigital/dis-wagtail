@@ -292,8 +292,8 @@ class BundleEditView(EditView):
     def _log_schedule_changes(self, instance: Bundle, original_pub_date: Any) -> None:
         """Log publication date changes."""
         if instance.publication_date != original_pub_date:
-            old_date = original_pub_date.strftime("%Y-%m-%d %H:%M") if original_pub_date else "Not set"
-            new_date = instance.publication_date.strftime("%Y-%m-%d %H:%M") if instance.publication_date else "Not set"
+            old_date = original_pub_date.strftime("%Y-%m-%d %H:%M") if original_pub_date else None
+            new_date = instance.publication_date.strftime("%Y-%m-%d %H:%M") if instance.publication_date else None
             log(action="bundles.schedule_changed", instance=instance, data={"old": old_date, "new": new_date})
 
     def run_after_hook(self) -> Optional["HttpResponseBase"]:
