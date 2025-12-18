@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views import View
 from wagtail.admin.auth import user_has_any_page_permission, user_passes_test
+from wagtail.log_actions import log
 from wagtail.models import Page, Revision
 
 from cms.articles.utils import create_data_csv_download_response_from_data
@@ -102,5 +103,15 @@ class RevisionChartDownloadView(View):
                 },
             )
             raise Http404 from e
+
+        # Log the chart download for audit trail
+        log(
+            action="content.chart_download",
+            instance=page,
+            data={
+                "chart_id": chart_id,
+                "revision_id": revision_id,
+            },
+        )
 
         return create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))

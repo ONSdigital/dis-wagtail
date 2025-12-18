@@ -251,3 +251,106 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
                 return f"Attempted preview of {log_entry.data['type']} '{log_entry.data['title']}'."
             except KeyError:
                 return "Attempted to preview an item."
+
+    @actions.register_action("bundles.create")
+    class CreateBundle(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for bundle creation actions."""
+
+        label = "Create bundle"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            return "Created bundle"
+
+    @actions.register_action("bundles.team_added")
+    class AddBundleTeam(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for adding preview teams to bundles."""
+
+        label = "Add preview team to bundle"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            try:
+                return f"Added preview team '{log_entry.data['team_name']}'"
+            except KeyError:
+                return "Added preview team"
+
+    @actions.register_action("bundles.team_removed")
+    class RemoveBundleTeam(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for removing preview teams from bundles."""
+
+        label = "Remove preview team from bundle"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            try:
+                return f"Removed preview team '{log_entry.data['team_name']}'"
+            except KeyError:
+                return "Removed preview team"
+
+    @actions.register_action("bundles.page_added")
+    class AddBundlePage(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for adding pages to bundles."""
+
+        label = "Add page to bundle"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            try:
+                return f"Added page '{log_entry.data['page_title']}'"
+            except KeyError:
+                return "Added page"
+
+    @actions.register_action("bundles.page_removed")
+    class RemoveBundlePage(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for removing pages from bundles."""
+
+        label = "Remove page from bundle"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            try:
+                return f"Removed page '{log_entry.data['page_title']}'"
+            except KeyError:
+                return "Removed page"
+
+    @actions.register_action("bundles.dataset_added")
+    class AddBundleDataset(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for adding datasets to bundles."""
+
+        label = "Add dataset to bundle"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            try:
+                return f"Added dataset '{log_entry.data['dataset_title']}'"
+            except KeyError:
+                return "Added dataset"
+
+    @actions.register_action("bundles.dataset_removed")
+    class RemoveBundleDataset(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for removing datasets from bundles."""
+
+        label = "Remove dataset from bundle"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            try:
+                return f"Removed dataset '{log_entry.data['dataset_title']}'"
+            except KeyError:
+                return "Removed dataset"
+
+    @actions.register_action("bundles.schedule_changed")
+    class ChangeBundleSchedule(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for bundle publication date changes."""
+
+        label = "Change bundle schedule"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            try:
+                old = log_entry.data.get("old", "Not set")
+                new = log_entry.data.get("new", "Not set")
+                return f"Changed publication date from '{old}' to '{new}'"
+            except KeyError:
+                return "Changed publication date"

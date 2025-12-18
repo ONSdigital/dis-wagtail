@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.templatetags.static import static
@@ -6,13 +6,15 @@ from django.urls import reverse
 from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.admin import messages
+from wagtail.log_actions import LogFormatter
 from wagtail.snippets.models import register_snippet
 
 from cms.core.viewsets import ContactDetailsViewSet, GlossaryViewSet
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
-    from wagtail.models import Page
+    from wagtail.log_actions import LogActionRegistry
+    from wagtail.models import ModelLogEntry, Page
 
 
 @hooks.register("register_icons")
@@ -70,3 +72,26 @@ def after_edit_page(request: "HttpRequest", page: "Page") -> None:
             ],
             extra_tags="safe",
         )
+
+
+@hooks.register("register_log_actions")
+def register_core_log_actions(actions: "LogActionRegistry") -> None:
+    """Registers custom logging actions for core content operations.
+
+    @see https://docs.wagtail.org/en/stable/extending/audit_log.html
+    @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-log-actions
+    """
+
+    @actions.register_action("content.chart_download")
+    class ChartDownload(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for chart CSV download actions."""
+
+        label = "Download chart CSV"
+
+        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+            """Returns the formatted log message."""
+            try:
+                chart_id = log_entry.data.get("chart_id", "unknown")
+                return f"Downloaded chart CSV (chart ID: {chart_id})"
+            except (KeyError, AttributeError):
+                return "Downloaded chart CSV"

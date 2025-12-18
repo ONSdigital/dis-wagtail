@@ -346,13 +346,6 @@ def publish_bundle(bundle: "Bundle", *, update_status: bool = True) -> None:
         "cms.bundles.notifications.slack", fromlist=["notify_slack_of_publication_start", "notify_slack_of_publish_end"]
     )
 
-    logger.info(
-        "Publishing Bundle",
-        extra={
-            "bundle_id": bundle.pk,
-            "event": "publishing_bundle",
-        },
-    )
     start_time = time.time()
     notifications.notify_slack_of_publication_start(bundle, url=bundle.full_inspect_url)
     for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision"):
@@ -380,14 +373,6 @@ def publish_bundle(bundle: "Bundle", *, update_status: bool = True) -> None:
         bundle.status = BundleStatus.PUBLISHED
         bundle.save()
     publish_duration = time.time() - start_time
-    logger.info(
-        "Published bundle",
-        extra={
-            "bundle_id": bundle.pk,
-            "duration": round(publish_duration * 1000, 3),
-            "event": "published_bundle",
-        },
-    )
 
     notifications.notify_slack_of_publish_end(bundle, publish_duration, url=bundle.full_inspect_url)
 
