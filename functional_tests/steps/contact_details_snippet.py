@@ -34,9 +34,9 @@ def navigate_to_snippet_listing(context: Context, snippet_name: str) -> None:
     context.page.get_by_role("link", name=snippet_name).click()
 
 
-@when('the user clicks the "{button_text}" button')
-def click_button(context: Context, button_text: str) -> None:
-    context.page.get_by_role("link", name=button_text).click()
+@when('the user clicks the "{link_text}" link')
+def click_button(context: Context, link_text: str) -> None:
+    context.page.get_by_role("link", name=link_text).click()
 
 
 @when("the user fills in the contact details form with valid data")
