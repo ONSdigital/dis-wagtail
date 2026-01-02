@@ -532,12 +532,13 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         message = ["The next release date must be after the release date."]
         self.assertFormError(form, "next_release_date", message)
 
-    def test_form_clean__validates_cannot_cancel_if_in_bundle_ready_to_be_published(self):
-        bundle = BundleFactory(release_calendar_page=self.page, approved=True)
+    def test_form_clean__validates_cannot_cancel_if_in_draft_bundle(self):
+        """Checks that the form prevents cancellation when the page is in a draft bundle."""
+        bundle = BundleFactory(release_calendar_page=self.page)  # Default is DRAFT status
 
         data = self.form_data
         data["status"] = ReleaseStatus.CANCELLED
-        data["notice"] = rich_text("")
+        data["notice"] = rich_text("Cancellation notice")
         form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
 
         self.assertFalse(form.is_valid())
@@ -545,28 +546,77 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         bundle_url = reverse("bundle:edit", args=[bundle.pk])
         bundle_str = f'<a href="{bundle_url}" target="_blank" title="Manage bundle">{bundle.name}</a>'
         message = (
-            f"This release calendar page is linked to bundle '{bundle_str}' which is ready to be published. "
-            "Please unschedule the bundle and unlink the release calendar page before making the cancellation."
+            f"This release calendar page is linked to bundle '{bundle_str}'. "
+            "Please unlink the release calendar page from the bundle before cancelling."
         )
         self.assertFormError(form, "status", message)
 
-    def test_form_clean__validates_cannot_cancel_if_in_bundle_ready_to_be_published_with_user_without_bundle_access(
-        self,
-    ):
+    def test_form_clean__validates_cannot_cancel_if_in_review_bundle(self):
+        """Checks that the form prevents cancellation when the page is in an in-review bundle."""
+        bundle = BundleFactory(release_calendar_page=self.page, in_review=True)
+
+        data = self.form_data
+        data["status"] = ReleaseStatus.CANCELLED
+        data["notice"] = rich_text("Cancellation notice")
+        form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
+
+        self.assertFalse(form.is_valid())
+
+        bundle_url = reverse("bundle:edit", args=[bundle.pk])
+        bundle_str = f'<a href="{bundle_url}" target="_blank" title="Manage bundle">{bundle.name}</a>'
+        message = (
+            f"This release calendar page is linked to bundle '{bundle_str}'. "
+            "Please unlink the release calendar page from the bundle before cancelling."
+        )
+        self.assertFormError(form, "status", message)
+
+    def test_form_clean__validates_cannot_cancel_if_in_approved_bundle(self):
+        """Checks that the form prevents cancellation when the page is in an approved bundle."""
         bundle = BundleFactory(release_calendar_page=self.page, approved=True)
 
         data = self.form_data
         data["status"] = ReleaseStatus.CANCELLED
-        data["notice"] = rich_text("")
-        form = self.form_class(instance=self.page, data=data)
+        data["notice"] = rich_text("Cancellation notice")
+        form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
+
+        self.assertFalse(form.is_valid())
+
+        bundle_url = reverse("bundle:edit", args=[bundle.pk])
+        bundle_str = f'<a href="{bundle_url}" target="_blank" title="Manage bundle">{bundle.name}</a>'
+        message = (
+            f"This release calendar page is linked to bundle '{bundle_str}'. "
+            "Please unlink the release calendar page from the bundle before cancelling."
+        )
+        self.assertFormError(form, "status", message)
+
+    def test_form_clean__validates_cannot_cancel_if_in_active_bundle_without_bundle_access(self):
+        """Checks that users without bundle access see plain bundle name in error message."""
+        bundle = BundleFactory(release_calendar_page=self.page)
+
+        data = self.form_data
+        data["status"] = ReleaseStatus.CANCELLED
+        data["notice"] = rich_text("Cancellation notice")
+        form = self.form_class(instance=self.page, data=data)  # No for_user
 
         self.assertFalse(form.is_valid())
 
         message = (
-            f"This release calendar page is linked to bundle '{bundle.name}' which is ready to be published. "
-            "Please unschedule the bundle and unlink the release calendar page before making the cancellation."
+            f"This release calendar page is linked to bundle '{bundle.name}'. "
+            "Please unlink the release calendar page from the bundle before cancelling."
         )
         self.assertFormError(form, "status", message)
+
+    def test_form_clean__allows_cancellation_if_bundle_is_published(self):
+        """Checks that cancellation is allowed when the bundle has already been published."""
+        BundleFactory(release_calendar_page=self.page, published=True)
+
+        data = self.form_data
+        data["status"] = ReleaseStatus.CANCELLED
+        data["notice"] = rich_text("Cancellation notice")
+        form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
+
+        # Published bundles are not active, so cancellation should be allowed
+        self.assertTrue(form.is_valid())
 
     def test_form_clean__sets_release_date_seconds_to_zero(
         self,
