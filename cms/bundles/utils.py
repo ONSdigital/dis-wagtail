@@ -122,7 +122,9 @@ def _create_content_dict_for_pages(pages: list[tuple[dict[str, Any], str]]) -> l
     if article_pages:
         content.append({"type": "release_content", "value": {"title": "Publications", "links": article_pages}})
     if methodology_pages:
-        content.append({"type": "release_content", "value": {"title": "Methodology", "links": methodology_pages}})
+        content.append(
+            {"type": "release_content", "value": {"title": "Quality and methodology", "links": methodology_pages}}
+        )
     return content
 
 

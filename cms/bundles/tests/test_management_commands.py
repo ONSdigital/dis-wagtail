@@ -172,7 +172,7 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertEqual(content["links"][0]["page"].pk, self.statistical_article.pk)
 
         content = release_page.content[1].value
-        self.assertEqual(content["title"], "Methodology")
+        self.assertEqual(content["title"], "Quality and methodology")
         self.assertEqual(len(content["links"]), 1)
         self.assertEqual(content["links"][0]["page"].pk, self.methodology_article.pk)
 
