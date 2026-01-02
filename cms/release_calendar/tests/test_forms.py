@@ -618,6 +618,27 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
         # Published bundles are not active, so cancellation should be allowed
         self.assertTrue(form.is_valid())
 
+    def test_form_clean__allows_other_status_changes_when_in_active_bundle(self):
+        """Checks that non-cancelled status changes are allowed when in an active bundle."""
+        BundleFactory(release_calendar_page=self.page)  # Draft bundle
+
+        data = self.form_data
+        data["status"] = ReleaseStatus.CONFIRMED  # Change from PROVISIONAL to CONFIRMED
+        form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
+
+        self.assertTrue(form.is_valid())
+
+    def test_form_clean__allows_editing_other_fields_when_in_active_bundle(self):
+        """Checks that editing non-status fields is allowed when in an active bundle."""
+        BundleFactory(release_calendar_page=self.page)  # Draft bundle
+
+        data = self.form_data
+        data["title"] = "Updated Title"
+        data["summary"] = rich_text("Updated summary content")
+        form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
+
+        self.assertTrue(form.is_valid())
+
     def test_form_clean__sets_release_date_seconds_to_zero(
         self,
     ):
