@@ -430,8 +430,8 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
         self,
         value: "StructValue",
         *,
-        parent_context: Optional[dict[str, Any]] = None,
-        block_id: Optional[str] = None,
+        parent_context: dict[str, Any] | None = None,
+        block_id: str | None = None,
     ) -> dict[str, Any]:
         config = super().get_component_config(value, parent_context=parent_context, block_id=block_id)
         match value["select_chart_type"]:
@@ -810,8 +810,8 @@ class IframeBlock(BaseVisualisationBlock):
         value: "StructValue",
         *,
         # We don't call super() here, so these args are unused
-        parent_context: Optional[dict[str, Any]] = None,  # pylint: disable=unused-argument
-        block_id: Optional[str] = None,  # pylint: disable=unused-argument
+        parent_context: dict[str, Any] | None = None,  # pylint: disable=unused-argument
+        block_id: str | None = None,  # pylint: disable=unused-argument
     ) -> dict[str, Any]:
         config = {
             "headingLevel": 3,
