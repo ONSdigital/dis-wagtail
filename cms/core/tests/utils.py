@@ -4,13 +4,34 @@ from typing import TYPE_CHECKING
 from unittest import TestCase
 
 from bs4 import BeautifulSoup
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.test import SimpleTestCase
+from django.utils import translation
 
 from cms.documents.models import CustomDocument
 
 if TYPE_CHECKING:
     from wagtail.blocks import DeclarativeSubBlocksMetaclass, StructValue
+
+
+class TranslationResetMixin:
+    """Mixin that resets the translation state after each test.
+
+    Use this mixin in test classes that access Welsh URLs or activate Welsh translations.
+    Django's translation state is thread-local and can leak between tests when running
+    in parallel, causing flaky test failures.
+
+    Example:
+        class MyTestCase(TranslationResetMixin, TestCase):
+            def test_welsh_page(self):
+                response = self.client.get("/cy")
+                ...
+    """
+
+    def tearDown(self) -> None:  # pylint: disable=invalid-name
+        translation.activate(settings.LANGUAGE_CODE)
+        super().tearDown()  # type: ignore[misc]
 
 
 def get_test_document():
