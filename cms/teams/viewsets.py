@@ -22,7 +22,7 @@ class ViewOnlyModelPermissionPolicy(ModelPermissionPolicy):
     the standard django.contrib.auth permission model directly.
     """
 
-    def user_has_permission(self, user: "User", action: str) -> bool:
+    def user_has_permission(self, user: User, action: str) -> bool:
         """Ensure only view action is allowed."""
         # Note: we allow temporary management, hidden behind a flag
         if action != "view" and not settings.ALLOW_TEAM_MANAGEMENT:
@@ -34,7 +34,7 @@ class ViewOnlyModelPermissionPolicy(ModelPermissionPolicy):
 class TeamsIndexView(IndexView):
     page_title = "Preview teams"
 
-    def get_base_queryset(self) -> "TeamQuerySet":
+    def get_base_queryset(self) -> TeamQuerySet:
         """Return only active teams."""
         return cast("TeamQuerySet", Team.objects.active())
 
@@ -84,7 +84,7 @@ class TeamChooseMixin:
             ),
         ]
 
-    def get_object_list(self) -> "TeamQuerySet":
+    def get_object_list(self) -> TeamQuerySet:
         """Return only active teams."""
         return cast("TeamQuerySet", Team.objects.active())
 

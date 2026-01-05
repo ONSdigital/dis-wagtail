@@ -26,7 +26,7 @@ class PrivateMediaModelManager(models.Manager):
     time.
     """
 
-    def bulk_set_privacy(self, objects: Iterable["PrivateMediaMixin"], privacy: Privacy) -> int:
+    def bulk_set_privacy(self, objects: Iterable[PrivateMediaMixin], privacy: Privacy) -> int:
         """Update an iterable of objects of this type to reflect the 'privacy'
         as efficiently as possible. Returns the number of objects that were actually
         updated in the process.
@@ -57,14 +57,14 @@ class PrivateMediaModelManager(models.Manager):
             file_url_batch.purge()
         return count
 
-    def bulk_make_public(self, objects: Iterable["PrivateMediaMixin"]) -> int:
+    def bulk_make_public(self, objects: Iterable[PrivateMediaMixin]) -> int:
         """Make an iterable of objects of this type 'public' as efficiently as
         possible. Returns the number of objects that were actually updated in
         the process.
         """
         return self.bulk_set_privacy(objects, Privacy.PUBLIC)
 
-    def bulk_make_private(self, objects: Iterable["PrivateMediaMixin"]) -> int:
+    def bulk_make_private(self, objects: Iterable[PrivateMediaMixin]) -> int:
         """Make an iterable of objects of this type 'private' as efficiently as
         possible. Returns the number of objects that were actually updated
         in the process.
@@ -72,8 +72,8 @@ class PrivateMediaModelManager(models.Manager):
         return self.bulk_set_privacy(objects, Privacy.PRIVATE)
 
     def bulk_set_file_permissions(
-        self, objects: Iterable["PrivateMediaMixin"], privacy: Privacy, *, save_changes: bool = False
-    ) -> list["PrivateMediaMixin"]:
+        self, objects: Iterable[PrivateMediaMixin], privacy: Privacy, *, save_changes: bool = False
+    ) -> list[PrivateMediaMixin]:
         """For an iterable of objects of this type, set the file permissions for all
         related files to reflect `privacy`. Returns a list of the provided objects,
         with their `file_permissions_last_set` datetime updated if all related files

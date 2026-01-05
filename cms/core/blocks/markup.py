@@ -112,7 +112,7 @@ class BasicTableBlock(WagtailTableBlock):
             **context,
         }
 
-    def render(self, value: dict, context: dict | None = None) -> Union[str, "SafeString"]:
+    def render(self, value: dict, context: dict | None = None) -> Union[str, SafeString]:
         """The Wagtail core TableBlock has a very custom `render` method. We don't want that."""
         rendered: str | SafeString = super(blocks.FieldBlock, self).render(value, context)
         return rendered

@@ -49,7 +49,7 @@ class PageAddToBundleButton(PageMenuItem):
         """Informs the permission policy to use Bundle-derived model permissions."""
         return ModelPermissionPolicy(Bundle)
 
-    def is_shown(self, user: "User") -> bool:
+    def is_shown(self, user: User) -> bool:
         """Determines whether the button should be shown.
 
         We only want it for pages inheriting from BundledPageMixin that are not in an active bundle.
@@ -70,8 +70,8 @@ class PageAddToBundleButton(PageMenuItem):
 
 @hooks.register("register_page_header_buttons")
 def page_header_buttons(
-    page: "Page",
-    user: "User",  # pylint: disable=unused-argument
+    page: Page,
+    user: User,  # pylint: disable=unused-argument
     view_name: str,  # pylint: disable=unused-argument
     next_url: str | None = None,
 ) -> Generator[PageAddToBundleButton]:
@@ -84,8 +84,8 @@ def page_header_buttons(
 
 @hooks.register("register_page_listing_buttons")
 def page_listing_buttons(
-    page: "Page",
-    user: "User",  # pylint: disable=unused-argument
+    page: Page,
+    user: User,  # pylint: disable=unused-argument
     next_url: str | None = None,
 ) -> Generator[PageAddToBundleButton]:
     """Registers the add to bundle button in the buttons shown in the page listing.
@@ -96,7 +96,7 @@ def page_listing_buttons(
 
 
 @hooks.register("register_admin_urls")
-def register_admin_urls() -> list[Union["URLPattern", "URLResolver"]]:
+def register_admin_urls() -> list[Union[URLPattern, URLResolver]]:
     """Registers the admin urls for Bundles.
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-urls.
@@ -112,7 +112,7 @@ class LatestBundlesPanel(Component):
     template_name = "bundles/wagtailadmin/panels/latest_bundles.html"
     num_bundles = 10
 
-    def __init__(self, request: "HttpRequest") -> None:
+    def __init__(self, request: HttpRequest) -> None:
         self.request = request
         self.permission_policy = ModelPermissionPolicy(Bundle)
 
@@ -132,7 +132,7 @@ class LatestBundlesPanel(Component):
 
         return queryset
 
-    def get_context_data(self, parent_context: "RenderContext | None" = None) -> "RenderContext | None":
+    def get_context_data(self, parent_context: RenderContext | None = None) -> RenderContext | None:
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
@@ -148,7 +148,7 @@ class BundlesInReviewPanel(Component):
     template_name = "bundles/wagtailadmin/panels/bundles_in_review.html"
     num_bundles = 10
 
-    def __init__(self, request: "HttpRequest") -> None:
+    def __init__(self, request: HttpRequest) -> None:
         self.request = request
         self.permission_policy = ModelPermissionPolicy(Bundle)
 
@@ -179,7 +179,7 @@ class BundlesInReviewPanel(Component):
         # for everyone else, only bundles in the same preview team they are in
         return queryset.filter(teams__team__in=self.request.user.active_team_ids).distinct()  # type: ignore[union-attr]
 
-    def get_context_data(self, parent_context: "RenderContext | None" = None) -> "RenderContext | None":
+    def get_context_data(self, parent_context: RenderContext | None = None) -> RenderContext | None:
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
@@ -190,7 +190,7 @@ class BundlesInReviewPanel(Component):
 
 
 @hooks.register("construct_homepage_panels")
-def add_latest_bundles_panel(request: "HttpRequest", panels: list[Component]) -> None:
+def add_latest_bundles_panel(request: HttpRequest, panels: list[Component]) -> None:
     """Adds the LatestBundlesPanel to the list of Wagtail admin dashboard panels.
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#construct-homepage-panels
@@ -200,7 +200,7 @@ def add_latest_bundles_panel(request: "HttpRequest", panels: list[Component]) ->
 
 
 @hooks.register("register_log_actions")
-def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
+def register_bundle_log_actions(actions: LogActionRegistry) -> None:
     """Registers custom logging actions.
 
     @see https://docs.wagtail.org/en/stable/extending/audit_log.html
@@ -213,7 +213,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Change bundle status"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Changed the bundle status from '{log_entry.data['old']}' to '{log_entry.data['new']}'"
@@ -226,7 +226,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Approve bundle"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Approved the bundle. (Old status: '{log_entry.data['old']}')"
@@ -239,7 +239,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Preview bundle item"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Previewed {log_entry.data['type']} '{log_entry.data['title']}'."
@@ -252,7 +252,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Attempt bundle item preview"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Attempted preview of {log_entry.data['type']} '{log_entry.data['title']}'."

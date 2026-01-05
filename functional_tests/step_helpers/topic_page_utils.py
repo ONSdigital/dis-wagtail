@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from cms.articles.tests.factories import (
     ArticleSeriesPageFactory,
@@ -39,7 +39,7 @@ class TopicContentBuilder:
         self.article_index_cache: dict[str, ArticlesIndexPage] = {}
         self.methodology_index_cache: dict[str, MethodologyIndexPage] = {}
 
-    def _tag_page_with_topic(self, page: "ArticleSeriesPage | MethodologyPage", topic: "Topic") -> None:
+    def _tag_page_with_topic(self, page: ArticleSeriesPage | MethodologyPage, topic: Topic) -> None:
         """Create relationship between series, methodology page and topic."""
         GenericPageToTaxonomyTopic.objects.create(page=page, topic=topic)
 
@@ -50,8 +50,8 @@ class TopicContentBuilder:
         return self.topic_cache[topic_name]
 
     def _create_series(
-        self, topic_page: "TopicPage", series_title: str, article_index: Optional["ArticlesIndexPage"]
-    ) -> "ArticleSeriesPage":
+        self, topic_page: TopicPage, series_title: str, article_index: ArticlesIndexPage | None
+    ) -> ArticleSeriesPage:
         """Create an article series under the topic page."""
         if article_index is None:
             # First series - use parent__parent
@@ -65,7 +65,7 @@ class TopicContentBuilder:
             title=series_title,
         )
 
-    def _create_article(self, title: str, series: "ArticleSeriesPage", release_date: str) -> "StatisticalArticlePage":
+    def _create_article(self, title: str, series: ArticleSeriesPage, release_date: str) -> StatisticalArticlePage:
         """Create a statistical article."""
         release_date_obj = datetime.strptime(release_date, "%Y-%m-%d").date()
         return StatisticalArticlePageFactory(
@@ -75,10 +75,10 @@ class TopicContentBuilder:
     def _create_methodology(
         self,
         title: str,
-        topic_page: "TopicPage",
-        methodology_index: Optional["MethodologyIndexPage"],
+        topic_page: TopicPage,
+        methodology_index: MethodologyIndexPage | None,
         publication_date: str,
-    ) -> "MethodologyPage":
+    ) -> MethodologyPage:
         """Create a methodology page."""
         publication_date_obj = datetime.strptime(publication_date, "%Y-%m-%d").date()
 
@@ -97,8 +97,8 @@ class TopicContentBuilder:
         )
 
     def create_articles_for_topic_page(
-        self, topic_page: "TopicPage", articles_data: list[ArticleDataDict]
-    ) -> dict[str, "StatisticalArticlePage"]:
+        self, topic_page: TopicPage, articles_data: list[ArticleDataDict]
+    ) -> dict[str, StatisticalArticlePage]:
         """Create articles with series under a specific topic page."""
         created_articles = {}
 
@@ -141,8 +141,8 @@ class TopicContentBuilder:
         return created_articles
 
     def create_methodologies_for_topic_page(
-        self, topic_page: "TopicPage", methodologies_data: list[MethodologyDataDict]
-    ) -> dict[str, "MethodologyPage"]:
+        self, topic_page: TopicPage, methodologies_data: list[MethodologyDataDict]
+    ) -> dict[str, MethodologyPage]:
         """Create methodologies under a specific topic page."""
         created_methodologies = {}
 

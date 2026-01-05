@@ -111,7 +111,7 @@ class BaseChartBlock(BaseVisualisationBlock):
 
     series_customisation = blocks.StaticBlock()
 
-    def get_context(self, value: "StructValue", parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
+    def get_context(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
 
         context["chart_config"] = self.get_component_config(
@@ -119,7 +119,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         )
         return context
 
-    def get_highcharts_chart_type(self, value: "StructValue") -> str:
+    def get_highcharts_chart_type(self, value: StructValue) -> str:
         """Chart type may be set by a field, or hardcoded in the subclass."""
         if chart_type := value.get("select_chart_type"):
             return cast(str, chart_type)
@@ -127,7 +127,7 @@ class BaseChartBlock(BaseVisualisationBlock):
 
     def get_component_config(
         self,
-        value: "StructValue",
+        value: StructValue,
         *,
         parent_context: dict[str, Any] | None = None,
         block_id: str | None = None,
@@ -169,7 +169,7 @@ class BaseChartBlock(BaseVisualisationBlock):
 
     def get_x_axis_config(
         self,
-        attrs: "StructValue",
+        attrs: StructValue,
         rows: Sequence[list[str | int | float]],
     ) -> dict[str, Any]:
         config: dict[str, Any] = {
@@ -201,7 +201,7 @@ class BaseChartBlock(BaseVisualisationBlock):
 
     def get_y_axis_config(
         self,
-        attrs: "StructValue",
+        attrs: StructValue,
     ) -> dict[str, Any]:
         config = {}
 
@@ -231,7 +231,7 @@ class BaseChartBlock(BaseVisualisationBlock):
             config["customReferenceLineValue"] = custom_reference_line
         return config
 
-    def get_annotations_config(self, value: "StructValue") -> AnnotationsReturn:
+    def get_annotations_config(self, value: StructValue) -> AnnotationsReturn:
         annotations_values: AnnotationsList = []
         range_annotations_values: AnnotationsList = []
         line_annotations_values: AnnotationsList = []
@@ -252,7 +252,7 @@ class BaseChartBlock(BaseVisualisationBlock):
 
     def get_series_data(
         self,
-        value: "StructValue",
+        value: StructValue,
     ) -> tuple[list[list[str | int | float]], list[dict[str, Any]]]:
         headers: list[str] = value["table"].headers
         rows: list[list[str | int | float]] = value["table"].rows
@@ -263,7 +263,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         return rows, series
 
     def get_series_item(
-        self, value: "StructValue", series_number: int, series_name: str, rows: list[list[str | int | float]]
+        self, value: StructValue, series_number: int, series_name: str, rows: list[list[str | int | float]]
     ) -> dict[str, Any]:
         """Get the configuration for a single series."""
         data_points = [r[series_number] or None for r in rows]
@@ -285,7 +285,7 @@ class BaseChartBlock(BaseVisualisationBlock):
             }
         return item
 
-    def get_extra_series_attributes(self, value: "StructValue", series_number: int) -> dict[str, Any]:
+    def get_extra_series_attributes(self, value: StructValue, series_number: int) -> dict[str, Any]:
         """Get additional parameters for a specific series."""
         # Start with the default parameters for this chart type
         extra_series_attributes = getattr(self, "extra_series_attributes", {})
@@ -295,7 +295,7 @@ class BaseChartBlock(BaseVisualisationBlock):
 
         return extra_series_attributes
 
-    def get_additional_options(self, value: "StructValue") -> dict[str, Any]:
+    def get_additional_options(self, value: StructValue) -> dict[str, Any]:
         """Get additional global options for the chart."""
         options = {}
         for option in value.get("options", []):
@@ -343,7 +343,7 @@ class BaseChartBlock(BaseVisualisationBlock):
 
     def get_download_config(
         self,
-        value: "StructValue",
+        value: StructValue,
         *,
         parent_context: dict[str, Any] | None = None,
         block_id: str | None = None,
@@ -360,7 +360,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         }
 
     @staticmethod
-    def _build_chart_download_url(page: "BasePage", block_id: str, superseded_version: int | None = None) -> str:
+    def _build_chart_download_url(page: BasePage, block_id: str, superseded_version: int | None = None) -> str:
         """Build the chart download URL, handling versioned pages.
 
         Args:
@@ -380,7 +380,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         return f"{base_url}{version_part}/download-chart/{block_id}"
 
     @staticmethod
-    def _build_preview_chart_download_url(page: "BasePage", block_id: str, request: "HttpRequest | None" = None) -> str:
+    def _build_preview_chart_download_url(page: BasePage, block_id: str, request: HttpRequest | None = None) -> str:
         """Build the chart download URL for preview mode.
 
         In preview mode, we need to use an admin URL that can access the draft revision.
@@ -411,7 +411,7 @@ class BaseChartBlock(BaseVisualisationBlock):
             kwargs={"page_id": page.pk, "revision_id": revision_id, "chart_id": block_id},
         )
 
-    def get_footnotes_config(self, value: "StructValue") -> dict["_StrOrPromise", Any]:
+    def get_footnotes_config(self, value: StructValue) -> dict[_StrOrPromise, Any]:
         if footnotes := value.get("footnotes"):
             return {"title": _("Footnotes"), "content": str(footnotes)}
         return {}

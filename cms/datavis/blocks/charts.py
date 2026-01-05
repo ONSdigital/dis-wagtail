@@ -194,13 +194,13 @@ class BarColumnChartBlock(BaseChartBlock):
     class Meta:
         icon = "chart-bar"
 
-    def get_series_customisation(self, value: "StructValue", series_number: int) -> dict[str, Any]:
+    def get_series_customisation(self, value: StructValue, series_number: int) -> dict[str, Any]:
         for block in value.get("series_customisation", []):
             if block.block_type == self.SERIES_AS_LINE_OVERLAY_BLOCK and block.value == series_number:
                 return {"type": "line"}
         return {}
 
-    def clean(self, value: "StructValue") -> "StructValue":
+    def clean(self, value: StructValue) -> StructValue:
         value = super().clean(value)
         self.validate_series_customisation(value)
         self.validate_options(value)
@@ -208,7 +208,7 @@ class BarColumnChartBlock(BaseChartBlock):
         self.validate_y_axis(value)
         return value
 
-    def validate_series_customisation(self, value: "StructValue") -> "StructValue":
+    def validate_series_customisation(self, value: StructValue) -> StructValue:
         _, series = self.get_series_data(value)
 
         errors = {}
@@ -256,7 +256,7 @@ class BarColumnChartBlock(BaseChartBlock):
         if errors:
             raise blocks.StructBlockValidationError(block_errors=errors)
 
-    def validate_x_axis(self, value: "StructValue") -> None:
+    def validate_x_axis(self, value: StructValue) -> None:
         if value.get("select_chart_type") == BarColumnChartTypeChoices.BAR and value.get("x_axis").get("title"):
             raise blocks.StructBlockValidationError(
                 {
@@ -271,7 +271,7 @@ class BarColumnChartBlock(BaseChartBlock):
                 }
             )
 
-    def validate_y_axis(self, value: "StructValue") -> None:
+    def validate_y_axis(self, value: StructValue) -> None:
         if value.get("y_axis").get("custom_reference_line"):
             if value.get("select_chart_type") == BarColumnChartTypeChoices.BAR:
                 raise blocks.StructBlockValidationError(
@@ -303,7 +303,7 @@ class BarColumnChartBlock(BaseChartBlock):
                     }
                 )
 
-    def validate_options(self, value: "StructValue") -> None:
+    def validate_options(self, value: StructValue) -> None:
         aspect_ratio_keys = [self.DESKTOP_ASPECT_RATIO, self.MOBILE_ASPECT_RATIO]
 
         errors = {}
@@ -323,7 +323,7 @@ class BarColumnChartBlock(BaseChartBlock):
 
     def get_series_item(
         self,
-        value: "StructValue",
+        value: StructValue,
         series_number: int,
         series_name: str,
         rows: list[list[str | int | float]],
@@ -428,7 +428,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
 
     def get_component_config(
         self,
-        value: "StructValue",
+        value: StructValue,
         *,
         parent_context: dict[str, Any] | None = None,
         block_id: str | None = None,
@@ -448,7 +448,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
 
     def get_series_data(
         self,
-        value: "StructValue",
+        value: StructValue,
     ) -> tuple[list[list[str | int | float]], list[dict[str, Any]]]:
         match value["select_chart_type"]:
             case BarColumnConfidenceIntervalChartTypeChoices.BAR:
@@ -459,7 +459,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
                 raise ValueError(f"Unknown chart type: {value['select_chart_type']}")
         return value["table"].rows, series
 
-    def get_series_data_bar(self, value: "StructValue") -> list[dict[str, Any]]:
+    def get_series_data_bar(self, value: StructValue) -> list[dict[str, Any]]:
         values: list[str | int | float] = []
         confidence_intervals: list[tuple[str | int | float, str | int | float]] = []
 
@@ -480,7 +480,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
             },
         ]
 
-    def get_series_data_column(self, value: "StructValue") -> list[dict[str, Any]]:
+    def get_series_data_column(self, value: StructValue) -> list[dict[str, Any]]:
         return [
             {
                 # Box plots are in the format
@@ -496,14 +496,14 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
             }
         ]
 
-    def clean(self, value: "StructValue") -> "StructValue":
+    def clean(self, value: StructValue) -> StructValue:
         value = super().clean(value)
         self.validate_options(value)
         self.validate_table(value)
         self.validate_x_axis(value)
         return value
 
-    def validate_options(self, value: "StructValue") -> None:
+    def validate_options(self, value: StructValue) -> None:
         aspect_ratio_keys = [self.DESKTOP_ASPECT_RATIO, self.MOBILE_ASPECT_RATIO]
 
         errors = {}
@@ -521,7 +521,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
         if errors:
             raise blocks.StructBlockValidationError(block_errors=errors)
 
-    def validate_table(self, value: "StructValue") -> None:
+    def validate_table(self, value: StructValue) -> None:
         errors = {}
         # Category, Value, Range min, Range max
         if len(value["table"].headers) < self.REQUIRED_COLUMN_COUNT:
@@ -549,7 +549,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
         if errors:
             raise blocks.StructBlockValidationError(block_errors=errors)
 
-    def validate_x_axis(self, value: "StructValue") -> None:
+    def validate_x_axis(self, value: StructValue) -> None:
         if value.get("select_chart_type") == BarColumnConfidenceIntervalChartTypeChoices.BAR and value.get(
             "x_axis"
         ).get("title"):
@@ -628,7 +628,7 @@ class ScatterPlotBlock(BaseChartBlock):
     class Meta:
         icon = "chart-line"
 
-    def get_series_data(self, value: "StructValue") -> tuple[list[list[str | int | float]], list[dict[str, Any]]]:
+    def get_series_data(self, value: StructValue) -> tuple[list[list[str | int | float]], list[dict[str, Any]]]:
         rows: list[list[str | int | float]] = value["table"].rows
         groups = defaultdict(list)
 
@@ -697,12 +697,12 @@ class AreaChartBlock(BaseChartBlock):
     class Meta:
         icon = "chart-area"
 
-    def clean(self, value: "StructValue") -> "StructValue":
+    def clean(self, value: StructValue) -> StructValue:
         value = super().clean(value)
         self.validate_table_data(value)
         return value
 
-    def validate_table_data(self, value: "StructValue") -> None:
+    def validate_table_data(self, value: StructValue) -> None:
         rows = value["table"].rows
 
         if any(cell == "" for row in rows[1:] for cell in row):
@@ -734,7 +734,7 @@ class IframeBlock(BaseVisualisationBlock):
     class Meta:
         icon = "code"
 
-    def clean(self, value: "StructValue") -> "StructValue":
+    def clean(self, value: StructValue) -> StructValue:
         errors = {}
 
         for field_name, field in self.child_blocks.items():
@@ -748,7 +748,7 @@ class IframeBlock(BaseVisualisationBlock):
 
         return super().clean(value)
 
-    def _validate_source_url(self, value: "StructValue") -> dict[str, ValidationError]:
+    def _validate_source_url(self, value: StructValue) -> dict[str, ValidationError]:
         """Validate the source URL of the iframe. Validation errors are returned as an errors dict.
         The URL can be either absolute (with scheme and hostname) or relative (path only).
         """
@@ -807,7 +807,7 @@ class IframeBlock(BaseVisualisationBlock):
 
     def get_component_config(
         self,
-        value: "StructValue",
+        value: StructValue,
         *,
         # We don't call super() here, so these args are unused
         parent_context: dict[str, Any] | None = None,  # pylint: disable=unused-argument
@@ -824,7 +824,7 @@ class IframeBlock(BaseVisualisationBlock):
 
         return config
 
-    def get_context(self, value: "StructValue", parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
+    def get_context(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
 
         context["chart_config"] = self.get_component_config(value)

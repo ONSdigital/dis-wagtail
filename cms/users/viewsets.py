@@ -22,7 +22,7 @@ class UserFilterForm(SearchFilterMixin, BaseFilterForm):
     def model_fields(self) -> set[str]:
         return {field.name for field in User._meta.get_fields()}
 
-    def filter(self, objects: "QuerySet[User]") -> "QuerySet[User]":
+    def filter(self, objects: QuerySet[User]) -> QuerySet[User]:
         """The User model doesn't have search_fields.
 
         So we take the same approach as the core UserViewSet when it comes to searching.
@@ -73,7 +73,7 @@ class UserChooserMixin:
             ),
         ]
 
-    def get_object_list(self) -> "QuerySet[User]":
+    def get_object_list(self) -> QuerySet[User]:
         return User.objects.select_related("wagtail_userprofile")
 
 

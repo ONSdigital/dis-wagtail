@@ -64,7 +64,7 @@ class SimpleTableBlock(TableBlock):
 
 
 class SimpleTableBlockAdapter(TableAdapter):
-    def js_args(self, block: "SimpleTableBlock") -> list[Any]:
+    def js_args(self, block: SimpleTableBlock) -> list[Any]:
         result: list[Any] = super().js_args(block)
         # We override wagtailtables js to remove the toolbar, as formatting
         # options are irrelevant to our data-only tables.

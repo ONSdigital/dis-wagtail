@@ -38,12 +38,12 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
     page_description = "A place for all methodologies."
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode as this redirects away
 
-    content_panels: ClassVar[list["Panel"]] = [
+    content_panels: ClassVar[list[Panel]] = [
         *Page.content_panels,
         HelpPanel(content="This is a container for methodology pages for URL structure purposes."),
     ]
     # disables the "Promote" tab as we control the slug, and the page redirects
-    promote_panels: ClassVar[list["Panel"]] = []
+    promote_panels: ClassVar[list[Panel]] = []
 
     def clean(self) -> None:
         self.slug = "methodologies"
@@ -54,7 +54,7 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
         self.slug = "methodologies"
         super().minimal_clean()
 
-    def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+    def serve(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         # Redirects methodology index page requests to the parent topic's methodologies search URL.
         return redirect_to_parent_listing(
             page=self, request=request, listing_url_method_name="get_methodologies_search_url"
@@ -97,7 +97,7 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
 
     show_cite_this_page = models.BooleanField(default=True)
 
-    content_panels: ClassVar[list["Panel"]] = [
+    content_panels: ClassVar[list[Panel]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
         FieldPanel("summary", required_on_save=True),
@@ -142,11 +142,11 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
         return context
 
     @property
-    def release_date(self) -> "datetime.date":
+    def release_date(self) -> datetime.date:
         return self.publication_date
 
     @cached_property
-    def related_publications(self) -> "PageQuerySet":
+    def related_publications(self) -> PageQuerySet:
         """Return a `PageQuerySet` of the StatisticalArticlePage page model via the
         `MethodologyRelatedPage` through model, which is suitable for display.
         The result is ordered to match that specified by editors using
@@ -163,7 +163,7 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
 
     def get_formatted_related_publications_list(
         self, request: HttpRequest | None = None
-    ) -> dict[str, Union[str, "StrPromise", list[dict[str, str]]]]:
+    ) -> dict[str, Union[str, StrPromise, list[dict[str, str]]]]:
         """Returns a formatted list of related internal pages for use with the Design System list component."""
         items = [
             {

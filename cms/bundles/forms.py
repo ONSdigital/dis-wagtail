@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 class BundleAdminForm(DeduplicateInlinePanelAdminForm):
     """The Bundle admin form used in the add/edit interface."""
 
-    instance: "Bundle"
+    instance: Bundle
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Helps the form initialisation.
@@ -344,7 +344,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
         return cleaned_data
 
-    def _sync_with_bundle_api(self, bundle: "Bundle") -> None:
+    def _sync_with_bundle_api(self, bundle: Bundle) -> None:
         sync_service = BundleAPISyncService(
             bundle=bundle,
             api_client=self.bundle_api_client,
@@ -352,7 +352,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         )
         sync_service.sync()
 
-    def save(self, commit: bool = True) -> "Bundle":
+    def save(self, commit: bool = True) -> Bundle:
         """Save the bundle and create in API if it has datasets but no API ID."""
         # Use the standard save behavior first. This handles new/existing objects
         # and m2m relations if commit=True.

@@ -42,13 +42,13 @@ class MainMenu(TranslatableMixin, DraftStateMixin, RevisionMixin, PreviewableMix
     def name(self) -> str:
         return f"{self} ({self.locale})"  # To avoid ambiguity, we include the locale
 
-    panels: ClassVar[list[Union[str, "Panel"]]] = [
+    panels: ClassVar[list[Union[str, Panel]]] = [
         "highlights",
         "columns",
         PublishingPanel(),
     ]
 
-    def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
+    def get_preview_template(self, request: HttpRequest, mode_name: str) -> str:
         return "templates/components/navigation/main_menu_preview.html"
 
     def __str__(self) -> str:
@@ -79,7 +79,7 @@ class FooterMenu(TranslatableMixin, DraftStateMixin, RevisionMixin, PreviewableM
         PublishingPanel(),
     ]
 
-    def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
+    def get_preview_template(self, request: HttpRequest, mode_name: str) -> str:
         return "templates/components/navigation/footer_menu_preview.html"
 
     def __str__(self) -> str:

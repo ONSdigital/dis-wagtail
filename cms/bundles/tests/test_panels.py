@@ -28,7 +28,7 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
         cls.request = get_dummy_request()
         cls.request.user = cls.superuser
 
-    def get_bound_panel(self, page: "Page") -> BundleNotePanel.BoundPanel:
+    def get_bound_panel(self, page: Page) -> BundleNotePanel.BoundPanel:
         """Binds the panel to the given page."""
         return self.panel.bind_to_model(page._meta.model).get_bound_panel(instance=page, request=self.request)
 
@@ -95,7 +95,7 @@ class BundleMultipleChooserPanelTestCase(WagtailTestUtils, TestCase):
         cls.request.user = cls.superuser
         BundlePageFactory(parent=cls.bundle, page=cls.page)
 
-    def get_bound_panel(self, bundle: "Bundle") -> BundleMultipleChooserPanel.BoundPanel:
+    def get_bound_panel(self, bundle: Bundle) -> BundleMultipleChooserPanel.BoundPanel:
         """Binds the panel to the given page."""
         return self.panel.bind_to_model(bundle._meta.model).get_bound_panel(instance=bundle, request=self.request)
 

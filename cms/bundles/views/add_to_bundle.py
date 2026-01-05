@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import PermissionDenied
@@ -26,7 +28,7 @@ class AddToBundleView(FormView):
     page_to_add: Page = None
     goto_next: str | None = None
 
-    def dispatch(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponseBase":
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         self.page_to_add = get_object_or_404(
             Page.objects.specific().defer_streamfields(), id=self.kwargs["page_to_add_id"]
         )
@@ -77,7 +79,7 @@ class AddToBundleView(FormView):
         )
         return context_data
 
-    def form_valid(self, form: AddToBundleForm) -> "HttpResponseRedirect":
+    def form_valid(self, form: AddToBundleForm) -> HttpResponseRedirect:
         bundle: Bundle = form.cleaned_data["bundle"]  # the 'bundle' field is required in the form.
         bundle.bundled_pages.add(BundlePage(page=self.page_to_add))
         bundle.save()

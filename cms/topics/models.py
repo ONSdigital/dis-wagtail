@@ -68,7 +68,7 @@ class TopicPageRelatedArticle(Orderable):
         ),
     )
 
-    panels: ClassVar[list["Panel"]] = [
+    panels: ClassVar[list[Panel]] = [
         MultiFieldPanel(
             [
                 FieldPanel(
@@ -162,7 +162,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     datasets = StreamField(DatasetStoryBlock(), blank=True, default=list, max_num=MAX_ITEMS_PER_SECTION)
     time_series = StreamField(TimeSeriesPageStoryBlock(), blank=True, default=list, max_num=MAX_ITEMS_PER_SECTION)
 
-    content_panels: ClassVar[list["Panel"]] = [
+    content_panels: ClassVar[list[Panel]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
         FieldPanel("summary", required_on_save=True),
@@ -208,7 +208,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
     _analytics_content_type: ClassVar[str] = "topics"
 
-    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+    def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
         context: dict = super().get_context(request, *args, **kwargs)
         context["table_of_contents"] = self.table_of_contents
@@ -288,7 +288,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             if len(figure_ids) != len(set(figure_ids)):
                 raise ValidationError({"headline_figures": "Duplicate headline figures are not allowed."})
 
-    def permissions_for_user(self, user: "User") -> PagePermissionTester:
+    def permissions_for_user(self, user: User) -> PagePermissionTester:
         """Overrides the core permissions_for_user to use our permission tester.
 
         TopicPagePermissionTester.can_add_subpage() takes into account max_count / max_count_per_parent.

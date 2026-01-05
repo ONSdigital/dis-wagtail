@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Union, cast
 from urllib.parse import urlencode
 
 from django.urls import reverse
@@ -37,7 +37,7 @@ class BundleStatusPanel(HelpPanel):
             super().__init__(**kwargs)
             self.content = self._content_for_instance(self.instance)
 
-        def _content_for_instance(self, instance: "Model") -> Union[str, "SafeString"]:
+        def _content_for_instance(self, instance: Model) -> Union[str, SafeString]:
             if not hasattr(instance, "status"):
                 return ""
 
@@ -52,7 +52,7 @@ class BundleNotePanel(HelpPanel):
             super().__init__(**kwargs)
             self.content = self._content_for_instance(self.instance)
 
-        def _content_for_instance(self, instance: "Model") -> Union[str, "SafeString"]:
+        def _content_for_instance(self, instance: Model) -> Union[str, SafeString]:
             if not hasattr(instance, "active_bundle"):
                 return ""
 
@@ -135,7 +135,7 @@ class BundleMultipleChooserPanel(MultipleChooserPanel):
 
 
 class CustomAdminPageChooser(PagesWithDraftsForBundleChooserWidget):
-    def get_display_title(self, instance: "Page") -> str:
+    def get_display_title(self, instance: Page) -> str:
         return get_page_title_with_workflow_status(instance)
 
 
@@ -165,7 +165,7 @@ class PageChooserWithStatusPanel(BundleFieldPanel):
 
 class CustomReleaseCalendarPageChooser(FutureReleaseCalendarChooserWidget):
     # Override BaseChooser's default get_display_title to return custom text display
-    def get_display_title(self, instance: "Page") -> str:
+    def get_display_title(self, instance: Page) -> str:
         return get_release_calendar_page_details(instance)
 
 
@@ -180,7 +180,7 @@ class ReleaseChooserWithDetailsPanel(BundleFieldPanel):
 
         return opts
 
-    def format_value_for_display(self, value: Optional["ReleaseCalendarPage"]) -> str:
+    def format_value_for_display(self, value: ReleaseCalendarPage | None) -> str:
         if value is None:
             return ""
         return get_release_calendar_page_details(value)

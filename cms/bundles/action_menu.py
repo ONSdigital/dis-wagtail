@@ -45,7 +45,7 @@ class ActionMenuItem(Component):
         """
         return False
 
-    def get_context_data(self, parent_context: "RenderContext | None" = None) -> "RenderContext | None":
+    def get_context_data(self, parent_context: RenderContext | None = None) -> RenderContext | None:
         """Defines context for the template, overridable to use more data."""
         context = super().get_context_data(parent_context=parent_context) or {}
         context.update(
@@ -153,7 +153,7 @@ class BundleActionMenu:
     template = "wagtailadmin/shared/action_menu/menu.html"
     default_item: ActionMenuItem | None = None
 
-    def __init__(self, request: "HttpRequest", bundle: "Bundle | None" = None, **kwargs: dict[str, Any]) -> None:
+    def __init__(self, request: HttpRequest, bundle: Bundle | None = None, **kwargs: dict[str, Any]) -> None:
         self.request = request
         context: dict[str, Any] = kwargs
         context["request"] = request
@@ -180,7 +180,7 @@ class BundleActionMenu:
         except IndexError:
             self.default_item = None
 
-    def render_html(self) -> "SafeString | str":
+    def render_html(self) -> SafeString | str:
         if not self.default_item:
             return ""
 

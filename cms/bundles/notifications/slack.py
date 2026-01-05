@@ -1,6 +1,6 @@
 import logging
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from slack_sdk.webhook import WebhookClient
@@ -18,8 +18,8 @@ logger = logging.getLogger("cms.bundles")
 
 def notify_slack_of_status_change(
     bundle: Bundle,
-    old_status: "_StrOrPromise",
-    user: Optional["User"] = None,
+    old_status: _StrOrPromise,
+    user: User | None = None,
     url: str | None = None,
     context_message: str | None = None,
 ) -> None:
@@ -54,7 +54,7 @@ def notify_slack_of_status_change(
         logger.error("Unable to notify Slack of bundle status change: %s", response.body)
 
 
-def notify_slack_of_publication_start(bundle: Bundle, user: Optional["User"] = None, url: str | None = None) -> None:
+def notify_slack_of_publication_start(bundle: Bundle, user: User | None = None, url: str | None = None) -> None:
     """Sends a Slack notification for Bundle publication start."""
     if (webhook_url := settings.SLACK_NOTIFICATIONS_WEBHOOK_URL) is None:
         return
@@ -83,7 +83,7 @@ def notify_slack_of_publication_start(bundle: Bundle, user: Optional["User"] = N
 
 
 def notify_slack_of_publish_end(
-    bundle: Bundle, elapsed: float, user: Optional["User"] = None, url: str | None = None
+    bundle: Bundle, elapsed: float, user: User | None = None, url: str | None = None
 ) -> None:
     """Sends a Slack notification for Bundle publication end."""
     if (webhook_url := settings.SLACK_NOTIFICATIONS_WEBHOOK_URL) is None:

@@ -73,7 +73,7 @@ class DocumentsBlock(blocks.StreamBlock):
 
     document = DocumentBlock()
 
-    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+    def get_context(self, value: StreamValue, parent_context: dict | None = None) -> dict:
         """Inject the document list as DS component macros data."""
         context: dict = super().get_context(value, parent_context)
         context["macro_data"] = [document.value.as_macro_data() for document in value]
@@ -135,13 +135,13 @@ class VideoEmbedBlock(blocks.StructBlock):
             embed_url = "https://www.youtube.com/embed/" + video_id
         return embed_url
 
-    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+    def get_context(self, value: StreamValue, parent_context: dict | None = None) -> dict:
         """Get the embed URL for the video based on the link URL."""
         context: dict = super().get_context(value, parent_context=parent_context)
         context["value"]["embed_url"] = self.get_embed_url(value["link_url"])
         return context
 
-    def clean(self, value: "StructValue") -> "StructValue":
+    def clean(self, value: StructValue) -> StructValue:
         """Checks that the given embed and link urls match youtube or vimeo."""
         errors = {}
 

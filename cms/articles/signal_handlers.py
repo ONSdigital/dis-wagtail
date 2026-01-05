@@ -26,7 +26,7 @@ def on_statistical_article_page_published(
 
 @receiver(init_new_page)
 def prepopulate_statistical_article(
-    sender: type["CreateView"],  # pylint: disable=unused-argument
+    sender: type[CreateView],  # pylint: disable=unused-argument
     page: Page,
     parent: Page,
     **kwargs: dict,

@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import logging
 import textwrap
 import time
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -50,7 +52,7 @@ logger = logging.getLogger(__name__)
 MISSING_VALUE = "Data missing"
 
 
-def add_exception_cause_to_form(exception: Exception, *, form: "BaseForm") -> None:
+def add_exception_cause_to_form(exception: Exception, *, form: BaseForm) -> None:
     """Adds errors from a BundleAPIClientError exception cause to the form errors."""
     cause = getattr(exception, "__cause__", None)
     if not cause:
@@ -78,7 +80,7 @@ class BundleCreateView(CreateView):
         kwargs["access_token"] = self.request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME)
         return kwargs
 
-    def form_valid(self, form: "BundleAdminForm") -> "HttpResponseBase":
+    def form_valid(self, form: BundleAdminForm) -> HttpResponseBase:
         self.form = form  # pylint: disable=attribute-defined-outside-init
         try:
             with transaction.atomic():
@@ -132,7 +134,7 @@ class BundleEditView(EditView):
     has_content_changes: bool = False
     start_time: float | None = None
 
-    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> "HttpResponseBase":
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         if (instance := self.get_object()) and instance.status == BundleStatus.PUBLISHED:
             return redirect(self.index_url_name)
 
@@ -167,7 +169,7 @@ class BundleEditView(EditView):
             kwargs["data"] = data
         return kwargs
 
-    def form_valid(self, form: "BundleAdminForm") -> "HttpResponseBase":
+    def form_valid(self, form: BundleAdminForm) -> HttpResponseBase:
         self.form = form  # pylint: disable=attribute-defined-outside-init
         try:
             with transaction.atomic():
@@ -228,7 +230,7 @@ class BundleEditView(EditView):
 
         return instance
 
-    def run_after_hook(self) -> Optional["HttpResponseBase"]:
+    def run_after_hook(self) -> HttpResponseBase | None:
         """This method allows calling hooks or additional logic after an action has been executed.
 
         In our case, we want to replicate the scheduled publication (send Slack notification, publish pages, update RC).
@@ -236,7 +238,7 @@ class BundleEditView(EditView):
         if self.action == "publish" or (self.action == "edit" and self.object.status == BundleStatus.PUBLISHED):
             publish_bundle(self.object, update_status=False)
 
-    def get_action(self, request: "HttpRequest") -> str:
+    def get_action(self, request: HttpRequest) -> str:
         """Determine the POST action."""
         for action in self.get_available_actions():
             if request.POST.get(f"action-{action}"):
@@ -305,7 +307,7 @@ class BundleInspectView(InspectView):
 
     template_name = "bundles/wagtailadmin/inspect.html"
 
-    def dispatch(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "TemplateResponse":
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
         if not user_can_preview_bundle(self.request.user, self.object):
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)  # type: ignore[no-any-return]
@@ -345,7 +347,7 @@ class BundleInspectView(InspectView):
             "bundled_datasets",
         ]
 
-    def get_field_label(self, field_name: str, field: "Field") -> str:
+    def get_field_label(self, field_name: str, field: Field) -> str:
         match field_name:
             case "approved":
                 label = "Approval status"
@@ -402,18 +404,18 @@ class BundleInspectView(InspectView):
             )
         return "N/A"
 
-    def get_pages_for_manager(self) -> "SafeString":
+    def get_pages_for_manager(self) -> SafeString:
         """Returns all the bundle pages.
         Publishing Admins / Officers can see everything when inspecting the bundle.
         """
         pages = self.object.get_bundled_pages().specific().defer_streamfields()
 
-        def get_page_status(page: "Page") -> str:
+        def get_page_status(page: Page) -> str:
             if self.object.status == BundleStatus.PUBLISHED and page.live:
                 return "Published"
             return page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"
 
-        def get_action(page: "Page") -> str:
+        def get_action(page: Page) -> str:
             if self.object.status == BundleStatus.PUBLISHED and page.live:
                 return str(page.get_url(request=self.request))
             return reverse(
@@ -448,7 +450,7 @@ class BundleInspectView(InspectView):
             page_data,
         )
 
-    def get_pages_for_previewer(self) -> "SafeString":
+    def get_pages_for_previewer(self) -> SafeString:
         """Returns the list of bundle pages a previewer-only user can see when inspecting the bundle.
         These are pages in the bundle that are in the "Ready for review" workflow state.
         """
@@ -481,7 +483,7 @@ class BundleInspectView(InspectView):
             page_data,
         )
 
-    def get_pages_display_value(self) -> "SafeString | str":
+    def get_pages_display_value(self) -> SafeString | str:
         """Returns formatted markup for Pages linked to the Bundle."""
         if self.can_manage:
             return self.get_pages_for_manager()
@@ -540,7 +542,7 @@ class BundleInspectView(InspectView):
             links.get("preview"),
         )
 
-    def _build_action_button(self, state: str, preview_url: str | None, dataset: "Dataset") -> "SafeString | str":
+    def _build_action_button(self, state: str, preview_url: str | None, dataset: Dataset) -> SafeString | str:
         """Build the action button HTML based on dataset state."""
         if state == BundleContentItemState.PUBLISHED:
             view_url = get_data_admin_action_url("preview", dataset.namespace, dataset.edition, str(dataset.version))
@@ -559,7 +561,7 @@ class BundleInspectView(InspectView):
             )
         return ""
 
-    def _get_processed_datasets(self) -> list[dict[str, "SafeString | str"]]:
+    def _get_processed_datasets(self) -> list[dict[str, SafeString | str]]:
         """Processes dataset information by hydrating local DB records with API data.
 
         Uses local database records as the source of truth, then enriches them with
@@ -592,7 +594,7 @@ class BundleInspectView(InspectView):
 
         return processed_data
 
-    def _render_datasets_table(self, include_edit_links: bool) -> "SafeString | str":
+    def _render_datasets_table(self, include_edit_links: bool) -> SafeString | str:
         """Renders datasets as an HTML table.
 
         Args:
@@ -635,15 +637,15 @@ class BundleInspectView(InspectView):
             dataset_data,
         )
 
-    def get_datasets_for_manager(self) -> "SafeString | str":
+    def get_datasets_for_manager(self) -> SafeString | str:
         """Returns all the bundle datasets for managers with edit links."""
         return self._render_datasets_table(include_edit_links=True)
 
-    def get_datasets_for_viewer(self) -> "SafeString | str":
+    def get_datasets_for_viewer(self) -> SafeString | str:
         """Returns all the bundle datasets for viewers without edit links."""
         return self._render_datasets_table(include_edit_links=False)
 
-    def get_bundled_datasets_display_value(self) -> "SafeString | str":
+    def get_bundled_datasets_display_value(self) -> SafeString | str:
         """Returns formatted markup for datasets linked to the Bundle."""
         if not self.object.has_datasets:
             return "No datasets in bundle"
@@ -695,7 +697,7 @@ class BundleDeleteView(DeleteView):
             self.object.delete()
             self.sync_bundle_deletion_with_bundle_api(bundle)
 
-    def form_valid(self, form: "BundleAdminForm") -> "HttpResponseBase":
+    def form_valid(self, form: BundleAdminForm) -> HttpResponseBase:
         try:
             response: HttpResponseBase = super().form_valid(form)
             return response
@@ -715,7 +717,7 @@ class BundleIndexView(IndexView):
     model = Bundle
     default_ordering = "name"
 
-    def get_base_queryset(self) -> "BundlesQuerySet":
+    def get_base_queryset(self) -> BundlesQuerySet:
         """Modifies the Bundle queryset to vary results based on the user capabilities."""
         queryset: BundlesQuerySet = super().get_base_queryset()
 
@@ -724,14 +726,14 @@ class BundleIndexView(IndexView):
 
         return queryset
 
-    def filter_queryset(self, queryset: "BundlesQuerySet") -> "BundlesQuerySet":
+    def filter_queryset(self, queryset: BundlesQuerySet) -> BundlesQuerySet:
         # automatically filter out published bundles if the status filter is not applied
         if not self.request.GET.get("status"):
             queryset = queryset.exclude(status=BundleStatus.PUBLISHED)
 
         return cast("BundlesQuerySet", super().filter_queryset(queryset))
 
-    def order_queryset(self, queryset: "BundlesQuerySet") -> "BundlesQuerySet":
+    def order_queryset(self, queryset: BundlesQuerySet) -> BundlesQuerySet:
         if self.ordering in ["status", "-status", "scheduled_publication_date", "-scheduled_publication_date"]:
             match self.ordering:
                 case "scheduled_publication_date":

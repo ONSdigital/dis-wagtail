@@ -7,6 +7,6 @@ if TYPE_CHECKING:
 
 
 class NonStrippingCharField(CharField):
-    def formfield(self, *args: Any, **kwargs: Any) -> "Field":
+    def formfield(self, *args: Any, **kwargs: Any) -> Field:
         kwargs["strip"] = False
         return super().formfield(*args, **kwargs)  # type: ignore[return-value]

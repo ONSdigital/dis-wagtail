@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _parse_der_public_key(b64_der_key: str) -> "RSAPublicKey":
+def _parse_der_public_key(b64_der_key: str) -> RSAPublicKey:
     """Parses a Base64 encoded DER public key and returns the public key object."""
     der = base64.b64decode(b64_der_key)
     key = serialization.load_der_public_key(der, backend=default_backend())

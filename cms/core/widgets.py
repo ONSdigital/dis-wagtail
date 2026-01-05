@@ -45,7 +45,7 @@ register(AdminDateTimeInputAdapter(), ONSAdminDateTimeInput)
 
 
 class ReadOnlyRichTextWidget(forms.Widget):
-    def render(self, name: str, value: str | None, attrs: Any = None, renderer: Any = None) -> "SafeString":
+    def render(self, name: str, value: str | None, attrs: Any = None, renderer: Any = None) -> SafeString:
         if value is None:
             value = ""
         # Remove HTML tags (note that there is no risk of XSS here as the value

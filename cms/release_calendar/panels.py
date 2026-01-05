@@ -40,7 +40,7 @@ class ReleaseCalendarBundleNotePanel(HelpPanel):
         def is_shown(self) -> bool:
             return self.instance.active_bundle is not None
 
-        def _get_panel_content(self) -> Union[str, "SafeString"]:
+        def _get_panel_content(self) -> Union[str, SafeString]:
             if not self.instance.active_bundle:
                 return ""
 
@@ -71,7 +71,7 @@ class ChangesToReleaseDateFieldPanel(FieldPanel):
     class BoundPanel(FieldPanel.BoundPanel):
         template_name = "wagtailadmin/panels/previous_release_date_data.html"
 
-        def get_context_data(self, parent_context: "RenderContext | None" = None) -> "RenderContext | None":
+        def get_context_data(self, parent_context: RenderContext | None = None) -> RenderContext | None:
             # To avoid circular import
             # pylint: disable=cyclic-import,import-outside-toplevel
             from cms.release_calendar.models import ReleaseCalendarPage

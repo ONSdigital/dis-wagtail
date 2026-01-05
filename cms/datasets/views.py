@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
@@ -55,7 +57,7 @@ def _update_dataset_metadata(dataset: Dataset, *, title: str, description: str) 
 class DatasetChooserPermissionMixin:
     """Mixin to check permissions for accessing unpublished datasets."""
 
-    def dispatch(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         # Check if requesting unpublished datasets
         is_published = request.GET.get("published", "").lower() == "true"
 
