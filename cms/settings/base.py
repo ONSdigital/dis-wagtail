@@ -368,6 +368,8 @@ WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
     ("cy", _("Welsh")),
 ]
 
+_valid_language_codes = {code for code, _ in LANGUAGES}
+
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
 
 # User groups
@@ -948,6 +950,9 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = {
     "CookiesPage",
     "Page",
 }
+
+# Allow-list of language codes whose pages are included in search indexing
+SEARCH_INDEX_INCLUDED_LANGUAGES = env.get("SEARCH_INDEX_INCLUDED_LANGUAGES", LANGUAGE_CODE).split(",")
 
 # Allowed domains for linking to other parts of the ONS website (for datasets or time series)
 ONS_ALLOWED_LINK_DOMAINS = env.get("ONS_ALLOWED_LINK_DOMAINS", "ons.gov.uk").split(",")
