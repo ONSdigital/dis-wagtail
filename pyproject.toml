@@ -1,6 +1,6 @@
 [tool.project]
 name = "cms"
-version = "0.1.0"
+version = "0.6.0"
 description = "The Wagtail CMS for managing and publishing content for the Office for National Statistics (ONS)"
 authors = ["ONSdigital"]
 license = "MIT"
@@ -11,7 +11,7 @@ package-mode = false
 requires-poetry = ">=2.2"
 
 [tool.poetry.dependencies]
-python = "^3.13"
+python = "^3.14"
 django = "5.2.9"
 wagtail = "~7.2"
 dj-database-url = "~3.0.0"
@@ -79,7 +79,7 @@ fakeredis = "^2.32.1"
 time-machine = "^3.1.0"
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py314"
 line-length = 120
 indent-width = 4
 
