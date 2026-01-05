@@ -332,19 +332,19 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             }
         )
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
-        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+        self.assertNotContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
 
         data["content-0-value-content-0-value-equation"] = latex_formula_cases
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
-        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+        self.assertNotContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
 
         data["content-0-value-content-0-value-equation"] = "$$a+b=c$$"
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
-        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+        self.assertNotContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
 
         data["content-0-value-content-0-value-equation"] = "$$test"  # Invalid LaTeX
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
-        self.assertContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+        self.assertContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
 
     def test_related_datasets_sorting_alphabetic(self):
         dataset_a = {"title": "a", "description": "a", "url": "https://example.com"}

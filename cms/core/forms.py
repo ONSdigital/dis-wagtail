@@ -13,7 +13,7 @@ from cms.core.utils import FORMULA_INDICATOR, latex_formula_to_svg
 logger = logging.getLogger(__name__)
 
 
-LATEX_VALIDATION_ERROR = "The equation is not valid LaTeX. Please check the syntax and try again."
+LATEX_VALIDATION_ERROR = "The equation is not valid MathJax. Please check the syntax and try again."
 
 
 class DeduplicateInlinePanelAdminForm(WagtailAdminPageForm):
