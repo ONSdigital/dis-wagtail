@@ -7,7 +7,7 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from wagtail.models import ModelLogEntry, PageLogEntry
+from wagtail.models import Locale, ModelLogEntry, PageLogEntry
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
@@ -183,6 +183,34 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertEqual(release_page.datasets[0].value, bundle_dataset_a.dataset)
         self.assertEqual(release_page.datasets[1].value, bundle_dataset_b.dataset)
         self.assertEqual(release_page.datasets[2].value, bundle_dataset_c.dataset)
+
+    def test_publish_bundle_with_welsh_release_calendar(self):
+        """Test publishing a bundle with a Welsh release calendar page uses Welsh translations."""
+        welsh_locale, _ = Locale.objects.get_or_create(language_code="cy")
+        release_page = ReleaseCalendarPageFactory(release_date=self.publication_date, locale=welsh_locale)
+
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+        BundlePageFactory(parent=self.bundle, page=self.methodology_article)
+
+        self.bundle.publication_date = None
+        self.bundle.release_calendar_page = release_page
+        self.bundle.save(update_fields=["publication_date", "release_calendar_page"])
+
+        self.call_command()
+
+        # Check release calendar was updated with Welsh translations
+        release_page.refresh_from_db()
+        self.assertEqual(release_page.status, ReleaseStatus.PUBLISHED)
+
+        content = release_page.content[0].value
+        self.assertEqual(content["title"], "Cyhoeddiadau")
+        self.assertEqual(len(content["links"]), 1)
+        self.assertEqual(content["links"][0]["page"].pk, self.statistical_article.pk)
+
+        content = release_page.content[1].value
+        self.assertEqual(content["title"], "Ansawdd a methodoleg")
+        self.assertEqual(len(content["links"]), 1)
+        self.assertEqual(content["links"][0]["page"].pk, self.methodology_article.pk)
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
     @patch("cms.bundles.management.commands.publish_bundles.logger")
