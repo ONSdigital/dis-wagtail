@@ -90,3 +90,12 @@ def build_uri_from_url_path(url_path: str) -> str:
     # The url_path includes the home page's "/home/" slug at the start, but our URLs don't, so we strip it out
     path = url_path.strip("/").split("/", 1)[-1]
     return f"/{path}" if not getattr(settings, "WAGTAIL_APPEND_SLASH", True) else f"/{path}/"
+
+
+def is_indexable_page(page: "Page") -> bool:
+    """Return True if the page should be indexed based on type, restrictions, and locale."""
+    return (
+        page.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES
+        and not page.get_view_restrictions().exists()
+        and page.locale.language_code in settings.SEARCH_INDEX_INCLUDED_LANGUAGES
+    )

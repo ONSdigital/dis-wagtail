@@ -67,3 +67,54 @@ def check_search_index_content_type(app_configs: Iterable["AppConfig"] | None, *
             )
 
     return errors
+
+
+@register()
+def check_search_index_included_languages(app_configs: Iterable["AppConfig"] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
+    """Validate SEARCH_INDEX_INCLUDED_LANGUAGES configuration.
+
+    - Must not be empty
+    - Must contain only codes declared in LANGUAGES/WAGTAIL_CONTENT_LANGUAGES
+    - Must be normalised to lowercase
+    """
+    errors: list[Error] = []
+
+    included = getattr(settings, "SEARCH_INDEX_INCLUDED_LANGUAGES", [])
+
+    # Ensure it's a non-empty iterable of strings
+    if not included or not all(isinstance(c, str) for c in included):
+        errors.append(
+            Error(
+                "SEARCH_INDEX_INCLUDED_LANGUAGES must be a non-empty list of language codes.",
+                hint=(
+                    "Set SEARCH_INDEX_INCLUDED_LANGUAGES to a comma-separated env value (e.g. 'en-gb,cy') "
+                    "or ensure LANGUAGE_CODE is valid; see cms.settings.base.LANGUAGES."
+                ),
+                id="search.E003",
+            )
+        )
+        return errors
+
+    # Valid codes from LANGUAGES (tuple of (code, name))
+    valid_codes = {code for code, _ in getattr(settings, "LANGUAGES", [])}
+
+    # Check membership
+    invalid_codes: list[str] = []
+
+    for code in included:
+        if code not in valid_codes:
+            invalid_codes.append(code)
+
+    if invalid_codes:
+        errors.append(
+            Error(
+                "SEARCH_INDEX_INCLUDED_LANGUAGES contains codes not present in LANGUAGES.",
+                hint=(
+                    f"Remove or correct invalid codes: {', '.join(sorted(invalid_codes))}. "
+                    f"Valid codes: {', '.join(sorted(valid_codes))}."
+                ),
+                id="search.E004",
+            )
+        )
+
+    return errors
