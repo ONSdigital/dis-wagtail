@@ -15,6 +15,10 @@ if TYPE_CHECKING:
     from wagtail.blocks import StreamValue, StructValue
 
 
+BYTES_PER_KB = 1024
+HALF_KB = BYTES_PER_KB // 2
+
+
 class ImageBlock(blocks.StructBlock):
     """Image block with caption."""
 
@@ -24,6 +28,20 @@ class ImageBlock(blocks.StructBlock):
     supporting_text = blocks.TextBlock(required=False, label="Supporting text (source)")
     notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
     download = blocks.BooleanBlock(required=False, label="Show download link for image")
+
+    def to_kb(self, bytes_val: int | None) -> int | None:
+        """Get file size in KB with custom rounding.
+
+        - Return None when input is None.
+        - Return 0 KB when size is under 512 bytes.
+        - Otherwise, round to the nearest KB, with 0.5 KB rounding up to 1 KB.
+        """
+        if bytes_val is None:
+            return None
+        if bytes_val < HALF_KB:
+            return 0
+        # Use integer math to round to nearest KB, avoiding banker's rounding
+        return (bytes_val + HALF_KB) // BYTES_PER_KB
 
     def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context)
@@ -39,11 +57,8 @@ class ImageBlock(blocks.StructBlock):
             _, ext = os.path.splitext(image.file.name)
             file_type = ext.lstrip(".").upper() or "IMG"
 
-            # Get file size in KB (rounded)
-            file_size_kb = round(large.file.size / 1024) if getattr(large.file, "size", None) else None
-
             context["file_type"] = file_type
-            context["file_size_kb"] = file_size_kb
+            context["file_size_kb"] = self.to_kb(getattr(large.file, "size", None))
 
         return context
 

@@ -1002,15 +1002,15 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         response = self.client.get(page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
+        # Sanity: image element rendered
+        self.assertContains(response, "<img")
+
         # Alt text from CustomImage.description
         self.assertContains(response, 'alt="Meaningful alt text"')
 
         # onsImage macro outputs src/srcset with both renditions
         self.assertContains(response, "width-1024")
         self.assertContains(response, "width-2048")
-
-        # Sanity: image element rendered
-        self.assertContains(response, "<img")
 
     def test_renders_download_link_with_file_type_and_size_when_enabled(self):
         page = self._make_information_page(download=True)
@@ -1022,7 +1022,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertContains(response, "Download")
 
         # HTML5 download attribute present
-        self.assertContains(response, "download")
+        self.assertContains(response, "download>")
 
         # Large rendition used for download
         self.assertContains(response, "width-2048")
