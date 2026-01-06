@@ -40,6 +40,7 @@ json-log-formatter = "^1.1.1"
 django-xff = "^1.5.0"
 djangorestframework = "^3.16.1"
 matplotlib = "^3.10.8"
+numpy = "^2.4"  # used by matplotlib
 django-ses = "^4.6.0"
 aws-msk-iam-sasl-signer-python = "^1.0.2"
 wagtailtables = "^0.2.2"
@@ -54,7 +55,7 @@ djhtml = "3.0.10"  # keep version in sync with .pre-commit-config.yaml
 mypy = "^1.19.1"
 types-requests = "^2.32.0.20250602"
 django-stubs = { version="^5.2.8", extras=["compatible-mypy"]}
-pylint = "^3.3.9"
+pylint = "^4.0.4"
 pylint-django = "^2.7.0"
 ruff = "0.14.10"  # keep version in sync with .pre-commit-config.yaml
 
