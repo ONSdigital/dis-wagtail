@@ -30,18 +30,18 @@ class ImageBlock(blocks.StructBlock):
     download = blocks.BooleanBlock(required=False, label="Show download link for image")
 
     def to_kb(self, bytes_val: int | None) -> int | None:
-        """Get file size in KB with custom rounding.
+        """Get file size in KB with simple rounding.
 
         - Return None when input is None.
-        - Return 0 KB when size is under 512 bytes.
-        - Otherwise, round to the nearest KB, with 0.5 KB rounding up to 1 KB.
+        - Return 1 KB when size is 512 bytes or less.
+        - Otherwise, round to the nearest KB (Python rounding).
         """
         if bytes_val is None:
             return None
-        if bytes_val < HALF_KB:
-            return 0
-        # Use integer math to round to nearest KB, avoiding banker's rounding
-        return (bytes_val + HALF_KB) // BYTES_PER_KB
+        if bytes_val <= HALF_KB:
+            return 1
+        # Use Python rounding for values greater than 512 bytes
+        return round(bytes_val / BYTES_PER_KB)
 
     def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context)
