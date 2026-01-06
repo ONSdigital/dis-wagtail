@@ -59,6 +59,10 @@ def create_article_index_page(sender: Any, instance: TopicPage, created: bool, r
     if not created or raw:
         return
 
+    # If the page already exists, do nothing
+    if ArticlesIndexPage.objects.child_of(instance).exists():
+        return
+
     articles_index = ArticlesIndexPage(title="Articles")
     instance.add_child(instance=articles_index)
     # We publish a live version for the methodologies index page. This is acceptable since its URL redirects

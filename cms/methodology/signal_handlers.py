@@ -12,6 +12,10 @@ def create_methodology_index_page(sender: Any, instance: TopicPage, created: boo
     if not created or raw:
         return
 
+    # If the page already exists, do nothing
+    if MethodologyIndexPage.objects.child_of(instance).exists():
+        return
+
     index_page = MethodologyIndexPage(title="Methodologies")
     instance.add_child(instance=index_page)
     # We publish a live version for the methodologies index page. This is acceptable since its URL redirects
