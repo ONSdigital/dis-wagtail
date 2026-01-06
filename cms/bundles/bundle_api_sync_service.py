@@ -253,7 +253,7 @@ class BundleAPISyncService:
                     "count": len(datasets_to_update),
                 },
             )
-            self.bundle.bundled_datasets.bulk_update(datasets_to_update, ["bundle_api_content_id"])
+            self.bundle.bundled_datasets.bulk_update(datasets_to_update, ["bundle_api_content_id"])  # pylint: disable=no-member
 
     def _add_content_items(
         self,

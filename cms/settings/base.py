@@ -560,12 +560,12 @@ LOGGING = {
 # Use fixed strings in case import paths move
 match env.get("EMAIL_BACKEND_NAME", "").upper():
     case "SES":
-        EMAIL_BACKEND = "django_ses.SESBackend"
+        EMAIL_BACKEND = "django_ses.SESBackend"  # pylint: disable=invalid-name
         AWS_SES_REGION_NAME = env["AWS_REGION"]
         USE_SES_V2 = True
 
     case "SMTP":
-        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"  # pylint: disable=invalid-name
         # https://docs.djangoproject.com/en/stable/ref/settings/#email-host
         if "EMAIL_HOST" in env:
             EMAIL_HOST = env["EMAIL_HOST"]
@@ -590,7 +590,7 @@ match env.get("EMAIL_BACKEND_NAME", "").upper():
         EMAIL_USE_TLS = True
 
     case _:
-        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # pylint: disable=invalid-name
 
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#email-subject-prefix
