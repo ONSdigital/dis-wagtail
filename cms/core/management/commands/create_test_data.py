@@ -89,3 +89,5 @@ class Command(BaseCommand):
             topic_page = self.create_node_for_factory(
                 TopicPageFactory, parent=root_page, get_or_create_args=["title"], title=title_factory, topic=topic
             )
+
+            topic_page.specific.save_revision().publish()
