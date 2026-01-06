@@ -8,23 +8,17 @@ from cms.topics.models import TopicPage
 
 class CreateTestDataTestCase(TestCase):
     def test_creates_topics(self) -> None:
-        call_command(
-            "create_test_data",
-        )
+        call_command("create_test_data", interactive=False)
 
         self.assertEqual(TopicPage.objects.count(), 6)
         self.assertEqual(len(set(TopicPage.objects.values_list("title", flat=True))), 3)
 
     def test_idempotent(self) -> None:
-        call_command(
-            "create_test_data",
-        )
+        call_command("create_test_data", interactive=False)
         self.assertEqual(TopicPage.objects.count(), 6)
 
-        call_command(
-            "create_test_data",
-        )
-        self.assertEqual(TopicPage.objects.count(), 3)
+        call_command("create_test_data", interactive=False)
+        self.assertEqual(TopicPage.objects.count(), 6)
 
 
 class DeleteTestDataTestCase(TestCase):
@@ -36,9 +30,7 @@ class DeleteTestDataTestCase(TestCase):
     def test_dry_run(self) -> None:
         original_topic_page_count = TopicPage.objects.count()
 
-        call_command(
-            "create_test_data",
-        )
+        call_command("create_test_data", interactive=False)
         self.assertGreater(TopicPage.objects.count(), original_topic_page_count)
 
         output = StringIO()
@@ -51,9 +43,7 @@ class DeleteTestDataTestCase(TestCase):
     def test_delete_data(self) -> None:
         original_topic_page_count = TopicPage.objects.count()
 
-        call_command(
-            "create_test_data",
-        )
+        call_command("create_test_data", interactive=False)
         self.assertGreater(TopicPage.objects.count(), original_topic_page_count)
 
         output = StringIO()

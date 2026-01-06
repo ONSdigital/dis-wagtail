@@ -48,13 +48,43 @@ class Command(BaseCommand):
             "--seed", nargs="?", default=4, type=int, help="Random seed to produce deterministic output"
         )
         parser.add_argument("--topics", nargs="?", default=3, type=int, help="Number of topics to create")
+        parser.add_argument(
+            "--noinput",
+            "--no-input",
+            action="store_false",
+            dest="interactive",
+            help="Tells Django to NOT prompt the user for input of any kind.",
+        )
 
     def run_hook(self, hook_name: str, *args, **kwargs) -> None:
         # NB: Hooks can return requests, but that makes no sense in a management command.
         for fn in hooks.get_hooks(hook_name):
             fn(*args, **kwargs)
 
+    def confirm_action(self, seed: int) -> bool:
+        self.stdout.write("You are about to create test data in the database.", self.style.NOTICE)
+
+        self.stdout.write(
+            f"Enter the seed ({seed}) to continue: ",
+            ending="",
+        )
+        result = input()
+        try:
+            result = int(result)
+        except ValueError:
+            self.stdout.write("Invalid input", self.style.ERROR)
+            return False
+
+        if result != seed:
+            self.stdout.write("Incorrect input", self.style.ERROR)
+            return False
+
+        return True
+
     def handle(self, *args: Any, **options: Any) -> None:
+        if options["interactive"] and not self.confirm_action(options["seed"]):
+            return
+
         # Seed randomness
         faker = Faker(locale="en_GB")
         faker.seed_instance(options["seed"])
