@@ -372,11 +372,6 @@ _valid_language_codes = {code for code, _ in LANGUAGES}
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
 
-# User groups
-PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
-PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
-VIEWERS_GROUP_NAME = "Viewers"
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/stable/howto/static-files/
@@ -993,9 +988,9 @@ AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
 AWS_COGNITO_TEAM_SYNC_ENABLED = env.get("AWS_COGNITO_TEAM_SYNC_ENABLED", "false").lower() == "true"
 AWS_COGNITO_TEAM_SYNC_FREQUENCY = int(env.get("AWS_COGNITO_TEAM_SYNC_FREQUENCY", "1"))
 
-# Groups
-PUBLISHING_ADMIN_GROUP_NAME = "Publishing Admins"
-PUBLISHING_OFFICER_GROUP_NAME = "Publishing Officers"
+# User groups
+PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
+PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
 VIEWERS_GROUP_NAME = "Viewers"
 ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
 
