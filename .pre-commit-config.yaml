@@ -5,10 +5,10 @@ default_language_version:
 
 repos: # Python linting and formatting
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: 'v0.14.8' # keep version in sync with pyproject.toml
+    rev: 'v0.14.10' # keep version in sync with pyproject.toml
     hooks:
-      - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-check
+        args: [--fix]
       - id: ruff-format
 
   - repo: local
