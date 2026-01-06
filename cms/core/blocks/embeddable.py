@@ -16,7 +16,6 @@ if TYPE_CHECKING:
 
 
 BYTES_PER_KB = 1024
-HALF_KB = BYTES_PER_KB // 2
 
 
 class ImageBlock(blocks.StructBlock):
@@ -38,10 +37,8 @@ class ImageBlock(blocks.StructBlock):
         """
         if bytes_val is None:
             return None
-        if bytes_val <= HALF_KB:
-            return 1
-        # Use Python rounding for values greater than 512 bytes
-        return round(bytes_val / BYTES_PER_KB)
+        # Ensure a minimum of 1 KB for any non-None size up to and including 512 bytes
+        return max(1, round(bytes_val / BYTES_PER_KB))
 
     def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context)

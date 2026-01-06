@@ -216,3 +216,7 @@ class ImageBlockToKbTest(SimpleTestCase):
         self.assertEqual(self.block.to_kb(1024), 1)
         # 1536 bytes -> 1.5 KB -> 2 KB under Python rounding
         self.assertEqual(self.block.to_kb(1536), 2)
+
+    def test_to_kb_bankers_rounding_at_half_values(self) -> None:
+        # 2560 bytes -> 2.5 KB -> 2 KB under Python rounding (banker's rounding)
+        self.assertEqual(self.block.to_kb(2560), 2)
