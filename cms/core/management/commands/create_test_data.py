@@ -7,7 +7,6 @@ import factory.random
 from django.core.management.base import BaseCommand
 from faker import Faker
 from treebeard.mp_tree import MP_Node
-from wagtail import hooks
 from wagtail.models import Site
 
 from cms.core.models import BasePage
@@ -31,15 +30,7 @@ class Command(BaseCommand):
         if existing_instance := parent.get_children().filter(**matching).first():
             return existing_instance
 
-        # Manually run necessary hooks
-        if isinstance(instance, BasePage):
-            self.run_hook("before_create_page", None, parent, type(instance))
-
         created_node = parent.add_child(instance=instance)
-
-        # Manually run necessary hooks
-        if isinstance(instance, BasePage):
-            self.run_hook("after_create_page", None, instance)
 
         return created_node
 
@@ -55,11 +46,6 @@ class Command(BaseCommand):
             dest="interactive",
             help="Tells Django to NOT prompt the user for input of any kind.",
         )
-
-    def run_hook(self, hook_name: str, *args, **kwargs) -> None:
-        # NB: Hooks can return requests, but that makes no sense in a management command.
-        for fn in hooks.get_hooks(hook_name):
-            fn(*args, **kwargs)
 
     def confirm_action(self, seed: int) -> bool:
         self.stdout.write("You are about to create test data in the database.", self.style.NOTICE)

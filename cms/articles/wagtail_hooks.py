@@ -7,15 +7,13 @@ from wagtail import hooks
 from wagtail.admin import messages
 
 from cms.articles import admin_urls
-from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage, StatisticalArticlePage
+from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponse
+    from django.http import HttpRequest
     from django.urls import URLPattern
     from django.urls.resolvers import URLResolver
     from wagtail.models import Page
-
-    from cms.topics.models import TopicPage
 
 
 @hooks.register("before_create_page")
@@ -56,17 +54,6 @@ def before_delete_page(request: "HttpRequest", page: "Page") -> HttpResponseRedi
             return redirect("wagtailadmin_pages:delete", page.pk)
 
     return None
-
-
-@hooks.register("after_create_topic_page")
-def after_create_topic_page(request: "HttpRequest", topic_page: "TopicPage") -> "HttpResponse | None":
-    articles_index = ArticlesIndexPage(title="Articles")
-    topic_page.add_child(instance=articles_index)
-    # We publish a live version for the methodologies index page. This is acceptable since its URL redirects
-    articles_index.save_revision().publish()
-
-    for fn in hooks.get_hooks("after_create_page"):
-        fn(request, articles_index)
 
 
 @hooks.register("register_admin_urls")
