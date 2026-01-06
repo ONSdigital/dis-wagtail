@@ -42,7 +42,7 @@
     {# Download #}
     {% if value.download %}
         <div class="ons-u-mt-s">
-            <h5 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Download") }} {{ value.figure_title or 'image' }}</h5>
+            <h4 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Download") }} {{ value.figure_title or 'image' }}</h5>
             <a href="{{ large_src }}" download>
                 {{ file_type }}{% if file_size_kb %} ({{ file_size_kb }}KB){% endif %}
             </a>
