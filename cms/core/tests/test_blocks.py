@@ -1,9 +1,15 @@
+# pylint: disable=too-many-lines
+import uuid
 from datetime import datetime
+from http import HTTPStatus
 from urllib.parse import urlparse
 
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
+from wagtail.images import get_image_model
+from wagtail.images.tests.utils import get_test_image_file
 from wagtail.rich_text import RichText
+from wagtail.test.utils import WagtailPageTestCase
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
@@ -22,6 +28,7 @@ from cms.core.blocks.glossary_terms import GlossaryTermsBlock
 from cms.core.tests.factories import GlossaryTermFactory
 from cms.core.tests.utils import get_test_document
 from cms.home.models import HomePage
+from cms.standard_pages.models import InformationPage
 
 
 class CoreBlocksTestCase(TestCase):
@@ -952,3 +959,74 @@ class AccordionBlockTestCase(TestCase):
         self.assertEqual(heading_attributes["data-ga-interaction-type"], "accordion")
         self.assertEqual(heading_attributes["data-ga-interaction-label"], "Test Section")
         self.assertEqual(heading_attributes["data-ga-click-position"], 1)
+
+
+class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.home = HomePage.objects.first()
+        image = get_image_model()
+
+        # Create a real CustomImage instance (since WAGTAILIMAGES_IMAGE_MODEL points to it)
+        cls.image = image.objects.create(
+            title="Test image title",
+            file=get_test_image_file(),  # default test.png
+            description="Meaningful alt text",
+        )
+
+    def _make_information_page(self, *, download: bool) -> InformationPage:
+        page = InformationPage(
+            title="Info page with image",
+            summary="<p>Summary</p>",
+            content=[
+                {
+                    "type": "image",
+                    "value": {
+                        "image": self.image.id,
+                        "figure_title": "Figure 1",
+                        "figure_subtitle": "Figure subtitle",
+                        "supporting_text": "Office for National Statistics",
+                        "download": download,
+                    },
+                    "id": str(uuid.uuid4()),
+                }
+            ],
+        )
+        self.home.add_child(instance=page)
+        page.save_revision().publish()
+        return page
+
+    def test_renders_small_and_large_renditions_and_alt_text(self):
+        page = self._make_information_page(download=False)
+
+        response = self.client.get(page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Alt text from CustomImage.description
+        self.assertContains(response, 'alt="Meaningful alt text"')
+
+        # onsImage macro outputs src/srcset with both renditions
+        self.assertContains(response, "width-1024")
+        self.assertContains(response, "width-2048")
+
+        # Sanity: image element rendered
+        self.assertContains(response, "<img")
+
+    def test_renders_download_link_with_file_type_and_size_when_enabled(self):
+        page = self._make_information_page(download=True)
+
+        response = self.client.get(page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Download section rendered
+        self.assertContains(response, "Download")
+
+        # HTML5 download attribute present
+        self.assertContains(response, "download")
+
+        # Large rendition used for download
+        self.assertContains(response, "width-2048")
+
+        # File type label (uppercased extension)
+        self.assertContains(response, "PNG")
+        self.assertContains(response, "KB")
