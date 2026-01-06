@@ -94,11 +94,9 @@ class BundleFieldPanel(FieldPanel):
         def __init__(self, **kwargs: Any) -> None:
             super().__init__(**kwargs)
 
-            instance = self.instance
-            if self.panel.accessor and hasattr(self.instance, f"{self.panel.accessor}_id"):
+            if self.panel.accessor and getattr(self.instance, f"{self.panel.accessor}_id"):
                 instance = getattr(self.instance, self.panel.accessor)
-
-            self.read_only = getattr(instance, "is_ready_to_be_published", False)
+                self.read_only = getattr(instance, "is_ready_to_be_published", False)
 
     def format_value_for_display(self, value: Any) -> str:
         if value is None:
