@@ -204,7 +204,7 @@ def user_selects_more_options(context: Context) -> None:
 
 @when('the user clicks "Delete Footer Menu"')
 def user_selects_delete_footer_menu(context: Context) -> None:
-    context.page.get_by_role("link", name="Delete 'Footer Menu'").click()
+    context.page.get_by_role("link", name="Delete").click()
     context.page.get_by_role("button", name="Yes, delete").click()
 
 

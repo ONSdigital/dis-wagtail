@@ -196,7 +196,7 @@ def the_user_can_bulk_delete_a_theme_page_and_its_children(context: Context) -> 
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="Home English", exact=True).click()
     context.page.get_by_role("button", name=f"More options for '{context.topic_page.title}'").click()
-    context.page.get_by_role("link", name=f"Delete page '{context.topic_page.title}'").click()
+    context.page.get_by_role("link", name="Delete").click()
     expect(context.page.get_by_role("link", name="This topic page is referenced")).to_be_visible()
     expect(context.page.get_by_text("Are you sure you want to")).to_be_visible()
     context.page.get_by_role("button", name="Yes, delete it").click()
