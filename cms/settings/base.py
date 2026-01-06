@@ -488,6 +488,9 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
 
 PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get("PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5)
 
+# Is the application running interactively (such as manage.py), or not (such as running the application)
+INTERACTIVE = sys.stdout.isatty()
+
 # Logging
 # This logging is configured to be used with Sentry and console logs. Console
 # logs are widely used by platforms offering Docker deployments, e.g. Heroku.
@@ -504,12 +507,12 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "json",
+            "formatter": "verbose" if INTERACTIVE else "json",
         },
         "gunicorn_access": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "gunicorn_json",
+            "formatter": "verbose" if INTERACTIVE else "gunicorn_json",
         },
     },
     "formatters": {
