@@ -63,14 +63,14 @@ jobs:
         with:
           node-version-file: '.nvmrc'
       - id: node-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/.nvmrc') }}-${{ hashFiles('**/package-lock.json') }}
       - if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm ci --no-audit
       - run: npm run build:prod
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: static
           path: cms/static_compiled/
@@ -144,7 +144,7 @@ jobs:
           make install-dev
           sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: static
           path: cms/static_compiled/
@@ -171,7 +171,7 @@ jobs:
           echo "## Coverage summary" >> "$GITHUB_STEP_SUMMARY"
           poetry run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
       - name: Upload coverage HTML report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: html-report
           path: htmlcov
@@ -233,7 +233,7 @@ jobs:
       - name: Playwright Install
         run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: static
           path: cms/static_compiled/
@@ -245,7 +245,7 @@ jobs:
         run: make functional-tests
 
       - name: Upload Failure Traces
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: playwright-traces-${{ matrix.browser }}

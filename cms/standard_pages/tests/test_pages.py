@@ -3,6 +3,7 @@ from django.test import override_settings
 from django.urls import reverse
 from wagtail.test.utils import WagtailPageTestCase
 
+from cms.core.tests.utils import TranslationResetMixin
 from cms.standard_pages.models import CookiesPage
 from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.standard_pages.utils import SUPPORTED_LANGUAGE_CODES
@@ -37,7 +38,7 @@ class DatePlaceholderTestCase(WagtailPageTestCase):
         )
 
 
-class CookiesPageTest(WagtailPageTestCase):
+class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
     def test_get_cookies_page(self):
         response = self.client.get("/cookies")
         self.assertEqual(response.status_code, 200)

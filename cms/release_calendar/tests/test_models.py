@@ -713,6 +713,30 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
 
                 self.assertEqual(response.status_code, 200)
 
+    def test_rendered__release_date_label_for_provisional(self):
+        """Check that provisional pages show 'Provisional release date:' label."""
+        self.page.status = ReleaseStatus.PROVISIONAL
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(response, "Provisional release date:")
+        self.assertNotContains(response, "Release date:")
+
+    def test_rendered__release_date_label_for_non_provisional(self):
+        """Check that non-provisional pages show 'Release date:' label."""
+        cases = [ReleaseStatus.CONFIRMED, ReleaseStatus.PUBLISHED, ReleaseStatus.CANCELLED]
+
+        for status in cases:
+            with self.subTest(status=status):
+                self.page.status = status
+                self.page.save_revision().publish()
+
+                response = self.client.get(self.page.url)
+
+                self.assertContains(response, "Release date:")
+                self.assertNotContains(response, "Provisional release date:")
+
 
 class ReleaseCalendarIndexTestCase(WagtailTestUtils, TestCase):
     """Tests for release calendar index."""
