@@ -12,14 +12,14 @@ class CreateTestDataTestCase(TestCase):
             "create_test_data",
         )
 
-        self.assertEqual(TopicPage.objects.count(), 3)
+        self.assertEqual(TopicPage.objects.count(), 6)
         self.assertEqual(len(set(TopicPage.objects.values_list("title", flat=True))), 3)
 
     def test_idempotent(self) -> None:
         call_command(
             "create_test_data",
         )
-        self.assertEqual(TopicPage.objects.count(), 3)
+        self.assertEqual(TopicPage.objects.count(), 6)
 
         call_command(
             "create_test_data",

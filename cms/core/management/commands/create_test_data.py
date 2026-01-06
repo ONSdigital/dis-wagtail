@@ -6,6 +6,8 @@ import factory.fuzzy
 import factory.random
 from django.core.management.base import BaseCommand
 from faker import Faker
+from treebeard.mp_tree import MP_Node
+from wagtail import hooks
 from wagtail.models import Site
 
 from cms.core.models import BasePage
@@ -20,7 +22,7 @@ class Command(BaseCommand):
     help = "Create random test data"
 
     def create_node_for_factory(
-        self, factory_type: type[factory.base.BaseFactory], parent: BasePage, get_or_create_args=(), **kwargs
+        self, factory_type: type[factory.base.BaseFactory], parent: MP_Node, get_or_create_args=(), **kwargs
     ):
         instance = factory_type.build(**kwargs)
 
@@ -29,13 +31,28 @@ class Command(BaseCommand):
         if existing_instance := parent.get_children().filter(**matching).first():
             return existing_instance
 
-        return parent.add_child(instance=instance)
+        # Manually run necessary hooks
+        if isinstance(instance, BasePage):
+            self.run_hook("before_create_page", None, parent, type(instance))
+
+        created_node = parent.add_child(instance=instance)
+
+        # Manually run necessary hooks
+        if isinstance(instance, BasePage):
+            self.run_hook("after_create_page", None, instance)
+
+        return created_node
 
     def add_arguments(self, parser: ArgumentParser):
         parser.add_argument(
             "--seed", nargs="?", default=4, type=int, help="Random seed to produce deterministic output"
         )
         parser.add_argument("--topics", nargs="?", default=3, type=int, help="Number of topics to create")
+
+    def run_hook(self, hook_name: str, *args, **kwargs) -> None:
+        # NB: Hooks can return requests, but that makes no sense in a management command.
+        for fn in hooks.get_hooks(hook_name):
+            fn(*args, **kwargs)
 
     def handle(self, *args: Any, **options: Any) -> None:
         # Seed randomness
