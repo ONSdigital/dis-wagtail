@@ -1,18 +1,23 @@
-import factory.enums
-from factory import Factory, faker, post_generation
+from factory import BUILD_STRATEGY, faker, post_generation
+from wagtail_factories.factories import MP_NodeFactory
 
 from cms.taxonomy.models import Topic
 
 
-class TopicFactory(Factory):
+class SimpleTopicFactory(MP_NodeFactory):
     class Meta:
         model = Topic
-        strategy = factory.BUILD_STRATEGY  # To prevent Factory from trying to save the node
 
     id: str = faker.Faker("random_number", digits=50, fix_len=True)  # Use a very long ID for uniqueness
     slug: str = faker.Faker("slug")
     title: str = faker.Faker("sentence", nb_words=3)
     description: str = faker.Faker("sentence", nb_words=10)
+
+
+class TopicFactory(SimpleTopicFactory):
+    class Meta:
+        model = Topic
+        strategy = BUILD_STRATEGY  # To prevent Factory from trying to save the node
 
     @post_generation
     def save_topic_in_tree(obj: Topic, *_args, **_kwargs) -> None:
