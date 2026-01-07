@@ -20,6 +20,15 @@ class CreateTestDataTestCase(TestCase):
         call_command("create_test_data", interactive=False)
         self.assertEqual(TopicPage.objects.count(), 6)
 
+    def test_tree_is_valid(self) -> None:
+        call_command("create_test_data", interactive=False)
+
+        output = StringIO()
+        call_command("fixtree", interactive=False, stdout=output)
+
+        self.assertIn("Checking page tree for problems...\nNo problems found.", output.getvalue())
+        self.assertIn("Checking collection tree for problems...\nNo problems found.", output.getvalue())
+
 
 class DeleteTestDataTestCase(TestCase):
     def test_no_existing_data(self) -> None:
@@ -51,3 +60,14 @@ class DeleteTestDataTestCase(TestCase):
         self.assertIn("Found data to delete", output.getvalue())
         self.assertIn("Successfully deleted", output.getvalue())
         self.assertEqual(TopicPage.objects.count(), original_topic_page_count)
+
+    def test_tree_is_valid(self) -> None:
+        call_command("create_test_data", interactive=False)
+
+        call_command("delete_test_data", interactive=False, stdout=StringIO())
+
+        output = StringIO()
+        call_command("fixtree", interactive=False, stdout=output)
+
+        self.assertIn("Checking page tree for problems...\nNo problems found.", output.getvalue())
+        self.assertIn("Checking collection tree for problems...\nNo problems found.", output.getvalue())
