@@ -56,6 +56,6 @@ def insert_workflow_tweaks_js() -> str:
 
 
 @hooks.register("register_permissions")
-def register_submit_translation_permission() -> "QuerySet[Permission]":
+def register_submit_translation_permission() -> QuerySet[Permission]:
     """Register the 'Unlock any workflow tasks' permission so it shows in the UI."""
     return Permission.objects.filter(content_type__app_label="wagtailadmin", codename="unlock_workflow_tasks")

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from wagtail.admin.mail import GroupApprovalTaskStateSubmissionEmailNotifier
 from wagtail.models import AbstractGroupApprovalTask
@@ -33,15 +33,15 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
     def get_description(cls) -> str:
         return "Marks a page as ready to be published. Used by bundles."
 
-    def locked_for_user(self, obj: "Model", user: "User") -> bool:
-        active_bundle: Optional[Bundle] = getattr(obj, "active_bundle", None)
+    def locked_for_user(self, obj: Model, user: User) -> bool:
+        active_bundle: Bundle | None = getattr(obj, "active_bundle", None)
         if active_bundle is not None and active_bundle.is_ready_to_be_published:
             return True
 
         locked: bool = super().locked_for_user(obj, user)
         return locked
 
-    def user_can_unlock(self, obj: "Model", user: "User") -> bool:
+    def user_can_unlock(self, obj: Model, user: User) -> bool:
         return user.has_perm("wagtailadmin.unlock_workflow_tasks")
 
     class Meta:
