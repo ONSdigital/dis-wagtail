@@ -5,25 +5,18 @@ from django.conf import settings
 from django.template import TemplateDoesNotExist
 from django.template.loader import get_template as original_get_template
 from django.test.utils import override_settings
-from django.utils import translation
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
-from cms.core.tests.utils import extract_datalayer_pushed_values, extract_response_jsonld
+from cms.core.tests.utils import TranslationResetMixin, extract_datalayer_pushed_values, extract_response_jsonld
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 
 
-class HomePageTests(WagtailPageTestCase):
+class HomePageTests(TranslationResetMixin, WagtailPageTestCase):
     def setUp(self):
         self.page = HomePage.objects.first()
-
-    def tearDown(self):
-        # Reset the translation to the default language after each test to avoid
-        # test contamination issues.
-        translation.activate(settings.LANGUAGE_CODE)
-        return super().tearDown()
 
     def test_home_page_can_be_served(self):
         """Test that the home page can be served."""
@@ -119,16 +112,10 @@ class HomePageTests(WagtailPageTestCase):
         )
 
 
-class PageCanonicalUrlTests(WagtailPageTestCase):
+class PageCanonicalUrlTests(TranslationResetMixin, WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.page = InformationPageFactory()
-
-    def tearDown(self):
-        # Reset the translation to the default language after each test to avoid
-        # test contamination issues.
-        translation.activate(settings.LANGUAGE_CODE)
-        return super().tearDown()
 
     def test_page_canonical_url(self):
         """Test that the home page has the correct canonical URL."""
@@ -252,13 +239,7 @@ class SocialMetaTests(WagtailPageTestCase):
         )
 
 
-class ErrorPageTests(WagtailPageTestCase):
-    def tearDown(self):
-        # Reset the translation to the default language after each test to avoid
-        # test contamination issues.
-        translation.activate(settings.LANGUAGE_CODE)
-        return super().tearDown()
-
+class ErrorPageTests(TranslationResetMixin, WagtailPageTestCase):
     def get_template_side_effect(self, template_name, *args, **kwargs):
         """Side effect function to simulate template loading failures."""
         if template_name == "templates/pages/errors/500.html":
