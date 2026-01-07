@@ -41,7 +41,7 @@ class Command(BaseCommand):
 
         return lookups
 
-    def handle(self, *args: Any, **options: Any) -> None:
+    def _build_collector(self) -> NestedObjects:
         collector = NestedObjects(using="default")
 
         for model in apps.get_models():
@@ -61,6 +61,11 @@ class Command(BaseCommand):
                 # They're correctly deleted, but this ensures they're displayed.
                 for instance in matching_instances:
                     collector.collect(instance.get_descendants())
+
+        return collector
+
+    def handle(self, *args: Any, **options: Any) -> None:
+        collector = self._build_collector()
 
         if not collector.data:
             self.stdout.write("No data to delete", self.style.SUCCESS)
