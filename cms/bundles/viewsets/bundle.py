@@ -1,4 +1,4 @@
-from __future__ import annotations
+from __future__ import annotations  # needed for unquoted forward references because of Django Views
 
 import logging
 import textwrap

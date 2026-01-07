@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -163,7 +163,7 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
 
     def get_formatted_related_publications_list(
         self, request: HttpRequest | None = None
-    ) -> dict[str, Union[str, StrPromise, list[dict[str, str]]]]:
+    ) -> dict[str, str | StrPromise | list[dict[str, str]]]:
         """Returns a formatted list of related internal pages for use with the Design System list component."""
         items = [
             {

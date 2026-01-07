@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.urls import reverse
@@ -40,7 +40,7 @@ class ReleaseCalendarBundleNotePanel(HelpPanel):
         def is_shown(self) -> bool:
             return self.instance.active_bundle is not None
 
-        def _get_panel_content(self) -> Union[str, SafeString]:
+        def _get_panel_content(self) -> str | SafeString:
             if not self.instance.active_bundle:
                 return ""
 

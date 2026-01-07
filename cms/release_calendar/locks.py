@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.urls import reverse
 from django.utils.html import format_html
@@ -18,7 +18,7 @@ class ReleasePageInBundleReadyToBePublishedLock(BaseLock):
     def for_user(self, user: User) -> bool:
         return self.object.active_bundle is not None and self.object.active_bundle.is_ready_to_be_published
 
-    def get_message(self, user: User) -> Union[str, SafeString]:
+    def get_message(self, user: User) -> str | SafeString:
         lock_message = (
             "This release calendar page is linked to a bundle that is ready to be published. "
             "You must unlink them in order to make changes."

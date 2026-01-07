@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
@@ -70,7 +70,7 @@ def after_create_topic_page(request: HttpRequest, topic_page: TopicPage) -> Http
 
 
 @hooks.register("register_admin_urls")
-def register_admin_urls() -> list[Union[URLPattern, URLResolver]]:
+def register_admin_urls() -> list[URLPattern | URLResolver]:
     """Registers the admin urls for Articles.
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-urls.

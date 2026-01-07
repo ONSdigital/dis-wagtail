@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlencode
 
 from django.urls import reverse
@@ -37,7 +37,7 @@ class BundleStatusPanel(HelpPanel):
             super().__init__(**kwargs)
             self.content = self._content_for_instance(self.instance)
 
-        def _content_for_instance(self, instance: Model) -> Union[str, SafeString]:
+        def _content_for_instance(self, instance: Model) -> str | SafeString:
             if not hasattr(instance, "status"):
                 return ""
 
@@ -52,7 +52,7 @@ class BundleNotePanel(HelpPanel):
             super().__init__(**kwargs)
             self.content = self._content_for_instance(self.instance)
 
-        def _content_for_instance(self, instance: Model) -> Union[str, SafeString]:
+        def _content_for_instance(self, instance: Model) -> str | SafeString:
             if not hasattr(instance, "active_bundle"):
                 return ""
 

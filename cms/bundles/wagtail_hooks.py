@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from django.db.models import QuerySet
 from django.urls import include, path
@@ -96,7 +96,7 @@ def page_listing_buttons(
 
 
 @hooks.register("register_admin_urls")
-def register_admin_urls() -> list[Union[URLPattern, URLResolver]]:
+def register_admin_urls() -> list[URLPattern | URLResolver]:
     """Registers the admin urls for Bundles.
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-urls.
