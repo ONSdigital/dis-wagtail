@@ -61,5 +61,5 @@ def create_article_index_page(sender: Any, instance: TopicPage, created: bool, r
 
     articles_index = ArticlesIndexPage(title="Articles")
     instance.add_child(instance=articles_index)
-    # We publish a live version for the methodologies index page. This is acceptable since its URL redirects
+    # We publish a live version for the articles index page. This is acceptable since its URL redirects
     articles_index.save_revision().publish()
