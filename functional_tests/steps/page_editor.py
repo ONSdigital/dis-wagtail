@@ -38,7 +38,7 @@ def click_the_given_button(context: Context, button_text: str) -> None:
     context.page.get_by_role("button", name=button_text).click()
 
 
-@step('The user opens the preview in a new tab, using the "{preview_mode}" preview mode')
+@step('the user opens the preview in a new tab, using the "{preview_mode}" preview mode')
 def open_new_preview_tab_with_preview_mode(context: Context, preview_mode: str) -> None:
     click_the_given_button(context, "Preview")
     context.page.get_by_label("Preview mode").select_option(preview_mode)
@@ -225,9 +225,9 @@ def user_open_page_actions_menu(context: Context) -> None:
 
 @step("the user has no option to copy the page")
 def user_has_no_option_to_copy_page(context: Context) -> None:
-    expect(context.page.get_by_role("link", name=f"Copy page '{context.page_title}'")).not_to_be_visible()
+    expect(context.page.get_by_role("link", name="Copy")).not_to_be_visible()
 
 
 @step("the user has the option to copy the page")
 def user_has_option_to_copy_page(context: Context) -> None:
-    expect(context.page.get_by_role("link", name=f"Copy page '{context.page_title}'")).to_be_visible()
+    expect(context.page.get_by_role("link", name="Copy")).to_be_visible()

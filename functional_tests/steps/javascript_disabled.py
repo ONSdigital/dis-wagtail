@@ -4,7 +4,7 @@ from behave.runner import Context
 from playwright.sync_api import expect
 
 
-@given("the user has Javascript disabled")
+@given("the user has JavaScript disabled")
 def the_user_has_javascript_disabled(
     context: Context,  # pylint: disable=unused-argument
 ) -> None:
@@ -14,7 +14,7 @@ def the_user_has_javascript_disabled(
     pass
 
 
-@given("the user has Javascript enabled")
+@given("the user has JavaScript enabled")
 def the_user_has_javascript_enabled(
     context: Context,  # pylint: disable=unused-argument
 ) -> None:
