@@ -12,6 +12,10 @@ def create_methodology_index_page(sender: Any, instance: TopicPage, created: boo
     if not created or raw:
         return
 
+    if instance.alias_of_id is not None:
+        # If this page is an alias, assume the methodology index is about to be created as an alias, too.
+        return
+
     index_page = MethodologyIndexPage(title="Methodologies")
     instance.add_child(instance=index_page)
     # We publish a live version for the methodologies index page. This is acceptable since its URL redirects

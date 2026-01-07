@@ -59,6 +59,10 @@ def create_article_index_page(sender: Any, instance: TopicPage, created: bool, r
     if not created or raw:
         return
 
+    if instance.alias_of_id is not None:
+        # If this page is an alias, assume the articles index is about to be created as an alias, too.
+        return
+
     articles_index = ArticlesIndexPage(title="Articles")
     instance.add_child(instance=articles_index)
     # We publish a live version for the articles index page. This is acceptable since its URL redirects
