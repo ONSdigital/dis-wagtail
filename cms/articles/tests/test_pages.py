@@ -5,7 +5,6 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import override_settings
 from django.urls import reverse
-from django.utils import translation
 from django.utils.html import strip_tags
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
@@ -20,7 +19,7 @@ from cms.articles.tests.factories import (
     StatisticalArticlePageFactory,
 )
 from cms.core.tests.factories import ContactDetailsFactory
-from cms.core.tests.utils import extract_response_jsonld
+from cms.core.tests.utils import TranslationResetMixin, extract_response_jsonld
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.home.models import HomePage
@@ -89,8 +88,7 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         )
 
 
-# pylint: disable=too-many-lines
-class StatisticalArticlePageTests(WagtailPageTestCase):
+class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.series = ArticleSeriesPageFactory()
@@ -122,12 +120,6 @@ class StatisticalArticlePageTests(WagtailPageTestCase):
 
     def setUp(self):
         self.dummy_request = get_dummy_request()
-
-    def tearDown(self):
-        # Reset the translation to the default language after each test to avoid
-        # test contamination issues.
-        translation.activate(settings.LANGUAGE_CODE)
-        return super().tearDown()
 
     def test_default_route(self):
         self.assertPageIsRoutable(self.page)

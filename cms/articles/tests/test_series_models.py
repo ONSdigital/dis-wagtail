@@ -8,6 +8,7 @@ from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.core.tests.utils import TranslationResetMixin
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datavis.tests.factories import TableDataFactory
 
@@ -63,7 +64,7 @@ class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(series_response.status_code, 200)
 
 
-class ArticleSeriesEvergreenUrlTestCase(WagtailTestUtils, TestCase):
+class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils, TestCase):
     def setUp(self):
         self.article_series_page = ArticleSeriesPageFactory()
         self.article_with_datasets = StatisticalArticlePageFactory(parent=self.article_series_page)
@@ -826,7 +827,7 @@ class ArticleSeriesChartDownloadWithVersionTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
 
-class ArticleSeriesChartDownloadMultilingualTestCase(WagtailTestUtils, TestCase):
+class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, WagtailTestUtils, TestCase):
     """Test chart download with multi-lingual support (Welsh translations and aliases)."""
 
     def setUp(self):
