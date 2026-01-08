@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 from django.urls import reverse
 from django.utils.dateparse import parse_datetime
-from django.utils.translation import gettext_noop as _N
+from django.utils.translation import gettext_lazy as _
 from wagtail.coreutils import resolve_model_string
 from wagtail.log_actions import log
 from wagtail.models import Page, get_page_models
@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 
 # Translatable strings for release calendar content sections.
 # These are extracted by makemessages and translated at runtime via get_translated_string.
-_N("Publications")
-_N("Quality and methodology")
+_("Publications")
+_("Quality and methodology")
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser
@@ -134,9 +134,11 @@ def _create_content_dict_for_pages(
             case "MethodologyPage":
                 methodology_pages.append(serialized_page)
     if article_pages:
+        # NB: This string needs to match the one at the top of the file
         title = get_translated_string("Publications", language_code)
         content.append({"type": "release_content", "value": {"title": title, "links": article_pages}})
     if methodology_pages:
+        # NB: This string needs to match the one at the top of the file
         title = get_translated_string("Quality and methodology", language_code)
         content.append({"type": "release_content", "value": {"title": title, "links": methodology_pages}})
     return content
