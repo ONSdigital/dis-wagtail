@@ -6,6 +6,7 @@ from django.test import RequestFactory, SimpleTestCase, TestCase, override_setti
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.utils import (
+    flatten_table_data,
     get_client_ip,
     get_content_type_for_page,
     latex_formula_to_svg,
@@ -151,6 +152,75 @@ class RedirectToParentListingTestCase(SimpleTestCase):
         )
         self.assertIsInstance(response, HttpResponseRedirect)
         self.assertEqual(response.url, "/parent/")
+
+
+class FlattenTableDataTestCase(SimpleTestCase):
+    def test_flattens_headers_and_rows(self):
+        """Test that headers and rows are correctly flattened."""
+        data = {
+            "headers": [
+                [{"value": "Header 1"}, {"value": "Header 2"}, {"value": "Header 3"}],
+            ],
+            "rows": [
+                [{"value": "Row 1 Col 1"}, {"value": "Row 1 Col 2"}, {"value": "Row 1 Col 3"}],
+                [{"value": "Row 2 Col 1"}, {"value": "Row 2 Col 2"}, {"value": "Row 2 Col 3"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["Header 1", "Header 2", "Header 3"],
+            ["Row 1 Col 1", "Row 1 Col 2", "Row 1 Col 3"],
+            ["Row 2 Col 1", "Row 2 Col 2", "Row 2 Col 3"],
+        ]
+        self.assertEqual(result, expected)
+
+    def test_handles_empty_data(self):
+        """Test that empty data returns an empty list."""
+        data = {}
+        result = flatten_table_data(data)
+        self.assertEqual(result, [])
+
+    def test_handles_empty_headers_and_rows(self):
+        """Test that empty headers and rows return an empty list."""
+        data = {"headers": [], "rows": []}
+        result = flatten_table_data(data)
+        self.assertEqual(result, [])
+
+    def test_handles_missing_values(self):
+        """Test that missing values are replaced with empty strings."""
+        data = {
+            "headers": [
+                [{"value": "Header 1"}, {}, {"value": "Header 3"}],
+            ],
+            "rows": [
+                [{}, {"value": "Row 1 Col 2"}, {"value": "Row 1 Col 3"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["Header 1", "", "Header 3"],
+            ["", "Row 1 Col 2", "Row 1 Col 3"],
+        ]
+        self.assertEqual(result, expected)
+
+    def test_handles_multiple_header_rows(self):
+        """Test that multiple header rows are correctly flattened."""
+        data = {
+            "headers": [
+                [{"value": "Header 1"}, {"value": "Header 2"}],
+                [{"value": "Subheader 1"}, {"value": "Subheader 2"}],
+            ],
+            "rows": [
+                [{"value": "Row 1 Col 1"}, {"value": "Row 1 Col 2"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["Header 1", "Header 2"],
+            ["Subheader 1", "Subheader 2"],
+            ["Row 1 Col 1", "Row 1 Col 2"],
+        ]
+        self.assertEqual(result, expected)
 
 
 class RedirectUtilityTestCase(SimpleTestCase):

@@ -107,3 +107,16 @@ def redirect_to_parent_listing(
     if callable(method) and (redirect_url := method()):
         return redirect(redirect_url)
     return redirect(parent.get_url(request=request))
+
+
+def flatten_table_data(data: dict) -> list[list[str | int | float]]:
+    """Flattens table data by extracting cell values from headers and rows.
+    This is primarily used for the table block.
+
+    Args:
+        data: Dictionary containing 'headers' and 'rows' keys with cell objects.
+
+    Returns:
+        List of rows, where each row is a list of cell values (strings, ints, or floats).
+    """
+    return [[cell.get("value", "") for cell in row] for row in [*data.get("headers", []), *data.get("rows", [])]]
