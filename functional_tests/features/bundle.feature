@@ -59,9 +59,17 @@ Feature: CMS users can manage bundles
       | New Status  |
       | Provisional |
       | Confirmed   |
-    # Note: This test case exists because currently, it is possible to update a release calendar page's status to "Cancelled" even though "Cancelled" pages are not allowed in bundles.
-    # This can be removed once validation between release calendar pages and bundles is improved.
-      | Cancelled   |
+
+    Scenario: A content editor cannot set a release calendar page to cancelled when it is in a bundle
+        When the user manually creates a future release calendar page with a "Provisional" status
+        And the user clicks the "Save Draft" button
+        And the user navigates to the bundle creation page
+        And the user enters a title
+        And the user opens the release calendar page chooser
+        And the user selects the existing release calendar page
+        And the user clicks "Save as draft"
+        And the user tries to set the release calendar page status to "Cancelled"
+        Then the user sees a validation error preventing the cancellation because the page is in a bundle
 
     @bundle_api_enabled
     Scenario: A content editor can see selected datasets on the inspect page

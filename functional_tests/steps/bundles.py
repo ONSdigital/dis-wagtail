@@ -284,3 +284,35 @@ def user_sees_updated_release_calendar_page_title_release_date_status(context: C
     expect(
         context.page.get_by_text(f"{context.original_title} ({context.original_status}, {context.original_date})")
     ).not_to_be_visible()
+
+
+@step('the user tries to set the release calendar page status to "Cancelled"')
+def user_tries_to_set_release_calendar_page_status_to_cancelled(context: Context) -> None:
+    """Navigate to the release calendar page edit view and attempt to set status to Cancelled."""
+    context.page.get_by_role("region", name="Scheduling").get_by_label("Actions").click()
+    with context.page.expect_popup() as edit_release_calendar_page:
+        context.page.get_by_role("link", name="Edit Release Calendar page").click()
+    # Close original bundles edit view
+    context.page.close()
+    # Assign context to new release calendar page edit view
+    context.page = edit_release_calendar_page.value
+
+    # Fill in the notice field (required for cancellation)
+    context.page.locator("#panel-child-content-metadata-content div").filter(
+        has_text="Cancellation notice Used for"
+    ).get_by_role("textbox").fill("Cancellation notice")
+
+    # Set status to Cancelled
+    context.page.get_by_label("Status*").select_option("CANCELLED")
+
+    # Attempt to save the draft
+    context.page.get_by_role("button", name="Save draft").click()
+
+
+@then("the user sees a validation error preventing the cancellation because the page is in a bundle")
+def user_sees_validation_error_preventing_cancellation(context: Context) -> None:
+    """Verify that a validation error is shown preventing cancellation due to bundle membership."""
+    expect(context.page.get_by_text("The page could not be saved due to validation errors")).to_be_visible()
+    expect(
+        context.page.get_by_text("Please unlink the release calendar page from the bundle before cancelling")
+    ).to_be_visible()
