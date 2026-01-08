@@ -142,42 +142,28 @@ class ONSTableBlock(TinyTableBlock):
             case _:
                 return ""
 
-    def _prepare_header_cells(self, row: list[dict[str, str | int]]) -> list[dict[str, str | int]]:
-        """Prepare header cells for the DS table macro.
+    def _prepare_cell(
+        self, cell: dict[str, str | int], class_key: str, *, is_body_cell: bool = False
+    ) -> dict[str, str | int]:
+        """Prepare a single cell for the DS table macro."""
+        cell_copy = dict(cell)
+        if alignment := cell_copy.get("align"):
+            cell_copy[class_key] = self._align_to_ons_classname(str(alignment))
+            del cell_copy["align"]
+        if is_body_cell and cell_copy.get("type") == "th":
+            cell_copy["heading"] = True
+        cell_copy.pop("type", None)
+        if is_body_cell:
+            cell_copy.pop("scope", None)
+        return cell_copy
 
-        Converts alignment to ONS classnames and removes the 'type' key.
-        """
-        prepared = []
-        for cell in row:
-            cell_copy = dict(cell)
-            if alignment := cell_copy.get("align"):
-                cell_copy["thClasses"] = self._align_to_ons_classname(str(alignment))
-                del cell_copy["align"]
-            # Remove 'type' as DS macro doesn't use it for header cells
-            cell_copy.pop("type", None)
-            prepared.append(cell_copy)
-        return prepared
+    def _prepare_header_cells(self, row: list[dict[str, str | int]]) -> list[dict[str, str | int]]:
+        """Prepare header cells for the DS table macro."""
+        return [self._prepare_cell(cell, "thClasses", is_body_cell=False) for cell in row]
 
     def _prepare_body_cells(self, row: list[dict[str, str | int]]) -> list[dict[str, str | int]]:
-        """Prepare body cells for the DS table macro.
-
-        Converts alignment to ONS classnames and transforms row headers
-        from type="th" to heading=true format expected by DS macro.
-        """
-        prepared = []
-        for cell in row:
-            cell_copy = dict(cell)
-            if alignment := cell_copy.get("align"):
-                cell_copy["tdClasses"] = self._align_to_ons_classname(str(alignment))
-                del cell_copy["align"]
-            # Convert type="th" to heading=true for row headers
-            if cell_copy.get("type") == "th":
-                cell_copy["heading"] = True
-            # Remove 'type' and 'scope' as DS macro uses 'heading' instead
-            cell_copy.pop("type", None)
-            cell_copy.pop("scope", None)
-            prepared.append(cell_copy)
-        return prepared
+        """Prepare body cells for the DS table macro."""
+        return [self._prepare_cell(cell, "tdClasses", is_body_cell=True) for cell in row]
 
     def get_context(self, value: dict, parent_context: dict | None = None) -> dict:
         """Insert the DS-ready options in the template context."""
