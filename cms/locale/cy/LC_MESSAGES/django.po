@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-08 17:34+0000\n"
+"POT-Creation-Date: 2026-01-08 17:39+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -465,7 +465,6 @@ msgstr "Rhyddhau"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:7
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:6
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:6
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:12
 #: cms/jinja2/templates/pages/statistical_article_page.html:13
 #: cms/jinja2/templates/pages/statistical_article_page.html:19
@@ -487,6 +486,10 @@ msgstr "Newidiadau i’r dyddiad rhyddhau hwn"
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:41
 msgid "This release is not yet published"
 msgstr "Nid yw’r datganiad hwn wedi’i gyhoeddi eto"
+
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:6
+msgid "Provisional release date:"
+msgstr ""
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:13
 msgid "Next release date:"
