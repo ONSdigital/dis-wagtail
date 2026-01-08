@@ -617,7 +617,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
                 # Special case for sub-routes of latest article in a series
                 url = request.canonical_url  # type: ignore[attr-defined]
                 return cast(str, url)
-            return cast(str, canonical_page.get_parent().get_full_url(request=request))
+            return cast(str, canonical_page.get_parent().specific_deferred.get_full_url(request=request))
 
         return super().get_canonical_url(request=request)
 
@@ -706,9 +706,8 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         canonical_page = self.alias_of.specific_deferred if self.alias_of_id else self
         if canonical_page.is_latest:
             request.canonical_url = (  # type: ignore[attr-defined]
-                canonical_page.get_parent().get_full_url(request=request) + "/related-data"
+                canonical_page.get_parent().specific_deferred.get_full_url(request) + "/related-data"
             )
-
         paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
         try:
             paginated_datasets = paginator.page(request.GET.get("page", 1))
@@ -757,14 +756,14 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         response = create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))
         return response
 
-    def get_url_parts(self, request: Optional["HttpRequest"] = None) -> tuple[int, str | None, str | None] | None:
+    def get_url_parts(self, request: Optional["HttpRequest"] = None) -> tuple[int, str, str] | None:
         url_parts = super().get_url_parts(request=request)
         if url_parts is None:
             return None
 
         site_id: int = url_parts[0]
-        root_url: str | None = url_parts[1]
-        page_path: str | None = url_parts[2]
+        root_url: str = url_parts[1]
+        page_path: str = url_parts[2]
 
         if not (root_url and page_path):
             return site_id, root_url, page_path
@@ -832,7 +831,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         if self.is_latest and request.path == self.get_url(request):
             # If this is the latest release, but the request path is the full page URL, not the evergreen latest,
             # then include the evergreen latest URL (the parent series URL) in the analytics values.
-            values["pageURL"] = self.get_parent().get_full_url(request)
+            values["pageURL"] = self.get_parent().specific_deferred.get_full_url(request)
         return values
 
     @cached_property
