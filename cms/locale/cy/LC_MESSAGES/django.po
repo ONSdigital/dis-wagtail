@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-05 14:11+0000\n"
+"POT-Creation-Date: 2026-01-07 10:54+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -34,12 +34,12 @@ msgstr "Dyfynnwch yr erthygl hon"
 msgid "Contact details"
 msgstr "Manylion cyswllt"
 
-#: cms/articles/models.py:502
+#: cms/articles/models.py:532
 #, python-format
 msgid "All data related to %(article_title)s"
 msgstr "Yr holl ddata sy'n gysylltiedig â %(article_title)s"
 
-#: cms/articles/models.py:561
+#: cms/articles/models.py:591
 msgid "Release date"
 msgstr "Dyddiad y datganiad"
 
@@ -209,6 +209,14 @@ msgstr "Rheswm dros newid"
 #: cms/jinja2/templates/components/streamfield/table_block.html:8
 msgid "Source"
 msgstr "Ffynhonnell"
+
+#: cms/jinja2/templates/components/streamfield/topic_headline_figure_block.html:3
+msgid "Error"
+msgstr ""
+
+#: cms/jinja2/templates/components/streamfield/topic_headline_figure_block.html:4
+msgid "Error retrieving figure"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:11
 msgid "Cookies on"
@@ -507,9 +515,9 @@ msgid ""
 msgstr ""
 "Mae’r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnolgan y "
 "Swyddfa Rheoleiddio Ystadegau (OSR) ac a ganfuwyd ei fod yn cydymffurfio "
-"gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://"
-"code.statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</"
-"a>. Mae hyn yn golygu yn fras bod yr ystadegau:"
+"gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://code."
+"statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</a>. "
+"Mae hyn yn golygu yn fras bod yr ystadegau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:138
 msgid "meet user needs"
