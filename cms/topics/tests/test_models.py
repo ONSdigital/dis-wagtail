@@ -570,18 +570,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, self.article.display_title)
 
     def test_translated_model_taxonomy_enforcement(self):
-        # Create a translations of self.topic_page
-        welsh_locale = Locale.objects.get(language_code="cy")
-        welsh_homepage = HomePage.objects.get(locale=welsh_locale)
-
-        # This should not raise a ValidationError
-        translated_topic_page = TopicPageFactory(
-            title="Test Topic",
-            locale=welsh_locale,
-            parent=welsh_homepage,
-            translation_key=self.topic_page.translation_key,
-            topic=self.topic_page.topic,
-        )
+        translated_topic_page = self.topic_page.get_translation(Locale.objects.get(language_code="cy"))
 
         # Assign different topic
         translated_topic_page.topic = TopicFactory()
