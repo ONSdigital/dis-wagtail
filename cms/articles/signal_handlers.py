@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from wagtail import hooks
 from wagtail.admin.signals import init_new_page
 from wagtail.models import Page
 from wagtail.signals import page_published
@@ -67,3 +68,8 @@ def create_article_index_page(sender: Any, instance: TopicPage, created: bool, r
     instance.add_child(instance=articles_index)
     # We publish a live version for the articles index page. This is acceptable since its URL redirects
     articles_index.save_revision().publish()
+
+    # Run after_create_page hook to ensure translations are created
+    # @see https://github.com/wagtail/wagtail/issues/13698
+    for fn in hooks.get_hooks("after_create_page"):
+        fn(None, articles_index)
