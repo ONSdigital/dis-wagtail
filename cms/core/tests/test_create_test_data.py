@@ -3,6 +3,7 @@ from io import StringIO
 from django.core.management import call_command
 from django.test import TestCase
 
+from cms.core.management.commands.create_test_data import SEEDED_DATA_PREFIX
 from cms.topics.models import TopicPage
 
 
@@ -12,6 +13,14 @@ class CreateTestDataTestCase(TestCase):
 
         self.assertEqual(TopicPage.objects.count(), 6)
         self.assertEqual(len(set(TopicPage.objects.values_list("title", flat=True))), 3)
+
+        for topic_page in TopicPage.objects.all():
+            with self.subTest(topic_page):
+                self.assertEqual(
+                    [child.block_type for child in topic_page.explore_more], ["internal_link", "external_link"]
+                )
+                for block in topic_page.explore_more:
+                    self.assertIn(SEEDED_DATA_PREFIX, block.value["thumbnail"].title)
 
     def test_idempotent(self) -> None:
         call_command("create_test_data", interactive=False)

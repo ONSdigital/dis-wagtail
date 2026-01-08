@@ -8,8 +8,8 @@ from django.core.management.base import BaseCommand
 from faker import Faker
 from treebeard.mp_tree import MP_Node
 from wagtail.models import Site
+from wagtail_factories import ImageFactory
 
-from cms.core.models import BasePage
 from cms.taxonomy.models import Topic
 from cms.taxonomy.tests.factories import SimpleTopicFactory
 from cms.topics.tests.factories import TopicPageFactory
@@ -81,13 +81,22 @@ class Command(BaseCommand):
 
         title_factory = factory.LazyFunction(lambda: SEEDED_DATA_PREFIX + faker.sentence(nb_words=3))
 
+        image = ImageFactory(title=title_factory)
+
         for _ in range(options["topics"]):
             topic = self.create_node_for_factory(
                 SimpleTopicFactory, parent=root_topic, get_or_create_args=["id"], title=title_factory
             )
 
             topic_page = self.create_node_for_factory(
-                TopicPageFactory, parent=root_page, get_or_create_args=["title"], title=title_factory, topic=topic
+                TopicPageFactory,
+                parent=root_page,
+                get_or_create_args=["title"],
+                title=title_factory,
+                topic=topic,
+                explore_more__0__internal_link__page=root_page,
+                explore_more__0__internal_link__thumbnail__image=image,
+                explore_more__1__external_link__thumbnail__image=image,
             )
 
             topic_page.specific.save_revision().publish()

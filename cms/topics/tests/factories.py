@@ -3,7 +3,36 @@ import wagtail_factories
 
 from cms.home.models import HomePage
 from cms.taxonomy.tests.factories import TopicFactory
+from cms.topics.blocks import ExploreMoreExternalLinkBlock, ExploreMoreInternalLinkBlock, ExploreMoreStoryBlock
 from cms.topics.models import TopicPage, TopicPageRelatedArticle, TopicPageRelatedMethodology
+
+
+class ExploreMoreExternalLinkBlockFactory(wagtail_factories.StructBlockFactory):
+    url = factory.Faker("url")
+    title = factory.Faker("sentence")
+    description = factory.Faker("text", max_nb_chars=100)
+    thumbnail = factory.SubFactory(wagtail_factories.ImageChooserBlockFactory)
+
+    class Meta:
+        model = ExploreMoreExternalLinkBlock
+
+
+class ExploreMoreInternalLinkBlockFactory(wagtail_factories.StructBlockFactory):
+    page = factory.SubFactory(wagtail_factories.PageChooserBlockFactory)
+    title = factory.Faker("sentence")
+    description = factory.Faker("text", max_nb_chars=100)
+    thumbnail = factory.SubFactory(wagtail_factories.ImageChooserBlockFactory)
+
+    class Meta:
+        model = ExploreMoreInternalLinkBlock
+
+
+class ExploreMoreStoryBlockFactory(wagtail_factories.StreamBlockFactory):
+    external_link = factory.SubFactory(ExploreMoreExternalLinkBlockFactory)
+    internal_link = factory.SubFactory(ExploreMoreInternalLinkBlockFactory)
+
+    class Meta:
+        model = ExploreMoreStoryBlock
 
 
 class TopicPageFactory(wagtail_factories.PageFactory):
@@ -16,6 +45,7 @@ class TopicPageFactory(wagtail_factories.PageFactory):
     title = factory.Faker("sentence", nb_words=4)
     summary = factory.Faker("text", max_nb_chars=100)
     topic = factory.SubFactory(TopicFactory)
+    explore_more = wagtail_factories.StreamFieldFactory(ExploreMoreStoryBlockFactory)
 
 
 class TopicPageRelatedArticleFactory(factory.django.DjangoModelFactory):
