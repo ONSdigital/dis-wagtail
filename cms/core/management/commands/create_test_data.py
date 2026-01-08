@@ -74,6 +74,7 @@ class Command(BaseCommand):
         # Seed randomness
         faker = Faker(locale="en_GB")
         faker.seed_instance(options["seed"])
+        factory.Faker._DEFAULT_LOCALE = "en_GB"  # pylint: disable=protected-access
         factory.random.reseed_random(options["seed"])
 
         root_page = Site.objects.first().root_page
