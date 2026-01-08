@@ -77,7 +77,7 @@ class Command(BaseCommand):
         factory.Faker._DEFAULT_LOCALE = "en_GB"  # pylint: disable=protected-access
         factory.random.reseed_random(options["seed"])
 
-        root_page = Site.objects.first().root_page
+        root_page = Site.objects.get(is_default_site=True).root_page
         root_topic = Topic.objects.root_topic()
 
         title_factory = factory.LazyFunction(lambda: SEEDED_DATA_PREFIX + faker.sentence(nb_words=3))
