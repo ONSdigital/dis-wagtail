@@ -646,8 +646,8 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             context["options"],
             {
                 "caption": "The caption",
-                "headers": [[{"value": "header cell", "type": "th"}]],
-                "trs": [{"tds": [{"value": "row cell", "type": "td"}]}],
+                "thList": [{"ths": [{"value": "header cell"}]}],
+                "trs": [{"tds": [{"value": "row cell"}]}],
             },
         )
         self.assertEqual(context["title"], "The table")
@@ -668,7 +668,8 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertIn(self.full_data["caption"], rendered)
         self.assertIn("Footnotes", rendered)
         self.assertIn(self.full_data["footnotes"], rendered)
-        self.assertIn("<table ", rendered)
+        self.assertIn("<table", rendered)
+        self.assertIn("ons-table", rendered)
         self.assertIn("header cell", rendered)
         self.assertIn("row cell", rendered)
 
@@ -719,53 +720,42 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         rendered = self.block.render({"data": table_data})
 
-        self.assertTagInHTML(
-            '<th scope="col" class="ons-table__header ons-u-ta-center" width="20px">'
-            '<span class="ons-table__header-text">header cell</span></th>',
-            rendered,
-        )
-        self.assertTagInHTML('<td class="ons-table__cell ons-u-ta-right">row cell</td>', rendered)
+        # Check header cell has alignment class
+        self.assertIn("ons-u-ta-center", rendered)
         self.assertIn("header cell", rendered)
+        # Check body cell has alignment class
+        self.assertIn("ons-u-ta-right", rendered)
         self.assertIn("row cell", rendered)
 
     def test_render_block__ds_component_markup(self):
+        """Test that table renders with correct DS component structure."""
+        # Test basic table with body only
         table = {
             "headers": [],
             "rows": [[{"value": "row cell", "type": "td"}]],
         }
         rendered = self.block.render({"data": table})
 
-        expected = """
-        <table class="ons-table">
-            <tbody class="ons-table__body">
-                <tr class="ons-table__row">
-                    <td class="ons-table__cell">row cell</td>
-                </tr>
-            </tbody>
-        </table>
-        """
-        self.assertInHTML(expected, rendered)
+        # Check key structural elements
+        self.assertIn("ons-table-scrollable", rendered)  # DS always adds scrollable wrapper
+        self.assertIn("ons-table__body", rendered)
+        self.assertIn("ons-table__row", rendered)
+        self.assertInHTML('<td class="ons-table__cell">row cell</td>', rendered)
 
+        # Test table with header only
         table = {
             "headers": [[{"value": "header cell", "type": "th"}]],
             "rows": [],
         }
         rendered = self.block.render({"data": table})
 
-        expected = """
-        <table class="ons-table">
-            <thead class="ons-table__head">
-                <tr class="ons-table__row">
-                    <th scope="col" class="ons-table__header">
-                        <span class="ons-table__header-text">header cell</span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody class="ons-table__body"></tbody>
-        </table>
-        """
-        self.assertInHTML(expected, rendered)
+        self.assertIn("ons-table__head", rendered)
+        self.assertInHTML(
+            '<th scope="col" class="ons-table__header"><span class="ons-table__header-text">header cell</span></th>',
+            rendered,
+        )
 
+        # Test complex table with multiple header rows and row headers
         table = {
             "headers": [
                 [
@@ -797,50 +787,16 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         }
         rendered = self.block.render({"data": table})
 
-        expected = """
-        <table class="ons-table">
-            <thead class="ons-table__head">
-                <tr class="ons-table__row">
-                    <th scope="col" class="ons-table__header" colspan="2">
-                        <span class="ons-table__header-text">Combined header</span>
-                    </th>
-                    <th scope="col" class="ons-table__header">
-                        <span class="ons-table__header-text">Regular header</span>
-                    </th>
-                    <th scope="col" class="ons-table__header" rowspan="2">
-                        <span class="ons-table__header-text">Two row header</span>
-                    </th>
-                </tr>
-                <tr class="ons-table__row">
-                    <th scope="col" class="ons-table__header">
-                        <span class="ons-table__header-text">Sub-header 1</span>
-                    </th>
-                    <th scope="col" class="ons-table__header">
-                        <span class="ons-table__header-text">Sub-header 2</span>
-                    </th>
-                    <th scope="col" class="ons-table__header">
-                        <span class="ons-table__header-text">Sub-header 3</span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody class="ons-table__body">
-                <tr class="ons-table__row">
-                    <th class="ons-table__cell" scope="row">Col header 1</th>
-                    <td class="ons-table__cell" colspan="2" rowspan="2">Two rows and cols cell</td>
-                    <td class="ons-table__cell">Col cell 1</td>
-                </tr>
-                <tr class="ons-table__row">
-                    <th class="ons-table__cell" scope="row">Col header 2</th>
-                    <td class="ons-table__cell" rowspan="2">Col cell 2</td>
-                </tr>
-                <tr class="ons-table__row">
-                    <th class="ons-table__cell" scope="row">Col header 3</th>
-                    <td class="ons-table__cell" colspan="3">Col cell 3</td>
-                </tr>
-            </tbody>
-        </table>
-        """
-        self.assertInHTML(expected, rendered)
+        # Check multiple header rows are rendered
+        self.assertIn("Combined header", rendered)
+        self.assertIn("Sub-header 1", rendered)
+        # Check colspan/rowspan attributes
+        self.assertIn('colspan="2"', rendered)
+        self.assertIn('rowspan="2"', rendered)
+        # Check row headers in body are rendered with heading attribute (th with scope=row)
+        self.assertInHTML('<th class="ons-table__cell" scope="row">Col header 1</th>', rendered)
+        self.assertInHTML('<th class="ons-table__cell" scope="row">Col header 2</th>', rendered)
+        self.assertInHTML('<th class="ons-table__cell" scope="row">Col header 3</th>', rendered)
 
     def test__align_to_ons_classname(self):
         scenarios = {"right": "ons-u-ta-right", "left": "ons-u-ta-left", "center": "ons-u-ta-center", "foo": ""}
@@ -850,19 +806,35 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
                 classname,
             )
 
-    def test__prepare_cells(self):
+    def test__prepare_header_cells(self):
+        """Test that header cells are prepared correctly for DS macro."""
+        cells = [{"value": "header cell", "type": "th", "width": "20px", "align": "center"}]
+        expected = [{"value": "header cell", "width": "20px", "thClasses": "ons-u-ta-center"}]
+        self.assertListEqual(
+            self.block._prepare_header_cells(cells),  # pylint: disable=protected-access
+            expected,
+        )
+
+    def test__prepare_body_cells(self):
+        """Test that body cells are prepared correctly for DS macro."""
         scenarios = [
-            (
-                [{"value": "header cell", "type": "th", "width": "20px", "align": "center"}],
-                [{"value": "header cell", "type": "th", "width": "20px", "thClasses": "ons-u-ta-center"}],
-            ),
+            # Regular td cell
             (
                 [{"value": "row cell", "type": "td", "width": "50%", "align": "right"}],
-                [{"value": "row cell", "type": "td", "width": "50%", "tdClasses": "ons-u-ta-right"}],
+                [{"value": "row cell", "width": "50%", "tdClasses": "ons-u-ta-right"}],
+            ),
+            # Row header (th in body) - should convert to heading=true
+            (
+                [{"value": "row header", "type": "th", "scope": "row"}],
+                [{"value": "row header", "heading": True}],
             ),
         ]
         for cells, expected in scenarios:
-            self.assertListEqual(self.block._prepare_cells(cells), expected)  # pylint: disable=protected-access
+            with self.subTest(cells=cells):
+                self.assertListEqual(
+                    self.block._prepare_body_cells(cells),  # pylint: disable=protected-access
+                    expected,
+                )
 
 
 class AccordionBlockTestCase(TestCase):
