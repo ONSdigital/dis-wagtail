@@ -349,22 +349,32 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         # Test \(...\) indicator - valid equation
         data["content-0-value-content-0-value-equation"] = r"\(a+b=c\)"
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
-        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+        self.assertNotContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
 
         # Test \(...\) indicator - mismatched (missing closing indicator)
         data["content-0-value-content-0-value-equation"] = r"\(a+b=c"
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
-        self.assertContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+        self.assertContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
 
         # Test mismatched indicators - starts with $$ but ends with \)
         data["content-0-value-content-0-value-equation"] = r"$$a+b=c\)"
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
-        self.assertContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+        self.assertContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
 
         # Test mismatched indicators - starts with \( but ends with $$
         data["content-0-value-content-0-value-equation"] = r"\(a+b=c$$"
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
-        self.assertContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+        self.assertContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
+
+        # Test \[...\] indicator - valid equation (display math)
+        data["content-0-value-content-0-value-equation"] = r"\[a+b=c\]"
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertNotContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
+
+        # Test \[...\] indicator - mismatched (missing closing indicator)
+        data["content-0-value-content-0-value-equation"] = r"\[a+b=c"
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
 
     def test_related_datasets_sorting_alphabetic(self):
         dataset_a = {"title": "a", "description": "a", "url": "https://example.com"}
