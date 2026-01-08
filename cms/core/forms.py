@@ -8,7 +8,7 @@ from wagtail.admin.forms.pages import CopyForm
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import PageLogEntry
 
-from cms.core.utils import FORMULA_INDICATOR, latex_formula_to_svg
+from cms.core.utils import FORMULA_INDICATORS, latex_formula_to_svg
 
 logger = logging.getLogger(__name__)
 
@@ -149,26 +149,27 @@ class NoLocaleFilterInChoosersForm(SearchFilterMixin, BaseFilterForm):
 
 class PageWithEquationsAdminForm(WagtailAdminPageForm):
     def _process_content_block(self, block: StreamValue) -> None:
-        if block.block_type == "equation":
-            equation = block.value["equation"].replace("\n", "").strip()
-            if equation.startswith(FORMULA_INDICATOR):
-                if not equation.endswith(FORMULA_INDICATOR):
+        if block.block_type != "equation":
+            return
+        equation = block.value["equation"].replace("\n", "").strip()
+        for start_indicator, finish_indicator in FORMULA_INDICATORS:
+            if equation.startswith(start_indicator):
+                if not equation.endswith(finish_indicator):
                     # Not worth trying to parse the equation if it doesn't end with the indicator
                     self.add_error("content", ValidationError(LATEX_VALIDATION_ERROR))
                     return
-                equation = equation[2:-2]
-            try:
-                block.value["svg"] = latex_formula_to_svg(equation)
-            except RuntimeError as error:
-                # Log the error for debugging purposes
-                logger.warning(
-                    "Could not process LaTeX equation: %s",
-                    error,
-                    extra={
-                        "equation": equation,
-                    },
-                )
-                self.add_error("content", LATEX_VALIDATION_ERROR)
+                equation = equation[len(start_indicator) : -len(finish_indicator)]
+                break
+        try:
+            block.value["svg"] = latex_formula_to_svg(equation)
+        except RuntimeError as error:
+            # Log the error for debugging purposes
+            logger.warning(
+                "Could not process LaTeX equation: %s",
+                error,
+                extra={"equation": equation},
+            )
+            self.add_error("content", LATEX_VALIDATION_ERROR)
 
     def clean_content(self) -> StreamValue:
         content: StreamValue = self.cleaned_data["content"]
