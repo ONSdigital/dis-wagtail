@@ -396,7 +396,7 @@ class SerializeBundleContentTranslationTests(TestCase):
         """Test that section titles are in English when language_code is 'en'."""
         bundle = BundleFactory()
         article = StatisticalArticlePageFactory()
-        methodology = MethodologyPageFactory(parent=article.get_parent())
+        methodology = MethodologyPageFactory()
         BundlePageFactory(parent=bundle, page=article)
         BundlePageFactory(parent=bundle, page=methodology)
 
@@ -410,7 +410,7 @@ class SerializeBundleContentTranslationTests(TestCase):
         """Test that section titles are in Welsh when language_code is 'cy'."""
         bundle = BundleFactory()
         article = StatisticalArticlePageFactory()
-        methodology = MethodologyPageFactory(parent=article.get_parent())
+        methodology = MethodologyPageFactory()
         BundlePageFactory(parent=bundle, page=article)
         BundlePageFactory(parent=bundle, page=methodology)
 
