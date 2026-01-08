@@ -4,9 +4,9 @@ from wagtail.blocks import StreamValue
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset, ONSDataset
 from cms.datasets.utils import (
-    construct_dataset_compound_id,
+    construct_chooser_dataset_compound_id,
     convert_old_dataset_format,
-    deconstruct_dataset_compound_id,
+    deconstruct_chooser_dataset_compound_id,
     extract_edition_from_dataset_url,
     format_datasets_as_document_list,
     get_dataset_for_published_state,
@@ -39,7 +39,7 @@ class TestUtils(TestCase):
         self.assertEqual(
             formatted_datasets[0],
             {
-                "title": {"text": lookup_dataset.title, "url": lookup_dataset.website_url},
+                "title": {"text": lookup_dataset.title, "url": lookup_dataset.url_path},
                 "metadata": {"object": {"text": "Dataset"}},
                 "description": f"<p>{lookup_dataset.description}</p>",
             },
@@ -140,8 +140,8 @@ class TestUtils(TestCase):
                 compound_tuple = (dataset_id, edition, version_id, published)
                 self.assertEqual(
                     compound_tuple,
-                    deconstruct_dataset_compound_id(
-                        construct_dataset_compound_id(
+                    deconstruct_chooser_dataset_compound_id(
+                        construct_chooser_dataset_compound_id(
                             dataset_id=dataset_id,
                             edition=edition,
                             version_id=version_id,
@@ -153,7 +153,7 @@ class TestUtils(TestCase):
     def test_deconstruct_compound_id_invalid(self):
         invalid_compound_id = "invalidcompoundidformat"
         with self.assertRaisesRegex(ValueError, f"Invalid compound ID format: {invalid_compound_id}"):
-            deconstruct_dataset_compound_id(invalid_compound_id)
+            deconstruct_chooser_dataset_compound_id(invalid_compound_id)
 
     def test_get_published_from_state(self):
         self.assertTrue(get_published_from_state("published"))

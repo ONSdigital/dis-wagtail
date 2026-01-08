@@ -16,13 +16,18 @@ from wagtail.search import index
 
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.home.models import HomePage
-from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.topics.models import TopicPage
 from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
 from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from .forms import BundleAdminForm
-from .panels import BundleFieldPanel, BundleMultipleChooserPanel, BundleStatusPanel, PageChooserWithStatusPanel
+from .panels import (
+    BundleFieldPanel,
+    BundleMultipleChooserPanel,
+    BundleStatusPanel,
+    PageChooserWithStatusPanel,
+    ReleaseChooserWithDetailsPanel,
+)
 
 if TYPE_CHECKING:
     import datetime
@@ -147,7 +152,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         related_name="bundles",
     )
     status = models.CharField(choices=BundleStatus.choices, default=BundleStatus.DRAFT, max_length=32)
-    bundle_api_content_id = models.CharField(max_length=255, blank=True, editable=False)
+    bundle_api_bundle_id = models.CharField(max_length=255, blank=True, editable=False)
     # note: it looks like etag is SHA-1, so 40 chars, but using 255 for safety
     # https://github.com/ONSdigital/dp-net/blob/a17216881f99417aefa7aa256a337e2ad635866d/handlers/response/etag.go#L13
     bundle_api_etag = models.CharField(max_length=255, blank=True, editable=False)
@@ -158,11 +163,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         BundleFieldPanel("name"),
         FieldRowPanel(
             [
-                BundleFieldPanel(
-                    "release_calendar_page",
-                    heading="Release Calendar page",
-                    widget=FutureReleaseCalendarChooserWidget,
-                ),
+                ReleaseChooserWithDetailsPanel("release_calendar_page", heading="Release Calendar page"),
                 BundleFieldPanel("publication_date", widget=ONSAdminDateTimeInput(), heading="or Publication date"),
             ],
             heading="Scheduling",
@@ -198,7 +199,9 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     search_fields: ClassVar[list[index.BaseField]] = [
         index.SearchField("name"),
         index.AutocompleteField("name"),
+        index.FilterField("id"),
         index.FilterField("status"),
+        index.FilterField("team_id"),
     ]
 
     def __str__(self) -> str:
@@ -215,6 +218,12 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     @cached_property
     def active_team_ids(self) -> list[int]:
         return list(self.teams.filter(team__is_active=True).values_list("team__pk", flat=True))
+
+    @cached_property
+    def team_id(self) -> list[int]:
+        # Workaround for https://github.com/wagtail/wagtail/issues/6616
+        # Currently Wagtail cannot search a QuerySet that's been filtered by a field on a related object
+        return self.active_team_ids
 
     @property
     def can_be_approved(self) -> bool:
@@ -240,6 +249,10 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             return True
 
         return self.scheduled_publication_date < timezone.now()
+
+    @property
+    def has_datasets(self) -> bool:
+        return self.bundled_datasets.exists()
 
     @property
     def full_inspect_url(self) -> str:

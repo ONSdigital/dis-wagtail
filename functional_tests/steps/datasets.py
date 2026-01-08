@@ -1,38 +1,12 @@
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
-from django.conf import settings
 from playwright.sync_api import expect
 
 from cms.settings.base import ONS_ALLOWED_LINK_DOMAINS
-from functional_tests.step_helpers.datasets import mock_datasets_responses
-
-MOCK_DATASETS = (
-    {
-        "dataset_id": "example1",
-        "description": "Example dataset for functional testing",
-        "title": "Looked Up Dataset",
-        "edition": "example-dataset-1",
-        "edition_title": "Example Dataset 1",
-        "latest_version": {
-            "href": "/datasets/example1/editions/example-dataset-1/versions/1",
-            "id": "1",
-        },
-        "release_date": "2025-01-01T00:00:00.000Z",
-        "state": "published",
-    },
-    {
-        "dataset_id": "example1",
-        "description": "Example dataset for functional testing unpublished",
-        "title": "Unpublished Looked Up Dataset",
-        "edition": "example-dataset-1",
-        "edition_title": "Example Dataset 1",
-        "latest_version": {
-            "href": "/datasets/example1/editions/example-dataset-1/versions/1",
-            "id": "1",
-        },
-        "release_date": "2025-01-01T00:00:00.000Z",
-        "state": "unpublished",
-    },
+from functional_tests.step_helpers.datasets import (
+    TEST_MIXED_STATES_DATASETS,
+    TEST_UNPUBLISHED_DATASETS,
+    mock_datasets_responses,
 )
 
 
@@ -43,11 +17,11 @@ def user_in_internal_environment(context: Context) -> None:
 
 @when("looks up and selects a dataset")
 def look_up_and_select_published_dataset(context: Context) -> None:
-    mock_dataset, unpublished_mock_dataset = MOCK_DATASETS
+    mock_dataset, unpublished_mock_dataset = TEST_MIXED_STATES_DATASETS
     dataset_displayed_fields = {
         "title": mock_dataset["title"],
         "description": mock_dataset["description"],
-        "url": f"{settings.ONS_WEBSITE_BASE_URL}/datasets/{mock_dataset['dataset_id']}",
+        "url": f"/datasets/{mock_dataset['dataset_id']}",
     }
 
     context.selected_datasets = [
@@ -71,7 +45,7 @@ def look_up_and_select_published_dataset(context: Context) -> None:
 
 @when("the user opens the dataset chooser")
 def open_dataset_chooser(context: Context) -> None:
-    mock_dataset, unpublished_mock_dataset = MOCK_DATASETS
+    mock_dataset, unpublished_mock_dataset = TEST_MIXED_STATES_DATASETS
 
     editor_tab = getattr(context, "editor_tab", "content")
 
@@ -86,7 +60,7 @@ def open_dataset_chooser(context: Context) -> None:
 
 @when("the user opens the dataset chooser and sets the filter to published datasets")
 def set_filter_to_published_datasets(context: Context) -> None:
-    mock_dataset, unpublished_mock_dataset = MOCK_DATASETS
+    mock_dataset, unpublished_mock_dataset = TEST_MIXED_STATES_DATASETS
 
     editor_tab = getattr(context, "editor_tab", "content")
 
@@ -124,47 +98,7 @@ def manually_enter_dataset_link(context: Context) -> None:
 
 @step("the user selects multiple datasets")
 def the_user_selects_multiple_datasets(context: Context) -> None:
-    mock_dataset_a = {
-        "dataset_id": "example1",
-        "description": "Example dataset for functional testing",
-        "title": "Looked Up Dataset",
-        "edition": "example-dataset-1",
-        "edition_title": "Example Dataset 1",
-        "latest_version": {
-            "href": "/datasets/example1/editions/example-dataset-1/versions/1",
-            "id": "1",
-        },
-        "release_date": "2025-01-01T00:00:00.000Z",
-        "state": "associated",
-    }
-
-    mock_dataset_b = {
-        "dataset_id": "example2",
-        "description": "Second example dataset for functional testing",
-        "title": "Personal well-being estimates by local authority",
-        "edition": "example-dataset-2",
-        "edition_title": "Example Dataset 2",
-        "latest_version": {
-            "href": "/datasets/example2/editions/example-dataset-2/versions/1",
-            "id": "1",
-        },
-        "release_date": "2025-01-02T00:00:00.000Z",
-        "state": "associated",
-    }
-
-    mock_dataset_c = {
-        "dataset_id": "example3",
-        "description": "Third example dataset for functional testing",
-        "title": "Deaths registered weekly in England and Wales by region",
-        "edition": "example-dataset-3",
-        "edition_title": "Example Dataset 3",
-        "latest_version": {
-            "href": "/datasets/example3/editions/example-dataset-3/versions/1",
-            "id": "1",
-        },
-        "release_date": "2025-01-03T00:00:00.000Z",
-        "state": "associated",
-    }
+    mock_dataset_a, mock_dataset_b, mock_dataset_c = TEST_UNPUBLISHED_DATASETS
 
     is_internal_environment = getattr(context, "is_internal_environment", False)
 
@@ -178,11 +112,12 @@ def the_user_selects_multiple_datasets(context: Context) -> None:
         context.page.get_by_role("checkbox", name="Personal well-being estimates by local authority").click()
         context.page.get_by_role("checkbox", name="Deaths registered weekly in England and Wales by region").click()
         context.page.get_by_role("button", name="Confirm selection").click()
+        context.page.wait_for_timeout(250)  # Wait for everything to process before leaving the with block
 
 
 @when("the user opens the bundle datasets chooser")
 def user_opens_bundle_datasets_chooser(context: Context) -> None:
-    mock_dataset = MOCK_DATASETS[0]
+    mock_dataset = TEST_MIXED_STATES_DATASETS[0]
 
     with mock_datasets_responses([mock_dataset]):
         context.page.get_by_role("button", name="Add dataset").click()

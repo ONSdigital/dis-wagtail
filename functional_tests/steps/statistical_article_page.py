@@ -115,6 +115,22 @@ def user_clicks_on_view_superseded_version(context: Context) -> None:
     page.get_by_role("link", name="View superseded version").click()
 
 
+@step("the user adds a chart to the content")
+def user_adds_chart_to_content(context: Context) -> None:
+    """Add a chart block to the article content section."""
+    page = context.page
+    page.locator("#panel-child-content-content-content").get_by_role("button", name="Insert a block").nth(2).click()
+    page.get_by_text("Line chart").click()
+
+    chart_region = page.get_by_role("region", name="Line chart")
+    chart_region.get_by_role("textbox", name="Title*", exact=True).fill("Test Chart Title")
+    chart_region.get_by_role("textbox", name="Subtitle*").fill("Test Chart Subtitle")
+    chart_region.get_by_label("Audio description*").fill("This is the chart audio description")
+
+    # Wait for the table editor to be ready and fill in chart data
+    page.wait_for_timeout(500)
+
+
 @step("the user adds a table with pasted content")
 def user_adds_table_with_pasted_content(context: Context) -> None:
     page = context.page
@@ -569,6 +585,13 @@ def a_statistical_article_page_with_configured_listing_image_exists(
         content=content,
     )
     context.statistical_article_page.save()
+
+
+@then("the page has a CSV download link for the chart")
+def the_page_has_a_csv_download_link_for_the_chart(context: Context) -> None:
+    """Check that the page has a CSV download link for the chart."""
+    csv_download_link = context.page.get_by_role("link", name="Download CSV")
+    expect(csv_download_link).to_be_visible()
 
 
 @given("the statistical article page is not a featured article on its containing topic page")

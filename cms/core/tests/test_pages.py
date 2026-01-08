@@ -5,16 +5,15 @@ from django.conf import settings
 from django.template import TemplateDoesNotExist
 from django.template.loader import get_template as original_get_template
 from django.test.utils import override_settings
-from django.utils import translation
 from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils import WagtailPageTestCase
 
-from cms.core.tests.utils import extract_datalayer_pushed_values, extract_response_jsonld
+from cms.core.tests.utils import TranslationResetMixin, extract_datalayer_pushed_values, extract_response_jsonld
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 
 
-class HomePageTests(WagtailPageTestCase):
+class HomePageTests(TranslationResetMixin, WagtailPageTestCase):
     def setUp(self):
         self.page = HomePage.objects.first()
 
@@ -81,17 +80,29 @@ class HomePageTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(extract_datalayer_pushed_values(response.text)), 0)
 
+    def test_language_toggle_welsh_link(self):
+        """Test that the Welsh language toggle link is present on the English home page."""
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        content = response.content.decode(encoding="utf-8")
+        self.assertInHTML(
+            ('<a href="/cy" lang="cy"><span class="ons-u-vh">Change language to </span>Cymraeg</a>'), content
+        )
 
-class PageCanonicalUrlTests(WagtailPageTestCase):
+    def test_language_toggle_english_link(self):
+        """Test that the English language toggle link is present on the Welsh home page."""
+        response = self.client.get("/cy")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        content = response.content.decode(encoding="utf-8")
+        self.assertInHTML(
+            ('<a href="/" lang="en"><span class="ons-u-vh">Change language to </span>English</a>'), content
+        )
+
+
+class PageCanonicalUrlTests(TranslationResetMixin, WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.page = InformationPageFactory()
-
-    def tearDown(self):
-        # Reset the translation to the default language after each test to avoid
-        # test contamination issues.
-        translation.activate(settings.LANGUAGE_CODE)
-        return super().tearDown()
 
     def test_page_canonical_url(self):
         """Test that the home page has the correct canonical URL."""
@@ -214,13 +225,7 @@ class SocialMetaTests(WagtailPageTestCase):
         )
 
 
-class ErrorPageTests(WagtailPageTestCase):
-    def tearDown(self):
-        # Reset the translation to the default language after each test to avoid
-        # test contamination issues.
-        translation.activate(settings.LANGUAGE_CODE)
-        return super().tearDown()
-
+class ErrorPageTests(TranslationResetMixin, WagtailPageTestCase):
     def get_template_side_effect(self, template_name, *args, **kwargs):
         """Side effect function to simulate template loading failures."""
         if template_name == "templates/pages/errors/500.html":

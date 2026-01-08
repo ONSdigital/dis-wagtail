@@ -1,10 +1,14 @@
+# pylint: disable=too-many-lines
+import textwrap
 from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
+from typing import ClassVar
 from unittest import mock
 from unittest.mock import patch
 
 import time_machine
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db.models import F, OrderBy
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -16,13 +20,16 @@ from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.bundles.clients.api import BundleAPIClientError
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
+from cms.datasets.tests.factories import DatasetFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
 from cms.standard_pages.tests.factories import InformationPageFactory
@@ -38,6 +45,12 @@ from cms.workflows.tests.utils import (
 
 
 class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
+    RELEASE_CALENDAR_PAGE_CASES: ClassVar[list[tuple[str, ReleaseStatus, str]]] = [
+        ("Release Calendar Page 1", ReleaseStatus.PROVISIONAL, "Release Calendar Page 1 (Provisional,"),
+        ("Release Calendar Page 2", ReleaseStatus.CONFIRMED, "Release Calendar Page 2 (Confirmed,"),
+        ("Release Calendar Page 3", ReleaseStatus.CANCELLED, "Release Calendar Page 3 (Cancelled,"),
+    ]
+
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
@@ -84,15 +97,46 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
 
         self.client.force_login(self.publishing_officer)
 
-    def get_base_form_data(self):
-        return nested_form_data(
-            {
-                "name": "The bundle",
-                "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
-                "bundled_datasets": inline_formset([]),
-                "teams": inline_formset([]),
-            }
+    def get_base_form_data(self, status: BundleStatus | None = None):
+        data = {
+            "name": "Original bundle",
+            "bundled_datasets": inline_formset([]),
+            "teams": inline_formset([]),
+        }
+
+        if status in {BundleStatus.APPROVED, BundleStatus.PUBLISHED}:
+            # If approved or published, page data must be existing and not considered new
+            bundled_pages = BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)
+            page_formset = inline_formset(
+                [
+                    {"id": bundled_pages.id, "page": self.statistical_article_page.id, "ORDER": 1},
+                ],
+                initial=1,
+            )
+        else:
+            page_formset = inline_formset([{"page": self.statistical_article_page.id}])
+
+        data["bundled_pages"] = page_formset
+
+        return nested_form_data(data)
+
+    @staticmethod
+    def chooser_panel_display(page) -> str:
+        return f"{page.title} ({page.get_status_display()}, {page.release_date_value})"
+
+    def _create_release_calendar_page(self, title, status):
+        """Assigns a release calendar page to the bundle."""
+        release_date = timezone.now() + timedelta(days=1)
+        release_calendar_page = ReleaseCalendarPageFactory(
+            title=title,
+            release_date=release_date,
+            status=status,
         )
+        return release_calendar_page
+
+    def _assign_release_calendar_page_to_bundle(self, release_calendar_page):
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.save(update_fields=["release_calendar_page"])
 
 
 class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
@@ -213,7 +257,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.client.force_login(self.superuser)
         mark_page_as_ready_to_publish(self.statistical_article_page, self.superuser)
 
-        data = self.get_base_form_data()
+        data = self.get_base_form_data(status=expected_status)
         data[action] = action
         data["status"] = BundleStatus.PUBLISHED.value  # attempting to force it
 
@@ -321,6 +365,42 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
+    def test_bundle_edit_view__shows_release_calendar_page_details(self):
+        """Release calendar page's title, status and release date are displayed when selected in bundles."""
+        for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
+            with self.subTest(title=title, status=status):
+                release_calendar_page = self._create_release_calendar_page(title=title, status=status)
+                # when validation of assigning cancelled pages to bundles are improved
+                # test for cancelled pages should fail
+                self._assign_release_calendar_page_to_bundle(release_calendar_page=release_calendar_page)
+                response = self.client.get(self.edit_url)
+                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value})"
+                self.assertContains(response, expected_display_panel)
+
+    def test_bundle_edit_view__shows_updated_release_calendar_page_details(self):
+        """When release calendar page details are updated, this tests that the updates are reflected on the bundles edit
+        page and checks stale values are not present.
+        """
+        release_calendar_page = self._create_release_calendar_page(
+            title="Future Release calendar Page", status=ReleaseStatus.PROVISIONAL
+        )
+        self._assign_release_calendar_page_to_bundle(release_calendar_page=release_calendar_page)
+        original_text = self.chooser_panel_display(release_calendar_page)
+
+        for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
+            with self.subTest(title=title, status=status):
+                release_calendar_page.title = title
+                release_calendar_page.status = status
+                release_calendar_page.release_date = timezone.now() + timedelta(days=2)
+                release_calendar_page.save()
+                self.bundle.save()
+
+                response = self.client.get(self.edit_url)
+                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value})"
+
+                self.assertContains(response, expected_display_panel)
+                self.assertNotContains(response, original_text)
+
     def test_bundle_edit_view__page_chooser_contain_workflow_state_information(self):
         BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)
         page_title = self.statistical_article_page.get_admin_display_title()
@@ -342,6 +422,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.client.force_login(self.publishing_officer)
         self.bundle.status = BundleStatus.IN_REVIEW
         self.bundle.save(update_fields=["status"])
+        bundled_page = BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)
         original_status = self.bundle.status
 
         response = self.client.post(
@@ -350,7 +431,16 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
                 {
                     "name": self.bundle.name,
                     "status": BundleStatus.APPROVED,
-                    "bundled_pages": inline_formset([{"page": self.statistical_article_page.id}]),
+                    "bundled_pages": inline_formset(
+                        [
+                            {
+                                "id": bundled_page.id,
+                                "page": self.statistical_article_page.id,
+                                "ORDER": 1,
+                            }
+                        ],
+                        initial=1,
+                    ),
                     "teams": inline_formset([]),
                     "action-approve": "action-approve",
                 }
@@ -405,6 +495,83 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
         response = self.client.get(self.edit_url)
         self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
+
+
+class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseBase):
+    LONG_TEXT = "Some long description to test truncation. " * 500
+
+    def _build_api_error(self, has_detail_errors: bool) -> BundleAPIClientError:
+        if has_detail_errors:
+            errors = [
+                {"description": "Title already in use"},
+                {"description": "Some other error"},
+                {"description": self.LONG_TEXT},
+                {"no-description-key": ""},
+            ]
+        else:
+            errors = []
+
+        return BundleAPIClientError("API Error", errors=errors)
+
+    # pylint: disable=too-many-locals
+    @patch("cms.bundles.forms.BundleAdminForm.save")
+    def test_add_and_edit_views_surface_bundle_api_errors(self, mock_save):
+        """Both add and edit views should surface Bundle API errors on the form."""
+        # Expected banner prefixes for each action
+        error_message_for_action = {
+            "action-create": "The bundle could not be created due to errors.",
+            "action-edit": "The bundle could not be saved due to errors.",
+        }
+
+        url_for_action = {
+            "action-create": self.bundle_add_url,
+            "action-edit": self.edit_url,
+        }
+
+        truncated_long_description = textwrap.shorten(self.LONG_TEXT, width=250, placeholder="...")
+
+        error_with_details = [
+            "Title already in use",
+            "Some other error",
+            truncated_long_description,
+            "Unknown API Error",
+        ]
+        error_no_details = ["API Error"]
+
+        cases = [
+            ("action-create", True, error_with_details),
+            ("action-edit", True, error_with_details),
+            ("action-create", False, error_no_details),
+            ("action-edit", False, error_no_details),
+        ]
+
+        for action, has_detail_errors, expected_errors in cases:
+            with self.subTest(action=action, has_detail_errors=has_detail_errors):
+                url = url_for_action[action]
+                expected_banner_msg = error_message_for_action[action]
+
+                data = self.get_base_form_data(status=BundleStatus.DRAFT)
+                data.update(
+                    {
+                        "name": f"Bundle for {action}",
+                        "status": BundleStatus.DRAFT.value,
+                        action: action,
+                    }
+                )
+
+                api_error = self._build_api_error(has_detail_errors)
+                validation_error = ValidationError("Failed to sync bundle with Bundle API")
+                validation_error.__cause__ = api_error
+                mock_save.side_effect = validation_error
+
+                response = self.client.post(url, data, follow=True)
+                form = response.context["form"]
+
+                self.assertEqual(response.status_code, 200)
+
+                self.assertContains(response, f"{expected_banner_msg} Failed to sync bundle with Bundle API.")
+
+                self.assertFormError(form=form, field=None, errors=expected_errors)
 
 
 class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
@@ -481,29 +648,120 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "The Test Statistical Article")
         self.assertContains(response, "The Test Topic Page")
 
-    def test_inspect_view__displays_message_when_no_datasets(self):
-        """Checks that the inspect view displays datasets."""
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__displays_message_when_bundle_has_no_dataset_records(self, mock_api_client):
+        """Checks that the inspect view displays message when bundle.has_datasets is False."""
         response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
 
         self.assertContains(response, "No datasets in bundle")
+        # API should not be called when has_datasets is False
+        mock_api_client.assert_not_called()
 
-    def test_inspect_view__contains_datasets(self):
-        """Checks that the inspect view displays datasets."""
-        bundle_dataset_a = BundleDatasetFactory(parent=self.bundle)
-        bundle_dataset_b = BundleDatasetFactory(parent=self.bundle)
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__displays_datasets_even_when_api_returns_no_datasets(self, mock_api_client):
+        """Checks that the inspect view displays local datasets even when API returns no datasets."""
+        self.bundle.bundle_api_bundle_id = "test-bundle-id"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        # Create a local dataset and bundled_dataset record
+        dataset = DatasetFactory(namespace="test-ns", edition="2024", version=1, title="Local Dataset")
+        BundleDatasetFactory(parent=self.bundle, dataset=dataset, bundle_api_content_id="content-123")
+
+        # Mock the Bundle API response with no datasets
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {"items": []}
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Should show the local dataset with "Data missing" state (no API data available)
+        self.assertContains(response, "Local Dataset")
+        self.assertContains(response, "Data missing")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__contains_datasets(self, mock_api_client):
+        """Checks that the inspect view displays datasets for managers with edit links."""
+        # Set API bundle ID
+        self.bundle.bundle_api_bundle_id = "test-bundle-id"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        dataset_id_a = "dataset-123"
+        dataset_id_b = "dataset-456"
+        edition_a = "2024"
+        edition_b = "2023"
+        version_a = 1
+        version_b = 2
+
+        # Create local datasets
+        dataset_a = DatasetFactory(namespace=dataset_id_a, edition=edition_a, version=version_a, title="Dataset A")
+        dataset_b = DatasetFactory(namespace=dataset_id_b, edition=edition_b, version=version_b, title="Dataset B")
+
+        # Create bundled_datasets records with content IDs
+        BundleDatasetFactory(parent=self.bundle, dataset=dataset_a, bundle_api_content_id="content-123")
+        BundleDatasetFactory(parent=self.bundle, dataset=dataset_b, bundle_api_content_id="content-456")
+
+        # Mock the Bundle API response
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "items": [
+                {
+                    "id": "content-123",
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": dataset_id_a,
+                        "title": "Dataset A API Title",  # API title should be ignored
+                        "edition_id": edition_a,
+                        "version_id": version_a,
+                    },
+                    "state": "PUBLISHED",
+                    "links": {
+                        "edit": f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}",
+                        "preview": f"/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}",
+                    },
+                },
+                {
+                    "id": "content-456",
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": dataset_id_b,
+                        "title": "Dataset B API Title",  # API title should be ignored
+                        "edition_id": edition_b,
+                        "version_id": version_b,
+                    },
+                    "state": "APPROVED",
+                    "links": {
+                        "edit": f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}",
+                        "preview": f"/datasets/{dataset_id_b}/editions/{edition_b}/versions/{version_b}",
+                    },
+                },
+            ]
+        }
 
         response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
 
         self.assertNotContains(response, "No datasets in bundle")
 
-        self.assertContains(response, bundle_dataset_a.dataset.title)
-        self.assertContains(response, bundle_dataset_a.dataset.version)
-        self.assertContains(response, bundle_dataset_a.dataset.edition)
-        self.assertContains(response, f'href="{bundle_dataset_a.dataset.website_url}"')
-        self.assertContains(response, bundle_dataset_b.dataset.title)
-        self.assertContains(response, bundle_dataset_b.dataset.version)
-        self.assertContains(response, bundle_dataset_b.dataset.edition)
-        self.assertContains(response, f'href="{bundle_dataset_b.dataset.website_url}"')
+        # Check dataset A (published - should have View Live link)
+        # Title should come from DB, not API
+        self.assertContains(response, "Dataset A")
+        self.assertNotContains(response, "Dataset A API Title")
+        self.assertContains(response, str(version_a))
+        self.assertContains(response, edition_a)
+        expected_edit_url_a = f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
+        expected_view_url_a = f"/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
+        self.assertContains(response, f'href="{expected_edit_url_a}"')
+        self.assertContains(response, f'href="{expected_view_url_a}"')
+        self.assertContains(response, "View Live")
+
+        # Check dataset B (approved - should NOT have View Live link)
+        self.assertContains(response, "Dataset B")
+        self.assertNotContains(response, "Dataset B API Title")
+        self.assertContains(response, str(version_b))
+        self.assertContains(response, edition_b)
+        expected_edit_url_b = f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}"
+        self.assertContains(response, f'href="{expected_edit_url_b}"')
 
     @override_settings(  # Address race condition in tests caused when calling delete() on a page
         WAGTAILSEARCH_BACKENDS={
@@ -556,6 +814,368 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "1 July 2025 1:37pm")
         self.assertContains(response, "1 July 2025 1:45pm")
         self.assertContains(response, "1 July 2025 2:00pm")
+
+    def test_inspect_view__shows_bundle_api_bundle_id_when_exists(self):
+        # Ensure the bundle has "bundle_api_bundle_id" set
+        self.bundle.bundle_api_bundle_id = "bundle-api-id-123"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Label and value are shown
+        self.assertContains(response, "Dataset Bundle API ID")
+        self.assertContains(response, "bundle-api-id-123")
+
+    def test_inspect_view__hides_bundle_api_bundle_id_when_not_exists(self):
+        # Ensure the bundle does not have "bundle_api_bundle_id" set
+        self.bundle.bundle_api_bundle_id = ""
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Label not shown
+        self.assertNotContains(response, "Dataset Bundle API ID")
+
+    def test_inspect_view__previewers__never_shown_bundle_api_bundle_id(self):
+        """Previewers should not see the API ID, even if it exists."""
+        # Give the in-review bundle datasets and an API ID
+        self.in_review_bundle.bundle_api_bundle_id = "bundle-api-id-123"
+        self.in_review_bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        # Login as viewer (previewer flow)
+        self.client.force_login(self.bundle_viewer)
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        # Label and value are not shown
+        self.assertNotContains(response, "Dataset Bundle API ID")
+        self.assertNotContains(response, "bundle-api-id-123")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__datasets_table_display(self, mock_api_client):
+        """Test that datasets are displayed in a table format with correct headers and data."""
+        self.bundle.bundle_api_bundle_id = "test-bundle-id"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        # Create local dataset
+        dataset = DatasetFactory(namespace="test-dataset-123", edition="2024", version=1, title="Test Dataset")
+        BundleDatasetFactory(parent=self.bundle, dataset=dataset, bundle_api_content_id="content-123")
+
+        # Mock the Bundle API response
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "items": [
+                {
+                    "id": "content-123",
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "test-dataset-123",
+                        "title": "Test Dataset API",
+                        "edition_id": "2024",
+                        "version_id": "1",
+                    },
+                    "state": "APPROVED",
+                    "links": {
+                        "edit": "/data-admin/series/test-dataset-123/editions/2024/versions/1",
+                    },
+                }
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Check that the table headers are present
+        self.assertContains(response, "<th>Title</th>")
+        self.assertContains(response, "<th>Edition</th>")
+        self.assertContains(response, "<th>Version</th>")
+        self.assertContains(response, "<th>State</th>")
+        self.assertContains(response, "<th>Actions</th>")
+
+        # Check that the dataset data is present (from DB, not API)
+        self.assertContains(response, "Test Dataset")
+        self.assertContains(response, "2024")
+        self.assertContains(response, "1")
+        self.assertContains(response, "Approved")
+        # Check for data admin URL
+        self.assertContains(response, 'href="/data-admin/series/test-dataset-123/editions/2024/versions/1"')
+        # APPROVED datasets should not have View Live button
+        self.assertNotContains(response, "View Live")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__datasets_table_with_multiple_datasets(self, mock_api_client):
+        """Test that multiple datasets are displayed correctly in the table."""
+        self.bundle.bundle_api_bundle_id = "test-bundle-id"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        # Create local datasets
+        dataset_one = DatasetFactory(namespace="dataset-one", edition="2024", version=1, title="Dataset One")
+        dataset_two = DatasetFactory(namespace="dataset-two", edition="2023", version=2, title="Dataset Two")
+        BundleDatasetFactory(parent=self.bundle, dataset=dataset_one, bundle_api_content_id="content-1")
+        BundleDatasetFactory(parent=self.bundle, dataset=dataset_two, bundle_api_content_id="content-2")
+
+        # Mock the Bundle API response with multiple datasets
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "items": [
+                {
+                    "id": "content-1",
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "dataset-one",
+                        "title": "Dataset One API",
+                        "edition_id": "2024",
+                        "version_id": "1",
+                    },
+                    "state": "APPROVED",
+                },
+                {
+                    "id": "content-2",
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "dataset-two",
+                        "title": "Dataset Two API",
+                        "edition_id": "2023",
+                        "version_id": "2",
+                    },
+                    "state": "PUBLISHED",
+                },
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Check that both datasets are present (titles from DB)
+        self.assertContains(response, "Dataset One")
+        self.assertContains(response, "2024")
+        self.assertContains(response, "Approved")
+
+        self.assertContains(response, "Dataset Two")
+        self.assertContains(response, "2023")
+        self.assertContains(response, "Published")
+        # Published dataset should have View Live link
+        self.assertContains(response, "View Live")
+        self.assertContains(response, 'href="/datasets/dataset-two/editions/2023/versions/2"')
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__datasets_table_with_missing_metadata(self, mock_api_client):
+        """Test that datasets with missing metadata display N/A."""
+        self.bundle.bundle_api_bundle_id = "test-bundle-id"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.bundle)
+
+        # Mock the Bundle API response with missing metadata
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "items": [
+                {
+                    "content_type": "DATASET",
+                    "metadata": {},
+                    "links": {},
+                }
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Check that N/A is displayed for missing data
+        self.assertContains(response, "N/A")
+        self.assertContains(response, 'href="#"')
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__datasets_for_viewer_without_edit_links(self, mock_api_client):
+        """Test that viewers see datasets without edit links."""
+        self.in_review_bundle.bundle_api_bundle_id = "test-bundle-id"
+        self.in_review_bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        # Create local dataset
+        dataset = DatasetFactory(namespace="dataset-123", edition="2024", version=1, title="Test Dataset")
+        BundleDatasetFactory(parent=self.in_review_bundle, dataset=dataset, bundle_api_content_id="content-123")
+
+        # Login as bundle viewer (non-manager)
+        self.client.force_login(self.bundle_viewer)
+
+        # Mock the Bundle API response
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "items": [
+                {
+                    "id": "content-123",
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "dataset-123",
+                        "title": "Test Dataset API",
+                        "edition_id": "2024",
+                        "version_id": "1",
+                    },
+                    "state": "PUBLISHED",
+                }
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        # Dataset title should be present but NOT as a hyperlink (from DB)
+        self.assertContains(response, "Test Dataset")
+        self.assertContains(response, "2024")
+        self.assertContains(response, "1")
+        self.assertContains(response, "Published")
+
+        # Should NOT contain data-admin link
+        self.assertNotContains(response, "/data-admin/series/")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__datasets_for_viewer_approved_no_view_live(self, mock_api_client):
+        """Test that viewers see approved datasets without View Live link."""
+        self.in_review_bundle.bundle_api_bundle_id = "test-bundle-id"
+        self.in_review_bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        # Create local dataset
+        dataset = DatasetFactory(namespace="dataset-456", edition="2023", version=2, title="Approved Dataset")
+        BundleDatasetFactory(parent=self.in_review_bundle, dataset=dataset, bundle_api_content_id="content-456")
+
+        # Login as bundle viewer (non-manager)
+        self.client.force_login(self.bundle_viewer)
+
+        # Mock the Bundle API response
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "items": [
+                {
+                    "id": "content-456",
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "dataset-456",
+                        "title": "Approved Dataset API",
+                        "edition_id": "2023",
+                        "version_id": "2",
+                    },
+                    "state": "APPROVED",
+                }
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        # Dataset should be present (from DB)
+        self.assertContains(response, "Approved Dataset")
+        self.assertContains(response, "2023")
+        self.assertContains(response, "2")
+        self.assertContains(response, "Approved")
+
+        # Should NOT contain View Live link for non-published datasets
+        self.assertNotContains(response, "View Live")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__displays_message_when_bundle_api_bundle_id_not_set(self, mock_api_client):
+        """Test that the inspect view displays an error message when bundle_api_bundle_id is not set."""
+        # Explicitly ensure bundle_api_bundle_id is not set
+        self.bundle.bundle_api_bundle_id = ""
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.bundle)
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertContains(response, "Unable to use the Dataset API to display datasets.")
+        # API should not be called when bundle_api_bundle_id is not set
+        mock_api_client.assert_not_called()
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=False)
+    def test_inspect_view__datasets_when_api_disabled(self):
+        """Test that the inspect view shows error message when API is disabled."""
+        # Create a bundled_datasets record so has_datasets returns True
+        BundleDatasetFactory(parent=self.bundle)
+        # When API is disabled, bundle_api_bundle_id is typically not set
+        self.bundle.bundle_api_bundle_id = ""
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Since bundle_api_bundle_id is not set, the error message should appear
+        self.assertContains(response, "Unable to use the Dataset API to display datasets.")
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__manager_sees_title_as_hyperlink(self, mock_api_client):
+        """Test that managers see dataset titles as hyperlinks to data-admin."""
+        self.bundle.bundle_api_bundle_id = "test-bundle-id"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        # Create local dataset
+        dataset = DatasetFactory(namespace="test-123", edition="2024", version=1, title="Manager Test Dataset")
+        BundleDatasetFactory(parent=self.bundle, dataset=dataset, bundle_api_content_id="content-123")
+
+        # Mock the Bundle API response
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "items": [
+                {
+                    "id": "content-123",
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "test-123",
+                        "title": "Manager Test Dataset API",
+                        "edition_id": "2024",
+                        "version_id": "1",
+                    },
+                    "state": "APPROVED",
+                    "links": {
+                        "edit": "/data-admin/series/test-123/editions/2024/versions/1",
+                    },
+                }
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Check that the title is hyperlinked to data-admin (title from DB)
+        expected_url = "/data-admin/series/test-123/editions/2024/versions/1"
+        self.assertContains(response, f'<a href="{expected_url}">Manager Test Dataset</a>')
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__viewer_sees_title_as_plain_text(self, mock_api_client):
+        """Test that viewers see dataset titles as plain text (not hyperlinked)."""
+        self.in_review_bundle.bundle_api_bundle_id = "test-bundle-id"
+        self.in_review_bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        # Create local dataset
+        dataset = DatasetFactory(namespace="test-456", edition="2023", version=2, title="Viewer Test Dataset")
+        BundleDatasetFactory(parent=self.in_review_bundle, dataset=dataset, bundle_api_content_id="content-456")
+
+        # Login as bundle viewer (non-manager)
+        self.client.force_login(self.bundle_viewer)
+
+        # Mock the Bundle API response
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "items": [
+                {
+                    "id": "content-456",
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": "test-456",
+                        "title": "Viewer Test Dataset API",
+                        "edition_id": "2023",
+                        "version_id": "2",
+                    },
+                    "state": "APPROVED",
+                }
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        # Check that the title is plain text (wrapped in <strong> but no <a> tag, title from DB)
+        self.assertContains(response, "<strong>Viewer Test Dataset</strong>")
+        # Make sure there's NO hyperlink to data-admin with this title
+        self.assertNotContains(response, '<a href="/data-admin/series/test-456')
 
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
@@ -622,6 +1242,26 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.approved_bundle.name)
         self.assertNotContains(response, self.another_in_review_bundle.name)
         self.assertNotContains(response, "View &quot;Ready to publish&quot;")
+
+    def test_index_view__previewers__search(self):
+        self.client.force_login(self.bundle_viewer)
+
+        another_preview_team = Team.objects.create(identifier="bar", name="Another preview team")
+        self.bundle_viewer.teams.add(another_preview_team)
+        BundleTeam.objects.create(parent=self.in_review_bundle, team=another_preview_team)
+        BundleTeam.objects.create(parent=self.approved_bundle, team=another_preview_team)
+
+        response = self.client.get(self.bundle_index_url, query_params={"q": "Bundle"})
+        self.assertContains(response, self.in_review_bundle.name, 2)
+        self.assertContains(response, self.approved_bundle.name, 2)
+        self.assertNotContains(response, self.published_bundle.name)
+        self.assertNotContains(response, self.another_in_review_bundle.name)
+
+        response = self.client.get(self.bundle_index_url, query_params={"q": "Preview"})
+        self.assertContains(response, self.in_review_bundle.name, 2)
+        self.assertNotContains(response, self.approved_bundle.name)
+        self.assertNotContains(response, self.published_bundle.name)
+        self.assertNotContains(response, self.another_in_review_bundle.name)
 
     def test_ordering(self):
         """Checks that the correct ordering is applied."""

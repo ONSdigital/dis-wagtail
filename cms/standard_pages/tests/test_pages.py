@@ -5,7 +5,7 @@ from django.utils import translation
 from wagtail.models import Site
 from wagtail.test.utils import WagtailPageTestCase
 
-from cms.core.tests.utils import reset_url_caches
+from cms.core.tests.utils import TranslationResetMixin, reset_url_caches
 from cms.standard_pages.models import CookiesPage
 from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.standard_pages.utils import SUPPORTED_LANGUAGE_CODES
@@ -40,7 +40,7 @@ class DatePlaceholderTestCase(WagtailPageTestCase):
         )
 
 
-class CookiesPageTest(WagtailPageTestCase):
+class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.cookies_page = CookiesPage.objects.get(locale__language_code="en-gb")

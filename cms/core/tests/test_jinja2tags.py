@@ -7,9 +7,10 @@ from wagtail.coreutils import get_dummy_request
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.templatetags.util_tags import routablepageurl_no_trailing_slash
+from cms.core.tests.utils import TranslationResetMixin
 
 
-class OnsDateFilterInJinjaTests(SimpleTestCase):
+class OnsDateFilterInJinjaTests(TranslationResetMixin, SimpleTestCase):
     """Integration: ensure the *ons_date* filter is registered in Jinja and
     produces the expected output with the real en-GB `formats.py` constants.
     """

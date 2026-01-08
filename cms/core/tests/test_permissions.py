@@ -46,6 +46,7 @@ class TestPermissions(TestCase):
             assign_permission_to_group(apps, group_name, permission_codename, app, model)
 
     def test_raises_exception_when_group_not_found(self):
+        """Check that an exception is raised when a group doesn't exist."""
         app = "core"
         model = "contactdetails"
         permission_codename = "add_contactdetails"
@@ -221,9 +222,6 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
         for permission_type in [*WAGTAIL_PERMISSION_TYPES, "view"]:
             self.check_and_remove_from_user_permissions_helper("bundles", "bundle", permission_type)
 
-        for permission_type in WAGTAIL_PERMISSION_TYPES:
-            self.check_and_remove_from_user_permissions_helper("wagtailredirects", "redirect", permission_type)
-
         self.check_and_remove_from_user_permissions_helper("navigation", "navigationsettings", "change")
         self.check_and_remove_from_user_permissions_helper("core", "socialmediasettings", "change")
         self.check_and_remove_from_user_permissions_helper("wagtailcore", "logentry", "view")
@@ -257,6 +255,12 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
     def test_publishing_admin_can_choose_documents(self):
         """Check that the Publishing Admin can choose images on pages."""
         self.collection_permission_check_helper("choose", "document", has_permission=True)
+
+    def test_publishing_admin_cannot_manage_redirects(self):
+        """Check that the Publishing Admin does not have permissions to manage wagtailredirects.redirect."""
+        self.snippet_permission_check_helper(
+            "wagtailredirects", "redirect", is_publishable=False, expected_has_perm=False
+        )
 
 
 class PublishingOfficerPermissionsTestCase(BaseGroupPermissionTestCase):
@@ -305,6 +309,12 @@ class PublishingOfficerPermissionsTestCase(BaseGroupPermissionTestCase):
         """Check that the Publishing Officer can choose documents on pages."""
         self.collection_permission_check_helper("choose", "document", has_permission=True)
 
+    def test_publishing_officer_cannot_manage_redirects(self):
+        """Check that the Publishing Officer does not have permissions to manage wagtailredirects.redirect."""
+        self.snippet_permission_check_helper(
+            "wagtailredirects", "redirect", is_publishable=False, expected_has_perm=False
+        )
+
 
 class ViewerPermissionsTestCase(BaseGroupPermissionTestCase):
     @classmethod
@@ -342,3 +352,21 @@ class ViewerPermissionsTestCase(BaseGroupPermissionTestCase):
     def test_viewer_cannot_choose_documents(self):
         """Check that the Viewer can't choose documents on pages."""
         self.collection_permission_check_helper("choose", "document", has_permission=False)
+
+    def test_viewer_cannot_manage_redirects(self):
+        """Check that the Viewer does not have permissions to manage wagtailredirects.redirect."""
+        self.snippet_permission_check_helper(
+            "wagtailredirects", "redirect", is_publishable=False, expected_has_perm=False
+        )
+
+
+class SuperuserPermissionsTestCase(BaseGroupPermissionTestCase):
+    def setUp(self):
+        self.user = UserFactory(is_superuser=True, is_staff=True)
+        self.client.force_login(self.user)
+
+    def test_superuser_can_manage_redirects(self):
+        """Check that the superuser has permissions to manage wagtailredirects.redirect."""
+        self.snippet_permission_check_helper(
+            "wagtailredirects", "redirect", is_publishable=False, expected_has_perm=True
+        )

@@ -369,6 +369,8 @@ WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
     ("cy", _("Welsh")),
 ]
 
+_valid_language_codes = {code for code, _ in LANGUAGES}
+
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
 
 # User groups
@@ -974,6 +976,11 @@ TOPIC_API_BASE_URL = env.get("TOPIC_API_BASE_URL", f"{ONS_API_BASE_URL}/topics")
 # Feature flag to enable/disable interaction with the ONS Bundle API
 DIS_DATASETS_BUNDLE_API_ENABLED = env.get("DIS_DATASETS_BUNDLE_API_ENABLED", "false").lower() == "true"
 
+# Feature flag to enable/disable validation of bundled datasets status on bundle approval
+BUNDLE_DATASET_STATUS_VALIDATION_ENABLED = (
+    env.get("BUNDLE_DATASET_STATUS_VALIDATION_ENABLED", "false").lower() == "true"
+)
+
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
 
@@ -998,6 +1005,9 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = {
     "CookiesPage",
     "Page",
 }
+
+# Allow-list of language codes whose pages are included in search indexing
+SEARCH_INDEX_INCLUDED_LANGUAGES = env.get("SEARCH_INDEX_INCLUDED_LANGUAGES", LANGUAGE_CODE).split(",")
 
 # Allowed domains for linking to other parts of the ONS website (for datasets or time series)
 ONS_ALLOWED_LINK_DOMAINS = env.get("ONS_ALLOWED_LINK_DOMAINS", "ons.gov.uk").split(",")
@@ -1094,3 +1104,9 @@ if CMS_USE_SUBDOMAIN_LOCALES and (config_string := env.get("CMS_HOSTNAME_LOCALE_
             alternative_domains = domains[1:]
             if len(alternative_domains) == 1:
                 CMS_HOSTNAME_ALTERNATIVES[default_domain] = alternative_domains[0]
+
+# This must remain lower than the Gunicorn worker timeout.
+# Note, the Gunicorn timeout may itself be overridden in deployment config (e.g. gunicorn.conf.py, Helm chart values).
+HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS = int(env.get("HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS", 10))
+
+DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "100"))

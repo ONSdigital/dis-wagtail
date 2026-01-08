@@ -3,10 +3,16 @@
 
 {% block header_area %}
     {%- set hero_topic = _("Release") -%}
-    {%- set breadcrumbs_label = _("Breadcrumbs") -%}
-    {%- set release_date_label = _("Release date:") -%}
+    {%- set provisional_release_date_label = _("Provisional release date:") -%}
 
     {# fmt:off #}
+    {{
+        onsBreadcrumbs({
+            "ariaLabel": breadcrumbs_aria_label,
+            "itemsList": page.get_breadcrumbs(request=request),
+            "variant": 'grey'
+        })
+    }}
     {{
         onsHero({
             "topic": hero_topic,
@@ -21,13 +27,9 @@
                 "termCol": "6",
                 "descriptionCol": "6",
                 "itemsList": [{
-                    "term": release_date_label,
+                    "term": provisional_release_date_label,
                     "descriptions": [{"description":  page.release_date_value}]
                 }]
-            },
-            "breadcrumbs": {
-                "ariaLabel": breadcrumbs_label,
-                "itemsList": page.get_breadcrumbs(request=request),
             }
         })
     }}
