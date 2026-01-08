@@ -90,9 +90,9 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
     def _validate_cancelled_status(self, status: str, notice: str) -> None:
         """Validate cancelled status requirements."""
         if status == ReleaseStatus.CANCELLED:
+            self._validate_not_in_active_bundle()
             if not notice:
                 raise ValidationError({"notice": "The notice field is required when the release is cancelled"})
-            self._validate_not_in_active_bundle()
 
     def _validate_non_provisional_status(self, status: str, cleaned_data: dict) -> None:
         """Validate non-provisional status requirements."""
