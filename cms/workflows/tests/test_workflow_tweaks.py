@@ -11,7 +11,7 @@ from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.users.tests.factories import UserFactory
-from cms.workflows.locks import PageInBundleReadyToBePublishedLock
+from cms.workflows.locks import PageReadyToBePublishedLock
 from cms.workflows.models import GroupReviewTask, ReadyToPublishGroupTask
 from cms.workflows.tests.utils import (
     mark_page_as_ready_for_review,
@@ -160,7 +160,7 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
 
-        self.assertIsInstance(self.page.get_lock(), PageInBundleReadyToBePublishedLock)
+        self.assertIsInstance(self.page.get_lock(), PageReadyToBePublishedLock)
 
     def test_page_locked_if_in_bundle_ready_to_be_published(self):
         self.client.force_login(self.publishing_admin)

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any
 from wagtail.admin.mail import GroupApprovalTaskStateSubmissionEmailNotifier
 from wagtail.models import AbstractGroupApprovalTask
 
-from .locks import PageInBundleReadyToBePublishedLock
+from .locks import PageReadyToBePublishedLock
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -31,7 +31,7 @@ class GroupReviewTask(AbstractGroupApprovalTask):
 class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
     """Placeholder task model to use in the Bundle approval logic."""
 
-    lock_class = PageInBundleReadyToBePublishedLock
+    lock_class = PageReadyToBePublishedLock
 
     @classmethod
     def get_description(cls) -> str:
