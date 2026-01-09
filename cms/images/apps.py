@@ -6,6 +6,3 @@ class ImagesConfig(AppConfig):
 
     default_auto_field = "django.db.models.AutoField"
     name = "cms.images"
-
-    def ready(self) -> None:
-        from . import signal_handlers  # noqa pylint: disable=import-outside-toplevel,unused-import

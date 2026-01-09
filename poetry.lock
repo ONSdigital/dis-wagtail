@@ -758,21 +758,6 @@ files = [
 dev = ["black", "flake8", "therapist", "tox", "twine"]
 
 [[package]]
-name = "django-crum"
-version = "0.7.9"
-description = "Django middleware to capture current request and user."
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "django-crum-0.7.9.tar.gz", hash = "sha256:65e9bc0f070a663fafc4d9e357f45fd4e6f01838b20a9e2fb7670f5706754288"},
-    {file = "django_crum-0.7.9-py2.py3-none-any.whl", hash = "sha256:037cc8b822975bb1d41cd24269b59a512cc77448fadc3f34ab9a17b229b4b471"},
-]
-
-[package.dependencies]
-django = ">=1.8"
-
-[[package]]
 name = "django-csp"
 version = "4.0"
 description = "Django Content Security Policy support."
@@ -3511,4 +3496,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.13"
-content-hash = "876c4b52f8a1c82a79cb682b096b32d47a203110b0c538504862a2286eebbe73"
+content-hash = "9b376ea5b77dd1798bf8c246609187530c17be3336351e5cb84e2a4312296881"

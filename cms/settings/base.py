@@ -135,7 +135,6 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "crum.CurrentRequestUserMiddleware",
     # Custom middleware to redirect trailing slash URLs to non-trailing-slash equivalent
     # which needs to be placed after CommonMiddleware to avoid double redirects.
     "cms.core.middleware.NonTrailingSlashRedirectMiddleware",
