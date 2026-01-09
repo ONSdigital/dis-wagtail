@@ -24,9 +24,9 @@ class ONSDatasetApiQuerySet(APIQuerySet):
         super().__init__(*args, **kwargs)
         self.token: str | None = None
         self.timeout: int = settings.HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS
-        self.limit: int = settings.DATASETS_API_DEFAULT_PAGE_SIZE
+        self.stop: int = settings.DATASETS_API_DEFAULT_PAGE_SIZE
 
-    def with_token(self, token: str) -> "ONSDatasetApiQuerySet":
+    def with_token(self, token: str) -> ONSDatasetApiQuerySet:
         """Return a cloned queryset with the given authentication token.
 
         We clone the queryset to ensure the method is stateless and doesn't mutate
@@ -139,7 +139,7 @@ class ONSDataset(APIModel):
         verbose_name_plural = "ONS Datasets"
 
     @classmethod
-    def from_query_data(cls, data: Mapping) -> "ONSDataset":
+    def from_query_data(cls, data: Mapping) -> ONSDataset:
         # Handle new /v1/dataset-editions response structure
         dataset_id = data.get("dataset_id", "id-not-provided")
         title = data.get("title") or "Title not provided"

@@ -36,8 +36,8 @@ class User(AbstractUser):
     def _assign_groups(self, /, groups_ids: Iterable[str]) -> None:
         """Assign groups to the user based on their Cognito groups."""
         role_to_group = {
-            "role-admin": settings.PUBLISHING_ADMIN_GROUP_NAME,
-            "role-publisher": settings.PUBLISHING_OFFICER_GROUP_NAME,
+            "role-admin": settings.PUBLISHING_ADMINS_GROUP_NAME,
+            "role-publisher": settings.PUBLISHING_OFFICERS_GROUP_NAME,
         }
 
         groups = {name: Group.objects.get(name=group_name) for name, group_name in role_to_group.items()}

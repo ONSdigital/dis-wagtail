@@ -5,3 +5,8 @@
 .ons-padding-end {
     padding-inline-end: 1.5rem;
 }
+
+/* Hides the disabled "add <type>" button for read-only InlinePanel/MultipleChooserPanels */
+.editor-view.content-locked button[id$='-OPEN_MODAL'] {
+    display: none;
+}

@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
-from wagtail.admin.panels import MultipleChooserPanel
 from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils import WagtailTestUtils
 
@@ -29,7 +28,7 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
         cls.request = get_dummy_request()
         cls.request.user = cls.superuser
 
-    def get_bound_panel(self, page: "Page") -> BundleNotePanel.BoundPanel:
+    def get_bound_panel(self, page: Page) -> BundleNotePanel.BoundPanel:
         """Binds the panel to the given page."""
         return self.panel.bind_to_model(page._meta.model).get_bound_panel(instance=page, request=self.request)
 
@@ -96,25 +95,20 @@ class BundleMultipleChooserPanelTestCase(WagtailTestUtils, TestCase):
         cls.request.user = cls.superuser
         BundlePageFactory(parent=cls.bundle, page=cls.page)
 
-    def get_bound_panel(self, bundle: "Bundle") -> BundleMultipleChooserPanel.BoundPanel:
+    def get_bound_panel(self, bundle: Bundle) -> BundleMultipleChooserPanel.BoundPanel:
         """Binds the panel to the given page."""
         return self.panel.bind_to_model(bundle._meta.model).get_bound_panel(instance=bundle, request=self.request)
 
-    def test_default_template_used(self):
+    def test_default_is_not_read_only(self):
         bound_panel = self.get_bound_panel(self.bundle)
+        self.assertFalse(bound_panel.read_only)
 
-        self.assertEqual(bound_panel.template_name, MultipleChooserPanel.BoundPanel.template_name)
-
-    def test_read_only_template_used_when_bundle_is_ready_to_publish(self):
+    def test_marked_as_read_only(self):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
 
         bound_panel = self.get_bound_panel(self.bundle)
-        self.assertEqual(bound_panel.template_name, "bundles/wagtailadmin/panels/read_only_output.html")
-
-    def test_value_from_instance(self):
-        bound_panel = self.get_bound_panel(self.bundle)
-        self.assertEqual(bound_panel.value_from_instance, self.bundle.bundled_pages)
+        self.assertTrue(bound_panel.read_only)
 
 
 class BundleDatasetChooserPanelTestCase(TestCase):

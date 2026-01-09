@@ -27,11 +27,11 @@ class ThemeIndexPage(BasePage):  # type: ignore[django-manager-missing]
     page_description = "A container for the list of themes."
     label = "Themes"
 
-    content_panels: ClassVar[list["Panel"]] = [
+    content_panels: ClassVar[list[Panel]] = [
         *BasePage.content_panels,
         HelpPanel(content="This is a container for articles and article series for URL structure purposes."),
     ]
-    promote_panels: ClassVar[list["Panel"]] = [
+    promote_panels: ClassVar[list[Panel]] = [
         PanelPlaceholder(  # this follows Page.promote_panels, sans "slug"
             "wagtail.admin.panels.MultiFieldPanel",
             [
@@ -56,7 +56,7 @@ class ThemeIndexPage(BasePage):  # type: ignore[django-manager-missing]
         self.slug = "browse"
         super().minimal_clean()
 
-    def get_formatted_child_pages(self, request: "HttpRequest") -> list[dict[str, dict[str, str] | Any]]:
+    def get_formatted_child_pages(self, request: HttpRequest) -> list[dict[str, dict[str, str] | Any]]:
         formatted_items = []
 
         for child_page in self.get_children().live().public().specific().defer_streamfields():
@@ -75,7 +75,7 @@ class ThemeIndexPage(BasePage):  # type: ignore[django-manager-missing]
             )
         return formatted_items
 
-    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+    def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
         context: dict = super().get_context(request, *args, **kwargs)
         context["formatted_items"] = self.get_formatted_child_pages(request)
         return context
@@ -92,7 +92,7 @@ class ThemePage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
-    content_panels: ClassVar[list["Panel"]] = [*BasePage.content_panels, "summary"]
+    content_panels: ClassVar[list[Panel]] = [*BasePage.content_panels, "summary"]
 
     @cached_property
     def analytics_content_type(self) -> str:  # pylint: disable=invalid-overridden-method

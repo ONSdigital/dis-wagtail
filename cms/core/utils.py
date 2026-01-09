@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from django_stubs_ext import StrOrPromise
 
 
-def get_content_type_for_page(page: "Page") -> "StrOrPromise":
+def get_content_type_for_page(page: Page) -> StrOrPromise:
     """Returns the content type for a given page."""
     label: StrOrPromise = page.specific_deferred.label
     return label
@@ -46,7 +46,7 @@ def get_related_content_type_label(content_type: str) -> str:
     return label
 
 
-def get_client_ip(request: "HttpRequest") -> str | None:
+def get_client_ip(request: HttpRequest) -> str | None:
     """Get the IP address of the client.
 
     It's assumed this has been overridden by `django-xff`
@@ -97,7 +97,7 @@ def redirect(
 
 
 def redirect_to_parent_listing(
-    *, page: "Page", request: "HttpRequest", listing_url_method_name: str
+    *, page: Page, request: HttpRequest, listing_url_method_name: str
 ) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
     """Redirects to the parent page's listing URL if available, otherwise to the parent page itself."""
     if not (parent := getattr(page.get_parent(), "specific_deferred", None)):

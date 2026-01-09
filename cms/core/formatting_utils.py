@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
+from typing import TYPE_CHECKING, Any, TypedDict, Union
 
 from django.utils.formats import date_format
 from django.utils.translation import gettext_lazy as _
@@ -16,9 +16,9 @@ if TYPE_CHECKING:
 
 
 class DocumentListItem(TypedDict):
-    title: dict[str, "StrOrPromise"]
+    title: dict[str, StrOrPromise]
     metadata: dict[str, Any]
-    description: "StrOrPromise"
+    description: StrOrPromise
 
 
 # Type alias for cleaner function signatures
@@ -26,7 +26,7 @@ PageDataCollection = Iterable[Union["ArticleDict", "MethodologyDict"]]
 
 
 def format_as_document_list_item(
-    title: str, url: str, content_type: "StrOrPromise", description: str
+    title: str, url: str, content_type: StrOrPromise, description: str
 ) -> DocumentListItem:
     """Formats an object as a list element to be used in the ONS DocumentList design system component."""
     return {
@@ -36,7 +36,7 @@ def format_as_document_list_item(
     }
 
 
-def _format_external_link(page_dict: "ExternalArticleDict") -> DocumentListItem:
+def _format_external_link(page_dict: ExternalArticleDict) -> DocumentListItem:
     """Format external link dictionary into DocumentListItem."""
     return format_as_document_list_item(
         title=page_dict["title"],
@@ -47,7 +47,7 @@ def _format_external_link(page_dict: "ExternalArticleDict") -> DocumentListItem:
 
 
 def _format_page_object(
-    page: "Page", request: Optional["HttpRequest"] = None, custom_title: Optional[str] = None
+    page: Page, request: HttpRequest | None = None, custom_title: str | None = None
 ) -> DocumentListItem:
     """Format page object into DocumentListItem."""
     page_datum: DocumentListItem = format_as_document_list_item(
@@ -64,7 +64,7 @@ def _format_page_object(
 
 def get_formatted_pages_list(
     pages: PageDataCollection,
-    request: Optional["HttpRequest"] = None,
+    request: HttpRequest | None = None,
 ) -> list[DocumentListItem]:
     """Returns a formatted list of page data for the documentList DS macro.
 
@@ -96,7 +96,7 @@ def get_formatted_pages_list(
     return data
 
 
-def get_document_metadata_date(value: date | datetime, *, prefix: "StrOrPromise | None" = None) -> dict[str, Any]:
+def get_document_metadata_date(value: date | datetime, *, prefix: StrOrPromise | None = None) -> dict[str, Any]:
     """Returns a dictionary with formatted date information for the DS document component metadata."""
     return {
         "prefix": prefix or _("Released"),
@@ -107,10 +107,10 @@ def get_document_metadata_date(value: date | datetime, *, prefix: "StrOrPromise 
 
 
 def get_document_metadata(
-    content_type: "StrOrPromise | None",
+    content_type: StrOrPromise | None,
     date_value: date | datetime | None,
     *,
-    prefix: "StrOrPromise | None" = None,
+    prefix: StrOrPromise | None = None,
 ) -> dict[str, Any]:
     """Returns a dictionary with formatted metadata information for the DS document component."""
     metadata: dict[str, Any] = {}

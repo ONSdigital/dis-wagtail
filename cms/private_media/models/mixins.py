@@ -97,7 +97,7 @@ class PrivateMediaMixin(models.Model):
         """Check if the file permissions are outdated relative to privacy changes."""
         return self.file_permissions_last_set is None or self.file_permissions_last_set < self.privacy_last_changed
 
-    def get_privacy_controlled_files(self) -> Iterator["FieldFile"]:
+    def get_privacy_controlled_files(self) -> Iterator[FieldFile]:
         """Return an Iterator of files that are managed by the model instance.
 
         Returns:
@@ -105,7 +105,7 @@ class PrivateMediaMixin(models.Model):
         """
         raise NotImplementedError
 
-    def get_privacy_controlled_serve_urls(self, sites: Iterable["Site"]) -> Iterator[str]:
+    def get_privacy_controlled_serve_urls(self, sites: Iterable[Site]) -> Iterator[str]:
         """Return an iterator of fully-fledged serve URLs for this object, covering the domains for all provided
         sites. It is the responsibility of the subclass to implement this method.
         """

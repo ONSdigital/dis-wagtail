@@ -18,7 +18,7 @@ class GlossaryTermsBlock(ListBlock):
     class Meta:
         template = "templates/components/streamfield/glossary_section_block.html"
 
-    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+    def get_context(self, value: StreamValue, parent_context: dict | None = None) -> dict:
         """Inject formatted glossary terms to be used with ONS Accordion component."""
         context: dict = super().get_context(value, parent_context)
         context["formatted_glossary_terms"] = [
@@ -31,7 +31,7 @@ class GlossaryTermsBlock(ListBlock):
         ]
         return context
 
-    def clean(self, value: "StructValue") -> MutableSequence:
+    def clean(self, value: StructValue) -> MutableSequence:
         """Deduplicate the glossary terms."""
         result: MutableSequence = super().clean(value)
 

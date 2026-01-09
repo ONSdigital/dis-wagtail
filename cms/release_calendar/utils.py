@@ -97,7 +97,7 @@ def get_translated_string(string_to_translate: str, language_code: str) -> str:
 
 
 def get_release_calendar_page_details(
-    release_calendar_page: "ReleaseCalendarPage",
+    release_calendar_page: ReleaseCalendarPage,
 ) -> str:
     """Returns the release page title, status and release date."""
     return (

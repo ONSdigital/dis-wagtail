@@ -28,7 +28,7 @@ __all__ = [
 class HighlightedChildPageChooseViewMixin:
     filter_form_class = NoLocaleFilterInChoosersForm
 
-    def get_object_list(self) -> "PageQuerySet[Page]":
+    def get_object_list(self) -> PageQuerySet[Page]:
         model_class: StatisticalArticlePage | MethodologyPage = self.model_class  # type: ignore[attr-defined]
         pages: PageQuerySet[Page] = model_class.objects.all().defer_streamfields()
         if topic_page_id := self.request.GET.get("topic_page_id"):  # type: ignore[attr-defined]
@@ -50,7 +50,7 @@ class HighlightedChildPageChooseViewMixin:
         return pages
 
     @property
-    def columns(self) -> list["Column"]:
+    def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
         title_column.accessor = "get_admin_display_title"
         return [

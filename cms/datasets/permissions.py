@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from cms.users.models import User
 
 
-def user_can_access_unpublished_datasets(user: "User | AnonymousUser") -> bool:
+def user_can_access_unpublished_datasets(user: User | AnonymousUser) -> bool:
     """Check if the user can access unpublished datasets.
 
     Uses the access_unpublished_datasets permission which is granted to Publishing Admins

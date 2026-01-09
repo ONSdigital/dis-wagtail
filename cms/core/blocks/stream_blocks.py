@@ -31,7 +31,7 @@ class SectionStoryBlock(StreamBlock):
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
 
-    def has_equations(self, value: "StreamValue") -> bool:
+    def has_equations(self, value: StreamValue) -> bool:
         """Checks if there are any equation blocks."""
         return any(block.value["content"].first_block_by_name(block_name="equation") is not None for block in value)
 
@@ -58,6 +58,6 @@ class CoreStoryBlock(StreamBlock):
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
         template = "templates/components/streamfield/stream_block.html"
 
-    def has_equations(self, value: "StreamValue") -> bool:
+    def has_equations(self, value: StreamValue) -> bool:
         """Checks if there are any equation blocks."""
         return value.first_block_by_name(block_name="equation") is not None

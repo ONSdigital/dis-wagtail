@@ -5,8 +5,8 @@ from django.forms import Media
 from django.utils.functional import cached_property
 from django.utils.text import slugify
 from wagtail import blocks
+from wagtail.admin.telepath import register
 from wagtail.blocks.struct_block import StructBlockAdapter
-from wagtail.telepath import register
 
 from cms.core.blocks import BasicTableBlock, LinkBlock, LinkBlockWithDescription
 
@@ -24,14 +24,14 @@ class ContentSectionBlock(blocks.StructBlock):
     class Meta:
         template = "templates/components/streamfield/release_content_section.html"
 
-    def get_context(self, value: "ListValue", parent_context: dict | None = None) -> dict:
+    def get_context(self, value: ListValue, parent_context: dict | None = None) -> dict:
         """Inject our block heading and slug in the template context."""
         context: dict = super().get_context(value, parent_context=parent_context)
         context["related_links"] = [item.get_related_link(context=context) for item in value["links"]]
 
         return context
 
-    def to_table_of_contents_items(self, value: "StructValue") -> list[dict[str, str]]:
+    def to_table_of_contents_items(self, value: StructValue) -> list[dict[str, str]]:
         """Convert the value to the table of contents component macro format."""
         return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
 

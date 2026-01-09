@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from django.shortcuts import redirect
 from django.templatetags.static import static
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 @hooks.register("construct_page_action_menu")
-def amend_page_action_menu_items(menu_items: list["ActionMenuItem"], request: "HttpRequest", context: Mapping) -> None:
+def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: HttpRequest, context: Mapping) -> None:
     if not (context["view"] == "edit" and context.get("page")):
         return
 
@@ -35,7 +35,7 @@ def amend_page_action_menu_items(menu_items: list["ActionMenuItem"], request: "H
 
 
 @hooks.register("before_edit_page")
-def before_edit_page(request: "HttpRequest", page: "Page") -> Optional["HttpResponse"]:
+def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
     if (
         request.method != "POST"
         or request.POST.get("action-workflow-action") != "true"

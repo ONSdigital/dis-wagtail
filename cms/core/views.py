@@ -1,3 +1,5 @@
+from __future__ import annotations  # needed for unquoted forward references because of Django Views
+
 import logging
 import platform
 from http import HTTPStatus
@@ -27,13 +29,13 @@ DB_HEALTHCHECK_QUERY = "SELECT 1"
 
 
 def page_not_found(
-    request: "HttpRequest", exception: Exception, template_name: str = "templates/pages/errors/404.html"
+    request: HttpRequest, exception: Exception, template_name: str = "templates/pages/errors/404.html"
 ) -> HttpResponse:
     """Custom 404 error view to use our page not found template."""
     return defaults.page_not_found(request, exception, template_name)
 
 
-def server_error(request: "HttpRequest", template_name: str = "templates/pages/errors/500.html") -> HttpResponse:
+def server_error(request: HttpRequest, template_name: str = "templates/pages/errors/500.html") -> HttpResponse:
     try:
         # Attempt to render the main, translatable 500 page.
         return render(request, template_name, status=500)
@@ -52,7 +54,7 @@ def server_error(request: "HttpRequest", template_name: str = "templates/pages/e
 
 
 def csrf_failure(
-    request: "HttpRequest",
+    request: HttpRequest,
     reason: str = "",  # given by Django
     template_name: str = "templates/pages/errors/403.html",
 ) -> HttpResponse:
@@ -65,7 +67,7 @@ def csrf_failure(
 
 @never_cache
 @require_GET
-def ready(request: "HttpRequest") -> HttpResponse:
+def ready(request: HttpRequest) -> HttpResponse:
     """Readiness probe endpoint.
 
     If this fails, requests will not be routed to the container.
@@ -75,7 +77,7 @@ def ready(request: "HttpRequest") -> HttpResponse:
 
 @never_cache
 @require_GET
-def liveness(request: "HttpRequest") -> HttpResponse:
+def liveness(request: HttpRequest) -> HttpResponse:
     """Liveness probe endpoint.
 
     If this fails, the container will be restarted.
@@ -106,7 +108,7 @@ def liveness(request: "HttpRequest") -> HttpResponse:
 
 @never_cache
 @require_GET
-def health(request: "HttpRequest") -> HttpResponse:
+def health(request: HttpRequest) -> HttpResponse:
     now = timezone.now().replace(microsecond=0)
 
     def build_check(name: str, message: str, failed: bool) -> dict:

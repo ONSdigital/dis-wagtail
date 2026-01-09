@@ -65,7 +65,7 @@ class PanelBlockAssertions(SimpleTestCase):
     """Mixin that provides shared assertions for panel blocks."""
 
     def assertPanelBlockFields(  # pylint: disable=invalid-name
-        self, value: "StructValue", expected_fields: set[str], block_class: "DeclarativeSubBlocksMetaclass"
+        self, value: StructValue, expected_fields: set[str], block_class: DeclarativeSubBlocksMetaclass
     ) -> None:
         self.assertEqual(
             set(value.keys()),

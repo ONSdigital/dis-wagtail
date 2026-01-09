@@ -8,7 +8,7 @@ from wagtail.search import index
 
 
 class TeamQuerySet(models.QuerySet["Team"]):
-    def active(self) -> "TeamQuerySet":
+    def active(self) -> TeamQuerySet:
         """Returns only active teams."""
         return self.filter(is_active=True)
 

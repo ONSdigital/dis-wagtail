@@ -29,7 +29,7 @@ class ManualDatasetBlock(StructBlock):
     class Meta:
         icon = "link"
 
-    def clean(self, value: "StructValue") -> "StructValue":
+    def clean(self, value: StructValue) -> StructValue:
         errors = validate_ons_url_struct_block(value, self.child_blocks)
 
         if errors:

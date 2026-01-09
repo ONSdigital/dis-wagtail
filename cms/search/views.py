@@ -1,3 +1,5 @@
+from __future__ import annotations  # needed for unquoted forward references because of Django Views
+
 from typing import TYPE_CHECKING
 
 from django.conf import settings
@@ -19,13 +21,13 @@ class ResourceListView(APIView):
 
     pagination_class = CustomLimitOffsetPagination
 
-    def dispatch(self, request: "HttpRequest", *args: tuple, **kwargs: dict) -> Response:
+    def dispatch(self, request: HttpRequest, *args: tuple, **kwargs: dict) -> Response:
         if not settings.CMS_RESOURCES_ENDPOINT_ENABLED:
             raise Http404
 
         return super().dispatch(request, *args, **kwargs)
 
-    def get(self, request: "HttpRequest", *args: tuple, **kwargs: dict) -> Response:
+    def get(self, request: HttpRequest, *args: tuple, **kwargs: dict) -> Response:
         queryset = self.get_queryset()
 
         paginator = self.pagination_class()

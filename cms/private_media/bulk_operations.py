@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def bulk_set_file_permissions(files: Iterable["FieldFile"], privacy: Privacy) -> dict["FieldFile", bool]:
+def bulk_set_file_permissions(files: Iterable[FieldFile], privacy: Privacy) -> dict[FieldFile, bool]:
     """Set file permissions for an iterable of FieldFile objects, using the
     make_private() or make_public() methods of the storage backend.
 
@@ -46,7 +46,7 @@ def bulk_set_file_permissions(files: Iterable["FieldFile"], privacy: Privacy) ->
                 "which is a requirement for bulk-setting of file permissions."
             )
 
-    def set_file_permission_and_report(file: "FieldFile") -> None:
+    def set_file_permission_and_report(file: FieldFile) -> None:
         if privacy == Privacy.PRIVATE:
             results[file] = file.storage.make_private(file)  # type: ignore[attr-defined]
         elif privacy == Privacy.PUBLIC:

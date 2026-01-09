@@ -17,7 +17,7 @@ class Command(BaseCommand):
     @see https://github.com/wagtail/wagtail/blob/main/wagtail/management/commands/publish_scheduled.py
     """
 
-    def add_arguments(self, parser: "CommandParser") -> None:
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "--dry-run",
             action="store_true",

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from wagtail.blocks.stream_block import StreamChild
 
 
-def serialize_correction_or_notice(entry: "StreamChild", *, superseded_url: str | None = None) -> dict:
+def serialize_correction_or_notice(entry: StreamChild, *, superseded_url: str | None = None) -> dict:
     """Serialize a correction or notice entry for the Design System.
 
     Args:

@@ -25,8 +25,8 @@ class AuthIntegrationTests(CognitoTokenTestCase):
     def test_group_assignment_for_admin_and_officer_roles(self):
         """Check group assignment for users with admin and officer roles."""
         role_group_map = {
-            "role-admin": settings.PUBLISHING_ADMIN_GROUP_NAME,
-            "role-publisher": settings.PUBLISHING_OFFICER_GROUP_NAME,
+            "role-admin": settings.PUBLISHING_ADMINS_GROUP_NAME,
+            "role-publisher": settings.PUBLISHING_OFFICERS_GROUP_NAME,
         }
         for role, expected_group in role_group_map.items():
             with self.subTest(role=role):
@@ -49,8 +49,8 @@ class AuthIntegrationTests(CognitoTokenTestCase):
 
         # User should be in both admin and officer groups
         self.assertInGroups(
-            settings.PUBLISHING_ADMIN_GROUP_NAME,
-            settings.PUBLISHING_OFFICER_GROUP_NAME,
+            settings.PUBLISHING_ADMINS_GROUP_NAME,
+            settings.PUBLISHING_OFFICERS_GROUP_NAME,
             settings.VIEWERS_GROUP_NAME,
         )
 

@@ -55,7 +55,7 @@ class BundleContentsMixin:
 class PreviewBundlePageView(BundleContentsMixin, TemplateView):
     http_method_names: Sequence[str] = ["get"]
 
-    def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> TemplateResponse:
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
         bundle_id = kwargs["bundle_id"]
         bundle = get_object_or_404(Bundle, id=bundle_id)
 
@@ -102,7 +102,7 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
 class PreviewBundleReleaseCalendarView(BundleContentsMixin, TemplateView):
     http_method_names: Sequence[str] = ["get"]
 
-    def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> TemplateResponse:
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
         bundle_id = kwargs["bundle_id"]
         bundle = get_object_or_404(Bundle, id=bundle_id)
 
@@ -197,7 +197,7 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
 
         return None
 
-    def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "TemplateResponse | HttpResponseRedirect":
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse | HttpResponseRedirect:
         bundle_id = kwargs["bundle_id"]
 
         if settings.DIS_DATASETS_BUNDLE_API_ENABLED is False:

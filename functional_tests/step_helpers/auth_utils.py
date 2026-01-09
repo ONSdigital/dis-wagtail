@@ -2,7 +2,7 @@ import base64
 import json
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 
 from behave.runner import Context
 from django.conf import settings
@@ -30,7 +30,7 @@ class AuthenticationTestHelper:
         # Mock get_jwks to return our test JWKS
         auth_utils.get_jwks = lambda: self.context.test_jwks
 
-    def generate_and_set_tokens(self, groups: Optional[list[str]] = None, **jwt_overrides: dict[str, Any]) -> None:
+    def generate_and_set_tokens(self, groups: list[str] | None = None, **jwt_overrides: dict[str, Any]) -> None:
         """Generate test JWT tokens with specified groups."""
         if groups is None:
             groups = ["role-admin"]

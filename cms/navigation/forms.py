@@ -67,7 +67,7 @@ def validate_links(
 class MainMenuAdminForm(WagtailAdminModelForm):
     """Custom form for the MainMenu model."""
 
-    def clean_highlights(self) -> "StreamValue":
+    def clean_highlights(self) -> StreamValue:
         highlights = self.cleaned_data["highlights"]
         seen_pages: set[Page] = set()
         seen_urls: set[str] = set()
@@ -94,7 +94,7 @@ class MainMenuAdminForm(WagtailAdminModelForm):
 
         return highlights
 
-    def clean_columns(self) -> "StreamValue":
+    def clean_columns(self) -> StreamValue:
         columns_value = self.cleaned_data["columns"]
         seen_pages: set[Page] = set()
         seen_urls: set[str] = set()
@@ -165,7 +165,7 @@ class MainMenuAdminForm(WagtailAdminModelForm):
 class FooterMenuAdminForm(WagtailAdminModelForm):
     """Custom form for validating Footer Menu columns and links."""
 
-    def clean_columns(self) -> "StreamValue":
+    def clean_columns(self) -> StreamValue:
         """Validates the column fields to ensure no duplicate pages or urls."""
         columns_value = self.cleaned_data["columns"]
         seen_pages: set[Page] = set()

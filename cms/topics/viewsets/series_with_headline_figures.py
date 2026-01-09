@@ -1,6 +1,6 @@
 import copy
 import hashlib
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.contrib.admin.utils import quote, unquote
 from django.core.exceptions import ObjectDoesNotExist
@@ -69,7 +69,7 @@ class SeriesWithHeadlineFiguresChooserMixin:
     model_class: ArticleSeriesPage
     filter_form_class = NoLocaleFilterInChoosersForm
 
-    def get_queryset(self) -> "PageQuerySet[ArticleSeriesPage]":
+    def get_queryset(self) -> PageQuerySet[ArticleSeriesPage]:
         topic_page_id = self.request.GET.get("topic_page_id")  # type: ignore[attr-defined]
         if not topic_page_id:
             return ArticleSeriesPage.objects.none()
@@ -85,7 +85,7 @@ class SeriesWithHeadlineFiguresChooserMixin:
 
         return series_pages
 
-    def get_object_list(self, objects: Optional["PageQuerySet[ArticleSeriesPage]"] = None) -> "list[ArticleSeriesPage]":
+    def get_object_list(self, objects: PageQuerySet[ArticleSeriesPage] | None = None) -> list[ArticleSeriesPage]:
         if objects is None:
             objects = self.get_queryset()
 
@@ -101,7 +101,7 @@ class SeriesWithHeadlineFiguresChooserMixin:
 
         return filtered_series
 
-    def get_results_page(self, request: "HttpRequest") -> "PaginatorPage[ArticleSeriesPage]":
+    def get_results_page(self, request: HttpRequest) -> PaginatorPage[ArticleSeriesPage]:
         """Overrides the parent to apply the filtering on the queryset.
 
         Our get_object_list() returns a list of pages with duplicates (depending on the headline figures count),
@@ -134,7 +134,7 @@ class SeriesWithHeadlineFiguresChooserMixin:
         )
 
     @property
-    def columns(self) -> list["Column"]:
+    def columns(self) -> list[Column]:
         return [
             self.title_column,
             HeadlineFigureColumn("figure_id", "figure_id", label="Figure ID", accessor="headline_figure"),
@@ -167,7 +167,7 @@ class SeriesWithHeadlineFiguresChosenResponseMixin(ChosenResponseMixin):
 
 
 class SeriesWithHeadlineFiguresChosenViewMixin(ChosenViewMixin):
-    def get(self, request: "HttpRequest", pk: Any) -> "HttpResponse":
+    def get(self, request: HttpRequest, pk: Any) -> HttpResponse:
         try:
             item = self.get_object(unquote(pk))
         except ObjectDoesNotExist as e:

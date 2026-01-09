@@ -23,11 +23,11 @@ class FeaturedSeriesPageChooseViewMixin:
     model_class: ArticleSeriesPage
     filter_form_class = NoLocaleFilterInChoosersForm
 
-    def get_object_list(self) -> "PageQuerySet[ArticleSeriesPage]":
+    def get_object_list(self) -> PageQuerySet[ArticleSeriesPage]:
         return ArticleSeriesPage.objects.all().order_by("path")
 
     @property
-    def columns(self) -> list["Column"]:
+    def columns(self) -> list[Column]:
         return [
             self.title_column,  # type: ignore[attr-defined]
             Column("parent", label="Topic", accessor="get_parent"),

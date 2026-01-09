@@ -66,7 +66,7 @@ class BundleAPIBundleMetadata:
         return asdict(self)
 
     @classmethod
-    def from_bundle(cls, bundle: "Bundle") -> "BundleAPIBundleMetadata":
+    def from_bundle(cls, bundle: Bundle) -> BundleAPIBundleMetadata:
         """Return a BundleAPIBundleMetadata instance populated from a Bundle instance."""
         return cls(
             title=bundle.name,
@@ -77,7 +77,7 @@ class BundleAPIBundleMetadata:
         )
 
     @classmethod
-    def from_api_response(cls, api_response: dict[str, Any]) -> "BundleAPIBundleMetadata":
+    def from_api_response(cls, api_response: dict[str, Any]) -> BundleAPIBundleMetadata:
         """Return a BundleAPIBundleMetadata instance populated from a Bundle API response."""
         return cls(
             title=api_response.get("title"),
@@ -126,7 +126,7 @@ def _create_content_dict_for_pages(pages: list[tuple[dict[str, Any], str]]) -> l
     return content
 
 
-def serialize_page(page: "Page") -> dict[str, Any]:
+def serialize_page(page: Page) -> dict[str, Any]:
     """Serializes a page to a dictionary."""
     return {
         "id": uuid.uuid4(),
@@ -135,7 +135,7 @@ def serialize_page(page: "Page") -> dict[str, Any]:
     }
 
 
-def serialize_preview_page(page: "Page", bundle_id: int, is_previewable: bool) -> dict[str, Any]:
+def serialize_preview_page(page: Page, bundle_id: int, is_previewable: bool) -> dict[str, Any]:
     specific_page = page.specific_deferred
     if workflow_state := specific_page.current_workflow_state:
         state = workflow_state.current_task_state.task.name
@@ -153,7 +153,7 @@ def serialize_preview_page(page: "Page", bundle_id: int, is_previewable: bool) -
     }
 
 
-def serialize_bundle_content_for_published_release_calendar_page(bundle: "Bundle") -> list[dict[str, Any]]:
+def serialize_bundle_content_for_published_release_calendar_page(bundle: Bundle) -> list[dict[str, Any]]:
     """Serializes the content of a bundle for a published release calendar page."""
     all_bundled_pages = bundle.get_bundled_pages()
     # Create a list of tuples with serialized pages and their specific class names
@@ -163,7 +163,7 @@ def serialize_bundle_content_for_published_release_calendar_page(bundle: "Bundle
 
 
 def serialize_bundle_content_for_preview_release_calendar_page(
-    bundle: "Bundle", previewing_user: "User | AnonymousUser"
+    bundle: Bundle, previewing_user: User | AnonymousUser
 ) -> list[dict[str, Any]]:
     """Serializes the content of a bundle for a release calendar page.
 
@@ -195,7 +195,7 @@ def serialize_bundle_content_for_preview_release_calendar_page(
     return _create_content_dict_for_pages(all_pages)
 
 
-def serialize_datasets_for_release_calendar_page(bundle: "Bundle") -> list[dict[str, Any]]:
+def serialize_datasets_for_release_calendar_page(bundle: Bundle) -> list[dict[str, Any]]:
     """Serializes the datasets of a bundle for a release calendar page."""
     return [
         {"type": "dataset_lookup", "id": uuid.uuid4(), "value": dataset["dataset"]}
@@ -219,7 +219,7 @@ def get_dataset_preview_key(dataset_id: str, edition_id: str, version_id: str) -
 
 def get_preview_items_for_bundle(
     *,
-    bundle: "Bundle",
+    bundle: Bundle,
     current_id: int | str,
     pages_in_bundle: list[Page],
     bundle_contents: dict[str, Any] | None = None,
@@ -283,7 +283,7 @@ def get_preview_items_for_bundle(
     return preview_items
 
 
-def _get_preview_teams_for_bundle(bundle: "Bundle") -> list[dict[Literal["id"], str]]:
+def _get_preview_teams_for_bundle(bundle: Bundle) -> list[dict[Literal["id"], str]]:
     """Get formatted preview teams for a bundle for API usage."""
     team_identifiers = bundle.teams.values_list("team__identifier", flat=True)
     return [{"id": identifier} for identifier in team_identifiers]
@@ -322,7 +322,7 @@ def get_page_title_with_workflow_status(page: Page) -> str:
     return f"{title} (Draft)"
 
 
-def update_bundle_linked_release_calendar_page(bundle: "Bundle") -> None:
+def update_bundle_linked_release_calendar_page(bundle: Bundle) -> None:
     """Updates the release calendar page related to the bundle with the pages in the bundle."""
     page = bundle.release_calendar_page
     if page:  # To satisfy mypy, ensure page is not None
@@ -336,7 +336,7 @@ def update_bundle_linked_release_calendar_page(bundle: "Bundle") -> None:
         revision.publish()
 
 
-def publish_bundle(bundle: "Bundle", *, update_status: bool = True) -> None:
+def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
     """Publishes a given bundle.
 
     This means it publishes the related pages, as well as updates the linked release calendar.

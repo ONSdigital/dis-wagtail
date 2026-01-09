@@ -34,9 +34,9 @@ class BundleAPISyncService:
     ValidationError and let the transaction roll back.
     """
 
-    bundle: "Bundle"
+    bundle: Bundle
     api_client: BundleAPIClient
-    original_datasets: set["BundleDataset"]
+    original_datasets: set[BundleDataset]
 
     @property
     def api_id(self) -> str:
@@ -59,7 +59,7 @@ class BundleAPISyncService:
         return self.local_bundle_data.as_dict() == BundleAPIBundleMetadata.from_api_response(self.api_bundle).as_dict()
 
     @cached_property
-    def bundled_datasets(self) -> set["BundleDataset"]:
+    def bundled_datasets(self) -> set[BundleDataset]:
         return set(self.bundle.bundled_datasets.all().select_related("dataset").order_by("id"))
 
     @datasets_bundle_api_enabled
@@ -230,7 +230,7 @@ class BundleAPISyncService:
         self,
         *,
         to_link_keys: Iterable[str],
-        cms_items: dict[str, "BundleDataset"],
+        cms_items: dict[str, BundleDataset],
         api_index: dict[str, str],
     ) -> None:
         """Populate local bundle_api_content_id for items that already exist
@@ -253,12 +253,12 @@ class BundleAPISyncService:
                     "count": len(datasets_to_update),
                 },
             )
-            self.bundle.bundled_datasets.bulk_update(datasets_to_update, ["bundle_api_content_id"])
+            self.bundle.bundled_datasets.bulk_update(datasets_to_update, ["bundle_api_content_id"])  # pylint: disable=no-member
 
     def _add_content_items(
         self,
         *,
-        items: set["BundleDataset"],
+        items: set[BundleDataset],
     ) -> str | None:
         """Add content items to the remote bundle.
         Stops on first error. Returns the most recent ETag observed.

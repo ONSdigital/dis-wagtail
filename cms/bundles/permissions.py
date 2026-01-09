@@ -19,7 +19,7 @@ def get_bundle_permission(action: str) -> str:
     return get_permission_name(Bundle, action)
 
 
-def user_can_manage_bundles(user: "User | AnonymousUser") -> bool:
+def user_can_manage_bundles(user: User | AnonymousUser) -> bool:
     if isinstance(user, AnonymousUser):
         return False
 
@@ -33,7 +33,7 @@ def user_can_manage_bundles(user: "User | AnonymousUser") -> bool:
     )
 
 
-def user_can_preview_bundle(user: "User | AnonymousUser", bundle: "Bundle") -> bool:
+def user_can_preview_bundle(user: User | AnonymousUser, bundle: Bundle) -> bool:
     if isinstance(user, AnonymousUser):
         return False
 

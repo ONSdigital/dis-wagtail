@@ -17,6 +17,8 @@ SILENCED_SYSTEM_CHECKS = [
     "staticfiles.W004",
 ]
 
+TEST_RUNNER = "cms.core.tests.runner.OldConnectionsCleanupDiscoveryRunner"
+
 # Don't redirect to HTTPS in tests or send the HSTS header
 SECURE_SSL_REDIRECT = False
 SECURE_HSTS_SECONDS = 0

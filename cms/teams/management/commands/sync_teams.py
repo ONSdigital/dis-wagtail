@@ -2,7 +2,7 @@ import argparse
 import logging
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
-from typing import Any, Optional
+from typing import Any
 
 import requests
 from django.conf import settings
@@ -65,7 +65,7 @@ class Command(BaseCommand):
             logger.exception("Failed to fetch groups from the API")
             return None
 
-    def _fetch_groups(self, url: str) -> Optional[list[dict]]:
+    def _fetch_groups(self, url: str) -> list[dict] | None:
         # Include both the standard Authorization header and the legacy X-Florence-Token.
         # The X-Florence-Token remains mandatory for now because some services still depend on older middleware.
         # Once all services are upgraded, we can remove the X-Florence-Token header entirely.

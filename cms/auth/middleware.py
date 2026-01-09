@@ -1,3 +1,5 @@
+from __future__ import annotations  # needed for unquoted forward references because of Django Views
+
 import logging
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
@@ -26,7 +28,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
     if an issue is encountered.
     """
 
-    def process_request(self, request: "HttpRequest") -> None:
+    def process_request(self, request: HttpRequest) -> None:
         """Process each incoming HTTP request to validate JWT tokens and ensure
         user authentication.
         """
@@ -83,7 +85,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         self._authenticate_user(request, id_payload)
 
     def _validate_token_session_consistency(
-        self, *, request: "HttpRequest", access_payload: Mapping, id_payload: Mapping
+        self, *, request: HttpRequest, access_payload: Mapping, id_payload: Mapping
     ) -> bool:
         # Ensure the client IDs match.
         if not self._validate_client_ids(client_id=access_payload["client_id"], audience=id_payload["aud"]):
@@ -130,7 +132,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         return True
 
     @staticmethod
-    def _handle_cognito_disabled(request: "HttpRequest") -> None:
+    def _handle_cognito_disabled(request: HttpRequest) -> None:
         """Processes requests when AWS Cognito authentication is disabled.
         Logs out users that do not have a usable password.
         """
@@ -143,7 +145,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
             logout(request)
 
     @staticmethod
-    def _handle_unauthenticated_user(request: "HttpRequest") -> None:
+    def _handle_unauthenticated_user(request: HttpRequest) -> None:
         """Logs out the user if JWT tokens are missing and the session configuration is unsuitable."""
         if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED or (
             request.user.is_authenticated and request.user.is_external_user
@@ -155,7 +157,7 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
             logout(request)
 
     @staticmethod
-    def _authenticate_user(request: "HttpRequest", id_payload: Mapping) -> None:
+    def _authenticate_user(request: HttpRequest, id_payload: Mapping) -> None:
         """Authenticates the user based on the JWT payload.
 
         Retrieves or creates the user, updates details, assigns appropriate groups, and logs the user in.

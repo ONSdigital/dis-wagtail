@@ -28,7 +28,7 @@ class CoreExtension(Extension):  # pylint: disable=abstract-method
     and other package template tags.
     """
 
-    def __init__(self, environment: "Environment"):
+    def __init__(self, environment: Environment):
         super().__init__(environment)
 
         self.environment.globals.update(

@@ -22,7 +22,7 @@ class BundleChooseViewMixin:
             UserColumn("created_by"),
         ]
 
-    def get_object_list(self) -> "BundlesQuerySet":
+    def get_object_list(self) -> BundlesQuerySet:
         """Overrides the default object list to only fetch the fields we're using."""
         queryset: BundlesQuerySet = Bundle.objects.editable().select_related("created_by").only("name", "created_by")
         return queryset

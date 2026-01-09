@@ -30,7 +30,7 @@ class PagesWithDraftsMixinFilterForm(LocaleFilterMixin, SearchFilterMixin, BaseF
             widget=forms.Select(attrs={"data-chooser-modal-search-filter": True}),
         )
 
-    def filter(self, objects: "PageQuerySet") -> "PageQuerySet":
+    def filter(self, objects: PageQuerySet) -> PageQuerySet:
         selected_page_type = self.cleaned_data.get("page_type")
         if selected_page_type:
             objects = objects.type(self._page_type_map[selected_page_type])
@@ -41,7 +41,7 @@ class PagesWithDraftsMixin:
     results_template_name = "bundles/bundle_page_chooser_results.html"
     filter_form_class = PagesWithDraftsMixinFilterForm
 
-    def get_object_list(self) -> "PageQuerySet":
+    def get_object_list(self) -> PageQuerySet:
         """Limits the pages that can be chosen for a bundle.
 
         Pages are included if they
@@ -62,7 +62,7 @@ class PagesWithDraftsMixin:
         )
 
     @property
-    def columns(self) -> list["Column"]:
+    def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
         title_column.accessor = "get_admin_display_title"
 

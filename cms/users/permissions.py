@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from django.db.models import Model
 
 
-def get_permission_name(model: "type[Model]", action: str) -> str:
+def get_permission_name(model: type[Model], action: str) -> str:
     """Get the full app-label-qualified permission name (as required by
     user.has_perm(...) ) for the given action on this model.
     """

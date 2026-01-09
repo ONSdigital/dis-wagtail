@@ -12,7 +12,7 @@ class RelativeOrAbsoluteURLBlock(blocks.URLBlock):
     an inherited and intentional limitation from Django's URLField.
     """
 
-    def clean(self, value: "StructValue") -> "StructValue":
+    def clean(self, value: StructValue) -> StructValue:
         # If the value starts with "/" we assume it is a relative URL, and prepend a dummy scheme and domain,
         # otherwise we assume it is an absolute URL and leave it unchanged.
         # This allows us to leverage the URLBlock validation for relative URLs.

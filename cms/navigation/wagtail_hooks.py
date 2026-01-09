@@ -19,7 +19,7 @@ class SingleInstanceModelPermissionPolicy(ModelPermissionPolicy):
     if one already exists.
     """
 
-    def user_has_permission(self, user: "User", action: str) -> bool:
+    def user_has_permission(self, user: User, action: str) -> bool:
         # Disallow "add" if an instance already exists
         if action == "add" and self.model.objects.exists():
             return False

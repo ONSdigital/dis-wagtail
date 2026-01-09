@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
 from django.db import models
@@ -184,7 +184,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
 
     _analytics_content_type: ClassVar[str] = "release-calendars"  # TODO agree in spec
 
-    def get_template(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> str:
+    def get_template(self, request: HttpRequest, *args: Any, **kwargs: Any) -> str:
         """Select the correct template based on status."""
         template_by_status = {
             ReleaseStatus.PROVISIONAL.value: "provisional.html",
@@ -198,7 +198,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         template: str = super().get_template(request, *args, **kwargs)
         return template
 
-    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+    def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
         context: dict = super().get_context(request, *args, **kwargs)
         context["table_of_contents"] = self.table_of_contents
@@ -223,7 +223,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return format_datasets_as_document_list(self.datasets)
 
     @cached_property
-    def table_of_contents(self) -> list[dict[str, str | object]]:
+    def table_of_contents(self) -> list[dict[str, Any]]:
         """Table of contents formatted to Design System specs."""
         items = [{"url": "#summary", "text": _("Summary")}]
 
@@ -261,14 +261,14 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return items
 
     @cached_property
-    def active_bundle(self) -> Optional["Bundle"]:
+    def active_bundle(self) -> Bundle | None:
         if not self.pk:
             return None
         bundle: Bundle | None = self.bundles.active().first()
         return bundle
 
     @property
-    def live_status(self) -> Optional[ReleaseStatus]:
+    def live_status(self) -> ReleaseStatus | None:
         if not self.pk:
             return None
         # We just want one field, so we don't use live_revision
@@ -277,7 +277,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return live_page.status if live_page else None
 
     @property
-    def live_notice(self) -> Optional[str]:
+    def live_notice(self) -> str | None:
         if not self.pk:
             return None
         live_page = ReleaseCalendarPage.objects.filter(pk=self.pk).live().only("notice").first()
@@ -287,7 +287,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     def preview_modes(self) -> Sequence[tuple[str, str]]:
         return ReleaseStatus.choices
 
-    def get_preview_template(self, request: None, mode_name: str) -> "TemplateResponse":
+    def get_preview_template(self, request: None, mode_name: str) -> TemplateResponse:
         templates = {
             "PROVISIONAL": "templates/pages/release_calendar/release_calendar_page--provisional.html",
             "CONFIRMED": "templates/pages/release_calendar/release_calendar_page--confirmed.html",
@@ -297,7 +297,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
 
         return cast("TemplateResponse", templates.get(mode_name, templates["PROVISIONAL"]))
 
-    def get_lock(self) -> Optional["BaseLock"]:
+    def get_lock(self) -> BaseLock | None:
         if self.active_bundle and self.active_bundle.is_ready_to_be_published:
             return ReleasePageInBundleReadyToBePublishedLock(self)
 

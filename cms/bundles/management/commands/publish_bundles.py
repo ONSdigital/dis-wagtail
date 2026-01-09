@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 class Command(BaseCommand):
     """The management command class for bundled publishing."""
 
-    def add_arguments(self, parser: "CommandParser") -> None:
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "--dry-run",
             action="store_true",

@@ -136,5 +136,5 @@ def get_published_from_state(state: str) -> bool:
     return state.lower() == "published"
 
 
-def get_dataset_for_published_state(dataset: "ONSDataset", published: bool) -> "ONSDataset":
+def get_dataset_for_published_state(dataset: ONSDataset, published: bool) -> ONSDataset:
     return dataset if published else dataset.next or dataset

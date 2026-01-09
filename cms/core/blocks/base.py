@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from django.forms.utils import ErrorList
@@ -94,7 +94,7 @@ class LinkBlockStructValue(StructValue):
 
     @staticmethod
     def get_gtm_attributes_for_link_value(
-        link_value: dict[str, Any], target_page: Optional["BasePage"] = None
+        link_value: dict[str, Any], target_page: BasePage | None = None
     ) -> dict[str, Any]:
         attributes = {
             "data-ga-event": "navigation-click",
