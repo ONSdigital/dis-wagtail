@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
@@ -8,6 +8,7 @@ from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundlePageFactory
+from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import (
     mark_page_as_ready_for_review,
@@ -115,3 +116,70 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         self.page.refresh_from_db()
         self.assertEqual(self.page.latest_revision.user_id, self.second_user.id)
         self.assertNotEqual(self.page.latest_revision.pk, latest_revision.pk)
+
+
+class WorkflowPublishingTestCase(WagtailTestUtils, TestCase):
+    """Tests that pages can be published through the approval workflow."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.first_user = UserFactory()
+        cls.first_user.groups.add(Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME))
+        cls.second_user = UserFactory()
+        cls.second_user.groups.add(Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME))
+
+    def test_page_published_after_workflow_approval(self):
+        """Test that a page is published when the workflow is completed via final approval."""
+        # Create a draft page (not live)
+        page = InformationPageFactory(live=False)
+
+        # Page should not be live initially
+        self.assertFalse(page.live)
+
+        # First user submits for review
+        workflow_state = mark_page_as_ready_for_review(page, self.first_user)
+
+        # Page should still not be live after first submission
+        page.refresh_from_db()
+        self.assertFalse(page.live)
+
+        # First task approval (review/preview stage)
+        progress_page_workflow(workflow_state)
+
+        # Page should still not be live after first approval
+        page.refresh_from_db()
+        self.assertFalse(page.live)
+        self.assertTrue(is_page_ready_to_publish(page))
+
+        # Final approval publishes the page
+        workflow_state.refresh_from_db()
+        workflow_state.current_task_state.approve()
+
+        # Page should now be live
+        page.refresh_from_db()
+        self.assertTrue(page.live)
+
+    def test_publish_button_not_shown_in_page_edit_view(self):
+        """Test that the Publish button is not shown when WAGTAIL_WORKFLOW_REQUIRE_APPROVAL_TO_PUBLISH is True."""
+        # Create a draft page (not live) so publish would normally be available
+        page = InformationPageFactory(live=False)
+        edit_url = reverse("wagtailadmin_pages:edit", args=[page.id])
+
+        self.client.force_login(self.first_user)
+        response = self.client.get(edit_url)
+
+        # The publish action should not be present (due to can_publish returning False)
+        self.assertNotContains(response, 'name="action-publish"')
+
+    @override_settings(WAGTAIL_WORKFLOW_REQUIRE_APPROVAL_TO_PUBLISH=False)
+    def test_publish_button_shown_when_setting_disabled(self):
+        """Test that the Publish button is shown when WAGTAIL_WORKFLOW_REQUIRE_APPROVAL_TO_PUBLISH is False."""
+        # Create a draft page (not live)
+        page = InformationPageFactory(live=False)
+        edit_url = reverse("wagtailadmin_pages:edit", args=[page.id])
+
+        self.client.force_login(self.first_user)
+        response = self.client.get(edit_url)
+
+        # The publish action should be present when the setting is disabled
+        self.assertContains(response, 'name="action-publish"')

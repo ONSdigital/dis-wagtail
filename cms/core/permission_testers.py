@@ -26,3 +26,17 @@ class BasePagePermissionTester(PagePermissionTester):
             return False
         can_copy_page: bool = super().can_copy()
         return can_copy_page
+
+    def can_publish(self) -> bool:
+        """Determine if the page can be published directly.
+
+        Returns False when WAGTAIL_WORKFLOW_REQUIRE_APPROVAL_TO_PUBLISH is True (the default),
+        enforcing the approval workflow for all pages. This prevents accidental or unauthorized
+        publication of potentially sensitive content.
+
+        For local development, this can be disabled in settings to allow direct publishing.
+        """
+        if getattr(settings, "WAGTAIL_WORKFLOW_REQUIRE_APPROVAL_TO_PUBLISH", True):
+            return False
+        can_publish: bool = super().can_publish()
+        return can_publish

@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
 
@@ -40,6 +40,18 @@ class TestBasePagePermissionTester(TestCase):
         welsh_info_page = InformationPageFactory(parent=self.welsh_home_page)
         tester = BasePagePermissionTester(user=self.publishing_admin, page=welsh_info_page)
         self.assertFalse(tester.can_copy())
+
+    def test_can_publish_returns_false_when_setting_enabled(self):
+        """Test that can_publish returns False when WAGTAIL_WORKFLOW_REQUIRE_APPROVAL_TO_PUBLISH is True."""
+        tester = BasePagePermissionTester(user=self.publishing_admin, page=self.english_home_page)
+        self.assertFalse(tester.can_publish())
+
+    @override_settings(WAGTAIL_WORKFLOW_REQUIRE_APPROVAL_TO_PUBLISH=False)
+    def test_can_publish_delegates_to_parent_when_setting_disabled(self):
+        """Test that can_publish delegates to parent when the setting is False."""
+        tester = BasePagePermissionTester(user=self.publishing_admin, page=self.english_home_page)
+        # When disabled, it should delegate to parent which checks actual permissions
+        self.assertTrue(tester.can_publish())
 
 
 class TestCustomPagePermissions(WagtailTestUtils, TestCase):
