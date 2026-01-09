@@ -113,6 +113,7 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertFalse(self.statistical_article.live)
         self.assertFalse(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
         self.assertFalse(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
+        self.assertFalse(PageLogEntry.objects.filter(action="wagtail.publish", page=self.statistical_article).exists())
 
         BundlePageFactory(parent=self.bundle, page=self.statistical_article)
 
@@ -141,7 +142,7 @@ class PublishBundlesCommandTestCase(TestCase):
         # Check that we have a log entry
         self.assertEqual(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
         self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 0)
-        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish").count(), 1)
+        self.assertTrue(PageLogEntry.objects.filter(action="wagtail.publish", page=self.statistical_article).exists())
 
     def test_publish_bundle_with_release_calendar(self):
         """Test publishing a bundle with an associated release calendar page."""
