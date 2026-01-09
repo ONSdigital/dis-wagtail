@@ -864,6 +864,12 @@ WAGTAIL_SITE_NAME = "Office for National Statistics"
 APPEND_SLASH = False
 WAGTAIL_APPEND_SLASH = False
 
+# Disable direct publishing to enforce approval workflow.
+# When True, the "Publish" action is hidden and direct publishing is blocked,
+# forcing all content through the approval workflow.
+# Set to False in local development if you need to bypass the workflow.
+WAGTAIL_WORKFLOW_REQUIRE_APPROVAL_TO_PUBLISH = True
+
 # Base URL to use when formatting absolute URLs within the Wagtail admin in
 # contexts without a request, e.g. in notification emails. Don't include '/admin'
 # or a trailing slash.
