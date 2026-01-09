@@ -65,8 +65,13 @@ def the_page_has_a_welsh_alias(context: Context, page: str) -> None:
     the_page_str = page.lower().replace(" ", "_")
     if not the_page_str.endswith("_page"):
         the_page_str += "_page"
+    welsh_locale = Locale.objects.get(language_code="cy")
     the_page = getattr(context, the_page_str)
-    the_page.copy_for_translation(Locale.objects.get(language_code="cy"), copy_parents=True)
+    try:
+        the_page.get_translation(welsh_locale)
+    except the_page.DoesNotExist:
+        # If a translation doesn't already exist, create one
+        the_page.copy_for_translation(welsh_locale, copy_parents=True)
 
 
 @when("the user tries to create a new theme page")
