@@ -527,6 +527,11 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "cms.audit": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
         "wagtail": {
             "handlers": ["console"],
             "level": "INFO",
