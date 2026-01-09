@@ -5,14 +5,11 @@ from typing import TYPE_CHECKING, ClassVar
 from django.db.models import QuerySet
 from django.utils.functional import cached_property
 
-from cms.workflows.locks import PageInBundleReadyToBePublishedLock
-
 from .enums import ACTIVE_BUNDLE_STATUSES
 from .panels import BundleNotePanel
 
 if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
-    from wagtail.locks import BaseLock
 
     from .models import Bundle
 
@@ -50,9 +47,3 @@ class BundledPageMixin:
     @cached_property
     def in_active_bundle(self) -> bool:
         return self.active_bundle is not None
-
-    def get_lock(self) -> BaseLock | None:
-        if self.active_bundle and self.active_bundle.is_ready_to_be_published:
-            return PageInBundleReadyToBePublishedLock(self)
-
-        return super().get_lock()  # type: ignore[misc]

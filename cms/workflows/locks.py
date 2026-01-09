@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from django.urls import reverse
 from django.utils.html import format_html
-from wagtail.locks import BaseLock
+from wagtail.locks import WorkflowLock
 
 from cms.bundles.permissions import user_can_manage_bundles
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from cms.users.models import User
 
 
-class PageInBundleReadyToBePublishedLock(BaseLock):
+class PageInBundleReadyToBePublishedLock(WorkflowLock):
     """A lock that is enabled when the page is in a bundle that is ready to be published."""
 
     def for_user(self, user: User) -> bool:
@@ -35,7 +35,7 @@ class PageInBundleReadyToBePublishedLock(BaseLock):
             bundle_title=self.object.active_bundle.name,
         )
 
-    def get_description(self, user: User) -> SafeString:
+    def get_description(self, user: User, can_lock: bool = False) -> SafeString:
         """Displayed in the sidebar info panel."""
         if user_can_manage_bundles(user):
             message = (
