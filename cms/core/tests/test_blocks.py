@@ -4,6 +4,7 @@ from datetime import datetime
 from http import HTTPStatus
 from urllib.parse import urlparse
 
+from bs4 import BeautifulSoup
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.images import get_image_model
@@ -1008,9 +1009,12 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         # Alt text from CustomImage.description
         self.assertContains(response, 'alt="Meaningful alt text"')
 
-        # onsImage macro outputs src/srcset with both renditions
-        self.assertContains(response, "width-1024")
-        self.assertContains(response, "width-2048")
+        # onsImage macro outputs src/srcset with both specific rendition URLs
+        small = self.image.get_rendition("width-1024")
+        large = self.image.get_rendition("width-2048")
+        # Use the underlying file URLs to be agnostic of serve method
+        self.assertContains(response, small.file.url)
+        self.assertContains(response, large.file.url)
 
     def test_renders_download_link_with_file_type_and_size_when_enabled(self):
         page = self._make_information_page(download=True)
@@ -1019,14 +1023,29 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         # Download section rendered
-        self.assertContains(response, "Download")
+        self.assertContains(response, "Download Figure 1")
 
-        # HTML5 download attribute present
-        self.assertContains(response, "download>")
+        # HTML5 download attribute present once (avoid base-template noise)
+        self.assertContains(response, " download", count=1)
 
-        # Large rendition used for download
-        self.assertContains(response, "width-2048")
+        # Large rendition used for download (assert exact URL appears twice in the response)
+        large = self.image.get_rendition("width-2048")
+        # Assert exact downloadable rendition file URL appears twice: once in href, once in onsImage srcset
+        self.assertContains(response, large.file.url, count=2)
 
-        # File type label (uppercased extension)
-        self.assertContains(response, "PNG")
-        self.assertContains(response, "KB")
+        # Assert the actual download anchor exists and targets the large rendition URL
+        html = response.content.decode(response.charset or "utf-8", errors="replace")
+        soup = BeautifulSoup(html, "html.parser")
+        download_link = soup.select_one("a[download]")
+
+        self.assertIsNotNone(download_link)
+        self.assertEqual(download_link.get("href"), large.file.url)
+
+        # File type + size label rendered on the download link text
+        link_text = download_link.get_text(strip=True)
+        self.assertIn("PNG", link_text)
+        if "(" in link_text and ")" in link_text:
+            inside = link_text.partition("(")[2].partition(")")[0]
+            self.assertTrue(inside.endswith("KB"))
+            size_val = inside[:-2]
+            self.assertTrue(size_val.isdigit())

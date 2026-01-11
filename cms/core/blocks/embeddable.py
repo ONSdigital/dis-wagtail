@@ -50,8 +50,8 @@ class ImageBlock(blocks.StructBlock):
             context["small_src"] = small.url
             context["large_src"] = large.url
 
-            # Get file extension (uppercase, without the dot)
-            _, ext = os.path.splitext(image.file.name)
+            # Get file extension of the rendition being downloaded (uppercase, without the dot)
+            _, ext = os.path.splitext(large.file.name)
             file_type = ext.lstrip(".").upper() or "IMG"
 
             context["file_type"] = file_type

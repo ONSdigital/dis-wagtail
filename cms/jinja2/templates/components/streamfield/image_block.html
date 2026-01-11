@@ -17,8 +17,8 @@
     {# Image #}
     {% set caption_text = None %}
         {% if value.supporting_text %}
-        {% set caption_text = _("Source") ~ " - " ~ value.supporting_text %}
-    {% endif %}
+            {% set caption_text = _("Source") ~ " - " ~ value.supporting_text %}
+        {% endif %}
 
     {{
         onsImage({
