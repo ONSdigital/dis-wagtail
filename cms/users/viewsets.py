@@ -26,6 +26,7 @@ class UserFilterForm(SearchFilterMixin, BaseFilterForm):
         """The User model doesn't have search_fields.
 
         So we take the same approach as the core UserViewSet when it comes to searching.
+        @see https://github.com/wagtail/wagtail/blob/13399d0/wagtail/users/views/bulk_actions/user_bulk_action.py
         """
         if search_query := self.cleaned_data.get("q"):
             model_fields = {f.name for f in User._meta.get_fields()}
