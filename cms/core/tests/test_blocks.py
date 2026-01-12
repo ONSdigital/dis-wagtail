@@ -5,6 +5,7 @@ from http import HTTPStatus
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
+from django.template.defaultfilters import filesizeformat
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.images import get_image_model
@@ -1041,11 +1042,5 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertIsNotNone(download_link)
         self.assertEqual(download_link.get("href"), large.file.url)
 
-        # File type + size label rendered on the download link text
-        link_text = download_link.get_text(strip=True)
-        self.assertIn("PNG", link_text)
-        if "(" in link_text and ")" in link_text:
-            inside = link_text.partition("(")[2].partition(")")[0]
-            self.assertTrue(inside.endswith("KB"))
-            size_val = inside[:-2]
-            self.assertTrue(size_val.isdigit())
+        expected = filesizeformat(large.file.size)
+        self.assertIn(f"({expected})", download_link.get_text(strip=True))

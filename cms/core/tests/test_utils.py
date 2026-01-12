@@ -5,7 +5,6 @@ from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponse
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
-from cms.core.blocks.embeddable import ImageBlock
 from cms.core.utils import (
     get_client_ip,
     get_content_type_for_page,
@@ -194,29 +193,3 @@ class RedirectUtilityTestCase(SimpleTestCase):
         response = redirect("/unicodé")
         expected_url = urllib.parse.quote("/unicodé", safe="/:")
         self.assertEqual(response.url, expected_url)
-
-
-class ImageBlockToKbTest(SimpleTestCase):
-    def setUp(self) -> None:
-        self.block = ImageBlock()
-
-    def test_to_kb_none_returns_none(self) -> None:
-        self.assertIsNone(self.block.to_kb(None))
-
-    def test_to_kb_values_up_to_512_bytes_return_1kb(self) -> None:
-        self.assertEqual(self.block.to_kb(0), 1)
-        self.assertEqual(self.block.to_kb(1), 1)
-        self.assertEqual(self.block.to_kb(511), 1)
-        self.assertEqual(self.block.to_kb(512), 1)
-
-    def test_to_kb_rounding_above_half_kb(self) -> None:
-        # 513 bytes (~0.501 KB) rounds to 1
-        self.assertEqual(self.block.to_kb(513), 1)
-        # 1024 bytes -> 1 KB
-        self.assertEqual(self.block.to_kb(1024), 1)
-        # 1536 bytes -> 1.5 KB -> 2 KB under Python rounding
-        self.assertEqual(self.block.to_kb(1536), 2)
-
-    def test_to_kb_bankers_rounding_at_half_values(self) -> None:
-        # 2560 bytes -> 2.5 KB -> 2 KB under Python rounding (banker's rounding)
-        self.assertEqual(self.block.to_kb(2560), 2)

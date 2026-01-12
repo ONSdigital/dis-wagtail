@@ -28,18 +28,6 @@ class ImageBlock(blocks.StructBlock):
     notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
     download = blocks.BooleanBlock(required=False, label="Show download link for image")
 
-    def to_kb(self, bytes_val: int | None) -> int | None:
-        """Get file size in KB with simple rounding.
-
-        - Return None when input is None.
-        - Return 1 KB when size is 512 bytes or less.
-        - Otherwise, round to the nearest KB (Python rounding).
-        """
-        if bytes_val is None:
-            return None
-        # Ensure a minimum of 1 KB for any non-None size up to and including 512 bytes
-        return max(1, round(bytes_val / BYTES_PER_KB))
-
     def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context)
 
@@ -53,9 +41,10 @@ class ImageBlock(blocks.StructBlock):
             # Get file extension of the rendition being downloaded (uppercase, without the dot)
             _, ext = os.path.splitext(large.file.name)
             file_type = ext.lstrip(".").upper() or "IMG"
-
             context["file_type"] = file_type
-            context["file_size_kb"] = self.to_kb(getattr(large.file, "size", None))
+
+            size_bytes = getattr(large.file, "size", None)
+            context["file_size_human"] = filesizeformat(size_bytes) if size_bytes is not None else None
 
         return context
 
@@ -108,7 +97,7 @@ class DocumentBlock(blocks.StructBlock):
 
 
 class DocumentsBlock(blocks.StreamBlock):
-    """A documents 'list' StramBlock."""
+    """A documents 'list' StreamBlock."""
 
     document = DocumentBlock()
 

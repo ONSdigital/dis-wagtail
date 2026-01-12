@@ -44,7 +44,7 @@
         <div class="ons-u-mt-s">
             <h4 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Download") }} {{ value.figure_title or 'image' }}</h4>
             <a href="{{ large_src }}" download>
-                {{ file_type }}{% if file_size_kb %} ({{ file_size_kb }}KB){% endif %}
+                {{ file_type }}{% if file_size_human %} ({{ file_size_human }}){% endif %}
             </a>
         </div>
     {% endif %}
