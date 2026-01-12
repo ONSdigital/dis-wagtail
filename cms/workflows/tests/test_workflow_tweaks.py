@@ -70,8 +70,14 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.edit_url)
         self.assertContains(response, 'name="action-cancel-workflow"')
 
-        # add to bundle, ready to publish
-        BundlePageFactory(parent__status=BundleStatus.APPROVED, page=self.page)
+        # add to bundle
+        BundlePageFactory(parent=self.bundle, page=self.page)
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, 'name="action-cancel-workflow"')
+
+        # mark the bundle as ready to publish
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
 
         response = self.client.get(self.edit_url)
         self.assertNotContains(response, 'name="action-cancel-workflow"')
@@ -133,12 +139,12 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         self.assertFalse(review_task.user_can_unlock(self.page, self.publishing_officer))
         self.assertFalse(ready_to_publish_task.user_can_unlock(self.page, self.publishing_officer))
 
-    def test_workflow_task_ready_to_publish_not_locked_for_user(self):
+    def test_workflow_task_ready_to_publish_locked_for_user(self):
         workflow_state = mark_page_as_ready_to_publish(self.page)
         task: ReadyToPublishGroupTask = workflow_state.current_task_state.task
 
-        self.assertFalse(task.locked_for_user(self.page, self.publishing_officer))
-        self.assertFalse(task.locked_for_user(self.page, self.publishing_officer))
+        self.assertTrue(task.locked_for_user(self.page, self.publishing_admin))
+        self.assertTrue(task.locked_for_user(self.page, self.publishing_officer))
 
     def test_workflow_task_ready_to_publish_locked_for_user_when_page_in_bundle_ready_to_be_published(self):
         workflow_state = mark_page_as_ready_to_publish(self.page)
@@ -148,7 +154,7 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
 
         task: ReadyToPublishGroupTask = workflow_state.current_task_state.task
 
-        self.assertTrue(task.locked_for_user(self.page, self.publishing_officer))
+        self.assertTrue(task.locked_for_user(self.page, self.publishing_admin))
         self.assertTrue(task.locked_for_user(self.page, self.publishing_officer))
 
     def test_get_lock(self):

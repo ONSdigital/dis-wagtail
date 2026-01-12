@@ -1,0 +1,15 @@
+{% extends "wagtailadmin/generic/base.html" %}
+{% load i18n wagtailadmin_tags %}
+
+{% block main_content %}
+    <p>This page is currently ready to be published. Are you sure you want to unlock editing for this page?</p>
+
+    <form action="{{ unlock_url }}" method="POST">
+        {% csrf_token %}
+
+        <div>
+            <button class="button" type="submit">Yes, unlock it</button>
+            <a href="{{ next_url }}" class="button button-secondary">{% trans "No, don't unlock" %}</a>
+        </div>
+    </form>
+{% endblock %}
