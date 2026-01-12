@@ -100,10 +100,12 @@ class GlossaryChooserViewset(SnippetChooserViewSet):
 
 
 class GlossaryViewSet(SnippetViewSet):
-    """A snippet viewset for Glossary."""
+    """A snippet viewset for Definitions (formerly Glossary)."""
 
     model = GlossaryTerm
     icon = "list-ul"
+    menu_label = "Definitions"
+    add_to_admin_menu = True
 
     index_view_class = GlossaryTermsIndex
     chooser_viewset_class = GlossaryChooserViewset

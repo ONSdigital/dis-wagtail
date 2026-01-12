@@ -3,7 +3,9 @@ from django.urls import reverse
 from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.core.models import GlossaryTerm
 from cms.core.tests.factories import ContactDetailsFactory, GlossaryTermFactory
+from cms.core.viewsets import GlossaryViewSet
 
 
 class TestContactDetailsChooserViewSet(WagtailTestUtils, TestCase):
@@ -96,3 +98,20 @@ class TestGlossaryTermChooserViewSet(WagtailTestUtils, TestCase):
     def test_chooser__no_results(self):
         response = self.client.get(f"{self.chooser_results_url}?q=foo")
         self.assertContains(response, 'Sorry, no snippets match "<em>foo</em>"', html=True)
+
+
+class TestGlossaryTermModelMetadata(TestCase):
+    """Test that GlossaryTerm model uses 'definition' terminology."""
+
+    def test_verbose_name_is_definition(self):
+        """Test that the model verbose_name is 'definition' instead of 'glossary term'."""
+        self.assertEqual(GlossaryTerm._meta.verbose_name, "definition")
+        self.assertEqual(GlossaryTerm._meta.verbose_name_plural, "definitions")
+
+
+class TestGlossaryViewSetMetadata(TestCase):
+    """Test that GlossaryViewSet displays 'Definitions' label in admin."""
+
+    def test_menu_label_is_definitions(self):
+        """Test that the viewset menu_label is 'Definitions' instead of 'Glossary'."""
+        self.assertEqual(GlossaryViewSet.menu_label, "Definitions")

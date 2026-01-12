@@ -56,10 +56,12 @@ msgid "View superseded version"
 msgstr "Gweld fersiwn wedi’i disodli"
 
 #: cms/core/blocks/accordion.py:47
+#: cms/jinja2/templates/components/streamfield/glossary_section_block.html:4
 msgid "Show all"
 msgstr "Dangos popeth"
 
 #: cms/core/blocks/accordion.py:48
+#: cms/jinja2/templates/components/streamfield/glossary_section_block.html:5
 msgid "Hide all"
 msgstr "Cuddio popeth"
 
@@ -190,13 +192,13 @@ msgstr "E-bost"
 msgid "Telephone"
 msgstr "Ffôn"
 
-#: cms/jinja2/templates/components/streamfield/glossary_section_block.html:4
-msgid "Show all glossary terms"
-msgstr "Dangos pob term geirfa"
+#: cms/jinja2/templates/components/streamfield/glossary_section_block.html:6
+msgid "Show all definitions"
+msgstr "Dangos pob diffiniad"
 
-#: cms/jinja2/templates/components/streamfield/glossary_section_block.html:5
-msgid "Hide all glossary terms"
-msgstr "Cuddio pob term geirfa"
+#: cms/jinja2/templates/components/streamfield/glossary_section_block.html:7
+msgid "Hide all definitions"
+msgstr "Cuddio pob diffiniad"
 
 #: cms/jinja2/templates/components/streamfield/release_date_change_block.html:2
 msgid "Previous date"

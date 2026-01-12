@@ -73,7 +73,7 @@ class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
 
 
 class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Indexed, models.Model):
-    """A model for glossary terms."""
+    """A model for definitions (formerly glossary terms)."""
 
     name = models.CharField(max_length=255)
     definition = RichTextField(features=settings.RICH_TEXT_BASIC)
@@ -102,6 +102,8 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
     ]
 
     class Meta:
+        verbose_name = "definition"
+        verbose_name_plural = "definitions"
         unique_together: ClassVar[list[tuple[str, ...]]] = [*TranslatableMixin.Meta.unique_together, ("name", "locale")]
 
     @property

@@ -612,6 +612,19 @@ class GlossaryTermBlockTestCase(TestCase):
             ],
         )
 
+    def test_glossary_term_block__render_uses_definitions_terminology(self):
+        """Test that the rendered block uses 'definitions' terminology for accessibility."""
+        term = GlossaryTermFactory()
+        block = GlossaryTermsBlock()
+
+        value = block.to_python([term.pk])
+        rendered = block.render(value)
+
+        # Verify aria-labels use 'definitions' not 'glossary'
+        self.assertIn('data-open-aria-label="Show all definitions"', rendered)
+        self.assertIn('data-close-aria-label="Hide all definitions"', rendered)
+        self.assertNotIn("glossary", rendered.lower())
+
 
 class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
     @classmethod

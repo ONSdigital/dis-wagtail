@@ -1,8 +1,10 @@
 {% from "components/accordion/_macro.njk" import onsAccordion %}
 
 {#- We set variables for text so that it gets picked up by makemessages -#}
-{%- set show_all_label = _("Show all glossary terms") -%}
-{%- set hide_all_label = _("Hide all glossary terms") -%}
+{%- set show_all_label = _("Show all") -%}
+{%- set hide_all_label = _("Hide all") -%}
+{%- set show_all_aria_label = _("Show all definitions") -%}
+{%- set hide_all_aria_label = _("Hide all definitions") -%}
 
 {# fmt:off #}
 {{-
@@ -10,7 +12,9 @@
         "id": "accordion-" ~ block_id,
         "allButton": {
             "open": show_all_label,
-            "close": hide_all_label
+            "close": hide_all_label,
+            "openAriaLabel": show_all_aria_label,
+            "closeAriaLabel": hide_all_aria_label
         },
         "itemsList": formatted_glossary_terms,
     })
