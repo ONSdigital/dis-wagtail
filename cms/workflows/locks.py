@@ -5,6 +5,7 @@ from django.utils.html import format_html
 from wagtail.locks import WorkflowLock
 
 from cms.bundles.permissions import user_can_manage_bundles
+from cms.bundles.utils import in_bundle_ready_to_be_published
 
 if TYPE_CHECKING:
     from django.utils.safestring import SafeString
@@ -13,15 +14,38 @@ if TYPE_CHECKING:
 
 
 class PageReadyToBePublishedLock(WorkflowLock):
-    """A lock that is enabled when the page is in a bundle that is ready to be published."""
+    """A page workflow lock.
 
-    def for_user(self, user: User) -> bool:
-        return (
-            getattr(self.object, "active_bundle", None) is not None
-            and self.object.active_bundle.is_ready_to_be_published
-        )
+    It comes in effect when the page enters the "Ready to be published" workflow step.
+    The page can be "unlocked" by moving back to the previous workflow step.
+    If the page bundle that is ready to be published, the bundle must be taken out of "Ready to be published" first.
+    """
 
     def get_message(self, user: User) -> str | SafeString:
+        """The lock message displayed at the top of the page."""
+        if in_bundle_ready_to_be_published(self.object):
+            return self.get_in_bundle_message(user)
+
+        if self.for_user(user):
+            return format_html(
+                "This page cannot be edited as it is <strong>{status}</strong>.", status="Ready to be published"
+            )
+
+        return ""
+
+    def get_description(self, user: User, _can_lock: bool = False) -> str | SafeString:
+        """Displayed in the sidebar info panel."""
+        if not self.for_user(user):
+            return ""
+
+        if in_bundle_ready_to_be_published(self.object):
+            return self.get_in_bundle_description(user)
+
+        return format_html(
+            "This page cannot be edited as it is <strong>{status}</strong>.", status="Ready to be published"
+        )
+
+    def get_in_bundle_message(self, user: User) -> str | SafeString:
         if user_can_manage_bundles(user):
             return format_html(
                 "This page is included in a bundle that is ready to be published. You must revert the bundle "
@@ -35,8 +59,7 @@ class PageReadyToBePublishedLock(WorkflowLock):
             bundle_title=self.object.active_bundle.name,
         )
 
-    def get_description(self, user: User, can_lock: bool = False) -> SafeString:
-        """Displayed in the sidebar info panel."""
+    def get_in_bundle_description(self, user: User) -> SafeString:
         if user_can_manage_bundles(user):
             message = (
                 'You must revert the bundle "<a href="{url}">{bundle_title}</a>" to <strong>Draft</strong> or '

@@ -13,6 +13,8 @@ from cms.bundles.utils import (
     get_data_admin_action_url,
     get_dataset_preview_key,
     get_pages_in_active_bundles,
+    in_active_bundle,
+    in_bundle_ready_to_be_published,
 )
 from cms.methodology.models import MethodologyPage
 from cms.release_calendar.models import ReleaseCalendarPage
@@ -21,6 +23,18 @@ from cms.topics.models import TopicPage
 
 
 class BundlesUtilsTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.bundle = BundleFactory()
+        cls.published_bundle = BundleFactory(published=True)
+
+        cls.page_in_active_bundle = StatisticalArticlePageFactory()
+        cls.page_in_published_bundle = StatisticalArticlePageFactory(parent=cls.page_in_active_bundle.get_parent())
+        cls.page_not_in_bundle = StatisticalArticlePageFactory(parent=cls.page_in_active_bundle.get_parent())
+
+        BundlePageFactory(parent=cls.bundle, page=cls.page_in_active_bundle)
+        BundlePageFactory(parent=cls.published_bundle, page=cls.page_in_published_bundle)
+
     def test_get_bundleable_page_types(self):
         page_types = get_bundleable_page_types()
         page_types.sort(key=lambda x: x.__name__)
@@ -37,19 +51,21 @@ class BundlesUtilsTestCase(TestCase):
         )
 
     def test_get_pages_in_active_bundles(self):
-        self.assertListEqual(get_pages_in_active_bundles(), [])
+        self.assertEqual(get_pages_in_active_bundles(), [self.page_in_active_bundle.pk])
 
-        bundle = BundleFactory()
-        published_bundle = BundleFactory(published=True)
+    def test_in_active_bundle(self):
+        self.assertTrue(in_active_bundle(self.page_in_active_bundle))
+        self.assertFalse(in_active_bundle(self.page_in_published_bundle))
+        self.assertFalse(in_active_bundle(self.page_not_in_bundle))
 
-        page_in_active_bundle = StatisticalArticlePageFactory()
-        page_in_published_bundle = StatisticalArticlePageFactory(parent=page_in_active_bundle.get_parent())
-        _page_not_in_bundle = StatisticalArticlePageFactory(parent=page_in_active_bundle.get_parent())
+    def test_in_bundle_ready_to_be_published(self):
+        self.assertFalse(in_bundle_ready_to_be_published(self.page_in_active_bundle))
+        self.assertFalse(in_bundle_ready_to_be_published(self.page_in_published_bundle))
+        self.assertFalse(in_bundle_ready_to_be_published(self.page_not_in_bundle))
 
-        BundlePageFactory(parent=bundle, page=page_in_active_bundle)
-        BundlePageFactory(parent=published_bundle, page=page_in_published_bundle)
-
-        self.assertListEqual(get_pages_in_active_bundles(), [page_in_active_bundle.pk])
+        page = StatisticalArticlePageFactory(parent=self.page_in_active_bundle.get_parent())
+        BundlePageFactory(parent=BundleFactory(approved=True), page=page)
+        self.assertTrue(in_bundle_ready_to_be_published(page))
 
 
 class DatasetGetDataAdminActionUrlTests(TestCase):
