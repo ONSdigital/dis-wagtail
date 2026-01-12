@@ -224,8 +224,8 @@ class TopicPageTests(WagtailPageTestCase):
         )
 
     def test_topic_page_displays_with_broken_headline_figure_ids(self):
-        """Test that the topic page renders correctly even when it has headline figures with IDs not present in the
-        latest article.
+        """Test that the topic page renders without headline figures, when it has broken headline figures which are not
+        present on the latest article in their series.
         """
         # Given
         # The topic page has headline figures with IDs that do not exist in the statistical article.
@@ -255,11 +255,13 @@ class TopicPageTests(WagtailPageTestCase):
         # Then
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, self.page.title)
-        self.assertContains(response, "Error retrieving figure")
+        self.assertNotContains(response, "Headline facts and figures")
+        self.assertNotContains(response, "broken1")
+        self.assertNotContains(response, "broken2")
 
     def test_topic_page_displays_with_broken_headline_figures_missing_series(self):
-        """Test that the topic page renders correctly even when it has headline figures with a series that no longer
-        exists.
+        """Test that the topic page renders without showing headline figures when it has headline figures from a series
+        that no longer exists.
         """
         # Given
         self.page.headline_figures.extend(
@@ -291,11 +293,11 @@ class TopicPageTests(WagtailPageTestCase):
         # Then
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, self.page.title)
-        self.assertContains(response, "Error retrieving figure")
+        self.assertNotContains(response, "Headline facts and figures")
 
     def test_topic_page_displays_with_broken_headline_figures_missing_article(self):
-        """Test that the topic page renders correctly even when it has headline figures with a series that no longer
-        exists.
+        """Test that the topic page renders renders without showing headline figures when it has headline figures from
+        an article that no longer exists.
         """
         # Given
         self.page.headline_figures.extend(
@@ -327,4 +329,4 @@ class TopicPageTests(WagtailPageTestCase):
         # Then
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, self.page.title)
-        self.assertContains(response, "Error retrieving figure")
+        self.assertNotContains(response, "Headline facts and figures")

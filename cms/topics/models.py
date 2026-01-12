@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
@@ -42,6 +43,8 @@ if TYPE_CHECKING:
     from cms.users.models import User
 
 MAX_ITEMS_PER_SECTION = 3
+
+logger = logging.getLogger(__name__)
 
 
 class TopicPageRelatedArticle(Orderable):
@@ -343,3 +346,18 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             self.topic,  # type: ignore[arg-type]
             "topicspecificmethodology",
         )
+
+    def has_broken_headline_figures(self) -> bool:
+        """Checks if values can be retrieved for all headline figures at this moment in time.
+        Returns True if figure values are found for all headline figures on this page, otherwise False, indicating one
+        or more headlines figures on this page are broken for the current latest articles in their respective series.
+        """
+        broken_figures = []
+        for headline_figure in self.headline_figures:
+            current_figure_values = TopicHeadlineFigureBlock.get_current_figure_data(headline_figure.value)
+            if not current_figure_values.get("figure"):
+                broken_figures.append(headline_figure.value.get("figure_id"))
+        logger.error(
+            "Topic page has broken headline figures", extra={"topic_page_id": self.id, "figure_ids": broken_figures}
+        )
+        return bool(broken_figures)

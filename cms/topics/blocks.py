@@ -151,18 +151,22 @@ class TopicHeadlineFigureBlock(StructBlock):
 
     def get_context(self, value: "StructValue", parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context=parent_context)
+        context["figure"] = self.get_current_figure_data(value)
 
-        # Always set at least the figure ID, in case we can't find the full figure details
-        # This ensures we can always render the block including the ID, even in error scenarios.
-        context["figure"] = {"figure_id": value["figure_id"]}
+        return context
+
+    @classmethod
+    def get_current_figure_data(cls, value: "StructValue") -> dict:
+        """Returns the current figure data for the given block value."""
+        figure_data = {"figure_id": value["figure_id"]}
 
         if series_page := value["series"]:
             latest_article: StatisticalArticlePage | None = series_page.get_latest()
 
             if latest_article and (figure := latest_article.get_headline_figure(value["figure_id"])):
-                figure["url"] = latest_article.get_url(request=context.get("request")) or ""
-                context["figure"] = figure
-        return context
+                figure_data.update(figure)
+
+        return figure_data
 
     class Meta:
         icon = "pick"

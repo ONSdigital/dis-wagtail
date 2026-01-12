@@ -35,7 +35,7 @@ def before_create_page(
 @hooks.register("before_delete_page")
 def before_delete_page(request: "HttpRequest", page: "Page") -> HttpResponseRedirect | None:
     if request.method == "POST":
-        if page.specific_class == StatisticalArticlePage and page.specific.figures_used_by_ancestor_with_no_fallback:
+        if page.specific_class is StatisticalArticlePage and page.specific.figures_used_by_ancestor_with_no_fallback:
             messages.warning(
                 request,
                 "This page cannot be deleted because it contains headline figures that are referenced elsewhere.",
@@ -44,7 +44,7 @@ def before_delete_page(request: "HttpRequest", page: "Page") -> HttpResponseRedi
             # See: https://docs.wagtail.org/en/latest/reference/hooks.html#before-delete-page
             return redirect("wagtailadmin_pages:delete", page.pk)
         if (
-            page.specific_class == ArticleSeriesPage
+            page.specific_class is ArticleSeriesPage
             and (latest := page.get_latest())
             and latest.figures_used_by_ancestor
         ):
@@ -61,7 +61,7 @@ def before_delete_page(request: "HttpRequest", page: "Page") -> HttpResponseRedi
 @hooks.register("before_unpublish_page")
 def before_unpublish_page(request: "HttpRequest", page: "Page") -> HttpResponseRedirect | None:
     if request.method == "POST":
-        if page.specific_class == StatisticalArticlePage and page.specific.figures_used_by_ancestor_with_no_fallback:
+        if page.specific_class is StatisticalArticlePage and page.specific.figures_used_by_ancestor_with_no_fallback:
             messages.warning(
                 request,
                 "This page cannot be unpublished because it contains headline figures that are referenced elsewhere.",
@@ -70,7 +70,7 @@ def before_unpublish_page(request: "HttpRequest", page: "Page") -> HttpResponseR
             # See: https://docs.wagtail.org/en/latest/reference/hooks.html#before-delete-page
             return redirect("wagtailadmin_pages:unpublish", page.pk)
         if (
-            page.specific_class == ArticleSeriesPage
+            page.specific_class is ArticleSeriesPage
             and (latest := page.get_latest())
             and latest.figures_used_by_ancestor
         ):
