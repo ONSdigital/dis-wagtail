@@ -166,7 +166,8 @@ class TopicHeadlineFigureBlock(StructBlock):
     def get_latest_article_for_figure(cls, value: "StructValue") -> "StatisticalArticlePage | None":
         """Returns the latest article in the given figures series."""
         if series_page := value["series"]:
-            return series_page.get_latest()
+            latest_article: StatisticalArticlePage | None = series_page.get_latest()
+            return latest_article
         return None
 
     class Meta:
