@@ -10,6 +10,7 @@ from treebeard.mp_tree import MP_Node
 from wagtail.models import Site
 from wagtail_factories import ImageFactory
 
+from cms.datasets.tests.factories import DatasetFactory
 from cms.taxonomy.models import Topic
 from cms.taxonomy.tests.factories import SimpleTopicFactory
 from cms.topics.tests.factories import TopicPageFactory
@@ -84,6 +85,8 @@ class Command(BaseCommand):
 
         image = ImageFactory(title=title_factory)
 
+        dataset = DatasetFactory(title=title_factory)
+
         for _ in range(options["topics"]):
             topic = self.create_node_for_factory(
                 SimpleTopicFactory, parent=root_topic, get_or_create_args=["id"], title=title_factory
@@ -95,6 +98,8 @@ class Command(BaseCommand):
                 get_or_create_args=["title"],
                 title=title_factory,
                 topic=topic,
+                datasets__0__dataset_lookup__dataset=dataset,
+                datasets__1="manual_link",
                 explore_more__0__internal_link__page=root_page,
                 explore_more__0__internal_link__thumbnail__image=image,
                 explore_more__1__external_link__thumbnail__image=image,

@@ -1,6 +1,7 @@
 import factory
 import wagtail_factories
 
+from cms.datasets.tests.factories import DatasetStoryBlockFactory
 from cms.home.models import HomePage
 from cms.taxonomy.tests.factories import TopicFactory
 from cms.topics.blocks import ExploreMoreExternalLinkBlock, ExploreMoreInternalLinkBlock, ExploreMoreStoryBlock
@@ -45,6 +46,7 @@ class TopicPageFactory(wagtail_factories.PageFactory):
     title = factory.Faker("sentence", nb_words=4)
     summary = factory.Faker("text", max_nb_chars=100)
     topic = factory.SubFactory(TopicFactory)
+    datasets = wagtail_factories.StreamFieldFactory(DatasetStoryBlockFactory)
     explore_more = wagtail_factories.StreamFieldFactory(ExploreMoreStoryBlockFactory)
 
 
