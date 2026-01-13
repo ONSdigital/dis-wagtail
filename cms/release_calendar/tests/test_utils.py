@@ -3,6 +3,7 @@ from datetime import date
 from django.test import TestCase, override_settings
 from django.utils.translation import gettext
 
+from cms.core.tests.utils import TranslationResetMixin
 from cms.release_calendar.utils import get_translated_string, parse_month_year
 
 
@@ -29,7 +30,7 @@ class ParseMonthYearTestCase(TestCase):
                 self.assertEqual(parse_month_year(text, locale), parse_result)
 
 
-class GetTranslatedStringTestCase(TestCase):
+class GetTranslatedStringTestCase(TranslationResetMixin, TestCase):
     def test_get_translated_string_with_english(self):
         """Test translation to English language."""
         test_string = "Hello"

@@ -3,7 +3,7 @@
 
 {% block header_area %}
     {%- set hero_topic = _("Release") -%}
-    {%- set release_date_label = _("Release date:") -%}
+    {%- set provisional_release_date_label = _("Provisional release date:") -%}
 
     {# fmt:off #}
     {{
@@ -27,7 +27,7 @@
                 "termCol": "6",
                 "descriptionCol": "6",
                 "itemsList": [{
-                    "term": release_date_label,
+                    "term": provisional_release_date_label,
                     "descriptions": [{"description":  page.release_date_value}]
                 }]
             }
