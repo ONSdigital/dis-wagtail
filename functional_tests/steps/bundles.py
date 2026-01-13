@@ -11,7 +11,7 @@ from playwright.sync_api import expect
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
-from cms.bundles.models import BundlePage, BundleTeam
+from cms.bundles.models import BundleTeam, BundlePage
 from cms.bundles.tests.factories import BundleFactory
 from cms.core.custom_date_format import ons_date_format
 from cms.release_calendar.enums import ReleaseStatus
@@ -50,7 +50,7 @@ def the_viewer_is_in_the_preview_team(context: Context) -> None:
     user.teams.add(context.team)
 
 
-@step("the user goes to the bundle creation page")
+@step("the user navigates to the bundle creation page")
 def the_user_goes_to_the_bundle_creation_page(context: Context) -> None:
     context.page.goto(context.base_url + "/admin/bundle/new/")
 
@@ -170,6 +170,7 @@ def bundle_inspect_show(context: Context) -> None:
 
 
 # To test release calendar page panel
+@given("a release calendar page with a future release date exists")
 @given('a release calendar page with a "{status}" status and future release date exists')
 def release_calendar_page_with_status_and_future_date_exists(context: Context, status: str = "Provisional") -> None:
     context.release_calendar_page = ReleaseCalendarPageFactory(
@@ -292,6 +293,38 @@ def user_sees_updated_release_calendar_page_title_release_date_status(context: C
     expect(
         context.page.get_by_text(f"{context.original_title} ({context.original_status}, {context.original_date})")
     ).not_to_be_visible()
+
+
+@step('the user tries to set the release calendar page status to "Cancelled"')
+def user_tries_to_set_release_calendar_page_status_to_cancelled(context: Context) -> None:
+    """Navigate to the release calendar page edit view and attempt to set status to Cancelled."""
+    context.page.get_by_role("region", name="Scheduling").get_by_label("Actions").click()
+    with context.page.expect_popup() as edit_release_calendar_page:
+        context.page.get_by_role("link", name="Edit Release Calendar page").click()
+    # Close original bundles edit view
+    context.page.close()
+    # Assign context to new release calendar page edit view
+    context.page = edit_release_calendar_page.value
+
+    # Fill in the notice field (required for cancellation)
+    context.page.locator("#panel-child-content-metadata-content div").filter(
+        has_text="Cancellation notice Used for"
+    ).get_by_role("textbox").fill("Cancellation notice")
+
+    # Set status to Cancelled
+    context.page.get_by_label("Status*").select_option("CANCELLED")
+
+    # Attempt to save the draft
+    context.page.get_by_role("button", name="Save draft").click()
+
+
+@then("the user sees a validation error preventing the cancellation because the page is in a bundle")
+def user_sees_validation_error_preventing_cancellation(context: Context) -> None:
+    """Verify that a validation error is shown preventing cancellation due to bundle membership."""
+    expect(context.page.get_by_text("The page could not be saved due to validation errors")).to_be_visible()
+    expect(
+        context.page.get_by_text("Please unlink the release calendar page from the bundle before cancelling")
+    ).to_be_visible()
 
 
 # Bundles UI Data Setup

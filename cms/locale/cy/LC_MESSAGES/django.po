@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-10 15:58+0000\n"
+"POT-Creation-Date: 2026-01-05 14:11+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,39 +19,39 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
 "11) ? 2 : 3;\n"
 
-#: cms/articles/models.py:183 cms/core/enums.py:8
+#: cms/articles/models.py:201 cms/core/enums.py:8
 #: cms/core/formatting_utils.py:44
 msgid "Article"
 msgstr "Erthygl"
 
-#: cms/articles/models.py:415
+#: cms/articles/models.py:463
 msgid "Cite this article"
 msgstr "Dyfynnwch yr erthygl hon"
 
-#: cms/articles/models.py:417
+#: cms/articles/models.py:465
 #: cms/jinja2/templates/components/contact_details/contact_details.html:6
 #: cms/methodology/models.py:190 cms/release_calendar/models.py:246
 msgid "Contact details"
 msgstr "Manylion cyswllt"
 
-#: cms/articles/models.py:454
+#: cms/articles/models.py:502
 #, python-format
 msgid "All data related to %(article_title)s"
 msgstr "Yr holl ddata sy'n gysylltiedig â %(article_title)s"
 
-#: cms/articles/models.py:513
+#: cms/articles/models.py:561
 msgid "Release date"
 msgstr "Dyddiad y datganiad"
 
-#: cms/articles/utils.py:24
+#: cms/articles/utils.py:27
 msgid "Correction"
 msgstr "Cywiriad"
 
-#: cms/articles/utils.py:24
+#: cms/articles/utils.py:27
 msgid "Notice"
 msgstr "Hysbysiad"
 
-#: cms/articles/utils.py:34
+#: cms/articles/utils.py:37
 msgid "View superseded version"
 msgstr "Gweld fersiwn wedi’i disodli"
 
@@ -93,11 +93,11 @@ msgstr "Tudalen"
 msgid "Released"
 msgstr "Rhyddhawyd"
 
-#: cms/core/models/base.py:157
+#: cms/core/models/base.py:164
 msgid "Home"
 msgstr "Cartref"
 
-#: cms/datavis/blocks/base.py:310
+#: cms/datavis/blocks/base.py:418
 #: cms/jinja2/templates/components/streamfield/table_block.html:12
 msgid "Footnotes"
 msgstr "Troednodiadau"
@@ -457,7 +457,6 @@ msgstr "Rhyddhau"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:7
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:6
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:6
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:12
 #: cms/jinja2/templates/pages/statistical_article_page.html:13
 #: cms/jinja2/templates/pages/statistical_article_page.html:19
@@ -479,6 +478,10 @@ msgstr "Newidiadau i’r dyddiad rhyddhau hwn"
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:41
 msgid "This release is not yet published"
 msgstr "Nid yw’r datganiad hwn wedi’i gyhoeddi eto"
+
+#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--provisional.html:6
+msgid "Provisional release date:"
+msgstr ""
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:13
 msgid "Next release date:"
@@ -504,9 +507,9 @@ msgid ""
 msgstr ""
 "Mae’r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnolgan y "
 "Swyddfa Rheoleiddio Ystadegau (OSR) ac a ganfuwyd ei fod yn cydymffurfio "
-"gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://code."
-"statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</a>. "
-"Mae hyn yn golygu yn fras bod yr ystadegau:"
+"gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://"
+"code.statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</"
+"a>. Mae hyn yn golygu yn fras bod yr ystadegau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:138
 msgid "meet user needs"
@@ -681,7 +684,7 @@ msgid "View all related time series"
 msgstr ""
 
 #: cms/jinja2/templates/pages/topic_page.html:148 cms/topics/models.py:263
-#: cms/topics/tests/test_models.py:545 cms/topics/tests/test_models.py:549
+#: cms/topics/tests/test_models.py:544 cms/topics/tests/test_models.py:548
 msgid "Explore more"
 msgstr "Archwilio mwy"
 
