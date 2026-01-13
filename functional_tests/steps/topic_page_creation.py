@@ -8,8 +8,7 @@ from playwright.sync_api import expect
 @when("the user fills in the topic page title")
 def user_fills_in_topic_page_title(context: Context) -> None:
     """Fill in only the title field of the topic page."""
-    context.page_title = "Test Title"
-    context.page.get_by_role("textbox", name="Title*").fill(context.page_title)
+    context.page.get_by_role("textbox", name="Title*").fill("Test Title")
 
 
 @when("the user fills in the topic page summary")
