@@ -15,9 +15,6 @@ if TYPE_CHECKING:
     from wagtail.blocks import StreamValue, StructValue
 
 
-BYTES_PER_KB = 1024
-
-
 class ImageBlock(blocks.StructBlock):
     """Image block with caption."""
 
