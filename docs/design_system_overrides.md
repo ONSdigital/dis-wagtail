@@ -10,9 +10,6 @@ Until the new styles needed for the beta site are ready to be used in the design
 
 ### Markup overrides
 
-In some cases it was necessary to duplicate and make changes to the nunjucks templates in the design system.
-These can be found in the `cms/jinja2/component_overrides` folder. Each component includes comments as to what has changed.
-
 The base page template (`cms/jinja2/templates/base_page.html`) has some important changes to the `pageContent` block in order to
 add the full width section for the new header areas - including relocating the `<main>` tag so that the new header area is nested inside it.
 
