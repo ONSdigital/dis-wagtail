@@ -42,6 +42,7 @@ def user_sees_validation_error(context: Context, error_message: str) -> None:
 def user_sees_validation_error_in_summary(context: Context, error_message: str) -> None:
     """Assert the validation error is visible near the summary field."""
     summary_region = context.page.get_by_role("region", name="Summary*")
+    # Go up to the parent of the summary region to find the error message
     expect(summary_region.locator("..").get_by_text(error_message)).to_be_visible()
 
 
@@ -63,12 +64,13 @@ def user_sees_draft_saved_message(context: Context) -> None:
     """Assert the draft saved message is visible."""
     # Wait for the page to process the save
     context.page.wait_for_timeout(500)
-    expect(context.page.locator(".messages .success")).to_be_visible()
+    expect(context.page.get_by_text("Page 'Test Title' created.")).to_be_visible()
 
 
 @then("the user can continue editing the page")
 def user_can_continue_editing(context: Context) -> None:
     """Assert the user can continue editing the page."""
+    # Check that the title field and save button are still visible
     expect(context.page.get_by_role("textbox", name="Title*")).to_be_visible()
     expect(context.page.get_by_role("button", name="Save draft")).to_be_visible()
 
@@ -111,5 +113,6 @@ def topic_page_preview_displays_content(context: Context) -> None:
 
     iframe_locator = context.page.frame_locator("#w-preview-iframe")
 
+    # context.topic_page is set by the "a topic page exists under the homepage" step
     expect(iframe_locator.get_by_role("heading", name=context.topic_page.title)).to_be_visible(timeout=10000)
     expect(iframe_locator.get_by_text(context.topic_page.summary)).to_be_visible()
