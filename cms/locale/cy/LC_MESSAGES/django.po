@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-05 14:11+0000\n"
+"POT-Creation-Date: 2026-01-08 17:39+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -54,6 +54,14 @@ msgstr "Hysbysiad"
 #: cms/articles/utils.py:37
 msgid "View superseded version"
 msgstr "Gweld fersiwn wedi’i disodli"
+
+#: cms/bundles/utils.py:27
+msgid "Publications"
+msgstr "Cyhoeddiadau"
+
+#: cms/bundles/utils.py:28
+msgid "Quality and methodology"
+msgstr "Ansawdd a methodoleg"
 
 #: cms/core/blocks/accordion.py:47
 msgid "Show all"
