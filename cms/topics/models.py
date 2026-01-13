@@ -352,12 +352,10 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         Returns True if figure values are found for all headline figures on this page, otherwise False, indicating one
         or more headlines figures on this page are broken for the current latest articles in their respective series.
         """
-        broken_figures = []
+        broken_figures = False
         for headline_figure in self.headline_figures:
-            current_figure_values = TopicHeadlineFigureBlock.get_current_figure_data(headline_figure.value)
-            if not current_figure_values.get("figure"):
-                broken_figures.append(headline_figure.value.get("figure_id"))
-        logger.error(
-            "Topic page has broken headline figures", extra={"topic_page_id": self.id, "figure_ids": broken_figures}
-        )
-        return bool(broken_figures)
+            figure_id = headline_figure.value.get("figure_id")
+            figure_article = TopicHeadlineFigureBlock.get_latest_article_for_figure(headline_figure.value)
+            if not figure_article or not figure_article.get_headline_figure(figure_id).get("figure"):
+                broken_figures = True
+        return broken_figures
