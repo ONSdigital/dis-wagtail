@@ -72,8 +72,10 @@ class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
         return str(self.name)
 
 
-class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Indexed, models.Model):
-    """A model for definitions (formerly glossary terms)."""
+class Definition(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Indexed, models.Model):
+    """A model for definitions."""
+
+    # Note: Definitions were formerly known as GlossaryTerms
 
     name = models.CharField(max_length=255)
     definition = RichTextField(features=settings.RICH_TEXT_BASIC)
@@ -82,10 +84,10 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="owned_glossary_terms",
+        related_name="owned_definitions",
     )
 
-    revisions = GenericRelation("wagtailcore.Revision", related_query_name="glossary_term")
+    revisions = GenericRelation("wagtailcore.Revision", related_query_name="definition")
 
     panels: ClassVar[list["Panel"]] = [
         "name",
@@ -122,7 +124,7 @@ class GlossaryTerm(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Ind
         super().save(*args, **kwargs)
 
     def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
-        return "templates/components/glossary/glossary_term_preview.html"
+        return "templates/components/definitions/definition_preview.html"
 
     def __str__(self) -> str:
         return str(self.name)

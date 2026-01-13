@@ -18,8 +18,8 @@ from cms.core.blocks import (
     RelatedContentBlock,
     RelatedLinksBlock,
 )
-from cms.core.blocks.glossary_terms import GlossaryTermsBlock
-from cms.core.tests.factories import GlossaryTermFactory
+from cms.core.blocks.definitions import DefinitionsBlock
+from cms.core.tests.factories import DefinitionFactory
 from cms.core.tests.utils import get_test_document
 from cms.home.models import HomePage
 
@@ -577,14 +577,14 @@ class CoreBlocksTestCase(TestCase):
         )
 
 
-class GlossaryTermBlockTestCase(TestCase):
-    """Test for Glossary Term block."""
+class DefinitionsBlockTestCase(TestCase):
+    """Test for Definitions block."""
 
-    def test_glossary_term_block_clean_method_removes_duplicates(self):
-        """Test that the clean method of the GlossaryTermsBlock removes duplicated instances of glossary terms."""
-        term = GlossaryTermFactory()
-        another_term = GlossaryTermFactory()
-        block = GlossaryTermsBlock()
+    def test_definitions_block_clean_method_removes_duplicates(self):
+        """Test that the clean method of the DefinitionsBlock removes duplicated instances of definitions."""
+        term = DefinitionFactory()
+        another_term = DefinitionFactory()
+        block = DefinitionsBlock()
 
         value = block.to_python([term.pk, term.pk, another_term.pk])
         clean_value = block.clean(value)
@@ -593,16 +593,16 @@ class GlossaryTermBlockTestCase(TestCase):
         self.assertEqual(clean_value[0].pk, term.pk)
         self.assertEqual(clean_value[1].pk, another_term.pk)
 
-    def test_glossary_term_block__get_context(self):
+    def test_definitions_block__get_context(self):
         """Test that get_context returns correctly formatted data to be used by the ONS Accordion component."""
-        term = GlossaryTermFactory()
-        block = GlossaryTermsBlock()
+        term = DefinitionFactory()
+        block = DefinitionsBlock()
 
         value = block.to_python([term.pk])
         context = block.get_context(value)
 
         self.assertListEqual(
-            context["formatted_glossary_terms"],
+            context["formatted_definitions"],
             [
                 {
                     "headingLevel": 3,
@@ -612,10 +612,10 @@ class GlossaryTermBlockTestCase(TestCase):
             ],
         )
 
-    def test_glossary_term_block__render_uses_definitions_terminology(self):
+    def test_definitions_block__render_uses_definitions_terminology(self):
         """Test that the rendered block uses 'definitions' terminology for accessibility."""
-        term = GlossaryTermFactory()
-        block = GlossaryTermsBlock()
+        term = DefinitionFactory()
+        block = DefinitionsBlock()
 
         value = block.to_python([term.pk])
         rendered = block.render(value)

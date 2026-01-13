@@ -2,7 +2,7 @@ from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from playwright.sync_api import expect
 
-from cms.core.models import GlossaryTerm
+from cms.core.models import Definition
 
 
 @step("the user adds another Definition snippet with the same name")
@@ -25,7 +25,7 @@ def user_fills_in_definition_details(context: Context) -> None:
 
 @given("a Definition snippet exists")
 def a_definition_snippet_exists(context: Context) -> None:
-    context.glossary_term = GlossaryTerm.objects.create(name="Term", definition="Definition")
+    context.definition = Definition.objects.create(name="Term", definition="Definition")
 
 
 @then("a validation error is displayed")
