@@ -7,7 +7,7 @@ class CustomImageForm(BaseImageForm):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         if "description" in self.fields:
-            self.fields["description"].label = "Alternative Text"
+            self.fields["description"].label = "Alternative text"
             self.fields["description"].required = True
             self.fields[
                 "title"

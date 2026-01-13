@@ -11,7 +11,7 @@ class CustomImageFormTests(TestCase):
         form = form_class()
 
         self.assertIn("description", form.fields)
-        self.assertEqual(form.fields["description"].label, "Alternative Text")
+        self.assertEqual(form.fields["description"].label, "Alternative text")
         self.assertTrue(form.fields["description"].required)
 
         self.assertIn("title", form.fields)
