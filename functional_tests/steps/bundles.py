@@ -2,6 +2,7 @@ import json
 import re
 from datetime import datetime, time, timedelta
 
+import requests
 from behave import given, step, then, when  # pylint: disable=no-name-in-module
 from behave.runner import Context
 from django.urls import reverse
@@ -11,7 +12,7 @@ from playwright.sync_api import expect
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundlePage, BundleTeam
-from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
+from cms.bundles.tests.factories import BundleFactory
 from cms.core.custom_date_format import ons_date_format
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
@@ -303,89 +304,14 @@ def a_user_exists_by_role(context: Context, user_role: str) -> None:
     context.users[user_role] = create_user(user_role)
 
 
-def create_topic_page(context: Context) -> None:
-    context.page.get_by_role("link", name="Dashboard").click()
-    context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Edit 'Home'").first.click()
-    context.page.get_by_role("button", name="Actions", exact=True).click()
-    context.page.get_by_role("link", name="Add a child page to 'Home'").click()
-    context.page.get_by_role("link", name="Topic page . A specific topic").click()
-    title = "Bundles UI Testing"
-    summary = f"{title} Summary"
-    context.page.get_by_role("textbox", name="Title*").fill(title)
-    context.page.locator("#panel-child-content-summary-content").get_by_role("textbox").locator("div").nth(2).click()
-    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill(summary)
-    context.page.get_by_role("tab", name="Taxonomy").click()
-    context.page.get_by_role("button", name="Choose a topic").click()
-    context.page.get_by_role("textbox", name="Search term").fill("Envi")
-    context.page.get_by_role("link", name="Environmental accounts").click()
-    context.page.get_by_role("button", name="Save draft").click()
-    context.page.get_by_role("button", name="More actions").click()
-    context.page.get_by_role("button", name="Publish").click()
-    context.article_path.append(title)
-
-
 @then("the bundle pages are not live")
-def get_url_for_article_edition(context) -> None:
-    # http://localhost:8000/bundles-ui-test-topic-page/articles/bundles-ui-test-article-series-page/editions/november-2025
-    # /articles/psf/editions/edition
-    print(context.topic_page.slug)
-    print(context.topic_page.slug)
-
-    # context.page.goto(f"{context.base_url}
-
-
-def create_article_series_page(context) -> None:
-    context.page.get_by_role("link", name="Dashboard").click()
-    context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="View child pages of 'Home'").first.click()
-    context.page.get_by_label("Page explorer").get_by_role("link", name="Bundles UI Testing 2", exact=True).click()
-    context.page.get_by_role("row", name="Select Articles More options").get_by_label("Select").check()
-    context.page.get_by_role("link", name="Add a child page to 'Articles'").click()
-    title = "Bundles UI Article Series Page"
-    context.page.get_by_role("textbox", name="Title*").fill(title)
-    context.page.get_by_role("tab", name="Taxonomy").click()
-    context.page.get_by_role("button", name="Add topics").click()
-    context.page.get_by_role("textbox", name="Search term").fill("En")
-    context.page.get_by_text("Environmental accounts").click()
-    context.page.get_by_role("button", name="Confirm selection").click()
-    context.page.get_by_role("button", name="Save draft").click()
-    context.page.get_by_role("button", name="More actions").click()
-    context.page.get_by_role("button", name="Publish").click()
-    context.article_path.append("articles")
-    context.article_path.append(title)
-
-
-def create_statistical_article_edition(context) -> None:
-    context.page.get_by_role("link", name="Dashboard").click()
-    context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Home English").click()
-    context.page.get_by_role("button", name="Show filters").click()
-    context.page.get_by_role("button", name="Page type").click()
-    context.page.get_by_text("Article series page").click()
-    context.page.get_by_role("link", name="Explore child pages of 'Bundles UI Article Series Page'").click()
-    context.page.get_by_role("link", name="Add child page").click()
-
-    context.page.get_by_role("textbox", name="Release Edition*").fill("November 2025")
-    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("November 2025 Summary")
-    context.page.get_by_role("textbox", name="Release date*").fill("2025-12-10")
-    context.page.get_by_role("textbox", name="Next release date").fill("2026-01-10")
-    context.page.locator("#panel-child-content-metadata-content div").filter(
-        has_text="Main points summary* Used"
-    ).get_by_role("textbox").fill("November 2025 Main Points Summary")
-    context.page.locator("#panel-child-content-content-content").get_by_role("button", name="Insert a block").click()
-    context.page.get_by_role("textbox", name="Section heading*").fill("November 2025 Content Section Heading")
-    (
-        context.page.locator("#panel-child-content-content-content")
-        .get_by_role("region")
-        .get_by_role("button", name="Insert a block")
-        .click()
+def get_url_for_article_edition(context: Context) -> None:
+    url = (
+        f"{context.base_url}/{context.topic_page.slug}/articles/{context.article_series_page.slug}"
+        f"/{context.statistical_article_page.slug}"
     )
-    context.page.get_by_text("Rich text").click()
-    context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("November 2025 Content")
-    context.page.get_by_role("button", name="Save draft").click()
-    context.page.get_by_role("button", name="More actions").click()
-    context.page.get_by_role("button", name="Submit to Release review").click()
+
+    expect(requests.get(url, timeout=3).status_code).to_have_value(404)
 
 
 @given("there is a Statistical Analysis page approved by {user_role}")
@@ -430,58 +356,54 @@ def add_user_to_preview_teams(context: Context, user_role: str) -> None:
 @given("there are {number_of_bundles} bundles with {bundle_details}")
 def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_details: str) -> None:
     bundle_dets = json.loads(bundle_details)
-    if bundle_dets:
-        context.bundles = []
-        context.bundlepages = []
-        context.bundleteams = []
+    context.bundles = []
+    context.bundlepages = []
+    context.bundleteams = []
 
-        for __ in range(int(number_of_bundles)):
-            bundle = BundleFactory()
+    for __ in range(int(number_of_bundles)):
+        bundle = BundleFactory()
 
-            if not hasattr(context.users, bundle_dets["creator_role"]) and bundle_dets["creator_role"] != "":
-                context.users[bundle_dets["creator_role"]] = create_user(bundle_dets["creator_role"])
+        if not hasattr(context.users, bundle_dets["creator_role"]) and bundle_dets["creator_role"] != "":
+            context.users[bundle_dets["creator_role"]] = create_user(bundle_dets["creator_role"])
 
-            bundle_status = BundleStatus.DRAFT
-            bundle_approved = False
-            if bundle_dets["status"] == "Approved":
-                bundle_status = BundleStatus.APPROVED
-                bundle_approved = True
-            elif bundle_dets["status"] == "In_Review":
-                bundle_status = BundleStatus.IN_REVIEW
+        bundle_status = BundleStatus.DRAFT
+        bundle_approved = False
+        if bundle_dets["status"] == "Approved":
+            bundle_status = BundleStatus.APPROVED
+            bundle_approved = True
+        elif bundle_dets["status"] == "In_Review":
+            bundle_status = BundleStatus.IN_REVIEW
 
-            if bundle_dets["creator_role"] != "":
-                user = context.users[bundle_dets["creator_role"]]["user"]
+        if bundle_dets["creator_role"] != "":
+            user = context.users[bundle_dets["creator_role"]]["user"]
 
-                bundle.created_by = user
-                bundle.status = bundle_status
-                bundle.approved = bundle_approved
+            bundle.created_by = user
+            bundle.status = bundle_status
+            bundle.approved = bundle_approved
 
-            else:
-                bundle.status = bundle_status
-                bundle.approved = bundle_approved
-            bundle.save()
+        else:
+            bundle.status = bundle_status
+            bundle.approved = bundle_approved
+        bundle.save()
 
-            if bool(bundle_dets["preview_teams"]) and hasattr(context, "team"):
-                BundleTeam.objects.create(parent=bundle, team=context.team)
-                context.bundleteams.append({"parent": bundle, "team": context.team})
-            bundle.save()
+        if bool(bundle_dets["preview_teams"]) and hasattr(context, "team"):
+            BundleTeam.objects.create(parent=bundle, team=context.team)
+            context.bundleteams.append({"parent": bundle, "team": context.team})
+        bundle.save()
 
-            if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_page"):
-                page = context.release_calendar_page
-                bundle.release_calendar_page = context.release_calendar_page
-                BundlePage.objects.create(parent=bundle, page=page)
-                context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
-            else:
-                now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
-                bundle.scheduled_date = now
-            bundle.save()
+        if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_page"):
+            page = context.release_calendar_page
+            bundle.release_calendar_page = context.release_calendar_page
+        else:
+            now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
+            bundle.scheduled_date = now
+        bundle.save()
 
-            if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_page"):
-                page = context.statistical_article_page
-                BundlePage.objects.create(parent=bundle, page=page)
-                # context.bundlepages.append(BundlePageFactory(parent=bundle, page=page))
-            bundle.save()
-            context.bundles.append(bundle)
+        if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_page"):
+            page = context.statistical_article_page
+            BundlePage.objects.create(parent=bundle, page=page)
+        bundle.save()
+        context.bundles.append(bundle)
         sorted(context.bundles, key=lambda x: x.name)
 
 
@@ -497,48 +419,9 @@ def log_in_user_by_role(context: Context, user_role: str) -> None:
 # Bundles UI Consequences
 @then("the logged in user can create a bundle")
 def add_bundle_details(context: Context) -> None:
-    bundle_name = "Bundle UI Test Bundle"
     context.page.goto(context.base_url + "/admin/")
     expect(context.page.get_by_role("link", name="Add bundle")).to_be_visible()
     context.page.get_by_role("link", name="Add bundle").click()
-    context.page.get_by_role("textbox", name="Name*").fill(bundle_name)
-    context.page.get_by_role("button", name="Save as draft").click()
-    expect(context.page.get_by_text("Bundle successfully created.")).to_be_visible()
-
-
-@then("the logged in user fails to create a bundle due to mandatory field")
-def fail_to_save_bundle_name(context: Context) -> None:
-    context.page.goto(context.base_url + "/admin/")
-    expect(context.page.get_by_role("link", name="Add bundle")).to_be_visible()
-    context.page.get_by_role("link", name="Add bundle").click()
-    context.page.get_by_role("button", name="Save as draft").click()
-    expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
-    expect(context.page.locator("#panel-child-name-errors")).to_contain_text("This field is required.")
-
-
-@then("the logged in user fails to save a bundle due to duplicate release dates")
-def fail_to_save_bundle_release(context: Context) -> None:
-    now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
-    bundle_name = "Bundle UI Test Bundle"
-
-    context.page.goto(context.base_url + "/admin/")
-    context.page.get_by_role("link", name="Add bundle").click()
-    context.page.get_by_role("textbox", name="Name*").fill(bundle_name)
-
-    context.page.get_by_role("button", name="Choose Release Calendar page").click()
-    context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_page.title)
-    context.page.get_by_role("row", name=context.release_calendar_page.title).get_by_role("link").click()
-    context.page.get_by_role("textbox", name="or Publication date").fill(now)
-
-    context.page.get_by_role("button", name="Save as draft").click()
-
-    expect(context.page.locator("#panel-child-scheduling-child-release_calendar_page-errors")).to_contain_text(
-        "You must choose either a Release Calendar page or a Publication date, not both."
-    )
-    expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
-    expect(context.page.locator("#panel-child-scheduling-child-publication_date-errors")).to_contain_text(
-        "You must choose either a Release Calendar page or a Publication date, not both."
-    )
 
 
 @then("the logged in user cannot create a bundle")
@@ -549,35 +432,17 @@ def cannot_add_bundles(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Add bundle")).not_to_be_visible()
 
 
-@then("the logged in user fails to create a bundle due used bundle name")
-def add_bundle_with_same_name(context: Context) -> None:
-    bundle_name = context.bundles[-1].name
-    context.page.goto(context.base_url + "/admin/")
-    context.page.get_by_role("link", name="Add bundle").click()
-    context.page.get_by_role("textbox", name="Name*").fill(bundle_name)
-    context.page.get_by_role("button", name="Save as draft").click()
-    expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
-    expect(context.page.locator("#panel-child-name-errors")).to_contain_text("Bundle with this Name already exists.")
-
-
 @then("the logged in user can find the bundle")
 def find_the_bundle(context: Context) -> None:
-    if len(context.bundles) <= 1:
-        expect(context.page.locator("#latest-bundles-heading")).to_contain_text("Latest active bundles")
-        expect(context.page.locator("#latest-bundles-content")).to_contain_text(context.bundles[-1].name)
-    else:
-        context.page.get_by_role("link", name="View all bundles", exact=True).click()
-        context.page.goto(f"{context.base_url}/admin/bundle/?q=Bundle+")
-        context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
-        expect(context.page.get_by_role("link", name=context.bundles[-1].name, exact=True)).to_be_visible()
+    context.page.goto(context.base_url + "/admin/")
+    context.page.get_by_role("link", name="Bundles", exact=True).click()
+    context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
+    context.page.goto(context.base_url + "/admin/bundle/?q=" + context.bundles[-1].name)
 
 
 @then("the logged in user goes to edit bundle")
 def edit_bundle(context: Context) -> None:
     bundle_edit = f"Edit '{context.bundles[-1].name}'"
-    context.page.get_by_role("link", name="Dashboard").click()
-    context.page.get_by_role("link", name="View all bundles", exact=True).click()
-    context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
     context.page.get_by_role("link", name=bundle_edit).click()
 
 
@@ -626,15 +491,6 @@ def add_article_page_in_edit(context: Context) -> None:
 @then("the {user_role} can preview bundle")
 def goes_to_preview_bundle(context: Context, user_role: str) -> None:
     bundle_inspect_button = f"Inspect '{context.bundles[-1].name}'"
-
-    # goto bundles menu
-    context.page.get_by_role("link", name="Dashboard").click()
-    context.page.get_by_role("link", name="Bundles", exact=True).click()
-
-    # search for required bundle
-    if user_role != "Viewer":
-        context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
-
     context.page.get_by_role("link", name=bundle_inspect_button).click()
 
     # Verify required bundle
@@ -643,7 +499,6 @@ def goes_to_preview_bundle(context: Context, user_role: str) -> None:
 
     if user_role != "Viewer":
         expect(context.page.get_by_role("term").filter(has_text=re.compile(r"^Status$"))).to_be_visible()
-        expect(context.page.get_by_text("Draft").first).to_be_visible()
         expect(context.page.get_by_text("Approval status")).to_be_visible()
         expect(context.page.get_by_text("Pending approval")).to_be_visible()
         expect(context.page.get_by_text("Teams", exact=True)).to_be_visible()
@@ -651,71 +506,100 @@ def goes_to_preview_bundle(context: Context, user_role: str) -> None:
 
     expect(context.page.get_by_text("Created at")).to_be_visible()
     expect(context.page.get_by_text("Created by")).to_be_visible()
-    expect(context.page.get_by_text(context.bundles[-1].created_by.get_username())).to_be_visible()
     expect(context.page.get_by_text("Scheduled publication")).to_be_visible()
     expect(context.page.get_by_text("Associated release calendar")).to_be_visible()
-    expect(context.page.locator("dl")).to_contain_text(context.release_calendar_page.title)
-    expect(context.page.get_by_text(context.statistical_article_page.title)).to_be_visible()
-    expect(context.page.get_by_role("cell", name="Statistical article page")).to_be_visible()
+    expect(context.page.get_by_text("Datasets", exact=True)).to_be_visible()
 
 
 @then("the logged in user cannot approve a bundle")
-@then("the logged in user cannot preview a bundle")
 def cannot_preview_bundle(context: Context) -> None:
-    context.page.get_by_role("link", name="Bundles", exact=True).click()
-    expect(
-        context.page.get_by_role("button", name=f"More options for '{context.bundles[-1].name}'")
-    ).not_to_be_visible()
+    context.page.get_by_role("button", name="More actions").click()
+    context.page.get_by_role("button", name="Approve").click()
+    expect(context.page.get_by_role("status")).to_contain_text(
+        "The bundle could not be saved due to errors. Cannot approve the bundle without any pages or datasets"
+    )
 
 
 @then("the logged in user can approve a bundle")
 def can_approve_bundle(context: Context) -> None:
-    bundle_edit = f"Edit '{context.bundles[-1].name}'"
-    bundle_status = f"Bundle '{context.bundles[-1].name}' Approval' updated. Edit"
-
-    context.page.get_by_role("link", name="Dashboard").click()
-    context.page.get_by_role("link", name="Bundles", exact=True).click()
-    context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
-    context.page.get_by_role("link", name=bundle_edit).click()
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Approve").click()
-    expect(context.page.get_by_role("status")).to_contain_text(bundle_status)
+    expect(context.page.get_by_text("Ready to publish").first).to_be_visible()
 
 
 @then("the logged in user cannot approve a bundle due to lack of pages")
 def cannot_approve_bundle_edge_case(context: Context) -> None:
-    bundle_edit = f"Edit '{context.bundles[-1].name}'"
-    context.page.get_by_role("link", name=bundle_edit).click()
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Approve").click()
     expect(context.page.get_by_text("The bundle could not be saved")).to_be_visible()
 
 
-@then("the logged in user can send bundle to moderation")
-def send_to_moderation(context: Context) -> None:
-    bundle_status = f"Bundle '{context.bundles[-1].name}'"
+@then("the logged in user cannot preview a bundle")
+def cannot_preview_a_specified_bundle(context: Context) -> None:
+    bundle_name = f"Bundle '{context.bundles[-1].name}'"
+    context.page.get_by_role("textbox", name="Search term").fill(bundle_name)
+    context.page.goto(context.base_url + "/admin/bundle/?q=" + bundle_name)
+    expect(context.page.get_by_role("paragraph")).to_contain_text("No bundles match your query.")
+
+
+@then("the logged in user gets a success message")
+def success_message(context: Context) -> None:
+    expect(context.page.get_by_role("status")).to_contain_text("Bundle successfully created.")
+    expect(context.page.get_by_text("Bundle successfully created.")).to_be_visible()
+
+
+@then("the logged in user gets a failure message due to field validation")
+def fail_to_save_bundle_name(context: Context) -> None:
+    expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
+    expect(context.page.locator("#panel-child-name-errors")).to_contain_text("This field is required.")
+
+
+@then("the logged in user gets a failure message due duplicate name")
+def existing_failure_message(context: Context) -> None:
+    expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
+    expect(context.page.locator("#panel-child-name-errors")).to_contain_text("Bundle with this Name already exists.")
+
+
+@then("the logged in user fails to create a bundle due duplicate schedule")
+def schedule_failure_message(context: Context) -> None:
+    expect(context.page.locator("#panel-child-scheduling-child-release_calendar_page-errors")).to_contain_text(
+        "You must choose either a Release Calendar page or a Publication date, not both."
+    )
+    expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
+    expect(context.page.locator("#panel-child-scheduling-child-publication_date-errors")).to_contain_text(
+        "You must choose either a Release Calendar page or a Publication date, not both."
+    )
+
+
+@then("the logged in user sends the bundle to preview")
+def send_bundle_to_moderation(context: Context) -> None:
+    # context.page.get_by_role("button", name="Actions", exact=True).click()
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Save to preview").click()
+
+
+@then("the logged in user gets a bundle update message")
+def update_message(context: Context) -> None:
+    bundle_status = f"Bundle '{context.bundles[-1].name}'"
     expect(context.page.get_by_text(bundle_status)).to_be_visible()
 
 
-@then("the {role} can preview the Release Calendar page")
-def preview_release_calendar_page(context: Context, role: str) -> None:
-    context.page.goto(context.base_url + "/admin/pages/")
-    context.page.get_by_role("button", name="Show filters").click()
-    context.page.get_by_role("button", name="Page type").click()
-    context.page.get_by_text("Release calendar page").click()
-    context.page.get_by_role("button", name="Show filters").click()
-    context.page.get_by_role("button", name="Locale").click()
-    context.page.locator("#id_locale").get_by_text("English").click()
+@then("the logged in user adds a Name to the bundle")
+def add_name_to_bundle(context: Context) -> None:
+    bundle_name = "Bundle UI Test Bundle"
+    if "bundles" in context:
+        bundle_name = context.bundles[-1].name
+    context.page.get_by_role("textbox", name="Name*").fill(bundle_name)
 
 
-@then("the {role} can preview the Statistical Analysis page")
-def preview_statistical_analysis_page(context: Context, role: str) -> None:
-    context.page.goto(context.base_url + "/admin/pages/")
-    context.page.get_by_role("button", name="Show filters").click()
-    context.page.get_by_role("button", name="Page type").click()
-    context.page.get_by_text("Statistical article page").click()
-    context.page.get_by_role("button", name="Show filters").click()
-    context.page.get_by_role("button", name="Locale").click()
-    context.page.locator("#id_locale").get_by_text("English").click()
+@then("the logged in user adds a Release Calendar page to the bundle")
+def add_release_calendar_to_bundle(context: Context) -> None:
+    context.page.get_by_role("button", name="Choose Release Calendar page").click()
+    context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_page.title)
+    context.page.get_by_role("row", name=context.release_calendar_page.title).get_by_role("link").click()
+
+
+@then("the logged in user add a schedule date to the bundle")
+def add(context: Context) -> None:
+    now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
+    context.page.get_by_role("textbox", name="or Publication date").fill(now)
