@@ -698,7 +698,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
             self.assertTrue(self.topic_page.has_broken_headline_figures())
 
         self.assertEqual(len(logs.output), 1)
-        self.assertIn("Broken headline figures found on TopicPage", logs.output[0])
+        self.assertIn("Broken headline figures found on topic page", logs.output[0])
 
     def test_cannot_add_children_once_articles_and_methodologies_index_are_created(self):
         self.assertEqual(TopicPage.objects.count(), 4)  # 4 created in setUpTestData
