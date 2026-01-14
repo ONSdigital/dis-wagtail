@@ -357,11 +357,12 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             figure_id = headline_figure.value.get("figure_id")
             figure_article = TopicHeadlineFigureBlock.get_latest_article_for_figure(headline_figure.value)
             if not figure_article or not figure_article.get_headline_figure(figure_id).get("figure"):
-                broken_figures.append({"figure_id": figure_id, "series": headline_figure.value.get("series").id})
+                series_id = headline_figure.value.get("series").id if headline_figure.value.get("series") else None
+                broken_figures.append({"figure_id": figure_id, "series_id": series_id})
         if broken_figures:
             logger.error(
-                "Broken headline figures found on TopicPage",
-                extra={"topic_page": self.id, "broken_figures": broken_figures},
+                "Broken headline figures found on topic page",
+                extra={"topic_page_id": self.id, "broken_figures": broken_figures},
             )
             return True
         return False
