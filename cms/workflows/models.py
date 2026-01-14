@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from django.db import transaction
 from wagtail.admin.mail import GroupApprovalTaskStateSubmissionEmailNotifier
@@ -62,7 +62,7 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
         return []
 
     @transaction.atomic
-    def unlock(self, task_state: TaskState, user: User):
+    def unlock(self, task_state: TaskState, user: User) -> Self:
         workflow_state = task_state.workflow_state
 
         # Cancel the current state and switch to a new task

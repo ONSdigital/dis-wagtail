@@ -4,7 +4,9 @@ from wagtail.admin.action_menu import ActionMenuItem
 
 
 class UnlockWorkflowMenuItem(ActionMenuItem):
-    def __init__(self, name, label, *args: Any, **kwargs: Any) -> None:
+    item_url: str = ""
+
+    def __init__(self, name: str, label: str, *args: Any, **kwargs: Any) -> None:
         self.name = name
         self.label = label
         self.icon_name = kwargs.pop("icon_name", "")

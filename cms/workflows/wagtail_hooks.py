@@ -11,8 +11,8 @@ from wagtail.admin import messages
 from wagtail.admin.action_menu import PageLockedMenuItem, WorkflowMenuItem
 
 from cms.bundles.mixins import BundledPageMixin
+from cms.bundles.utils import in_bundle_ready_to_be_published
 
-from ..bundles.utils import in_bundle_ready_to_be_published
 from . import admin_urls
 from .action_menu import UnlockWorkflowMenuItem
 from .admin_urls import path
@@ -32,11 +32,11 @@ def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: Http
     if not (context["view"] == "edit" and context.get("page")):
         return
 
-    page: Page = context["page"]
-    if not isinstance(page, BundledPageMixin):
+    if not isinstance(context["page"], BundledPageMixin):
         return
 
     updated_menu_items = menu_items
+    page: Page = context["page"]
     if in_bundle_ready_to_be_published(page):
         # start with a fully locked action menu when in a bundle that is ready to be published,
         # as we want to prevent all actions.
@@ -64,7 +64,7 @@ def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: Http
         label = "Approve" if "with comment" not in item.label else "Approve with comment"
         updated_menu_items[index].label = f"{label} and Publish" if is_final_task else label
 
-    if page.latest_revision and page.latest_revision.user_id == request.user.pk:  # type: ignore[attr-defined]
+    if page.latest_revision and page.latest_revision.user_id == request.user.pk:
         # hide the "approve" action items if the current user was the last editor as they cannot self-approve
         menu_items[:] = [item for item in updated_menu_items if item.name != "approve"]
     else:
