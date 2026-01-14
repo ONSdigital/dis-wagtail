@@ -1,59 +1,61 @@
 {% from "components/image/_macro.njk" import onsImage %}
 
 {# fmt:off #}
-<div>
-    {# Figure Title #}
-    <hgroup>
+{% if value.image %}
+    <div>
+        {# Figure Title #}
+        <hgroup>
+            {% if value.figure_title %}
+                <h3 class="ons-chart__title">{{ value.figure_title }}</h3>
+            {% endif %}
+
+            {# Figure Subtitle #}
+            {% if value.figure_subtitle %}
+                <p>{{ value.figure_subtitle }}</p>
+            {% endif %}
+        </hgroup>
+
+        {# Image #}
+        {% set caption_text = None %}
+        {% if value.supporting_text %}
+            {% set caption_text = _("Source") ~ " - " ~ value.supporting_text %}
+        {% endif %}
+
+        
+        {{
+            onsImage({
+                "image": {
+                    "smallSrc": small_src,
+                    "largeSrc": large_src
+                },
+                "alt": value.image.description,
+                "caption": caption_text
+            })
+        }}
+
+        {# Notes #}
+        {% if value.notes_section %}
+            <div class="ons-u-mt-s">
+                <h4 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Notes") }}</h4>
+                <div>{{ value.notes_section|richtext }}</div>
+            </div>
+        {% endif %}
+
         {% if value.figure_title %}
-            <h3 class="ons-chart__title">{{ value.figure_title }}</h3>
+            {% set download_aria_label = _("Download image") ~ ": " ~ value.figure_title %}
+        {% else %}
+            {% set download_aria_label = _("Download image") %}
         {% endif %}
 
-        {# Figure Subtitle #}
-        {% if value.figure_subtitle %}
-            <p>{{ value.figure_subtitle }}</p>
+        {# Download #}
+        {% if value.download and value.image %}
+            <div class="ons-u-mt-s">
+                <h4 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Download this image") }}</h4>
+                <a href="{{ large_src }}" download aria-label="{{ download_aria_label }}">
+                    {{ file_type }}{% if file_size_human %} ({{ file_size_human }}){% endif %}
+                </a>
+            </div>
         {% endif %}
-    </hgroup>
-
-    {# Image #}
-    {% set caption_text = None %}
-    {% if value.supporting_text %}
-        {% set caption_text = _("Source") ~ " - " ~ value.supporting_text %}
-    {% endif %}
-
-    {{
-        onsImage({
-            "image": {
-                "smallSrc": small_src,
-                "largeSrc": large_src
-            },
-            "alt": value.image.description,
-            "caption": caption_text
-        })
-    }}
-
-    {# Notes #}
-    {% if value.notes_section %}
-        <div class="ons-u-mt-s">
-            <h4 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Notes") }}</h4>
-            <div>{{ value.notes_section|richtext }}</div>
-        </div>
-    {% endif %}
-
-    {% set download_aria_label = None %}
-    {% if value.figure_title %}
-        {% set download_aria_label = _("Download image") ~ ": " ~ value.figure_title %}
-    {% else %}
-        {% set download_aria_label = _("Download image") %}
-    {% endif %}
-
-    {# Download #}
-    {% if value.download %}
-        <div class="ons-u-mt-s">
-            <h4 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Download this image") }}</h4>
-            <a href="{{ large_src }}" download aria-label="{{ download_aria_label }}">
-                {{ file_type }}{% if file_size_human %} ({{ file_size_human }}){% endif %}
-            </a>
-        </div>
-    {% endif %}
-</div>
+    </div>
+{% endif %}
 {# fmt:off #}

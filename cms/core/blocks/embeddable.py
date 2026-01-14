@@ -28,20 +28,26 @@ class ImageBlock(blocks.StructBlock):
     def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context)
 
-        if image := value.get("image"):
-            small = image.get_rendition("width-1024")
-            large = image.get_rendition("width-2048")
+        # Guard: image may be missing at render time if the asset was
+        # deleted after publishing (accidental or otherwise). Return early
+        # to avoid calling get_rendition() on a None value.
+        image = value.get("image")
+        if not image:
+            return context
 
-            context["small_src"] = small.url
-            context["large_src"] = large.url
+        small = image.get_rendition("width-1024")
+        large = image.get_rendition("width-2048")
 
-            # Get file extension of the rendition being downloaded (uppercase, without the dot)
-            _, ext = os.path.splitext(large.file.name)
-            file_type = ext.lstrip(".").upper() or "IMG"
-            context["file_type"] = file_type
+        context["small_src"] = small.url
+        context["large_src"] = large.url
 
-            size_bytes = getattr(large.file, "size", None)
-            context["file_size_human"] = filesizeformat(size_bytes) if size_bytes is not None else None
+        # Get file extension of the rendition being downloaded (uppercase, without the dot)
+        _, ext = os.path.splitext(large.file.name)
+        file_type = ext.lstrip(".").upper() or "IMG"
+        context["file_type"] = file_type
+
+        size_bytes = getattr(large.file, "size", None)
+        context["file_size_human"] = filesizeformat(size_bytes) if size_bytes is not None else None
 
         return context
 
