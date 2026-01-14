@@ -22,11 +22,15 @@ class Command(BaseCommand):
     help = "Create random test data"
 
     def create_node_for_factory(
-        self, factory_type: type[factory.base.BaseFactory], parent: MP_Node, get_or_create_args=(), **kwargs
-    ):
+        self,
+        factory_type: type[factory.base.BaseFactory],
+        parent: MP_Node,
+        get_or_create_args: list[str] | None = None,
+        **kwargs: Any,
+    ) -> MP_Node:
         instance = factory_type.build(**kwargs)
 
-        matching = {s: getattr(instance, s) for s in get_or_create_args}
+        matching = {s: getattr(instance, s) for s in (get_or_create_args or [])}
 
         if existing_instance := parent.get_children().filter(**matching).first():
             return existing_instance
@@ -35,7 +39,7 @@ class Command(BaseCommand):
 
         return created_node
 
-    def add_arguments(self, parser: ArgumentParser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
             "--seed", nargs="?", default=4, type=int, help="Random seed to produce deterministic output"
         )
@@ -57,12 +61,12 @@ class Command(BaseCommand):
         )
         result = input()
         try:
-            result = int(result)
+            int_result = int(result)
         except ValueError:
             self.stdout.write("Invalid input", self.style.ERROR)
             return False
 
-        if result != seed:
+        if int_result != seed:
             self.stdout.write("Incorrect input", self.style.ERROR)
             return False
 
@@ -76,16 +80,16 @@ class Command(BaseCommand):
         faker = Faker(locale="en_GB")
         faker.seed_instance(options["seed"])
         factory.Faker._DEFAULT_LOCALE = "en_GB"  # pylint: disable=protected-access
-        factory.random.reseed_random(options["seed"])
+        factory.random.reseed_random(options["seed"])  # type: ignore[no-untyped-call]
 
         root_page = Site.objects.get(is_default_site=True).root_page
         root_topic = Topic.objects.root_topic()
 
-        title_factory = factory.LazyFunction(lambda: SEEDED_DATA_PREFIX + faker.sentence(nb_words=3))
+        title_factory = factory.LazyFunction(lambda: SEEDED_DATA_PREFIX + faker.sentence(nb_words=3))  # type: ignore[no-untyped-call]
 
         image = ImageFactory(title=title_factory)
 
-        dataset = DatasetFactory(title=title_factory)
+        dataset = DatasetFactory(title=title_factory)  # type: ignore[no-untyped-call]
 
         for _ in range(options["topics"]):
             topic = self.create_node_for_factory(

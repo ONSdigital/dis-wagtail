@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from typing import Any
 
 from django.apps import apps
@@ -15,7 +16,7 @@ COLUMNS = {"slug", "title"}
 class Command(BaseCommand):
     help = "Delete all random test data"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
             "--noinput",
             "--no-input",
@@ -52,15 +53,15 @@ class Command(BaseCommand):
 
             self.stdout.write(f"Collecting {self.style.HTTP_INFO(model._meta.label)}")
 
-            matching_instances = model.objects.filter(lookups)
+            matching_instances = model._default_manager.filter(lookups)  # pylint: disable=protected-access
 
-            collector.collect(matching_instances)
+            collector.collect(matching_instances)  # type: ignore[arg-type]
 
             if issubclass(model, MP_Node):
                 # Child nodes aren't automatically picked up by the collector.
                 # They're correctly deleted, but this ensures they're displayed.
                 for instance in matching_instances:
-                    collector.collect(instance.get_descendants())
+                    collector.collect(instance.get_descendants())  # type: ignore[attr-defined]
 
         return collector
 
@@ -78,13 +79,17 @@ class Command(BaseCommand):
 
         if options["dry_run"]:
             for model, instances in sorted(collector.data.items(), key=lambda d: d[0]._meta.label):
-                self.stdout.write(f"{model._meta.label} ({self.style.ERROR(len(instances))})", self.style.HTTP_INFO)
+                self.stdout.write(
+                    f"{model._meta.label} ({self.style.ERROR(str(len(instances)))})", self.style.HTTP_INFO
+                )
                 for instance in sorted(instances, key=str):
                     self.stdout.write(f"\t{instance!s} ({instance.pk})")
 
         else:
             for model, instances in sorted(collector.data.items(), key=lambda d: d[0]._meta.label):
-                self.stdout.write(f"\t {self.style.HTTP_INFO(model._meta.label)}: {self.style.ERROR(len(instances))}")
+                self.stdout.write(
+                    f"\t {self.style.HTTP_INFO(model._meta.label)}: {self.style.ERROR(str(len(instances)))}"
+                )
 
             if options["interactive"]:
                 self.stdout.write(
@@ -93,17 +98,17 @@ class Command(BaseCommand):
                 )
                 result = input()
                 try:
-                    result = int(result)
+                    int_result = int(result)
                 except ValueError:
                     self.stdout.write("Invalid input", self.style.ERROR)
                     return
 
-                if result != instances_to_delete:
+                if int_result != instances_to_delete:
                     self.stdout.write("Incorrect input", self.style.ERROR)
                     return
 
             self.stdout.write("Deleting data...", self.style.NOTICE)
             for model, instances in collector.data.items():
                 # Use queryset delete methods to use any customized behaviour
-                model.objects.filter(pk__in=[instance.pk for instance in instances]).delete()
+                model._default_manager.filter(pk__in=[instance.pk for instance in instances]).delete()  # pylint: disable=protected-access
             self.stdout.write("Successfully deleted", self.style.SUCCESS)

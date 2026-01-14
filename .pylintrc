@@ -439,6 +439,7 @@ disable=raw-checker-failed,
         missing-function-docstring,
         fixme,
         too-many-public-methods,
+        line-too-long,
 
 # note:
 # - wrong-import-order: covered by ruff
