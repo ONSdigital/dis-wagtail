@@ -996,7 +996,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         # Download section rendered
-        self.assertContains(response, "Download Figure 1")
+        self.assertContains(response, "Download this image")
 
         # HTML5 download attribute present once (avoid base-template noise)
         self.assertContains(response, " download", count=1)
