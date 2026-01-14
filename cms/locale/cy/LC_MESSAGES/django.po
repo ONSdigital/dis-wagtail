@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-08 17:39+0000\n"
+"POT-Creation-Date: 2026-01-14 17:18+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -215,8 +215,13 @@ msgstr "Ffynhonnell"
 msgid "Notes"
 msgstr ""
 
-#: cms/jinja2/templates/components/streamfield/image_block.html:45
-msgid "Download"
+#: cms/jinja2/templates/components/streamfield/image_block.html:44
+#: cms/jinja2/templates/components/streamfield/image_block.html:46
+msgid "Download image"
+msgstr ""
+
+#: cms/jinja2/templates/components/streamfield/image_block.html:52
+msgid "Download this image"
 msgstr ""
 
 #: cms/jinja2/templates/components/streamfield/release_date_change_block.html:2
@@ -392,8 +397,8 @@ msgstr ""
 #: cms/jinja2/templates/pages/errors/500.html:7
 #, python-format
 msgid ""
-"If the web address is correct, or you selected a link or button, <a "
-"href=\"%(contact_url)s\">contact us</a>."
+"If the web address is correct, or you selected a link or button, <a href="
+"\"%(contact_url)s\">contact us</a>."
 msgstr ""
 "Os yw’r cyfeiriad gwe yn gywir, neu os ydych wedi dewis dolen neu botwm,<a "
 "href=\"%(contact_url)s\">cysylltwch â ni</a>."
@@ -405,11 +410,11 @@ msgstr "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth"
 #: cms/jinja2/templates/pages/errors/500.html:6
 #, python-format
 msgid ""
-"Our scheduled publications can also be found on our <a "
-"href=\"%(backup_url)s\">backup site</a>."
+"Our scheduled publications can also be found on our <a href=\"%(backup_url)s"
+"\">backup site</a>."
 msgstr ""
-"Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a "
-"href=\"%(backup_url)s\">gwefan wrth gefn"
+"Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a href="
+"\"%(backup_url)s\">gwefan wrth gefn"
 
 #: cms/jinja2/templates/pages/information_page.html:9
 msgid "Last updated"
@@ -518,9 +523,9 @@ msgstr "Ynglyn â’r data"
 msgid ""
 "These are accredited official statistics. They have been independently "
 "reviewed by the Office for Statistics Regulation (OSR) and found to comply "
-"with the standards of trustworthiness, quality and value in the <a "
-"href=\"https://code.statisticsauthority.gov.uk/the-code/\">Code of Practice "
-"for Statistics</a>. This broadly means that the statistics:"
+"with the standards of trustworthiness, quality and value in the <a href="
+"\"https://code.statisticsauthority.gov.uk/the-code/\">Code of Practice for "
+"Statistics</a>. This broadly means that the statistics:"
 msgstr ""
 "Mae’r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnolgan y "
 "Swyddfa Rheoleiddio Ystadegau (OSR) ac a ganfuwyd ei fod yn cydymffurfio "

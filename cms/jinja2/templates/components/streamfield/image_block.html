@@ -39,11 +39,18 @@
         </div>
     {% endif %}
 
+    {% set download_aria_label = None %}
+    {% if value.figure_title %}
+        {% set download_aria_label = _("Download image") ~ ": " ~ value.figure_title %}
+    {% else %}
+        {% set download_aria_label = _("Download image") %}
+    {% endif %}
+
     {# Download #}
     {% if value.download %}
         <div class="ons-u-mt-s">
             <h4 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Download this image") }}</h4>
-            <a href="{{ large_src }}" download>
+            <a href="{{ large_src }}" download aria-label="{{ download_aria_label }}">
                 {{ file_type }}{% if file_size_human %} ({{ file_size_human }}){% endif %}
             </a>
         </div>
