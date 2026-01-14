@@ -1,20 +1,82 @@
 Feature: Page-level workflows
 
     Background:
-        Given a Publishing Officer logs into the admin site
-        And a statistical article exists
+        Given a statistical article exists
         And the statistical article page is "in preview"
 
     Scenario: A Publishing team user cannot self-approve a page if making edits
-        When the user edits the statistical article page
-        And the user updates the statistical article page content
-        And the user clicks the action button toggle
+        When a Publishing Officer logs into the admin site
+        And  the user edits the statistical article page
+        And  the user updates the statistical article page content
+        And  the user clicks the action button toggle
         Then the "Approve" button is disabled
-        And the "Approve with comment" button is disabled
+        And  the "Approve with comment" button is disabled
 
 
     Scenario: A Publishing team user cannot see the approve buttons if they are the last editor
-        When the user edits the statistical article page
-        And the user is the last statistical article page editor
+        When a Publishing Officer logs into the admin site
+        And  the user edits the statistical article page
+        And  the user is the last statistical article page editor
         Then the "Approve" button does not exist
-        And the "Approve with comment" button does not exist
+        And  the "Approve with comment" button does not exist
+
+
+    Scenario: A Publishing Admin can unlock a page locked by someone else, when it is in the review workflow step
+        When a Publishing Admin logs into the admin site
+        And the statistical article page is locked by another user
+        And  the user edits the statistical article page
+        Then the "Page locked" button exists
+        And  the user can unlock the page
+
+
+    Scenario: A Publishing Office can unlock a page locked them, when it is in the review workflow step
+        When a Publishing Officer logs into the admin site
+        And the statistical article page is locked by the user
+        And  the user edits the statistical article page
+        Then the "Page locked" button exists
+        And  the user can unlock the page
+
+
+    Scenario Outline: When page is Approved (Ready to publish), it should be locked for editing
+        When a <user> logs into the admin site
+        And  the statistical article page is "ready to publish"
+        And  the user edits the statistical article page
+        Then the "This page cannot be edited as it is Ready to be published." text is displayed
+        And  the "Page locked" button exists
+
+    Examples:
+      | Publishing Officer |
+      | Publishing Admin   |
+
+
+    Scenario: When page is Approved (Ready to publish), then a Publishing admin can "unlock" it
+        When a Publishing Admin logs into the admin site
+        And  the statistical article page is "ready to publish"
+        And  the user edits the statistical article page
+        And  the user clicks the action button toggle
+        Then the "Unlock editing" link exists
+        And  the user can unlock the page for editing
+        And  the "Page editing unlocked." text is displayed
+        And  the "Unlock editing" link does not exist
+
+    Scenario: When page is Approved (Ready to publish) and in a work in progress bundle, then a Publishing admin can "unlock" it
+        When a Publishing Admin logs into the admin site
+        And  the statistical article page is "ready to publish"
+        And  a bundle has been created
+        And  the statistical article page is in a "In Preview" bundle
+        And  the user edits the statistical article page
+        And  the user clicks the action button toggle
+        Then the "Unlock editing" link exists
+        And  the user can unlock the page for editing
+        And  the "Page editing unlocked." text is displayed
+        And  the "Unlock editing" link does not exist
+
+    Scenario: When page is Approved (Ready to publish) and in an Approved bundle, then a Publishing admin cannot "unlock" it
+        When a Publishing Admin logs into the admin site
+        And  the statistical article page is "Ready to publish"
+        And  a bundle has been created
+        And  the statistical article page is in a "Ready to publish" bundle
+        And  the user edits the statistical article page
+        Then the "Page locked" button exists
+        And  the "Unlock editing" link does not exist
+        And  the "This page is included in a bundle that is ready to be published. You must revert the bundle to Draft or In preview in order to make further changes." text is displayed

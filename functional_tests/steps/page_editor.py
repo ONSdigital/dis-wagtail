@@ -182,6 +182,13 @@ def the_user_can_publish_a_page(context: Context) -> None:
     expect(context.page.get_by_role("button", name="Publish")).to_be_visible()
 
 
+@step("the user can unlock the page")
+def the_user_unlock_a_page(context: Context) -> None:
+    context.page.get_by_role("button", name="Toggle status").click()
+    context.page.get_by_text("Lock", exact=True).click()
+    expect(context.page.get_by_text("Page 'Test Info Page' is now unlocked.")).to_be_visible()
+
+
 @step("the user can lock and unlock a page")
 def the_user_can_lock_and_unlock_a_page(context: Context) -> None:
     context.page.get_by_role("button", name="Toggle status").click()
