@@ -5,16 +5,16 @@ from django.test import TestCase
 
 from cms.images.models import CustomImage
 from cms.taxonomy.models import Topic
+from cms.test_data.config import TestDataConfig
+from cms.test_data.management.commands.create_test_data import SEEDED_DATA_PREFIX
 from cms.topics.models import TopicPage
-
-from .management.commands.create_test_data import SEEDED_DATA_PREFIX
 
 AFFECTED_MODELS = [TopicPage, Topic, CustomImage]
 
 
 class CreateTestDataTestCase(TestCase):
     def _call_with_config(self, config: dict | None = None) -> None:
-        call_command("create_test_data", interactive=False, config=config or {})
+        call_command("create_test_data", interactive=False, config=TestDataConfig.model_validate(config or {}))
 
     def test_creates_data(self) -> None:
         original_counts = {model: model.objects.count() for model in AFFECTED_MODELS}
@@ -25,7 +25,16 @@ class CreateTestDataTestCase(TestCase):
             self.assertGreater(model.objects.count(), original_count, model)
 
     def test_creates_topics(self) -> None:
-        self._call_with_config()
+        self._call_with_config(
+            {
+                "topics": {
+                    "count": 3,
+                    "datasets": 1,
+                    "dataset_manual_links": 1,
+                    "explore_more": 2,
+                }
+            }
+        )
 
         self.assertEqual(TopicPage.objects.count(), 3)
         self.assertEqual(len(set(TopicPage.objects.values_list("title", flat=True))), 3)
@@ -62,7 +71,7 @@ class DeleteTestDataTestCase(TestCase):
         self.assertIn("No data to delete", output.getvalue())
 
     def test_dry_run(self) -> None:
-        call_command("create_test_data", interactive=False, config={})
+        call_command("create_test_data", interactive=False, config=TestDataConfig())
 
         original_counts = {model: model.objects.count() for model in AFFECTED_MODELS}
 
@@ -75,7 +84,7 @@ class DeleteTestDataTestCase(TestCase):
             self.assertEqual(model.objects.count(), original_count, model)
 
     def test_delete_data(self) -> None:
-        call_command("create_test_data", interactive=False, config={})
+        call_command("create_test_data", interactive=False, config=TestDataConfig())
 
         original_counts = {model: model.objects.count() for model in AFFECTED_MODELS}
 
@@ -88,7 +97,7 @@ class DeleteTestDataTestCase(TestCase):
             self.assertLess(model.objects.count(), original_count, model)
 
     def test_tree_is_valid(self) -> None:
-        call_command("create_test_data", interactive=False, config={})
+        call_command("create_test_data", interactive=False, config=TestDataConfig())
 
         call_command("delete_test_data", interactive=False, stdout=StringIO())
 

@@ -1,5 +1,5 @@
-import json
 from argparse import ArgumentParser, ArgumentTypeError
+from itertools import count
 from pathlib import Path
 from typing import Any
 
@@ -8,25 +8,28 @@ import factory.fuzzy
 import factory.random
 from django.core.management.base import BaseCommand
 from faker import Faker
+from pydantic import ValidationError
 from treebeard.mp_tree import MP_Node
 from wagtail.models import Site
-from wagtail_factories import ImageFactory
 
 from cms.datasets.tests.factories import DatasetFactory
 from cms.taxonomy.models import Topic
 from cms.taxonomy.tests.factories import SimpleTopicFactory
+from cms.test_data.config import TestDataConfig
+from cms.test_data.factories import ImageFactory
 from cms.test_data.utils import SEEDED_DATA_PREFIX
 from cms.topics.tests.factories import TopicPageFactory
 
 
-def validate_config_file(val: str) -> dict:
+def validate_config_file(val: str) -> TestDataConfig:
     config_path = Path(val)
 
     if not config_path.is_file() or config_path.suffix != ".json":
         raise ArgumentTypeError(f"{val} does not exist or is not a valid JSON file")
-
-    with config_path.open("r") as c:
-        return json.load(c)  # type: ignore[no-any-return]
+    try:
+        return TestDataConfig.model_validate_json(config_path.read_text())
+    except ValidationError as e:
+        raise ArgumentTypeError(str(e)) from e
 
 
 class Command(BaseCommand):
@@ -87,7 +90,7 @@ class Command(BaseCommand):
         if options["interactive"] and not self.confirm_action(options["seed"]):
             return
 
-        config: dict = options["config"]
+        config: TestDataConfig = options["config"]
 
         # Seed randomness
         faker = Faker(locale="en_GB")
@@ -100,14 +103,32 @@ class Command(BaseCommand):
 
         title_factory = factory.LazyFunction(lambda: SEEDED_DATA_PREFIX + faker.sentence(nb_words=3))  # type: ignore[no-untyped-call]
 
-        image = ImageFactory(title=title_factory)
+        images = ImageFactory.create_batch(config.images.get_count(faker), title=title_factory)
 
-        dataset = DatasetFactory(title=title_factory)  # type: ignore[no-untyped-call]
+        datasets = DatasetFactory.create_batch(config.datasets.get_count(faker), title=title_factory)
 
-        for _ in range(config.get("topics", 3)):
+        for _ in range(config.topics.get_count(faker)):
             topic = self.create_node_for_factory(
                 SimpleTopicFactory, parent=root_topic, get_or_create_args=["id"], title=title_factory
             )
+
+            topic_kwargs = {}
+
+            topic_datasets_counter = count()
+            for _ in range(config.topics.datasets_count(faker)):
+                topic_kwargs[f"datasets__{next(topic_datasets_counter)}__dataset_lookup__dataset"] = (
+                    faker.random_element(datasets)
+                )
+
+            for _ in range(config.topics.dataset_manual_links):
+                topic_kwargs[f"datasets__{next(topic_datasets_counter)}"] = "manual_link"
+
+            for i in range(config.topics.explore_more_count(faker)):
+                if i % 2 == 0:
+                    topic_kwargs[f"explore_more__{i}__internal_link__page"] = root_page
+                    topic_kwargs[f"explore_more__{i}__internal_link__thumbnail__image"] = faker.random_element(images)
+                else:
+                    topic_kwargs[f"explore_more__{i}__external_link__thumbnail__image"] = faker.random_element(images)
 
             topic_page = self.create_node_for_factory(
                 TopicPageFactory,
@@ -115,11 +136,7 @@ class Command(BaseCommand):
                 get_or_create_args=["title"],
                 title=title_factory,
                 topic=topic,
-                datasets__0__dataset_lookup__dataset=dataset,
-                datasets__1="manual_link",
-                explore_more__0__internal_link__page=root_page,
-                explore_more__0__internal_link__thumbnail__image=image,
-                explore_more__1__external_link__thumbnail__image=image,
+                **topic_kwargs,
             )
 
             topic_page.specific.save_revision().publish()
