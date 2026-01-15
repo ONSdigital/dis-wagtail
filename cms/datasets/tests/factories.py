@@ -10,6 +10,7 @@ class DatasetFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = Dataset
+        django_get_or_create = ("namespace", "edition", "version")
 
     namespace = factory.Faker("sentence", nb_words=4)
     title = factory.Faker("sentence", nb_words=4)
