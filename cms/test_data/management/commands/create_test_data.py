@@ -18,6 +18,7 @@ from cms.taxonomy.tests.factories import SimpleTopicFactory
 from cms.test_data.config import TestDataConfig
 from cms.test_data.factories import ImageFactory
 from cms.test_data.utils import SEEDED_DATA_PREFIX
+from cms.topics.models import TopicPage
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -130,7 +131,7 @@ class Command(BaseCommand):
                 else:
                     topic_kwargs[f"explore_more__{i}__external_link__thumbnail__image"] = faker.random_element(images)
 
-            topic_page = self.create_node_for_factory(
+            topic_page: TopicPage = self.create_node_for_factory(
                 TopicPageFactory,
                 parent=root_page,
                 get_or_create_args=["title"],
@@ -139,4 +140,5 @@ class Command(BaseCommand):
                 **topic_kwargs,
             )
 
-            topic_page.specific.save_revision().publish()
+            if faker.boolean(int(config.topics.published * 100)) and not topic_page.live:
+                topic_page.specific.save_revision().publish()

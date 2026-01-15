@@ -1,7 +1,10 @@
-from typing import Self
+from typing import Annotated, Self
 
+import annotated_types
 from faker import Faker
 from pydantic import BaseModel, PositiveInt, model_validator
+
+FractionalFloat = Annotated[float, annotated_types.Ge(0), annotated_types.Le(0)]
 
 
 class RangeConfig(BaseModel):
@@ -31,7 +34,11 @@ def get_count(data: PositiveInt | RangeConfig, faker: Faker) -> int:
     return faker.random_int(min=data.min, max=data.max)
 
 
-class TopicCreationConfig(ModelCreationConfig):
+class PageCreationConfig(ModelCreationConfig):
+    published: FractionalFloat = 0.5
+
+
+class TopicCreationConfig(PageCreationConfig):
     datasets: PositiveInt | RangeConfig = 1
     dataset_manual_links: PositiveInt = 0
     explore_more: PositiveInt | RangeConfig = 1
