@@ -440,6 +440,7 @@ disable=raw-checker-failed,
         fixme,
         too-many-public-methods,
         line-too-long,
+        unspecified-encoding,
 
 # note:
 # - wrong-import-order: covered by ruff

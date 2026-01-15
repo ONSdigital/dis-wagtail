@@ -1,4 +1,6 @@
-from argparse import ArgumentParser
+import json
+from argparse import ArgumentParser, ArgumentTypeError
+from pathlib import Path
 from typing import Any
 
 import factory
@@ -16,6 +18,16 @@ from cms.taxonomy.tests.factories import SimpleTopicFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 SEEDED_DATA_PREFIX = "Z-RANDOM "
+
+
+def validate_config_file(val: str) -> dict:
+    config_path = Path(val)
+
+    if not config_path.is_file() or config_path.suffix != ".json":
+        raise ArgumentTypeError(f"{val} does not exist or is not a valid JSON file")
+
+    with config_path.open("r") as c:
+        return json.load(c)  # type: ignore[no-any-return]
 
 
 class Command(BaseCommand):
@@ -43,7 +55,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--seed", nargs="?", default=4, type=int, help="Random seed to produce deterministic output"
         )
-        parser.add_argument("--topics", nargs="?", default=3, type=int, help="Number of topics to create")
+        parser.add_argument("--config", type=validate_config_file, help="Config file")
         parser.add_argument(
             "--noinput",
             "--no-input",
@@ -76,6 +88,8 @@ class Command(BaseCommand):
         if options["interactive"] and not self.confirm_action(options["seed"]):
             return
 
+        config: dict = options["config"]
+
         # Seed randomness
         faker = Faker(locale="en_GB")
         faker.seed_instance(options["seed"])
@@ -91,7 +105,7 @@ class Command(BaseCommand):
 
         dataset = DatasetFactory(title=title_factory)  # type: ignore[no-untyped-call]
 
-        for _ in range(options["topics"]):
+        for _ in range(config.get("topics", 3)):
             topic = self.create_node_for_factory(
                 SimpleTopicFactory, parent=root_topic, get_or_create_args=["id"], title=title_factory
             )

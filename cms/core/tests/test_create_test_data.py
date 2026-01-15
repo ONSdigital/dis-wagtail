@@ -12,16 +12,19 @@ AFFECTED_MODELS = [TopicPage, Topic, CustomImage]
 
 
 class CreateTestDataTestCase(TestCase):
+    def _call_with_config(self, config: dict | None = None) -> None:
+        call_command("create_test_data", interactive=False, config=config or {})
+
     def test_creates_data(self) -> None:
         original_counts = {model: model.objects.count() for model in AFFECTED_MODELS}
 
-        call_command("create_test_data", interactive=False)
+        self._call_with_config()
 
         for model, original_count in original_counts.items():
             self.assertGreater(model.objects.count(), original_count, model)
 
     def test_creates_topics(self) -> None:
-        call_command("create_test_data", interactive=False)
+        self._call_with_config()
 
         self.assertEqual(TopicPage.objects.count(), 3)
         self.assertEqual(len(set(TopicPage.objects.values_list("title", flat=True))), 3)
@@ -35,14 +38,14 @@ class CreateTestDataTestCase(TestCase):
                     self.assertIn(SEEDED_DATA_PREFIX, block.value["thumbnail"].title)
 
     def test_idempotent(self) -> None:
-        call_command("create_test_data", interactive=False)
+        self._call_with_config()
         self.assertEqual(TopicPage.objects.count(), 3)
 
-        call_command("create_test_data", interactive=False)
+        self._call_with_config()
         self.assertEqual(TopicPage.objects.count(), 3)
 
     def test_tree_is_valid(self) -> None:
-        call_command("create_test_data", interactive=False)
+        self._call_with_config()
 
         output = StringIO()
         call_command("fixtree", interactive=False, stdout=output)
@@ -58,7 +61,7 @@ class DeleteTestDataTestCase(TestCase):
         self.assertIn("No data to delete", output.getvalue())
 
     def test_dry_run(self) -> None:
-        call_command("create_test_data", interactive=False)
+        call_command("create_test_data", interactive=False, config={})
 
         original_counts = {model: model.objects.count() for model in AFFECTED_MODELS}
 
@@ -71,7 +74,7 @@ class DeleteTestDataTestCase(TestCase):
             self.assertEqual(model.objects.count(), original_count, model)
 
     def test_delete_data(self) -> None:
-        call_command("create_test_data", interactive=False)
+        call_command("create_test_data", interactive=False, config={})
 
         original_counts = {model: model.objects.count() for model in AFFECTED_MODELS}
 
@@ -84,7 +87,7 @@ class DeleteTestDataTestCase(TestCase):
             self.assertLess(model.objects.count(), original_count, model)
 
     def test_tree_is_valid(self) -> None:
-        call_command("create_test_data", interactive=False)
+        call_command("create_test_data", interactive=False, config={})
 
         call_command("delete_test_data", interactive=False, stdout=StringIO())
 
