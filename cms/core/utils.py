@@ -16,7 +16,8 @@ if TYPE_CHECKING:
 
 matplotlib_lock = Lock()
 
-FORMULA_INDICATOR = "$$"
+# A set of tuples containing the beginning and end indicators for LaTeX formulas
+FORMULA_INDICATORS: set[tuple[str, str]] = {("$$", "$$"), ("\\(", "\\)"), ("\\[", "\\]")}
 
 mpl.rcParams.update(
     {
