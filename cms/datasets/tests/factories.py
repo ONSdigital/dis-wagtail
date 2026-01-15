@@ -11,7 +11,7 @@ class DatasetFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Dataset
 
-    namespace = factory.Sequence(lambda n: f"namespace-{n}")
+    namespace = factory.Faker("sentence", nb_words=4)
     title = factory.Faker("sentence", nb_words=4)
     description = factory.Faker("sentence", nb_words=16)
     version = factory.Sequence(lambda n: n)
