@@ -1,9 +1,10 @@
 from http import HTTPStatus
+from unittest.mock import patch
 
 from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
-from wagtail.models import GroupPagePermission, Page
+from wagtail.models import GroupPagePermission, Page, PageLogEntry
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -235,6 +236,49 @@ class RevisionChartDownloadViewTestCase(WagtailTestUtils, TestCase):
         # Should NOT contain new data
         self.assertNotIn("Region", content)
         self.assertNotIn("London", content)
+
+    def test_download_creates_audit_log_entry(self):
+        """Test that downloading a chart creates an audit log entry."""
+        # Verify no log entries exist yet for this action
+        initial_count = PageLogEntry.objects.filter(action="content.chart_download").count()
+
+        # Download the chart
+        response = self.client.get(self.get_download_url())
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Verify audit log entry was created
+        log_entry = PageLogEntry.objects.filter(action="content.chart_download").latest("timestamp")
+        self.assertEqual(log_entry.object_id, self.article.pk)
+        self.assertEqual(log_entry.data["chart_id"], "test-chart-id")
+        self.assertEqual(log_entry.data["revision_id"], self.revision_id)
+
+        # Verify count increased
+        final_count = PageLogEntry.objects.filter(action="content.chart_download").count()
+        self.assertEqual(final_count, initial_count + 1)
+
+    def test_download_audit_log_mirrors_to_stdout(self):
+        """Test that chart download audit log entry is mirrored to stdout."""
+        with patch("cms.core.audit.audit_logger") as mock_logger:
+            # Download the chart
+            response = self.client.get(self.get_download_url())
+
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+
+            # Verify audit logger was called
+            mock_logger.info.assert_called_once()
+            call_args = mock_logger.info.call_args
+
+            # Verify the log message
+            self.assertEqual(call_args[0][0], "content.chart_download")
+
+            # Verify extra data
+            extra = call_args[1]["extra"]
+            self.assertEqual(extra["event"], "content.chart_download")
+            self.assertEqual(extra["object_id"], self.article.pk)
+            self.assertEqual(extra["data"]["chart_id"], "test-chart-id")
+            self.assertEqual(extra["data"]["revision_id"], self.revision_id)
+            self.assertIn("timestamp", extra)
 
 
 class RevisionChartDownloadBundlePermissionsTestCase(WagtailTestUtils, TestCase):
