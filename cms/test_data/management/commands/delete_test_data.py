@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Model, Q
 from treebeard.mp_tree import MP_Node
 
-from .create_test_data import SEEDED_DATA_PREFIX
+from cms.test_data.utils import SEEDED_DATA_PREFIX
 
 COLUMNS = {"slug", "title"}
 

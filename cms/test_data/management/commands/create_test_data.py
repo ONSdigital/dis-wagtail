@@ -15,9 +15,8 @@ from wagtail_factories import ImageFactory
 from cms.datasets.tests.factories import DatasetFactory
 from cms.taxonomy.models import Topic
 from cms.taxonomy.tests.factories import SimpleTopicFactory
+from cms.test_data.utils import SEEDED_DATA_PREFIX
 from cms.topics.tests.factories import TopicPageFactory
-
-SEEDED_DATA_PREFIX = "Z-RANDOM "
 
 
 def validate_config_file(val: str) -> dict:

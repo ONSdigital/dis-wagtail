@@ -3,10 +3,11 @@ from io import StringIO
 from django.core.management import call_command
 from django.test import TestCase
 
-from cms.core.management.commands.create_test_data import SEEDED_DATA_PREFIX
 from cms.images.models import CustomImage
 from cms.taxonomy.models import Topic
 from cms.topics.models import TopicPage
+
+from .management.commands.create_test_data import SEEDED_DATA_PREFIX
 
 AFFECTED_MODELS = [TopicPage, Topic, CustomImage]
 
