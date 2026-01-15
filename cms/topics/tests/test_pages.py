@@ -259,7 +259,9 @@ class TopicPageTests(WagtailPageTestCase):
         self.assertContains(response, self.page.title)
         self.assertNotContains(response, "Headline facts and figures")
         self.assertNotContains(response, "figurexyz")
+        self.assertNotContains(response, "XYZ")
         self.assertNotContains(response, "figureabc")
+        self.assertNotContains(response, "ABC")
         self.assertNotContains(response, "broken1")
         self.assertNotContains(response, "broken2")
 
@@ -299,7 +301,9 @@ class TopicPageTests(WagtailPageTestCase):
         self.assertContains(response, self.page.title)
         self.assertNotContains(response, "Headline facts and figures")
         self.assertNotContains(response, "figurexyz")
+        self.assertNotContains(response, "XYZ")
         self.assertNotContains(response, "figureabc")
+        self.assertNotContains(response, "ABC")
 
     def test_topic_page_displays_with_broken_headline_figures_missing_article(self):
         """Test that the topic page renders renders without showing headline figures when it has headline figures from
@@ -337,4 +341,6 @@ class TopicPageTests(WagtailPageTestCase):
         self.assertContains(response, self.page.title)
         self.assertNotContains(response, "Headline facts and figures")
         self.assertNotContains(response, "figurexyz")
+        self.assertNotContains(response, "XYZ")
         self.assertNotContains(response, "figureabc")
+        self.assertNotContains(response, "ABC")
