@@ -453,9 +453,7 @@ def add_bundle_details(context: Context) -> None:
 
 
 @then("the logged in user cannot create a bundle")
-def cannot_add_bundles(context: Context) -> None:
-    expect(context.page.get_by_role("link", name="Add bundle")).not_to_be_visible()
-    context.page.goto(context.base_url + reverse("bundle:index"))
+def cannot_add_bundles(context: Context) -> None:x
     expect(context.page.get_by_role("link", name="Add bundle")).not_to_be_visible()
 
 

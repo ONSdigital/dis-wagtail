@@ -28,7 +28,8 @@ Scenario Outline: A User can create a bundle
 Scenario Outline: A User cannot create a bundle due to authorisation
     Given there is a <role> user
     When the <role> logs in
-    Then the logged in user cannot create a bundle
+    Then the logged in user goes to the bundle page
+    And the logged in user cannot create a bundle
     Examples: bundles
        | role     |
        | Viewer   |
