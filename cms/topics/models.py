@@ -362,7 +362,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         if broken_figures:
             logger.error(
                 "Broken headline figures found on topic page",
-                extra={"topic_page_id": self.id, "broken_figures": broken_figures},
+                extra={"topic_page_id": self.id, "topic_page_slug": self.slug, "broken_figures": broken_figures},
             )
             return True
         return False
