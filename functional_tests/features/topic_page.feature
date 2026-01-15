@@ -39,6 +39,7 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the topic page has a Welsh translation
         When the user edits the topic page
         And the user switches to the Welsh locale
+        And the user converts the alias into an ordinary page
         And the user goes to the Taxonomy tab
         Then the user is informed that the selected topic is copied from the English version
 
