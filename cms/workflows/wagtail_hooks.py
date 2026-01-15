@@ -54,7 +54,10 @@ def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: Http
                 icon_name = "success" if name == "approve" else "edit"
                 updated_menu_items.append(WorkflowMenuItem(name, item_label, launch_modal, icon_name=icon_name))
 
-    is_final_task = page.current_workflow_task.pk == page.current_workflow_state.workflow.tasks.last().pk
+    is_final_task = False
+    if page.current_workflow_task:
+        is_final_task = page.current_workflow_task.pk == page.current_workflow_state.workflow.tasks.last().pk
+
     for index, item in enumerate(updated_menu_items):
         if item.name != "approve":
             continue

@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 from django.test import TestCase
 from django.urls import reverse
+from wagtail.models import TaskState
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.bundles.enums import BundleStatus
@@ -82,6 +83,9 @@ class UnlockWorkflowViewTestCase(WagtailTestUtils, TestCase):
     def test_post(self):
         mark_page_as_ready_to_publish(self.page)
 
+        task_states_count_before = TaskState.objects.count()
         response = self.client.post(self.unlock_url)
         self.assertIsInstance(self.page.current_workflow_task, GroupReviewTask)
         self.assertRedirects(response, reverse("wagtailadmin_pages:edit", args=(self.page.pk,)))
+
+        self.assertEqual(TaskState.objects.count(), task_states_count_before + 1)

@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, Self
 
 from django.db import transaction
+from django.utils import timezone
 from wagtail.admin.mail import GroupApprovalTaskStateSubmissionEmailNotifier
 from wagtail.models import AbstractGroupApprovalTask, TaskState
 
@@ -66,7 +67,14 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
         workflow_state = task_state.workflow_state
 
         # Cancel the current state and switch to a new task
-        workflow_state.current_task_state.cancel(user=user)
+        # note: not calling workflow_state.current_task_state.cancel() as that calls workflow_state.update() without
+        # next_step, which then results in a call to workflow_state.next_step() thus creating a task state for
+        # Ready to publish, which we don't want
+        workflow_state.current_task_state.status = task_state.STATUS_CANCELLED
+        workflow_state.current_task_state.finished_at = timezone.now()
+        workflow_state.current_task_state.finished_by = user
+        workflow_state.current_task_state.save()
+
         workflow_state.current_task_state.log_state_change_action(user, "cancel")
         workflow_state.update(user=user, next_task=workflow_state.workflow.tasks.exclude(pk=task_state.task_id).first())
         return self
