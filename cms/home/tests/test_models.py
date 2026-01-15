@@ -7,7 +7,7 @@ from cms.home.models import HomePage
 
 class HomePageTestCase(TranslationResetMixin, TestCase):
     def setUp(self):
-        self.home_page = HomePage.objects.get(slug="home")
+        self.home_page = HomePage.objects.first()
         self.url = self.home_page.get_url()
 
     def test_loads(self):
