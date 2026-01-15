@@ -26,24 +26,22 @@ class PageReadyToBePublishedLock(WorkflowLock):
         if in_bundle_ready_to_be_published(self.object):
             return self.get_in_bundle_message(user)
 
+        return self.get_generic_message(user)
+
+    def get_description(self, user: User, _can_lock: bool = False) -> str | SafeString:
+        """Displayed in the sidebar info panel."""
+        if in_bundle_ready_to_be_published(self.object):
+            return self.get_in_bundle_description(user)
+
+        return self.get_generic_message(user)
+
+    def get_generic_message(self, user: User) -> str | SafeString:
         if self.for_user(user):
             return format_html(
                 "This page cannot be edited as it is <strong>{status}</strong>.", status="Ready to be published"
             )
 
         return ""
-
-    def get_description(self, user: User, _can_lock: bool = False) -> str | SafeString:
-        """Displayed in the sidebar info panel."""
-        if not self.for_user(user):
-            return ""
-
-        if in_bundle_ready_to_be_published(self.object):
-            return self.get_in_bundle_description(user)
-
-        return format_html(
-            "This page cannot be edited as it is <strong>{status}</strong>.", status="Ready to be published"
-        )
 
     def get_in_bundle_message(self, user: User) -> str | SafeString:
         if user_can_manage_bundles(user):

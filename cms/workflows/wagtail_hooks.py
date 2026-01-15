@@ -58,20 +58,21 @@ def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: Http
     if page.current_workflow_task:
         is_final_task = page.current_workflow_task.pk == page.current_workflow_state.workflow.tasks.last().pk
 
-    for index, item in enumerate(updated_menu_items):
-        if item.name != "approve":
-            continue
+    is_self_approver = page.latest_revision and page.latest_revision.user_id == request.user.pk
+    final_menu_items = []
+    for item in updated_menu_items:
+        if item.name == "approve":
+            # skip adding this item when the current user was the last editor to prevent self-approval
+            if is_self_approver:
+                continue
 
-        # tidy up the "approve" action label, both for when we're lock in ready to publish,
-        # and when the workflow was "unlocked". i.e. moved back a step.
-        label = "Approve" if "with comment" not in item.label else "Approve with comment"
-        updated_menu_items[index].label = f"{label} and Publish" if is_final_task else label
+            # tidy up the "approve" action label, both for when we're lock in ready to publish,
+            # and when the workflow was "unlocked". i.e. moved back a step.
+            label = "Approve" if "with comment" not in item.label else "Approve with comment"
+            item.label = f"{label} and Publish" if is_final_task else label
+        final_menu_items.append(item)
 
-    if page.latest_revision and page.latest_revision.user_id == request.user.pk:
-        # hide the "approve" action items if the current user was the last editor as they cannot self-approve
-        menu_items[:] = [item for item in updated_menu_items if item.name != "approve"]
-    else:
-        menu_items[:] = updated_menu_items
+    menu_items[:] = final_menu_items
 
 
 @hooks.register("construct_page_action_menu")
