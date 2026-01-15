@@ -222,6 +222,154 @@ class FlattenTableDataTestCase(SimpleTestCase):
         ]
         self.assertEqual(result, expected)
 
+    def test_colspan_repeats_value(self):
+        """Test that colspan cells have their value repeated across columns."""
+        data = {
+            "headers": [
+                [{"value": "Merged Header", "colspan": 2}, {"value": "Header 3"}],
+            ],
+            "rows": [
+                [{"value": "A"}, {"value": "B"}, {"value": "C"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["Merged Header", "Merged Header", "Header 3"],
+            ["A", "B", "C"],
+        ]
+        self.assertEqual(result, expected)
+
+        # Test with colspan in rows
+        data = {
+            "headers": [],
+            "rows": [
+                [{"value": "Merged Cell", "colspan": 2}, {"value": "C1"}],
+                [{"value": "A2"}, {"value": "B2"}, {"value": "C2"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["Merged Cell", "Merged Cell", "C1"],
+            ["A2", "B2", "C2"],
+        ]
+        self.assertEqual(result, expected)
+
+    def test_rowspan_repeats_value(self):
+        """Test that rowspan cells have their value repeated across rows."""
+        data = {
+            "headers": [],
+            "rows": [
+                [{"value": "Merged", "rowspan": 2}, {"value": "B1"}],
+                [{"value": "B2"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["Merged", "B1"],
+            ["Merged", "B2"],
+        ]
+        self.assertEqual(result, expected)
+
+    def test_colspan_and_rowspan_combined(self):
+        """Test that cells with both colspan and rowspan are handled correctly."""
+        data = {
+            "headers": [],
+            "rows": [
+                [{"value": "Merged", "colspan": 2, "rowspan": 2}, {"value": "C1"}],
+                [{"value": "C2"}],
+                [{"value": "A3"}, {"value": "B3"}, {"value": "C3"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["Merged", "Merged", "C1"],
+            ["Merged", "Merged", "C2"],
+            ["A3", "B3", "C3"],
+        ]
+        self.assertEqual(result, expected)
+
+        # Test with headers and cells merged both ways in the middle
+        data = {
+            "headers": [[{"value": "Header 1"}, {"value": "Header 2"}, {"value": "Header 3"}, {"value": "Header 4"}]],
+            "rows": [
+                [{"value": "A1"}, {"value": "Merged", "colspan": 2, "rowspan": 2}, {"value": "C1"}],
+                [{"value": "A2"}, {"value": "C2"}],
+                [{"value": "A3"}, {"value": "B3"}, {"value": "C3"}, {"value": "D3"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["Header 1", "Header 2", "Header 3", "Header 4"],
+            ["A1", "Merged", "Merged", "C1"],
+            ["A2", "Merged", "Merged", "C2"],
+            ["A3", "B3", "C3", "D3"],
+        ]
+        self.assertEqual(result, expected)
+
+    def test_rowspan_at_end_of_row(self):
+        """Test that rowspan cells at the end of a row are handled correctly."""
+        data = {
+            "headers": [],
+            "rows": [
+                [{"value": "A1"}, {"value": "Merged", "rowspan": 2}],
+                [{"value": "A2"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["A1", "Merged"],
+            ["A2", "Merged"],
+        ]
+        self.assertEqual(result, expected)
+
+    def test_multiple_rowspans_in_same_row(self):
+        """Test that multiple rowspan cells in the same row are handled correctly."""
+        data = {
+            "headers": [],
+            "rows": [
+                [{"value": "A", "rowspan": 2}, {"value": "B"}, {"value": "C", "rowspan": 3}],
+                [{"value": "B2"}],
+                [{"value": "A3"}, {"value": "B3"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["A", "B", "C"],
+            ["A", "B2", "C"],
+            ["A3", "B3", "C"],
+        ]
+        self.assertEqual(result, expected)
+
+    def test_colspan_with_default_value(self):
+        """Test that colspan=1 (default) doesn't duplicate values."""
+        data = {
+            "headers": [],
+            "rows": [
+                [{"value": "A", "colspan": 1}, {"value": "B"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["A", "B"],
+        ]
+        self.assertEqual(result, expected)
+
+    def test_rowspan_with_default_value(self):
+        """Test that rowspan=1 (default) doesn't duplicate values."""
+        data = {
+            "headers": [],
+            "rows": [
+                [{"value": "A", "rowspan": 1}],
+                [{"value": "B"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["A"],
+            ["B"],
+        ]
+        self.assertEqual(result, expected)
+
 
 class RedirectUtilityTestCase(SimpleTestCase):
     def test_temporary_redirect_default(self):

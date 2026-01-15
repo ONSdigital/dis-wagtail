@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.models import Page
 
-
 matplotlib_lock = Lock()
 
 FORMULA_INDICATOR = "$$"
@@ -111,7 +110,9 @@ def redirect_to_parent_listing(
 
 def flatten_table_data(data: dict) -> list[list[str | int | float]]:
     """Flattens table data by extracting cell values from headers and rows.
-    This is primarily used for the table block.
+
+    This is primarily used for the table block. Merged cells (colspan/rowspan)
+    have their values repeated across all spanned cells.
 
     Args:
         data: Dictionary containing 'headers' and 'rows' keys with cell objects.
@@ -119,4 +120,48 @@ def flatten_table_data(data: dict) -> list[list[str | int | float]]:
     Returns:
         List of rows, where each row is a list of cell values (strings, ints, or floats).
     """
-    return [[cell.get("value", "") for cell in row] for row in [*data.get("headers", []), *data.get("rows", [])]]
+    all_rows = [*data.get("headers", []), *data.get("rows", [])]
+    result: list[list[str | int | float]] = []
+    # Track columns filled by rowspan: {col_index: (value, remaining_rows)}
+    rowspan_tracker: dict[int, tuple[str | int | float, int]] = {}
+
+    for row in all_rows:
+        processed_row: list[str | int | float] = []
+        col_index = 0
+
+        for cell in row:
+            # Fill columns blocked by previous rowspans
+            while col_index in rowspan_tracker:
+                value, remaining = rowspan_tracker[col_index]
+                processed_row.append(value)
+                if remaining == 1:
+                    del rowspan_tracker[col_index]
+                else:
+                    rowspan_tracker[col_index] = (value, remaining - 1)
+                col_index += 1
+
+            value = cell.get("value", "")
+            colspan = cell.get("colspan", 1)
+            rowspan = cell.get("rowspan", 1)
+
+            # Add the cell value repeated for colspan
+            for _ in range(colspan):
+                processed_row.append(value)
+                # Track rowspan for this column
+                if rowspan > 1:
+                    rowspan_tracker[col_index] = (value, rowspan - 1)
+                col_index += 1
+
+        # Handle any remaining rowspan columns at end of row
+        while col_index in rowspan_tracker:
+            value, remaining = rowspan_tracker[col_index]
+            processed_row.append(value)
+            if remaining == 1:
+                del rowspan_tracker[col_index]
+            else:
+                rowspan_tracker[col_index] = (value, remaining - 1)
+            col_index += 1
+
+        result.append(processed_row)
+
+    return result
