@@ -1,4 +1,6 @@
 # pylint: disable=not-callable
+import re
+
 from behave import step, then, when
 from behave.runner import Context
 from django.urls import reverse
@@ -7,6 +9,8 @@ from wagtail.models import Locale
 
 from cms.themes.models import ThemeIndexPage
 from cms.themes.tests.factories import ThemeIndexPageFactory
+
+RE_UNLOCKED = re.compile(r"Page '.*' is now unlocked\.")
 
 
 @when("the user clicks the action button toggle")
@@ -186,16 +190,16 @@ def the_user_can_publish_a_page(context: Context) -> None:
 def the_user_unlock_a_page(context: Context) -> None:
     context.page.get_by_role("button", name="Toggle status").click()
     context.page.get_by_text("Lock", exact=True).click()
-    expect(context.page.get_by_text("Page 'Test Info Page' is now unlocked.")).to_be_visible()
+    expect(context.page.get_by_text(RE_UNLOCKED)).to_be_visible()
 
 
 @step("the user can lock and unlock a page")
 def the_user_can_lock_and_unlock_a_page(context: Context) -> None:
     context.page.get_by_role("button", name="Toggle status").click()
     context.page.get_by_text("Lock", exact=True).click()
-    expect(context.page.get_by_text("'Test Info Page' was locked by you")).to_be_visible()
+    expect(context.page.get_by_text(re.compile(r"'.*' was locked by you"))).to_be_visible()
     context.page.get_by_text("Lock", exact=True).click()
-    expect(context.page.get_by_text("Page 'Test Info Page' is now unlocked.")).to_be_visible()
+    expect(context.page.get_by_text(RE_UNLOCKED)).to_be_visible()
 
 
 @step("the user can bulk delete the topic page and its children")
