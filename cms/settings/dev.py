@@ -135,6 +135,7 @@ MIGRATION_LINTER_OPTIONS = {
         "0008_topicpage_time_series",  # Ignoring NOT NULL constraint
         "0003_topic_slug",  # Ignoring NOT NULL constraint
         "0007_rename_bundle_api_content_id_bundle_bundle_api_bundle_id",  # Ignoring RENAMING constraint
+        "0010_rename_glossaryterm_to_definition",  # Ignoring RENAMING table (GlossaryTerm -> Definition)
     ],
 }
 

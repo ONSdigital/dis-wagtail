@@ -45,11 +45,11 @@ Feature: Role Based Access Control Permission as defined in data migrations
         And the user can see the Navigation settings menu item
         And the user can see the Social media settings menu item
 
-    Scenario: A Publishing Admin can manage Glossary Terms
+    Scenario: A Publishing Admin can manage Definitions
         Given a Publishing Admin logs into the admin site
         And the user can see the Snippets menu item
         When the user clicks the Snippets menu item
-        Then the user can add Glossary terms snippet
+        Then the user can add Definitions snippet
 
     Scenario: A Publishing Admin can manage Contact Details
         Given a Publishing Admin logs into the admin site
