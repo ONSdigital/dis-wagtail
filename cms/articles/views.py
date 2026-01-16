@@ -167,7 +167,7 @@ class RevisionTableDownloadView(View):
     Uses the same permission model as Wagtail's revision views.
     """
 
-    def get(self, request: "HttpRequest", page_id: int, revision_id: int, table_id: str) -> HttpResponse:
+    def get(self, request: HttpRequest, page_id: int, revision_id: int, table_id: str) -> HttpResponse:
         """Handle GET request for table download.
 
         Args:

@@ -1,8 +1,8 @@
 from django.forms import Media
 from django.utils.functional import cached_property
 from wagtail import blocks
+from wagtail.admin.telepath import register
 from wagtail.blocks.struct_block import StructBlockAdapter
-from wagtail.telepath import register
 from wagtailmath.blocks import MathBlock
 
 

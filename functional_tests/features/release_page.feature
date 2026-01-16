@@ -111,7 +111,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
     And the user enters some example content on the page
     And <Feature> <is/are> added under pre-release access
     And the user clicks "Publish"
-    Then an error message is displayed to say the page could not be created 
+    Then an error message is displayed to say the page could not be created
     And the user sees a validation error message: <Error>
 
     Examples:
@@ -130,7 +130,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
     Then the example content is displayed in the preview tab
     And a release date change is displayed in the release calendar page preview tab
 
-  Scenario: The previous date in the date change log block is pre-populated 
+  Scenario: The previous date in the date change log block is pre-populated
     When the user publishes a "Confirmed" page with example content
     And the user returns to editing the published page
     And the user changes the release date to a new date

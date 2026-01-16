@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 @register()
-def check_aws_cognito(app_configs: Iterable["AppConfig"] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
+def check_aws_cognito(app_configs: Iterable[AppConfig] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
     errors: list[Error] = []
 
     if not getattr(settings, "AWS_COGNITO_LOGIN_ENABLED", False):
@@ -37,7 +37,7 @@ def check_aws_cognito(app_configs: Iterable["AppConfig"] | None, **kwargs: Any) 
 
 
 @register()
-def check_session_config(app_configs: Iterable["AppConfig"] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
+def check_session_config(app_configs: Iterable[AppConfig] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
     errors: list[Error] = []
     session_cookie_age = getattr(settings, "SESSION_COOKIE_AGE", None)
     session_renewal_offset = getattr(settings, "SESSION_RENEWAL_OFFSET_SECONDS", None)
@@ -56,7 +56,7 @@ def check_session_config(app_configs: Iterable["AppConfig"] | None, **kwargs: An
 
 
 @register()
-def check_identity_api(app_configs: Iterable["AppConfig"] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
+def check_identity_api(app_configs: Iterable[AppConfig] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
     errors: list[Error] = []
     cognito_enabled = getattr(settings, "AWS_COGNITO_LOGIN_ENABLED", False)
     identity_api_url = getattr(settings, "IDENTITY_API_BASE_URL", None)
@@ -90,7 +90,7 @@ def check_identity_api(app_configs: Iterable["AppConfig"] | None, **kwargs: Any)
 
 
 @register()
-def check_team_sync(app_configs: Iterable["AppConfig"] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
+def check_team_sync(app_configs: Iterable[AppConfig] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
     errors: list[Error] = []
 
     if not getattr(settings, "AWS_COGNITO_TEAM_SYNC_ENABLED", False):

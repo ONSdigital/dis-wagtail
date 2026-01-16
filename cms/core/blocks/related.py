@@ -29,7 +29,7 @@ class RelatedContentBlock(LinkBlockWithDescription):
     )
     release_date = DateBlock(required=False)
 
-    def clean(self, value: "LinkBlockStructValue") -> "LinkBlockStructValue":
+    def clean(self, value: LinkBlockStructValue) -> LinkBlockStructValue:
         """Validate the related content based on its type."""
         cleaned_value = super().clean(value)
 
@@ -60,7 +60,7 @@ class RelatedLinksBlock(ListBlock):
         self.heading = _("Related links") if add_heading else ""
         self.slug = slugify(self.heading) if add_heading else ""
 
-    def get_context(self, value: "ListValue", parent_context: dict | None = None) -> dict:
+    def get_context(self, value: ListValue, parent_context: dict | None = None) -> dict:
         """Inject our block heading and slug in the template context."""
         context: dict = super().get_context(value, parent_context=parent_context)
         context["related_links"] = [item.get_related_link(context=context) for item in value]
@@ -79,6 +79,6 @@ class RelatedLinksBlock(ListBlock):
         help_text = "A list of related links."
         template = "templates/components/streamfield/related_links_block.html"
 
-    def to_table_of_contents_items(self, _value: "ListValue") -> list[dict[str, "StrOrPromise"]]:
+    def to_table_of_contents_items(self, _value: ListValue) -> list[dict[str, StrOrPromise]]:
         """Returns the table of contents component macro data."""
         return [{"url": "#" + self.slug, "text": self.heading}]
