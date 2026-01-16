@@ -77,6 +77,7 @@ def _migrate_revisions(apps, direction):
 
 
 def _process_blocks(blocks, direction):
+    """Recursively process StreamField blocks to migrate ImageBlock data."""
     modified = False
 
     for block in blocks:
