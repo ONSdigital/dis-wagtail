@@ -492,8 +492,38 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         topic_page_class = resolve_model_string("topics.TopicPage")
         topic = topic_page_class.objects.ancestor_of(self).first().specific_deferred
         return [
-            figure.value["figure_id"] for figure in topic.headline_figures if figure.value["series"].id == series.id
+            figure.value["figure_id"]
+            for figure in topic.headline_figures
+            if figure.value["series"].id == series.id
+            and figure.value["figure_id"] in self.headline_figures_figure_ids_list
         ]
+
+    @property
+    def figures_used_by_ancestor_with_no_fallback(self) -> set[str]:
+        """Returns the set of figure IDs used by the ancestor topic page, for which there are no values to fall back on
+        from the previous to latest article in the series.
+        """
+        if not self.is_latest:
+            # Figures are only ever used from the latest article in the series
+            return set()
+
+        figures_in_use = set(self.figures_used_by_ancestor)
+        if not figures_in_use:
+            return set()
+
+        articles_headline_figures = (
+            StatisticalArticlePage.objects.sibling_of(self)
+            .live()
+            .order_by("-release_date")
+            .values_list("headline_figures", flat=True)
+        )
+        if len(articles_headline_figures) <= 1:
+            # This is the only article in the series, so all figures in use have no fallback
+            return figures_in_use
+
+        previous_to_latest_figures = articles_headline_figures[1]
+        previous_figure_ids = {figure.value["figure_id"] for figure in previous_to_latest_figures}
+        return figures_in_use - previous_figure_ids
 
     @cached_property
     def related_data_display_title(self) -> str:

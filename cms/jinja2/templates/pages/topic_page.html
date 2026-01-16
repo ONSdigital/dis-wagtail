@@ -25,7 +25,8 @@
     }}
     {# fmt:on #}
 
-    {% if page.headline_figures %}
+    {# Only include the headline figures if all figures are valid, exclude it entirely if any are broken #}
+    {% if page.headline_figures and not page.has_broken_headline_figures() %}
         <div class="ons-container">
             <h2 class="ons-u-fs-m ons-u-mb-s">{{ _("Headline facts and figures") }}</h2>
             <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--l ons-u-pb-2xl" id="headline-figures">
