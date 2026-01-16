@@ -1,8 +1,0 @@
-<div role="textbox" tabindex="0" aria-labelledby="{{ id_for_label }}-label"{% if help_text %} aria-describedby="{{ help_text_id }}"{% endif %} aria-readonly="true">
-    {% if self.formset %}
-        {{ self.formset.management_form }}
-        {% for child in self.children %}
-            {% include "wagtailadmin/panels/inline_panel_child.html" %}
-        {% endfor %}
-    {% endif %}
-</div>

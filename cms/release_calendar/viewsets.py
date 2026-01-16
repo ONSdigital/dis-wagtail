@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 class FutureReleaseCalendarMixin:
     results_template_name = "wagtailadmin/panels/future_release_calendar_page_chooser_results.html"
 
-    def get_object_list(self) -> QuerySet["ReleaseCalendarPage"]:
+    def get_object_list(self) -> QuerySet[ReleaseCalendarPage]:
         # To avoid circular import
         from cms.release_calendar.models import ReleaseCalendarPage  # pylint: disable=import-outside-toplevel
 
@@ -65,7 +65,7 @@ class FutureReleaseCalendarPageChooseResultsView(FutureReleaseCalendarMixin, Cho
 
 
 class FutureReleaseCalendarPageChosenMixin(ChosenView):
-    def get_display_title(self, instance: "ReleaseCalendarPage") -> str:
+    def get_display_title(self, instance: ReleaseCalendarPage) -> str:
         return get_release_calendar_page_details(instance)
 
 
@@ -84,4 +84,4 @@ class FutureReleaseCalendarPageChooserViewSet(ChooserViewSet):
 
 
 release_calendar_chooser_viewset = FutureReleaseCalendarPageChooserViewSet("release_calendar_chooser")
-FutureReleaseCalendarChooserWidget: type["BaseChooser"] = release_calendar_chooser_viewset.widget_class
+FutureReleaseCalendarChooserWidget: type[BaseChooser] = release_calendar_chooser_viewset.widget_class

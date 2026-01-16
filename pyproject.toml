@@ -1,6 +1,6 @@
 [tool.project]
 name = "cms"
-version = "0.1.0"
+version = "0.6.0"
 description = "The Wagtail CMS for managing and publishing content for the Office for National Statistics (ONS)"
 authors = ["ONSdigital"]
 license = "MIT"
@@ -11,77 +11,76 @@ package-mode = false
 requires-poetry = ">=2.2"
 
 [tool.poetry.dependencies]
-python = "^3.13"
-django = "5.2.9"
-wagtail = "~7.0"
-dj-database-url = "~3.0.0"
-django-basic-auth-ip-whitelist = "~0.8"
+python = "^3.14"
+django = "5.2.10"
+wagtail = "~7.2"
+dj-database-url = "~3.1.0"
 django-csp = "~4.0"
 django-defender = "~0.9.8"
 django-extensions = "~4.1"
 django-jinja = "^2.11.0"
-django-redis = "~5.4"
+django-redis = "~6.0"
 django-storages = { version = "~1.14", extras = ["s3"] }
 gunicorn = "~23.0"
-psycopg = "~3.2.9"
-sentry-sdk = "~2.29"  # Torchbox dependency
-wagtail-font-awesome-svg = "^1.1"
-apscheduler = "^3.11.0"
+psycopg = "~3.3.2"
+wagtail-font-awesome-svg = "^2.0"
+apscheduler = "^3.11.2"
 wagtailmath = "~1.3.1"
-whitenoise = "~6.9"
+whitenoise = "~6.11"
 slack-sdk = "^3.35.0"
 django-cache-memoize = "^0.2.1"
 django-iam-dbauth = "^0.2.1"
-requests = "^2.32.3"
-django-treebeard = "^4.7.1"
+requests = "^2.32.5"
+django-treebeard = "^4.8"
 kafka-python = "^2.0.5"
-wagtail-tinytableblock = "^0.3.4"
-queryish = "^0.2"
+wagtail-tinytableblock = "^0.4.0"
+queryish = "^0.3"
 python-json-logger = "^3.3.0"
 json-log-formatter = "^1.1.1"
 django-xff = "^1.5.0"
-djangorestframework = "^3.16.0"
-matplotlib = "^3.10.3"
-django-ses = "^4.4.0"
+djangorestframework = "^3.16.1"
+matplotlib = "^3.10.8"
+numpy = "^2.4"  # used by matplotlib
+django-ses = "^4.6.0"
 aws-msk-iam-sasl-signer-python = "^1.0.2"
 wagtailtables = "^0.2.2"
 pyjwt = "^2.10.1"
-cryptography = "^45.0.4"
-django-pglock = "^1.7.2"
+cryptography = "^46.0.3"
+django-pglock = "^1.8.0"
 wagtail-schema-org = "^4.1.1"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
-djhtml = "3.0.8"  # keep version in sync with .pre-commit-config.yaml
-mypy = "^1.16.0"
+djhtml = "3.0.10"  # keep version in sync with .pre-commit-config.yaml
+mypy = "^1.19.1"
 types-requests = "^2.32.0.20250602"
-django-stubs = { version="^5.2.1", extras=["compatible-mypy"]}
-pylint = "^3.3.7"
-pylint-django = "^2.6.1"
-ruff = "0.11.13"  # keep version in sync with .pre-commit-config.yaml
+django-stubs = { version="^5.2.8", extras=["compatible-mypy"]}
+pylint = "^4.0.4"
+pylint-django = "^2.7.0"
+ruff = "0.14.10"  # keep version in sync with .pre-commit-config.yaml
 
-wagtail-factories = "^4.2.1"
-coverage = "^7.8.2"
-responses = "^0.25.7"
+wagtail-factories = "^4.3.0"
+coverage = "^7.13.1"
+responses = "^0.25.8"
 
-dslr = "^0.5.1"
-django-debug-toolbar = "^5.2.0"
+dslr = "^0.6.0"
+django-debug-toolbar = "^6.1.0"
 pudb = "^2025.1"
-tblib = "^3.1.0"
-Werkzeug = "~3.1.4"
-playwright = "^1.52.0"
-behave = "^1.2.6"
+tblib = "^3.2.2"
+Werkzeug = "^3.1.5"
+playwright = "^1.57.0"
+behave = "^1.3.3"
 
 setuptools = "^78.1.1"
 honcho = "^2.0.0"
 detect-secrets = "^1.5.0"
-moto = {extras = ["iam","s3"], version = "^5.0.22"}
+moto = {extras = ["iam","s3"], version = "^5.1.18"}
 django-migration-linter = "^5.2.0"
-fakeredis = "^2.29.0"
-time-machine = "^2.16.0"
+fakeredis = "^2.32.1"
+time-machine = "^3.1.0"
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py314"
 line-length = 120
 indent-width = 4
 
@@ -123,6 +122,8 @@ ignore = [
     "UP007",
     # Allow complex functions
     "C901",
+    # Allow non-top-level imports
+    "PLC0415",
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -189,7 +190,6 @@ omit = [
     "**/node_modules/*",
     "**/migrations/*",
     "**/tests/*",
-    "cms/core/management/commands/test_sentry.py",
     "cms/wsgi.py",
     "cms/urls.py",
     "cms/settings/*",

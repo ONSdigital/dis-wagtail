@@ -1,4 +1,5 @@
-from behave import step, then, when  # pylint: disable=no-name-in-module
+# pylint: disable=not-callable
+from behave import step, then, when
 from behave.runner import Context
 from playwright.sync_api import expect
 
@@ -8,7 +9,7 @@ def user_creates_information_page(context: Context) -> None:
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="Edit 'Home'").first.click()
     context.page.get_by_role("button", name="Actions", exact=True).click()
-    context.page.get_by_role("link", name="Add a child page to 'Home'").click()
+    context.page.get_by_role("link", name="Add child page").click()
     context.page.get_by_role("link", name="Information page", exact=True).click()
 
 

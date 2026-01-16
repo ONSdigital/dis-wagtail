@@ -10,7 +10,7 @@ def create_index_page(apps, schema_editor):
     Locale = apps.get_model("wagtailcore.Locale")
 
     # Create content type for the model
-    index_content_type, created = ContentType.objects.get_or_create(
+    index_content_type, _created = ContentType.objects.get_or_create(
         model="releasecalendarindex", app_label="release_calendar"
     )
 
