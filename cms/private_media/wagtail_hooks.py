@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 @hooks.register("before_serve_document")
-def protect_private_documents(document: "PrivateDocumentMixin", request: "HttpRequest") -> None:
+def protect_private_documents(document: PrivateDocumentMixin, request: HttpRequest) -> None:
     """Block access to private documents if the user has insufficient permissions."""
     if document.is_private and (
         not request.user.is_authenticated

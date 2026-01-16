@@ -1,6 +1,7 @@
+# pylint: disable=not-callable
 from typing import Literal
 
-from behave import step, then  # pylint: disable=no-name-in-module
+from behave import step, then
 from behave.runner import Context
 from playwright.sync_api import expect
 

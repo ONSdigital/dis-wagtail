@@ -25,7 +25,7 @@ class GroupReviewTask(AbstractGroupApprovalTask):
 class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
     """Placeholder task model to use in the Bundle approval logic."""
 
-    def locked_for_user(self, obj: "Model", user: "User") -> bool:
+    def locked_for_user(self, obj: Model, user: User) -> bool:
         if getattr(obj, "active_bundle", None) is not None:
             return True
 
@@ -44,7 +44,7 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
 class TaskStateSubmissionEmailNotifier(GroupApprovalTaskStateSubmissionEmailNotifier):
     """A notifier to send email updates for our submission events."""
 
-    def can_handle(self, instance: "TaskState", **kwargs: Any) -> bool:
+    def can_handle(self, instance: TaskState, **kwargs: Any) -> bool:
         return isinstance(instance, self.valid_classes) and isinstance(
             instance.task.specific, GroupReviewTask | ReadyToPublishGroupTask
         )

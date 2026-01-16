@@ -40,12 +40,12 @@ class PrivateDocumentMixin(PrivateMediaMixin):
     def serve_url(self) -> str:
         return reverse("wagtaildocs_serve", args=[self.id, self.filename])
 
-    def get_privacy_controlled_files(self) -> Iterator["FieldFile"]:
+    def get_privacy_controlled_files(self) -> Iterator[FieldFile]:
         file: FieldFile | None = getattr(self, "file", None)
         if file:
             yield file
 
-    def get_privacy_controlled_serve_urls(self, sites: Iterable["Site"]) -> Iterator[str]:
+    def get_privacy_controlled_serve_urls(self, sites: Iterable[Site]) -> Iterator[str]:
         """Return an iterator of fully-fledged serve URLs for this document, covering the domains for all
         provided sites.
         """

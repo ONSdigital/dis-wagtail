@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from wagtail.models import Page
 
 
-def build_standard_resource_dict(page: "Page") -> dict:
+def build_standard_resource_dict(page: Page) -> dict:
     """Returns a dict with the standard resource fields.
     This covers the non-release case (and also forms the base of the release case).
     """
@@ -27,7 +27,7 @@ def build_standard_resource_dict(page: "Page") -> dict:
     }
 
 
-def build_release_specific_fields(page: "Page") -> dict:
+def build_release_specific_fields(page: Page) -> dict:
     """Builds the extra fields that only apply to release content_type."""
     data = {
         "finalised": page.status in [ReleaseStatus.CONFIRMED, ReleaseStatus.PROVISIONAL],
@@ -54,7 +54,7 @@ def build_release_specific_fields(page: "Page") -> dict:
     return data
 
 
-def build_resource_dict(page: "Page", old_url_path: str | None = None) -> dict:
+def build_resource_dict(page: Page, old_url_path: str | None = None) -> dict:
     """Single entry point that decides if we build standard or release payload.
     Returns a dict shaped according to the resource_metadata.yml spec.
     old_url_path is optional, if provided it will be used to populate the uri_old field, which is used to remove
@@ -80,7 +80,7 @@ def get_model_by_name(model_name: str) -> type:
     raise LookupError(f"No model named '{model_name}' was found.")
 
 
-def build_page_uri(page: "Page") -> str:
+def build_page_uri(page: Page) -> str:
     """Build the URI for a given page based on its URL path."""
     return build_uri_from_url_path(page.url_path)
 
@@ -92,7 +92,7 @@ def build_uri_from_url_path(url_path: str) -> str:
     return f"/{path}" if not getattr(settings, "WAGTAIL_APPEND_SLASH", True) else f"/{path}/"
 
 
-def is_indexable_page(page: "Page") -> bool:
+def is_indexable_page(page: Page) -> bool:
     """Return True if the page should be indexed based on type, restrictions, and locale."""
     return (
         page.specific_class.__name__ not in settings.SEARCH_INDEX_EXCLUDED_PAGE_TYPES

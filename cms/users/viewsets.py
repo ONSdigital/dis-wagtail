@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 from django.contrib.admin.utils import quote
+from django.db.models import Q
 from django.urls import reverse
 from django.utils.functional import cached_property
 from wagtail.admin.forms.choosers import BaseFilterForm, SearchFilterMixin
@@ -8,7 +9,7 @@ from wagtail.admin.ui.tables import Column, StatusTagColumn
 from wagtail.admin.utils import get_user_display_name
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
-from wagtail.users.views.users import UserColumn, get_users_filter_query
+from wagtail.users.views.users import UserColumn
 
 from .models import User
 
@@ -21,13 +22,19 @@ class UserFilterForm(SearchFilterMixin, BaseFilterForm):
     def model_fields(self) -> set[str]:
         return {field.name for field in User._meta.get_fields()}
 
-    def filter(self, objects: "QuerySet[User]") -> "QuerySet[User]":
+    def filter(self, objects: QuerySet[User]) -> QuerySet[User]:
         """The User model doesn't have search_fields.
 
         So we take the same approach as the core UserViewSet when it comes to searching.
+        @see https://github.com/wagtail/wagtail/blob/13399d0/wagtail/users/views/bulk_actions/user_bulk_action.py
         """
         if search_query := self.cleaned_data.get("q"):
-            conditions = get_users_filter_query(search_query, self.model_fields)
+            model_fields = {f.name for f in User._meta.get_fields()}
+            filterable_fields = {"username", "first_name", "last_name", "email"}
+            common_fields = model_fields & filterable_fields
+            conditions = Q()
+            for field in common_fields:
+                conditions |= Q(**{f"{field}__icontains": search_query})
             return objects.filter(conditions)
         return objects
 
@@ -67,7 +74,7 @@ class UserChooserMixin:
             ),
         ]
 
-    def get_object_list(self) -> "QuerySet[User]":
+    def get_object_list(self) -> QuerySet[User]:
         return User.objects.select_related("wagtail_userprofile")
 
 

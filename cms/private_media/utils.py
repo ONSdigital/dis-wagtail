@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 @cache
-def get_private_media_models() -> list[type["PrivateMediaMixin"]]:
+def get_private_media_models() -> list[type[PrivateMediaMixin]]:
     """Return all registered models that use the `PrivateMediaMixin` mixin."""
     from cms.private_media.models import PrivateMediaMixin  # pylint: disable=import-outside-toplevel
 
