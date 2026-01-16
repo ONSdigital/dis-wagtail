@@ -59,7 +59,7 @@ def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect
 
 
 @hooks.register("before_unpublish_page")
-def before_unpublish_page(request: "HttpRequest", page: "Page") -> HttpResponseRedirect | None:
+def before_unpublish_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | None:
     if request.method == "POST":
         if page.specific_class is StatisticalArticlePage and page.specific.figures_used_by_ancestor_with_no_fallback:
             messages.warning(
