@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, ClassVar
 
 from django.utils.text import slugify
 from wagtail.blocks import RichTextBlock, StreamBlock, StructBlock
-from wagtail.images.blocks import ImageChooserBlock
 
 from cms.core.blocks import (
     AccordionBlock,
@@ -15,6 +14,7 @@ from cms.core.blocks import (
     VideoEmbedBlock,
     WarningPanelBlock,
 )
+from cms.core.blocks.embeddable import ImageBlock
 from cms.core.blocks.equation import EquationBlock
 from cms.core.blocks.glossary_terms import GlossaryTermsBlock
 from cms.core.blocks.markup import ONSTableBlock
@@ -40,7 +40,7 @@ class SectionContentBlock(StreamBlock):
     information_panel = InformationPanelBlock()
     announcement_panel = AnnouncementPanelBlock()
     accordion = AccordionBlock()
-    image = ImageChooserBlock(group="Media")
+    image = ImageBlock(group="Media")
     documents = DocumentsBlock(group="Media")
     video_embed = VideoEmbedBlock(group="Media")
     table = ONSTableBlock(group="DataVis", allow_links=True)
