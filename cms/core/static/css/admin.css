@@ -10,3 +10,12 @@
 .editor-view.content-locked button[id$='-OPEN_MODAL'] {
     display: none;
 }
+
+/* Tidies up the lock message icon alignment for multi-line messages */
+.messages .lock {
+    padding-inline-start: 4em;
+}
+
+.messages .lock .icon-lock {
+    margin-inline-start: -2.4em;
+}

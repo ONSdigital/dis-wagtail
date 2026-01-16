@@ -19,11 +19,10 @@ Feature: Role Based Access Control Permission as defined in data migrations
         Then the user can bulk delete the topic page and its children
 
     Scenario: A Publishing Admin can lock and unlock a page
-        Given a Publishing Admin logs into the admin site
+        Given a statistical article exists 
+        And a Publishing Admin logs into the admin site
         And the user can see the Pages menu item
-        When the user creates an information page as a child of the home page
-        And the user adds content to the new information page
-        And the user clicks the "Save Draft" button
+        When the user edits the statistical article page
         Then the user can lock and unlock a page
 
     Scenario: A Publishing Admin can manage image collections

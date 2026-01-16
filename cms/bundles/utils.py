@@ -29,6 +29,7 @@ _("Quality and methodology")
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser
+    from django.db.models import Model
 
     from cms.users.models import User
 
@@ -498,3 +499,12 @@ def get_data_admin_action_url(
     """
     prefix = "data-admin/series" if action == "edit" else "datasets"
     return f"/{prefix}/{dataset_id}/editions/{edition_id}/versions/{version_id}"
+
+
+def in_active_bundle(item: Model) -> bool:
+    return getattr(item, "active_bundle", None) is not None
+
+
+def in_bundle_ready_to_be_published(item: Model) -> bool:
+    active_bundle: Bundle | None = getattr(item, "active_bundle", None)
+    return active_bundle is not None and active_bundle.is_ready_to_be_published
