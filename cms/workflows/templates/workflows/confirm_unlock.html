@@ -4,7 +4,7 @@
 {% block main_content %}
     <p>This page is currently ready to be published. Are you sure you want to unlock editing for this page?</p>
 
-    <form action="{{ unlock_url }}" method="POST">
+    <form action="{{ unlock_url }}" method="post">
         {% csrf_token %}
 
         <div>
