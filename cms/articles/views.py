@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def user_can_access_csv_download(user: "User") -> bool:
+def user_can_access_csv_download(user: User) -> bool:
     """Check if user can access CSV downloads for charts and tables.
 
     Allows access for users with page permissions OR bundle view permission.
@@ -37,7 +37,7 @@ def user_can_access_csv_download(user: "User") -> bool:
     return user.has_perm(get_bundle_permission("view"))
 
 
-def get_revision_page_for_request(request: "HttpRequest", page_id: int, revision_id: int) -> Page:
+def get_revision_page_for_request(request: HttpRequest, page_id: int, revision_id: int) -> Page:
     """Get the page as it was at the specified revision.
 
     Args:
@@ -139,7 +139,7 @@ class RevisionChartDownloadView(View):
     Uses the same permission model as Wagtail's revision views.
     """
 
-    def get(self, request: "HttpRequest", page_id: int, revision_id: int, chart_id: str) -> HttpResponse:
+    def get(self, request: HttpRequest, page_id: int, revision_id: int, chart_id: str) -> HttpResponse:
         """Handle GET request for chart download.
 
         Args:
