@@ -1,4 +1,5 @@
 import io
+import re
 from threading import Lock
 from typing import TYPE_CHECKING, Any
 
@@ -6,6 +7,7 @@ import matplotlib as mpl
 from django.conf import settings
 from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import redirect as _redirect
+from django.utils.html import strip_tags
 from matplotlib.figure import Figure
 
 from cms.core.enums import RelatedContentType
@@ -13,7 +15,6 @@ from cms.core.enums import RelatedContentType
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.models import Page
-
 
 matplotlib_lock = Lock()
 
@@ -108,3 +109,82 @@ def redirect_to_parent_listing(
     if callable(method) and (redirect_url := method()):
         return redirect(redirect_url)
     return redirect(parent.get_url(request=request))
+
+
+def clean_cell_value(value: str | int | float) -> str | int | float:
+    """Cleans a cell value for CSV export.
+
+    Args:
+        value: The cell value to clean.
+
+    Returns:
+        The cleaned cell value as a string, int, or float.
+    """
+    if not isinstance(value, str):
+        return value
+
+    value = value.strip()
+
+    # Replace <br> tags (all variations) with newlines, then strip remaining HTML
+    value = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
+    value = strip_tags(value)
+    return value
+
+
+def flatten_table_data(data: dict) -> list[list[str | int | float]]:
+    """Flattens table data by extracting cell values from headers and rows.
+
+    This is primarily used for the table block. Merged cells (colspan/rowspan)
+    have their values repeated across all spanned cells.
+
+    Args:
+        data: Dictionary containing 'headers' and 'rows' keys with cell objects.
+
+    Returns:
+        List of rows, where each row is a list of cell values (strings, ints, or floats).
+    """
+    all_rows = [*data.get("headers", []), *data.get("rows", [])]
+    result: list[list[str | int | float]] = []
+    # Track columns filled by rowspan: {col_index: (value, remaining_rows)}
+    rowspan_tracker: dict[int, tuple[str | int | float, int]] = {}
+
+    for row in all_rows:
+        processed_row: list[str | int | float] = []
+        col_index = 0
+
+        for cell in row:
+            # Fill columns blocked by previous rowspans
+            while col_index in rowspan_tracker:
+                value, remaining = rowspan_tracker[col_index]
+                processed_row.append(value)
+                if remaining == 1:
+                    del rowspan_tracker[col_index]
+                else:
+                    rowspan_tracker[col_index] = (value, remaining - 1)
+                col_index += 1
+
+            value = clean_cell_value(cell.get("value", ""))
+            colspan = cell.get("colspan", 1)
+            rowspan = cell.get("rowspan", 1)
+
+            # Add the cell value repeated for colspan
+            for _ in range(colspan):
+                processed_row.append(value)
+                # Track rowspan for this column
+                if rowspan > 1:
+                    rowspan_tracker[col_index] = (value, rowspan - 1)
+                col_index += 1
+
+        # Handle any remaining rowspan columns at end of row
+        while col_index in rowspan_tracker:
+            value, remaining = rowspan_tracker[col_index]
+            processed_row.append(value)
+            if remaining == 1:
+                del rowspan_tracker[col_index]
+            else:
+                rowspan_tracker[col_index] = (value, remaining - 1)
+            col_index += 1
+
+        result.append(processed_row)
+
+    return result

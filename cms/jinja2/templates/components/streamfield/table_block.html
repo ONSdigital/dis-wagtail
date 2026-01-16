@@ -1,7 +1,8 @@
 {% from "components/table/_macro.njk" import onsTable %}
+{%- set block_id = block.id | replace(":", "-") -%}
 {%- if options -%}
     <div class="ons-table-block" id="table-{{ block_id }}">
-        {% if title %}<h3 class="heading-4">{{ title }}</h3>{% endif %}
+        {% if title %}<h3>{{ title }}</h3>{% endif %}
 
         {{ onsTable(options) }}
 
@@ -13,5 +14,18 @@
                 {{ footnotes|richtext }}
             {% endcall %}
         {%- endif -%}
+
+        {% if options.download and options.download.title and options.download.itemsList | length > 0 %}
+            {% from "components/list/_macro.njk" import onsList %}
+            {# fmt:off #}
+               <h4 class="ons-u-mt-l-not-important">{{ options.download.title }}</h4>
+                {{
+                    onsList({
+                        "element": "ol",
+                        "itemsList": options.download.itemsList
+                    })
+                }}
+            {# fmt:on #}
+        {% endif %}
     </div>
 {%- endif -%}
