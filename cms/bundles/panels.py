@@ -79,7 +79,10 @@ class BundleNotePanel(HelpPanel):
 
 
 class BundleFieldPanel(FieldPanel):
-    """Defines a bundle-specific FieldPanel that is conditionally read-only."""
+    """Defines a bundle-specific FieldPanel that is conditionally read-only.
+
+    ref: https://docs.wagtail.org/en/stable/reference/panels.html#wagtail.admin.panels.FieldPanel.read_only
+    """
 
     def __init__(self, field_name: str, accessor: str | None = None, **kwargs: Any) -> None:
         super().__init__(field_name, **kwargs)
@@ -105,7 +108,10 @@ class BundleFieldPanel(FieldPanel):
 
 
 class BundleMultipleChooserPanel(MultipleChooserPanel):
-    """Defines a bundle-specific MultiFieldPanel that is conditionally read-only."""
+    """Defines a bundle-specific MultiFieldPanel that is conditionally read-only.
+
+    ref: https://docs.wagtail.org/en/stable/reference/panels.html#wagtail.admin.panels.FieldPanel.read_only
+    """
 
     def get_form_options(self) -> dict[str, Any]:
         """Override to inject custom widget for bundled_datasets."""
