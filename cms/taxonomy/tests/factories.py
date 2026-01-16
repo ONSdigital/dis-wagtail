@@ -7,6 +7,7 @@ from cms.taxonomy.models import Topic
 class SimpleTopicFactory(MP_NodeFactory):
     class Meta:
         model = Topic
+        django_get_or_create = ("id", "parent")
 
     id: str = faker.Faker("random_number", digits=50, fix_len=True)  # Use a very long ID for uniqueness
     slug: str = faker.Faker("slug")
@@ -18,6 +19,7 @@ class TopicFactory(SimpleTopicFactory):
     class Meta:
         model = Topic
         strategy = BUILD_STRATEGY  # To prevent Factory from trying to save the node
+        django_get_or_create = ("id", "parent")
 
     @post_generation
     def save_topic_in_tree(obj: Topic, *_args, **_kwargs) -> None:

@@ -22,7 +22,8 @@ class CreateTestDataTestCase(TestCase):
         self._call_with_config()
 
         for model, original_count in original_counts.items():
-            self.assertGreater(model.objects.count(), original_count, model)
+            with self.subTest(model):
+                self.assertGreater(model.objects.count(), original_count, model)
 
     def test_creates_topics(self) -> None:
         self._call_with_config(

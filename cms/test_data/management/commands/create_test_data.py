@@ -9,7 +9,6 @@ import factory.random
 from django.core.management.base import BaseCommand
 from faker import Faker
 from pydantic import ValidationError
-from treebeard.mp_tree import MP_Node
 from wagtail.models import Site
 
 from cms.datasets.tests.factories import DatasetFactory
@@ -18,7 +17,6 @@ from cms.taxonomy.tests.factories import SimpleTopicFactory
 from cms.test_data.config import TestDataConfig
 from cms.test_data.factories import ImageFactory
 from cms.test_data.utils import SEEDED_DATA_PREFIX
-from cms.topics.models import TopicPage
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -35,24 +33,6 @@ def validate_config_file(val: str) -> TestDataConfig:
 
 class Command(BaseCommand):
     help = "Create random test data"
-
-    def create_node_for_factory(
-        self,
-        factory_type: type[factory.base.BaseFactory],
-        parent: MP_Node,
-        get_or_create_args: list[str] | None = None,
-        **kwargs: Any,
-    ) -> MP_Node:
-        instance = factory_type.build(**kwargs)
-
-        matching = {s: getattr(instance, s) for s in (get_or_create_args or [])}
-
-        if existing_instance := parent.get_children().filter(**matching).first():
-            return existing_instance
-
-        created_node = parent.add_child(instance=instance)
-
-        return created_node
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
@@ -109,11 +89,12 @@ class Command(BaseCommand):
         datasets = DatasetFactory.create_batch(config.datasets.get_count(faker), title=title_factory)
 
         for _ in range(config.topics.get_count(faker)):
-            topic = self.create_node_for_factory(
-                SimpleTopicFactory, parent=root_topic, get_or_create_args=["id"], title=title_factory
-            )
-
-            topic_kwargs = {}
+            topic_kwargs = {
+                # NB: Must be created using a separate factory, as TopicFactory isn't idempotent
+                "topic": SimpleTopicFactory.create(parent=root_topic, title=title_factory),
+                "parent": root_page,
+                "title": title_factory,
+            }
 
             topic_datasets_counter = count()
             for _ in range(config.topics.datasets_count(faker)):
@@ -131,14 +112,7 @@ class Command(BaseCommand):
                 else:
                     topic_kwargs[f"explore_more__{i}__external_link__thumbnail__image"] = faker.random_element(images)
 
-            topic_page: TopicPage = self.create_node_for_factory(
-                TopicPageFactory,
-                parent=root_page,
-                get_or_create_args=["title"],
-                title=title_factory,
-                topic=topic,
-                **topic_kwargs,
-            )
+            topic_page = TopicPageFactory.create(**topic_kwargs)
 
             if faker.boolean(int(config.topics.published * 100)) and not topic_page.live:
                 topic_page.specific.save_revision().publish()

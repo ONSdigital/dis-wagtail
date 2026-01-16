@@ -41,6 +41,7 @@ class TopicPageFactory(wagtail_factories.PageFactory):
 
     class Meta:
         model = TopicPage
+        django_get_or_create = ("title", "parent")
 
     parent = factory.LazyFunction(lambda: HomePage.objects.first())  # pylint: disable=unnecessary-lambda
     title = factory.Faker("sentence", nb_words=4)

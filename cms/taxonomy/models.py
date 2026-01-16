@@ -5,17 +5,19 @@ from django.db import IntegrityError, models
 from django.db.models import UniqueConstraint
 from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
-from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
+from treebeard.mp_tree import MP_Node, MP_NodeManager
 from wagtail.admin.panels import FieldPanel
+from wagtail.query import TreeQuerySet
 from wagtail.search import index
 
 BASE_TOPIC_DEPTH = 2
 
 
 class TopicManager(MP_NodeManager):
-    def get_queryset(self) -> MP_NodeQuerySet:
+    def get_queryset(self) -> TreeQuerySet:
         """Filter out the dummy root topic from all querysets."""
-        return super().get_queryset().filter(depth__gt=1)
+        # Reuse Wagtail's custom tree QuerySet for helpful utils
+        return TreeQuerySet(self.model).order_by("path").filter(depth__gt=1)
 
     def root_topic(self) -> "Topic":
         """Return the dummy root topic."""
@@ -38,7 +40,7 @@ class Topic(index.Indexed, MP_Node):
     class Meta:
         ordering = ("path",)
 
-    objects: TopicManager = TopicManager()  # Override the default manager
+    objects: TopicManager = TopicManager.from_queryset(TreeQuerySet)()
 
     id = models.CharField(max_length=100, primary_key=True)  # type: ignore[var-annotated]
     title = models.CharField(max_length=100)  # type: ignore[var-annotated]
