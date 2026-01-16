@@ -1,4 +1,5 @@
 import io
+import re
 from threading import Lock
 from typing import TYPE_CHECKING, Any
 
@@ -6,6 +7,7 @@ import matplotlib as mpl
 from django.conf import settings
 from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import redirect as _redirect
+from django.utils.html import strip_tags
 from matplotlib.figure import Figure
 
 from cms.core.enums import RelatedContentType
@@ -109,6 +111,26 @@ def redirect_to_parent_listing(
     return redirect(parent.get_url(request=request))
 
 
+def clean_cell_value(value: str | int | float) -> str | int | float:
+    """Cleans a cell value for CSV export.
+
+    Args:
+        value: The cell value to clean.
+
+    Returns:
+        The cleaned cell value as a string, int, or float.
+    """
+    if not isinstance(value, str):
+        return value
+
+    value = value.strip()
+
+    # Replace <br> tags (all variations) with newlines, then strip remaining HTML
+    value = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
+    value = strip_tags(value)
+    return value
+
+
 def flatten_table_data(data: dict) -> list[list[str | int | float]]:
     """Flattens table data by extracting cell values from headers and rows.
 
@@ -141,7 +163,7 @@ def flatten_table_data(data: dict) -> list[list[str | int | float]]:
                     rowspan_tracker[col_index] = (value, remaining - 1)
                 col_index += 1
 
-            value = cell.get("value", "")
+            value = clean_cell_value(cell.get("value", ""))
             colspan = cell.get("colspan", 1)
             rowspan = cell.get("rowspan", 1)
 

@@ -6,6 +6,7 @@ from django.test import RequestFactory, SimpleTestCase, TestCase, override_setti
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.utils import (
+    clean_cell_value,
     flatten_table_data,
     get_client_ip,
     get_content_type_for_page,
@@ -370,6 +371,69 @@ class FlattenTableDataTestCase(SimpleTestCase):
         ]
         self.assertEqual(result, expected)
 
+    def test_numeric_values_preserved(self):
+        """Test that numeric values (int and float) are preserved."""
+        data = {
+            "headers": [[{"value": "Name"}, {"value": "Count"}, {"value": "Rate"}]],
+            "rows": [
+                [{"value": "Item A"}, {"value": 42}, {"value": 3.14}],
+                [{"value": "Item B"}, {"value": 0}, {"value": -2.5}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["Name", "Count", "Rate"],
+            ["Item A", 42, 3.14],
+            ["Item B", 0, -2.5],
+        ]
+        self.assertEqual(result, expected)
+
+    def test_html_stripped_from_values(self):
+        """Test that HTML tags are stripped from cell values."""
+        data = {
+            "headers": [[{"value": "<b>Header</b>"}]],
+            "rows": [
+                [{"value": "<p>Paragraph</p>"}],
+                [{"value": "<a href='#'>Link</a>"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["Header"],
+            ["Paragraph"],
+            ["Link"],
+        ]
+        self.assertEqual(result, expected)
+
+    def test_br_tags_converted_to_newlines(self):
+        """Test that <br> tags are converted to newlines."""
+        data = {
+            "headers": [],
+            "rows": [
+                [{"value": "Line 1<br/>Line 2"}],
+                [{"value": "A<br>B<br/>C"}],
+            ],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["Line 1\nLine 2"],
+            ["A\nB\nC"],
+        ]
+        self.assertEqual(result, expected)
+
+    def test_whitespace_stripped(self):
+        """Test that leading and trailing whitespace is stripped from values."""
+        data = {
+            "headers": [[{"value": "  Header  "}]],
+            "rows": [[{"value": "\t Value \n"}]],
+        }
+        result = flatten_table_data(data)
+        expected = [
+            ["Header"],
+            ["Value"],
+        ]
+        self.assertEqual(result, expected)
+
 
 class RedirectUtilityTestCase(SimpleTestCase):
     def test_temporary_redirect_default(self):
@@ -411,3 +475,49 @@ class RedirectUtilityTestCase(SimpleTestCase):
         response = redirect("/unicodé")
         expected_url = urllib.parse.quote("/unicodé", safe="/:")
         self.assertEqual(response.url, expected_url)
+
+
+class CleanCellValueTestCase(SimpleTestCase):
+    def test_returns_numerical_values_unchanged(self):
+        """Test that numerical values are returned unchanged."""
+        self.assertEqual(clean_cell_value(42), 42)
+        self.assertEqual(clean_cell_value(0), 0)
+        self.assertEqual(clean_cell_value(-10), -10)
+        self.assertEqual(clean_cell_value(3.14), 3.14)
+        self.assertEqual(clean_cell_value(0.0), 0.0)
+        self.assertEqual(clean_cell_value(-2.5), -2.5)
+
+    def test_strips_whitespace(self):
+        """Test that leading and trailing whitespace is stripped."""
+        self.assertEqual(clean_cell_value("  hello  "), "hello")
+        self.assertEqual(clean_cell_value("\t\ntext\n\t"), "text")
+
+    def test_converts_br_tags_to_newlines(self):
+        """Test that <br> tag variations are converted to newlines."""
+        self.assertEqual(clean_cell_value("line1<br/>line2"), "line1\nline2")
+        self.assertEqual(clean_cell_value("line1<br>line2"), "line1\nline2")
+        self.assertEqual(clean_cell_value("a<br/>b<br>c"), "a\nb\nc")
+        # Test case insensitivity and spacing variations
+        self.assertEqual(clean_cell_value("a<BR>b"), "a\nb")
+        self.assertEqual(clean_cell_value("a<Br/>b"), "a\nb")
+        self.assertEqual(clean_cell_value("a<br />b"), "a\nb")
+
+    def test_strips_html_tags(self):
+        """Test that HTML tags are stripped from the value."""
+        self.assertEqual(clean_cell_value("<b>bold</b>"), "bold")
+        self.assertEqual(clean_cell_value("<p>paragraph</p>"), "paragraph")
+        self.assertEqual(clean_cell_value("<a href='#'>link</a>"), "link")
+
+    def test_combined_html_and_br_handling(self):
+        """Test that HTML stripping and BR conversion work together."""
+        self.assertEqual(clean_cell_value("<b>bold</b><br/><i>italic</i>"), "bold\nitalic")
+        self.assertEqual(clean_cell_value("  <p>text<br>more</p>  "), "text\nmore")
+
+    def test_empty_string(self):
+        """Test that empty strings are handled correctly."""
+        self.assertEqual(clean_cell_value(""), "")
+        self.assertEqual(clean_cell_value("   "), "")
+
+    def test_plain_string(self):
+        """Test that plain strings without HTML are returned stripped."""
+        self.assertEqual(clean_cell_value("plain text"), "plain text")
