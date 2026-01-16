@@ -697,5 +697,4 @@ def the_featured_article_component_contains_the_featured_article_listing_image(
 @step("the user cannot delete the referenced headline figures")
 def user_cannot_delete_the_referenced_headline_figures(context: Context) -> None:
     headline_figures_region = context.page.get_by_role("region", name="Headline figures")
-    expect(headline_figures_region.get_by_role("button", name="Delete").nth(0)).not_to_be_visible()
-    expect(headline_figures_region.get_by_role("button", name="Delete").nth(1)).not_to_be_visible()
+    expect(headline_figures_region.get_by_role("button", name="Delete")).to_have_count(0)
