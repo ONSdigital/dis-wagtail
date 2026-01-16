@@ -38,7 +38,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             del self.fields["changes_to_release_date"]
 
         # Get the live version of the page for validation comparisons
-        self.live_page: "ReleaseCalendarPage | None" = None  # noqa: UP037
+        self.live_page: ReleaseCalendarPage | None = None
         if self.instance and self.instance.pk:
             # Import at runtime to avoid circular import
             from .models import ReleaseCalendarPage  # pylint: disable=import-outside-toplevel

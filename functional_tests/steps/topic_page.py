@@ -1,4 +1,5 @@
-from behave import given, step, then, when  # pylint: disable=no-name-in-module
+# pylint: disable=not-callable
+from behave import given, step, then, when
 from behave.runner import Context
 from django.conf import settings
 from django.urls import reverse
@@ -170,7 +171,7 @@ def user_can_see_link(context: Context, link_text: str) -> None:
     expect(context.page.get_by_role("link", name=link_text)).to_be_visible()
 
 
-@given("the following topic pages exist")
+@given("the following topic pages exist:")
 def create_topic_pages_from_table(context: Context) -> None:
     """Create multiple topic pages from a table."""
     context.topic_pages = {}  # Store all topic pages by title
@@ -193,7 +194,7 @@ def create_topic_pages_from_table(context: Context) -> None:
         context.topic_pages[title] = topic_page
 
 
-@given('"{topic_page_title}" has the following "{item_type}"')
+@given('"{topic_page_title}" has the following "{item_type}":')
 def create_items_for_topic_page(context: Context, topic_page_title: str, item_type: str) -> None:
     """Create articles or methodologies under a specific topic page."""
     topic_page = context.topic_pages[topic_page_title]
@@ -259,7 +260,7 @@ def highlighted_section_visible(context: Context, section_type: str) -> None:
     expect(context.page.locator(selector)).to_contain_text(expected_text)
 
 
-@then('the highlighted "{item_type}" are displayed in this order')
+@then('the highlighted "{item_type}" are displayed in this order:')
 def check_highlighted_items_order(context: Context, item_type: str) -> None:
     """Check the order of highlighted articles or methodologies matches the table."""
     expected_titles = [row[0] for row in context.table]

@@ -2,9 +2,9 @@ from django.conf import settings
 from django.forms import Media
 from django.utils.functional import cached_property
 from wagtail import blocks
+from wagtail.admin.telepath import register
 from wagtail.blocks.field_block import FieldBlockAdapter
 from wagtail.blocks.struct_block import StructBlockAdapter
-from wagtail.telepath import register
 
 
 class BasePanelBlock(blocks.StructBlock):

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.contrib.staticfiles.finders import get_finders
@@ -67,7 +67,7 @@ class CMSWhiteNoiseMiddleware(WhiteNoiseMiddleware):
 
         self.files = new_files
 
-    def find_file(self, url: str) -> Optional["StaticFile"]:
+    def find_file(self, url: str) -> StaticFile | None:
         if url.startswith(self.static_prefix) and url not in self.known_static_files:
             # Force a 404 here, so Django doesn't try and serve the file itself
             raise Http404

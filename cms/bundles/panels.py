@@ -1,8 +1,7 @@
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlencode
 
 from django.urls import reverse
-from django.utils.functional import cached_property
 from django.utils.html import format_html
 from wagtail.admin.panels import FieldPanel, HelpPanel, MultipleChooserPanel
 
@@ -38,7 +37,7 @@ class BundleStatusPanel(HelpPanel):
             super().__init__(**kwargs)
             self.content = self._content_for_instance(self.instance)
 
-        def _content_for_instance(self, instance: "Model") -> Union[str, "SafeString"]:
+        def _content_for_instance(self, instance: Model) -> str | SafeString:
             if not hasattr(instance, "status"):
                 return ""
 
@@ -53,7 +52,7 @@ class BundleNotePanel(HelpPanel):
             super().__init__(**kwargs)
             self.content = self._content_for_instance(self.instance)
 
-        def _content_for_instance(self, instance: "Model") -> Union[str, "SafeString"]:
+        def _content_for_instance(self, instance: Model) -> str | SafeString:
             if not hasattr(instance, "active_bundle"):
                 return ""
 
@@ -80,7 +79,10 @@ class BundleNotePanel(HelpPanel):
 
 
 class BundleFieldPanel(FieldPanel):
-    """Defines a bundle-specific FieldPanel that is conditionally read-only."""
+    """Defines a bundle-specific FieldPanel that is conditionally read-only.
+
+    ref: https://docs.wagtail.org/en/stable/reference/panels.html#wagtail.admin.panels.FieldPanel.read_only
+    """
 
     def __init__(self, field_name: str, accessor: str | None = None, **kwargs: Any) -> None:
         super().__init__(field_name, **kwargs)
@@ -95,11 +97,9 @@ class BundleFieldPanel(FieldPanel):
         def __init__(self, **kwargs: Any) -> None:
             super().__init__(**kwargs)
 
-            instance = self.instance
             if self.panel.accessor and getattr(self.instance, f"{self.panel.accessor}_id"):
                 instance = getattr(self.instance, self.panel.accessor)
-
-            self.read_only = getattr(instance, "is_ready_to_be_published", False)
+                self.read_only = getattr(instance, "is_ready_to_be_published", False)
 
     def format_value_for_display(self, value: Any) -> str:
         if value is None:
@@ -108,7 +108,10 @@ class BundleFieldPanel(FieldPanel):
 
 
 class BundleMultipleChooserPanel(MultipleChooserPanel):
-    """Defines a bundle-specific MultiFieldPanel that is conditionally read-only."""
+    """Defines a bundle-specific MultiFieldPanel that is conditionally read-only.
+
+    ref: https://docs.wagtail.org/en/stable/reference/panels.html#wagtail.admin.panels.FieldPanel.read_only
+    """
 
     def get_form_options(self) -> dict[str, Any]:
         """Override to inject custom widget for bundled_datasets."""
@@ -128,30 +131,15 @@ class BundleMultipleChooserPanel(MultipleChooserPanel):
 
             self.read_only = self.instance.is_ready_to_be_published
 
-        @property
-        def template_name(self) -> str:
-            if self.read_only:
-                return "bundles/wagtailadmin/panels/read_only_output.html"
-            return cast(str, super().template_name)
-
-        @cached_property
-        def value_from_instance(self) -> Any:
-            return getattr(self.instance, self.panel.relation_name)
-
         def get_context_data(self, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
             context: dict[str, Any] = super().get_context_data(parent_context)
             if self.read_only:
-                context.update(
-                    {
-                        "display_value": self.panel.format_value_for_display(self.value_from_instance),
-                        "can_order": False,
-                    }
-                )
+                context["can_order"] = False
             return context
 
 
 class CustomAdminPageChooser(PagesWithDraftsForBundleChooserWidget):
-    def get_display_title(self, instance: "Page") -> str:
+    def get_display_title(self, instance: Page) -> str:
         return get_page_title_with_workflow_status(instance)
 
 
@@ -181,7 +169,7 @@ class PageChooserWithStatusPanel(BundleFieldPanel):
 
 class CustomReleaseCalendarPageChooser(FutureReleaseCalendarChooserWidget):
     # Override BaseChooser's default get_display_title to return custom text display
-    def get_display_title(self, instance: "Page") -> str:
+    def get_display_title(self, instance: Page) -> str:
         return get_release_calendar_page_details(instance)
 
 
@@ -196,7 +184,7 @@ class ReleaseChooserWithDetailsPanel(BundleFieldPanel):
 
         return opts
 
-    def format_value_for_display(self, value: Optional["ReleaseCalendarPage"]) -> str:
+    def format_value_for_display(self, value: ReleaseCalendarPage | None) -> str:
         if value is None:
             return ""
         return get_release_calendar_page_details(value)
