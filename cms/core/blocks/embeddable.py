@@ -25,7 +25,7 @@ class ImageBlock(blocks.StructBlock):
     notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
     download = blocks.BooleanBlock(required=False, label="Show download link for image")
 
-    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+    def get_context(self, value: StreamValue, parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context)
 
         # Guard: image may be missing at render time if the asset was
