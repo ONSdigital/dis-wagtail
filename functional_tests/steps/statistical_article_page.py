@@ -1,6 +1,7 @@
+# pylint: disable=not-callable
 from datetime import timedelta
 
-from behave import given, step, then, when  # pylint: disable=no-name-in-module
+from behave import given, step, then, when
 from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect
@@ -691,3 +692,9 @@ def the_featured_article_component_contains_the_featured_article_listing_image(
     context: Context,
 ) -> None:
     expect(context.featured_article_component.locator("img")).to_be_visible()
+
+
+@step("the user cannot delete the referenced headline figures")
+def user_cannot_delete_the_referenced_headline_figures(context: Context) -> None:
+    headline_figures_region = context.page.get_by_role("region", name="Headline figures")
+    expect(headline_figures_region.get_by_role("button", name="Delete")).to_have_count(0)

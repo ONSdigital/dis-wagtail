@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 
 class BaseAnnotationTestCase(SimpleTestCase):
-    block_type: ClassVar[type["blocks.StructBlock"]]
+    block_type: ClassVar[type[blocks.StructBlock]]
     raw_data: dict[str, Any]
 
     @classmethod

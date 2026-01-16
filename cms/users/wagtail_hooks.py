@@ -19,7 +19,7 @@ if getattr(settings, "ENABLE_DJANGO_DEFENDER", False):
 
     class DjangoAdminMenuItem(MenuItem):
         """Custom menu item visible only to superusers."""
-        def is_shown(self, request: "HttpRequest") -> bool:
+        def is_shown(self, request: HttpRequest) -> bool:
             return request.user.is_superuser
 
     @hooks.register("register_settings_menu_item")
@@ -35,5 +35,5 @@ if getattr(settings, "ENABLE_DJANGO_DEFENDER", False):
 
 
 @hooks.register("register_admin_viewset")
-def register_viewset() -> "UserChooserViewSet":
+def register_viewset() -> UserChooserViewSet:
     return user_chooser_viewset

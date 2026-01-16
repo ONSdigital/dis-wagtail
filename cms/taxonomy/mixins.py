@@ -17,7 +17,7 @@ class ExclusiveTaxonomyMixin(models.Model):
     # will need to be linked to the same topic, so we need to use a ForeignKey and enforce exclusivity separately
     topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, related_name="related_%(class)s", null=True)
 
-    taxonomy_panels: ClassVar[list["Panel"]] = [
+    taxonomy_panels: ClassVar[list[Panel]] = [
         ExclusiveTaxonomyFieldPanel("topic", widget=ExclusiveTopicChooserWidget),
     ]
 
@@ -62,7 +62,7 @@ class ExclusiveTaxonomyMixin(models.Model):
 class GenericTaxonomyMixin(models.Model):
     """Generic Taxonomy mixin allows pages to be tagged with one or more topics non-exclusively."""
 
-    taxonomy_panels: ClassVar[list["Panel"]] = [
+    taxonomy_panels: ClassVar[list[Panel]] = [
         MultipleChooserPanel("topics", label="Topics", chooser_field_name="topic"),
     ]
 

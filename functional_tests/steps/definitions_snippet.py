@@ -1,4 +1,5 @@
-from behave import given, step, then, when  # pylint: disable=no-name-in-module
+# pylint: disable=not-callable
+from behave import given, step, then, when
 from behave.runner import Context
 from playwright.sync_api import expect
 
@@ -39,30 +40,26 @@ def validation_error_is_displayed_for_duplicated_definition(
 def definition_is_visible_in_index_view_with_the_required_columns(
     context: Context,
 ) -> None:
-    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(1)).to_contain_text("Name")
-    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(1)).to_contain_text("Term")
+    expect(context.page.get_by_role("columnheader", name="Name")).to_contain_text("Name")
+    expect(context.page.locator("tr:nth-child(1) > td:nth-child(2)")).to_contain_text("Term")
 
 
 @then("the Updated time is displayed")
 def the_last_edited_time_column_is_displayed(context: Context) -> None:
-    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(3)).to_contain_text("Updated")
-    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(3)).to_contain_text("Just now")
+    expect(context.page.get_by_role("columnheader", name="Updated", exact=True)).to_contain_text("Updated")
+    expect(context.page.locator("tr:nth-child(1) > td:nth-child(4)")).to_contain_text("Just now")
 
 
 @then("the Updated by field is populated with the user's name")
 def the_edited_by_column_is_displayed(context: Context) -> None:
-    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(4)).to_contain_text("Updated by")
-    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(4)).to_contain_text(
-        context.user_data["full_name"]
-    )
+    expect(context.page.get_by_role("columnheader", name="Updated by")).to_contain_text("Updated by")
+    expect(context.page.locator("tr:nth-child(1) > td:nth-child(5)")).to_contain_text(context.user_data["full_name"])
 
 
 @then("the Owner field is populated with the user's name")
 def owner_field_has_the_correct_user(context: Context) -> None:
-    expect(context.page.get_by_role("row", name="Name").get_by_role("cell").nth(5)).to_contain_text("Owner")
-    expect(context.page.get_by_role("row", name="Term").get_by_role("cell").nth(5)).to_contain_text(
-        context.user_data["full_name"]
-    )
+    expect(context.page.get_by_role("columnheader", name="Owner")).to_contain_text("Owner")
+    expect(context.page.locator("tr:nth-child(1) > td:nth-child(6)")).to_contain_text(context.user_data["full_name"])
 
 
 @given("the user modifies the Definition description")

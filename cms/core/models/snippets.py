@@ -1,5 +1,5 @@
 from collections.abc import Collection
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
@@ -27,7 +27,7 @@ class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=255, blank=True)
 
-    panels: ClassVar[list["Panel"]] = [
+    panels: ClassVar[list[Panel]] = [
         "name",
         "email",
         "phone",
@@ -89,7 +89,7 @@ class Definition(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Index
 
     revisions = GenericRelation("wagtailcore.Revision", related_query_name="definition")
 
-    panels: ClassVar[list["Panel"]] = [
+    panels: ClassVar[list[Panel]] = [
         "name",
         "definition",
         "owner",
@@ -109,7 +109,7 @@ class Definition(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Index
         unique_together: ClassVar[list[tuple[str, ...]]] = [*TranslatableMixin.Meta.unique_together, ("name", "locale")]
 
     @property
-    def updated_by(self) -> Optional["User"]:
+    def updated_by(self) -> User | None:
         return self.latest_revision.user if self.latest_revision else None
 
     def validate_unique(self, exclude: Collection[str] | None = None) -> None:
@@ -123,7 +123,7 @@ class Definition(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Index
         self.name = self.name.strip()
         super().save(*args, **kwargs)
 
-    def get_preview_template(self, request: "HttpRequest", mode_name: str) -> str:
+    def get_preview_template(self, request: HttpRequest, mode_name: str) -> str:
         return "templates/components/definitions/definition_preview.html"
 
     def __str__(self) -> str:

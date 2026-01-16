@@ -30,7 +30,7 @@ def get_view_bundle_permission() -> Permission:
     return Permission.objects.get(codename="view_bundle")
 
 
-def create_bundle_manager(username: str = "publishing_officer") -> "User":
+def create_bundle_manager(username: str = "publishing_officer") -> User:
     publishing_group = GroupFactory(name="Publishing Officers", access_admin=True)
     grant_all_bundle_permissions(publishing_group)
     grant_all_page_permissions(publishing_group)
@@ -41,34 +41,34 @@ def create_bundle_manager(username: str = "publishing_officer") -> "User":
     return publishing_officer
 
 
-def make_bundle_manager(user: "User") -> None:
+def make_bundle_manager(user: User) -> None:
     """Gives all the bundle permissions to the given user."""
     user.user_permissions.add(*get_all_bundle_permissions())
 
 
-def create_bundle_viewer(username: str = "bundle.viewer") -> "User":
+def create_bundle_viewer(username: str = "bundle.viewer") -> User:
     bundle_viewer = UserFactory(username=username, access_admin=True)
     make_bundle_viewer(bundle_viewer)
 
     return bundle_viewer
 
 
-def make_bundle_viewer(user: "User") -> None:
+def make_bundle_viewer(user: User) -> None:
     """Gives the view bundle permission to the given user."""
     user.user_permissions.add(get_view_bundle_permission())
 
 
-def grant_all_bundle_permissions(group: "Group") -> None:
+def grant_all_bundle_permissions(group: Group) -> None:
     """Adds all the bundle permissions to the given group."""
     group.permissions.add(*get_all_bundle_permissions())
 
 
-def grant_view_bundle_permissions(group: "Group") -> None:
+def grant_view_bundle_permissions(group: Group) -> None:
     """Adds the view bundle permission to the given group."""
     group.permissions.add(get_view_bundle_permission())
 
 
-def grant_all_page_permissions(group: "Group") -> None:
+def grant_all_page_permissions(group: Group) -> None:
     """Adds all the page permissions to the given group."""
     home = HomePage.objects.first()
     for permission_type in ["add", "change", "delete", "view"]:

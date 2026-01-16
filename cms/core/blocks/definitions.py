@@ -18,7 +18,7 @@ class DefinitionsBlock(ListBlock):
     class Meta:
         template = "templates/components/streamfield/definitions_block.html"
 
-    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+    def get_context(self, value: StreamValue, parent_context: dict | None = None) -> dict:
         """Inject formatted definitions to be used with ONS Accordion component."""
         context: dict = super().get_context(value, parent_context)
         context["formatted_definitions"] = [
@@ -31,7 +31,7 @@ class DefinitionsBlock(ListBlock):
         ]
         return context
 
-    def clean(self, value: "StructValue") -> MutableSequence:
+    def clean(self, value: StructValue) -> MutableSequence:
         """Deduplicate the definitions."""
         result: MutableSequence = super().clean(value)
 
