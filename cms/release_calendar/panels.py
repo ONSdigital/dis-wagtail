@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.urls import reverse
@@ -11,8 +11,6 @@ from wagtail.admin.widgets.datetime import DEFAULT_DATETIME_FORMAT
 from cms.bundles.permissions import user_can_manage_bundles
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from django.utils.safestring import SafeString
     from laces.typing import RenderContext
 
@@ -42,7 +40,7 @@ class ReleaseCalendarBundleNotePanel(HelpPanel):
         def is_shown(self) -> bool:
             return self.instance.active_bundle is not None
 
-        def _get_panel_content(self) -> Union[str, "SafeString"]:
+        def _get_panel_content(self) -> str | SafeString:
             if not self.instance.active_bundle:
                 return ""
 
@@ -73,7 +71,7 @@ class ChangesToReleaseDateFieldPanel(FieldPanel):
     class BoundPanel(FieldPanel.BoundPanel):
         template_name = "wagtailadmin/panels/previous_release_date_data.html"
 
-        def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
+        def get_context_data(self, parent_context: RenderContext | None = None) -> RenderContext | None:
             # To avoid circular import
             # pylint: disable=cyclic-import,import-outside-toplevel
             from cms.release_calendar.models import ReleaseCalendarPage

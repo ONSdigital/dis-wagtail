@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
 
 
-def global_vars(request: "HttpRequest") -> dict[str, Any]:
+def global_vars(request: HttpRequest) -> dict[str, Any]:
     """Set our global variables to use in templates."""
     return {
         "GOOGLE_TAG_MANAGER_CONTAINER_ID": settings.GOOGLE_TAG_MANAGER_CONTAINER_ID,

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
@@ -20,9 +20,9 @@ if TYPE_CHECKING:
 
 @hooks.register("before_create_page")
 def before_create_page(
-    request: "HttpRequest",
-    parent_page: "Page",
-    page_class: type["Page"],
+    request: HttpRequest,
+    parent_page: Page,
+    page_class: type[Page],
 ) -> None:
     if page_class == StatisticalArticlePage and parent_page.get_latest():
         # Display message - the actual prepopulation is done in the signal handler
@@ -33,7 +33,7 @@ def before_create_page(
 
 
 @hooks.register("before_delete_page")
-def before_delete_page(request: "HttpRequest", page: "Page") -> HttpResponseRedirect | None:
+def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | None:
     if request.method == "POST":
         if page.specific_class is StatisticalArticlePage and page.specific.figures_used_by_ancestor_with_no_fallback:
             messages.warning(
@@ -85,7 +85,7 @@ def before_unpublish_page(request: "HttpRequest", page: "Page") -> HttpResponseR
 
 
 @hooks.register("after_create_topic_page")
-def after_create_topic_page(request: "HttpRequest", topic_page: "TopicPage") -> "HttpResponse | None":
+def after_create_topic_page(request: HttpRequest, topic_page: TopicPage) -> HttpResponse | None:
     articles_index = ArticlesIndexPage(title="Articles")
     topic_page.add_child(instance=articles_index)
     # We publish a live version for the methodologies index page. This is acceptable since its URL redirects
@@ -96,7 +96,7 @@ def after_create_topic_page(request: "HttpRequest", topic_page: "TopicPage") -> 
 
 
 @hooks.register("register_admin_urls")
-def register_admin_urls() -> list[Union["URLPattern", "URLResolver"]]:
+def register_admin_urls() -> list[URLPattern | URLResolver]:
     """Registers the admin urls for Articles.
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-urls.

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Generic
+from typing import TYPE_CHECKING
 
 from django.db.models import OuterRef, Q, Subquery
 from django.db.models.functions import Coalesce
@@ -8,7 +8,7 @@ from django.db.models.functions import Coalesce
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.core.query import order_by_pk_position
 from cms.methodology.models import MethodologyPage
-from cms.topics.services.types import ArticleDict, InternalArticleDict, MethodologyDict, T
+from cms.topics.services.types import ArticleDict, InternalArticleDict, MethodologyDict
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
@@ -16,10 +16,10 @@ if TYPE_CHECKING:
     from ..models import TopicPage, TopicPageRelatedArticle
 
 
-class BaseProcessor(ABC, Generic[T]):
+class BaseProcessor[T](ABC):
     """Abstract base class for processors handling related content for topic pages."""
 
-    def __init__(self, topic_page: "TopicPage", max_items_per_section: int) -> None:
+    def __init__(self, topic_page: TopicPage, max_items_per_section: int) -> None:
         self.topic_page = topic_page
         self.max_items_per_section = max_items_per_section
 
@@ -66,7 +66,7 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
 
         return manual_articles, highlighted_page_pks
 
-    def _process_related_article(self, related: "TopicPageRelatedArticle") -> ArticleDict | None:
+    def _process_related_article(self, related: TopicPageRelatedArticle) -> ArticleDict | None:
         """Process a single related article entry."""
         # Handle external articles
         if not related.page:
@@ -128,7 +128,7 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
 
         return [{"internal_page": page} for page in qs[:limit]]
 
-    def _latest_article_pks_for_series(self, series_qs: "PageQuerySet") -> set[int]:
+    def _latest_article_pks_for_series(self, series_qs: PageQuerySet) -> set[int]:
         """For each series in `series_qs`, return the PK of its latest StatisticalArticlePage."""
         newest_child = (
             StatisticalArticlePage.objects.live()
