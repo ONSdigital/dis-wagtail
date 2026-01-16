@@ -137,7 +137,7 @@ Scenario Outline: A User can preview a bundle
 
 
 #---- Bundle Cannot preview UI Tests -----
-Scenario Outline: A User cannot preview a bundle due to not member of  associated preview-team
+Scenario Outline: A User cannot preview a bundle due to not being a member of an associated preview-team
     Given there is a <role> user
     And there is a <creator_role> user
     And there is a Statistical Analysis page approved by <creator_role>
