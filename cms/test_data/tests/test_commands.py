@@ -34,10 +34,7 @@ class CreateTestDataTestCase(TestCase):
                     "dataset_manual_links": 1,
                     "explore_more": 2,
                     "published": 1,
-                    "revisions": {
-                        "min": 1,
-                        "max": 3
-                    }
+                    "revisions": {"min": 1, "max": 3},
                 }
             }
         )
@@ -67,6 +64,17 @@ class CreateTestDataTestCase(TestCase):
 
         self._call_with_config()
         self.assertEqual(TopicPage.objects.count(), 3)
+        self.assertEqual(set(TopicPage.objects.values_list("title", flat=True)), topic_titles)
+
+    def test_seeded(self) -> None:
+        self._call_with_config()
+
+        topic_titles = set(TopicPage.objects.values_list("title", flat=True))
+
+        call_command("delete_test_data", stdout=StringIO(), interactive=False)
+
+        self._call_with_config()
+
         self.assertEqual(set(TopicPage.objects.values_list("title", flat=True)), topic_titles)
 
     def test_tree_is_valid(self) -> None:
