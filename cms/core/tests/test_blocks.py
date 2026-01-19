@@ -948,7 +948,11 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
             description="Meaningful alt text",
         )
 
-    def _make_information_page(self, *, download: bool) -> InformationPage:
+        cls.small = cls.image.get_rendition("width-1024")
+        cls.large = cls.image.get_rendition("width-2048")
+
+    def _make_information_page(self, *, download: bool, image=None) -> InformationPage:
+        image = image or self.image
         page = InformationPage(
             title="Info page with image",
             summary="<p>Summary</p>",
@@ -956,7 +960,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
                 {
                     "type": "image",
                     "value": {
-                        "image": self.image.id,
+                        "image": image.id,
                         "figure_title": "Figure 1",
                         "figure_subtitle": "Figure subtitle",
                         "supporting_text": "Office for National Statistics",
@@ -983,11 +987,9 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertContains(response, 'alt="Meaningful alt text"')
 
         # onsImage macro outputs src/srcset with both specific rendition URLs
-        small = self.image.get_rendition("width-1024")
-        large = self.image.get_rendition("width-2048")
         # Use the underlying file URLs to be agnostic of serve method
-        self.assertContains(response, small.file.url)
-        self.assertContains(response, large.file.url)
+        self.assertContains(response, self.small.file.url)
+        self.assertContains(response, self.large.file.url)
 
     def test_renders_download_link_with_file_type_and_size_when_enabled(self):
         page = self._make_information_page(download=True)
@@ -1002,9 +1004,9 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertContains(response, " download", count=1)
 
         # Large rendition used for download (assert exact URL appears twice in the response)
-        large = self.image.get_rendition("width-2048")
         # Assert exact downloadable rendition file URL appears twice: once in href, once in onsImage srcset
-        self.assertContains(response, large.file.url, count=2)
+        self.assertContains(response, self.large.file.url, count=2)
+        self.assertContains(response, self.small.file.url, count=0)
 
         # Assert the actual download anchor exists and targets the large rendition URL
         html = response.content.decode(response.charset or "utf-8", errors="replace")
@@ -1012,7 +1014,51 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         download_link = soup.select_one("a[download]")
 
         self.assertIsNotNone(download_link)
-        self.assertEqual(download_link.get("href"), large.file.url)
+        self.assertEqual(download_link.get("href"), self.large.file.url)
 
-        expected = filesizeformat(large.file.size)
+        expected = filesizeformat(self.large.file.size)
         self.assertIn(f"({expected})", download_link.get_text(strip=True))
+
+    def test_does_not_render_download_link_when_disabled(self):
+        page = self._make_information_page(download=False)
+
+        response = self.client.get(page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Download section not rendered
+        self.assertNotContains(response, "Download this image")
+
+        # No HTML5 download attribute
+        self.assertNotContains(response, " download")
+
+        # No anchor with download attribute
+        html = response.content.decode(response.charset or "utf-8", errors="replace")
+        soup = BeautifulSoup(html, "html.parser")
+        download_link = soup.select_one("a[download]")
+        self.assertIsNone(download_link)
+
+    def test_renders_when_image_is_missing(self):
+        image_model = get_image_model()
+        image = image_model.objects.create(
+            title="Test image to delete",
+            file=get_test_image_file(),
+            description="Temporary alt text",
+        )
+
+        page = self._make_information_page(download=True, image=image)
+
+        image.delete()
+
+        response = self.client.get(page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(response, page.title)
+        self.assertContains(response, "Summary")
+
+        # Image and download UI should not render when the image is missing
+        self.assertNotContains(response, "<img")
+        self.assertNotContains(response, "Download this image")
+        self.assertNotContains(response, " download")
+        self.assertNotContains(response, "Figure 1")
+        self.assertNotContains(response, "Figure subtitle")
+        self.assertNotContains(response, "Office for National Statistics")
