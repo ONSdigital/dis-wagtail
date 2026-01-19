@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from django.db.models import Model
 
 
-def publish_media_on_publish(instance: "Model", **kwargs: Any) -> None:
+def publish_media_on_publish(instance: Model, **kwargs: Any) -> None:
     """Signal handler to be connected to the 'page_published' and 'published'
     signals for all publishable models. It is responsible for identifying any
     privacy-controlled media used by the object, and ensuring that it is also
@@ -43,7 +43,7 @@ def publish_media_on_publish(instance: "Model", **kwargs: Any) -> None:
             )
 
 
-def unpublish_media_on_unpublish(instance: "Model", **kwargs: Any) -> None:
+def unpublish_media_on_unpublish(instance: Model, **kwargs: Any) -> None:
     """Signal handler to be connected to the 'page_unpublished' and 'unpublished'
     signals for all publishable models. It is responsible for identifying any
     privacy-controlled media used solely by the object, and ensuring that it is

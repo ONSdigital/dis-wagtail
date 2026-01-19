@@ -107,6 +107,17 @@ Feature: Statistical Article Page components
         And the user clicks "View Live" on the publish confirmation banner
         Then the published statistical article page has the added headline figures
 
+    Scenario: A CMS user cannot delete headline figures from a Statistical Article Page when they are referenced by the topic page
+        When the user goes to add a new statistical article page
+        And the user adds basic statistical article page content
+        And the user adds headline figures
+        And the user clicks "Publish"
+        And the user edits the ancestor topic
+        And the user adds two headline figures to the topic page
+        And the user clicks "Publish"
+        And the user returns to editing the statistical article page
+        Then the user cannot delete the referenced headline figures
+
     Scenario: A CMS user can see date placeholders on a Statistical Article Page by textbox
         When the user goes to add a new statistical article page
         Then the date placeholder "YYYY-MM-DD" is displayed in the "Release date*" textbox
