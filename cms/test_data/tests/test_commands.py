@@ -129,3 +129,7 @@ class DeleteTestDataTestCase(TestCase):
 
         self.assertIn("Checking page tree for problems...\nNo problems found.", output.getvalue())
         self.assertIn("Checking collection tree for problems...\nNo problems found.", output.getvalue())
+
+        # Topics aren't part of the page tree, to manually check they're valid
+        self.assertEqual(Topic.objects.root_topic().numchild, 0)
+        self.assertEqual(Topic.find_problems(), ([], [], [], [], []))

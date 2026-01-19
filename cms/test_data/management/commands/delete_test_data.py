@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Model, Q
 from treebeard.mp_tree import MP_Node
 
+from cms.taxonomy.models import Topic
 from cms.test_data.utils import SEEDED_DATA_PREFIX
 
 COLUMNS = {"slug", "title"}
@@ -111,4 +112,9 @@ class Command(BaseCommand):
             for model, instances in collector.data.items():
                 # Use queryset delete methods to use any customized behaviour
                 model._default_manager.filter(pk__in=[instance.pk for instance in instances]).delete()  # pylint: disable=protected-access
+
+            # NB: Because the topic tree hides the root node in a number core method, it gets corrupted
+            # during deletion. Manually repair the tree afterwards.
+            Topic.fix_tree()
+
             self.stdout.write("Successfully deleted", self.style.SUCCESS)
