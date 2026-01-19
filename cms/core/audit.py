@@ -20,7 +20,7 @@ audit_logger = logging.getLogger("cms.audit")
 @receiver(post_save, sender="wagtailcore.ModelLogEntry")
 def mirror_log_entry_to_stdout(
     sender: type,  # pylint: disable=unused-argument
-    instance: "PageLogEntry | ModelLogEntry",
+    instance: PageLogEntry | ModelLogEntry,
     created: bool,
     **kwargs: Any,
 ) -> None:
