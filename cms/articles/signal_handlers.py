@@ -3,9 +3,8 @@ from typing import TYPE_CHECKING, Any
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from wagtail import hooks
-from wagtail.admin.signals import init_new_page
 from wagtail.models import Page
-from wagtail.signals import page_published
+from wagtail.signals import init_new_page, page_published
 
 from cms.articles.models import ArticlesIndexPage, StatisticalArticlePage
 from cms.topics.models import TopicPage
