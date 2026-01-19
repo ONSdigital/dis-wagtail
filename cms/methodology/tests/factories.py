@@ -16,6 +16,7 @@ from cms.topics.tests.factories import TopicPageFactory
 class MethodologyIndexPageFactory(wagtail_factories.PageFactory):
     class Meta:
         model = MethodologyIndexPage
+        django_get_or_create: ClassVar[list[str]] = ["parent"]
 
     parent = factory.SubFactory(TopicPageFactory)
 

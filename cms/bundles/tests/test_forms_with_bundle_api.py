@@ -94,7 +94,7 @@ class BundleDatasetValidationTestCase(TestCase):
     def tearDown(self):
         self.patcher.stop()
 
-    def raw_form_data_with_dataset(self, dataset: "DatasetFactory") -> dict[str, Any]:
+    def raw_form_data_with_dataset(self, dataset: DatasetFactory) -> dict[str, Any]:
         """Returns raw form data with a dataset."""
         bundle_dataset = BundleDatasetFactory(parent=self.bundle, dataset=dataset)
         raw_data = {

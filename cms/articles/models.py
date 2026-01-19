@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from bs4 import BeautifulSoup
 from django.conf import settings
@@ -58,12 +58,12 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
     page_description = "A container for statistical article series. Used for URL structure purposes."
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode as this redirects away
 
-    content_panels: ClassVar[list["Panel"]] = [
+    content_panels: ClassVar[list[Panel]] = [
         *Page.content_panels,
         HelpPanel(content="This is a container for articles and article series for URL structure purposes."),
     ]
     # disables the "Promote" tab as we control the slug, and the page redirects
-    promote_panels: ClassVar[list["Panel"]] = []
+    promote_panels: ClassVar[list[Panel]] = []
 
     def clean(self) -> None:
         self.slug = "articles"
@@ -74,7 +74,7 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
         self.slug = "articles"
         super().minimal_clean()
 
-    def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+    def serve(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         # Redirects article series index page requests to the parent topic's articles search URL.
         return redirect_to_parent_listing(page=self, request=request, listing_url_method_name="get_articles_search_url")
 
@@ -92,7 +92,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     page_description = "A container for statistical articles in a series."
     exclude_from_breadcrumbs = True
 
-    content_panels: ClassVar[list["Panel"]] = [
+    content_panels: ClassVar[list[Panel]] = [
         *Page.content_panels,
         HelpPanel(
             content=(
@@ -106,14 +106,14 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         ),
     ]
 
-    def get_latest(self) -> Optional["StatisticalArticlePage"]:
+    def get_latest(self) -> StatisticalArticlePage | None:
         latest: StatisticalArticlePage | None = (
             StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date").first()
         )
         return latest
 
     @path("")
-    def latest_article(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+    def latest_article(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         """Serves the latest statistical article page in the series."""
         if not (latest := self.get_latest()):
             raise Http404
@@ -121,7 +121,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         return latest.serve(request, *args, serve_as_edition=True, **kwargs)
 
     @path("related-data/")
-    def latest_article_related_data(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+    def latest_article_related_data(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         """Serves the related data for the latest statistical article page in the series."""
         if not (latest := self.get_latest()):
             raise Http404
@@ -131,7 +131,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         return cast("HttpResponse", latest.related_data(request, *args, **kwargs))
 
     @path("editions/")
-    def previous_releases(self, request: "HttpRequest") -> "TemplateResponse":
+    def previous_releases(self, request: HttpRequest) -> TemplateResponse:
         children = StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")
         paginator = Paginator(children, per_page=settings.PREVIOUS_RELEASES_PER_PAGE)
 
@@ -151,30 +151,28 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         return response
 
     @path("editions/<str:slug>/")
-    def release(self, request: "HttpRequest", slug: str, **kwargs: Any) -> "HttpResponse":
+    def release(self, request: HttpRequest, slug: str, **kwargs: Any) -> HttpResponse:
         if not (edition := StatisticalArticlePage.objects.live().child_of(self).filter(slug=slug).first()):
             raise Http404
         return cast("HttpResponse", edition.serve(request, serve_as_edition=True, **kwargs))
 
     @path("editions/<str:slug>/related-data/")
-    def release_related_data(self, request: "HttpRequest", slug: str) -> "HttpResponse":
+    def release_related_data(self, request: HttpRequest, slug: str) -> HttpResponse:
         return cast("HttpResponse", self.release(request, slug, related_data=True))
 
     @path("editions/<str:slug>/versions/<int:version>/")
-    def release_with_versions(self, request: "HttpRequest", slug: str, version: int) -> "HttpResponse":
+    def release_with_versions(self, request: HttpRequest, slug: str, version: int) -> HttpResponse:
         return cast("HttpResponse", self.release(request, slug, version=version))
 
     @path("editions/<str:slug>/download-chart/<str:chart_id>/")
-    def download_chart(self, request: "HttpRequest", slug: str, chart_id: str) -> "HttpResponse":
+    def download_chart(self, request: HttpRequest, slug: str, chart_id: str) -> HttpResponse:
         if not (edition := StatisticalArticlePage.objects.live().child_of(self).filter(slug=slug).first()):
             raise Http404
         response: HttpResponse = edition.download_chart(request, chart_id)
         return response
 
     @path("editions/<str:slug>/versions/<int:version>/download-chart/<str:chart_id>/")
-    def download_chart_with_version(
-        self, request: "HttpRequest", slug: str, version: int, chart_id: str
-    ) -> "HttpResponse":
+    def download_chart_with_version(self, request: HttpRequest, slug: str, version: int, chart_id: str) -> HttpResponse:
         response: HttpResponse = self.release(request, slug, version=version, chart_id=chart_id)
         return response
 
@@ -254,7 +252,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
     featured_chart = StreamField(FeaturedChartBlock(), blank=True, max_num=1)
 
-    content_panels: ClassVar[list["Panel"]] = [
+    content_panels: ClassVar[list[Panel]] = [
         *BundledPageMixin.panels,
         MultiFieldPanel(
             [
@@ -307,22 +305,22 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         FieldPanel("content", icon="list-ul", required_on_save=True),
     ]
 
-    corrections_and_notices_panels: ClassVar[list["Panel"]] = [
+    corrections_and_notices_panels: ClassVar[list[Panel]] = [
         FieldPanel("corrections", icon="warning"),
         FieldPanel("notices", icon="info-circle"),
     ]
 
-    related_data_panels: ClassVar[list["Panel"]] = [
+    related_data_panels: ClassVar[list[Panel]] = [
         "dataset_sorting",
         FieldPanel("datasets", icon="table"),
     ]
 
-    additional_panel_tabs: ClassVar[list[tuple[list["Panel"], str]]] = [
+    additional_panel_tabs: ClassVar[list[tuple[list[Panel], str]]] = [
         (related_data_panels, "Related data"),
         (corrections_and_notices_panels, "Corrections and notices"),
     ]
 
-    promote_panels: ClassVar[list["Panel"]] = [
+    promote_panels: ClassVar[list[Panel]] = [
         *BasePage.promote_panels,
         FieldPanel(
             "featured_chart",
@@ -494,8 +492,38 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         topic_page_class = resolve_model_string("topics.TopicPage")
         topic = topic_page_class.objects.ancestor_of(self).first().specific_deferred
         return [
-            figure.value["figure_id"] for figure in topic.headline_figures if figure.value["series"].id == series.id
+            figure.value["figure_id"]
+            for figure in topic.headline_figures
+            if figure.value["series"].id == series.id
+            and figure.value["figure_id"] in self.headline_figures_figure_ids_list
         ]
+
+    @property
+    def figures_used_by_ancestor_with_no_fallback(self) -> set[str]:
+        """Returns the set of figure IDs used by the ancestor topic page, for which there are no values to fall back on
+        from the previous to latest article in the series.
+        """
+        if not self.is_latest:
+            # Figures are only ever used from the latest article in the series
+            return set()
+
+        figures_in_use = set(self.figures_used_by_ancestor)
+        if not figures_in_use:
+            return set()
+
+        articles_headline_figures = (
+            StatisticalArticlePage.objects.sibling_of(self)
+            .live()
+            .order_by("-release_date")
+            .values_list("headline_figures", flat=True)
+        )
+        if len(articles_headline_figures) <= 1:
+            # This is the only article in the series, so all figures in use have no fallback
+            return figures_in_use
+
+        previous_to_latest_figures = articles_headline_figures[1]
+        previous_figure_ids = {figure.value["figure_id"] for figure in previous_to_latest_figures}
+        return figures_in_use - previous_figure_ids
 
     @cached_property
     def related_data_display_title(self) -> str:
@@ -519,7 +547,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         return topic_page_class.objects.ancestor_of(self).first().specific_deferred
 
     def get_serialized_corrections_and_notices(
-        self, request: "HttpRequest"
+        self, request: HttpRequest
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Returns a list of corrections and notices for the page."""
         base_url = self.get_url(request) or ""
@@ -543,7 +571,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         )
         return corrections, notices
 
-    def as_featured_article_macro_data(self, request: "HttpRequest") -> dict[str, Any]:
+    def as_featured_article_macro_data(self, request: HttpRequest) -> dict[str, Any]:
         """Returns data formatted for the onsFeaturedArticle Nunjucks/Jinja2 macro."""
         data = {
             "title": {
@@ -605,7 +633,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         }
         return cast(dict[str, object], extend(super().ld_entity(), properties))
 
-    def get_canonical_url(self, request: "HttpRequest") -> str:
+    def get_canonical_url(self, request: HttpRequest) -> str:
         """Get the article page canonical URL for the given request.
         If the article is the latest in the series, this will be the evergreen series URL.
         Otherwise, it will be the default canonical page URL.
@@ -621,7 +649,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         return super().get_canonical_url(request=request)
 
-    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+    def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
         """Adds additional context to the page."""
         context: dict = super().get_context(request)
 
@@ -640,7 +668,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             ("featured_article", "Featured Article"),
         ]
 
-    def serve_preview(self, request: "HttpRequest", mode_name: str) -> "TemplateResponse":
+    def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
         match mode_name:
             case "related_data":
                 return cast("TemplateResponse", self.related_data(request))
@@ -652,9 +680,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         return cast("TemplateResponse", super().serve_preview(request, mode_name))
 
     @path("versions/<int:version>/")
-    def previous_version(
-        self, request: "HttpRequest", version: int, **kwargs: Any
-    ) -> "TemplateResponse | HttpResponse":
+    def previous_version(self, request: HttpRequest, version: int, **kwargs: Any) -> TemplateResponse | HttpResponse:
         if version <= 0 or not self.corrections:
             raise Http404
 
@@ -697,7 +723,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         return response
 
     @path("related-data/")
-    def related_data(self, request: "HttpRequest") -> "TemplateResponse":
+    def related_data(self, request: HttpRequest) -> TemplateResponse:
         if not self.dataset_document_list:
             raise Http404
 
@@ -727,7 +753,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         return response
 
     @path("download-chart/<str:chart_id>/")
-    def download_chart(self, request: "HttpRequest", chart_id: str) -> "HttpResponse":
+    def download_chart(self, request: HttpRequest, chart_id: str) -> HttpResponse:
         """Serves a chart download request for a specific chart in the article.
 
         Args:
@@ -757,7 +783,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         response = create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))
         return response
 
-    def get_url_parts(self, request: Optional["HttpRequest"] = None) -> tuple[int, str | None, str | None] | None:
+    def get_url_parts(self, request: HttpRequest | None = None) -> tuple[int, str | None, str | None] | None:
         url_parts = super().get_url_parts(request=request)
         if url_parts is None:
             return None
@@ -780,7 +806,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         return site_id, root_url, page_path
 
-    def serve(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "HttpResponse":
+    def serve(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         """Handle the page serving with the /editions/ virtual slug.
 
         Note: if you add routes to the page model, coordinate with ArticleSeriesPage paths.
@@ -827,7 +853,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             values["nextReleaseDate"] = format_date_for_gtm(self.next_release_date)
         return super().cached_analytics_values | values
 
-    def get_analytics_values(self, request: "HttpRequest") -> dict[str, str | bool]:
+    def get_analytics_values(self, request: HttpRequest) -> dict[str, str | bool]:
         values = self.cached_analytics_values
         if self.is_latest and request.path == self.get_url(request):
             # If this is the latest release, but the request path is the full page URL, not the evergreen latest,

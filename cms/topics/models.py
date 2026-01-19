@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
@@ -43,6 +44,8 @@ if TYPE_CHECKING:
 
 MAX_ITEMS_PER_SECTION = 3
 
+logger = logging.getLogger(__name__)
+
 
 class TopicPageRelatedArticle(Orderable):
     parent = ParentalKey("TopicPage", on_delete=models.CASCADE, related_name="related_articles")
@@ -68,7 +71,7 @@ class TopicPageRelatedArticle(Orderable):
         ),
     )
 
-    panels: ClassVar[list["Panel"]] = [
+    panels: ClassVar[list[Panel]] = [
         MultiFieldPanel(
             [
                 FieldPanel(
@@ -162,7 +165,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     datasets = StreamField(DatasetStoryBlock(), blank=True, default=list, max_num=MAX_ITEMS_PER_SECTION)
     time_series = StreamField(TimeSeriesPageStoryBlock(), blank=True, default=list, max_num=MAX_ITEMS_PER_SECTION)
 
-    content_panels: ClassVar[list["Panel"]] = [
+    content_panels: ClassVar[list[Panel]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
         FieldPanel("summary", required_on_save=True),
@@ -208,7 +211,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
     _analytics_content_type: ClassVar[str] = "topics"
 
-    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+    def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
         """Additional context for the template."""
         context: dict = super().get_context(request, *args, **kwargs)
         context["table_of_contents"] = self.table_of_contents
@@ -250,7 +253,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         return processor()
 
     @cached_property
-    def table_of_contents(self) -> list[dict[str, str | object]]:
+    def table_of_contents(self) -> list[dict[str, Any]]:
         """Table of contents formatted to Design System specs."""
         items = []
         if self.latest_article_in_featured_series:
@@ -288,7 +291,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             if len(figure_ids) != len(set(figure_ids)):
                 raise ValidationError({"headline_figures": "Duplicate headline figures are not allowed."})
 
-    def permissions_for_user(self, user: "User") -> PagePermissionTester:
+    def permissions_for_user(self, user: User) -> PagePermissionTester:
         """Overrides the core permissions_for_user to use our permission tester.
 
         TopicPagePermissionTester.can_add_subpage() takes into account max_count / max_count_per_parent.
@@ -343,3 +346,23 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             self.topic,  # type: ignore[arg-type]
             "topicspecificmethodology",
         )
+
+    def has_broken_headline_figures(self) -> bool:
+        """Checks if values can be retrieved for all headline figures at this moment in time.
+        Returns True if figure values are found for all headline figures on this page, otherwise False, indicating one
+        or more headlines figures on this page are broken for the current latest articles in their respective series.
+        """
+        broken_figures = []
+        for headline_figure in self.headline_figures:
+            figure_id = headline_figure.value.get("figure_id")
+            figure_article = TopicHeadlineFigureBlock.get_latest_article_for_figure(headline_figure.value)
+            if not figure_article or not figure_article.get_headline_figure(figure_id).get("figure"):
+                series_id = headline_figure.value.get("series").id if headline_figure.value.get("series") else None
+                broken_figures.append({"figure_id": figure_id, "series_id": series_id})
+        if broken_figures:
+            logger.error(
+                "Broken headline figures found on topic page",
+                extra={"topic_page_id": self.id, "topic_page_slug": self.slug, "broken_figures": broken_figures},
+            )
+            return True
+        return False

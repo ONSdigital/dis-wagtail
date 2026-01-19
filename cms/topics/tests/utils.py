@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from django.test import Client
 
 
-def post_page_add_form_to_create_topic_page(client: "Client", homepage_id: int) -> None:
+def post_page_add_form_to_create_topic_page(client: Client, homepage_id: int) -> None:
     topic_term = Topic(id="topic-a", title="Topic A")
     Topic.save_new(topic_term)
 

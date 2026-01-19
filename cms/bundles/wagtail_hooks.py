@@ -1,11 +1,12 @@
-from typing import TYPE_CHECKING, Any, Union, cast
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Any, cast
 
 from django.db.models import QuerySet
 from django.urls import include, path
 from django.utils.functional import cached_property
 from wagtail import hooks
 from wagtail.admin.ui.components import Component
-from wagtail.admin.widgets import PageListingButton
+from wagtail.admin.ui.menus.pages import PageMenuItem
 from wagtail.log_actions import LogFormatter
 from wagtail.permission_policies import ModelPermissionPolicy
 
@@ -17,8 +18,6 @@ from .viewsets.bundle_chooser import bundle_chooser_viewset
 from .viewsets.bundle_page_chooser import bundle_page_chooser_viewset
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from django.http import HttpRequest
     from django.urls import URLPattern
     from django.urls.resolvers import URLResolver
@@ -38,21 +37,19 @@ def register_viewset() -> list:
     return [bundle_viewset, bundle_chooser_viewset, bundle_page_chooser_viewset]
 
 
-class PageAddToBundleButton(PageListingButton):
+class PageAddToBundleButton(PageMenuItem):
     """Defines the 'Add to Bundle' button to use in different contexts in the admin."""
 
     label = "Add to Bundle"
     icon_name = "boxes-stacked"
-    aria_label_format = "Add '%(title)s' to a bundle"
     url_name = "bundles:add_to_bundle"
 
-    @property
-    def permission_policy(self) -> ModelPermissionPolicy:
+    @cached_property
+    def bundle_permission_policy(self) -> ModelPermissionPolicy:
         """Informs the permission policy to use Bundle-derived model permissions."""
         return ModelPermissionPolicy(Bundle)
 
-    @property
-    def show(self) -> bool:
+    def is_shown(self, user: User) -> bool:
         """Determines whether the button should be shown.
 
         We only want it for pages inheriting from BundledPageMixin that are not in an active bundle.
@@ -63,33 +60,43 @@ class PageAddToBundleButton(PageListingButton):
         if self.page.in_active_bundle:
             return False
 
+        page: Page = self.page  # needed to appease mypy
         # Note: limit to pages that are not in an active bundle
         can_show: bool = (
-            self.page_perms.can_edit() or self.page_perms.can_publish()
-        ) and self.permission_policy.user_has_any_permission(self.user, ["add", "change", "delete"])
+            page.permissions_for_user(user).can_edit() or page.permissions_for_user(user).can_publish()
+        ) and self.bundle_permission_policy.user_has_any_permission(user, ["add", "change", "delete"])
         return can_show
 
 
 @hooks.register("register_page_header_buttons")
-def page_header_buttons(page: "Page", user: "User", view_name: str, next_url: str | None = None) -> PageListingButton:  # pylint: disable=unused-argument
+def page_header_buttons(
+    page: Page,
+    user: User,  # pylint: disable=unused-argument
+    view_name: str,  # pylint: disable=unused-argument
+    next_url: str | None = None,
+) -> Generator[PageAddToBundleButton]:
     """Registers the add to bundle button in the buttons shown in the page add/edit header.
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-page-header-buttons.
     """
-    yield PageAddToBundleButton(page=page, user=user, priority=10, next_url=next_url)
+    yield PageAddToBundleButton(page=page, priority=10, next_url=next_url)
 
 
 @hooks.register("register_page_listing_buttons")
-def page_listing_buttons(page: "Page", user: "User", next_url: str | None = None) -> PageListingButton:
+def page_listing_buttons(
+    page: Page,
+    user: User,  # pylint: disable=unused-argument
+    next_url: str | None = None,
+) -> Generator[PageAddToBundleButton]:
     """Registers the add to bundle button in the buttons shown in the page listing.
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register_page_listing_buttons.
     """
-    yield PageAddToBundleButton(page=page, user=user, priority=10, next_url=next_url)
+    yield PageAddToBundleButton(page=page, priority=10, next_url=next_url)
 
 
 @hooks.register("register_admin_urls")
-def register_admin_urls() -> list[Union["URLPattern", "URLResolver"]]:
+def register_admin_urls() -> list[URLPattern | URLResolver]:
     """Registers the admin urls for Bundles.
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-urls.
@@ -105,7 +112,7 @@ class LatestBundlesPanel(Component):
     template_name = "bundles/wagtailadmin/panels/latest_bundles.html"
     num_bundles = 10
 
-    def __init__(self, request: "HttpRequest") -> None:
+    def __init__(self, request: HttpRequest) -> None:
         self.request = request
         self.permission_policy = ModelPermissionPolicy(Bundle)
 
@@ -125,7 +132,7 @@ class LatestBundlesPanel(Component):
 
         return queryset
 
-    def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
+    def get_context_data(self, parent_context: RenderContext | None = None) -> RenderContext | None:
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
@@ -141,7 +148,7 @@ class BundlesInReviewPanel(Component):
     template_name = "bundles/wagtailadmin/panels/bundles_in_review.html"
     num_bundles = 10
 
-    def __init__(self, request: "HttpRequest") -> None:
+    def __init__(self, request: HttpRequest) -> None:
         self.request = request
         self.permission_policy = ModelPermissionPolicy(Bundle)
 
@@ -172,7 +179,7 @@ class BundlesInReviewPanel(Component):
         # for everyone else, only bundles in the same preview team they are in
         return queryset.filter(teams__team__in=self.request.user.active_team_ids).distinct()  # type: ignore[union-attr]
 
-    def get_context_data(self, parent_context: "Optional[RenderContext]" = None) -> "Optional[RenderContext]":
+    def get_context_data(self, parent_context: RenderContext | None = None) -> RenderContext | None:
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
@@ -183,7 +190,7 @@ class BundlesInReviewPanel(Component):
 
 
 @hooks.register("construct_homepage_panels")
-def add_latest_bundles_panel(request: "HttpRequest", panels: list[Component]) -> None:
+def add_latest_bundles_panel(request: HttpRequest, panels: list[Component]) -> None:
     """Adds the LatestBundlesPanel to the list of Wagtail admin dashboard panels.
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#construct-homepage-panels
@@ -193,7 +200,7 @@ def add_latest_bundles_panel(request: "HttpRequest", panels: list[Component]) ->
 
 
 @hooks.register("register_log_actions")
-def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
+def register_bundle_log_actions(actions: LogActionRegistry) -> None:
     """Registers custom logging actions.
 
     @see https://docs.wagtail.org/en/stable/extending/audit_log.html
@@ -206,7 +213,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Change bundle status"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Changed the bundle status from '{log_entry.data['old']}' to '{log_entry.data['new']}'"
@@ -219,7 +226,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Approve bundle"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Approved the bundle. (Old status: '{log_entry.data['old']}')"
@@ -232,7 +239,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Preview bundle item"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Previewed {log_entry.data['type']} '{log_entry.data['title']}'."
@@ -245,7 +252,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Attempt bundle item preview"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Attempted preview of {log_entry.data['type']} '{log_entry.data['title']}'."
@@ -258,7 +265,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Add preview team to bundle"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Added preview team '{log_entry.data['team_name']}'"
@@ -271,7 +278,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Remove preview team from bundle"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Removed preview team '{log_entry.data['team_name']}'"
@@ -284,7 +291,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Add page to bundle"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Added page '{log_entry.data['page_title']}'"
@@ -297,7 +304,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Remove page from bundle"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Removed page '{log_entry.data['page_title']}'"
@@ -310,7 +317,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Add dataset to bundle"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Added dataset '{log_entry.data['dataset_title']}'"
@@ -323,7 +330,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Remove dataset from bundle"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 return f"Removed dataset '{log_entry.data['dataset_title']}'"
@@ -336,7 +343,7 @@ def register_bundle_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Change bundle schedule"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 old = log_entry.data.get("old", "Not set")

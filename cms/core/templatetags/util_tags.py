@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import jinja2
 from django import template
@@ -22,8 +22,8 @@ if TYPE_CHECKING:
 
 
 class LocaleURLsDict(TypedDict):
-    locale: "Locale"
-    variant: "Page"
+    locale: Locale
+    variant: Page
     url: str
 
 
@@ -41,7 +41,7 @@ class HreflangDict(TypedDict):
 
 # Social text
 @register.filter(name="social_text")
-def social_text(page: "Page", site: "Site") -> str:
+def social_text(page: Page, site: Site) -> str:
     """Returns the given page social text, or the default sharing image as defined in the social media settings."""
     social_text_str: str = getattr(page, "social_text", "")
     return social_text_str or SocialMediaSettings.for_site(site).default_sharing_text
@@ -49,7 +49,7 @@ def social_text(page: "Page", site: "Site") -> str:
 
 # Social image
 @register.filter(name="social_image")
-def social_image(page: "Page", site: "Site") -> Optional["CustomImage"]:
+def social_image(page: Page, site: Site) -> CustomImage | None:
     """Returns the given page social image, or the default sharing image as defined in the social media settings."""
     the_social_image: CustomImage | None = getattr(page, "social_image", None)
     return the_social_image or SocialMediaSettings.for_site(site).default_sharing_image
@@ -57,7 +57,7 @@ def social_image(page: "Page", site: "Site") -> Optional["CustomImage"]:
 
 @library.global_function
 @jinja2.pass_context
-def include_django(context: jinja2.runtime.Context, template_name: str) -> "SafeString":
+def include_django(context: jinja2.runtime.Context, template_name: str) -> SafeString:
     """Allow importing a pre-rendered Django template into jinja2."""
     return render_to_string(template_name, context=dict(context), request=context.get("request", None))
 
@@ -152,7 +152,7 @@ def ons_date_format_filter(value: datetime | None, format_string: str) -> str:
 
 # Copy django's json_script filter
 @register.filter(is_safe=True)
-def json_script(value: dict[str, Any], element_id: Optional[str] = None) -> "SafeString":
+def json_script(value: dict[str, Any], element_id: str | None = None) -> SafeString:
     """Output value JSON-encoded, wrapped in a <script type="application/json">
     tag (with an optional id).
     """
@@ -181,7 +181,7 @@ def extend(value: list[Any], element: Any) -> None:
 @register.filter(name="routablepageurl")
 def routablepageurl_no_trailing_slash(
     context: jinja2.runtime.Context,
-    page: "Page",
+    page: Page,
     *args: Any,
     **kwargs: Any,
 ) -> Any:

@@ -56,7 +56,7 @@ register_snippet(GlossaryViewSet)
 
 
 @hooks.register("after_edit_page")
-def after_edit_page(request: "HttpRequest", page: "Page") -> None:
+def after_edit_page(request: HttpRequest, page: Page) -> None:
     if page.locale.language_code != settings.LANGUAGE_CODE:
         return
 
@@ -75,7 +75,7 @@ def after_edit_page(request: "HttpRequest", page: "Page") -> None:
 
 
 @hooks.register("register_log_actions")
-def register_core_log_actions(actions: "LogActionRegistry") -> None:
+def register_core_log_actions(actions: LogActionRegistry) -> None:
     """Registers custom logging actions for core content operations.
 
     @see https://docs.wagtail.org/en/stable/extending/audit_log.html
@@ -88,7 +88,7 @@ def register_core_log_actions(actions: "LogActionRegistry") -> None:
 
         label = "Download chart CSV"
 
-        def format_message(self, log_entry: "ModelLogEntry") -> Any:
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
                 chart_title = log_entry.data.get("chart_title")

@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def user_can_access_chart_download(user: "User") -> bool:
+def user_can_access_chart_download(user: User) -> bool:
     """Check if user can access chart downloads.
 
     Allows access for users with page permissions OR bundle view permission.
@@ -46,7 +46,7 @@ class RevisionChartDownloadView(View):
     Uses the same permission model as Wagtail's revision views.
     """
 
-    def get(self, request: "HttpRequest", page_id: int, revision_id: int, chart_id: str) -> HttpResponse:
+    def get(self, request: HttpRequest, page_id: int, revision_id: int, chart_id: str) -> HttpResponse:
         """Handle GET request for chart download.
 
         Args:

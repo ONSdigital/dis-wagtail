@@ -12,7 +12,7 @@ def create_homepage(apps, schema_editor):
     Page.objects.get(id=2).delete()
 
     # Create content type for homepage model
-    homepage_content_type, created = ContentType.objects.get_or_create(model="homepage", app_label="home")
+    homepage_content_type, _created = ContentType.objects.get_or_create(model="homepage", app_label="home")
 
     # Create a new homepage
     homepage = HomePage.objects.create(
