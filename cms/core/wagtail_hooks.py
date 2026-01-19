@@ -54,7 +54,7 @@ register_snippet(GlossaryViewSet)
 
 
 @hooks.register("after_edit_page")
-def after_edit_page(request: "HttpRequest", page: "Page") -> None:
+def after_edit_page(request: HttpRequest, page: Page) -> None:
     if page.locale.language_code != settings.LANGUAGE_CODE:
         return
 

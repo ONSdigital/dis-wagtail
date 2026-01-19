@@ -34,13 +34,13 @@ class BasePublisher(ABC):
     CREATED_OR_UPDATED_CHANNEL = "search-content-updated"
     DELETED_CHANNEL = "search-content-deleted"
 
-    def publish_created_or_updated(self, page: "Page", old_url_path: str | None = None) -> None:
+    def publish_created_or_updated(self, page: Page, old_url_path: str | None = None) -> None:
         """Build the message for the created/updated event.
         Delegate sending to the subclass's _publish().
         """
         return self._publish(self.CREATED_OR_UPDATED_CHANNEL, build_resource_dict(page, old_url_path=old_url_path))
 
-    def publish_deleted(self, page: "Page") -> None:
+    def publish_deleted(self, page: Page) -> None:
         """Build the message for the deleted event.
         Delegate sending to the subclass's _publish().
         """
@@ -101,7 +101,7 @@ class KafkaPublisher(BasePublisher):
             **auth_config,
         )
 
-    def _publish(self, channel: str | None, message: dict) -> "RecordMetadata":
+    def _publish(self, channel: str | None, message: dict) -> RecordMetadata:
         """Send the message to Kafka."""
         logger.info("KafkaPublisher: Publishing to channel=%s, message=%s", channel, message)
         future = self.producer.send(channel, message)

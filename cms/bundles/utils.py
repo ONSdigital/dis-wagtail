@@ -8,17 +8,24 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 from django.urls import reverse
 from django.utils.dateparse import parse_datetime
+from django.utils.translation import gettext_lazy as _
 from wagtail.coreutils import resolve_model_string
 from wagtail.log_actions import log
 from wagtail.models import Page, get_page_models
 
 from cms.core.fields import StreamField
 from cms.release_calendar.enums import ReleaseStatus
+from cms.release_calendar.utils import get_translated_string
 
 from .enums import ACTIVE_BUNDLE_STATUSES, BundleStatus
 from .permissions import user_can_manage_bundles
 
 logger = logging.getLogger(__name__)
+
+# Translatable strings for release calendar content sections.
+# These are extracted by makemessages and translated at runtime via get_translated_string.
+_("Publications")
+_("Quality and methodology")
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser
@@ -66,7 +73,7 @@ class BundleAPIBundleMetadata:
         return asdict(self)
 
     @classmethod
-    def from_bundle(cls, bundle: "Bundle") -> "BundleAPIBundleMetadata":
+    def from_bundle(cls, bundle: Bundle) -> BundleAPIBundleMetadata:
         """Return a BundleAPIBundleMetadata instance populated from a Bundle instance."""
         return cls(
             title=bundle.name,
@@ -77,7 +84,7 @@ class BundleAPIBundleMetadata:
         )
 
     @classmethod
-    def from_api_response(cls, api_response: dict[str, Any]) -> "BundleAPIBundleMetadata":
+    def from_api_response(cls, api_response: dict[str, Any]) -> BundleAPIBundleMetadata:
         """Return a BundleAPIBundleMetadata instance populated from a Bundle API response."""
         return cls(
             title=api_response.get("title"),
@@ -107,8 +114,15 @@ def get_pages_in_active_bundles() -> list[int]:
     )
 
 
-def _create_content_dict_for_pages(pages: list[tuple[dict[str, Any], str]]) -> list[dict[str, Any]]:
-    """Helper function to create content dictionary for article and methodology pages."""
+def _create_content_dict_for_pages(
+    pages: list[tuple[dict[str, Any], str]], language_code: str = "en"
+) -> list[dict[str, Any]]:
+    """Helper function to create content dictionary for article and methodology pages.
+
+    Args:
+        pages: A list of tuples containing serialized page data and page type names.
+        language_code: The language code for translating section titles (e.g., 'en', 'cy').
+    """
     article_pages: list[dict[str, Any]] = []
     methodology_pages: list[dict[str, Any]] = []
     content: list[dict[str, Any]] = []
@@ -120,13 +134,17 @@ def _create_content_dict_for_pages(pages: list[tuple[dict[str, Any], str]]) -> l
             case "MethodologyPage":
                 methodology_pages.append(serialized_page)
     if article_pages:
-        content.append({"type": "release_content", "value": {"title": "Publications", "links": article_pages}})
+        # NB: This string needs to match the one at the top of the file
+        title = get_translated_string("Publications", language_code)
+        content.append({"type": "release_content", "value": {"title": title, "links": article_pages}})
     if methodology_pages:
-        content.append({"type": "release_content", "value": {"title": "Methodology", "links": methodology_pages}})
+        # NB: This string needs to match the one at the top of the file
+        title = get_translated_string("Quality and methodology", language_code)
+        content.append({"type": "release_content", "value": {"title": title, "links": methodology_pages}})
     return content
 
 
-def serialize_page(page: "Page") -> dict[str, Any]:
+def serialize_page(page: Page) -> dict[str, Any]:
     """Serializes a page to a dictionary."""
     return {
         "id": uuid.uuid4(),
@@ -135,7 +153,7 @@ def serialize_page(page: "Page") -> dict[str, Any]:
     }
 
 
-def serialize_preview_page(page: "Page", bundle_id: int, is_previewable: bool) -> dict[str, Any]:
+def serialize_preview_page(page: Page, bundle_id: int, is_previewable: bool) -> dict[str, Any]:
     specific_page = page.specific_deferred
     if workflow_state := specific_page.current_workflow_state:
         state = workflow_state.current_task_state.task.name
@@ -153,17 +171,24 @@ def serialize_preview_page(page: "Page", bundle_id: int, is_previewable: bool) -
     }
 
 
-def serialize_bundle_content_for_published_release_calendar_page(bundle: "Bundle") -> list[dict[str, Any]]:
-    """Serializes the content of a bundle for a published release calendar page."""
+def serialize_bundle_content_for_published_release_calendar_page(
+    bundle: Bundle, language_code: str = "en"
+) -> list[dict[str, Any]]:
+    """Serializes the content of a bundle for a published release calendar page.
+
+    Args:
+        bundle: The bundle to serialize.
+        language_code: The language code for translating section titles (e.g., 'en', 'cy').
+    """
     all_bundled_pages = bundle.get_bundled_pages()
     # Create a list of tuples with serialized pages and their specific class names
     all_pages = [(serialize_page(page), page.specific_class.__name__) for page in all_bundled_pages]
 
-    return _create_content_dict_for_pages(all_pages)
+    return _create_content_dict_for_pages(all_pages, language_code)
 
 
 def serialize_bundle_content_for_preview_release_calendar_page(
-    bundle: "Bundle", previewing_user: "User | AnonymousUser"
+    bundle: Bundle, previewing_user: User | AnonymousUser, language_code: str = "en"
 ) -> list[dict[str, Any]]:
     """Serializes the content of a bundle for a release calendar page.
 
@@ -171,11 +196,12 @@ def serialize_bundle_content_for_preview_release_calendar_page(
     state and linked to the preview URL.
 
     Args:
-        bundle (Bundle): The bundle to serialize.
-        previewing_user (User | AnonymousUser): The user previewing the bundle.
+        bundle: The bundle to serialize.
+        previewing_user: The user previewing the bundle.
+        language_code: The language code for translating section titles (e.g., 'en', 'cy').
 
     Returns:
-        list[dict[str, Any]]: A list of dictionaries representing the serialized content of the bundle.
+        A list of dictionaries representing the serialized content of the bundle.
     """
     all_pages = []
     previewable_pages = []
@@ -192,10 +218,10 @@ def serialize_bundle_content_for_preview_release_calendar_page(
         serialized_page = serialize_preview_page(page, bundle.pk, page in previewable_pages)
         all_pages.append((serialized_page, page.specific_class.__name__))
 
-    return _create_content_dict_for_pages(all_pages)
+    return _create_content_dict_for_pages(all_pages, language_code)
 
 
-def serialize_datasets_for_release_calendar_page(bundle: "Bundle") -> list[dict[str, Any]]:
+def serialize_datasets_for_release_calendar_page(bundle: Bundle) -> list[dict[str, Any]]:
     """Serializes the datasets of a bundle for a release calendar page."""
     return [
         {"type": "dataset_lookup", "id": uuid.uuid4(), "value": dataset["dataset"]}
@@ -219,7 +245,7 @@ def get_dataset_preview_key(dataset_id: str, edition_id: str, version_id: str) -
 
 def get_preview_items_for_bundle(
     *,
-    bundle: "Bundle",
+    bundle: Bundle,
     current_id: int | str,
     pages_in_bundle: list[Page],
     bundle_contents: dict[str, Any] | None = None,
@@ -283,7 +309,7 @@ def get_preview_items_for_bundle(
     return preview_items
 
 
-def _get_preview_teams_for_bundle(bundle: "Bundle") -> list[dict[Literal["id"], str]]:
+def _get_preview_teams_for_bundle(bundle: Bundle) -> list[dict[Literal["id"], str]]:
     """Get formatted preview teams for a bundle for API usage."""
     team_identifiers = bundle.teams.values_list("team__identifier", flat=True)
     return [{"id": identifier} for identifier in team_identifiers]
@@ -322,11 +348,21 @@ def get_page_title_with_workflow_status(page: Page) -> str:
     return f"{title} (Draft)"
 
 
-def update_bundle_linked_release_calendar_page(bundle: "Bundle") -> None:
+def get_language_code_from_page(page: Page) -> str:
+    """Get the language code from a page's locale for translation purposes.
+
+    Normalizes 'en-gb' to 'en' for consistency with translation files.
+    """
+    language_code = page.locale.language_code
+    return "en" if language_code == "en-gb" else language_code
+
+
+def update_bundle_linked_release_calendar_page(bundle: Bundle) -> None:
     """Updates the release calendar page related to the bundle with the pages in the bundle."""
     page = bundle.release_calendar_page
     if page:  # To satisfy mypy, ensure page is not None
-        content = serialize_bundle_content_for_published_release_calendar_page(bundle)
+        language_code = get_language_code_from_page(page)
+        content = serialize_bundle_content_for_published_release_calendar_page(bundle, language_code)
         datasets = serialize_datasets_for_release_calendar_page(bundle)
 
         page.content = cast(StreamField, content)
@@ -336,7 +372,7 @@ def update_bundle_linked_release_calendar_page(bundle: "Bundle") -> None:
         revision.publish()
 
 
-def publish_bundle(bundle: "Bundle", *, update_status: bool = True) -> None:
+def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
     """Publishes a given bundle.
 
     This means it publishes the related pages, as well as updates the linked release calendar.

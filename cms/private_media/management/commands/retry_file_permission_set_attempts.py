@@ -50,7 +50,7 @@ class Command(BaseCommand):
             self.update_file_permissions(model, make_public, Privacy.PUBLIC)
 
     def update_file_permissions(
-        self, model_class: type["PrivateMediaMixin"], items: Collection["PrivateMediaMixin"], privacy: Privacy
+        self, model_class: type[PrivateMediaMixin], items: Collection[PrivateMediaMixin], privacy: Privacy
     ) -> None:
         """Update the file permissions for the provided items to reflect the provided privacy status."""
         plural = model_class._meta.verbose_name_plural

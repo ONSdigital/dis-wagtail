@@ -6,6 +6,7 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.functional import cached_property
+from wagtail.admin.telepath import register
 from wagtail.blocks import (
     CharBlock,
     PageChooserBlock,
@@ -18,7 +19,6 @@ from wagtail.blocks import (
 )
 from wagtail.blocks.struct_block import StructBlockAdapter
 from wagtail.images.blocks import ImageChooserBlock
-from wagtail.telepath import register
 
 from cms.articles.models import ArticleSeriesPage
 from cms.core.url_utils import normalise_url, validate_ons_url_struct_block
@@ -41,7 +41,7 @@ class ExploreMoreExternalLinkBlock(StructBlock):
     class Meta:
         icon = "link"
 
-    def get_formatted_value(self, value: "StructValue", context: dict | None = None) -> dict[str, str | dict]:  # pylint: disable=unused-argument
+    def get_formatted_value(self, value: StructValue, context: dict | None = None) -> dict[str, str | dict]:  # pylint: disable=unused-argument
         """Returns the value formatted for the Design System onsDocumentList macro."""
         renditions = value["thumbnail"].get_renditions("fill-144x100", "fill-288x200")
         return {
@@ -72,7 +72,7 @@ class ExploreMoreInternalLinkBlock(StructBlock):
     class Meta:
         icon = "doc-empty-inverse"
 
-    def get_formatted_value(self, value: "StructValue", context: dict | None = None) -> dict[str, str | dict]:
+    def get_formatted_value(self, value: StructValue, context: dict | None = None) -> dict[str, str | dict]:
         """Returns the value formatted for the Design System onsDocumentList macro."""
         page: Page = value["page"].specific_deferred
         if not page.live:
@@ -101,7 +101,7 @@ class ExploreMoreStoryBlock(StreamBlock):
     class Meta:
         template = "templates/components/streamfield/explore_more_stream_block.html"
 
-    def get_context(self, value: "StreamValue", parent_context: dict | None = None) -> dict:
+    def get_context(self, value: StreamValue, parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context=parent_context)
 
         formatted_items = []
@@ -113,7 +113,7 @@ class ExploreMoreStoryBlock(StreamBlock):
         return context
 
 
-SeriesChooserBlock: "ChooserBlock" = series_with_headline_figures_chooser_viewset.get_block_class(
+SeriesChooserBlock: ChooserBlock = series_with_headline_figures_chooser_viewset.get_block_class(
     name="SeriesChooserBlock", module_path="cms.topics.blocks"
 )
 
@@ -149,17 +149,26 @@ class TopicHeadlineFigureBlock(StructBlock):
     series = LinkedSeriesChooserBlock()
     figure_id = CharBlock()
 
-    def get_context(self, value: "StructValue", parent_context: dict | None = None) -> dict:
+    def get_context(self, value: StructValue, parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context=parent_context)
+        figure = {"figure_id": value["figure_id"]}
+        figure_article = self.get_latest_article_for_figure(value)
 
-        if series_page := value["series"]:
-            latest_article: StatisticalArticlePage | None = series_page.get_latest()
+        if figure_article:
+            figure.update(figure_article.get_headline_figure(value["figure_id"]))
+            figure["url"] = figure_article.get_url(request=context.get("request")) or ""
 
-            if latest_article and (figure := latest_article.get_headline_figure(value["figure_id"])):
-                figure["url"] = latest_article.get_url(request=context.get("request")) or ""
-                context["figure"] = figure
+        context["figure"] = figure
 
         return context
+
+    @classmethod
+    def get_latest_article_for_figure(cls, value: StructValue) -> StatisticalArticlePage | None:
+        """Returns the latest article in the given figures series."""
+        if series_page := value["series"]:
+            latest_article: StatisticalArticlePage | None = series_page.get_latest()
+            return latest_article
+        return None
 
     class Meta:
         icon = "pick"
@@ -192,7 +201,7 @@ class TimeSeriesPageLinkBlock(StructBlock):
         icon = "link"
         template = "templates/components/streamfield/time_series_link.html"
 
-    def clean(self, value: "StructValue") -> "StructValue":
+    def clean(self, value: StructValue) -> StructValue:
         errors = validate_ons_url_struct_block(value, self.child_blocks)
 
         if errors:
@@ -204,7 +213,7 @@ class TimeSeriesPageLinkBlock(StructBlock):
 class TimeSeriesPageStoryBlock(StreamBlock):
     time_series_page_link = TimeSeriesPageLinkBlock()
 
-    def clean(self, value: "StreamValue", ignore_required_constraints: bool = False) -> "StreamValue":
+    def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
         cleaned_value = super().clean(value)
 
         # For each time series URL, record the indices of the blocks it appears in

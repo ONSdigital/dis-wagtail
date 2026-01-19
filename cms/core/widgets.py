@@ -1,11 +1,11 @@
 import re
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from django import forms
 from django.utils.html import format_html
 from wagtail.admin import widgets
+from wagtail.admin.telepath import register
 from wagtail.admin.widgets.datetime import AdminDateTimeInput, AdminDateTimeInputAdapter
-from wagtail.telepath import register
 
 if TYPE_CHECKING:
     from django.utils.safestring import SafeString
@@ -45,7 +45,7 @@ register(AdminDateTimeInputAdapter(), ONSAdminDateTimeInput)
 
 
 class ReadOnlyRichTextWidget(forms.Widget):
-    def render(self, name: str, value: Optional[str], attrs: Any = None, renderer: Any = None) -> "SafeString":
+    def render(self, name: str, value: str | None, attrs: Any = None, renderer: Any = None) -> SafeString:
         if value is None:
             value = ""
         # Remove HTML tags (note that there is no risk of XSS here as the value

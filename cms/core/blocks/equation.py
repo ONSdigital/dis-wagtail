@@ -1,13 +1,17 @@
 from django.forms import Media
 from django.utils.functional import cached_property
 from wagtail import blocks
+from wagtail.admin.telepath import register
 from wagtail.blocks.struct_block import StructBlockAdapter
-from wagtail.telepath import register
 from wagtailmath.blocks import MathBlock
 
 
 class EquationBlock(blocks.StructBlock):
-    equation = MathBlock(label="Mathematical equation")
+    equation = MathBlock(
+        label="Mathematical equation",
+        help_text="Enter a mathematical equation using the MathJax syntax such as"
+        " <code>$$\\frac{(n^2+n)(2n+1)}{6}$$</code>.",
+    )
     svg = blocks.TextBlock(required=False)
 
     class Meta:

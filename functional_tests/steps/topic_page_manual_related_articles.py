@@ -1,4 +1,5 @@
-from behave import given, then, when  # pylint: disable=no-name-in-module
+# pylint: disable=not-callable
+from behave import given, then, when
 from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect

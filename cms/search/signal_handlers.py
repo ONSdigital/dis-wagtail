@@ -24,7 +24,7 @@ def get_publisher() -> KafkaPublisher | LogPublisher:
 
 
 @receiver(page_published)
-def on_page_published(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None:  # pylint: disable=unused-argument
+def on_page_published(sender: type[Page], instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
     """Called whenever a Wagtail Page is published (UI or code).
     instance is the published Page object.
     """
@@ -33,7 +33,7 @@ def on_page_published(sender: "type[Page]", instance: "Page", **kwargs: Any) -> 
 
 
 @receiver(page_unpublished)
-def on_page_unpublished(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None:  # pylint: disable=unused-argument
+def on_page_unpublished(sender: type[Page], instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
     """Called whenever a Wagtail Page is unpublished (UI or code).
     instance is the unpublished Page object.
     """
@@ -42,7 +42,7 @@ def on_page_unpublished(sender: "type[Page]", instance: "Page", **kwargs: Any) -
 
 
 @receiver(post_delete, sender=Page)
-def on_page_deleted(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None:  # pylint: disable=unused-argument
+def on_page_deleted(sender: type[Page], instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
     """Catches all subclass deletions of Wagtail's Page model.
     Only fires if the page is published and not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES.
     """
@@ -52,7 +52,7 @@ def on_page_deleted(sender: "type[Page]", instance: "Page", **kwargs: Any) -> No
 
 
 @receiver(page_slug_changed)
-def on_page_slug_changed(sender: "type[Page]", instance: "Page", instance_before: "Page", **kwargs: Any) -> None:  # pylint: disable=unused-argument
+def on_page_slug_changed(sender: type[Page], instance: Page, instance_before: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
     """Called after a slug change to a Wagtail Page is published.
     "instance" is the updated Page object, "instance_before" is the Page object before the slug change.
     We need to update the search index for pages descendants whose URL paths have changed as a result.
@@ -66,7 +66,7 @@ def on_page_slug_changed(sender: "type[Page]", instance: "Page", instance_before
 
 
 @receiver(post_page_move)
-def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None:  # pylint: disable=unused-argument
+def on_page_moved(sender: type[Page], instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
     """Called after a Wagtail Page is moved in the tree.
     "instance" is the moved Page object.
     We use the publish_created_or_updated method to update search for the moved page and any of its non-excluded
@@ -79,7 +79,7 @@ def on_page_moved(sender: "type[Page]", instance: "Page", **kwargs: Any) -> None
         _update_for_page_and_descendant_paths(instance=instance, old_url_path=old_url_path, new_url_path=new_url_path)
 
 
-def _update_for_page_and_descendant_paths(*, instance: "Page", old_url_path: str, new_url_path: str) -> None:
+def _update_for_page_and_descendant_paths(*, instance: Page, old_url_path: str, new_url_path: str) -> None:
     """Update the search index for the page and all affected descendants whose URL paths have changed."""
     if instance.get_view_restrictions().exists():
         # Pages with view restrictions should not be exposed in search
@@ -118,7 +118,7 @@ def _update_for_page_and_descendant_paths(*, instance: "Page", old_url_path: str
 
 
 def build_old_descendant_path(
-    *, parent_page: "Page", descendant_page: "Page", parent_path_before: str, parent_path_after: str
+    *, parent_page: Page, descendant_page: Page, parent_path_before: str, parent_path_after: str
 ) -> str | None:
     """Build the old URL path for a moved descendant page."""
     if descendant_page.url_path.startswith(parent_path_after):

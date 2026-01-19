@@ -1,6 +1,6 @@
 # pylint: disable=too-many-lines
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -332,19 +332,49 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             }
         )
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
-        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+        self.assertNotContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
 
         data["content-0-value-content-0-value-equation"] = latex_formula_cases
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
-        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+        self.assertNotContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
 
         data["content-0-value-content-0-value-equation"] = "$$a+b=c$$"
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
-        self.assertNotContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+        self.assertNotContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
 
         data["content-0-value-content-0-value-equation"] = "$$test"  # Invalid LaTeX
         response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
-        self.assertContains(response, "The equation is not valid LaTeX. Please check the syntax and try again.")
+        self.assertContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
+
+        # Test \(...\) indicator - valid equation
+        data["content-0-value-content-0-value-equation"] = r"\(a+b=c\)"
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertNotContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
+
+        # Test \(...\) indicator - mismatched (missing closing indicator)
+        data["content-0-value-content-0-value-equation"] = r"\(a+b=c"
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
+
+        # Test mismatched indicators - starts with $$ but ends with \)
+        data["content-0-value-content-0-value-equation"] = r"$$a+b=c\)"
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
+
+        # Test mismatched indicators - starts with \( but ends with $$
+        data["content-0-value-content-0-value-equation"] = r"\(a+b=c$$"
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
+
+        # Test \[...\] indicator - valid equation (display math)
+        data["content-0-value-content-0-value-equation"] = r"\[a+b=c\]"
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertNotContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
+
+        # Test \[...\] indicator - mismatched (missing closing indicator)
+        data["content-0-value-content-0-value-equation"] = r"\[a+b=c"
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[self.page.pk]), data, follow=True)
+        self.assertContains(response, "The equation is not valid MathJax. Please check the syntax and try again.")
 
     def test_related_datasets_sorting_alphabetic(self):
         dataset_a = {"title": "a", "description": "a", "url": "https://example.com"}
@@ -820,6 +850,9 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def test_cannot_be_deleted_if_ancestor_uses_headline_figures(self):
         """Test that the page cannot be deleted if an ancestor uses the headline figures."""
         self.client.force_login(self.user)
+        self.page.release_date = self.basic_page.release_date + timedelta(days=1)
+        self.page.next_release_date = self.page.release_date + timedelta(days=1)
+        self.page.save_revision().publish()
         topic = TopicPage.objects.ancestor_of(self.page).first()
         topic.headline_figures.extend(
             [

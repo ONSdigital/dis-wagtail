@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from django.shortcuts import redirect
 from django.templatetags.static import static
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 @hooks.register("before_delete_page")
-def before_delete_page(request: "HttpRequest", page: "Page") -> Optional["HttpResponseRedirect"]:
+def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | None:
     """Block release calendar page deletion and show a message."""
     if page.specific_class == ReleaseCalendarPage:
         messages.warning(request, "Release Calendar pages cannot be deleted. You can mark them as cancelled instead.")
@@ -38,7 +38,7 @@ def before_delete_page(request: "HttpRequest", page: "Page") -> Optional["HttpRe
 
 
 @hooks.register("register_admin_viewset")
-def register_chooser_viewset() -> "FutureReleaseCalendarPageChooserViewSet":
+def register_chooser_viewset() -> FutureReleaseCalendarPageChooserViewSet:
     return release_calendar_chooser_viewset
 
 
