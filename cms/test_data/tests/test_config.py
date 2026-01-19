@@ -11,8 +11,10 @@ class TestDataConfigTestCase(SimpleTestCase):
 
     def test_count(self) -> None:
         self.assertEqual(get_count(1, Faker()), 1)
-        self.assertLessEqual(get_count(RangeConfig(min=1, max=10), Faker()), 10)
-        self.assertGreaterEqual(get_count(RangeConfig(min=1, max=10), Faker()), 1)
+
+        for _ in range(100):
+            self.assertLessEqual(get_count(RangeConfig(min=1, max=10), Faker()), 10)
+            self.assertGreaterEqual(get_count(RangeConfig(min=1, max=10), Faker()), 1)
 
     def test_range_bounds(self) -> None:
         with self.assertRaises(ValidationError):

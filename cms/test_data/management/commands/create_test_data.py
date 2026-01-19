@@ -114,5 +114,12 @@ class Command(BaseCommand):
 
             topic_page = TopicPageFactory.create(**topic_kwargs)
 
-            if faker.boolean(int(config.topics.published * 100)) and not topic_page.live:
-                topic_page.specific.save_revision().publish()
+            for _ in range(config.topics.revisions_count(faker)):
+                topic_page.specific.save_revision()
+
+            if (
+                not topic_page.live
+                and topic_page.latest_revision_id
+                and faker.boolean(int(config.topics.published * 100))
+            ):
+                topic_page.specific.latest_revision.publish()

@@ -33,6 +33,11 @@ class CreateTestDataTestCase(TestCase):
                     "datasets": 1,
                     "dataset_manual_links": 1,
                     "explore_more": 2,
+                    "published": 1,
+                    "revisions": {
+                        "min": 1,
+                        "max": 3
+                    }
                 }
             }
         )
@@ -48,12 +53,21 @@ class CreateTestDataTestCase(TestCase):
                 for block in topic_page.explore_more:
                     self.assertIn(SEEDED_DATA_PREFIX, block.value["thumbnail"].title)
 
+                self.assertLessEqual(topic_page.revisions.count(), 3)
+                self.assertGreaterEqual(topic_page.revisions.count(), 1)
+
+                self.assertTrue(topic_page.live)
+
     def test_idempotent(self) -> None:
         self._call_with_config()
+
+        topic_titles = set(TopicPage.objects.values_list("title", flat=True))
+
         self.assertEqual(TopicPage.objects.count(), 3)
 
         self._call_with_config()
         self.assertEqual(TopicPage.objects.count(), 3)
+        self.assertEqual(set(TopicPage.objects.values_list("title", flat=True)), topic_titles)
 
     def test_tree_is_valid(self) -> None:
         self._call_with_config()
