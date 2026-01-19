@@ -1,14 +1,26 @@
 from django.db import DEFAULT_DB_ALIAS
+from django.db.models.signals import post_save
 from django.test import override_settings
+from modelsearch.signal_handlers import post_save_signal_handler
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Site
 
 from cms.core.models.settings import SocialMediaSettings
 from cms.core.tests import TransactionTestCase
+from cms.taxonomy.models import Topic
 
 
 class SiteSettingsTestCase(TransactionTestCase):
-    """Tests for site settings, and how they behaves with multiple databases."""
+    """Tests for site settings, and how they behave with multiple databases."""
+
+    @classmethod
+    def setUpClass(cls):
+        # Temporarily disconnecting the search post save signal handler for Topics to prevent noise in tests
+        post_save.disconnect(post_save_signal_handler, sender=Topic)
+
+        super().setUpClass()
+
+        post_save.connect(post_save_signal_handler, sender=Topic)
 
     def setUp(self):
         self.request = get_dummy_request()

@@ -1,8 +1,10 @@
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import DEFAULT_DB_ALIAS, router, transaction
+from django.db.models.signals import post_save
 from django.test import TestCase, override_settings
 from django.utils.connection import ConnectionDoesNotExist
+from modelsearch.signal_handlers import post_save_signal_handler
 from wagtail.models import Page, Revision
 from wagtail_factories import ImageFactory
 
@@ -10,11 +12,21 @@ from cms.core.db_router import READ_REPLICA_DB_ALIAS, ExternalEnvRouter
 from cms.core.tests import TransactionTestCase
 from cms.home.models import HomePage
 from cms.images.models import CustomImage, Rendition
+from cms.taxonomy.models import Topic
 from cms.users.models import User
 
 
 class DBRouterTestCase(TransactionTestCase):
     available_apps = frozenset({"cms.users"})
+
+    @classmethod
+    def setUpClass(cls):
+        # Temporarily disconnecting the search post save signal handler for Topics to prevent noise in tests
+        post_save.disconnect(post_save_signal_handler, sender=Topic)
+
+        super().setUpClass()
+
+        post_save.connect(post_save_signal_handler, sender=Topic)
 
     def setUp(self):
         # Warm the content-type cache

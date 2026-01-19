@@ -6,6 +6,7 @@ from django.utils import timezone
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.core.tests.utils import rebuild_internal_search_index
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
 from cms.topics.viewsets import (
@@ -20,7 +21,6 @@ class FeaturedSeriesPageChooserViewSetTest(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
-
         # Create test pages
         cls.topic_page = TopicPageFactory(title="PSF")
         cls.series1 = ArticleSeriesPageFactory(parent=cls.topic_page, title="Series A")
@@ -59,6 +59,7 @@ class FeaturedSeriesPageChooserViewSetTest(WagtailTestUtils, TestCase):
 
     def test_chooser_search(self):
         """Test the AJAX results view."""
+        rebuild_internal_search_index()
         response = self.client.get(f"{self.chooser_results_url}?q=Series A")
 
         self.assertEqual(response.status_code, 200)
@@ -124,6 +125,8 @@ class HighlightedPageChooserViewSetTest(WagtailTestUtils, TestCase):
         cls.methodology_chooser_results_url = reverse(
             highlighted_methodology_page_chooser_viewset.get_url_name("choose_results")
         )
+
+        rebuild_internal_search_index()
 
     def setUp(self):
         self.client.force_login(self.superuser)
