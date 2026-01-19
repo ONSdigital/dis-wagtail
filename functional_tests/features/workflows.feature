@@ -30,9 +30,9 @@ Feature: Page-level workflows
 
 
     Scenario: A Publishing Office can unlock a page locked by them, when it is in the review workflow step
-        Given the statistical article page is locked by the user
-        When a Publishing Officer logs into the admin site
-        And  the user edits the statistical article page
+        Given the statistical article page is locked by a Publishing Officer
+        And the user is logged in
+        When the user edits the statistical article page
         Then the "Unlock" button exists
         And  the user can unlock the page
 

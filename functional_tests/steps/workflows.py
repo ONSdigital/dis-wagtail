@@ -41,9 +41,11 @@ def the_page_was_locked_by_another_user(context: Context, page_str: str) -> None
     lock_page(the_page, another_user_data["user"])
 
 
-@step("the {page_str} page is locked by the user")
-def the_page_was_locked_by_the_user(context: Context, page_str: str) -> None:
+@step("the {page_str} page is locked by a {user_type}")
+def the_page_was_locked_by_the_user(context: Context, page_str: str, user_type: str) -> None:
     the_page = get_page_from_context(context, page_str)
+    context.user_data = create_user(user_type)
+
     lock_page(the_page, context.user_data["user"])
 
 
