@@ -3,13 +3,14 @@ from io import StringIO
 from django.core.management import call_command
 from django.test import TestCase
 
+from cms.datasets.models import Dataset
 from cms.images.models import CustomImage
 from cms.taxonomy.models import Topic
 from cms.test_data.config import TestDataConfig
 from cms.test_data.management.commands.create_test_data import SEEDED_DATA_PREFIX
 from cms.topics.models import TopicPage
 
-AFFECTED_MODELS = [TopicPage, Topic, CustomImage]
+AFFECTED_MODELS = [TopicPage, Topic, CustomImage, Dataset]
 
 
 class CreateTestDataTestCase(TestCase):
