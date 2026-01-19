@@ -22,24 +22,24 @@ Feature: Page-level workflows
 
 
     Scenario: A Publishing Admin can unlock a page locked by someone else, when it is in the review workflow step
+        Given the statistical article page is locked by another user
         When a Publishing Admin logs into the admin site
-        And  the statistical article page is locked by another user
         And  the user edits the statistical article page
         Then the "Unlock" button exists
         And  the user can unlock the page
 
 
     Scenario: A Publishing Office can unlock a page locked by them, when it is in the review workflow step
+        Given the statistical article page is locked by the user
         When a Publishing Officer logs into the admin site
-        And the statistical article page is locked by the user
         And  the user edits the statistical article page
         Then the "Unlock" button exists
         And  the user can unlock the page
 
 
     Scenario Outline: When page is Approved (Ready to publish), it should be locked for editing
+        Given the statistical article page is "ready to publish"
         When a <user> logs into the admin site
-        And  the statistical article page is "ready to publish"
         And  the user edits the statistical article page
         Then the "This page cannot be edited as it is Ready to be published." text is displayed
         And  the "Page locked" button exists
@@ -50,8 +50,8 @@ Feature: Page-level workflows
 
 
     Scenario: When page is Approved (Ready to publish), then a Publishing admin can "unlock" it
+        Given the statistical article page is "ready to publish"
         When a Publishing Admin logs into the admin site
-        And  the statistical article page is "ready to publish"
         And  the user edits the statistical article page
         And  the user clicks the action button toggle
         Then the "Unlock editing" link exists
@@ -60,8 +60,8 @@ Feature: Page-level workflows
         And  the "Unlock editing" link does not exist
 
     Scenario: When page is Approved (Ready to publish) and in a work in progress bundle, then a Publishing admin can "unlock" it
+        Given the statistical article page is "ready to publish"
         When a Publishing Admin logs into the admin site
-        And  the statistical article page is "ready to publish"
         And  a bundle has been created
         And  the statistical article page is in a "In Preview" bundle
         And  the user edits the statistical article page
@@ -72,8 +72,8 @@ Feature: Page-level workflows
         And  the "Unlock editing" link does not exist
 
     Scenario: When page is Approved (Ready to publish) and in an Approved bundle, then a Publishing admin cannot "unlock" it
+        Given the statistical article page is "Ready to publish"
         When a Publishing Admin logs into the admin site
-        And  the statistical article page is "Ready to publish"
         And  a bundle has been created
         And  the statistical article page is in a "Ready to publish" bundle
         And  the user edits the statistical article page
