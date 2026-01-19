@@ -95,7 +95,6 @@ class RevisionChartDownloadViewTestCase(WagtailTestUtils, TestCase):
         editor = UserFactory(username="editor", access_admin=True)
         editor.groups.add(group)
 
-        self.client.logout()
         self.client.force_login(editor)
 
         response = self.client.get(self.get_download_url())
