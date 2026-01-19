@@ -1,6 +1,6 @@
 # pylint: disable=too-many-lines
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -850,6 +850,9 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def test_cannot_be_deleted_if_ancestor_uses_headline_figures(self):
         """Test that the page cannot be deleted if an ancestor uses the headline figures."""
         self.client.force_login(self.user)
+        self.page.release_date = self.basic_page.release_date + timedelta(days=1)
+        self.page.next_release_date = self.page.release_date + timedelta(days=1)
+        self.page.save_revision().publish()
         topic = TopicPage.objects.ancestor_of(self.page).first()
         topic.headline_figures.extend(
             [

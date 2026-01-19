@@ -627,6 +627,79 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
             )
             self.topic_page.clean()
 
+    def test_has_broken_headline_figures_no_figures(self):
+        self.topic_page.headline_figures = []
+        self.assertFalse(self.topic_page.has_broken_headline_figures())
+
+    def test_has_broken_headline_figures_all_valid(self):
+        self.article.headline_figures = [
+            {
+                "type": "figure",
+                "value": {
+                    "figure_id": "figure1",
+                    "title": "Figure title 1",
+                    "figure": "1",
+                    "supporting_text": "Figure supporting text 1",
+                },
+            },
+            {
+                "type": "figure",
+                "value": {
+                    "figure_id": "figure2",
+                    "title": "Figure title 2",
+                    "figure": "2",
+                    "supporting_text": "Figure supporting text 2",
+                },
+            },
+        ]
+        self.article.headline_figures_figure_ids = "figure1,figure2"
+        self.article.save_revision().publish()
+
+        self.topic_page.headline_figures = [
+            (
+                "figure",
+                {
+                    "series": self.article_series,
+                    "figure_id": "figure1",
+                },
+            ),
+            (
+                "figure",
+                {
+                    "series": self.article_series,
+                    "figure_id": "figure2",
+                },
+            ),
+        ]
+        self.topic_page.save_revision().publish()
+
+        self.assertFalse(self.topic_page.has_broken_headline_figures())
+
+    def test_has_broken_headline_figures_with_broken(self):
+        self.topic_page.headline_figures = [
+            (
+                "figure",
+                {
+                    "series": self.article_series,
+                    "figure_id": "brokenfigure1",
+                },
+            ),
+            (
+                "figure",
+                {
+                    "series": self.article_series,
+                    "figure_id": "brokenfigure2",
+                },
+            ),
+        ]
+        self.topic_page.save_revision().publish()
+
+        with self.assertLogs("cms.topics.models", level="ERROR") as logs:
+            self.assertTrue(self.topic_page.has_broken_headline_figures())
+
+        self.assertEqual(len(logs.output), 1)
+        self.assertIn("Broken headline figures found on topic page", logs.output[0])
+
     def test_cannot_add_children_once_articles_and_methodologies_index_are_created(self):
         self.assertEqual(TopicPage.objects.count(), 4)  # 4 created in setUpTestData
         self.client.force_login(self.superuser)
