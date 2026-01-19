@@ -26,6 +26,9 @@ class DBRouterTestCase(TransactionTestCase):
 
         super().setUpClass()
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
         post_save.connect(post_save_signal_handler, sender=Topic)
 
     def setUp(self):
