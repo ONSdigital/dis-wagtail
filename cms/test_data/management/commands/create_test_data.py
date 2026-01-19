@@ -38,7 +38,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--seed", nargs="?", default=4, type=int, help="Random seed to produce deterministic output"
         )
-        parser.add_argument("--config", type=validate_config_file, help="Config file")
+        parser.add_argument("--config", type=validate_config_file, default=TestDataConfig(), help="Config file")
         parser.add_argument(
             "--noinput",
             "--no-input",

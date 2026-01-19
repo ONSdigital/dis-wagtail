@@ -8,6 +8,7 @@ from cms.test_data.config import RangeConfig, TestDataConfig, get_count
 class TestDataConfigTestCase(SimpleTestCase):
     def test_default(self) -> None:
         TestDataConfig()
+        TestDataConfig.model_validate({})
 
     def test_count(self) -> None:
         self.assertEqual(get_count(1, Faker()), 1)
