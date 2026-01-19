@@ -1,7 +1,9 @@
+import json
 from io import StringIO
 
 from django.core.management import call_command
 from django.test import TestCase
+from django.test.testcases import SimpleTestCase
 
 from cms.datasets.models import Dataset
 from cms.images.models import CustomImage
@@ -134,3 +136,19 @@ class DeleteTestDataTestCase(TestCase):
         # Topics aren't part of the page tree, to manually check they're valid
         self.assertEqual(Topic.objects.root_topic().numchild, 0)
         self.assertEqual(Topic.find_problems(), ([], [], [], [], []))
+
+
+class ShowDefaultTestDataConfigTestCase(SimpleTestCase):
+    def test_output_default(self) -> None:
+        output = StringIO()
+        call_command("show_default_test_data_config", stdout=output)
+
+        default_config = TestDataConfig.model_validate_json(output.getvalue())
+        self.assertEqual(default_config, TestDataConfig())
+
+    def test_outputs_schema(self) -> None:
+        output = StringIO()
+        call_command("show_default_test_data_config", stdout=output, schema=True)
+
+        # We can't really validate it, so just check it looks like JSON
+        json.loads(output.getvalue())
