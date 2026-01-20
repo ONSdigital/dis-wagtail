@@ -19,6 +19,7 @@ from cms.core.elasticache import ElastiCacheIAMCredentialProvider
 from cms.core.jinja2 import custom_json_dumps
 
 # TODO: Remove once wagtailtables updates telepath import
+# https://github.com/overcastsoftware/wagtailtables/issues/7
 warnings.filterwarnings(
     "ignore",
     category=RemovedInWagtail80Warning,
