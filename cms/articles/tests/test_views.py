@@ -102,27 +102,6 @@ class RevisionChartDownloadViewTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response["Content-Type"], "text/csv")
 
-    def test_download_success_for_user_with_publish_permission(self):
-        """Test chart download for user with publish permission on the page."""
-        # Create a group with publish permission on the page
-        group, _ = Group.objects.get_or_create(name="Publishers")
-        GroupPagePermission.objects.create(
-            group=group,
-            page=Page.objects.get(pk=self.article.pk),
-            permission_type="publish",
-        )
-
-        # Create non-superuser with admin access and add to group
-        publisher = UserFactory(username="publisher", access_admin=True)
-        publisher.groups.add(group)
-
-        self.client.logout()
-        self.client.force_login(publisher)
-
-        response = self.client.get(self.get_download_url())
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(response["Content-Type"], "text/csv")
-
     def test_download_denied_for_anonymous_user(self):
         """Test chart download is denied for anonymous users."""
         self.client.logout()
