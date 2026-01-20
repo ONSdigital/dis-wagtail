@@ -21,6 +21,7 @@ class HeadlineFigureBlockFactory(wagtail_factories.StructBlockFactory):
 class ArticlesIndexPageFactory(wagtail_factories.PageFactory):
     class Meta:
         model = ArticlesIndexPage
+        django_get_or_create: ClassVar[list[str]] = ["parent"]
 
     parent = factory.SubFactory(TopicPageFactory)
     title = factory.Faker("sentence", nb_words=4)

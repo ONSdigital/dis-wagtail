@@ -27,12 +27,12 @@ class ImageServeView(View):
 
     def get(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
-        request: "HttpRequest",
+        request: HttpRequest,
         signature: str,
         image_id: int,
         filter_spec: str,
         filename: str | None = None,  # pylint: disable=unused-argument
-    ) -> "HttpResponseBase":
+    ) -> HttpResponseBase:
         """This method immitates `wagtail.images.views.serve.ServeView.get()`, but introduces an
         additional permission check for private images, and returns responses with varied
         cache headers applied, depending on the scenario.
@@ -82,7 +82,7 @@ class ImageServeView(View):
             return self.serve_public_rendition(rendition)
         return self.serve_private_rendition(rendition)
 
-    def get_image(self, image_id: int) -> "AbstractImage":
+    def get_image(self, image_id: int) -> AbstractImage:
         """Return an image object matching the provided `image_id`, or raise
         a `Http404` exception if no such image exists.
 
@@ -92,7 +92,7 @@ class ImageServeView(View):
         """
         return get_object_or_404(get_image_model(), id=image_id)
 
-    def redirect_to_file(self, url: str) -> "HttpResponseRedirect":
+    def redirect_to_file(self, url: str) -> HttpResponseRedirect:
         """Return a cachable temporary redirect to the requested file URL.
 
         The response is cached for 1 hour to reduce load on the web server.
@@ -104,7 +104,7 @@ class ImageServeView(View):
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
-    def serve_public_rendition(self, rendition: "AbstractRendition") -> "FileResponse":
+    def serve_public_rendition(self, rendition: AbstractRendition) -> FileResponse:
         """Return a cachable FileResponse for the requested rendition.
 
         The response is cached for 1 hour to reduce load on the web server.
@@ -116,7 +116,7 @@ class ImageServeView(View):
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
-    def serve_private_rendition(self, rendition: "AbstractRendition") -> "FileResponse":
+    def serve_private_rendition(self, rendition: AbstractRendition) -> FileResponse:
         """Return a non-cachable FileResponse for the requested rendition.
 
         While an image is still private, access is dependant on the current
@@ -126,7 +126,7 @@ class ImageServeView(View):
         add_never_cache_headers(response)
         return response
 
-    def _serve_rendition(self, rendition: "AbstractRendition") -> "FileResponse":
+    def _serve_rendition(self, rendition: AbstractRendition) -> FileResponse:
         with rendition.get_willow_image() as willow_image:
             mime_type = willow_image.mime_type
 
@@ -146,7 +146,7 @@ class ImageServeView(View):
 class DocumentServeView(View):
     http_method_names: Sequence[str] = ["get"]
 
-    def get(self, request: "HttpRequest", document_id: int, document_filename: str) -> "HttpResponseBase":
+    def get(self, request: HttpRequest, document_id: int, document_filename: str) -> HttpResponseBase:
         """This method immitates `wagtail.documents.views.serve.serve()`, but introduces an
         additional permission check for private documents, and returns responses with varied
         cache headers applied, depending on the scenario.
@@ -184,7 +184,7 @@ class DocumentServeView(View):
             return self.serve_public_document(document)
         return self.serve_private_document(document)
 
-    def get_document(self, document_id: int, document_filename: str) -> "AbstractDocument":
+    def get_document(self, document_id: int, document_filename: str) -> AbstractDocument:
         """Return a document object matching the provided `document_id` and
         `document_filename`, or raise a `Http404` exception if no such
         document exists.
@@ -198,7 +198,7 @@ class DocumentServeView(View):
             raise Http404
         return obj
 
-    def redirect_to_file(self, url: str) -> "HttpResponseRedirect":
+    def redirect_to_file(self, url: str) -> HttpResponseRedirect:
         """Return a cachable temporary redirect to the file URL.
 
         The redirect response is cached for 1 hour to alleviate load on the
@@ -210,7 +210,7 @@ class DocumentServeView(View):
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
-    def serve_public_document(self, document: "AbstractDocument") -> "FileResponse":
+    def serve_public_document(self, document: AbstractDocument) -> FileResponse:
         """Return a cachable FileResponse for the requested document file.
 
         The response is cached for 1 hour to reduce load on the web server.
@@ -221,7 +221,7 @@ class DocumentServeView(View):
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
-    def serve_private_document(self, document: "AbstractDocument") -> "FileResponse":
+    def serve_private_document(self, document: AbstractDocument) -> FileResponse:
         """Return a non-cachable FileResponse for the requested document file.
 
         While a document is still private, access is dependant on the current
@@ -231,7 +231,7 @@ class DocumentServeView(View):
         add_never_cache_headers(response)
         return response
 
-    def _serve_document(self, document: "AbstractDocument") -> "FileResponse":
+    def _serve_document(self, document: AbstractDocument) -> FileResponse:
         document.file.open("rb")
         response = FileResponse(document.file, document.content_type)
 

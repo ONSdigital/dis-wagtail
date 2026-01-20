@@ -9,5 +9,5 @@ if TYPE_CHECKING:
 
 
 class ResourceSerializer(serializers.BaseSerializer):  # pylint: disable=abstract-method
-    def to_representation(self, instance: "Page") -> dict:
+    def to_representation(self, instance: Page) -> dict:
         return build_resource_dict(instance)

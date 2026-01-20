@@ -25,7 +25,7 @@ class PrivateImageMixin(PrivateMediaMixin):
     class Meta:
         abstract = True
 
-    def get_privacy_controlled_files(self) -> Iterator["FieldFile"]:
+    def get_privacy_controlled_files(self) -> Iterator[FieldFile]:
         file: FieldFile | None = getattr(self, "file", None)
         if file:
             yield file
@@ -33,7 +33,7 @@ class PrivateImageMixin(PrivateMediaMixin):
             rendition_file: FieldFile = rendition.file
             yield rendition_file
 
-    def create_renditions(self, *filters: "Filter") -> dict["Filter", AbstractRendition]:
+    def create_renditions(self, *filters: Filter) -> dict[Filter, AbstractRendition]:
         """Create image renditions and set their privacy permissions.
 
         Args:
@@ -47,7 +47,7 @@ class PrivateImageMixin(PrivateMediaMixin):
         bulk_set_file_permissions(files, self.privacy)
         return created_renditions
 
-    def get_privacy_controlled_serve_urls(self, sites: Iterable["Site"]) -> Iterator[str]:
+    def get_privacy_controlled_serve_urls(self, sites: Iterable[Site]) -> Iterator[str]:
         """Return an iterator of fully-fledged serve URLs for this image, covering the domains for all
         provided sites.
         """
@@ -68,7 +68,7 @@ class AbstractPrivateRendition(AbstractRendition):
         abstract = True
 
     @staticmethod
-    def construct_cache_key(image: "AbstractImage", filter_cache_key: str, filter_spec: str) -> str:
+    def construct_cache_key(image: AbstractImage, filter_cache_key: str, filter_spec: str) -> str:
         """Construct a cache key for the rendition that includes privacy status.
 
         Args:

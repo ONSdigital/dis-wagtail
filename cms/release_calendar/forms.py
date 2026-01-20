@@ -38,7 +38,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             del self.fields["changes_to_release_date"]
 
         # Get the live version of the page for validation comparisons
-        self.live_page: "ReleaseCalendarPage | None" = None  # noqa: UP037
+        self.live_page: ReleaseCalendarPage | None = None
         if self.instance and self.instance.pk:
             # Import at runtime to avoid circular import
             from .models import ReleaseCalendarPage  # pylint: disable=import-outside-toplevel
@@ -90,9 +90,9 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
     def _validate_cancelled_status(self, status: str, notice: str) -> None:
         """Validate cancelled status requirements."""
         if status == ReleaseStatus.CANCELLED:
+            self._validate_not_in_active_bundle()
             if not notice:
                 raise ValidationError({"notice": "The notice field is required when the release is cancelled"})
-            self.validate_bundle_not_pending_publication(status)
 
     def _validate_non_provisional_status(self, status: str, cleaned_data: dict) -> None:
         """Validate non-provisional status requirements."""
@@ -236,12 +236,10 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
                 }
             )
 
-    def validate_bundle_not_pending_publication(self, status: str) -> None:
-        if self.instance.status == status:
-            return
-
+    def _validate_not_in_active_bundle(self) -> None:
+        """Prevent cancellation when the page is part of any active bundle."""
         bundle = self.instance.active_bundle
-        if not (bundle and bundle.is_ready_to_be_published):
+        if not bundle:
             return
 
         if self.for_user and user_can_manage_bundles(self.for_user):
@@ -254,8 +252,8 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             bundle_str = bundle.name
 
         message = format_html(
-            "This release calendar page is linked to bundle '{}' which is ready to be published. "
-            "Please unschedule the bundle and unlink the release calendar page before making the cancellation.",
+            "This release calendar page is linked to bundle '{}'. "
+            "Please unlink the release calendar page from the bundle before cancelling.",
             bundle_str,
         )
         raise ValidationError({"status": message})

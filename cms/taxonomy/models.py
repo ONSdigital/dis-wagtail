@@ -1,5 +1,5 @@
 import typing
-from typing import Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.db import IntegrityError, models
 from django.db.models import UniqueConstraint
@@ -12,6 +12,9 @@ from wagtail.search import index
 
 BASE_TOPIC_DEPTH = 2
 
+if TYPE_CHECKING:
+    from django.db.models import BaseConstraint
+
 
 class TopicManager(MP_NodeManager):
     def get_queryset(self) -> TreeQuerySet:
@@ -19,7 +22,7 @@ class TopicManager(MP_NodeManager):
         # Reuse Wagtail's custom tree QuerySet for helpful utils
         return TreeQuerySet(self.model).order_by("path").filter(depth__gt=1)
 
-    def root_topic(self) -> "Topic":
+    def root_topic(self) -> Topic:
         """Return the dummy root topic."""
         # We create the dummy root in a migration so we know it will exist, so cast to "Topic" for mypy
         return typing.cast(Topic, super().get_queryset().filter(depth=1).get())
@@ -58,7 +61,7 @@ class Topic(index.Indexed, MP_Node):
     ]
 
     @classmethod
-    def save_new(cls, topic: "Topic", parent_topic: Optional["Topic"] = None) -> None:
+    def save_new(cls, topic: Topic, parent_topic: Topic | None = None) -> None:
         """Save a new topic either underneath the specific parent if passed, otherwise underneath our default root level
         dummy topic.
 
@@ -74,15 +77,15 @@ class Topic(index.Indexed, MP_Node):
         # errors in subsequent actions
         parent_topic.save()
 
-    def get_parent(self, *args: Any, **kwargs: Any) -> Optional["Topic"]:
+    def get_parent(self, *args: Any, **kwargs: Any) -> Topic | None:
         """Return the parent topic if one exists, or None otherwise.
         Return none if at or below our base topic depth to avoid returning a cached root topic.
         """
         if self.depth <= BASE_TOPIC_DEPTH:
             return None
-        return typing.cast(Optional[Topic], super().get_parent(*args, **kwargs))
+        return typing.cast(Topic | None, super().get_parent(*args, **kwargs))
 
-    def get_base_parent(self) -> "Topic":
+    def get_base_parent(self) -> Topic:
         """Return the base level parent topic (top level, with no parent topics), or self if this topic is base depth
         (Excluding the dummy root topic).
         """
@@ -90,7 +93,7 @@ class Topic(index.Indexed, MP_Node):
             return self
         return typing.cast("Topic", self.get_ancestors().first())
 
-    def move(self, target: Optional["Topic"] = None, pos: str = "sorted-child") -> None:
+    def move(self, target: Topic | None = None, pos: str = "sorted-child") -> None:
         """Move the topic to underneath the target parent. If no target is passed, move it underneath our root."""
         target_parent = target or Topic.objects.root_topic()
         super().move(target_parent, pos=pos)
@@ -123,6 +126,6 @@ class GenericPageToTaxonomyTopic(models.Model):
     panels: ClassVar[list[FieldPanel]] = [FieldPanel("topic")]
 
     class Meta:
-        constraints: ClassVar[list[UniqueConstraint]] = [
+        constraints: ClassVar[list[BaseConstraint]] = [
             UniqueConstraint(fields=["page", "topic"], name="unique_generic_taxonomy")
         ]

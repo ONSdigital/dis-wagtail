@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING, Any
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from wagtail.admin.signals import init_new_page
+from wagtail import hooks
 from wagtail.models import Page
-from wagtail.signals import page_published
+from wagtail.signals import init_new_page, page_published
 
 from cms.articles.models import ArticlesIndexPage, StatisticalArticlePage
 from cms.topics.models import TopicPage
@@ -29,7 +29,7 @@ def on_statistical_article_page_published(
 
 @receiver(init_new_page)
 def prepopulate_statistical_article(
-    sender: type["CreateView"],  # pylint: disable=unused-argument
+    sender: type[CreateView],  # pylint: disable=unused-argument
     page: Page,
     parent: Page,
     **kwargs: dict,
@@ -46,6 +46,7 @@ def prepopulate_statistical_article(
     # Prepopulate the new page with the latest page's data
     page.summary = latest.summary
     page.headline_figures = latest.headline_figures
+    page.headline_figures_figure_ids = latest.headline_figures_figure_ids
     page.contact_details = latest.contact_details
     page.is_accredited = latest.is_accredited
     page.is_census = latest.is_census
@@ -59,7 +60,16 @@ def create_article_index_page(sender: Any, instance: TopicPage, created: bool, r
     if not created or raw:
         return
 
+    if instance.alias_of_id is not None:
+        # If this page is an alias, assume the articles index is about to be created as an alias, too.
+        return
+
     articles_index = ArticlesIndexPage(title="Articles")
     instance.add_child(instance=articles_index)
-    # We publish a live version for the methodologies index page. This is acceptable since its URL redirects
+    # We publish a live version for the articles index page. This is acceptable since its URL redirects
     articles_index.save_revision().publish()
+
+    # Run after_create_page hook to ensure translations are created
+    # @see https://github.com/wagtail/wagtail/issues/13698
+    for fn in hooks.get_hooks("after_create_page"):
+        fn(None, articles_index)

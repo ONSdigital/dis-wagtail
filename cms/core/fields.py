@@ -38,7 +38,7 @@ class StreamField(WagtailStreamfield):
         kwargs.pop("verbose_name", None)
         return name, path, args, kwargs
 
-    def to_python(self, value: Any) -> "StreamValue":
+    def to_python(self, value: Any) -> StreamValue:
         """Overrides StreamField.to_python() to make the return value
         (a `StreamValue`) more useful when migrating. When migrating, block
         definitions are unavailable to the field's underlying StreamBlock,

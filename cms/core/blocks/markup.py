@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -112,7 +112,7 @@ class BasicTableBlock(WagtailTableBlock):
             **context,
         }
 
-    def render(self, value: dict, context: dict | None = None) -> Union[str, "SafeString"]:
+    def render(self, value: dict, context: dict | None = None) -> str | SafeString:
         """The Wagtail core TableBlock has a very custom `render` method. We don't want that."""
         rendered: str | SafeString = super(blocks.FieldBlock, self).render(value, context)
         return rendered
@@ -142,15 +142,28 @@ class ONSTableBlock(TinyTableBlock):
             case _:
                 return ""
 
-    def _prepare_cells(self, row: list[dict[str, str | int]]) -> list[dict[str, str | int]]:
-        # Note: while this makes use of list mutability, returning a value to placate mypy
-        for cell in row:
-            if alignment := cell.get("align"):
-                classname_key = "thClasses" if cell["type"] == "th" else "tdClasses"
-                cell[classname_key] = self._align_to_ons_classname(str(alignment))
-                del cell["align"]
+    def _prepare_cell(
+        self, cell: dict[str, str | int], class_key: str, *, is_body_cell: bool = False
+    ) -> dict[str, str | int]:
+        """Prepare a single cell for the DS table macro."""
+        cell_copy = dict(cell)
+        if alignment := cell_copy.get("align"):
+            cell_copy[class_key] = self._align_to_ons_classname(str(alignment))
+            del cell_copy["align"]
+        if is_body_cell and cell_copy.get("type") == "th":
+            cell_copy["heading"] = True
+        cell_copy.pop("type", None)
+        if is_body_cell:
+            cell_copy.pop("scope", None)
+        return cell_copy
 
-        return row
+    def _prepare_header_cells(self, row: list[dict[str, str | int]]) -> list[dict[str, str | int]]:
+        """Prepare header cells for the DS table macro."""
+        return [self._prepare_cell(cell, "thClasses", is_body_cell=False) for cell in row]
+
+    def _prepare_body_cells(self, row: list[dict[str, str | int]]) -> list[dict[str, str | int]]:
+        """Prepare body cells for the DS table macro."""
+        return [self._prepare_cell(cell, "tdClasses", is_body_cell=True) for cell in row]
 
     def get_context(self, value: dict, parent_context: dict | None = None) -> dict:
         """Insert the DS-ready options in the template context."""
@@ -165,8 +178,8 @@ class ONSTableBlock(TinyTableBlock):
             "title": value.get("title"),
             "options": {
                 "caption": value.get("caption"),
-                "headers": [self._prepare_cells(header_row) for header_row in data.get("headers", [])],
-                "trs": [{"tds": self._prepare_cells(row)} for row in data.get("rows", [])],
+                "thList": [{"ths": self._prepare_header_cells(header_row)} for header_row in data.get("headers", [])],
+                "trs": [{"tds": self._prepare_body_cells(row)} for row in data.get("rows", [])],
             },
             "source": value.get("source"),
             "footnotes": value.get("footnotes"),

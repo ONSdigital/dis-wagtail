@@ -31,6 +31,6 @@ def format_time_series_as_document_list(time_series: StreamValue) -> list[dict[s
     return time_series_documents
 
 
-def get_topic_search_url(topic: "Topic", suffix: str) -> str:
+def get_topic_search_url(topic: Topic, suffix: str) -> str:
     """Returns a formatted search relative URL for a topic."""
     return f"/{topic.slug_path}/{suffix}"

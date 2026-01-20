@@ -40,7 +40,7 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
 
     _analytics_content_type: ClassVar[str] = "information"
 
-    content_panels: ClassVar[list["Panel"]] = [
+    content_panels: ClassVar[list[Panel]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
         FieldPanel("summary", required_on_save=True),
@@ -80,7 +80,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
     content = RichTextField(features=settings.RICH_TEXT_BASIC, blank=True)
     related_links = StreamField([("related_link", RelatedContentBlock())], blank=True)
 
-    content_panels: ClassVar[list["Panel"]] = [
+    content_panels: ClassVar[list[Panel]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
         FieldPanel("summary", required_on_save=True),
@@ -97,7 +97,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
 
     _analytics_content_type: ClassVar[str] = "index-pages"
 
-    def get_formatted_items(self, request: "HttpRequest") -> list[dict[str, str | dict[str, str]]]:
+    def get_formatted_items(self, request: HttpRequest) -> list[dict[str, str | dict[str, str]]]:
         """Returns a formatted list of Featured items
         that can be either children internal Pages or specified in a RelatedContentBlock
         for use with the Design system Document list component.
@@ -124,7 +124,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
             )
         return formatted_items
 
-    def _get_formatted_child_pages(self, request: "HttpRequest") -> list[dict[str, dict[str, str] | Any]]:
+    def _get_formatted_child_pages(self, request: HttpRequest) -> list[dict[str, dict[str, str] | Any]]:
         """Format child pages if there are no featured items."""
         formatted_items = []
 
@@ -158,7 +158,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
 
         return formatted_links
 
-    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+    def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
         context: dict = super().get_context(request, *args, **kwargs)
 
         context["formatted_items"] = self.get_formatted_items(request)
