@@ -4,6 +4,7 @@
 import datetime
 import os
 import sys
+import warnings
 from copy import deepcopy
 from pathlib import Path
 from typing import cast
@@ -12,9 +13,19 @@ import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
+from wagtail.utils.deprecation import RemovedInWagtail80Warning
 
 from cms.core.elasticache import ElastiCacheIAMCredentialProvider
 from cms.core.jinja2 import custom_json_dumps
+
+# TODO: Remove once wagtailtables updates telepath import
+# https://github.com/overcastsoftware/wagtailtables/issues/7
+warnings.filterwarnings(
+    "ignore",
+    category=RemovedInWagtail80Warning,
+    module=r"wagtailtables\..*",
+    message=r"wagtail\.telepath has been moved to wagtail\.admin\.telepath",
+)
 
 env = os.environ.copy()
 
