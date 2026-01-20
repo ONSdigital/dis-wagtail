@@ -58,7 +58,7 @@ def get_revision_page_for_request(request: HttpRequest, page_id: int, revision_i
 
     # Check standard Wagtail page permissions
     perms = page.permissions_for_user(request.user)
-    has_page_perms = perms.can_publish() or perms.can_edit()
+    has_page_perms = perms.can_edit()
 
     # Check bundle preview permissions (only if page is bundled)
     has_bundle_preview = False

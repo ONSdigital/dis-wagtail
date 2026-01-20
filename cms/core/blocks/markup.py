@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
@@ -221,8 +222,11 @@ class ONSTableBlock(TinyTableBlock):
             else self._build_table_download_url(page, block_id, parent_context.get("superseded_version"))
         )
 
-        title = value.get("title") or value.get("caption") or "Table"
-        return {"title": f"Download: {title}", "itemsList": [{"text": f"Download CSV{size_suffix}", "url": csv_url}]}
+        title = value.get("title") or value.get("caption") or _("Table")
+        return {
+            "title": f"{_('Download')}: {title}",
+            "itemsList": [{"text": f"{_('Download CSV')}{size_suffix}", "url": csv_url}],
+        }
 
     @staticmethod
     def _build_table_download_url(page: Any, block_id: str, superseded_version: int | None = None) -> str:

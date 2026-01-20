@@ -1,5 +1,6 @@
 import io
 import re
+from collections.abc import Mapping
 from threading import Lock
 from typing import TYPE_CHECKING, Any
 
@@ -131,14 +132,14 @@ def clean_cell_value(value: str | int | float) -> str | int | float:
     return value
 
 
-def flatten_table_data(data: dict) -> list[list[str | int | float]]:
+def flatten_table_data(data: Mapping) -> list[list[str | int | float]]:
     """Flattens table data by extracting cell values from headers and rows.
 
     This is primarily used for the table block. Merged cells (colspan/rowspan)
     have their values repeated across all spanned cells.
 
     Args:
-        data: Dictionary containing 'headers' and 'rows' keys with cell objects.
+        data: Data containing 'headers' and 'rows' keys with cell objects.
 
     Returns:
         List of rows, where each row is a list of cell values (strings, ints, or floats).
@@ -148,20 +149,26 @@ def flatten_table_data(data: dict) -> list[list[str | int | float]]:
     # Track columns filled by rowspan: {col_index: (value, remaining_rows)}
     rowspan_tracker: dict[int, tuple[str | int | float, int]] = {}
 
+    # Use closure to access rowspan_tracker
+    def fill_rowspan_columns(processed_row: list[str | int | float], col_index: int) -> int:
+        """Fill columns blocked by previous rowspans, returning the updated column index."""
+        while col_index in rowspan_tracker:
+            value, remaining = rowspan_tracker[col_index]
+            processed_row.append(value)
+            if remaining == 1:
+                del rowspan_tracker[col_index]
+            else:
+                rowspan_tracker[col_index] = (value, remaining - 1)
+            col_index += 1
+        return col_index
+
     for row in all_rows:
         processed_row: list[str | int | float] = []
         col_index = 0
 
         for cell in row:
             # Fill columns blocked by previous rowspans
-            while col_index in rowspan_tracker:
-                value, remaining = rowspan_tracker[col_index]
-                processed_row.append(value)
-                if remaining == 1:
-                    del rowspan_tracker[col_index]
-                else:
-                    rowspan_tracker[col_index] = (value, remaining - 1)
-                col_index += 1
+            col_index = fill_rowspan_columns(processed_row, col_index)
 
             value = clean_cell_value(cell.get("value", ""))
             colspan = cell.get("colspan", 1)
@@ -176,14 +183,7 @@ def flatten_table_data(data: dict) -> list[list[str | int | float]]:
                 col_index += 1
 
         # Handle any remaining rowspan columns at end of row
-        while col_index in rowspan_tracker:
-            value, remaining = rowspan_tracker[col_index]
-            processed_row.append(value)
-            if remaining == 1:
-                del rowspan_tracker[col_index]
-            else:
-                rowspan_tracker[col_index] = (value, remaining - 1)
-            col_index += 1
+        fill_rowspan_columns(processed_row, col_index)  # Return value not needed
 
         result.append(processed_row)
 
