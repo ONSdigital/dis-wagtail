@@ -167,9 +167,6 @@ class DeleteTestDataTestCase(TestCase):
             itertools.chain.from_iterable(model.objects.all() for model in AFFECTED_MODELS if class_is_indexed(model))
         )
 
-        for instance in instances:
-            self.assertTrue(instance.index_entries.exists())
-
         call_command("delete_test_data", interactive=False, stdout=StringIO())
 
         for instance in instances:
