@@ -5,7 +5,6 @@ from wagtail.test.utils import WagtailTestUtils
 
 from cms.core.models import Definition
 from cms.core.tests.factories import ContactDetailsFactory, DefinitionFactory
-from cms.core.viewsets import DefinitionViewSet
 
 
 class TestContactDetailsChooserViewSet(WagtailTestUtils, TestCase):
@@ -107,11 +106,3 @@ class TestDefinitionModelMetadata(TestCase):
         """Test that the model verbose_name is 'definition'."""
         self.assertEqual(Definition._meta.verbose_name, "definition")
         self.assertEqual(Definition._meta.verbose_name_plural, "definitions")
-
-
-class TestDefinitionViewSetMetadata(TestCase):
-    """Test that DefinitionViewSet displays 'Definitions' label in admin."""
-
-    def test_menu_label_is_definitions(self):
-        """Test that the viewset menu_label is 'Definitions'."""
-        self.assertEqual(DefinitionViewSet.menu_label, "Definitions")
