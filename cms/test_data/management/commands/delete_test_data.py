@@ -7,6 +7,7 @@ from django.apps import apps
 from django.contrib.admin.utils import NestedObjects
 from django.core.exceptions import FieldDoesNotExist
 from django.core.management.base import BaseCommand
+from django.db import transaction
 from django.db.models import Model, Q
 from django.db.models.signals import post_save
 from modelsearch.index import class_is_indexed
@@ -142,7 +143,7 @@ class Command(BaseCommand):
 
             self.stdout.write("Deleting data...", self.style.NOTICE)
 
-            with disable_signals(list(collector.data.keys())):
+            with disable_signals(list(collector.data.keys())), transaction.atomic():
                 for model, instances in collector.data.items():
                     # Use queryset delete methods to use any customized behaviour
                     model._default_manager.filter(pk__in=[instance.pk for instance in instances]).delete()  # pylint: disable=protected-access

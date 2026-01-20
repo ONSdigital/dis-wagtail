@@ -8,6 +8,7 @@ import factory
 import factory.fuzzy
 import factory.random
 from django.core.management.base import BaseCommand
+from django.db import transaction
 from django.db.models import Model
 from factory.base import Factory
 from faker import Faker
@@ -65,6 +66,7 @@ class TestDataFactory:
         except KeyError:
             raise RuntimeError(f"{model!r} has not been created yet") from None
 
+    @transaction.atomic
     def run(self) -> None:
         self._create_images()
         self._create_datasets()
