@@ -38,6 +38,8 @@ class Topic(index.Indexed, MP_Node):
     dummy node, we override the default object manager with one which only returns non-root level, actual topic nodes.
     """
 
+    search_auto_update = True
+
     class Meta:
         ordering = ("path",)
 
