@@ -570,18 +570,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, self.article.display_title)
 
     def test_translated_model_taxonomy_enforcement(self):
-        # Create a translations of self.topic_page
-        welsh_locale = Locale.objects.get(language_code="cy")
-        welsh_homepage = HomePage.objects.get(locale=welsh_locale)
-
-        # This should not raise a ValidationError
-        translated_topic_page = TopicPageFactory(
-            title="Test Topic",
-            locale=welsh_locale,
-            parent=welsh_homepage,
-            translation_key=self.topic_page.translation_key,
-            topic=self.topic_page.topic,
-        )
+        translated_topic_page = self.topic_page.get_translation(Locale.objects.get(language_code="cy"))
 
         # Assign different topic
         translated_topic_page.topic = TopicFactory()
@@ -701,7 +690,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         self.assertIn("Broken headline figures found on topic page", logs.output[0])
 
     def test_cannot_add_children_once_articles_and_methodologies_index_are_created(self):
-        self.assertEqual(TopicPage.objects.count(), 4)  # 4 created in setUpTestData
+        self.assertEqual(TopicPage.objects.child_of(self.home_page).count(), 4)  # created in setUpTestData
         self.client.force_login(self.superuser)
         response = self.client.post(
             reverse("wagtailadmin_pages:add", args=("topics", "topicpage", self.home_page.pk)),
