@@ -23,23 +23,10 @@ class RangeConfig(BaseModel):
 class ModelCreationConfig(BaseModel):
     count: NonNegativeInt | RangeConfig = 1
 
-    def get_count(self, faker: Faker) -> int:
-        return get_count(self.count, faker)
-
-
-def get_count(data: PositiveInt | RangeConfig, faker: Faker) -> int:
-    if isinstance(data, int):
-        return data
-
-    return faker.random_int(min=data.min, max=data.max)
-
 
 class PageCreationConfig(ModelCreationConfig):
     published: FractionalFloat = 0.5
     revisions: NonNegativeInt | RangeConfig = 0
-
-    def revisions_count(self, faker: Faker) -> int:
-        return get_count(self.revisions, faker)
 
 
 class TopicCreationConfig(PageCreationConfig):
@@ -47,14 +34,14 @@ class TopicCreationConfig(PageCreationConfig):
     dataset_manual_links: NonNegativeInt = 0
     explore_more: NonNegativeInt | RangeConfig = 1
 
-    def datasets_count(self, faker: Faker) -> int:
-        return get_count(self.datasets, faker)
-
-    def explore_more_count(self, faker: Faker) -> int:
-        return get_count(self.explore_more, faker)
-
 
 class TestDataConfig(BaseModel):
     datasets: ModelCreationConfig = ModelCreationConfig()
     images: ModelCreationConfig = ModelCreationConfig()
     topics: TopicCreationConfig = TopicCreationConfig(count=3)
+
+    def get_count(self, data: int | RangeConfig, faker: Faker) -> int:
+        if isinstance(data, int):
+            return data
+
+        return faker.random_int(min=data.min, max=data.max)

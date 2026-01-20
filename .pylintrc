@@ -433,6 +433,7 @@ disable=raw-checker-failed,
         too-many-public-methods,
         line-too-long,
         unspecified-encoding,
+        too-many-instance-attributes,
 
 # note:
 # - wrong-import-order: covered by ruff
