@@ -1,4 +1,6 @@
 from argparse import ArgumentParser
+from collections.abc import Generator
+from contextlib import contextmanager
 from typing import Any
 
 from django.apps import apps
@@ -6,12 +8,42 @@ from django.contrib.admin.utils import NestedObjects
 from django.core.exceptions import FieldDoesNotExist
 from django.core.management.base import BaseCommand
 from django.db.models import Model, Q
+from django.db.models.signals import post_save
+from modelsearch.index import class_is_indexed
+from modelsearch.signal_handlers import post_save_signal_handler
 from treebeard.mp_tree import MP_Node
+from wagtail.models import ReferenceIndex
+from wagtail.signal_handlers import update_reference_index_on_save
 
 from cms.taxonomy.models import Topic
 from cms.test_data.utils import SEEDED_DATA_PREFIX
 
 COLUMNS = {"slug", "title"}
+
+
+@contextmanager
+def disable_signals(models: list[type[Model]]) -> Generator[None]:
+    """Disable certain signals when saving models.
+
+    This is part for performance reasons, but mostly because the tasks
+    these signals enqueue will fail as the objects no longer exist.
+    """
+    for model in models:
+        # Don't rebuild search index when saving instances
+        post_save.disconnect(post_save_signal_handler, sender=model)
+
+        # Don't rebuild reference index when saving models
+        post_save.disconnect(update_reference_index_on_save, sender=model)
+
+    try:
+        yield
+    finally:
+        for model in models:
+            if class_is_indexed(model):
+                post_save.connect(post_save_signal_handler, sender=model)
+
+            if ReferenceIndex.model_is_indexable(model):
+                post_save.connect(update_reference_index_on_save, sender=model)
 
 
 class Command(BaseCommand):
@@ -109,9 +141,11 @@ class Command(BaseCommand):
                     return
 
             self.stdout.write("Deleting data...", self.style.NOTICE)
-            for model, instances in collector.data.items():
-                # Use queryset delete methods to use any customized behaviour
-                model._default_manager.filter(pk__in=[instance.pk for instance in instances]).delete()  # pylint: disable=protected-access
+
+            with disable_signals(list(collector.data.keys())):
+                for model, instances in collector.data.items():
+                    # Use queryset delete methods to use any customized behaviour
+                    model._default_manager.filter(pk__in=[instance.pk for instance in instances]).delete()  # pylint: disable=protected-access
 
             # NB: Because the topic tree hides the root node in a number core method, it gets corrupted
             # during deletion. Manually repair the tree afterwards.

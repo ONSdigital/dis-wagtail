@@ -1,9 +1,12 @@
+import itertools
 import json
 from io import StringIO
 
 from django.core.management import call_command
 from django.test import TestCase
 from django.test.testcases import SimpleTestCase
+from modelsearch.index import class_is_indexed
+from wagtail.models import ReferenceIndex
 
 from cms.datasets.models import Dataset
 from cms.images.models import CustomImage
@@ -141,6 +144,36 @@ class DeleteTestDataTestCase(TestCase):
         # Topics aren't part of the page tree, to manually check they're valid
         self.assertEqual(Topic.objects.root_topic().numchild, 0)
         self.assertEqual(Topic.find_problems(), ([], [], [], [], []))
+
+    def test_deletes_reference_index(self):
+        call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
+
+        instances = list(
+            itertools.chain.from_iterable(
+                model.objects.all() for model in AFFECTED_MODELS if ReferenceIndex.model_is_indexable(model)
+            )
+        )
+
+        call_command("delete_test_data", interactive=False, stdout=StringIO())
+
+        for instance in instances:
+            self.assertFalse(ReferenceIndex.get_references_for_object(instance).exists())
+            self.assertFalse(ReferenceIndex.get_references_to(instance).exists())
+
+    def test_deletes_search_index(self):
+        call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
+
+        instances = list(
+            itertools.chain.from_iterable(model.objects.all() for model in AFFECTED_MODELS if class_is_indexed(model))
+        )
+
+        for instance in instances:
+            self.assertTrue(instance.index_entries.exists())
+
+        call_command("delete_test_data", interactive=False, stdout=StringIO())
+
+        for instance in instances:
+            self.assertFalse(instance.index_entries.exists())
 
 
 class ShowDefaultTestDataConfigTestCase(SimpleTestCase):
