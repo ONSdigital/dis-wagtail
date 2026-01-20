@@ -104,8 +104,6 @@ class DefinitionViewSet(SnippetViewSet):
 
     model = Definition
     icon = "list-ul"
-    menu_label = "Definitions"
-    add_to_admin_menu = True
 
     index_view_class = DefinitionsIndex
     chooser_viewset_class = DefinitionChooserViewSet
