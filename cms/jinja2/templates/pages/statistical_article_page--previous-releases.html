@@ -33,7 +33,7 @@
 {% endblock -%}
 
 {% block main %}
-    <div class="ons-grid">
+    <div class="ons-grid ons-js-table-of-contents-container">
         <div class="ons-grid__col ons-col-8@m">
             {# using namespaced variable here so we can update previous_release_pages inside the pages loop #}
             {%- set releases = namespace(previous_release_pages=[]) -%}
