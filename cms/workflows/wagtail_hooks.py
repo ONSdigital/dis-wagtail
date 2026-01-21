@@ -27,20 +27,20 @@ if TYPE_CHECKING:
     from wagtail.models import Page
 
 
-@hooks.register("construct_page_action_menu")
-def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: HttpRequest, context: Mapping) -> None:
-    if not (context["view"] == "edit" and context.get("page")):
-        return
+def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, context: Mapping) -> list:
+    """Modifies the action menu items depending on the page state.
 
-    if not isinstance(context["page"], BundledPageMixin):
-        return
-
+    - if the page is in a bundle that is ready to be published, remove all actions regardless of permissions
+    - when the page is ready to be published, it is locked for editing, so inject the ReadyToPublishTask actions
+    - hide the "approve" tasks for the last editor
+    - and finally tidy up the "approve" labels
+    """
     updated_menu_items = menu_items
     page: Page = context["page"]
     if in_bundle_ready_to_be_published(page):
         # start with a fully locked action menu when in a bundle that is ready to be published,
         # as we want to prevent all actions.
-        updated_menu_items = [PageLockedMenuItem()]
+        return [PageLockedMenuItem()]
 
     if is_page_ready_to_publish(page):
         # The lock kicks in when we're in ReadyToPublishGroupTask, which marks the page as locked for editing.
@@ -54,9 +54,10 @@ def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: Http
                 icon_name = "success" if name in ["approve", "locked-approve"] else "edit"
                 updated_menu_items.append(WorkflowMenuItem(name, item_label, launch_modal, icon_name=icon_name))
 
-    is_final_task = False
-    if page.current_workflow_task:
-        is_final_task = page.current_workflow_task.pk == page.current_workflow_state.workflow.tasks.last().pk
+    is_final_task = (
+        page.current_workflow_task
+        and page.current_workflow_task.pk == page.current_workflow_state.workflow.tasks.last().pk
+    )
 
     is_self_approver = page.latest_revision and page.latest_revision.user_id == request.user.pk
     final_menu_items = []
@@ -75,26 +76,28 @@ def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: Http
             item.label = label
         final_menu_items.append(item)
 
-    menu_items[:] = final_menu_items
+    return final_menu_items
 
 
 @hooks.register("construct_page_action_menu")
-def amend_page_locked_action_menu_item(
-    menu_items: list[ActionMenuItem], request: HttpRequest, context: Mapping
-) -> None:
-    # note: split into its own hook call to simplify the logic in amend_page_action_menu_items.
+def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: HttpRequest, context: Mapping) -> None:
     if not (context["view"] == "edit" and context.get("page")):
         return
 
     if not isinstance(context["page"], BundledPageMixin):
         return
 
-    for item in menu_items:
+    # do the bulk of tweaks
+    updated_menu_items = update_action_menu(menu_items, request, context)
+
+    # finally ensure the page locked item is first
+    for item in updated_menu_items:
         if isinstance(item, PageLockedMenuItem):
-            # ensure the page locked item is first
             item.order = -1
-            menu_items.sort(key=lambda item: item.order)
+            updated_menu_items.sort(key=lambda item: item.order)
             break
+
+    menu_items[:] = updated_menu_items
 
 
 @hooks.register("before_edit_page")

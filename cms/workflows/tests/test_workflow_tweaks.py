@@ -4,12 +4,14 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
+from wagtail.admin.action_menu import PageLockedMenuItem
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
+from cms.home.models import HomePage
 from cms.users.tests.factories import UserFactory
 from cms.workflows.locks import PageReadyToBePublishedLock
 from cms.workflows.models import GroupReviewTask, ReadyToPublishGroupTask
@@ -34,6 +36,19 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
 
         cls.bundle = BundleFactory()
         cls.bundle_page = BundlePageFactory(parent=cls.bundle, page=cls.page)
+
+    def mark_bundle_as_ready_to_publish(self):
+        # mark the bundle as ready to publish
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+
+    def assertActionIn(self, action, menu_items):  # pylint: disable=invalid-name
+        actions = {item.name for item in menu_items}
+        self.assertIn(action, actions)
+
+    def assertActionNotIn(self, action, menu_items):  # pylint: disable=invalid-name
+        actions = {item.name for item in menu_items}
+        self.assertNotIn(action, actions)
 
     def test_amend_page_action_menu_items_hook(self):
         # Mark the page as ready for review
@@ -75,9 +90,7 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.edit_url)
         self.assertContains(response, 'name="action-cancel-workflow"')
 
-        # mark the bundle as ready to publish
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
+        self.mark_bundle_as_ready_to_publish()
 
         response = self.client.get(self.edit_url)
         self.assertNotContains(response, 'name="action-cancel-workflow"')
@@ -163,8 +176,7 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         mark_page_as_ready_to_publish(self.page)
         self.assertIsNotNone(self.page.get_lock)
 
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
+        self.mark_bundle_as_ready_to_publish()
 
         self.assertIsInstance(self.page.get_lock(), PageReadyToBePublishedLock)
 
@@ -173,8 +185,7 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         self.assertIsNotNone(self.page.get_lock)
 
         mark_page_as_ready_to_publish(self.page)
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
+        self.mark_bundle_as_ready_to_publish()
 
         response = self.client.get(self.edit_url)
         bundle_url = reverse("bundle:edit", args=[self.bundle.pk])
@@ -199,8 +210,7 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
 
         # note: we are mocking user_can_manage_bundles in all entry points.
         mark_page_as_ready_to_publish(self.page)
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
+        self.mark_bundle_as_ready_to_publish()
 
         response = self.client.get(self.edit_url)
         self.assertContains(
@@ -230,8 +240,106 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
     def test_ready_to_publish_task__get_actions__user_can_publish__bundle_ready_to_publish(self):
         mark_page_as_ready_to_publish(self.page)
 
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
+        self.mark_bundle_as_ready_to_publish()
 
         actions = self.page.current_workflow_task.get_actions(self.page, self.publishing_admin)
         self.assertEqual(actions, [])
+
+    @patch("cms.workflows.wagtail_hooks.update_action_menu")
+    def test_workflow_page_action_hook_not_actioned_in_irrelevant_contexts(self, mocked_update):
+        # add page
+        home_page = HomePage.objects.first()
+        self.client.get(
+            reverse("wagtailadmin_pages:add", args=("standard_pages", "informationpage", home_page.pk)),
+        )
+        mocked_update.assert_not_called()
+
+        # edit non-BundledPageMixin model
+        self.client.get(reverse("wagtailadmin_pages:edit", args=[home_page.id]))
+        mocked_update.assert_not_called()
+
+    def test_action_menu_for_self_approval(self):
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_for_review(self.page, self.publishing_admin)
+
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertEqual(len(menu_items), 4)
+        self.assertActionIn("action-publish", menu_items)
+        self.assertActionIn("action-unpublish", menu_items)
+        self.assertActionIn("action-cancel-workflow", menu_items)
+        self.assertActionIn("reject", menu_items)
+        self.assertActionNotIn("approve", menu_items)
+
+    def test_action_menu_locked_item_first_in_list(self):
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_to_publish(self.page, self.publishing_admin)
+
+        response = self.client.get(self.edit_url)
+        action_menu = response.context["action_menu"]
+        self.assertIsInstance(action_menu.default_item, PageLockedMenuItem)
+
+    def test_action_menu_fully_locked_when_in_bundle_ready_to_be_published(self):
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_to_publish(self.page, self.publishing_admin)
+        self.mark_bundle_as_ready_to_publish()
+
+        response = self.client.get(self.edit_url)
+        action_menu = response.context["action_menu"]
+        self.assertIsInstance(action_menu.default_item, PageLockedMenuItem)
+        self.assertEqual(action_menu.menu_items, [])
+
+    def test_action_menu_labels__in_review(self):
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_for_review(self.page, self.publishing_officer)
+
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+        # unpublish, publish, approve, approve with comment, reject
+        self.assertEqual(len(menu_items), 5)
+
+        self.assertActionIn("action-publish", menu_items)
+        self.assertActionIn("action-unpublish", menu_items)
+        self.assertActionIn("approve", menu_items)
+        self.assertActionIn("reject", menu_items)
+        self.assertActionNotIn("locked-approve", menu_items)
+        self.assertActionNotIn("unlock", menu_items)
+
+        labels = {item.label for item in menu_items}
+        self.assertIn("Approve", labels)
+        self.assertIn("Approve with comment", labels)
+
+    def test_action_menu_labels__in_ready_to_publish__in_bundle(self):
+        self.client.force_login(self.publishing_admin)
+
+        mark_page_as_ready_to_publish(self.page, self.publishing_officer)
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertEqual(len(menu_items), 1)  # unlock
+
+        self.assertActionIn("unlock", menu_items)
+        self.assertActionNotIn("locked-approve", menu_items)
+
+        labels = {item.label for item in menu_items}
+        self.assertIn("Unlock editing", labels)
+        self.assertNotIn("Publish", labels)
+        self.assertNotIn("Approve and Publish", labels)
+
+    def test_action_menu_labels__in_ready_to_publish__no_bundle(self):
+        self.client.force_login(self.publishing_admin)
+        page = StatisticalArticlePageFactory()
+        mark_page_as_ready_to_publish(page, self.publishing_officer)
+
+        response = self.client.get(reverse("wagtailadmin_pages:edit", args=[page.pk]))
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertEqual(len(menu_items), 2)  # unlock, publish
+        self.assertActionIn("unlock", menu_items)
+        self.assertActionIn("locked-approve", menu_items)
+
+        labels = {item.label for item in menu_items}
+        self.assertIn("Publish", labels)
+        self.assertIn("Unlock editing", labels)
+        self.assertNotIn("Approve and Publish", labels)
