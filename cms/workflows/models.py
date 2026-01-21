@@ -51,7 +51,7 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
         if not in_active_bundle(obj):
             return [
                 ("unlock", "Unlock editing", False),
-                ("approve", "Approve", False),
+                ("locked-approve", "Approve", False),
             ]
         if not in_bundle_ready_to_be_published(obj):
             # we're in a bundle which is not yet ready to be published,
@@ -83,8 +83,8 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
     def on_action(self, task_state: TaskState, user: User, action_name: str, **kwargs: Any) -> None:
         if action_name == "unlock":
             self.unlock(task_state, user)
-
-            # todo - log the action
+        elif action_name == "locked-approve":
+            super().on_action(task_state, user, "approve", **kwargs)
         else:
             super().on_action(task_state, user, action_name, **kwargs)
 

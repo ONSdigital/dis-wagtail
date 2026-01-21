@@ -59,7 +59,7 @@ def the_given_button_is_enabled(
     )
 
 
-@then('the "{button_label}" button {exists}')
+@step('the "{button_label}" button {exists}')
 def the_given_button_is_present(
     context: Context, button_label: str, exists: Literal["exists", "does not exist"]
 ) -> None:

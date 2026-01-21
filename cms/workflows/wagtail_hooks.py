@@ -11,7 +11,7 @@ from wagtail.admin import messages
 from wagtail.admin.action_menu import PageLockedMenuItem, WorkflowMenuItem
 
 from cms.bundles.mixins import BundledPageMixin
-from cms.bundles.utils import in_bundle_ready_to_be_published
+from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 
 from . import admin_urls
 from .action_menu import UnlockWorkflowMenuItem
@@ -51,7 +51,7 @@ def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: Http
                 url = reverse("workflows:unlock", args=(page.pk,))
                 updated_menu_items.append(UnlockWorkflowMenuItem(name, label, icon_name="lock-open", item_url=url))
             else:
-                icon_name = "success" if name == "approve" else "edit"
+                icon_name = "success" if name in ["approve", "locked-approve"] else "edit"
                 updated_menu_items.append(WorkflowMenuItem(name, item_label, launch_modal, icon_name=icon_name))
 
     is_final_task = False
@@ -61,7 +61,7 @@ def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: Http
     is_self_approver = page.latest_revision and page.latest_revision.user_id == request.user.pk
     final_menu_items = []
     for item in updated_menu_items:
-        if item.name == "approve":
+        if item.name in ["approve", "locked-approve"]:
             # skip adding this item when the current user was the last editor to prevent self-approval
             if is_self_approver:
                 continue
@@ -96,16 +96,40 @@ def amend_page_locked_action_menu_item(
 
 @hooks.register("before_edit_page")
 def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
-    if (
-        request.method != "POST"
-        or request.POST.get("action-workflow-action") != "true"
-        or request.POST.get("workflow-action-name") != "approve"
-        or page.latest_revision.user_id != request.user.pk
-    ):
+    if request.method != "POST" or request.POST.get("action-workflow-action") != "true":
         return None
 
-    messages.error(request, "Cannot self-approve your changes. Please ask another Publishing team member to do so.")
-    return redirect("wagtailadmin_pages:edit", page.pk)
+    action_name = request.POST.get("workflow-action-name", "")
+
+    if action_name == "approve" and page.latest_revision.user_id == request.user.pk:
+        messages.error(request, "Cannot self-approve your changes. Please ask another Publishing team member to do so.")
+        return redirect("wagtailadmin_pages:edit", page.pk)
+
+    if action_name == "locked-approve" and is_page_ready_to_publish(page) and not in_active_bundle(page):
+        # The page is "Ready to publish" and the edit form was POSTed with the ReadyToPublishGroupTask "locked-approve"
+        # action. Perform the required workflow action without saving the form.
+        # Note: this follows the logic from the Wagtail core page edit view
+        # https://github.com/wagtail/wagtail/blob/40c9b1fdff19bad5b9997c0366ed5cb642edd557/wagtail/admin/views/pages/edit.py#L854
+        page.current_workflow_task.on_action(page.current_workflow_task_state, request.user, action_name)
+
+        # run the after_edit_page hook
+        for fn in hooks.get_hooks("after_edit_page"):
+            result = fn(request, page)
+            if hasattr(result, "status_code"):
+                typed_result: HttpResponse = result  # placate mypy
+                return typed_result
+
+        message = f"Page '{page.get_admin_display_title()}' has been published."
+
+        buttons = []
+        if (page_url := page.get_url(request=request)) is not None:
+            buttons.append(messages.button(page_url, "View live", new_window=False))
+        buttons.append(messages.button(reverse("wagtailadmin_pages:edit", args=(page.pk,)), "Edit"))
+        messages.success(request, message, buttons=buttons)
+
+        return redirect("wagtailadmin_explore", page.get_parent().pk)
+
+    return None
 
 
 @hooks.register("insert_editor_js")

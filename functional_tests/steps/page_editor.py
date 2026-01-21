@@ -9,6 +9,7 @@ from wagtail.models import Locale
 
 from cms.themes.models import ThemeIndexPage
 from cms.themes.tests.factories import ThemeIndexPageFactory
+from functional_tests.step_helpers.utils import get_page_from_context
 
 RE_UNLOCKED = re.compile(r"Page '.*' is now unlocked\.")
 
@@ -185,6 +186,7 @@ def the_user_can_save_a_page(context: Context) -> None:
 
 
 @step("the user can publish a page")
+@step("the user can publish the page")
 def the_user_can_publish_a_page(context: Context) -> None:
     expect(context.page.get_by_role("button", name="More actions")).to_be_visible()
     context.page.get_by_role("button", name="More actions").click()
@@ -247,3 +249,10 @@ def user_has_no_option_to_copy_page(context: Context) -> None:
 @step("the user has the option to copy the page")
 def user_has_option_to_copy_page(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Copy")).to_be_visible()
+
+
+@then("the published {page_str} page is displayed")
+def the_published_page_is_displayed(context: Context, page_str: str) -> None:
+    the_page = get_page_from_context(context, page_str)
+    # note: we don't display the summary anywhere other than the edit form, or the published page
+    expect(context.page.get_by_text(the_page.summary, exact=True)).to_be_visible()

@@ -29,7 +29,7 @@ Feature: Page-level workflows
         And  the user can unlock the page
 
 
-    Scenario: A Publishing Office can unlock a page locked by them, when it is in the review workflow step
+    Scenario: A Publishing Officer can unlock a page locked by them, when it is in the review workflow step
         Given the statistical article page is locked by a Publishing Officer
         And the user is logged in
         When the user edits the statistical article page
@@ -45,8 +45,9 @@ Feature: Page-level workflows
         And  the "Page locked" button exists
 
     Examples:
-      | Publishing Officer |
-      | Publishing Admin   |
+        | user               |
+        | Publishing Officer |
+        | Publishing Admin   |
 
 
     Scenario: When page is Approved (Ready to publish), then a Publishing admin can "unlock" it
@@ -58,6 +59,7 @@ Feature: Page-level workflows
         And  the user can unlock the page for editing
         And  the "Page editing unlocked." text is displayed
         And  the "Unlock editing" link does not exist
+
 
     Scenario: When page is Approved (Ready to publish) and in a work in progress bundle, then a Publishing admin can "unlock" it
         Given the statistical article page is "ready to publish"
@@ -71,6 +73,7 @@ Feature: Page-level workflows
         And  the "Page editing unlocked." text is displayed
         And  the "Unlock editing" link does not exist
 
+
     Scenario: When page is Approved (Ready to publish) and in an Approved bundle, then a Publishing admin cannot "unlock" it
         Given the statistical article page is "Ready to publish"
         When a Publishing Admin logs into the admin site
@@ -80,3 +83,14 @@ Feature: Page-level workflows
         Then the "Page locked" button exists
         And  the "Unlock editing" link does not exist
         And  the "This page is included in a bundle that is ready to be published. You must revert the bundle to Draft or In preview in order to make further changes." text is displayed
+
+
+    Scenario: When page is Approved (Ready to publish) and not in a bundle, a Publishing Admin can publish it
+        Given the statistical article page is "ready to publish"
+        When a Publishing Admin logs into the admin site
+        And  the user edits the statistical article page
+        And  the user clicks the action button toggle
+        And  the "Approve and Publish" button exists
+        And  the user clicks the "Approve and Publish" button
+        And  the user clicks "View Live" on the publish confirmation banner
+        Then the published statistical article page is displayed
