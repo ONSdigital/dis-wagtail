@@ -5,7 +5,6 @@ from typing import Any
 
 from django.apps import apps
 from django.contrib.admin.utils import NestedObjects
-from django.core.exceptions import FieldDoesNotExist
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Model, Q
@@ -18,8 +17,6 @@ from wagtail.signal_handlers import update_reference_index_on_save
 
 from cms.taxonomy.models import Topic
 from cms.test_data.utils import SEEDED_DATA_PREFIX
-
-COLUMNS = {"slug", "title"}
 
 
 @contextmanager
@@ -67,14 +64,13 @@ class Command(BaseCommand):
         )
 
     def _get_lookups(self, model: type[Model]) -> Q:
+        """Query any field which might contain the prefix."""
         lookups = Q()
-        for column in COLUMNS:
-            try:
-                model._meta.get_field(column)
-            except FieldDoesNotExist:
-                continue
+        for field in model._meta.fields:
+            supported_lookups = field.get_lookups().keys()
 
-            lookups |= Q(**{column + "__istartswith": SEEDED_DATA_PREFIX})
+            if "istartswith" in supported_lookups:
+                lookups |= Q(**{field.attname + "__istartswith": SEEDED_DATA_PREFIX})
 
         return lookups
 
