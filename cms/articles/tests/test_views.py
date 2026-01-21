@@ -11,7 +11,7 @@ from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import create_bundle_viewer
-from cms.datavis.tests.factories import TableDataFactory
+from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
 from cms.teams.tests.factories import TeamFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_for_review
@@ -376,17 +376,12 @@ class RevisionTableDownloadViewTestCase(WagtailTestUtils, TestCase):
                     "content": [
                         {
                             "type": "table",
-                            "value": {
-                                "title": "Test Table Title",
-                                "caption": "Table caption",
-                                "data": {
-                                    "headers": [[{"value": "Year", "type": "th"}, {"value": "Value", "type": "th"}]],
-                                    "rows": [
-                                        [{"value": "2020", "type": "td"}, {"value": "100", "type": "td"}],
-                                        [{"value": "2021", "type": "td"}, {"value": "150", "type": "td"}],
-                                    ],
-                                },
-                            },
+                            "value": make_table_block_value(
+                                title="Test Table Title",
+                                caption="Table caption",
+                                headers=[["Year", "Value"]],
+                                rows=[["2020", "100"], ["2021", "150"]],
+                            ),
                             "id": "test-table-id",
                         }
                     ],
@@ -438,10 +433,7 @@ class RevisionTableDownloadViewTestCase(WagtailTestUtils, TestCase):
                     "content": [
                         {
                             "type": "table",
-                            "value": {
-                                "title": "Empty Table",
-                                "data": {"headers": [], "rows": []},
-                            },
+                            "value": make_table_block_value(title="Empty Table", headers=[], rows=[]),
                             "id": "empty-table-id",
                         }
                     ],
@@ -512,19 +504,12 @@ class ChartAndTableDownloadTestCase(WagtailTestUtils, TestCase):
                         },
                         {
                             "type": "table",
-                            "value": {
-                                "title": "Regional Statistics Table",
-                                "caption": "Regional breakdown",
-                                "data": {
-                                    "headers": [
-                                        [{"value": "Region", "type": "th"}, {"value": "Population", "type": "th"}]
-                                    ],
-                                    "rows": [
-                                        [{"value": "North", "type": "td"}, {"value": "5000000", "type": "td"}],
-                                        [{"value": "South", "type": "td"}, {"value": "7000000", "type": "td"}],
-                                    ],
-                                },
-                            },
+                            "value": make_table_block_value(
+                                title="Regional Statistics Table",
+                                caption="Regional breakdown",
+                                headers=[["Region", "Population"]],
+                                rows=[["North", "5000000"], ["South", "7000000"]],
+                            ),
                             "id": "regional-table",
                         },
                     ],
@@ -627,3 +612,11 @@ class ChartAndTableDownloadTestCase(WagtailTestUtils, TestCase):
 
         # Verify second chart download matches first
         self.assertEqual(chart_content, chart_content_2)
+
+        # Dwonload table again to ensure no state issues
+        table_response_2 = self.client.get(self.get_table_download_url())
+        self.assertEqual(table_response_2.status_code, HTTPStatus.OK)
+        table_content_2 = table_response_2.content.decode("utf-8")
+
+        # Verify second table download matches first
+        self.assertEqual(table_content, table_content_2)
