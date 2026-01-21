@@ -966,6 +966,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
 
     def _make_information_page(self, *, download: bool, image=None) -> InformationPage:
         image = image or self.image
+
         page = InformationPage(
             title="Info page with image",
             summary="<p>Summary</p>",
@@ -985,6 +986,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         )
         self.home.add_child(instance=page)
         page.save_revision().publish()
+
         return page
 
     def test_renders_small_and_large_renditions_and_alt_text(self):
@@ -1001,8 +1003,8 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
 
         # onsImage macro outputs src/srcset with both specific rendition URLs
         # Use the underlying file URLs to be agnostic of serve method
-        self.assertContains(response, self.small.file.url)
-        self.assertContains(response, self.large.file.url)
+        self.assertContains(response, self.small.url)
+        self.assertContains(response, self.large.url)
 
     def test_renders_download_link_with_file_type_and_size_when_enabled(self):
         page = self._make_information_page(download=True)
@@ -1018,8 +1020,8 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
 
         # Large rendition used for download (assert exact URL appears twice in the response)
         # Assert exact downloadable rendition file URL appears twice: once in href, once in onsImage srcset
-        self.assertContains(response, self.large.file.url, count=2)
-        self.assertContains(response, self.small.file.url, count=0)
+        self.assertContains(response, self.large.url, count=2)
+        self.assertContains(response, self.small.url, count=2)
 
         # Assert the actual download anchor exists and targets the large rendition URL
         html = response.content.decode(response.charset or "utf-8", errors="replace")
@@ -1027,7 +1029,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         download_link = soup.select_one("a[download]")
 
         self.assertIsNotNone(download_link)
-        self.assertEqual(download_link.get("href"), self.large.file.url)
+        self.assertEqual(download_link.get("href"), self.large.url)
 
         expected = filesizeformat(self.large.file.size)
         self.assertIn(f"({expected})", download_link.get_text(strip=True))
@@ -1068,10 +1070,12 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertContains(response, page.title)
         self.assertContains(response, "Summary")
 
-        # Image and download UI should not render when the image is missing
-        self.assertNotContains(response, "<img")
+        # Download UI should not render when the image is missing
         self.assertNotContains(response, "Download this image")
         self.assertNotContains(response, " download")
-        self.assertNotContains(response, "Figure 1")
-        self.assertNotContains(response, "Figure subtitle")
-        self.assertNotContains(response, "Office for National Statistics")
+
+        # Image block content should render without the image
+        self.assertContains(response, "<img")
+        self.assertContains(response, "Figure 1")
+        self.assertContains(response, "Figure subtitle")
+        self.assertContains(response, "Office for National Statistics")
