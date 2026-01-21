@@ -90,8 +90,8 @@ Feature: Page-level workflows
         When a Publishing Admin logs into the admin site
         And  the user edits the statistical article page
         And  the user clicks the action button toggle
-        And  the "Approve and Publish" button exists
-        And  the user clicks the "Approve and Publish" button
+        And  the "Publish" button exists
+        And  the user clicks the "Publish" button
         And  the user clicks "View Live" on the publish confirmation banner
         Then the published statistical article page is displayed
 
@@ -101,4 +101,4 @@ Feature: Page-level workflows
         When a Publishing Officer logs into the admin site
         And  the user edits the statistical article page
         And  the user clicks the action button toggle
-        Then the "Approve and Publish" button doesn't exist
+        Then the "Publish" button doesn't exist

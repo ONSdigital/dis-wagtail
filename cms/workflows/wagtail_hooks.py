@@ -68,8 +68,11 @@ def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: Http
 
             # tidy up the "approve" action label, both for when we're lock in ready to publish,
             # and when the workflow was "unlocked". i.e. moved back a step.
-            label = "Approve" if "with comment" not in item.label else "Approve with comment"
-            item.label = f"{label} and Publish" if is_final_task else label
+            if is_final_task:
+                label = "Publish" if "with comment" not in item.label else "Publish with comment"
+            else:
+                label = "Approve" if "with comment" not in item.label else "Approve with comment"
+            item.label = label
         final_menu_items.append(item)
 
     menu_items[:] = final_menu_items
