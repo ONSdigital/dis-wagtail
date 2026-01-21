@@ -271,11 +271,11 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
 
-        self.assertEqual(len(menu_items), 4)
-        self.assertActionIn("action-publish", menu_items)
+        self.assertEqual(len(menu_items), 3)
         self.assertActionIn("action-unpublish", menu_items)
         self.assertActionIn("action-cancel-workflow", menu_items)
         self.assertActionIn("reject", menu_items)
+        self.assertActionNotIn("action-publish", menu_items)
         self.assertActionNotIn("approve", menu_items)
 
     def test_action_menu_locked_item_first_in_list(self):
@@ -302,13 +302,13 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
-        # unpublish, publish, approve, approve with comment, reject
-        self.assertEqual(len(menu_items), 5)
+        # unpublish, approve, approve with comment, reject
+        self.assertEqual(len(menu_items), 4)
 
-        self.assertActionIn("action-publish", menu_items)
-        self.assertActionIn("action-unpublish", menu_items)
         self.assertActionIn("approve", menu_items)
         self.assertActionIn("reject", menu_items)
+        self.assertActionIn("action-unpublish", menu_items)
+        self.assertActionNotIn("action-publish", menu_items)
         self.assertActionNotIn("locked-approve", menu_items)
         self.assertActionNotIn("unlock", menu_items)
 

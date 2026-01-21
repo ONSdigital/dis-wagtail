@@ -1,25 +1,35 @@
 from django.conf import settings
+from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.bundles.tests.utils import grant_all_page_permissions
+from cms.bundles.enums import BundleStatus
+from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.home.models import HomePage
 from cms.standard_pages.models import InformationPage
 from cms.standard_pages.tests.factories import InformationPageFactory
-from cms.users.tests.factories import GroupFactory, UserFactory
+from cms.users.tests.factories import UserFactory
+from cms.workflows.tests.utils import mark_page_as_ready_for_review, mark_page_as_ready_to_publish
 
 
-class TestBasePagePermissionTester(TestCase):
+class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.publishing_admin_group = GroupFactory(name="Publishing Admins", access_admin=True)
-        grant_all_page_permissions(cls.publishing_admin_group)
-        cls.publishing_admin = UserFactory(username="publishing_admin")
-        cls.publishing_admin.groups.add(cls.publishing_admin_group)
+        cls.publishing_admin = UserFactory()
+        cls.publishing_admin.groups.add(Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME))
+        cls.publishing_officer = UserFactory()
+        cls.publishing_officer.groups.add(Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME))
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.user = UserFactory(access_admin=True)
+
         cls.english_home_page = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
         cls.welsh_home_page = HomePage.objects.get(locale__language_code="cy")
+
+        cls.information_page = InformationPageFactory()
+
+        cls.bundle = BundleFactory()
 
     def test_can_add_subpage_english(self):
         tester = BasePagePermissionTester(user=self.publishing_admin, page=self.english_home_page)
@@ -40,6 +50,49 @@ class TestBasePagePermissionTester(TestCase):
         welsh_info_page = InformationPageFactory(parent=self.welsh_home_page)
         tester = BasePagePermissionTester(user=self.publishing_admin, page=welsh_info_page)
         self.assertFalse(tester.can_copy())
+
+    def test_can_publish__in_active_bundle(self):
+        BundlePageFactory(parent=self.bundle, page=self.information_page)
+
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer, self.user]:
+            with self.subTest(f"{user=} cannot publish when page in active bundle"):
+                tester = BasePagePermissionTester(user=user, page=self.information_page)
+                self.assertFalse(tester.can_publish())
+                self.assertFalse(tester.can_publish_subpage())
+
+    def test_can_publish__no_bundle_but_in_ready_for_review(self):
+        mark_page_as_ready_for_review(self.information_page)
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer, self.user]:
+            with self.subTest(f"{user=} cannot publish when page not ready to publish, outside of bundle"):
+                tester = BasePagePermissionTester(user=user, page=self.information_page)
+                self.assertFalse(tester.can_publish())
+                self.assertFalse(tester.can_publish_subpage())
+
+    def test_can_publish__no_bundle_but_in_ready_to_publish(self):
+        mark_page_as_ready_to_publish(self.information_page)
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer]:
+            with self.subTest(f"{user=} can publish when page not ready to publish, outside of bundle"):
+                tester = BasePagePermissionTester(user=user, page=self.information_page)
+                self.assertTrue(tester.can_publish())
+                self.assertTrue(tester.can_publish_subpage())
+
+        with self.subTest(
+            f"Non-priviledge{self.user=} cannot publish when page not ready to publish, outside of bundle"
+        ):
+            tester = BasePagePermissionTester(user=self.user, page=self.information_page)
+            self.assertFalse(tester.can_publish())
+            self.assertFalse(tester.can_publish_subpage())
+
+    def test_can_publish__no_active_bundle_or_workflow(self):
+        BundlePageFactory(parent=self.bundle, page=self.information_page)
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status"])
+
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer]:
+            with self.subTest(f"{user=} cannot publish when page not ready to publish, with no active bundle"):
+                tester = BasePagePermissionTester(user=user, page=self.information_page)
+                self.assertFalse(tester.can_publish())
+                self.assertFalse(tester.can_publish_subpage())
 
 
 class TestCustomPagePermissions(WagtailTestUtils, TestCase):
