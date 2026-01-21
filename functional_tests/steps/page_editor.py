@@ -256,3 +256,10 @@ def the_published_page_is_displayed(context: Context, page_str: str) -> None:
     the_page = get_page_from_context(context, page_str)
     # note: we don't display the summary anywhere other than the edit form, or the published page
     expect(context.page.get_by_text(the_page.summary, exact=True)).to_be_visible()
+
+
+@then("the user cannot unlock the page")
+def the_user_cannot_unlock_a_page(context: Context) -> None:
+    context.page.get_by_role("button", name="Toggle status").click()
+    expect(context.page.get_by_text("Lock", exact=True)).to_have_count(0)
+    expect(context.page.get_by_text("Locked by another user")).to_be_visible()

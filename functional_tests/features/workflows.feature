@@ -37,6 +37,13 @@ Feature: Page-level workflows
         And  the user can unlock the page
 
 
+    Scenario: A Publishing Officer cannot unlock a page locked by a Publishing Admin, when it is in the review workflow step
+        Given the statistical article page is locked by a Publishing Admin
+        When a Publishing Officer logs into the admin site
+        And  the user edits the statistical article page
+        Then the "Unlock" button doesn't exist
+
+
     Scenario Outline: When page is Approved (Ready to publish), it should be locked for editing
         Given the statistical article page is "ready to publish"
         When a <user> logs into the admin site
