@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.utils.formats import date_format
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.core.tests.utils import rebuild_internal_search_index
 from cms.teams.models import Team
 from cms.teams.tests.factories import TeamFactory
 from cms.teams.viewsets import team_chooser_viewset
@@ -55,6 +56,7 @@ class TeamsViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.inactive_team.identifier)
 
     def test_chooser_search_active_team_found(self):
+        rebuild_internal_search_index()
         response = self.client.get(f"{self.chooser_results_url}?q=statistics")
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -63,6 +65,7 @@ class TeamsViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.inactive_team.name)
 
     def test_chooser_search_inactive_team_not_found(self):
+        rebuild_internal_search_index()
         response = self.client.get(f"{self.chooser_results_url}?q=research")
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -70,6 +73,7 @@ class TeamsViewSetTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, 'Sorry, there are no matches for "<em>research</em>"', html=True)
 
     def test_chooser_search_data_team_found(self):
+        rebuild_internal_search_index()
         response = self.client.get(f"{self.chooser_results_url}?q=data")
 
         self.assertEqual(response.status_code, HTTPStatus.OK)

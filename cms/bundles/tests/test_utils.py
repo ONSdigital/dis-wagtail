@@ -19,6 +19,7 @@ from cms.bundles.utils import (
     in_bundle_ready_to_be_published,
     serialize_bundle_content_for_published_release_calendar_page,
 )
+from cms.core.tests.utils import rebuild_internal_search_index
 from cms.methodology.models import MethodologyPage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.models import ReleaseCalendarPage
@@ -429,6 +430,8 @@ class SerializeBundleContentTranslationTests(TestCase):
         methodology = MethodologyPageFactory()
         BundlePageFactory(parent=bundle, page=article)
         BundlePageFactory(parent=bundle, page=methodology)
+
+        rebuild_internal_search_index()
 
         content = serialize_bundle_content_for_published_release_calendar_page(bundle, language_code="cy")
 

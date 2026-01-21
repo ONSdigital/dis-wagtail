@@ -3,7 +3,9 @@ from django.urls import reverse
 from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.core.tests.factories import ContactDetailsFactory, GlossaryTermFactory
+from cms.core.models import Definition
+from cms.core.tests.factories import ContactDetailsFactory, DefinitionFactory
+from cms.core.tests.utils import rebuild_internal_search_index
 
 
 class TestContactDetailsChooserViewSet(WagtailTestUtils, TestCase):
@@ -39,6 +41,7 @@ class TestContactDetailsChooserViewSet(WagtailTestUtils, TestCase):
         self.assertContains(response, self.contact_cy.email)
 
     def test_chooser_search(self):
+        rebuild_internal_search_index()
         response = self.client.get(f"{self.chooser_results_url}?q=first")
 
         self.assertContains(response, self.contact.name)
@@ -54,13 +57,13 @@ class TestContactDetailsChooserViewSet(WagtailTestUtils, TestCase):
         self.assertContains(response, 'Sorry, no snippets match "<em>foo</em>"', html=True)
 
 
-class TestGlossaryTermChooserViewSet(WagtailTestUtils, TestCase):
+class TestDefinitionChooserViewSet(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
 
-        cls.term = GlossaryTermFactory(name="First term", definition="something")
-        cls.term_cy = GlossaryTermFactory(
+        cls.term = DefinitionFactory(name="First term", definition="something")
+        cls.term_cy = DefinitionFactory(
             name="Cyswllt cyntaf", definition="something else", locale=Locale.objects.get(language_code="cy")
         )
 
@@ -83,6 +86,7 @@ class TestGlossaryTermChooserViewSet(WagtailTestUtils, TestCase):
         self.assertContains(response, self.term_cy.name)
 
     def test_chooser_search(self):
+        rebuild_internal_search_index()
         response = self.client.get(f"{self.chooser_results_url}?q=first")
 
         self.assertContains(response, self.term.name)
@@ -96,3 +100,12 @@ class TestGlossaryTermChooserViewSet(WagtailTestUtils, TestCase):
     def test_chooser__no_results(self):
         response = self.client.get(f"{self.chooser_results_url}?q=foo")
         self.assertContains(response, 'Sorry, no snippets match "<em>foo</em>"', html=True)
+
+
+class TestDefinitionModelMetadata(TestCase):
+    """Test that Definition model uses 'definition' terminology."""
+
+    def test_verbose_name_is_definition(self):
+        """Test that the model verbose_name is 'definition'."""
+        self.assertEqual(Definition._meta.verbose_name, "definition")
+        self.assertEqual(Definition._meta.verbose_name_plural, "definitions")
