@@ -185,7 +185,6 @@ def the_user_can_save_a_page(context: Context) -> None:
     expect(context.page.get_by_role("button", name="Save draft")).to_be_visible()
 
 
-@step("the user can publish a page")
 @step("the user can publish the page")
 def the_user_can_publish_a_page(context: Context) -> None:
     expect(context.page.get_by_role("button", name="More actions")).to_be_visible()
@@ -263,3 +262,10 @@ def the_user_cannot_unlock_a_page(context: Context) -> None:
     context.page.get_by_role("button", name="Toggle status").click()
     expect(context.page.get_by_text("Lock", exact=True)).to_have_count(0)
     expect(context.page.get_by_text("Locked by another user")).to_be_visible()
+
+
+@step("the user cannot publish the page")
+def the_user_cannot_publish_a_page(context: Context) -> None:
+    expect(context.page.get_by_role("button", name="More actions")).to_be_visible()
+    context.page.get_by_role("button", name="More actions").click()
+    expect(context.page.get_by_role("button", name="Publish")).to_have_count(0)

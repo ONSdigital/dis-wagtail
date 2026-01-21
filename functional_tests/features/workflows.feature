@@ -92,9 +92,9 @@ Feature: Page-level workflows
         And  the "This page is included in a bundle that is ready to be published. You must revert the bundle to Draft or In preview in order to make further changes." text is displayed
 
 
-    Scenario: When page is Approved (Ready to publish) and not in a bundle, a Publishing Admin can publish it
+    Scenario Outline: When page is Approved (Ready to publish) and not in a bundle, a <publishing user> can publish it
         Given the statistical article page is "ready to publish"
-        When a Publishing Admin logs into the admin site
+        When a <publishing user> logs into the admin site
         And  the user edits the statistical article page
         And  the user clicks the action button toggle
         And  the "Publish" button exists
@@ -102,10 +102,8 @@ Feature: Page-level workflows
         And  the user clicks "View Live" on the publish confirmation banner
         Then the published statistical article page is displayed
 
-
-    Scenario: When page is Approved (Ready to publish) and not in a bundle, a Publishing Officer cannot publish it
-        Given the statistical article page is "ready to publish"
-        When a Publishing Officer logs into the admin site
-        And  the user edits the statistical article page
-        And  the user clicks the action button toggle
-        Then the "Publish" button doesn't exist
+    Examples:
+        | publishing user    |
+        | Publishing Admin   |
+        | Publishing Officer |
+        | superuser          |
