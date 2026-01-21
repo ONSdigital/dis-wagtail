@@ -11,6 +11,7 @@ from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
+from cms.core.permission_testers import BasePagePermissionTester
 from cms.home.models import HomePage
 from cms.users.tests.factories import UserFactory
 from cms.workflows.locks import PageReadyToBePublishedLock
@@ -343,3 +344,38 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         self.assertIn("Publish", labels)
         self.assertIn("Unlock editing", labels)
         self.assertNotIn("Approve and Publish", labels)
+
+
+class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = StatisticalArticlePageFactory()
+
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.user = UserFactory(access_admin=True)
+
+        cls.publishing_admin = UserFactory()
+        cls.publishing_admin.groups.add(Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME))
+        cls.publishing_officer = UserFactory()
+        cls.publishing_officer.groups.add(Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME))
+
+    def test_can_lock__in_review(self):
+        mark_page_as_ready_for_review(self.page)
+
+        for user in [self.user, self.superuser]:
+            with self.subTest(msg=f"{user=} cannot lock as they must be a PA or PO"):
+                tester = BasePagePermissionTester(user=user, page=self.page)
+                self.assertFalse(tester.can_lock())
+
+        for user in [self.publishing_officer, self.publishing_admin]:
+            with self.subTest(msg=f"{user=} can lock"):
+                tester = BasePagePermissionTester(user=user, page=self.page)
+                self.assertTrue(tester.can_lock())
+
+    def test_can_lock__ready_to_publish(self):
+        mark_page_as_ready_to_publish(self.page)
+
+        for user in [self.user, self.superuser, self.publishing_officer, self.publishing_admin]:
+            with self.subTest(msg=f"{user=} can lock"):
+                tester = BasePagePermissionTester(user=user, page=self.page)
+                self.assertFalse(tester.can_lock())
