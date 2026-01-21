@@ -484,7 +484,7 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
 
 PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get("PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5)
 
-# Is the application running interactively (such as manage.py), or not (such as running the application)
+# Is the application running interactively (such as a management command)
 INTERACTIVE = sys.stdout.isatty()
 
 # Logging

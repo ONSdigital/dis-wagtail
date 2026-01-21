@@ -39,6 +39,8 @@ def disable_signals(models: list[type[Model]]) -> Generator[None]:
     try:
         yield
     finally:
+        # Reconnect signals (based on logic in packages).
+        # This mostly matters for tests.
         for model in models:
             if class_is_indexed(model):
                 post_save.connect(post_save_signal_handler, sender=model)

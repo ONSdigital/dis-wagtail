@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any
 
 import factory
-import factory.fuzzy
 import factory.random
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -50,17 +49,21 @@ class TestDataFactory:
     def create_batch_from_factory(
         self, factory_class: type[Factory], instance_count: int, factory_kwargs: dict
     ) -> list[Model]:
+        """Create model instances from a given factory."""
         created = factory_class.create_batch(instance_count, **factory_kwargs)
         if factory_class._meta.model not in self.model_registry:
+            # Do a copy just in case anything external tries to mutate it
             self.model_registry[factory_class._meta.model] = created.copy()
         else:
             self.model_registry[factory_class._meta.model].extend(created)
         return created
 
     def create_from_factory(self, factory_class: type[Factory], factory_kwargs: dict) -> Model:
+        """Create a model instance from a given factory."""
         return self.create_batch_from_factory(factory_class, 1, factory_kwargs)[0]
 
     def random_model(self, model: type[Model]) -> Model:
+        """Select a random previously-generated model."""
         try:
             return self.faker.random_element(self.model_registry[model])
         except KeyError:

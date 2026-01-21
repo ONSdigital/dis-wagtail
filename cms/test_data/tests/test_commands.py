@@ -3,6 +3,7 @@ import json
 from io import StringIO
 
 from django.core.management import call_command
+from django.db.models.signals import post_save
 from django.test import TestCase
 from django.test.testcases import SimpleTestCase
 from modelsearch.index import class_is_indexed
@@ -171,6 +172,15 @@ class DeleteTestDataTestCase(TestCase):
 
         for instance in instances:
             self.assertFalse(instance.index_entries.exists())
+
+    def test_signals_reconnected(self):
+        call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
+
+        post_save_receivers = len(post_save.receivers)
+
+        call_command("delete_test_data", interactive=False, stdout=StringIO())
+
+        self.assertEqual(len(post_save.receivers), post_save_receivers)
 
 
 class ShowDefaultTestDataConfigTestCase(SimpleTestCase):
