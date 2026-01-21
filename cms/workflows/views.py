@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
@@ -26,7 +26,8 @@ def unlock(request: HttpRequest, page_id: int) -> TemplateResponse | HttpRespons
     if not isinstance(page.current_workflow_task, ReadyToPublishGroupTask):
         raise PermissionDenied
 
-    user = cast(User, request.user)  # placates mypy complaining about AnonymousUser. We know this is a proper user
+    # Type ignore: request.user is guaranteed to be User by this point.
+    user: User = request.user  # type: ignore
     if not page.current_workflow_task.user_can_unlock_for_edits(page, user):
         # the user must be able to action ReadyToPublishGroupTask, and the page must not be in a bundle that
         # is ready to be published
