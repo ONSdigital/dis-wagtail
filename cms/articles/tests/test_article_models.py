@@ -23,7 +23,7 @@ from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.datasets.tests.factories import DatasetFactory
 from cms.datavis.constants import CHART_BLOCK_TYPES
-from cms.datavis.tests.factories import TableDataFactory
+from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
 from cms.topics.models import TopicPage
 
 
@@ -822,37 +822,22 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                     "content": [
                         {
                             "type": "table",
-                            "value": {
-                                "title": "Test Table 1",
-                                "caption": "Table caption 1",
-                                "data": {
-                                    "headers": [
-                                        [{"value": "Header 1", "type": "th"}, {"value": "Header 2", "type": "th"}]
-                                    ],
-                                    "rows": [
-                                        [
-                                            {"value": "Row 1 Col 1", "type": "td"},
-                                            {"value": "Row 1 Col 2", "type": "td"},
-                                        ],
-                                        [
-                                            {"value": "Row 2 Col 1", "type": "td"},
-                                            {"value": "Row 2 Col 2", "type": "td"},
-                                        ],
-                                    ],
-                                },
-                                "source": "Test Source",
-                            },
+                            "value": make_table_block_value(
+                                title="Test Table 1",
+                                caption="Table caption 1",
+                                source="Test Source",
+                                headers=[["Header 1", "Header 2"]],
+                                rows=[["Row 1 Col 1", "Row 1 Col 2"], ["Row 2 Col 1", "Row 2 Col 2"]],
+                            ),
                             "id": "test-table-id-1",
                         },
                         {
                             "type": "table",
-                            "value": {
-                                "title": "Test Table 2",
-                                "data": {
-                                    "headers": [[{"value": "Col A", "type": "th"}, {"value": "Col B", "type": "th"}]],
-                                    "rows": [[{"value": "Data A", "type": "td"}, {"value": "Data B", "type": "td"}]],
-                                },
-                            },
+                            "value": make_table_block_value(
+                                title="Test Table 2",
+                                headers=[["Col A", "Col B"]],
+                                rows=[["Data A", "Data B"]],
+                            ),
                             "id": "test-table-id-2",
                         },
                     ],
@@ -882,10 +867,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                     "content": [
                         {
                             "type": "table",
-                            "value": {
-                                "title": "Known Table",
-                                "data": {"headers": [], "rows": []},
-                            },
+                            "value": make_table_block_value(title="Known Table"),
                             "id": "known-table-id",
                         }
                     ],
@@ -967,10 +949,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                     "content": [
                         {
                             "type": "table",
-                            "value": {
-                                "title": "Empty Table",
-                                "data": {"headers": [], "rows": []},
-                            },
+                            "value": make_table_block_value(title="Empty Table", headers=[], rows=[]),
                             "id": "empty-table-id",
                         }
                     ],
@@ -994,13 +973,11 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
                     "content": [
                         {
                             "type": "table",
-                            "value": {
-                                "title": "Download Test Table",
-                                "data": {
-                                    "headers": [[{"value": "Col1", "type": "th"}, {"value": "Col2", "type": "th"}]],
-                                    "rows": [[{"value": "A", "type": "td"}, {"value": "B", "type": "td"}]],
-                                },
-                            },
+                            "value": make_table_block_value(
+                                title="Download Test Table",
+                                headers=[["Col1", "Col2"]],
+                                rows=[["A", "B"]],
+                            ),
                             "id": "download-table-id",
                         }
                     ],
