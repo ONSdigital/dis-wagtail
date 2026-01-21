@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
-        ("core", "0010_rename_glossaryterm_to_definition"),
+        ("core", "0009_remove_redirect_permissions"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

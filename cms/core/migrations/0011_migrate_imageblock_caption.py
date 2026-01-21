@@ -124,7 +124,7 @@ def _process_blocks(blocks, direction):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core", "0009_remove_redirect_permissions"),
+        ("core", "0010_rename_glossaryterm_to_definition"),
         ("standard_pages", "0003_cookiespage"),
         ("articles", "0008_articlesindexpage"),
         ("methodology", "0002_methodologiesindexpage"),
