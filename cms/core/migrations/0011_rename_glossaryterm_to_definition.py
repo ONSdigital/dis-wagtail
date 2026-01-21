@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
-        ("core", "0009_remove_redirect_permissions"),
+        ("core", "0010_migrate_imageblock_caption"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
