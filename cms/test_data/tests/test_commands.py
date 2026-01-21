@@ -2,6 +2,7 @@ import itertools
 import json
 from io import StringIO
 
+import factory.random
 from django.core.management import call_command
 from django.db.models.signals import post_save
 from django.test import TestCase
@@ -20,6 +21,10 @@ AFFECTED_MODELS = [TopicPage, Topic, CustomImage, Dataset]
 
 
 class CreateTestDataTestCase(TestCase):
+    def tearDown(self) -> None:
+        # Clear random seed after tests
+        factory.random.reseed_random(None)  # type: ignore[no-untyped-call]
+
     def _call_with_config(self, config: dict | None = None) -> str:
         output = StringIO()
         call_command(
@@ -100,6 +105,10 @@ class CreateTestDataTestCase(TestCase):
 
 
 class DeleteTestDataTestCase(TestCase):
+    def tearDown(self) -> None:
+        # Clear random seed after tests
+        factory.random.reseed_random(None)  # type: ignore[no-untyped-call]
+
     def test_no_existing_data(self) -> None:
         output = StringIO()
         call_command("delete_test_data", stdout=output, no_color=True)
