@@ -49,10 +49,10 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
         # if locked, but not in bundle ready to be published -> unlock only
         # if lock and in bundle ready to be published -> []
         if not in_active_bundle(obj):
-            return [
-                ("unlock", "Unlock editing", False),
-                ("locked-approve", "Approve", False),
-            ]
+            actions = [("unlock", "Unlock editing", False)]
+            if hasattr(obj, "permissions_for_user") and obj.permissions_for_user(user).can_publish():
+                actions.append(("locked-approve", "Approve", False))
+            return actions
         if not in_bundle_ready_to_be_published(obj):
             # we're in a bundle which is not yet ready to be published,
             # so the only available option is to unlock.

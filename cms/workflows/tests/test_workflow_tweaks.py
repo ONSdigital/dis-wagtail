@@ -210,3 +210,28 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         )
         self.assertNotContains(response, "Manage bundle")
         self.assertNotContains(response, reverse("bundle:edit", args=[self.bundle.pk]))
+
+    def test_ready_to_publish_task__get_actions__user_can_publish__non_bundle_page(self):
+        non_bundle_page = StatisticalArticlePageFactory()
+        mark_page_as_ready_to_publish(non_bundle_page)
+
+        self.assertEqual(
+            non_bundle_page.current_workflow_task.get_actions(non_bundle_page, self.publishing_admin),
+            [("unlock", "Unlock editing", False), ("locked-approve", "Approve", False)],
+        )
+
+    def test_ready_to_publish_task__get_actions__user_can_publish__active_bundle_in_progress(self):
+        mark_page_as_ready_to_publish(self.page)
+        self.assertEqual(
+            self.page.current_workflow_task.get_actions(self.page, self.publishing_admin),
+            [("unlock", "Unlock editing", False)],
+        )
+
+    def test_ready_to_publish_task__get_actions__user_can_publish__bundle_ready_to_publish(self):
+        mark_page_as_ready_to_publish(self.page)
+
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+
+        actions = self.page.current_workflow_task.get_actions(self.page, self.publishing_admin)
+        self.assertEqual(actions, [])

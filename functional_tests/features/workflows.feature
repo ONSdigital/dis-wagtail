@@ -94,3 +94,11 @@ Feature: Page-level workflows
         And  the user clicks the "Approve and Publish" button
         And  the user clicks "View Live" on the publish confirmation banner
         Then the published statistical article page is displayed
+
+
+    Scenario: When page is Approved (Ready to publish) and not in a bundle, a Publishing Officer cannot publish it
+        Given the statistical article page is "ready to publish"
+        When a Publishing Officer logs into the admin site
+        And  the user edits the statistical article page
+        And  the user clicks the action button toggle
+        Then the "Approve and Publish" button doesn't exist
