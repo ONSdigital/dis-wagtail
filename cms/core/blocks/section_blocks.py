@@ -14,9 +14,9 @@ from cms.core.blocks import (
     VideoEmbedBlock,
     WarningPanelBlock,
 )
+from cms.core.blocks.definitions import DefinitionsBlock
 from cms.core.blocks.embeddable import ImageBlock
 from cms.core.blocks.equation import EquationBlock
-from cms.core.blocks.glossary_terms import GlossaryTermsBlock
 from cms.core.blocks.markup import ONSTableBlock
 from cms.datavis.blocks import (
     AreaChartBlock,
@@ -46,7 +46,7 @@ class SectionContentBlock(StreamBlock):
     table = ONSTableBlock(group="DataVis", allow_links=True)
     equation = EquationBlock(group="DataVis", icon="decimal")
     related_links = RelatedLinksBlock(icon="link")
-    definitions = GlossaryTermsBlock()
+    definitions = DefinitionsBlock()
 
     line_chart = LineChartBlock(group="DataVis", label="Line Chart")
     bar_column_chart = BarColumnChartBlock(group="DataVis", label="Bar/Column Chart")
