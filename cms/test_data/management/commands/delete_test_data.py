@@ -109,45 +109,39 @@ class Command(BaseCommand):
         instances_to_delete = sum(len(i) for i in collector.data.values())
         self.stdout.write(f"Found data to delete ({instances_to_delete})", self.style.NOTICE)
 
+        for model, instances in sorted(collector.data.items(), key=lambda d: d[0]._meta.label):
+            self.stdout.write(f"{model._meta.label} ({self.style.ERROR(str(len(instances)))})", self.style.HTTP_INFO)
+            for instance in sorted(instances, key=str):
+                self.stdout.write(f"\t{instance!s} ({instance.pk})")
+
         if options["dry_run"]:
-            for model, instances in sorted(collector.data.items(), key=lambda d: d[0]._meta.label):
-                self.stdout.write(
-                    f"{model._meta.label} ({self.style.ERROR(str(len(instances)))})", self.style.HTTP_INFO
-                )
-                for instance in sorted(instances, key=str):
-                    self.stdout.write(f"\t{instance!s} ({instance.pk})")
+            return
 
-        else:
-            for model, instances in sorted(collector.data.items(), key=lambda d: d[0]._meta.label):
-                self.stdout.write(
-                    f"\t {self.style.HTTP_INFO(model._meta.label)}: {self.style.ERROR(str(len(instances)))}"
-                )
+        if options["interactive"]:
+            self.stdout.write(
+                f"Enter the number of records which will be deleted ({instances_to_delete}) to continue: ",
+                ending="",
+            )
+            result = input()
+            try:
+                int_result = int(result)
+            except ValueError:
+                self.stdout.write("Invalid input", self.style.ERROR)
+                return
 
-            if options["interactive"]:
-                self.stdout.write(
-                    f"Enter the number of records which will be deleted ({instances_to_delete}) to continue: ",
-                    ending="",
-                )
-                result = input()
-                try:
-                    int_result = int(result)
-                except ValueError:
-                    self.stdout.write("Invalid input", self.style.ERROR)
-                    return
+            if int_result != instances_to_delete:
+                self.stdout.write("Incorrect input", self.style.ERROR)
+                return
 
-                if int_result != instances_to_delete:
-                    self.stdout.write("Incorrect input", self.style.ERROR)
-                    return
+        self.stdout.write("Deleting data...", self.style.NOTICE)
 
-            self.stdout.write("Deleting data...", self.style.NOTICE)
+        with disable_signals(list(collector.data.keys())), transaction.atomic():
+            for model, instances in collector.data.items():
+                # Use queryset delete methods to use any customized behaviour
+                model._default_manager.filter(pk__in=[instance.pk for instance in instances]).delete()  # pylint: disable=protected-access
 
-            with disable_signals(list(collector.data.keys())), transaction.atomic():
-                for model, instances in collector.data.items():
-                    # Use queryset delete methods to use any customized behaviour
-                    model._default_manager.filter(pk__in=[instance.pk for instance in instances]).delete()  # pylint: disable=protected-access
+        # NB: Because the topic tree hides the root node in a number core method, it gets corrupted
+        # during deletion. Manually repair the tree afterwards.
+        Topic.fix_tree()
 
-            # NB: Because the topic tree hides the root node in a number core method, it gets corrupted
-            # during deletion. Manually repair the tree afterwards.
-            Topic.fix_tree()
-
-            self.stdout.write("Successfully deleted", self.style.SUCCESS)
+        self.stdout.write("Successfully deleted", self.style.SUCCESS)
