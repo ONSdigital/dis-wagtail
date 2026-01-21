@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
-        ("core", "0010_migrate_imageblock_caption"),
+        ("core", "0010_rename_glossaryterm_to_definition"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
