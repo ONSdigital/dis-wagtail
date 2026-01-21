@@ -18,7 +18,10 @@ assign_permission_to_group = importlib.import_module(
 
 WAGTAIL_PERMISSION_TYPES = ["add", "change", "delete"]
 
-WAGTAIL_PAGE_PERMISSION_TYPES = ["add", "change", "bulk_delete", "lock", "publish", "unlock"]
+WAGTAIL_PAGE_PERMISSION_TYPES = {"add", "change", "bulk_delete", "lock", "publish", "unlock"}
+
+PUBLISHING_OFFICERS_PERMISSIONS = {"add", "change", "publish"}
+PUBLISHING_ADMINS_PERMISSIONS = WAGTAIL_PAGE_PERMISSION_TYPES
 
 
 class TestPermissions(TestCase):
@@ -288,12 +291,12 @@ class PublishingOfficerPermissionsTestCase(BaseGroupPermissionTestCase):
 
     def test_publishing_officer_can_create_and_change_pages(self):
         """Check that the Publishing Officer can only add and change pages."""
-        for permission_type in WAGTAIL_PAGE_PERMISSION_TYPES:
-            if permission_type in ("add", "change"):
-                self.page_permission_check_helper(permission_type, has_permission=True)
-            else:
-                # Publishing Officers should not have bulk_delete, lock, publish or unlock permissions
-                self.page_permission_check_helper(permission_type, has_permission=False)
+        for permission_type in PUBLISHING_OFFICERS_PERMISSIONS:
+            self.page_permission_check_helper(permission_type, has_permission=True)
+
+        for permission_type in WAGTAIL_PAGE_PERMISSION_TYPES - PUBLISHING_OFFICERS_PERMISSIONS:
+            # Publishing Officers should not have bulk_delete, lock or unlock permissions
+            self.page_permission_check_helper(permission_type, has_permission=False)
 
     def test_publishing_officer_cannot_manage_images(self):
         """Check that the Publishing Officer cannot manage image collection."""
