@@ -1,5 +1,5 @@
 import urllib.parse
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
@@ -388,20 +388,20 @@ class FlattenTableDataTestCase(SimpleTestCase):
         ]
         self.assertEqual(result, expected)
 
-    def test_html_stripped_from_values(self):
-        """Test that HTML tags are stripped from cell values."""
+    def test_html_stripped_from_values_except_links(self):
+        """Test that HTML tags are stripped except anchor tags."""
         data = {
             "headers": [[{"value": "<b>Header</b>"}]],
             "rows": [
                 [{"value": "<p>Paragraph</p>"}],
-                [{"value": "<a href='#'>Link</a>"}],
+                [{"value": '<a href="#">Link</a>'}],
             ],
         }
         result = flatten_table_data(data)
         expected = [
             ["Header"],
             ["Paragraph"],
-            ["Link"],
+            ['<a href="#">Link</a>'],
         ]
         self.assertEqual(result, expected)
 
@@ -502,16 +502,70 @@ class CleanCellValueTestCase(SimpleTestCase):
         self.assertEqual(clean_cell_value("a<Br/>b"), "a\nb")
         self.assertEqual(clean_cell_value("a<br />b"), "a\nb")
 
-    def test_strips_html_tags(self):
-        """Test that HTML tags are stripped from the value."""
+    def test_strips_html_tags_except_anchors(self):
+        """Test that HTML tags are stripped except anchor tags."""
         self.assertEqual(clean_cell_value("<b>bold</b>"), "bold")
         self.assertEqual(clean_cell_value("<p>paragraph</p>"), "paragraph")
-        self.assertEqual(clean_cell_value("<a href='#'>link</a>"), "link")
+        self.assertEqual(clean_cell_value("<span class='foo'>span</span>"), "span")
+        self.assertEqual(clean_cell_value("<div>div</div>"), "div")
+        self.assertEqual(clean_cell_value("<em>emphasis</em>"), "emphasis")
+        self.assertEqual(clean_cell_value("<strong>strong</strong>"), "strong")
 
     def test_combined_html_and_br_handling(self):
         """Test that HTML stripping and BR conversion work together."""
         self.assertEqual(clean_cell_value("<b>bold</b><br/><i>italic</i>"), "bold\nitalic")
         self.assertEqual(clean_cell_value("  <p>text<br>more</p>  "), "text\nmore")
+
+    def test_preserves_anchor_tags(self):
+        """Test that anchor tags are preserved while other tags are stripped."""
+        # Note: BeautifulSoup normalizes quotes to double quotes
+        self.assertEqual(clean_cell_value("<a href='#'>link</a>"), '<a href="#">link</a>')
+        self.assertEqual(
+            clean_cell_value('<a href="https://example.com">Example</a>'),
+            '<a href="https://example.com">Example</a>',
+        )
+        self.assertEqual(
+            clean_cell_value('<a href="/path" class="link">styled link</a>'),
+            '<a class="link" href="/path">styled link</a>',
+        )
+
+    def test_preserves_anchor_tags_mixed_with_other_html(self):
+        """Test that anchors are preserved while other HTML is stripped."""
+        self.assertEqual(
+            clean_cell_value("<b>Bold</b> and <a href='#'>link</a>"),
+            'Bold and <a href="#">link</a>',
+        )
+        self.assertEqual(
+            clean_cell_value("<p><a href='#'>link</a> in paragraph</p>"),
+            '<a href="#">link</a> in paragraph',
+        )
+        self.assertEqual(
+            clean_cell_value("<a href='#'>link1</a><br/><a href='#'>link2</a>"),
+            '<a href="#">link1</a>\n<a href="#">link2</a>',
+        )
+
+    def test_preserves_anchor_tags_case_insensitive(self):
+        """Test that anchor tags are preserved regardless of case."""
+        # Note: BeautifulSoup normalizes tag names to lowercase and quotes to double quotes
+        self.assertEqual(clean_cell_value("<A href='#'>LINK</A>"), '<a href="#">LINK</a>')
+        self.assertEqual(clean_cell_value("<A HREF='#'>link</A>"), '<a href="#">link</a>')
+
+    def test_strips_tags_starting_with_a(self):
+        """Test that HTML tags starting with 'a' (but not anchor tags) are stripped."""
+        self.assertEqual(clean_cell_value("<abbr>abbreviation</abbr>"), "abbreviation")
+        self.assertEqual(clean_cell_value("<article>content</article>"), "content")
+        self.assertEqual(clean_cell_value("<aside>sidebar</aside>"), "sidebar")
+        self.assertEqual(clean_cell_value("<address>addr</address>"), "addr")
+
+    def test_self_closing_anchor_preserved(self):
+        """Test that self-closing anchor syntax is preserved (normalized by BeautifulSoup)."""
+        self.assertEqual(clean_cell_value("<a href='#'/>"), '<a href="#"></a>')
+
+    def test_preserves_less_than_symbols_in_content(self):
+        """Test that < symbols in content are preserved for CSV output."""
+        self.assertEqual(clean_cell_value("<b>a <- b</b>"), "a <- b")
+        self.assertEqual(clean_cell_value("<p>5 < 10</p>"), "5 < 10")
+        self.assertEqual(clean_cell_value("a < b"), "a < b")
 
     def test_empty_string(self):
         """Test that empty strings are handled correctly."""
@@ -521,3 +575,12 @@ class CleanCellValueTestCase(SimpleTestCase):
     def test_plain_string(self):
         """Test that plain strings without HTML are returned stripped."""
         self.assertEqual(clean_cell_value("plain text"), "plain text")
+
+    def test_skips_beautifulsoup_for_plain_strings(self):
+        """Test that BeautifulSoup is not instantiated for strings without '<'."""
+        with patch("cms.core.utils.BeautifulSoup") as mock_bs:
+            clean_cell_value("plain text without html")
+            mock_bs.assert_not_called()
+
+            clean_cell_value("text with <b>html</b>")
+            mock_bs.assert_called_once()

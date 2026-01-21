@@ -5,10 +5,10 @@ from threading import Lock
 from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
+from bs4 import BeautifulSoup, Tag
 from django.conf import settings
 from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import redirect as _redirect
-from django.utils.html import strip_tags
 from matplotlib.figure import Figure
 
 from cms.core.enums import RelatedContentType
@@ -126,10 +126,20 @@ def clean_cell_value(value: str | int | float) -> str | int | float:
 
     value = value.strip()
 
-    # Replace <br> tags (all variations) with newlines, then strip remaining HTML
+    # Replace <br> tags (all variations) with newlines
     value = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
-    value = strip_tags(value)
-    return value
+
+    if "<" not in value:
+        # Return early if there are no HTML tags to process
+        return value
+
+    # Strip all HTML tags except <a> tags (preserve links)
+    soup = BeautifulSoup(value, "html.parser")
+    for tag in soup.find_all(True):
+        if isinstance(tag, Tag) and tag.name != "a":
+            tag.unwrap()
+    # Use formatter=None to avoid escaping < characters in text content
+    return soup.decode(formatter=None)  # type: ignore[arg-type]
 
 
 def flatten_table_data(data: Mapping) -> list[list[str | int | float]]:
