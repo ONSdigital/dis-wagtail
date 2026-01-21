@@ -5,6 +5,7 @@ from django.contrib.auth.models import Permission
 from django.shortcuts import redirect
 from django.templatetags.static import static
 from django.urls import include, reverse
+from django.utils import timezone
 from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.admin import messages
@@ -125,7 +126,10 @@ def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
                 typed_result: HttpResponse = result  # placate mypy
                 return typed_result
 
-        message = f"Page '{page.get_admin_display_title()}' has been published."
+        if page.go_live_at and page.go_live_at > timezone.now():
+            message = f"Page '{page.get_admin_display_title()}' has been scheduled for publishing."
+        else:
+            message = f"Page '{page.get_admin_display_title()}' has been published."
 
         buttons = []
         if (page_url := page.get_url(request=request)) is not None:

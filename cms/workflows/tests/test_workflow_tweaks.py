@@ -1,9 +1,11 @@
+import datetime
 from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from wagtail.admin.action_menu import PageLockedMenuItem
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
@@ -50,6 +52,28 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
     def assertActionNotIn(self, action, menu_items):  # pylint: disable=invalid-name
         actions = {item.name for item in menu_items}
         self.assertNotIn(action, actions)
+
+    def get_simple_post_data(self, page):
+        return nested_form_data(
+            {
+                "title": page.title,
+                "slug": page.slug,
+                "summary": rich_text(page.summary),
+                "main_points_summary": rich_text(page.main_points_summary),
+                "release_date": page.release_date,
+                "content": streamfield(
+                    [("section", {"title": "Test", "content": streamfield([("rich_text", rich_text("text"))])})]
+                ),
+                "headline_figures": streamfield([]),
+                "datasets": streamfield([]),
+                "dataset_sorting": "AS_SHOWN",
+                "corrections": streamfield([]),
+                "notices": streamfield([]),
+                "action-workflow-action": "true",
+                "workflow-action-name": "approve",
+                "featured_chart": streamfield([]),
+            }
+        )
 
     def test_amend_page_action_menu_items_hook(self):
         # Mark the page as ready for review
@@ -104,26 +128,7 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         mark_page_as_ready_for_review(self.page, self.publishing_admin)
         latest_revision = self.page.latest_revision
 
-        data = nested_form_data(
-            {
-                "title": self.page.title,
-                "slug": self.page.slug,
-                "summary": rich_text(self.page.summary),
-                "main_points_summary": rich_text(self.page.main_points_summary),
-                "release_date": self.page.release_date,
-                "content": streamfield(
-                    [("section", {"title": "Test", "content": streamfield([("rich_text", rich_text("text"))])})]
-                ),
-                "headline_figures": streamfield([]),
-                "datasets": streamfield([]),
-                "dataset_sorting": "AS_SHOWN",
-                "corrections": streamfield([]),
-                "notices": streamfield([]),
-                "action-workflow-action": "true",
-                "workflow-action-name": "approve",
-                "featured_chart": streamfield([]),
-            }
-        )
+        data = self.get_simple_post_data(self.page)
         response = self.client.post(self.edit_url, data, follow=True)
 
         self.assertContains(
@@ -344,6 +349,56 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         self.assertIn("Publish", labels)
         self.assertIn("Unlock editing", labels)
         self.assertNotIn("Approve and Publish", labels)
+
+    def test_locked_approve_action__publishes_page(self):
+        self.client.force_login(self.publishing_admin)
+
+        draft_page = StatisticalArticlePageFactory(live=False)
+        mark_page_as_ready_to_publish(draft_page, self.publishing_officer)
+
+        self.assertFalse(draft_page.live)
+
+        data = self.get_simple_post_data(draft_page)
+        data["workflow-action-name"] = "locked-approve"
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[draft_page.pk]), data, follow=True)
+
+        draft_page.refresh_from_db()
+        self.assertContains(response, f"Page &#x27;{draft_page.get_admin_display_title()}&#x27; has been published.")
+        self.assertTrue(draft_page.live)
+
+    def test_locked_approve_action__schedules_page(self):
+        self.client.force_login(self.publishing_admin)
+
+        draft_page = StatisticalArticlePageFactory(live=False, go_live_at=timezone.now() + datetime.timedelta(days=10))
+        mark_page_as_ready_to_publish(draft_page, self.publishing_officer)
+
+        self.assertFalse(draft_page.live)
+
+        data = self.get_simple_post_data(draft_page)
+        data["workflow-action-name"] = "locked-approve"
+        data["go_live_at"] = draft_page.go_live_at
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[draft_page.pk]), data, follow=True)
+
+        self.assertFalse(draft_page.live)
+        self.assertContains(
+            response, f"Page &#x27;{draft_page.get_admin_display_title()}&#x27; has been scheduled for publishing."
+        )
+
+    def test_locked_approve_action__publishes_page_with_go_live_in_the_past(self):
+        self.client.force_login(self.publishing_admin)
+
+        draft_page = StatisticalArticlePageFactory(live=False, go_live_at=timezone.now() - datetime.timedelta(hours=1))
+        mark_page_as_ready_to_publish(draft_page, self.publishing_officer)
+
+        self.assertFalse(draft_page.live)
+
+        data = self.get_simple_post_data(draft_page)
+        data["workflow-action-name"] = "locked-approve"
+        data["go_live_at"] = draft_page.go_live_at
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=[draft_page.pk]), data, follow=True)
+
+        self.assertFalse(draft_page.live)
+        self.assertContains(response, f"Page &#x27;{draft_page.get_admin_display_title()}&#x27; has been published.")
 
 
 class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):
