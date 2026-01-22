@@ -1,4 +1,5 @@
 # pylint: disable=not-callable
+import uuid
 from datetime import timedelta
 
 from behave import given, step, then, when
@@ -13,6 +14,7 @@ from cms.articles.tests.factories import (
 )
 from cms.datavis.tests.factories import TableDataFactory
 from cms.topics.models import TopicPage
+from functional_tests.step_helpers.utils import get_page_from_context
 
 
 @given("an article series page exists")
@@ -114,6 +116,53 @@ def user_clicks_on_view_superseded_version(context: Context) -> None:
     page = context.page
     page.get_by_text("Show detail").click()
     page.get_by_role("link", name="View superseded version").click()
+
+
+@step("the {page_str} has a chart")
+def the_page_has_a_chart(context: Context, page_str: str):
+    the_page = get_page_from_context(context, page_str)
+    the_page.content = [
+        {
+            "type": "section",
+            "value": {
+                "content": [
+                    {
+                        "type": "line_chart",
+                        "id": uuid.uuid4(),
+                        "value": {
+                            "annotations": [],
+                            "audio_description": "desc",
+                            "caption": "",
+                            "footnotes": "This is a lovely footnote",
+                            "options": [],
+                            "show_legend": True,
+                            "show_markers": False,
+                            "subtitle": "subtitle",
+                            "table": {
+                                "table_data": '{"data": [["Foo","Bar"],["1234","1337"],["",""],["",""],["",""]]}',
+                                "table_type": "table",
+                            },
+                            "theme": "primary",
+                            "title": "line chart",
+                            "x_axis": {"tick_interval_desktop": None, "tick_interval_mobile": None, "title": ""},
+                            "y_axis": {
+                                "custom_reference_line": None,
+                                "end_on_tick": True,
+                                "max": None,
+                                "min": None,
+                                "start_on_tick": True,
+                                "tick_interval_desktop": None,
+                                "tick_interval_mobile": None,
+                                "title": "",
+                            },
+                        },
+                    },
+                ],
+                "title": "section",
+            },
+        }
+    ]
+    the_page.save_revision()
 
 
 @step("the user adds a chart to the content")

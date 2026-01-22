@@ -242,10 +242,11 @@ Feature: Statistical Article Page components
         Then the user cannot see the equation fallback
 
     Scenario: A chart on a statistical article page has a CSV download link
-        When the user goes to add a new statistical article page
-        And the user adds basic statistical article page content
-        And the user adds a chart to the content
-        And the user enters data into the chart table
-        And the user clicks "Publish"
-        And the user clicks "View Live" on the publish confirmation banner
+        Given a statistical article exists
+        And  the statistical article page has a chart
+        And  the statistical article page is "ready to publish"
+        When the user edits the statistical article page
+        And  the user clicks the action button toggle
+        And  the user clicks the "Publish" button
+        And  the user clicks "View Live" on the publish confirmation banner
         Then the page has a CSV download link for the chart
