@@ -8,7 +8,7 @@ from wagtail.snippets.views.chooser import SnippetChooserViewSet
 from wagtail.snippets.views.snippets import IndexView as SnippetIndexView
 from wagtail.snippets.views.snippets import SnippetViewSet
 
-from cms.core.models import ContactDetails, GlossaryTerm
+from cms.core.models import ContactDetails, Definition
 
 
 class ContactDetailsIndex(SnippetIndexView):
@@ -54,7 +54,7 @@ class ContactDetailsViewSet(SnippetViewSet):
     chooser_viewset_class = ContactDetailsChooserViewset
 
 
-class GlossaryTermsIndex(SnippetIndexView):
+class DefinitionsIndex(SnippetIndexView):
     list_display: ClassVar[list[str | Column]] = [
         "name",
         "locale",
@@ -63,12 +63,12 @@ class GlossaryTermsIndex(SnippetIndexView):
         UserColumn("owner"),
     ]
 
-    def get_base_queryset(self) -> QuerySet[GlossaryTerm]:
-        queryset: QuerySet[GlossaryTerm] = super().get_base_queryset()
+    def get_base_queryset(self) -> QuerySet[Definition]:
+        queryset: QuerySet[Definition] = super().get_base_queryset()
         return queryset.select_related("latest_revision__user", "latest_revision__user__wagtail_userprofile")
 
 
-class GlossaryTermsChooseColumnsMixin:
+class DefinitionsChooseColumnsMixin:
     @property
     def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
@@ -80,30 +80,30 @@ class GlossaryTermsChooseColumnsMixin:
             UserColumn("updated_by"),
         ]
 
-    def get_object_list(self) -> QuerySet[GlossaryTerm]:
-        queryset = GlossaryTerm.objects.select_related(
+    def get_object_list(self) -> QuerySet[Definition]:
+        queryset = Definition.objects.select_related(
             "latest_revision", "latest_revision__user", "latest_revision__user__wagtail_userprofile"
         )
         queryset = queryset.annotate(_updated_at=F("latest_revision__created_at"))
         return queryset
 
 
-class GlossaryChooseView(GlossaryTermsChooseColumnsMixin, SnippetChooseView): ...
+class DefinitionChooseView(DefinitionsChooseColumnsMixin, SnippetChooseView): ...
 
 
-class GlossaryChooseResultsView(GlossaryTermsChooseColumnsMixin, SnippetChooseResultsView): ...
+class DefinitionChooseResultsView(DefinitionsChooseColumnsMixin, SnippetChooseResultsView): ...
 
 
-class GlossaryChooserViewset(SnippetChooserViewSet):
-    choose_view_class = GlossaryChooseView
-    choose_results_view_class = GlossaryChooseResultsView
+class DefinitionChooserViewSet(SnippetChooserViewSet):
+    choose_view_class = DefinitionChooseView
+    choose_results_view_class = DefinitionChooseResultsView
 
 
-class GlossaryViewSet(SnippetViewSet):
-    """A snippet viewset for Glossary."""
+class DefinitionViewSet(SnippetViewSet):
+    """A snippet viewset for Definitions."""
 
-    model = GlossaryTerm
+    model = Definition
     icon = "list-ul"
 
-    index_view_class = GlossaryTermsIndex
-    chooser_viewset_class = GlossaryChooserViewset
+    index_view_class = DefinitionsIndex
+    chooser_viewset_class = DefinitionChooserViewSet
