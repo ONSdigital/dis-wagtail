@@ -34,8 +34,6 @@ def _migrate_streamfield(Model, field_name, direction):
     """Iterate through all instances and migrate ImageBlock data."""
     for instance in Model.objects.all():
         field_value = getattr(instance, field_name, None)
-        if not field_value:
-            continue
 
         # StreamValue.raw_data returns a RawDataView
         stream_data = list(field_value.raw_data)
@@ -52,20 +50,12 @@ def _migrate_revisions(apps, direction):
 
     for revision in Revision.objects.all():
         content = revision.content
-        if not content or "content" not in content:
-            continue
 
         stream_data = content["content"]
 
         # Revisions store StreamField as JSON string
         if isinstance(stream_data, str):
-            try:
-                stream_data = json.loads(stream_data)
-            except (json.JSONDecodeError, TypeError):
-                continue
-
-        if not isinstance(stream_data, list):
-            continue
+            stream_data = json.loads(stream_data)
 
         modified = _process_blocks(stream_data, direction)
 
@@ -81,9 +71,6 @@ def _process_blocks(blocks, direction):
     modified = False
 
     for block in blocks:
-        if not isinstance(block, dict):
-            continue
-
         block_type = block.get("type")
         block_value = block.get("value")
 
