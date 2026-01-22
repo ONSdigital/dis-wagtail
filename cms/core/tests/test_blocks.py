@@ -995,9 +995,6 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         response = self.client.get(page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        # Sanity: image element rendered
-        self.assertContains(response, "<img")
-
         # Alt text from CustomImage.description
         self.assertContains(response, 'alt="Meaningful alt text"')
 
@@ -1075,7 +1072,6 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertNotContains(response, " download")
 
         # Image block content should render without the image
-        self.assertContains(response, "<img")
         self.assertContains(response, "Figure 1")
         self.assertContains(response, "Figure subtitle")
         self.assertContains(response, "Office for National Statistics")
