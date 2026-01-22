@@ -1,7 +1,5 @@
 # pylint: disable=too-many-lines
 import uuid
-
-# pylint: disable=too-many-lines
 from datetime import datetime
 from http import HTTPStatus
 from unittest.mock import Mock
