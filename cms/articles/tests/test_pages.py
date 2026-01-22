@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from datetime import timedelta
 from http import HTTPStatus
 
@@ -947,6 +948,14 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
             f'<a href="tel:{self.page.contact_details.phone}">{self.page.contact_details.phone}</a>',
             html=True,
         )
+
+    def test_article_page_uses_correct_toc_class(self):
+        """Test that the article page uses the correct table of contents class."""
+        response = self.client.get(self.page.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "ons-js-table-of-contents-container")
+        self.assertNotContains(response, "ons-js-toc-container")
 
 
 class GeneralPageTests(WagtailPageTestCase):
