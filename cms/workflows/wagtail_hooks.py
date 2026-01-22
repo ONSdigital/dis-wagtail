@@ -69,9 +69,16 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
                 continue
 
             # tidy up the "approve" action label, both for when we're lock in ready to publish,
-            # and when the workflow was "unlocked". i.e. moved back a step.
+            # and when the workflow was "unlocked". i.e. moved back a step. Account for scheduled publishing
             if is_final_task:
-                label = "Publish" if "with comment" not in item.label else "Publish with comment"
+                if page.go_live_at and page.go_live_at > timezone.now():
+                    label = (
+                        "Schedule to publish"
+                        if "with comment" not in item.label
+                        else "Schedule to publish with comment"
+                    )
+                else:
+                    label = "Publish" if not "with comment" not in item.label else "Publish with comment"
             else:
                 label = "Approve" if "with comment" not in item.label else "Approve with comment"
             item.label = label

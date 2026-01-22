@@ -72,6 +72,15 @@ Feature: Page-level workflows
         And  the "Unlock editing" link does not exist
 
 
+    Scenario: When page is Approved (Ready to publish), is not in a bundle and has a schedule it can be scheduled to publish
+        Given the statistical article scheduled page is at "ready to publish"
+        When a Publishing Admin logs into the admin site
+        And  the user edits the statistical article page
+        And  the user clicks the action button toggle
+        Then  the "Schedule to publish" button exists
+        And  the user clicks the "Schedule to publish" button
+        And  the "has been scheduled for publishing." text is displayed
+
     Scenario: When page is Approved (Ready to publish) and in a work in progress bundle, then a Publishing admin can "unlock" it
         Given the statistical article page is "ready to publish"
         When a Publishing Admin logs into the admin site
