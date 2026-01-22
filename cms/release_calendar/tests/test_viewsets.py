@@ -9,6 +9,7 @@ from wagtail.models import GroupPagePermission, Locale
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.bundles.tests.factories import BundleFactory
+from cms.core.tests.utils import rebuild_internal_search_index
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.release_calendar.viewsets import release_calendar_chooser_viewset
@@ -61,6 +62,7 @@ class TestFutureReleaseCalendarChooserViewSet(WagtailTestUtils, TestCase):
 
     def test_chooser_search(self):
         """Tests that the chooser search results work as expected."""
+        rebuild_internal_search_index()
         chooser_results_url = reverse(release_calendar_chooser_viewset.get_url_name("choose_results"))
         response = self.client.get(f"{chooser_results_url}?q=preliminary")
 
