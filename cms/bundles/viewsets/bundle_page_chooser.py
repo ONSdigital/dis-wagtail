@@ -50,16 +50,17 @@ class PagesWithDraftsMixin:
         - have unpublished changes
         - are not in another active bundle
         """
-        pre_filter_q = Page.objects.type(*get_bundleable_page_types()).filter(
-            has_unpublished_changes=True, alias_of__isnull=True
-        )
+        pre_filter_q = (
+            Page.objects.type(*get_bundleable_page_types())
+            .filter(has_unpublished_changes=True, alias_of__isnull=True)
+            .exclude(go_live_at__gte=timezone.now())
+        )  # exclude any scheduled pages with future go-live date
         return (
             Page.objects.specific(defer=True)
             # using pk_in because the direct has_unpublished_changes and alias_of filter
             # requires Page to have them added to search fields which we cannot do
             .filter(pk__in=pre_filter_q)
             .exclude(pk__in=get_pages_in_active_bundles())
-            .exclude(go_live_at__gte=timezone.now())  # exclude any scheduled pages with future go-live date
             .order_by("-latest_revision_created_at")
         )
 
