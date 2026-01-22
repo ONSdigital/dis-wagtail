@@ -78,7 +78,7 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
                         else "Schedule to publish with comment"
                     )
                 else:
-                    label = "Publish" if not "with comment" not in item.label else "Publish with comment"
+                    label = "Publish" if "with comment" not in item.label else "Publish with comment"
             else:
                 label = "Approve" if "with comment" not in item.label else "Approve with comment"
             item.label = label
