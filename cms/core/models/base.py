@@ -231,7 +231,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         if content_group := self.analytics_content_group:
             values["contentGroup"] = content_group
         if content_theme := self.analytics_content_theme:
-            values["theme"] = content_theme
+            values["contentTheme"] = content_theme
         if publication_date := self.publication_date:
             values["releaseDate"] = format_date_for_gtm(publication_date)
         return values

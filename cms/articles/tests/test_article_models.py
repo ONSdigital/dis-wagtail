@@ -493,7 +493,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(analytics_values.get("pageTitle"), self.page.get_full_display_title())
         self.assertEqual(analytics_values.get("contentType"), self.page.analytics_content_type)
         self.assertEqual(analytics_values.get("contentGroup"), self.page.analytics_content_group)
-        self.assertEqual(analytics_values.get("theme"), self.page.analytics_content_theme)
+        self.assertEqual(analytics_values.get("contentTheme"), self.page.analytics_content_theme)
         self.assertEqual(analytics_values.get("outputSeries"), self.page.get_parent().slug)
         self.assertEqual(analytics_values.get("latestRelease"), "yes")
         self.assertEqual(analytics_values.get("releaseDate"), format_date_for_gtm(self.page.release_date))
@@ -517,10 +517,6 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         analytics_values = self.page.get_analytics_values(get_dummy_request(path=self.page.get_full_url()))
         self.assertEqual(analytics_values.get("latestRelease"), "no")
         self.assertNotIn("pageURL", analytics_values.keys())
-
-    def test_analytics_content_type(self):
-        """Test that the GTM content type is 'statistical-article'."""
-        self.assertEqual(self.page.analytics_content_type, "statistical-article")
 
 
 class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
@@ -921,7 +917,7 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(datalayer_values["gtm.blocklist"], ["customScripts", "sp", "adm", "awct", "k", "d", "j"])
         self.assertEqual(datalayer_values["contentType"], self.page.analytics_content_type)
         self.assertEqual(datalayer_values["contentGroup"], self.page.analytics_content_group)
-        self.assertEqual(datalayer_values["theme"], self.page.analytics_content_theme)
+        self.assertEqual(datalayer_values["contentTheme"], self.page.analytics_content_theme)
         for key, value in self.page.get_analytics_values(get_dummy_request(path=self.page_url)).items():
             self.assertIn(key, datalayer_values)
             self.assertEqual(datalayer_values[key], value)

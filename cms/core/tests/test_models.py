@@ -177,4 +177,4 @@ class AnalyticsValuesTestCase(TestCase):
         self.assertEqual(analytics_values.get("pageTitle"), information_page.title)
         self.assertEqual(analytics_values.get("contentType"), information_page.analytics_content_type)
         self.assertEqual(analytics_values.get("contentGroup"), information_page.analytics_content_group)
-        self.assertEqual(analytics_values.get("theme"), information_page.analytics_content_theme)
+        self.assertEqual(analytics_values.get("contentTheme"), information_page.analytics_content_theme)
