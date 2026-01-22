@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django import forms
+from django.utils import timezone
 from wagtail.admin.forms.choosers import BaseFilterForm, LocaleFilterMixin, SearchFilterMixin
 from wagtail.admin.ui.tables import Column, DateColumn, LocaleColumn
 from wagtail.admin.ui.tables.pages import PageStatusColumn
@@ -58,6 +59,7 @@ class PagesWithDraftsMixin:
             # requires Page to have them added to search fields which we cannot do
             .filter(pk__in=pre_filter_q)
             .exclude(pk__in=get_pages_in_active_bundles())
+            .exclude(go_live_at__gte=timezone.now())  # exclude any scheduled pages with future go-live date
             .order_by("-latest_revision_created_at")
         )
 
