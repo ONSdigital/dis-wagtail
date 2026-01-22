@@ -1,6 +1,10 @@
 import json
+import logging
 
 from django.db import migrations
+
+logger = logging.getLogger(__name__)
+
 
 MODELS_WITH_IMAGEBLOCK = [
     ("standard_pages", "InformationPage", "content"),
@@ -50,6 +54,10 @@ def _migrate_revisions(apps, direction):
 
     for revision in Revision.objects.all():
         content = revision.content
+
+        if not content or "content" not in content:
+            logger.warning("Skipping revision %s with missing content", revision.pk)
+            continue
 
         stream_data = content["content"]
 
