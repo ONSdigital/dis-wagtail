@@ -518,6 +518,10 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(analytics_values.get("latestRelease"), "no")
         self.assertNotIn("pageURL", analytics_values.keys())
 
+    def test_analytics_content_type(self):
+        """Test that the GTM content type is 'articles'."""
+        self.assertEqual(self.page.analytics_content_type, "articles")
+
 
 class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
