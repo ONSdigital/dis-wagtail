@@ -66,8 +66,7 @@ class RevisionChartDownloadView(View):
         page = get_object_or_404(Page, id=page_id).specific
 
         # Check standard Wagtail page permissions
-        perms = page.permissions_for_user(request.user)
-        has_page_perms = perms.can_publish() or perms.can_edit()
+        has_page_perms = page.permissions_for_user(request.user).can_edit()
 
         # Check bundle preview permissions (only if page is bundled)
         has_bundle_preview = False
