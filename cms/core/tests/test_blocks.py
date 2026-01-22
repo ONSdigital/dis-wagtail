@@ -1,7 +1,10 @@
 # pylint: disable=too-many-lines
 import uuid
+
+# pylint: disable=too-many-lines
 from datetime import datetime
 from http import HTTPStatus
+from unittest.mock import Mock
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
@@ -857,6 +860,81 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
                     self.block._prepare_body_cells(cells),  # pylint: disable=protected-access
                     expected,
                 )
+
+    def test_ons_table_block_includes_download_config_with_context(self):
+        """Test that download config is added to options when block_id and page are present."""
+        page = StatisticalArticlePageFactory()
+        context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": None,
+        }
+
+        result = self.block.get_context(self.full_data, parent_context=context)
+
+        self.assertIn("options", result)
+        self.assertIn("download", result["options"])
+        self.assertIn("title", result["options"]["download"])
+        self.assertIn("itemsList", result["options"]["download"])
+        self.assertEqual(result["options"]["download"]["title"], "Download: The table")
+        self.assertEqual(len(result["options"]["download"]["itemsList"]), 1)
+        self.assertIn("CSV", result["options"]["download"]["itemsList"][0]["text"])
+        self.assertIn("url", result["options"]["download"]["itemsList"][0])
+
+    def test_ons_table_block_builds_preview_url_correctly(self):
+        """Test that preview URL is built correctly for draft content."""
+        page = StatisticalArticlePageFactory()
+        page.latest_revision_id = 123
+
+        request = Mock()
+        request.is_preview = True
+        request.resolver_match = Mock()
+        request.resolver_match.kwargs = {"revision_id": 456}
+
+        context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": request,
+        }
+
+        result = self.block.get_context(self.full_data, parent_context=context)
+
+        download_url = result["options"]["download"]["itemsList"][0]["url"]
+        self.assertIn("/admin/articles/pages/", download_url)
+        self.assertIn("/revisions/456/", download_url)
+        self.assertIn("/download-table/test-block-id/", download_url)
+
+    def test_ons_table_block_builds_published_url_correctly(self):
+        """Test that published URL is built correctly for live content."""
+        page = StatisticalArticlePageFactory()
+        # Mock the url property since it's read-only
+        page_mock = Mock(spec=page)
+        page_mock.url = "/economy/articles/test-article/"
+        page_mock.pk = page.pk
+
+        context = {
+            "block_id": "test-block-id",
+            "page": page_mock,
+            "request": None,
+        }
+
+        result = self.block.get_context(self.full_data, parent_context=context)
+
+        download_url = result["options"]["download"]["itemsList"][0]["url"]
+        self.assertEqual(download_url, "/economy/articles/test-article/download-table/test-block-id")
+
+    def test_ons_table_block_download_config_missing_without_page(self):
+        """Test that download is empty when page is missing from context."""
+        context = {
+            "block_id": "test-block-id",
+            "page": None,
+            "request": None,
+        }
+
+        result = self.block.get_context(self.full_data, parent_context=context)
+
+        # download should be empty dict when page is missing
+        self.assertEqual(result["options"]["download"], {})
 
 
 class AccordionBlockTestCase(TestCase):
