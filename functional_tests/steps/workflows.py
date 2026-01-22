@@ -1,8 +1,10 @@
 # pylint: disable=not-callable
+from datetime import timedelta
 from typing import Literal
 
 from behave import step, then
 from behave.runner import Context
+from django.utils import timezone
 from playwright.sync_api import expect
 
 from cms.workflows.tests.utils import (
@@ -26,6 +28,17 @@ def the_given_page_is_in_workflow_stage(
             mark_page_as_ready_to_publish(the_page)
         else:
             progress_page_workflow(the_page.current_workflow_state)
+
+
+@step('the {page_str} scheduled page is at "{workflow_stage}"')
+def the_given_scheduled_page_is_in_workflow_stage(
+    context: Context, page_str: str, workflow_stage: Literal["in preview", "ready to publish"]
+) -> None:
+    the_page = get_page_from_context(context, page_str)
+    the_page.go_live_at = timezone.now() + timedelta(days=1)
+    the_page.save_revision()
+
+    the_given_page_is_in_workflow_stage(context, page_str, workflow_stage)
 
 
 @step("the user is the last {page_str} page editor")
