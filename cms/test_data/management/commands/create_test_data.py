@@ -122,7 +122,7 @@ class TestDataFactory:
             if (
                 not topic_page.live
                 and topic_page.latest_revision_id
-                and self.faker.boolean(int(self.config.topics.published * 100))
+                and self.faker.boolean(int(self.config.topics.published_probability * 100))
             ):
                 topic_page.specific.latest_revision.publish()
 
