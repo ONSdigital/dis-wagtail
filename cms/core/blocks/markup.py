@@ -2,10 +2,15 @@ from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.urls import reverse
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
+
+from cms.core.utils import flatten_table_data
+from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 
 if TYPE_CHECKING:
     from django.utils.safestring import SafeString
@@ -174,17 +179,77 @@ class ONSTableBlock(TinyTableBlock):
         if not data.get("rows") and not data.get("headers"):
             return context
 
-        return {
+        options = {
+            "caption": value.get("caption"),
+            "thList": [{"ths": self._prepare_header_cells(header_row)} for header_row in data.get("headers", [])],
+            "trs": [{"tds": self._prepare_body_cells(row)} for row in data.get("rows", [])],
+        }
+
+        # Add download config if block_id and page context available
+        block_id = context.get("block_id")
+        if block_id and parent_context:
+            options["download"] = self._get_download_config(
+                value=value, parent_context=parent_context, block_id=block_id, data=data
+            )
+
+        table_context = {
             "title": value.get("title"),
-            "options": {
-                "caption": value.get("caption"),
-                "thList": [{"ths": self._prepare_header_cells(header_row)} for header_row in data.get("headers", [])],
-                "trs": [{"tds": self._prepare_body_cells(row)} for row in data.get("rows", [])],
-            },
+            "options": options,
             "source": value.get("source"),
             "footnotes": value.get("footnotes"),
             **context,
         }
+
+        return table_context
+
+    def _get_download_config(self, *, value: dict, parent_context: dict, block_id: str, data: dict) -> dict[str, Any]:
+        """Build download config for ONS Downloads component."""
+        page = parent_context.get("page")
+        if not page:
+            return {}
+
+        # Flatten table data for size calculation
+        csv_rows = flatten_table_data(data)
+
+        size_suffix = f" ({get_approximate_file_size_in_kb(csv_rows)})"
+
+        # Build URL (preview vs published)
+        request = parent_context.get("request")
+        is_preview = getattr(request, "is_preview", False) if request else False
+        csv_url = (
+            self._build_preview_table_download_url(page, block_id, request)
+            if is_preview
+            else self._build_table_download_url(page, block_id, parent_context.get("superseded_version"))
+        )
+
+        title = value.get("title") or value.get("caption") or _("Table")
+        return {
+            "title": f"{_('Download')}: {title}",
+            "itemsList": [{"text": f"{_('Download CSV')}{size_suffix}", "url": csv_url}],
+        }
+
+    @staticmethod
+    def _build_table_download_url(page: Any, block_id: str, superseded_version: int | None = None) -> str:
+        """Build table download URL for published pages."""
+        base_url = page.url.rstrip("/")
+        version_part = f"/versions/{superseded_version}" if superseded_version is not None else ""
+        return f"{base_url}{version_part}/download-table/{block_id}"
+
+    @staticmethod
+    def _build_preview_table_download_url(page: Any, block_id: str, request: Any = None) -> str:
+        """Build table download URL for preview mode."""
+        revision_id = None
+        if request and hasattr(request, "resolver_match") and request.resolver_match:
+            revision_id = request.resolver_match.kwargs.get("revision_id")
+        if revision_id is None and hasattr(page, "latest_revision_id"):
+            revision_id = page.latest_revision_id
+        if revision_id is None:
+            return "#"
+
+        return reverse(
+            "articles:revision_table_download",
+            kwargs={"page_id": page.pk, "revision_id": revision_id, "table_id": block_id},
+        )
 
     class Meta:
         icon = "table"
