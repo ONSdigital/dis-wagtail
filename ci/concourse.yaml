@@ -1,0 +1,14 @@
+application:
+  repo_name: dis-wagtail
+  branch:
+    main: feat/setup-ci
+helm:
+  repo_name: dis-helm-cms-service-chart
+  values_files:
+    image_tag_key: tag
+    bleed:
+      - values/dis-bleed-internal.yaml
+      - values/dis-bleed-external.yaml
+aws:
+  ecr:
+    application: dis/apps/dis-wagtail-cms
