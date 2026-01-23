@@ -5,7 +5,7 @@ image_resource:
   type: registry-image
   source:
     repository: alpine
-    tag: 3.23
+    tag: '3.23'
     registry_mirror:
       host: ((ecr_repository_uri))
     aws_access_key_id: ((aws_access_key_id))
