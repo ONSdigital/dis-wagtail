@@ -20,8 +20,8 @@ from cms.images.models import CustomImage
 from cms.taxonomy.models import Topic
 from cms.taxonomy.tests.factories import SimpleTopicFactory
 from cms.test_data.config import TestDataConfig
+from cms.test_data.constants import SEEDED_DATA_PREFIX
 from cms.test_data.factories import ImageFactory
-from cms.test_data.utils import SEEDED_DATA_PREFIX
 from cms.topics.models import TopicPage
 from cms.topics.tests.factories import TopicPageFactory
 

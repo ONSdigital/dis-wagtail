@@ -16,7 +16,7 @@ from wagtail.models import ReferenceIndex
 from wagtail.signal_handlers import update_reference_index_on_save
 
 from cms.taxonomy.models import Topic
-from cms.test_data.utils import SEEDED_DATA_PREFIX
+from cms.test_data.constants import SEEDED_DATA_PREFIX
 
 
 @contextmanager
