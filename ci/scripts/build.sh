@@ -1,7 +1,12 @@
-#!/bin/bash -eux
+#!/bin/sh
+set -eu
 
-# Build the application
-pushd pull_request
-  mkdir -p build
-  cp build/dis-wagtail Dockerfile ../build
-popd
+# These directories will exist in the Concourse build environment
+SRC_DIR="pull_request"
+DST_DIR="build"
+
+# Copy contents of pull_request into build (not the directory itself)
+cp -pR "${SRC_DIR}/." "${DST_DIR}/"
+
+# Ensure Concourse-specific Dockerfile exists in build
+cp -p "${SRC_DIR}/Dockerfile" "${DST_DIR}/Dockerfile.concourse"
