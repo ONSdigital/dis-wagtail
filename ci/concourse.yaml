@@ -11,4 +11,4 @@ helm:
       - values/dis-bleed-external.yaml
 aws:
   ecr:
-    application: wagtail-cms
+    application: dis/apps/dis-wagtail-cms
