@@ -51,7 +51,7 @@ class CreateTestDataTestCase(TestCase):
                     "dataset_manual_links": 1,
                     "explore_more": 2,
                     "published": 1,
-                    "revisions": {"min": 1, "max": 3},
+                    "revisions": {"min": 2, "max": 3},
                 }
             }
         )
@@ -68,7 +68,7 @@ class CreateTestDataTestCase(TestCase):
                     self.assertIn(SEEDED_DATA_PREFIX, block.value["thumbnail"].title)
 
                 self.assertLessEqual(topic_page.revisions.count(), 3)
-                self.assertGreaterEqual(topic_page.revisions.count(), 1)
+                self.assertGreaterEqual(topic_page.revisions.count(), 2)
 
                 self.assertTrue(topic_page.live)
 
