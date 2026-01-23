@@ -6,7 +6,7 @@ helm:
   repo_name: dis-helm-cms-service-chart
   values_files:
     image_tag_key: tag
-    bleed:
+    sandbox: # temporary - point sandbox to bleed
       - values/dis-bleed-internal.yaml
       - values/dis-bleed-external.yaml
 aws:
