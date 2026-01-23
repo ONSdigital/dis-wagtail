@@ -6,6 +6,7 @@ image_resource:
   source:
     repository: alpine
     tag: 3.23
+    version: 3.23
     registry_mirror:
       host: ((ecr_repository_uri))
     aws_access_key_id: ((aws_access_key_id))
