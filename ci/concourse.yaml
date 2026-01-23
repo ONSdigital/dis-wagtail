@@ -1,6 +1,7 @@
 application:
   repo_name: dis-wagtail
-  branch: feat/setup-ci
+  branch:
+    main: feat/setup-ci
 helm:
   repo_name: dis-helm-cms-service-chart
   values_files:

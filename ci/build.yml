@@ -20,4 +20,3 @@ outputs:
 
 run:
   path: pull_request/ci/scripts/build.sh
-
