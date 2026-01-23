@@ -7,7 +7,7 @@ changelog:
     - title: New Features
       labels:
         - New Feature
-    - title: Enhancements
+    - title: Enhancements - changes
       labels:
         - Enhancement
     - title: Bug Fixes
