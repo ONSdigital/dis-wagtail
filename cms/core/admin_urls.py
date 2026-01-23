@@ -1,11 +1,8 @@
 from django.urls import path
 
-from cms.core.views import RevisionChartDownloadView, RevisionTableDownloadView
+from .views import RevisionChartDownloadView, RevisionTableDownloadView
 
-app_name = "articles"
-
-# Note: These URLs are kept for backwards compatibility.
-# New code should use the core:revision_chart_download and core:revision_table_download URLs.
+app_name = "core"
 urlpatterns = [
     path(
         "pages/<int:page_id>/revisions/<int:revision_id>/download-chart/<str:chart_id>/",

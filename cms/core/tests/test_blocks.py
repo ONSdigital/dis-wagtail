@@ -890,7 +890,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         result = self.block.get_context(self.full_data, parent_context=context)
 
         download_url = result["options"]["download"]["itemsList"][0]["url"]
-        self.assertIn("/admin/articles/pages/", download_url)
+        self.assertIn("/admin/core/pages/", download_url)
         self.assertIn("/revisions/456/", download_url)
         self.assertIn("/download-table/test-block-id/", download_url)
 

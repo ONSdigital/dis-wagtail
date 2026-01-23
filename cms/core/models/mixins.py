@@ -1,18 +1,31 @@
+import json
+import logging
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.core.paginator import EmptyPage, Paginator
 from django.db import models
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from wagtail.admin.panels import MultiFieldPanel
-from wagtail.contrib.routable_page.models import RoutablePageMixin
+from wagtail.contrib.routable_page.models import RoutablePageMixin, path
 from wagtail.coreutils import WAGTAIL_APPEND_SLASH
+
+from cms.core.utils import create_data_csv_download_response_from_data, flatten_table_data
+from cms.datavis.constants import CHART_BLOCK_TYPES, TABLE_BLOCK_TYPES
 
 if TYPE_CHECKING:
     from django.core.paginator import Page
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
 
-__all__ = ["ListingFieldsMixin", "SocialFieldsMixin", "SubpageMixin"]
+__all__ = [
+    "CSVDownloadMixin",
+    "ListingFieldsMixin",
+    "NoTrailingSlashRoutablePageMixin",
+    "SocialFieldsMixin",
+    "SubpageMixin",
+]
+
+logger = logging.getLogger(__name__)
 
 
 class ListingFieldsMixin(models.Model):
@@ -113,3 +126,151 @@ class NoTrailingSlashRoutablePageMixin(RoutablePageMixin):
         if not WAGTAIL_APPEND_SLASH:
             result = result.rstrip("/")
         return result
+
+
+class CSVDownloadMixin:
+    """Mixin providing CSV download functionality for pages with SectionStoryBlock content.
+
+    Provides routable endpoints for downloading chart and table data as CSV files.
+
+    Requires:
+        - The page to have a `content` StreamField using SectionStoryBlock
+        - The page to inherit from RoutablePageMixin (or a subclass like NoTrailingSlashRoutablePageMixin)
+    """
+
+    def _get_block_in_types_by_id(self, block_types: frozenset[str], block_id: str) -> dict[str, Any]:
+        """Helper method to find a block by its unique block ID in content for specified block types.
+
+        Args:
+            block_types: The frozenset of block types to search within.
+            block_id: The unique block ID of the block to find.
+
+        Returns:
+            The block's value as a dictionary, or an empty dict if not found.
+
+        Note:
+            Block IDs are automatically assigned by Wagtail when content is created
+            through the admin interface. Blocks without IDs (e.g., programmatically
+            created test data) cannot be retrieved by this method.
+        """
+        for section_block in self.content or []:  # type: ignore[attr-defined]
+            if section_block.block_type != "section":
+                continue
+            section_content = section_block.value.get("content", [])
+            for content_block in section_content:
+                if (
+                    content_block.block_type in block_types
+                    and content_block.id is not None
+                    and str(content_block.id) == block_id
+                ):
+                    return dict(content_block.value)
+
+        return {}
+
+    def get_chart(self, chart_id: str) -> dict[str, Any]:
+        """Finds a chart block by its unique block ID in content.
+
+        Args:
+            chart_id: The unique block ID of the chart to find
+
+        Returns:
+            The chart block's value as a dictionary, or an empty dict if not found.
+        """
+        return self._get_block_in_types_by_id(CHART_BLOCK_TYPES, chart_id)
+
+    def get_table(self, table_id: str) -> dict[str, Any]:
+        """Finds a data table block by its unique block ID in content.
+
+        Args:
+            table_id: The unique block ID of the data table to find
+
+        Returns:
+            The data table block's value as a dictionary, or an empty dict if not found.
+        """
+        return self._get_block_in_types_by_id(TABLE_BLOCK_TYPES, table_id)
+
+    def get_table_data_for_csv(self, table_id: str) -> list[list[str | int | float]]:
+        """Extracts table data in CSV-ready format from TinyTableBlock.
+
+        Flattens structured cell data (headers + rows) into 2D array.
+        Extracts only the "value" field from each cell object.
+
+        Args:
+            table_id: The unique block ID of the table to extract data from.
+
+        Returns:
+            A 2D list of values suitable for CSV export (headers first, then rows).
+
+        Raises:
+            ValueError: If table not found or has no data.
+        """
+        table_data = self.get_table(table_id)
+        if not table_data:
+            raise ValueError(f"Table with ID {table_id} not found")
+
+        data_dict = table_data.get("data", {})
+
+        # Headers first, then rows - extract only "value" from cell objects
+        csv_data = flatten_table_data(data_dict)
+
+        if not csv_data:
+            raise ValueError(f"Table {table_id} has no data")
+        return csv_data
+
+    @path("download-chart/<str:chart_id>/")
+    def download_chart(self, request: HttpRequest, chart_id: str) -> HttpResponse:
+        """Serves a chart download request for a specific chart in the page.
+
+        Args:
+            request: The HTTP request object.
+            chart_id: The unique block ID of the chart to download.
+
+        Returns:
+            An HTTP response with the chart download.
+        """
+        chart_data = self.get_chart(chart_id)
+        if not chart_data:
+            raise Http404
+        try:
+            data = json.loads(chart_data["table"]["table_data"])["data"]
+        except (KeyError, json.JSONDecodeError) as e:
+            logger.warning(
+                "Failed to parse chart data: %s",
+                e,
+                extra={
+                    "chart_id": chart_id,
+                    "page_id": self.id,  # type: ignore[attr-defined]
+                    "page_slug": self.slug,  # type: ignore[attr-defined]
+                },
+            )
+            raise Http404 from e
+
+        return create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))
+
+    @path("download-table/<str:table_id>/")
+    def download_table(self, request: HttpRequest, table_id: str) -> HttpResponse:
+        """Serves a table download request for a specific table in the page.
+
+        Args:
+            request: The HTTP request object.
+            table_id: The unique block ID of the table to download.
+
+        Returns:
+            An HTTP response with the table CSV download.
+        """
+        try:
+            csv_data = self.get_table_data_for_csv(table_id)
+        except ValueError as e:
+            logger.warning(
+                "Failed to extract table data: %s",
+                e,
+                extra={
+                    "table_id": table_id,
+                    "page_id": self.id,  # type: ignore[attr-defined]
+                    "page_slug": self.slug,  # type: ignore[attr-defined]
+                },
+            )
+            raise Http404 from e
+        table_data = self.get_table(table_id)
+        title = table_data.get("title") or table_data.get("caption") or "table"
+        return create_data_csv_download_response_from_data(csv_data, title=title)

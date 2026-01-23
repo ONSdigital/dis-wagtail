@@ -247,7 +247,7 @@ class ONSTableBlock(TinyTableBlock):
             return "#"
 
         return reverse(
-            "articles:revision_table_download",
+            "core:revision_table_download",
             kwargs={"page_id": page.pk, "revision_id": revision_id, "table_id": block_id},
         )
 

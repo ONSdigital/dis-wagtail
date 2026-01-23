@@ -59,3 +59,10 @@ CHART_BLOCK_TYPES: frozenset[str] = frozenset(
         "area_chart",
     }
 )
+
+# Block type names for table blocks in SectionContentBlock
+TABLE_BLOCK_TYPES: frozenset[str] = frozenset(
+    {
+        "table",
+    }
+)
