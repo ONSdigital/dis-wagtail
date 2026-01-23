@@ -358,7 +358,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         index.AutocompleteField("news_headline"),
     ]
 
-    _analytics_content_type = "statistical-articles"
+    _analytics_content_type = "articles"
 
     def clean(self) -> None:
         """Additional validation on save."""
