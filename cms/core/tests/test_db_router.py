@@ -8,7 +8,7 @@ from modelsearch.signal_handlers import post_save_signal_handler
 from wagtail.models import Page, Revision
 from wagtail_factories import ImageFactory
 
-from cms.core.db_router import READ_REPLICA_DB_ALIAS, ExternalEnvRouter
+from cms.core.db_router import READ_REPLICA_DB_ALIAS, ExternalEnvRouter, force_write_db
 from cms.core.tests import TransactionTestCase
 from cms.home.models import HomePage
 from cms.images.models import CustomImage, Rendition
@@ -55,6 +55,18 @@ class DBRouterTestCase(TransactionTestCase):
 
         with transaction.atomic():
             self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
+
+        self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
+
+    def test_uses_write_db_in_nested_transaction(self):
+        """Check the default is used for reads in a nested transaction."""
+        self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
+
+        with transaction.atomic():
+            self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
+
+            with transaction.atomic():
+                self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
 
         self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
 
