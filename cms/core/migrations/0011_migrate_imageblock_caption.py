@@ -56,7 +56,7 @@ def _migrate_revisions(apps, direction):
         content = revision.content
 
         if not content or "content" not in content:
-            logger.warning("Skipping revision %s with missing content", revision.pk)
+            logger.info("Skipping revision %s with missing content", revision.pk)
             continue
 
         stream_data = content["content"]
