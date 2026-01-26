@@ -274,6 +274,11 @@ else:
 if "read_replica" not in DATABASES:
     DATABASES["read_replica"] = deepcopy(DATABASES["default"])
 
+# Allow overriding the database port for local development with multiple instances
+if "DB_PORT" in env:
+    DATABASES["default"]["PORT"] = env["DB_PORT"]
+    DATABASES["read_replica"]["PORT"] = env["DB_PORT"]
+
 DATABASE_ROUTERS = [
     "cms.core.db_router.ExternalEnvRouter",
     "cms.core.db_router.ReadReplicaRouter",

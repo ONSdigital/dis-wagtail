@@ -59,10 +59,6 @@ if DEBUG:
         "SHOW_COLLAPSED": True,
     }
 
-DB_PORT = env.get("DB_PORT", "5432")
-DATABASES["default"]["PORT"] = DB_PORT  # noqa: F405
-DATABASES["read_replica"]["PORT"] = DB_PORT  # noqa: F405
-
 # Force database connections to be read-only for the replica
 if "postgres" in DATABASES["read_replica"]["ENGINE"]:  # noqa: F405
     DATABASES["read_replica"]["ENGINE"] = "cms.core.database_backends.postgres_readonly"  # noqa: F405
