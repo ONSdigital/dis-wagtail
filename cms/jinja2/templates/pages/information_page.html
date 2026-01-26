@@ -3,6 +3,7 @@
 {% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
+{% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {# fmt:off #}
     {% if page.last_published_at %}
@@ -48,7 +49,24 @@
 {% endblock %}
 
 {% block main %}
-    <div class="ons-grid">
+    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--xl ons-js-table-of-contents-container">
+        <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
+            {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
+                {# fmt:off #}
+                {{-
+                    onsTableOfContents({
+                        "title": toc_title,
+                        "ariaLabel": toc_aria_label,
+                        "itemsList": table_of_contents,
+                        "button": {
+                            "text": _("Save or print this page")
+                        }
+                    })
+                -}}
+                {# fmt:on #}
+            {% endwith %}
+        </div>
+
         <div class="ons-grid__col ons-col-8@m">
             {% include_block page.content %}
         </div>

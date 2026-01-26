@@ -57,6 +57,23 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
             values["lastUpdatedDate"] = format_date_for_gtm(self.last_published_at.date())
         return values
 
+    @cached_property
+    def table_of_contents(self) -> list[dict[str, str | object]]:
+        """Table of contents formatted to Design System specs."""
+        items = []
+        for block in self.content:  # pylint: disable=not-an-iterable,useless-suppression
+            if hasattr(block.block, "to_table_of_contents_items"):
+                items += block.block.to_table_of_contents_items(block.value)
+        # TODO: Need to check the GTM stuff
+        # add_table_of_contents_gtm_attributes(items)
+        return items
+
+    def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
+        """Additional context for the template."""
+        context: dict = super().get_context(request, *args, **kwargs)
+        context["table_of_contents"] = self.table_of_contents
+        return context
+
 
 class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
