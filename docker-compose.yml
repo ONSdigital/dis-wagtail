@@ -17,7 +17,7 @@ services:
       DJANGO_SETTINGS_MODULE: cms.settings.dev
       ENABLE_DJANGO_DEFENDER: 'false'
       MEDIA_DIR: /app/media/
-      REDIS_URL: redis://redis
+      REDIS_URL: redis://redis:${REDIS_PORT:-6379}
       SECRET_KEY: local_dev_secret_key # pragma: allowlist secret
       WAGTAILADMIN_BASE_URL: 'http://localhost:${WEB_PORT:-8000}'
       STATIC_DIR: /app/static/
