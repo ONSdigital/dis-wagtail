@@ -68,11 +68,11 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
     search_index_content_type: ClassVar[str] = "static_landing_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
-    featured_items = StreamField(
-        [("featured_item", RelatedContentBlock())],
-        help_text="Leave blank to automatically populate with child pages. Only published pages will be displayed.",
-        blank=True,
-    )
+    # featured_items = StreamField(
+    #     [("featured_item", RelatedContentBlock())],
+    #     help_text="Leave blank to automatically populate with child pages. Only published pages will be displayed.",
+    #     blank=True,
+    # )
 
     content_panels: ClassVar[list[Panel]] = [
         *BundledPageMixin.panels,
@@ -92,27 +92,27 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
         that can be either children internal Pages or specified in a RelatedContentBlock
         for use with the Design system Document list component.
         """
-        if self.featured_items:
-            return self._get_formatted_featured_items()
+        # if self.featured_items:
+        #     return self._get_formatted_featured_items()
         return self._get_formatted_child_pages(request)
 
-    def _get_formatted_featured_items(self) -> list[dict[str, str | dict[str, str]]]:
-        """Format items from self.featured_items."""
-        formatted_items = []
-        for featured_item in self.featured_items:
-            link = featured_item.value.link
-            if link is None:
-                continue
+    # def _get_formatted_featured_items(self) -> list[dict[str, str | dict[str, str]]]:
+    #     """Format items from self.featured_items."""
+    #     formatted_items = []
+    #     for featured_item in self.featured_items:
+    #         link = featured_item.value.link
+    #         if link is None:
+    #             continue
 
-            formatted_items.append(
-                {
-                    "featured": "true",
-                    "title": {"text": link["text"], "url": link["url"]},
-                    "description": link["description"],
-                    "metadata": link.get("metadata", {}),
-                }
-            )
-        return formatted_items
+    #         formatted_items.append(
+    #             {
+    #                 "featured": "true",
+    #                 "title": {"text": link["text"], "url": link["url"]},
+    #                 "description": link["description"],
+    #                 "metadata": link.get("metadata", {}),
+    #             }
+    #         )
+    #     return formatted_items
 
     def _get_formatted_child_pages(self, request: HttpRequest) -> list[dict[str, dict[str, str] | Any]]:
         """Format child pages if there are no featured items."""
