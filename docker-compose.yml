@@ -13,13 +13,13 @@ services:
         required: false
     environment:
       HEROKU_APP_NAME: local # this stops Birdbath's HerokuNotProductionCheck complaining
-      DATABASE_URL: postgres://ons:ons@db:5432/ons # pragma: allowlist secret
+      DATABASE_URL: postgres://ons:ons@db:${DB_PORT:-5432}/ons # pragma: allowlist secret
       DJANGO_SETTINGS_MODULE: cms.settings.dev
       ENABLE_DJANGO_DEFENDER: 'false'
       MEDIA_DIR: /app/media/
       REDIS_URL: redis://redis
       SECRET_KEY: local_dev_secret_key # pragma: allowlist secret
-      WAGTAILADMIN_BASE_URL: 'http://localhost:8000'
+      WAGTAILADMIN_BASE_URL: 'http://localhost:${WEB_PORT:-8000}'
       STATIC_DIR: /app/static/
       STATIC_URL: /static/
       KAFKA_SERVERS: broker:9092
@@ -27,7 +27,7 @@ services:
       EMAIL_HOST: mailpit
     ports:
       - ${WEBPACK_PORT:-3000}:3000 # webpack
-      - ${WEB_PORT:-8000}:8000 # runserver
+      - ${WEB_PORT:-8000}:${WEB_PORT:-8000} # runserver
       - ${MKDOCS_PORT:-8001}:8001 # mkdocs serve
     volumes:
       # Mount the repo at /app/

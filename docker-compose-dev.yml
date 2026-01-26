@@ -7,6 +7,7 @@ services:
       # Defaults for createdb/dropdb/pg_restore etc.
       PGDATABASE: ons
       PGUSER: ons
+      PGPORT: ${DB_PORT:-5432}
       # Values for initdb
       POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_USER: ons
@@ -15,7 +16,7 @@ services:
       - pgdata:/var/lib/postgresql/data
     attach: false
     ports:
-      - ${DB_PORT:-5432}:5432
+      - ${DB_PORT:-5432}:${DB_PORT:-5432}
 
   redis:
     image: redis:7.2
