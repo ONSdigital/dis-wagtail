@@ -1,11 +1,16 @@
 Feature: UI Bundle Happy Paths
     """
     User role Bundle Life Cycle Happy Path 1 bundle Authorisation summary
+    Each scenario
+    uses the bundle page
+    uses search to
+
+
                                  | Bundles Search | Create | Edit | Preview | Approve |
         Publishing Admin         | Can            | Can    | Can  | Can     | Can     !
         Publishing Officer       | Can            | Can    | Can  | Can     | Can     |
-        Viewer                   | N/A            | Cannot | N/A  | N/A     | N/A     |
-            not in preview team  | Cannot         | N/A    | N/A  | Cannot  | N/A     |
+        Viewer                   | Can            | Cannot | N/A  | N/A     | N/A     |
+            not in preview team  | Can            | N/A    | N/A  | Cannot  | N/A     |
             in preview team      | Can            | N/A    | N/A  | Can     | N/A     |
     """
 
@@ -14,6 +19,7 @@ Scenario Outline: A User can create a bundle
     Given there is a <role> user
     When the <role> logs in
     Then the logged in user goes to the bundle page
+    And the logged in user can see the create button
     And the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
     And the user clicks "Save as draft"
@@ -29,7 +35,7 @@ Scenario Outline: A User cannot create a bundle due to authorisation
     Given there is a <role> user
     When the <role> logs in
     Then the logged in user goes to the bundle page
-    And the logged in user cannot create a bundle
+    And the logged in user cannot see the create button
     Examples: bundles
        | role     |
        | Viewer   |
@@ -38,6 +44,7 @@ Scenario Outline: A User cannot create a bundle due to field validation
     Given there is a <role> user
     When the <role> logs in
     Then the logged in user goes to the bundle page
+    And the logged in user can see the create button
     And the logged in user can create a bundle
     And the user clicks "Save as draft"
     And the logged in user gets a failure message due to field validation
@@ -54,6 +61,7 @@ Scenario Outline: A User cannot create a bundle due to already existing
     And there are <number_of_bundles> bundles with <bundle_details>
     When the <role> logs in
     Then the logged in user goes to the bundle page
+    And the logged in user can see the create button
     And the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
     And the user clicks "Save as draft"
@@ -67,9 +75,10 @@ Scenario Outline: A User cannot create a bundle due to already existing
 Scenario Outline: A User cannot save a bundle due to duplicate schedule
     Given there is a <role> user
     And there is a <creator_role> user
-    And there is a Release Calendar page approved by <creator_role>
+    And there is a release calendar page approved by <creator_role>
     When the <role> logs in
-   Then the logged in user goes to the bundle page
+    Then the logged in user goes to the bundle page
+    And the logged in user can see the create button
     And the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
     And the logged in user adds a Release Calendar page to the bundle
@@ -87,8 +96,8 @@ Scenario Outline: A User cannot save a bundle due to duplicate schedule
 Scenario Outline: A User can edit a bundle
     Given there is a <role> user
     And there is a <creator_role> user
-    And there is a Statistical Analysis page approved by <creator_role>
-    And there is a Release Calendar page approved by <creator_role>
+    And there is a statistical analysis page approved by <creator_role>
+    And there is a release calendar page approved by <creator_role>
     And there is a preview team
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
@@ -116,8 +125,8 @@ Scenario Outline: A User can edit a bundle
 Scenario Outline: A User can preview a bundle
     Given there is a <role> user
     And there is a <creator_role> user
-    And there is a Statistical Analysis page approved by <creator_role>
-    And there is a Release Calendar page approved by <creator_role>
+    And there is a statistical analysis page approved by <creator_role>
+    And there is a release calendar page approved by <creator_role>
     And there is a preview team
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
@@ -140,8 +149,8 @@ Scenario Outline: A User can preview a bundle
 Scenario Outline: A User cannot preview a bundle due to not being a member of an associated preview-team
     Given there is a <role> user
     And there is a <creator_role> user
-    And there is a Statistical Analysis page approved by <creator_role>
-    And there is a Release Calendar page approved by <creator_role>
+    And there is a statistical analysis page approved by <creator_role>
+    And there is a release calendar page approved by <creator_role>
     And there is a preview team
     And there are <number_of_bundles> bundles with <bundle_details>
     When the <role> logs in
@@ -159,8 +168,8 @@ Scenario Outline: A User cannot preview a bundle due to not being a member of an
 Scenario Outline: A user can approve a bundle
     Given there is a <role> user
     And there is a <creator_role> user
-    And there is a Statistical Analysis page approved by <creator_role>
-    And there is a Release Calendar page approved by <creator_role>
+    And there is a statistical analysis page approved by <creator_role>
+    And there is a release calendar page approved by <creator_role>
     And there is a preview team
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
