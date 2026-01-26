@@ -34,6 +34,33 @@ def a_statistical_article_exists(context: Context) -> None:
     context.statistical_article_page = StatisticalArticlePageFactory(parent=context.article_series_page)
 
 
+@given("a statistical article page with headline figures exists")
+def a_statistical_article_page_with_headline_figures_exists(context: Context) -> None:
+    a_statistical_article_exists(context)
+    context.statistical_article_page.headline_figures = [
+        (
+            "figure",
+            {
+                "figure_id": "figure_1",
+                "title": "First headline figure",
+                "figure": "~123%",
+                "supporting_text": "First supporting text",
+            },
+        ),
+        (
+            "figure",
+            {
+                "figure_id": "figure_2",
+                "title": "Second headline figure",
+                "figure": "~321%",
+                "supporting_text": "Second supporting text",
+            },
+        ),
+    ]
+    context.statistical_article_page.headline_figures_figure_ids = "figure_1,figure_2"
+    context.statistical_article_page.save_revision()
+
+
 @given("a statistical article page with equations exists")
 def a_statistical_article_page_with_equations_exists(context: Context) -> None:
     an_article_series_exists(context)

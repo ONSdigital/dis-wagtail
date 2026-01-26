@@ -28,6 +28,8 @@ def the_given_page_is_in_workflow_stage(
             mark_page_as_ready_to_publish(the_page)
         else:
             progress_page_workflow(the_page.current_workflow_state)
+    elif workflow_stage.lower() == "published":
+        the_page.save_revision().publish()
 
 
 @step('the {page_str} scheduled page is at "{workflow_stage}"')
