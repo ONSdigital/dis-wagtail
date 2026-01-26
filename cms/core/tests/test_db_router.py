@@ -68,6 +68,8 @@ class DBRouterTestCase(TransactionTestCase):
             with transaction.atomic():
                 self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
 
+            self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
+
         self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
 
     def test_uses_write_db_for_read_when_autocommit_disabled(self):
