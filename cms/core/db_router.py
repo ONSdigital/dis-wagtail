@@ -5,11 +5,19 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DEFAULT_DB_ALIAS, transaction
-from django.db.models import Model
+from django.db.models import Model, QuerySet
 
 from cms.images.models import Rendition
 
 READ_REPLICA_DB_ALIAS = "read_replica"
+
+
+def force_write_db[T: Model](queryset: QuerySet[T]) -> QuerySet[T]:
+    """Force the given queryset to use the write DB, even for read queries.
+
+    This is a helper function to make the intent clearer.
+    """
+    return queryset.using(DEFAULT_DB_ALIAS)
 
 
 class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access

@@ -16,38 +16,42 @@ Generally, a developer shouldn't need to worry about this configuration, or expl
 > [!WARNING]
 > There is a small delay between writes to the primary instance and when those writes are visible on the replicas.
 
-This means that immediately attempting to read data from the replicas after writing it may return stale data, leading to race conditions and intermittent bugs
-which can only present.
+This means that immediately (within the same request) attempting to read data from the replicas after writing it may return stale data, leading to race conditions and intermittent bugs.
 
-This can be avoided by ensuring that any read-after-write operations are performed on the primary write instance. There are a couple of different ways to
-achieve this depending on the use-case:
+This can be avoided by ensuring that any read-after-write operations are performed on the primary write instance. To achieve this, you can use the `force_write_db` function:
 
-1. Using `using('default')` to explicitly target the primary instance for a specific query:
+```python
+from cms.core.db_router import force_write_db
 
-    ```python
-    # Write data
+obj = MyModel.objects.create(field='value')
+
+# Read data from default (write) DB alias to avoid replication lag
+obj = force_write_db(MyModel.objects.all()).get(id=obj.id)
+```
+
+Note that this work-around is not necessary when **both** queries happen within the same transaction, since transactions are always handled using the write instance:
+
+```python
+from django.db import transaction
+from cms.core.db_router import force_write_db
+
+
+with transaction.atomic():
     obj = MyModel.objects.create(field='value')
 
-    # Read data from default (write) DB alias to avoid replication lag
-    obj = MyModel.objects.using(DEFAULT_DB_ALIAS).get(id=obj.id)
-    ```
+    # This reads from the default (write) DB
+    obj = MyModel.objects.get(id=obj.id)
 
-2. Using a transaction explicitly with the default connection alias `transaction.atomic(using=DEFAULT_DB_ALIAS)`:
+    # This also reads from the default DB, but the `force_write_db` is unnecessary.
+    obj = force_write_db(MyModel.objects.all()).get(id=obj.id)
+```
 
-    ```python
-    with transaction.atomic(using=DEFAULT_DB_ALIAS):
-        # Write data
-        obj = MyModel.objects.create(field='value')
-
-        # Read data - will use primary due to open transaction which specifies use of the default (write) DB alias
-        obj = MyModel.objects.get(id=obj.id)
-    ```
+This is only true for the _same_ transaction. If they're executed within different transactions, or only 1 is within a transaction, `force_write_db` is necessary.
 
 ### Use of combined read-write methods
 
 > [!WARNING]
 > For performance-critical areas, some of Django's built-in queries should be avoided: `get_or_create`, `update_or_create`. These methods result in queries
 > which always use the primary database instance.
-
-Instead, it may be better to use multiple explicit queries (e.g. `.get` then `.create`) so that the optimal connection is used. However, take care to avoid the
-replication lag issues described above.
+> Instead, it may be better to use multiple explicit queries (e.g. `.get` then `.create`) so that the optimal connection is used. However, take care to avoid the
+> replication lag issues described above.

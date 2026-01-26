@@ -125,6 +125,20 @@ class DBRouterTestCase(TransactionTestCase):
         with override_settings(IS_EXTERNAL_ENV=True):
             self.assertEqual(router.db_for_read(Revision), READ_REPLICA_DB_ALIAS)
 
+    def test_force_write_db(self):
+        """Check that the force_write_db util works as expected."""
+        qs = User.objects.all()
+
+        self.assertEqual(qs.db, READ_REPLICA_DB_ALIAS)
+        self.assertEqual(force_write_db(qs).db, DEFAULT_DB_ALIAS)
+
+        with self.assertNumQueriesConnection():
+            # Calling the method doesn't perform any queries
+            force_write_db(qs)
+
+        with self.assertNumQueriesConnection(default=1):
+            list(force_write_db(qs))
+
 
 @override_settings(IS_EXTERNAL_ENV=True)
 class ExternalEnvRouterTestCase(TestCase):
