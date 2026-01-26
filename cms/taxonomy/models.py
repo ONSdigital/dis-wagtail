@@ -2,11 +2,12 @@ import typing
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.db import IntegrityError, models
-from django.db.models import QuerySet, UniqueConstraint
+from django.db.models import UniqueConstraint
 from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
-from treebeard.mp_tree import MP_Node
+from treebeard.mp_tree import MP_Node, MP_NodeManager
 from wagtail.admin.panels import FieldPanel
+from wagtail.query import TreeQuerySet
 from wagtail.search import index
 
 BASE_TOPIC_DEPTH = 2
@@ -15,15 +16,16 @@ if TYPE_CHECKING:
     from django.db.models import BaseConstraint
 
 
-class TopicManager(models.Manager):
-    def get_queryset(self) -> QuerySet:
+class TopicManager(MP_NodeManager):
+    def get_queryset(self) -> TreeQuerySet:
         """Filter out the dummy root topic from all querysets."""
-        return super().get_queryset().filter(depth__gt=1)
+        # Reuse Wagtail's custom tree QuerySet for helpful utils
+        return TreeQuerySet(self.model).order_by("path").filter(depth__gt=1)
 
     def root_topic(self) -> Topic:
         """Return the dummy root topic."""
         # We create the dummy root in a migration so we know it will exist, so cast to "Topic" for mypy
-        return typing.cast(Topic, super().get_queryset().filter(depth=1).first())
+        return typing.cast(Topic, super().get_queryset().filter(depth=1).get())
 
 
 # This is the main 'node' model, it inherits mp_node
@@ -43,7 +45,7 @@ class Topic(index.Indexed, MP_Node):
     class Meta:
         ordering = ("path",)
 
-    objects: TopicManager = TopicManager()  # Override the default manager
+    objects: TopicManager = TopicManager.from_queryset(TreeQuerySet)()
 
     id = models.CharField(max_length=100, primary_key=True)  # type: ignore[var-annotated]
     title = models.CharField(max_length=100)  # type: ignore[var-annotated]
