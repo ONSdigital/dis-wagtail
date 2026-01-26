@@ -17,12 +17,13 @@ ALLOWED_HOSTS = ["*"]
 INTERNAL_IPS = ("127.0.0.1", "10.0.2.2")
 
 # This is only to test Wagtail emails.
-WAGTAILADMIN_BASE_URL = "http://localhost:8000"
+WEB_PORT = env.get("WEB_PORT", "8000")
+WAGTAILADMIN_BASE_URL = f"http://localhost:{WEB_PORT}"
 
 # Display sent emails in via mailpit @ http://localhost:8025
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = env.get("EMAIL_HOST", "localhost")
-EMAIL_PORT = 1025
+EMAIL_PORT = int(env.get("MAILPIT_SMTP_PORT", "1025"))
 EMAIL_USE_TLS = False
 
 # Sender address for email notifications
@@ -58,12 +59,17 @@ if DEBUG:
         "SHOW_COLLAPSED": True,
     }
 
+DB_PORT = env.get("DB_PORT", "5432")
+DATABASES["default"]["PORT"] = DB_PORT  # noqa: F405
+DATABASES["read_replica"]["PORT"] = DB_PORT  # noqa: F405
+
 # Force database connections to be read-only for the replica
 if "postgres" in DATABASES["read_replica"]["ENGINE"]:  # noqa: F405
     DATABASES["read_replica"]["ENGINE"] = "cms.core.database_backends.postgres_readonly"  # noqa: F405
 
 # Redis
-REDIS_URL = env.get("REDIS_URL", "redis://localhost:6379")
+REDIS_PORT = env.get("REDIS_PORT", "6379")
+REDIS_URL = env.get("REDIS_URL", f"redis://localhost:{REDIS_PORT}")
 CACHES["default"] = {  # noqa: F405
     "BACKEND": "django_redis.cache.RedisCache",
     "LOCATION": REDIS_URL,
@@ -84,7 +90,8 @@ AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL", f"{AUTH_STUB_URL}/tok
 
 # External search service
 SEARCH_INDEX_PUBLISHER_BACKEND = "kafka"
-KAFKA_SERVERS = env.get("KAFKA_SERVERS", "localhost:9094").split(",")
+KAFKA_PORT = env.get("KAFKA_PORT", "9094")
+KAFKA_SERVERS = env.get("KAFKA_SERVERS", f"localhost:{KAFKA_PORT}").split(",")
 
 if AWS_COGNITO_LOGIN_ENABLED:  # noqa: F405
     WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", f"{AUTH_STUB_URL}/florence/login")
