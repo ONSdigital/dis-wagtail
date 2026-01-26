@@ -5,13 +5,13 @@
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
 
 {# fmt:off #}
-    {% if page.last_updated %}
-        {%- set last_updated_label = _("Last updated") -%}
+    {% if page.last_published_at %}
+        {%- set last_updated_label = _("Last updated:") -%}
         {%- set last_updated_item = {
                 "term": last_updated_label,
                 "descriptions": [
                     {
-                        "description": page.last_updated|ons_date("DATE_FORMAT")
+                        "description": page.last_published_at|ons_date("DATE_FORMAT")
                     }
                 ]
             }

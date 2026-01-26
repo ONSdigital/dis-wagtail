@@ -1,9 +1,8 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
-from django.db import models
 from django.utils.functional import cached_property
-from wagtail.admin.panels import FieldPanel, InlinePanel
+from wagtail.admin.panels import FieldPanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
 
@@ -16,7 +15,6 @@ from cms.core.formatting_utils import get_document_metadata
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
 from cms.core.utils import get_content_type_for_page
-from cms.core.widgets import date_widget
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -31,11 +29,11 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
 
     template = "templates/pages/information_page.html"
 
-    parent_page_types: ClassVar[list[str]] = ["home.HomePage", "InformationPage", "IndexPage"]
+    parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
+    # TODO: Confirm if the below content type is correct
     search_index_content_type: ClassVar[str] = "static_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
-    last_updated = models.DateField(blank=True, null=True)
     content = StreamField(CoreStoryBlock())
 
     _analytics_content_type: ClassVar[str] = "information"
@@ -44,9 +42,7 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
         *BundledPageMixin.panels,
         *BasePage.content_panels,
         FieldPanel("summary", required_on_save=True),
-        FieldPanel("last_updated", date_widget),
         FieldPanel("content", required_on_save=True),
-        InlinePanel("page_related_pages", label="Related pages"),
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
@@ -58,16 +54,17 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         values = super().cached_analytics_values
-        if self.last_updated:
-            values["lastUpdatedDate"] = format_date_for_gtm(self.last_updated)
+        if self.last_published_at.date():
+            values["lastUpdatedDate"] = format_date_for_gtm(self.last_published_at.date())
         return values
 
 
 class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
 
-    parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
+    parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
+    # TODO: Confirm if the below content type is correct
     search_index_content_type: ClassVar[str] = "static_landing_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
@@ -77,22 +74,15 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
         blank=True,
     )
 
-    content = RichTextField(features=settings.RICH_TEXT_BASIC, blank=True)
-    related_links = StreamField([("related_link", RelatedContentBlock())], blank=True)
-
     content_panels: ClassVar[list[Panel]] = [
         *BundledPageMixin.panels,
         *BasePage.content_panels,
         FieldPanel("summary", required_on_save=True),
-        "featured_items",
-        "content",
-        "related_links",
     ]
 
     search_fields: ClassVar[list[index.SearchField | index.AutocompleteField]] = [
         *BasePage.search_fields,
         index.SearchField("summary"),
-        index.SearchField("content"),
     ]
 
     _analytics_content_type: ClassVar[str] = "index-pages"
@@ -144,25 +134,10 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
             )
         return formatted_items
 
-    def get_formatted_related_links_list(self) -> list[dict[str, str]]:
-        """Returns a formatted list of related links for both external and internal pages
-        for use with the Design System list component.
-        """
-        formatted_links = [
-            {
-                "title": related_link.value.link.get("text"),
-                "url": related_link.value.link.get("url"),
-            }
-            for related_link in self.related_links
-        ]
-
-        return formatted_links
-
     def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
         context: dict = super().get_context(request, *args, **kwargs)
 
         context["formatted_items"] = self.get_formatted_items(request)
-        context["related_links_list"] = self.get_formatted_related_links_list()
 
         return context
 
