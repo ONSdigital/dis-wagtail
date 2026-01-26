@@ -11,7 +11,7 @@ services:
       # Values for initdb
       POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_USER: ons
-      REDIS_URL: redis://redis:${REDIS_PORT:-6379}
+      REDIS_URL: redis://redis:6379
     volumes:
       - pgdata:/var/lib/postgresql/data
     attach: false
