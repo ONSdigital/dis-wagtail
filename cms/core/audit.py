@@ -39,10 +39,11 @@ def mirror_log_entry_to_stdout(
         return
 
     audit_logger.info(
+        "Audit event: %s",
         instance.action,
         extra={
             "event": instance.action,
-            "object_type": instance.content_type.model if instance.content_type else None,
+            "object_type": instance.content_type.name if instance.content_type else None,
             "object_id": instance.object_id,
             "object_label": instance.label,
             "user_id": instance.user_id,

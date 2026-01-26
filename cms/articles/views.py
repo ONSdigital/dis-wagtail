@@ -111,7 +111,6 @@ class RevisionChartDownloadView(View):
             action="content.chart_download",
             instance=page,
             data={
-                "chart_title": chart_title,
                 "chart_id": chart_id,
                 "revision_id": revision_id,
             },

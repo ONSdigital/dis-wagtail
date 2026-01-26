@@ -28,12 +28,13 @@ class AuditSignalHandlerTestCase(WagtailTestUtils, TestCase):
             # Verify audit logger was called
             mock_logger.info.assert_called_once()
             call_args: tuple[tuple[Any, ...], dict[str, Any]] = mock_logger.info.call_args
-            assert call_args[0][0] == "wagtail.edit"
+            assert call_args[0][0] == "Audit event: %s"
+            assert call_args[0][1] == "wagtail.edit"
 
             # Verify extra data
             extra: dict[str, Any] = call_args[1]["extra"]
             assert extra["event"] == "wagtail.edit"
-            assert extra["object_type"] == "statisticalarticlepage"
+            assert extra["object_type"] == "statistical article page"
             assert extra["object_id"] == page.id
             assert "object_label" in extra
             assert "timestamp" in extra
@@ -48,7 +49,8 @@ class AuditSignalHandlerTestCase(WagtailTestUtils, TestCase):
             # Verify audit logger was called
             mock_logger.info.assert_called_once()
             call_args: tuple[tuple[Any, ...], dict[str, Any]] = mock_logger.info.call_args
-            assert call_args[0][0] == "wagtail.create"
+            assert call_args[0][0] == "Audit event: %s"
+            assert call_args[0][1] == "wagtail.create"
 
             # Verify extra data
             extra: dict[str, Any] = call_args[1]["extra"]
