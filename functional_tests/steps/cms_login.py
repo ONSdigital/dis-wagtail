@@ -38,3 +38,11 @@ def user_logs_in(context: Context, user_type: str) -> None:
     context.page.get_by_placeholder("Enter your username").fill(context.user_data["username"])
     context.page.get_by_placeholder("Enter password").fill(context.user_data["password"])
     context.page.get_by_role("button", name="Sign in").click()
+
+
+@step("the user is logged in")
+def user_is_logged_in(context: Context) -> None:
+    context.page.goto(f"{context.base_url}/admin/login/")
+    context.page.get_by_placeholder("Enter your username").fill(context.user_data["username"])
+    context.page.get_by_placeholder("Enter password").fill(context.user_data["password"])
+    context.page.get_by_role("button", name="Sign in").click()

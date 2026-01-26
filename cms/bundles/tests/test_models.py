@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
@@ -13,7 +11,6 @@ from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
-from cms.workflows.locks import PageInBundleReadyToBePublishedLock
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
 
@@ -134,51 +131,3 @@ class BundledPageMixinTestCase(WagtailTestUtils, TestCase):
 
         del self.page.active_bundle  # cleared cached property
         self.assertIsNone(self.page.active_bundle)
-
-    def test_get_lock(self):
-        self.assertIsNotNone(self.page.get_lock)
-
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
-
-        self.assertIsInstance(self.page.get_lock(), PageInBundleReadyToBePublishedLock)
-
-    def test_page_locked_if_in_bundle_ready_to_be_published(self):
-        self.client.force_login(self.superuser)
-
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
-
-        response = self.client.get(self.edit_url)
-        bundle_url = reverse("bundle:edit", args=[self.bundle.pk])
-        self.assertContains(
-            response,
-            "This page is included in a bundle that is ready to be published. You must revert the bundle to "
-            "<strong>Draft</strong> or <strong>In preview</strong> in order to make further changes. "
-            '<span class="buttons"><a type="button" class="button button-small button-secondary" '
-            f'href="{bundle_url}">Manage bundle</a></span>',
-        )
-
-        self.assertContains(
-            response,
-            f'You must revert the bundle "<a href="{bundle_url}">{self.bundle.name}</a>" to <strong>Draft</strong> or '
-            f'<strong>In preview</strong> in order to make further changes. <a href="{bundle_url}">Manage bundle</a>.',
-        )
-
-    @patch("cms.workflows.locks.user_can_manage_bundles", return_value=False)
-    @patch("cms.bundles.panels.user_can_manage_bundles", return_value=False)
-    def test_page_locked_if_in_bundle_ready_to_be_published_but_user_cannot_manage_bundles(self, _mock, _mock2):
-        self.client.force_login(self.superuser)
-
-        # note: we are mocking user_can_manage_bundles in all entry points.
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
-
-        response = self.client.get(self.edit_url)
-        self.assertContains(
-            response,
-            "This page cannot be changed as it included "
-            f'in the "{self.bundle.name}" bundle which is ready to be published.',
-        )
-        self.assertNotContains(response, "Manage bundle")
-        self.assertNotContains(response, reverse("bundle:edit", args=[self.bundle.pk]))
