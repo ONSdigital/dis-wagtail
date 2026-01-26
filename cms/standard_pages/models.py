@@ -10,10 +10,8 @@ from cms.bundles.mixins import BundledPageMixin
 from cms.core.analytics_utils import format_date_for_gtm
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
-from cms.core.formatting_utils import get_document_metadata
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
-from cms.core.utils import get_content_type_for_page
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -109,7 +107,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
         """Format child pages if there are no featured items."""
         formatted_items = []
 
-        qs = self.get_children().specific().defer_streamfields()
+        qs = self.get_children().specific().defer_streamfields().order_by("title")
         if not getattr(request, "is_preview", False):
             qs = qs.live().public()
 
@@ -121,9 +119,6 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
                         "url": child_page.get_url(request=request),
                     },
                     "description": getattr(child_page, "listing_summary", "") or getattr(child_page, "summary", ""),
-                    "metadata": get_document_metadata(
-                        get_content_type_for_page(child_page), child_page.specific_deferred.publication_date
-                    ),
                 }
             )
         return formatted_items
