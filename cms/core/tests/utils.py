@@ -1,10 +1,12 @@
 import json
 import re
+from io import StringIO
 from typing import TYPE_CHECKING
 from unittest import TestCase
 
 from bs4 import BeautifulSoup
 from django.conf import settings
+from django.core import management
 from django.core.files.base import ContentFile
 from django.test import SimpleTestCase
 from django.utils import translation
@@ -72,3 +74,17 @@ class PanelBlockAssertions(SimpleTestCase):
             expected_fields,
             f"Unexpected fields in block value for {block_class.__name__}: {set(value.keys()) - expected_fields}",
         )
+
+
+def rebuild_internal_search_index():
+    """Used to rebuild the search index as we no longer use enqueue on commit for django-tasks."""
+    management.call_command(
+        "wagtail_update_index",
+        backend_name="default",
+        stdout=StringIO(),
+        chunk_size=50,
+    )
+
+
+def rebuild_references_index():
+    management.call_command("rebuild_references_index", stdout=StringIO())
