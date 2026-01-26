@@ -89,7 +89,7 @@ class CoreSectionContentBlock(StreamBlock):
     video_embed = VideoEmbedBlock(group="Media")
     image = ImageBlock(group="Media")
     documents = DocumentsBlock(group="Media")
-    related_links = RelatedLinksBlock(add_heading=True)  # Add a heading as this is outside of a section block
+    related_links = RelatedLinksBlock()
     table = ONSTableBlock(group="DataVis", allow_links=True)
     equation = EquationBlock(group="DataVis", icon="decimal")
     iframe_visualisation = IframeBlock(group="DataVis", label="Iframe Visualisation")
