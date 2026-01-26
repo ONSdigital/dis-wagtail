@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.shortcuts import redirect
@@ -55,17 +55,4 @@ def before_create_page(request: HttpRequest, page: Page) -> HttpResponse | None:
             "Topic and theme pages cannot be duplicated as selected taxonomy needs to be unique for each page.",
         )
         return redirect("wagtailadmin_explore", page.get_parent().id)
-    return None
-
-
-@hooks.register("after_create_page")
-def after_create_page(request: HttpRequest, page: Page) -> HttpResponse | None:
-    if page.specific_class != TopicPage:
-        return None
-
-    for fn in hooks.get_hooks("after_create_topic_page"):
-        result = fn(request, page)
-        if hasattr(result, "status_code"):
-            return cast("HttpResponse", result)
-
     return None

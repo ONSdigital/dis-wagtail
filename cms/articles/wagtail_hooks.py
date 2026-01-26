@@ -7,15 +7,13 @@ from wagtail import hooks
 from wagtail.admin import messages
 
 from cms.articles import admin_urls
-from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage, StatisticalArticlePage
+from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponse
+    from django.http import HttpRequest
     from django.urls import URLPattern
     from django.urls.resolvers import URLResolver
     from wagtail.models import Page
-
-    from cms.topics.models import TopicPage
 
 
 @hooks.register("before_create_page")
@@ -35,7 +33,7 @@ def before_create_page(
 @hooks.register("before_delete_page")
 def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | None:
     if request.method == "POST":
-        if page.specific_class == StatisticalArticlePage and page.specific.figures_used_by_ancestor:
+        if page.specific_class is StatisticalArticlePage and page.specific.figures_used_by_ancestor_with_no_fallback:
             messages.warning(
                 request,
                 "This page cannot be deleted because it contains headline figures that are referenced elsewhere.",
@@ -44,7 +42,7 @@ def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect
             # See: https://docs.wagtail.org/en/latest/reference/hooks.html#before-delete-page
             return redirect("wagtailadmin_pages:delete", page.pk)
         if (
-            page.specific_class == ArticleSeriesPage
+            page.specific_class is ArticleSeriesPage
             and (latest := page.get_latest())
             and latest.figures_used_by_ancestor
         ):
@@ -58,15 +56,30 @@ def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect
     return None
 
 
-@hooks.register("after_create_topic_page")
-def after_create_topic_page(request: HttpRequest, topic_page: TopicPage) -> HttpResponse | None:
-    articles_index = ArticlesIndexPage(title="Articles")
-    topic_page.add_child(instance=articles_index)
-    # We publish a live version for the methodologies index page. This is acceptable since its URL redirects
-    articles_index.save_revision().publish()
+@hooks.register("before_unpublish_page")
+def before_unpublish_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | None:
+    if request.method == "POST":
+        if page.specific_class is StatisticalArticlePage and page.specific.figures_used_by_ancestor_with_no_fallback:
+            messages.warning(
+                request,
+                "This page cannot be unpublished because it contains headline figures that are referenced elsewhere.",
+            )
+            # Redirect to the unpublish page (the same page) to prevent unpublish action
+            # See: https://docs.wagtail.org/en/latest/reference/hooks.html#before-delete-page
+            return redirect("wagtailadmin_pages:unpublish", page.pk)
+        if (
+            page.specific_class is ArticleSeriesPage
+            and (latest := page.get_latest())
+            and latest.figures_used_by_ancestor
+        ):
+            message = (
+                "This page cannot be unpublished because one or more of its children contain headline figures"
+                " that are referenced elsewhere."
+            )
+            messages.warning(request, message)
+            return redirect("wagtailadmin_pages:unpublish", page.pk)
 
-    for fn in hooks.get_hooks("after_create_page"):
-        fn(request, articles_index)
+    return None
 
 
 @hooks.register("register_admin_urls")

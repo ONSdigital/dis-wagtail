@@ -1,4 +1,6 @@
+# pylint: disable=too-many-lines
 from datetime import datetime
+from unittest.mock import Mock
 from urllib.parse import urlparse
 
 from django.test import TestCase
@@ -18,8 +20,8 @@ from cms.core.blocks import (
     RelatedContentBlock,
     RelatedLinksBlock,
 )
-from cms.core.blocks.glossary_terms import GlossaryTermsBlock
-from cms.core.tests.factories import GlossaryTermFactory
+from cms.core.blocks.definitions import DefinitionsBlock
+from cms.core.tests.factories import DefinitionFactory
 from cms.core.tests.utils import get_test_document
 from cms.home.models import HomePage
 
@@ -577,14 +579,14 @@ class CoreBlocksTestCase(TestCase):
         )
 
 
-class GlossaryTermBlockTestCase(TestCase):
-    """Test for Glossary Term block."""
+class DefinitionsBlockTestCase(TestCase):
+    """Test for Definitions block."""
 
-    def test_glossary_term_block_clean_method_removes_duplicates(self):
-        """Test that the clean method of the GlossaryTermsBlock removes duplicated instances of glossary terms."""
-        term = GlossaryTermFactory()
-        another_term = GlossaryTermFactory()
-        block = GlossaryTermsBlock()
+    def test_definitions_block_clean_method_removes_duplicates(self):
+        """Test that the clean method of the DefinitionsBlock removes duplicated instances of definitions."""
+        term = DefinitionFactory()
+        another_term = DefinitionFactory()
+        block = DefinitionsBlock()
 
         value = block.to_python([term.pk, term.pk, another_term.pk])
         clean_value = block.clean(value)
@@ -593,16 +595,16 @@ class GlossaryTermBlockTestCase(TestCase):
         self.assertEqual(clean_value[0].pk, term.pk)
         self.assertEqual(clean_value[1].pk, another_term.pk)
 
-    def test_glossary_term_block__get_context(self):
+    def test_definitions_block__get_context(self):
         """Test that get_context returns correctly formatted data to be used by the ONS Accordion component."""
-        term = GlossaryTermFactory()
-        block = GlossaryTermsBlock()
+        term = DefinitionFactory()
+        block = DefinitionsBlock()
 
         value = block.to_python([term.pk])
         context = block.get_context(value)
 
         self.assertListEqual(
-            context["formatted_glossary_terms"],
+            context["formatted_definitions"],
             [
                 {
                     "headingLevel": 3,
@@ -611,6 +613,19 @@ class GlossaryTermBlockTestCase(TestCase):
                 }
             ],
         )
+
+    def test_definitions_block__render_uses_definitions_terminology(self):
+        """Test that the rendered block uses 'definitions' terminology for accessibility."""
+        term = DefinitionFactory()
+        block = DefinitionsBlock()
+
+        value = block.to_python([term.pk])
+        rendered = block.render(value)
+
+        # Verify aria-labels use 'definitions' not 'glossary'
+        self.assertIn('data-open-aria-label="Show all definitions"', rendered)
+        self.assertIn('data-close-aria-label="Hide all definitions"', rendered)
+        self.assertNotIn("glossary", rendered.lower())
 
 
 class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
@@ -835,6 +850,81 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
                     self.block._prepare_body_cells(cells),  # pylint: disable=protected-access
                     expected,
                 )
+
+    def test_ons_table_block_includes_download_config_with_context(self):
+        """Test that download config is added to options when block_id and page are present."""
+        page = StatisticalArticlePageFactory()
+        context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": None,
+        }
+
+        result = self.block.get_context(self.full_data, parent_context=context)
+
+        self.assertIn("options", result)
+        self.assertIn("download", result["options"])
+        self.assertIn("title", result["options"]["download"])
+        self.assertIn("itemsList", result["options"]["download"])
+        self.assertEqual(result["options"]["download"]["title"], "Download: The table")
+        self.assertEqual(len(result["options"]["download"]["itemsList"]), 1)
+        self.assertIn("CSV", result["options"]["download"]["itemsList"][0]["text"])
+        self.assertIn("url", result["options"]["download"]["itemsList"][0])
+
+    def test_ons_table_block_builds_preview_url_correctly(self):
+        """Test that preview URL is built correctly for draft content."""
+        page = StatisticalArticlePageFactory()
+        page.latest_revision_id = 123
+
+        request = Mock()
+        request.is_preview = True
+        request.resolver_match = Mock()
+        request.resolver_match.kwargs = {"revision_id": 456}
+
+        context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": request,
+        }
+
+        result = self.block.get_context(self.full_data, parent_context=context)
+
+        download_url = result["options"]["download"]["itemsList"][0]["url"]
+        self.assertIn("/admin/articles/pages/", download_url)
+        self.assertIn("/revisions/456/", download_url)
+        self.assertIn("/download-table/test-block-id/", download_url)
+
+    def test_ons_table_block_builds_published_url_correctly(self):
+        """Test that published URL is built correctly for live content."""
+        page = StatisticalArticlePageFactory()
+        # Mock the url property since it's read-only
+        page_mock = Mock(spec=page)
+        page_mock.url = "/economy/articles/test-article/"
+        page_mock.pk = page.pk
+
+        context = {
+            "block_id": "test-block-id",
+            "page": page_mock,
+            "request": None,
+        }
+
+        result = self.block.get_context(self.full_data, parent_context=context)
+
+        download_url = result["options"]["download"]["itemsList"][0]["url"]
+        self.assertEqual(download_url, "/economy/articles/test-article/download-table/test-block-id")
+
+    def test_ons_table_block_download_config_missing_without_page(self):
+        """Test that download is empty when page is missing from context."""
+        context = {
+            "block_id": "test-block-id",
+            "page": None,
+            "request": None,
+        }
+
+        result = self.block.get_context(self.full_data, parent_context=context)
+
+        # download should be empty dict when page is missing
+        self.assertEqual(result["options"]["download"], {})
 
 
 class AccordionBlockTestCase(TestCase):

@@ -1,6 +1,6 @@
 # pylint: disable=too-many-lines
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -23,7 +23,7 @@ from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.datasets.tests.factories import DatasetFactory
 from cms.datavis.constants import CHART_BLOCK_TYPES
-from cms.datavis.tests.factories import TableDataFactory
+from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
 from cms.topics.models import TopicPage
 
 
@@ -518,6 +518,10 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(analytics_values.get("latestRelease"), "no")
         self.assertNotIn("pageURL", analytics_values.keys())
 
+    def test_analytics_content_type(self):
+        """Test that the GTM content type is 'articles'."""
+        self.assertEqual(self.page.analytics_content_type, "articles")
+
 
 class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
@@ -812,6 +816,189 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
             self.assertEqual(chart["title"], f"Chart {i}")
             self.assertEqual(chart["audio_description"], f"Description {i}")
 
+    def test_get_table_returns_table_block_by_id(self):
+        """Test get_table returns the correct table from content sections."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="Test Table 1",
+                                caption="Table caption 1",
+                                source="Test Source",
+                                headers=[["Header 1", "Header 2"]],
+                                rows=[["Row 1 Col 1", "Row 1 Col 2"], ["Row 2 Col 1", "Row 2 Col 2"]],
+                            ),
+                            "id": "test-table-id-1",
+                        },
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="Test Table 2",
+                                headers=[["Col A", "Col B"]],
+                                rows=[["Data A", "Data B"]],
+                            ),
+                            "id": "test-table-id-2",
+                        },
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        # Test retrieving the first table
+        table = self.page.get_table("test-table-id-1")
+        self.assertEqual(table["title"], "Test Table 1")
+        self.assertEqual(table["caption"], "Table caption 1")
+        self.assertEqual(table["source"], "Test Source")
+
+        # Test retrieving the second table
+        table = self.page.get_table("test-table-id-2")
+        self.assertEqual(table["title"], "Test Table 2")
+        self.assertIn("data", table)
+
+    def test_get_table_returns_empty_dict_when_not_found(self):
+        """Test get_table returns empty dict when table_id is not found."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(title="Known Table"),
+                            "id": "known-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        # Test with invalid table_id
+        table = self.page.get_table("unknown-table-id")
+        self.assertEqual(table, {})
+
+    def test_get_table_data_for_csv_extracts_headers_and_rows(self):
+        """Test get_table_data_for_csv flattens table data correctly."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": {
+                                "title": "CSV Test Table",
+                                "data": {
+                                    "headers": [
+                                        [
+                                            {"value": "Year", "type": "th", "align": "left"},
+                                            {"value": "Value", "type": "th", "align": "right"},
+                                        ]
+                                    ],
+                                    "rows": [
+                                        [
+                                            {"value": "2020", "type": "td", "align": "left"},
+                                            {"value": "100", "type": "td", "align": "right"},
+                                        ],
+                                        [
+                                            {"value": "2021", "type": "td", "align": "left"},
+                                            {"value": "150", "type": "td", "align": "right"},
+                                        ],
+                                    ],
+                                },
+                            },
+                            "id": "csv-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        csv_data = self.page.get_table_data_for_csv("csv-table-id")
+
+        # Verify headers come first
+        self.assertEqual(csv_data[0], ["Year", "Value"])
+        # Verify rows follow
+        self.assertEqual(csv_data[1], ["2020", "100"])
+        self.assertEqual(csv_data[2], ["2021", "150"])
+        # Verify only values are extracted (not type or align)
+        self.assertEqual(len(csv_data), 3)
+
+    def test_get_table_data_for_csv_raises_for_missing_table(self):
+        """Test get_table_data_for_csv raises ValueError for missing table."""
+        self.page.content = []
+        self.page.save_revision().publish()
+
+        with self.assertRaises(ValueError) as context:
+            self.page.get_table_data_for_csv("nonexistent-table-id")
+
+        self.assertIn("not found", str(context.exception))
+
+    def test_get_table_data_for_csv_raises_for_empty_table(self):
+        """Test get_table_data_for_csv raises ValueError for empty table."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Empty Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(title="Empty Table", headers=[], rows=[]),
+                            "id": "empty-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        with self.assertRaises(ValueError) as context:
+            self.page.get_table_data_for_csv("empty-table-id")
+
+        self.assertIn("has no data", str(context.exception))
+
+    def test_download_table_returns_csv(self):
+        """Test download_table returns a CSV response."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Download Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="Download Test Table",
+                                headers=[["Col1", "Col2"]],
+                                rows=[["A", "B"]],
+                            ),
+                            "id": "download-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        factory = RequestFactory()
+        request = factory.get("/fake-path/")
+        response = self.page.download_table(request, "download-table-id")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("attachment", response["Content-Disposition"])
+        self.assertIn("download-test-table.csv", response["Content-Disposition"].lower())
+
     def test_headline_figures_shown(self):
         """Test that the headline figures are shown in the template."""
         response = self.client.get(self.page_url)
@@ -850,6 +1037,9 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def test_cannot_be_deleted_if_ancestor_uses_headline_figures(self):
         """Test that the page cannot be deleted if an ancestor uses the headline figures."""
         self.client.force_login(self.user)
+        self.page.release_date = self.basic_page.release_date + timedelta(days=1)
+        self.page.next_release_date = self.page.release_date + timedelta(days=1)
+        self.page.save_revision().publish()
         topic = TopicPage.objects.ancestor_of(self.page).first()
         topic.headline_figures.extend(
             [

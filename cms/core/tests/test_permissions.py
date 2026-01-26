@@ -209,7 +209,7 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
 
         # Snippet permissions (app, model, permission types)
         snippet_permissions = [
-            ("core", "glossaryterm", WAGTAIL_PERMISSION_TYPES),
+            ("core", "definition", WAGTAIL_PERMISSION_TYPES),
             ("core", "contactdetails", WAGTAIL_PERMISSION_TYPES),
             ("navigation", "mainmenu", [*WAGTAIL_PERMISSION_TYPES, "publish"]),
             ("navigation", "footermenu", [*WAGTAIL_PERMISSION_TYPES, "publish"]),
