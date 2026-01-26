@@ -98,3 +98,18 @@ def register_core_log_actions(actions: LogActionRegistry) -> None:
 
             except (KeyError, AttributeError):
                 return "Downloaded chart CSV"
+
+    @actions.register_action("content.table_download")
+    class TableDownload(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for table CSV download actions."""
+
+        label = "Download table CSV"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            try:
+                table_id = log_entry.data.get("table_id", "unknown")
+                return f"Downloaded table CSV for table with ID {table_id}"
+
+            except (KeyError, AttributeError):
+                return "Downloaded table CSV"

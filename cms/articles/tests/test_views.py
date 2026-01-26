@@ -248,7 +248,8 @@ class RevisionChartDownloadViewTestCase(WagtailTestUtils, TestCase):
             call_args = mock_logger.info.call_args
 
             # Verify the log message
-            self.assertEqual(call_args[0][0], "content.chart_download")
+            self.assertEqual(call_args[0][0], "Audit event: %s")
+            self.assertEqual(call_args[0][1], "content.chart_download")
 
             # Verify extra data
             extra = call_args[1]["extra"]
@@ -514,6 +515,29 @@ class RevisionTableDownloadViewTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response["Content-Type"], "text/csv")
+
+    def test_download_audit_log_mirrors_to_stdout(self):
+        """Test that table download audit log entry is mirrored to stdout."""
+        with patch("cms.core.audit.audit_logger") as mock_logger:
+            response = self.client.get(self.get_download_url())
+
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+
+            # Verify audit logger was called
+            mock_logger.info.assert_called_once()
+            call_args = mock_logger.info.call_args
+
+            # Verify the log message
+            self.assertEqual(call_args[0][0], "Audit event: %s")
+            self.assertEqual(call_args[0][1], "content.table_download")
+
+            # Verify extra data
+            extra = call_args[1]["extra"]
+            self.assertEqual(extra["event"], "content.table_download")
+            self.assertEqual(extra["object_id"], self.article.pk)
+            self.assertEqual(extra["data"]["table_id"], "test-table-id")
+            self.assertEqual(extra["data"]["revision_id"], self.revision_id)
+            self.assertIn("timestamp", extra)
 
 
 class ChartAndTableDownloadTestCase(WagtailTestUtils, TestCase):
