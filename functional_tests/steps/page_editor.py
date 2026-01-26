@@ -12,6 +12,7 @@ from cms.themes.tests.factories import ThemeIndexPageFactory
 from functional_tests.step_helpers.utils import get_page_from_context
 
 RE_UNLOCKED = re.compile(r"Page '.*' is now unlocked\.")
+RE_CREATED = re.compile(r"Page '.*' created\.")
 
 
 @when("the user clicks the action button toggle")
@@ -119,10 +120,10 @@ def user_fills_required_topic_theme_page_content(context: Context) -> None:
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Test Summary")
 
 
-@then("the user can successfully publish the page")
-def the_user_can_successfully_publish_the_page(context: Context) -> None:
-    publish_page(context)
-    expect(context.page.get_by_text(f"Page '{context.page_title}' created and published")).to_be_visible()
+@then("the user can create the page")
+def the_user_can_successfully_save_the_page(context: Context) -> None:
+    context.page.get_by_role("button", name="Save draft").click()
+    expect(context.page.get_by_text(RE_CREATED)).to_be_visible()
 
 
 def publish_page(context: Context) -> None:
