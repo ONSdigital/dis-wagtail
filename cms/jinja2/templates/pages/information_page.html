@@ -51,24 +51,6 @@
     <div class="ons-grid">
         <div class="ons-grid__col ons-col-8@m">
             {% include_block page.content %}
-
-            <!-- {% if page.related_pages %}
-                {%- set related_content_aria_label = _('Related content') -%}
-                {%- set related_content_title = _('Related content') -%}
-
-                {# fmt:off #}
-                {{-
-                    onsRelatedContent({
-                        "ariaLabel": related_content_aria_label,
-                        "rows": [{
-                            "id": 'related-content',
-                            "title": related_content_title,
-                            "itemsList": page.related_pages
-                        }]
-                    })
-                -}}
-                {# fmt:on #}
-            {% endif %} -->
         </div>
     </div>
 {% endblock %}
