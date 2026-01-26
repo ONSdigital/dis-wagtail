@@ -7,8 +7,11 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from wagtail.admin.action_menu import PageLockedMenuItem
+from wagtail.models import Revision
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
+from wagtail.test.utils.timestamps import submittable_timestamp
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
+from wagtail.utils.timestamps import render_timestamp
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
@@ -148,6 +151,61 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         self.page.refresh_from_db()
         self.assertEqual(self.page.latest_revision.user_id, self.publishing_officer.id)
         self.assertNotEqual(self.page.latest_revision.pk, latest_revision.pk)
+
+    def test_before_edit_page__prevents_schedule_mechanism_when_in_bundle(self):
+        """Test that users cannot set individual page publishing schedule while in a bundle."""
+        self.client.force_login(self.publishing_admin)
+
+        self.assertIsNone(self.page.go_live_at)
+
+        go_live_at = timezone.now() + datetime.timedelta(weeks=3)
+        data = self.get_simple_post_data(self.page)
+        data["go_live_at"] = submittable_timestamp(go_live_at)
+        del data["action-workflow-action"]
+        del data["workflow-action-name"]
+        response = self.client.post(self.edit_url, data, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cannot set individual an publishing schedule while the page is in a bundle.")
+
+        self.assertIsNone(response.context["page"].go_live_at)
+        self.assertFalse(
+            Revision.objects.for_instance(self.page)
+            .filter(content__go_live_at__startswith=str(go_live_at.date()))
+            .exists()
+        )
+
+    def test_before_edit_page__doesnt_prevent_scheduling_when_not_in_bundle(self):
+        # un-bundle
+        self.bundle.bundled_pages.all().delete()
+        self.client.force_login(self.publishing_admin)
+
+        go_live_at = timezone.now() + datetime.timedelta(weeks=3)
+        self.assertFalse(
+            Revision.objects.for_instance(self.page)
+            .filter(content__go_live_at__startswith=str(go_live_at.date()))
+            .exists()
+        )
+
+        data = self.get_simple_post_data(self.page)
+        data["go_live_at"] = submittable_timestamp(go_live_at)
+        del data["action-workflow-action"]
+        del data["workflow-action-name"]
+
+        response = self.client.post(self.edit_url, data, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Cannot set individual an publishing schedule while the page is in a bundle.")
+
+        # Check that revision with go_live_at in its content JSON exists
+        self.assertTrue(
+            Revision.objects.for_instance(self.page)
+            .filter(content__go_live_at__startswith=str(go_live_at.date()))
+            .exists()
+        )
+
+        self.assertContains(response, render_timestamp(go_live_at))
+        self.assertEqual(response.context["page"].go_live_at.date(), go_live_at.date())
 
     def test_workflow_task_can_unlock(self):
         review_task = GroupReviewTask()
