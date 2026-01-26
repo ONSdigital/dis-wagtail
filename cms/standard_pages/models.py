@@ -88,7 +88,6 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
         """
         return self._get_formatted_child_pages(request)
 
-
     def _get_formatted_child_pages(self, request: HttpRequest) -> list[dict[str, dict[str, str] | Any]]:
         """Format child pages if there are no featured items."""
         formatted_items = []
