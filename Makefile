@@ -1,5 +1,11 @@
 DESIGN_SYSTEM_VERSION=`cat .design-system-version`
 
+# Load .env file if it exists
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+endif
+
 .DEFAULT_GOAL := all
 
 .EXPORT_ALL_VARIABLES:
