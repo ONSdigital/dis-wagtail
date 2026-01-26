@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlencode
 
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.html import format_html
 from wagtail.admin.panels import FieldPanel, HelpPanel, MultipleChooserPanel
 
@@ -69,7 +70,13 @@ class BundleNotePanel(HelpPanel):
                     return format_html(html, link, bundle.get_status_display())
                 return format_html(html, bundle.name, bundle.get_status_display())
 
-            if can_manage and instance.pk:
+            if (go_live_at := getattr(instance, "go_live_at", None)) and go_live_at > timezone.now():
+                return format_html(
+                    "<p>{}</p>",
+                    "This page is not part of any bundles. It cannot be bundled because it has a page-level schedule.",
+                )
+
+            if instance.pk and can_manage:
                 return format_html(
                     "<p>This page is not part of any bundles. "
                     '<a href="{}" class="button button-small button-secondary">Add to Bundle</a></p>',
