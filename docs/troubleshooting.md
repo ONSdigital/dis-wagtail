@@ -47,13 +47,16 @@ This pattern has been applied to:
 ## "Too many open files" Error on macOS
 
 ### Problem
+
 When running tests or development servers on macOS, you may encounter a "Too many open files" error. This is due to the default limit on the number of file descriptors that can be opened simultaneously.
 
 ### Symptoms
+
 - Errors during test execution or server startup
 - Error message: "OSError: [Errno 24] Too many open files"
 
 ### Solution
+
 Increase the file descriptor limit on your macOS system by following these steps:
 
 1. Open a terminal window.
@@ -62,7 +65,7 @@ Increase the file descriptor limit on your macOS system by following these steps
     ulimit -n
     ```
 3. Increase the limit by adding the following lines to your shell configuration file (e.g.,
-    `~/.bash_profile`, `~/.zshrc`):
+   `~/.bash_profile`, `~/.zshrc`):
     ```bash
     ulimit -n 65536
     ```
@@ -84,5 +87,6 @@ sudo launchctl limit maxfiles 65536 200000
 This sets both the soft and hard limits for file descriptors using `launchctl`.
 
 ### When to Apply This Fix
+
 - When `ulimit -n` returns a low number (e.g., 256 or 1024)
 - When encountering "Too many open files" errors during development or testing on macOS
