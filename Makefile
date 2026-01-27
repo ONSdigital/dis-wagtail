@@ -44,7 +44,7 @@ format-frontend:  ## Format front-end files (CSS, JS, YAML, MD)
 
 .PHONY: npm-build
 npm-build: ## Build the front-end assets
-	. $$HOME/.nvm/nvm.sh; nvm use; npm run build
+	@if [ -f "$$HOME/.nvm/nvm.sh" ]; then . $$HOME/.nvm/nvm.sh && nvm use; fi && npm run build
 
 .PHONY: lint
 lint: lint-py lint-html lint-frontend lint-migrations ## Run all linters (python, html, front-end, migrations)
