@@ -79,6 +79,10 @@ test:  ## Run the tests and check coverage.
 mypy:  ## Run mypy.
 	poetry run mypy cms/ .github/*.py
 
+.PHONY: pa11y
+pa11y:  ## Run pa11y accessibility tests against the sitemap
+	pa11y-ci --sitemap http://localhost:$(WEB_PORT)/sitemap.xml --config ./pa11y.config.js
+
 .PHONY: install
 install:  ## Install the dependencies excluding dev.
 	npm install --production
