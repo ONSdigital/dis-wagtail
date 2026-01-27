@@ -25,9 +25,9 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class InformationPage(
+class InformationPage(  # type: ignore[django-manager-missing]
     CoreCSVDownloadMixin, BundledPageMixin, NoTrailingSlashRoutablePageMixin, GenericTaxonomyMixin, BasePage
-):  # type: ignore[django-manager-missing]
+):
     """A generic information page model."""
 
     base_form_class = PageWithEquationsAdminForm

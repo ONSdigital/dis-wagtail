@@ -1,5 +1,6 @@
 import json
 import logging
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.core.paginator import EmptyPage, Paginator
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
     from django.core.paginator import Page
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
+    from wagtail.blocks.stream_block import StreamChild
 
 __all__ = [
     "CSVDownloadMixin",
@@ -140,9 +142,9 @@ class CoreCSVDownloadMixin:
         - The page to inherit from RoutablePageMixin (or a subclass like NoTrailingSlashRoutablePageMixin)
     """
 
-    def _iter_content_blocks(self):
+    def _iter_content_blocks(self) -> Iterator[StreamChild]:
         """Yields content blocks from the page. Override in subclasses for different structures."""
-        yield from self.content or []  # type: ignore[attr-defined]
+        yield from getattr(self, "content", None) or []
 
     def _get_block_in_types_by_id(self, block_types: frozenset[str], block_id: str) -> dict[str, Any]:
         """Find a block by its unique block ID for specified block types.
@@ -246,9 +248,9 @@ class CSVDownloadMixin(CoreCSVDownloadMixin):
         - The page to inherit from RoutablePageMixin (or a subclass like NoTrailingSlashRoutablePageMixin)
     """
 
-    def _iter_content_blocks(self):
+    def _iter_content_blocks(self) -> Iterator[StreamChild]:
         """Yields content blocks from within sections."""
-        for section_block in self.content or []:  # type: ignore[attr-defined]
+        for section_block in getattr(self, "content", None) or []:
             if section_block.block_type != "section":
                 continue
             yield from section_block.value.get("content", [])
