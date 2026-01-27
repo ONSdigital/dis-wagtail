@@ -266,6 +266,10 @@ else:
         ),
     }
 
+    # Allow overriding the database port for local development with multiple instances
+    if "DB_PORT" in env:
+        DATABASES["default"]["PORT"] = env["DB_PORT"]
+
     if "READ_REPLICA_DATABASE_URL" in env:
         DATABASES["read_replica"] = dj_database_url.config(
             env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age or 0
@@ -273,11 +277,6 @@ else:
 
 if "read_replica" not in DATABASES:
     DATABASES["read_replica"] = deepcopy(DATABASES["default"])
-
-# Allow overriding the database port for local development with multiple instances
-if "DB_PORT" in env:
-    DATABASES["default"]["PORT"] = env["DB_PORT"]
-    DATABASES["read_replica"]["PORT"] = env["DB_PORT"]
 
 DATABASE_ROUTERS = [
     "cms.core.db_router.ExternalEnvRouter",
