@@ -12,7 +12,6 @@ services:
       - path: .env
         required: false
     environment:
-      HEROKU_APP_NAME: local # this stops Birdbath's HerokuNotProductionCheck complaining
       DATABASE_URL: postgres://ons:ons@db:${DB_PORT:-5432}/ons # pragma: allowlist secret
       DJANGO_SETTINGS_MODULE: cms.settings.dev
       ENABLE_DJANGO_DEFENDER: 'false'
