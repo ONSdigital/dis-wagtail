@@ -1,3 +1,4 @@
+import os
 import re
 from typing import TYPE_CHECKING, ClassVar
 from urllib.parse import urlparse
@@ -18,7 +19,37 @@ class ImageBlock(blocks.StructBlock):
     """Image block with caption."""
 
     image = ImageChooserBlock()
-    caption = blocks.CharBlock(required=False)
+    figure_title = blocks.CharBlock(required=False)
+    figure_subtitle = blocks.CharBlock(required=False)
+    supporting_text = blocks.TextBlock(required=False, label="Supporting text (source)")
+    notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
+    download = blocks.BooleanBlock(required=False, label="Show download link for image")
+
+    def get_context(self, value: StreamValue, parent_context: dict | None = None) -> dict:
+        context: dict = super().get_context(value, parent_context)
+
+        # Guard: image may be missing at render time if the asset was
+        # deleted after publishing (accidental or otherwise). Return early
+        # to avoid calling get_rendition() on a None value.
+        image = value.get("image")
+        if not image:
+            return context
+
+        small = image.get_rendition("width-1024")
+        large = image.get_rendition("width-2048")
+
+        context["small_src"] = small.url
+        context["large_src"] = large.url
+
+        # Get file extension of the rendition being downloaded (uppercase, without the dot)
+        _, ext = os.path.splitext(large.file.name)
+        file_type = ext.lstrip(".").upper() or "IMG"
+        context["file_type"] = file_type
+
+        size_bytes = getattr(large.file, "size", None)
+        context["file_size_human"] = filesizeformat(size_bytes) if size_bytes is not None else None
+
+        return context
 
     class Meta:
         icon = "image"
@@ -69,7 +100,7 @@ class DocumentBlock(blocks.StructBlock):
 
 
 class DocumentsBlock(blocks.StreamBlock):
-    """A documents 'list' StramBlock."""
+    """A documents 'list' StreamBlock."""
 
     document = DocumentBlock()
 

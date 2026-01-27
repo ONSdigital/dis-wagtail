@@ -83,18 +83,9 @@ def ready(request: HttpRequest) -> HttpResponse:
     """Readiness probe endpoint.
 
     If this fails, requests will not be routed to the container.
-    """
-    return HttpResponse(status=200)
 
-
-@never_cache
-@require_GET
-def liveness(request: HttpRequest) -> HttpResponse:
-    """Liveness probe endpoint.
-
-    If this fails, the container will be restarted.
-
-    Unlike the health endpoint, this probe returns at the first sign of issue.
+    Readiness should reflect whether this instance can currently serve traffic,
+    including access to required dependencies.
     """
     for connection in connections.all():
         try:
@@ -105,7 +96,10 @@ def liveness(request: HttpRequest) -> HttpResponse:
             if result != (1,):
                 return HttpResponseServerError(f"Database {connection.alias} returned unexpected result")
         except Exception:  # pylint: disable=broad-exception-caught
-            logger.exception("Database %s reported an error", connection.alias)
+            logger.exception(
+                "Database reported an error",
+                extra={"connection_alias": connection.alias},
+            )
             return HttpResponseServerError(f"Database {connection.alias} reported an error")
 
     if isinstance(caches["default"], RedisCache):
@@ -115,6 +109,19 @@ def liveness(request: HttpRequest) -> HttpResponse:
             logger.exception("Unable to ping Redis")
             return HttpResponseServerError("Unable to ping Redis")
 
+    return HttpResponse(status=200)
+
+
+@never_cache
+@require_GET
+def liveness(request: HttpRequest) -> HttpResponse:
+    """Liveness probe endpoint.
+
+    If this fails, the container will be restarted.
+
+    This should be shallow and only indicate whether the process is alive and
+    responsive; dependency issues (e.g. DB/Redis) belong in readiness.
+    """
     return HttpResponse(status=200)
 
 
