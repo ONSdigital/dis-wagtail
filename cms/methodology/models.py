@@ -77,8 +77,8 @@ class MethodologyRelatedPage(Orderable):
 
 class MethodologyPage(  # type: ignore[django-manager-missing]
     CSVDownloadMixin,
-    NoTrailingSlashRoutablePageMixin,
     BundledPageMixin,
+    NoTrailingSlashRoutablePageMixin,
     GenericTaxonomyMixin,
     BasePage,
 ):
