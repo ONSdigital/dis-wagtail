@@ -1,5 +1,8 @@
+from collections.abc import Generator
+from contextlib import contextmanager
 from typing import Any
 
+from asgiref.local import Local
 from django.apps import apps
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
@@ -11,13 +14,34 @@ from cms.images.models import Rendition
 
 READ_REPLICA_DB_ALIAS = "read_replica"
 
+_force_write_db_for_context = Local()
 
-def force_write_db[T: Model](queryset: QuerySet[T]) -> QuerySet[T]:
+
+def force_write_db_for_queryset[T: Model](queryset: QuerySet[T]) -> QuerySet[T]:
     """Force the given queryset to use the write DB, even for read queries.
 
     This is a helper function to make the intent clearer.
     """
     return queryset.using(DEFAULT_DB_ALIAS)
+
+
+@contextmanager
+def force_write_db() -> Generator[None]:
+    """Force a given context to use the write DB, even for read queries.
+
+    Note that this only applies to queries executed within the context, rather than
+    querysets created there.
+    """
+    previous_value = getattr(_force_write_db_for_context, "value", None)
+
+    try:
+        _force_write_db_for_context.value = True
+        yield
+    finally:
+        if previous_value is None:
+            del _force_write_db_for_context.value
+        else:
+            _force_write_db_for_context.value = previous_value
 
 
 class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
@@ -45,6 +69,9 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
 
     def db_for_read(self, model: type[Model], **hints: Any) -> str | None:
         """Determine which database should be used for read queries."""
+        if getattr(_force_write_db_for_context, "value", False):
+            return DEFAULT_DB_ALIAS
+
         # Models used in a GenericRelation must use the write connection.
         # @see https://code.djangoproject.com/ticket/36389
         if not settings.IS_EXTERNAL_ENV and model in self.generic_target_models:

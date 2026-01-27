@@ -8,7 +8,7 @@ from modelsearch.signal_handlers import post_save_signal_handler
 from wagtail.models import Page, Revision
 from wagtail_factories import ImageFactory
 
-from cms.core.db_router import READ_REPLICA_DB_ALIAS, ExternalEnvRouter, force_write_db
+from cms.core.db_router import READ_REPLICA_DB_ALIAS, ExternalEnvRouter, force_write_db, force_write_db_for_queryset
 from cms.core.tests import TransactionTestCase
 from cms.home.models import HomePage
 from cms.images.models import CustomImage, Rendition
@@ -139,19 +139,32 @@ class DBRouterTestCase(TransactionTestCase):
         with override_settings(IS_EXTERNAL_ENV=True):
             self.assertEqual(router.db_for_read(Revision), READ_REPLICA_DB_ALIAS)
 
-    def test_force_write_db(self):
+    def test_force_write_db_for_queryset(self):
         """Check that the force_write_db util works as expected."""
         qs = User.objects.all()
 
         self.assertEqual(qs.db, READ_REPLICA_DB_ALIAS)
-        self.assertEqual(force_write_db(qs).db, DEFAULT_DB_ALIAS)
+        self.assertEqual(force_write_db_for_queryset(qs).db, DEFAULT_DB_ALIAS)
 
         with self.assertNumQueriesConnection():
             # Calling the method doesn't perform any queries
-            force_write_db(qs)
+            force_write_db_for_queryset(qs)
 
         with self.assertNumQueriesConnection(default=1):
-            list(force_write_db(qs))
+            list(force_write_db_for_queryset(qs))
+
+    def test_force_write_db(self):
+        self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
+
+        with force_write_db():
+            self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
+
+            with force_write_db():
+                self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
+
+            self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
+
+        self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
 
 
 @override_settings(IS_EXTERNAL_ENV=True)

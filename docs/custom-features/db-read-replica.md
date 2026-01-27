@@ -15,25 +15,24 @@ Generally, a developer shouldn't need to worry about this configuration, or expl
 
 > [!WARNING]
 > There is a small delay between writes to the primary instance and when those writes are visible on the replicas.
-
 This means that immediately (within the same request) attempting to read data from the replicas after writing it may return stale data, leading to race conditions and intermittent bugs.
 
-This can be avoided by ensuring that any read-after-write operations are performed on the primary write instance. To achieve this, you can use the `force_write_db` function:
+This can be avoided by ensuring that any read-after-write operations are performed on the primary write instance. To achieve this, you can use the `force_write_db_for_queryset` function on a given queryset:
 
 ```python
-from cms.core.db_router import force_write_db
+from cms.core.db_router import force_write_db_for_queryset
 
 obj = MyModel.objects.create(field='value')
 
 # Read data from default (write) DB alias to avoid replication lag
-obj = force_write_db(MyModel.objects.all()).get(id=obj.id)
+obj = force_write_db_for_queryset(MyModel.objects.all()).get(id=obj.id)
 ```
 
 Note that this work-around is not necessary when **both** queries happen within the same transaction, since transactions are always handled using the write instance:
 
 ```python
 from django.db import transaction
-from cms.core.db_router import force_write_db
+from cms.core.db_router import force_write_db_for_queryset
 
 
 with transaction.atomic():
@@ -42,11 +41,32 @@ with transaction.atomic():
     # This reads from the default (write) DB
     obj = MyModel.objects.get(id=obj.id)
 
-    # This also reads from the default DB, but the `force_write_db` is unnecessary.
-    obj = force_write_db(MyModel.objects.all()).get(id=obj.id)
+    # This also reads from the default DB, but the `force_write_db_for_queryset` is unnecessary.
+    obj = force_write_db_for_queryset(MyModel.objects.all()).get(id=obj.id)
 ```
 
-This is only true for the _same_ transaction. If they're executed within different transactions, or only 1 is within a transaction, `force_write_db` is necessary.
+This is only true for the _same_ transaction. If they're executed within different transactions, or only 1 is within a transaction, `force_write_db_for_queryset` is necessary.
+
+Alternatively, to require an entire block or function to use the write database, use `force_write_db`:
+
+```python
+from cms.core.db_router import force_write_db
+
+with force_write_db():
+    # Read data from default (write) DB alias
+    obj = MyModel.objects.get(id=obj.id)
+
+# It can also be used as a decorator:
+
+@force_write_db()
+def get_obj():
+    # Read data from default (write) DB alias
+    MyModel.objects.get(id=obj.id)
+```
+
+`force_write_db` supports being nested - only once the outer-most block has exited will the default behaviour be restored.
+
+`force_write_db` is preferred over starting unnecessary transactions, as transactions both incur additional overhead, and change the behaviour of the system unnecessarily.
 
 ### Use of combined read-write methods
 

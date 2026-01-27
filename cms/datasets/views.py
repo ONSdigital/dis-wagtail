@@ -22,7 +22,7 @@ from wagtail.admin.views.generic.chooser import (
 )
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
-from cms.core.db_router import force_write_db
+from cms.core.db_router import force_write_db_for_queryset
 from cms.datasets.models import Dataset, ONSDataset
 from cms.datasets.permissions import user_can_access_unpublished_datasets
 from cms.datasets.utils import deconstruct_chooser_dataset_compound_id, get_dataset_for_published_state
@@ -296,7 +296,7 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
         if datasets_to_create or datasets_to_update:
             # Because newly-created instances may not have synced to the DB replicas yet,
             # force use of the write instance.
-            return force_write_db(Dataset.objects.all()).filter(existing_query)
+            return force_write_db_for_queryset(Dataset.objects.all()).filter(existing_query)
 
         # Since no instances were created or updated, it's safe to use the default database handling.
         return Dataset.objects.all()
