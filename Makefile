@@ -1,10 +1,13 @@
 DESIGN_SYSTEM_VERSION=`cat .design-system-version`
 
+
 .DEFAULT_GOAL := all
 
 .EXPORT_ALL_VARIABLES:
 # Default to development config if DJANGO_SETTINGS_MODULE is not set
 DJANGO_SETTINGS_MODULE ?= cms.settings.dev
+# Default web port for local development
+WEB_PORT ?= 8000
 
 .PHONY: all
 all: ## Show the available make targets.
@@ -41,7 +44,7 @@ format-frontend:  ## Format front-end files (CSS, JS, YAML, MD)
 
 .PHONY: npm-build
 npm-build: ## Build the front-end assets
-	. $$HOME/.nvm/nvm.sh; nvm use; npm run build
+	@if [ -f "$$HOME/.nvm/nvm.sh" ]; then . $$HOME/.nvm/nvm.sh && nvm use; fi && npm run build
 
 .PHONY: lint
 lint: lint-py lint-html lint-frontend lint-migrations ## Run all linters (python, html, front-end, migrations)
@@ -75,6 +78,10 @@ test:  ## Run the tests and check coverage.
 .PHONY: mypy
 mypy:  ## Run mypy.
 	poetry run mypy cms/ .github/*.py
+
+.PHONY: pa11y
+pa11y:  ## Run pa11y accessibility tests against the sitemap
+	pa11y-ci --sitemap http://localhost:$(WEB_PORT)/sitemap.xml --config ./pa11y.config.js
 
 .PHONY: install
 install:  ## Install the dependencies excluding dev.
@@ -169,12 +176,12 @@ createsuperuser: ## Create a super user with a default username and password
 
 .PHONY: runserver
 runserver: ## Run the Django application locally
-	poetry run python ./manage.py runserver 0:8000
+	poetry run python ./manage.py runserver 0:$(WEB_PORT)
 
 .PHONY: dev-init
 dev-init: load-design-system-templates npm-build collectstatic compilemessages makemigrations migrate load-topics createsuperuser ## Run the pre-run setup scripts
-	## Set all Wagtail sites to our development port of 8000
-	poetry run python manage.py shell -c "from wagtail.models import Site; Site.objects.all().update(port=8000)"
+	## Set all Wagtail sites to our development port
+	poetry run python manage.py shell -c "from wagtail.models import Site; Site.objects.all().update(port=$(WEB_PORT))"
 
 .PHONY: functional-tests-up
 functional-tests-up:  ## Start the functional tests docker compose dependencies
