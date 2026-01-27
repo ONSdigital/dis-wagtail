@@ -11,6 +11,7 @@ from django.utils import timezone
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.utils import publish_bundle
+from cms.core.db_router import force_write_db
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ class Command(BaseCommand):
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("Publish failed", extra={"bundle_id": bundle.pk, "event": "publish_failed"})
 
+    @force_write_db()
     def handle(self, *args: Any, **options: Any) -> None:
         dry_run = False
         if options["dry_run"]:
