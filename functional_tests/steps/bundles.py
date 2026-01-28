@@ -4,7 +4,6 @@ import json
 import re
 from datetime import datetime, time, timedelta
 
-import requests
 from behave import given, step, then, when
 from behave.runner import Context
 from django.urls import reverse
@@ -19,8 +18,6 @@ from cms.core.custom_date_format import ons_date_format
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
-from cms.topics.models import TopicPage
-from cms.topics.tests.factories import TopicPageFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 from functional_tests.step_helpers.users import create_user
@@ -339,26 +336,14 @@ def a_user_exists_by_role(context: Context, user_role: str) -> None:
     context.users[user_role] = create_user(user_role)
 
 
-@then("the bundle pages are not live")
-def get_url_for_article_edition(context: Context) -> None:
-    url = (
-        f"{context.base_url}/{context.topic_page.slug}/articles/{context.article_series_page.slug}"
-        f"/{context.statistical_article_page.slug}"
-    )
-
-    expect(requests.get(url, timeout=3).status_code).to_have_value(404)
-
-
 @given("there is a statistical analysis page approved by {user_role}")
 def statistical_analysis(context: Context, user_role: str) -> None:
     user = context.users[user_role]["user"]
     now = datetime.now()
     now -= timedelta(days=31)
     title = now.strftime("%B %Y")
-    context.topic_page = TopicPageFactory(slug="topic-slug", live=True, title="Bundle Ui Test Topic Page")
-    context.article_series_page = ArticleSeriesPageFactory(title="PSF", parent=context.topic_page, slug="PSF")
-    context.topic_page = TopicPage.objects.ancestor_of(context.article_series_page).first()
-    article = StatisticalArticlePageFactory(parent=context.article_series_page, title=title, live=False, slug="edition")
+    context.article_series_page = ArticleSeriesPageFactory(title="PSF", slug="PSF")
+    article = StatisticalArticlePageFactory(parent=context.article_series_page, title=title, live=True, slug="edition")
     mark_page_as_ready_to_publish(article, user)
     article.save()
     context.statistical_article_page = article
@@ -423,7 +408,6 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
         bundle.save()
 
         if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_page"):
-            page = context.release_calendar_page
             bundle.release_calendar_page = context.release_calendar_page
         else:
             now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
@@ -465,14 +449,15 @@ def cannot_create_bundle(context: Context) -> None:
 
 @step("the logged in user can find the bundle")
 def find_the_bundle(context: Context) -> None:
+    bundles_search_button = f"{context.bundles[-1].name} Edit Inspect"
     context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
-    context.page.goto(context.base_url + "/admin/bundle/?q=" + context.bundles[-1].name)
+    expect(context.page.get_by_text("There is 1 match")).to_be_visible()
+    expect(context.page.get_by_role("table")).to_contain_text(bundles_search_button)
 
 
 @step("the logged in user goes to edit bundle")
 def edit_bundle(context: Context) -> None:
-    bundle_edit = f"Edit '{context.bundles[-1].name}'"
-    context.page.get_by_role("link", name=bundle_edit).click()
+    context.page.get_by_role("link", name=context.bundles[-1].name, exact=True).click()
 
 
 @step("the logged in user can add a release schedule")

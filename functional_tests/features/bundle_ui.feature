@@ -1,10 +1,5 @@
 Feature: UI Bundle Happy Paths
     """
-    User role Bundle Life Cycle Happy Path 1 bundle Authorisation summary
-    Each scenario
-    uses the bundle page
-    uses search to
-
 
                                  | Bundles Search | Create | Edit | Preview | Approve |
         Publishing Admin         | Can            | Can    | Can  | Can     | Can     !
