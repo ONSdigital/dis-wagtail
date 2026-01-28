@@ -79,7 +79,6 @@ class SectionBlock(StructBlock):
 class CoreSectionContentBlock(StreamBlock):
     """The core section content block definition."""
 
-    heading = HeadingBlock()
     rich_text = RichTextBlock()
     quote = QuoteBlock()
     warning_panel = WarningPanelBlock()
