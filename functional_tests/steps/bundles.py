@@ -447,12 +447,21 @@ def cannot_create_bundle(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Add bundle")).not_to_be_visible()
 
 
-@step("the logged in user can find the bundle")
-def find_the_bundle(context: Context) -> None:
+@step("the {user_role} can find the bundle")
+def find_the_bundle(context: Context, user_role: str) -> None:
     bundles_search_button = f"{context.bundles[-1].name} Edit Inspect"
+    if user_role == "Viewer":
+        bundles_search_button = f"{context.bundles[-1].name} Inspect"
+
     context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
     expect(context.page.get_by_text("There is 1 match")).to_be_visible()
     expect(context.page.get_by_role("table")).to_contain_text(bundles_search_button)
+
+
+@step("the logged in user cannot find the bundle")
+def not_find_the_bundle(context: Context) -> None:
+    context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
+    expect(context.page.get_by_text("No bundles match your query.")).to_be_visible()
 
 
 @step("the logged in user goes to edit bundle")
@@ -553,14 +562,6 @@ def cannot_approve_bundle_edge_case(context: Context) -> None:
     expect(context.page.get_by_role("status")).to_contain_text(
         "The bundle could not be saved due to errors. Cannot approve the bundle without any pages or datasets"
     )
-
-
-@step("the logged in user cannot preview a bundle")
-def cannot_preview_a_specified_bundle(context: Context) -> None:
-    bundle_name = f"Bundle '{context.bundles[-1].name}'"
-    context.page.get_by_role("textbox", name="Search term").fill(bundle_name)
-    context.page.goto(context.base_url + "/admin/bundle/?q=" + bundle_name)
-    expect(context.page.get_by_role("paragraph")).to_contain_text("No bundles match your query.")
 
 
 @step("the logged in user gets a success message")

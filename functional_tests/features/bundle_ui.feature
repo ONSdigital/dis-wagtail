@@ -98,7 +98,7 @@ Scenario Outline: A User can edit a bundle
     And there are <number_of_bundles> bundles with <bundle_details>
     When the <role> logs in
     Then the logged in user goes to the bundle page
-    And the logged in user can find the bundle
+    And the <role> can find the bundle
     And the logged in user goes to edit bundle
     And the logged in user can add a release schedule
     And the logged in user can add pages
@@ -114,7 +114,6 @@ Scenario Outline: A User can edit a bundle
        | 1                 | Publishing Officer         | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
        | 2                 | Publishing Officer         | Publishing Officer  | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
 
-
 #---- Bundle Preview UI Tests  -----
 
 Scenario Outline: A User can preview a bundle
@@ -127,7 +126,7 @@ Scenario Outline: A User can preview a bundle
     And there are <number_of_bundles> bundles with <bundle_details>
     When the <role> logs in
     Then the logged in user goes to the bundle page
-    And the logged in user can find the bundle
+    And the <role> can find the bundle
     And  the <role> can preview bundle
 
   Examples: bundles
@@ -150,8 +149,7 @@ Scenario Outline: A User cannot preview a bundle due to not being a member of an
     And there are <number_of_bundles> bundles with <bundle_details>
     When the <role> logs in
     Then the logged in user goes to the bundle page
-    And the logged in user can find the bundle
-    And the logged in user cannot preview a bundle
+    And the logged in user cannot find the bundle
 
  Examples: bundles
      | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                       |
@@ -170,7 +168,7 @@ Scenario Outline: A user can approve a bundle
     And there are <number_of_bundles> bundles with <bundle_details>
     When the <role> logs in
     Then the logged in user goes to the bundle page
-    And the logged in user can find the bundle
+    And the <role> can find the bundle
     And the logged in user can approve a bundle
 
     Examples: bundles
@@ -190,7 +188,7 @@ Scenario Outline: A user cannot approve a bundle due no bundle pages in bundle
     And there are <number_of_bundles> bundles with <bundle_details>
     When the <role> logs in
     Then the logged in user goes to the bundle page
-    And the logged in user can find the bundle
+    And the <role> can find the bundle
     And the logged in user cannot approve a bundle due to lack of pages
 
     Examples: bundles
