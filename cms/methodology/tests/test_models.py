@@ -331,3 +331,44 @@ class MethodologyPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
 
         with self.assertRaises(Http404):
             self.page.download_chart(request, "nonexistent-chart-id")
+
+    def test_download_chart_endpoint_via_url(self):
+        """Test download_chart endpoint is accessible via URL."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "URL Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "URL Test Chart",
+                                "table": TableDataFactory(
+                                    table_data=[
+                                        ["X", "Y"],
+                                        ["1", "2"],
+                                    ]
+                                ),
+                            },
+                            "id": "url-test-chart-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        response = self.client.get(f"{self.page.url}/download-chart/url-test-chart-id")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+
+    def test_download_chart_endpoint_returns_404_for_nonexistent_chart(self):
+        """Test download_chart endpoint returns 404 when chart not found."""
+        self.page.content = []
+        self.page.save_revision().publish()
+
+        response = self.client.get(f"{self.page.url}/download-chart/nonexistent-id")
+
+        self.assertEqual(response.status_code, 404)
