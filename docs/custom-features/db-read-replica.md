@@ -11,15 +11,18 @@ Generally, a developer shouldn't need to worry about this configuration, or expl
 
 ## Forcing the write database
 
-In some situations, it may be necessary to force the write database instance be used for all database queries - even reads. To achieve this, you can use the `force_write_db_for_queryset` function on a given queryset:
+In some situations, it may be necessary to force the write database instance be used for all database queries - even reads. To achieve this, you can use the `force_write_db_for` function on a given queryset:
 
 ```python
-from cms.core.db_router import force_write_db_for_queryset
+from cms.core.db_router import force_write_db_for
 
 obj = MyModel.objects.create(field='value')
 
 # Read data from default (write) DB alias to avoid replication lag
-obj = force_write_db_for_queryset(MyModel.objects.all()).get(id=obj.id)
+obj = force_write_db_for(MyModel.objects.all()).get(id=obj.id)
+
+# Also supports being provided a Manager rather than QuerySet
+obj = force_write_db_for(MyModel.objects).get(id=obj.id)
 ```
 
 Alternatively, to require an entire block or function to use the write database, use `force_write_db`:
@@ -65,7 +68,7 @@ This can be avoided by ensuring that any read-after-write operations are perform
 
 ```python
 from django.db import transaction
-from cms.core.db_router import force_write_db_for_queryset
+from cms.core.db_router import force_write_db_for
 
 
 with transaction.atomic():
@@ -74,11 +77,11 @@ with transaction.atomic():
     # This reads from the default (write) DB
     obj = MyModel.objects.get(id=obj.id)
 
-    # This also reads from the default DB, but the `force_write_db_for_queryset` is unnecessary.
-    obj = force_write_db_for_queryset(MyModel.objects.all()).get(id=obj.id)
+    # This also reads from the default DB, but the `force_write_db_for` is unnecessary.
+    obj = force_write_db_for(MyModel.objects.all()).get(id=obj.id)
 ```
 
-This is only true for the _same_ transaction. If they're executed within different transactions, or only 1 is within a transaction, `force_write_db_for_queryset` is necessary.
+This is only true for the _same_ transaction. If they're executed within different transactions, or only 1 is within a transaction, `force_write_db_for` is necessary.
 
 ### Use of combined read-write methods
 

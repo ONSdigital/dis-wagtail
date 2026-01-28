@@ -701,7 +701,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         # second call (with `.using`) returns the final queryset after bulk_create
         mock_final_queryset = Mock()
         mock_dataset.objects.filter.return_value = []
-        mock_dataset.objects.all.return_value.using.return_value.filter.return_value = mock_final_queryset
+        mock_dataset.objects.using.return_value.filter.return_value = mock_final_queryset
         mock_dataset.objects.bulk_create.return_value = None
 
         request = self.factory.get("/chooser/")
@@ -718,9 +718,9 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         # Verify Datasets were created
         mock_dataset.objects.bulk_create.assert_called_once()
         # Verify using(DEFAULT_DB_ALIAS) was called for final queryset
-        mock_dataset.objects.all.return_value.using.assert_called_once_with(DEFAULT_DB_ALIAS)
+        mock_dataset.objects.using.assert_called_once_with(DEFAULT_DB_ALIAS)
         # Verify the results were fetched
-        mock_dataset.objects.all.return_value.using.return_value.filter.assert_called_once()
+        mock_dataset.objects.using.return_value.filter.assert_called_once()
         self.assertEqual(result, mock_final_queryset)
 
     @patch("cms.datasets.views.user_can_access_unpublished_datasets")
@@ -776,7 +776,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         # second call (with `.using`) returns the final queryset after bulk_create
         mock_final_queryset = Mock()
         mock_dataset.objects.filter.return_value = []
-        mock_dataset.objects.all.return_value.using.return_value.filter.return_value = mock_final_queryset
+        mock_dataset.objects.using.return_value.filter.return_value = mock_final_queryset
         mock_dataset.objects.bulk_create.return_value = None
 
         request = self.factory.get("/chooser/")
@@ -891,7 +891,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         mock_using = Mock()
         mock_using.filter.return_value = mock_final_queryset
         mock_dataset.objects.filter.side_effect = [[existing_dataset]]
-        mock_dataset.objects.all.return_value.using.return_value = mock_using
+        mock_dataset.objects.using.return_value = mock_using
         mock_dataset.objects.bulk_create.return_value = None
         mock_dataset.objects.bulk_update.return_value = None
 
@@ -989,7 +989,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         mock_using = Mock()
         mock_using.filter.return_value = mock_final_queryset
         mock_dataset.objects.filter.side_effect = [[existing_dataset]]
-        mock_dataset.objects.all.return_value.using.return_value = mock_using
+        mock_dataset.objects.using.return_value = mock_using
         mock_dataset.objects.bulk_create.return_value = None
         mock_dataset.objects.bulk_update.return_value = None
 
@@ -1054,7 +1054,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         mock_using = Mock()
         mock_using.filter.return_value = mock_final_queryset
         mock_dataset.objects.filter.side_effect = [[existing_dataset_1, existing_dataset_2]]
-        mock_dataset.objects.all.return_value.using.return_value = mock_using
+        mock_dataset.objects.using.return_value = mock_using
         mock_dataset.objects.bulk_create.return_value = None
         mock_dataset.objects.bulk_update.return_value = None
 
