@@ -13,6 +13,7 @@ from functional_tests.step_helpers.utils import get_page_from_context
 
 RE_UNLOCKED = re.compile(r"Page '.*' is now unlocked\.")
 RE_CREATED = re.compile(r"Page '.*' created\.")
+RE_SAVED = re.compile(r"Page '.*' has been updated\.")
 
 
 @when("the user clicks the action button toggle")
@@ -41,7 +42,7 @@ def click_the_given_button(context: Context, button_text: str) -> None:
     if button_text in ("Save Draft", "Preview"):
         # add a small delay to allow any client-side JS to initialise.
         context.page.wait_for_timeout(500)
-    context.page.get_by_role("button", name=button_text).click()
+    context.page.get_by_role("button", name=button_text, exact=True).click()
 
 
 @step('the user opens the preview in a new tab, using the "{preview_mode}" preview mode')
@@ -53,18 +54,28 @@ def open_new_preview_tab_with_preview_mode(context: Context, preview_mode: str) 
         context.page.get_by_role("link", name="Preview in new tab").click()
     # closes context.page (admin page)
     context.page.close()
-    # assigns context.page to the pop up tab
+    # assigns context.page to the pop-up tab
     context.page = preview_tab.value
 
 
-@when("the user edits the {page} page")
-def the_user_edits_a_page(context: Context, page: str) -> None:
-    the_page = page.lower().replace(" ", "_")
-
-    if not the_page.endswith("_page"):
-        the_page += "_page"
-    edit_url = reverse("wagtailadmin_pages:edit", args=[getattr(context, the_page).pk])
+@when("the user edits the {page_str} page")
+def the_user_edits_a_page(context: Context, page_str: str) -> None:
+    the_page = get_page_from_context(context, page_str)
+    edit_url = reverse("wagtailadmin_pages:edit", args=[the_page.pk])
     context.page.goto(f"{context.base_url}{edit_url}")
+
+
+@step("the user views the {page_str} page draft")
+def the_user_views_a_page_draft(context: Context, page_str: str) -> None:
+    the_page = get_page_from_context(context, page_str)
+    view_draft_url = reverse("wagtailadmin_pages:view_draft", args=(the_page.id,))
+    context.page.goto(f"{context.base_url}{view_draft_url}")
+
+
+@step("the user views the {page_str} page")
+def the_user_views_the_given_page(context: Context, page_str: str) -> None:
+    the_page = get_page_from_context(context, page_str)
+    context.page.goto(f"{context.base_url}{the_page.url}")
 
 
 @step("the {page} page has a Welsh translation")
@@ -121,9 +132,15 @@ def user_fills_required_topic_theme_page_content(context: Context) -> None:
 
 
 @then("the user can create the page")
-def the_user_can_successfully_save_the_page(context: Context) -> None:
+def the_user_can_successfully_create_the_page(context: Context) -> None:
     context.page.get_by_role("button", name="Save draft").click()
     expect(context.page.get_by_text(RE_CREATED)).to_be_visible()
+
+
+@then("the user can save the page")
+def the_user_can_successfully_save_the_page(context: Context) -> None:
+    context.page.get_by_role("button", name="Save draft").click()
+    expect(context.page.get_by_text(RE_SAVED)).to_be_visible()
 
 
 def publish_page(context: Context) -> None:

@@ -56,11 +56,6 @@ def user_edits_the_ancestor_topic(context: Context) -> None:
     context.page.goto(f"{context.base_url}{edit_url}")
 
 
-@step("the user views the topic page")
-def user_views_the_topic_page(context: Context) -> None:
-    context.page.goto(f"{context.base_url}{context.topic_page.url}")
-
-
 @step("the user clicks to add headline figures to the topic page")
 def user_clicks_to_add_headline_figures_to_the_topic_page(context: Context, *, button_index: int = 0) -> None:
     page = context.page

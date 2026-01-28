@@ -88,7 +88,7 @@ def step_refresh_page(context: Context) -> None:
 @when('the user clicks the "Log out" button in the Wagtail UI')
 def step_click_logout(context: Context) -> None:
     """Trigger the logout flow."""
-    context.page.get_by_role("button", name="first").click()
+    context.page.locator("button.sidebar-footer__account").click()
     context.page.get_by_role("button", name="Log out").click()
 
 

@@ -4,6 +4,7 @@ from behave.runner import Context
 from playwright.sync_api import expect
 
 from functional_tests.step_helpers.users import create_user
+from functional_tests.steps.auth import step_click_logout
 
 
 @given("the user is a CMS admin")
@@ -30,19 +31,21 @@ def user_sees_admin_homepage(context: Context) -> None:
     expect(context.page.get_by_label("Dashboard")).to_be_visible()
 
 
-@step("a {user_type} logs into the admin site")
-def user_logs_in(context: Context, user_type: str) -> None:
-    context.user_data = create_user(user_type)
-
-    context.page.goto(f"{context.base_url}/admin/login/")
-    context.page.get_by_placeholder("Enter your username").fill(context.user_data["username"])
-    context.page.get_by_placeholder("Enter password").fill(context.user_data["password"])
-    context.page.get_by_role("button", name="Sign in").click()
-
-
 @step("the user is logged in")
-def user_is_logged_in(context: Context) -> None:
+def the_user_logs_in(context: Context) -> None:
     context.page.goto(f"{context.base_url}/admin/login/")
     context.page.get_by_placeholder("Enter your username").fill(context.user_data["username"])
     context.page.get_by_placeholder("Enter password").fill(context.user_data["password"])
     context.page.get_by_role("button", name="Sign in").click()
+
+
+@step("a {user_type} logs into the admin site")
+def a_user_logs_in(context: Context, user_type: str) -> None:
+    context.user_data = create_user(user_type)
+    the_user_logs_in(context)
+
+
+@step("a {user_type} is logged in")
+def a_user_is_logged_in(context: Context, user_type: str) -> None:
+    step_click_logout(context)
+    a_user_logs_in(context, user_type)
