@@ -51,7 +51,7 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
         values = super().cached_analytics_values
-        if self.last_published_at.date():
+        if self.last_published_at:
             values["lastUpdatedDate"] = format_date_for_gtm(self.last_published_at.date())
         return values
 
