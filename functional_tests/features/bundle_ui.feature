@@ -12,13 +12,13 @@ Feature: UI Bundle Happy Paths
 #---- Bundle Create UI Tests -----
 Scenario Outline: A User can create a bundle
     Given there is a <role> user
-    When the <role> logs in
-    Then the logged in user goes to the bundle page
+    And the <role> logs in
+    And the logged in user goes to the bundle page
     And the logged in user can see the create button
-    And the logged in user can create a bundle
+    When the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
     And the user clicks "Save as draft"
-    And the logged in user gets a success message
+    Then the logged in user gets a success message
 
     Examples: bundles
        | role               |
@@ -28,21 +28,21 @@ Scenario Outline: A User can create a bundle
 #---- Bundle Cannot Create UI Tests -----
 Scenario Outline: A User cannot create a bundle due to authorisation
     Given there is a <role> user
-    When the <role> logs in
-    Then the logged in user goes to the bundle page
-    And the logged in user cannot see the create button
+    And the <role> logs in
+    When the logged in user goes to the bundle page
+    Then the logged in user cannot see the create button
     Examples: bundles
        | role     |
        | Viewer   |
 
 Scenario Outline: A User cannot create a bundle due to field validation
     Given there is a <role> user
-    When the <role> logs in
-    Then the logged in user goes to the bundle page
+    And the <role> logs in
+    And the logged in user goes to the bundle page
     And the logged in user can see the create button
-    And the logged in user can create a bundle
+    When the logged in user can create a bundle
     And the user clicks "Save as draft"
-    And the logged in user gets a failure message due to field validation
+    Then the logged in user gets a failure message due to field validation
 
     Examples: bundles
        | role               |
@@ -54,13 +54,13 @@ Scenario Outline: A User cannot create a bundle due to already existing
     Given there is a <role> user
     And there is a <creator_role> user
     And there are <number_of_bundles> bundles with <bundle_details>
-    When the <role> logs in
-    Then the logged in user goes to the bundle page
+    And the <role> logs in
+    And the logged in user goes to the bundle page
     And the logged in user can see the create button
     And the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
-    And the user clicks "Save as draft"
-    And the logged in user gets a failure message due duplicate name
+    When the user clicks "Save as draft"
+    Then the logged in user gets a failure message due duplicate name
 
     Examples: bundles
        | number_of_bundles | role               | creator_role        |  bundle_details                                                                                                                                                |
@@ -71,15 +71,15 @@ Scenario Outline: A User cannot save a bundle due to duplicate schedule
     Given there is a <role> user
     And there is a <creator_role> user
     And there is a release calendar page approved by <creator_role>
-    When the <role> logs in
-    Then the logged in user goes to the bundle page
+    And the <role> logs in
+    And the logged in user goes to the bundle page
     And the logged in user can see the create button
     And the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
     And the logged in user adds a Release Calendar page to the bundle
     And the logged in user add a schedule date to the bundle
-    And the user clicks "Save as draft"
-    And the logged in user fails to create a bundle due duplicate schedule
+    When the user clicks "Save as draft"
+    Then the logged in user fails to create a bundle due duplicate schedule
 
     Examples: bundles
        | role               | creator_role      |
@@ -96,14 +96,14 @@ Scenario Outline: A User can edit a bundle
     And there is a preview team
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
-    When the <role> logs in
-    Then the logged in user goes to the bundle page
+    And the <role> logs in
+    And the logged in user goes to the bundle page
     And the <role> can find the bundle
-    And the logged in user goes to edit bundle
+    When the logged in user goes to edit bundle
     And the logged in user can add a release schedule
     And the logged in user can add pages
     And the logged in user can add preview team
-    And the user clicks "Save as draft"
+    Then the user clicks "Save as draft"
     And the logged in user sends the bundle to preview
     And the logged in user gets a bundle update message
 
@@ -124,10 +124,10 @@ Scenario Outline: A User can preview a bundle
     And there is a preview team
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
-    When the <role> logs in
-    Then the logged in user goes to the bundle page
-    And the <role> can find the bundle
-    And  the <role> can preview bundle
+    And the <role> logs in
+    And the logged in user goes to the bundle page
+    When the <role> can find the bundle
+    Then  the <role> can preview bundle
 
   Examples: bundles
        | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                              |
@@ -147,9 +147,9 @@ Scenario Outline: A User cannot preview a bundle due to not being a member of an
     And there is a release calendar page approved by <creator_role>
     And there is a preview team
     And there are <number_of_bundles> bundles with <bundle_details>
-    When the <role> logs in
-    Then the logged in user goes to the bundle page
-    And the logged in user cannot find the bundle
+    And the <role> logs in
+    When the logged in user goes to the bundle page
+    Then the logged in user cannot find the bundle
 
  Examples: bundles
      | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                       |
@@ -166,10 +166,10 @@ Scenario Outline: A user can approve a bundle
     And there is a preview team
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
-    When the <role> logs in
-    Then the logged in user goes to the bundle page
-    And the <role> can find the bundle
-    And the logged in user can approve a bundle
+    And the <role> logs in
+    And the logged in user goes to the bundle page
+    When the <role> can find the bundle
+    Then the logged in user can approve a bundle
 
     Examples: bundles
        | number_of_bundles | role                       | creator_role        |  bundle_details                                                                                                                                                |
@@ -186,10 +186,10 @@ Scenario Outline: A user cannot approve a bundle due no bundle pages in bundle
     And there is a preview team
     And the <role> is a member of the preview team
     And there are <number_of_bundles> bundles with <bundle_details>
-    When the <role> logs in
-    Then the logged in user goes to the bundle page
-    And the <role> can find the bundle
-    And the logged in user cannot approve a bundle due to lack of pages
+    And the <role> logs in
+    And the logged in user goes to the bundle page
+    When the <role> can find the bundle
+    Then the logged in user cannot approve a bundle due to lack of pages
 
     Examples: bundles
         | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                                 |
