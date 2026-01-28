@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any
 from django import forms
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.db import DEFAULT_DB_ALIAS
 from django.db.models import Q, QuerySet
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
@@ -23,6 +22,7 @@ from wagtail.admin.views.generic.chooser import (
 )
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
+from cms.core.db_router import force_write_db_for
 from cms.datasets.models import Dataset, ONSDataset
 from cms.datasets.permissions import user_can_access_unpublished_datasets
 from cms.datasets.utils import deconstruct_chooser_dataset_compound_id, get_dataset_for_published_state
@@ -293,9 +293,13 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
         if datasets_to_update:
             Dataset.objects.bulk_update(datasets_to_update, all_updated_fields)
 
-        # Return the existing and newly created datasets, using the DEFAULT_DB_ALIAS to ensure we read from the default
-        # database instance, as the newly created datasets may not yet be replicated to read replicas.
-        return Dataset.objects.using(DEFAULT_DB_ALIAS).filter(existing_query)
+        if datasets_to_create or datasets_to_update:
+            # Because newly-created instances may not have synced to the DB replicas yet,
+            # force use of the write instance.
+            return force_write_db_for(Dataset.objects).filter(existing_query)
+
+        # Since no instances were created or updated, it's safe to use the default database handling.
+        return Dataset.objects.all()
 
 
 class DatasetChosenMultipleView(DatasetChosenMultipleViewMixin, ChosenResponseMixin, View): ...

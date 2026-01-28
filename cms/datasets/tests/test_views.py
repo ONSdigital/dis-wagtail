@@ -940,11 +940,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         existing_dataset.title = "Same Title"
         existing_dataset.description = "Same Description"
 
-        mock_final_queryset = Mock()
-        mock_using = Mock()
-        mock_using.filter.return_value = mock_final_queryset
         mock_dataset.objects.filter.side_effect = [[existing_dataset]]
-        mock_dataset.objects.using.return_value = mock_using
         mock_dataset.objects.bulk_create.return_value = None
 
         request = self.factory.get("/chooser/")
@@ -957,7 +953,9 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         # Verify no bulk operations were performed since metadata matches
         mock_dataset.objects.bulk_update.assert_not_called()
         mock_dataset.objects.bulk_create.assert_not_called()
-        self.assertEqual(result, mock_final_queryset)
+
+        # Since no operations were performed, there is no .using call.
+        self.assertEqual(result, mock_dataset.objects.all.return_value)
 
     @patch("cms.datasets.views.get_dataset_for_published_state")
     @patch("cms.datasets.views.Dataset")
@@ -1103,11 +1101,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         existing_dataset.title = "Existing Title"
         existing_dataset.description = "Existing Description"
 
-        mock_final_queryset = Mock()
-        mock_using = Mock()
-        mock_using.filter.return_value = mock_final_queryset
         mock_dataset.objects.filter.side_effect = [[existing_dataset]]
-        mock_dataset.objects.using.return_value = mock_using
         mock_dataset.objects.bulk_create.return_value = None
 
         request = self.factory.get("/chooser/")
@@ -1124,4 +1118,6 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         # Verify no bulk operations were performed since API values were empty
         mock_dataset.objects.bulk_update.assert_not_called()
         mock_dataset.objects.bulk_create.assert_not_called()
-        self.assertEqual(result, mock_final_queryset)
+
+        # Since no operations were performed, there is no .using call.
+        self.assertEqual(result, mock_dataset.objects.all.return_value)
