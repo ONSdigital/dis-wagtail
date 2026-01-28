@@ -1,3 +1,4 @@
+import csv
 import io
 import re
 from collections.abc import Mapping
@@ -7,8 +8,9 @@ from typing import TYPE_CHECKING, Any
 import matplotlib as mpl
 from bs4 import BeautifulSoup, Tag
 from django.conf import settings
-from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import redirect as _redirect
+from django.utils.text import slugify
 from matplotlib.figure import Figure
 
 from cms.core.enums import RelatedContentType
@@ -198,3 +200,39 @@ def flatten_table_data(data: Mapping) -> list[list[str | int | float]]:
         result.append(processed_row)
 
     return result
+
+
+def sanitize_data_for_csv(data: list[list[str | int | float]]) -> list[list[str | int | float]]:
+    """Sanitize data for CSV export by escaping formula triggers.
+
+    Prevents CSV injection by prepending ' to strings starting with
+    =, +, -, @, or tab characters.
+    """
+    triggers = ("=", "+", "-", "@", "\t")
+
+    return [
+        [f"'{value}" if isinstance(value, str) and value.startswith(triggers) else value for value in row]
+        for row in data
+    ]
+
+
+def create_data_csv_download_response_from_data(data: list[list[str | int | float]], *, title: str) -> HttpResponse:
+    """Creates a Django HttpResponse for downloading a CSV file from table data.
+
+    Args:
+        data: The list of data rows to be converted to CSV, where each row is a list of values.
+        title: The title for the CSV file, which will be slugified to create the filename.
+
+    Returns:
+        A Django HttpResponse object configured for CSV file download.
+    """
+    filename = slugify(title) or "chart"
+    response = HttpResponse(
+        content_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}.csv"',
+        },
+    )
+    writer = csv.writer(response)
+    writer.writerows(sanitize_data_for_csv(data))
+    return response

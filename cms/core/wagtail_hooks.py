@@ -2,16 +2,19 @@ from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.templatetags.static import static
-from django.urls import reverse
+from django.urls import include, path, reverse
 from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.admin import messages
 from wagtail.snippets.models import register_snippet
 
+from cms.core import admin_urls
 from cms.core.viewsets import ContactDetailsViewSet, DefinitionViewSet
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from django.urls import URLPattern
+    from django.urls.resolvers import URLResolver
     from wagtail.models import Page
 
 
@@ -70,3 +73,12 @@ def after_edit_page(request: HttpRequest, page: Page) -> None:
             ],
             extra_tags="safe",
         )
+
+
+@hooks.register("register_admin_urls")
+def register_admin_urls() -> list[URLPattern | URLResolver]:
+    """Registers the admin urls for core.
+
+    @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-urls.
+    """
+    return [path("core/", include(admin_urls))]
