@@ -11,7 +11,7 @@ Generally, a developer shouldn't need to worry about this configuration, or expl
 
 ## Forcing the write database
 
-In some situations, it may be necessary to force the write database instance be used for all database queries - even reads. To achieve this, you can use the `force_write_db_for` function on a given queryset:
+In some situations, it may be necessary to force the write database instance to be used for all database queries - even reads. To achieve this, you can use the `force_write_db_for` function on a given queryset:
 
 ```python
 from cms.core.db_router import force_write_db_for
