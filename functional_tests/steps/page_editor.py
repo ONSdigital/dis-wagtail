@@ -46,6 +46,19 @@ def click_the_given_button(context: Context, button_text: str) -> None:
     context.page.get_by_role("button", name=button_text, exact=True).click()
 
 
+@step("the user opens the preview in a new tab")
+def open_new_preview_tab(context: Context) -> None:
+    context.page.locator('[data-w-tooltip-content-value="Status"]').focus()
+    user_clicks_view_toggle_preview(context)
+
+    with context.page.expect_popup() as preview_tab:
+        context.page.get_by_role("link", name="Preview in new tab").click()
+    # closes context.page (admin page)
+    context.page.close()
+    # assigns context.page to the pop-up tab
+    context.page = preview_tab.value
+
+
 @step('the user opens the preview in a new tab, using the "{preview_mode}" preview mode')
 def open_new_preview_tab_with_preview_mode(context: Context, preview_mode: str) -> None:
     context.page.locator('[data-w-tooltip-content-value="Status"]').focus()
