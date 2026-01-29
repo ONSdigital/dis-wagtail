@@ -1,34 +1,32 @@
 {% extends "templates/base_page.html" %}
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
+{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
+{% from "components/hero/_macro.njk" import onsHero %}
+
+{% block header_area %}
+    {# fmt:off #}
+    {{
+        onsBreadcrumbs({
+            "ariaLabel": breadcrumbs_aria_label,
+            "itemsList": page.get_breadcrumbs(request=request),
+            "variant": 'grey'
+        })
+    }}
+    {{
+        onsHero({
+            "title": page.title,
+            "text": page.summary|richtext(),
+            "variants": 'grey',
+        })
+    }}
+    {# fmt:on #}
+{% endblock %}
 
 {% block main %}
 
-    {% if page.summary %}
-        <p>{{ page.summary|richtext }}</p>
-    {% endif %}
-
     {% if formatted_items %}
         {{ onsDocumentList({"documents": formatted_items}) }}
-    {% endif %}
-
-    {% if page.content %}
-        {% include_block page.content|richtext %}
-    {% endif %}
-
-    {% if related_links_list %}
-        {# fmt:off #}
-        {{
-            onsRelatedContent({
-                "ariaLabel": _('Related links'),
-                "rows": [{
-                    "id": 'related-content',
-                    "title": _('Related links'),
-                    "itemsList": related_links_list
-                }]
-            })
-        }}
-        {# fmt:on #}
     {% endif %}
 
 {% endblock %}

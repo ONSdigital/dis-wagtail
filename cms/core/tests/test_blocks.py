@@ -1048,13 +1048,22 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
             summary="<p>Summary</p>",
             content=[
                 {
-                    "type": "image",
+                    "type": "section",
                     "value": {
-                        "image": image.id,
-                        "figure_title": "Figure 1",
-                        "figure_subtitle": "Figure subtitle",
-                        "supporting_text": "Office for National Statistics",
-                        "download": download,
+                        "title": "A section heading",
+                        "content": [
+                            {
+                                "type": "image",
+                                "value": {
+                                    "image": image.id,
+                                    "figure_title": "Figure 1",
+                                    "figure_subtitle": "Figure subtitle",
+                                    "supporting_text": "Office for National Statistics",
+                                    "download": download,
+                                },
+                                "id": str(uuid.uuid4()),
+                            }
+                        ],
                     },
                     "id": str(uuid.uuid4()),
                 }
