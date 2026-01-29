@@ -17,12 +17,12 @@ READ_REPLICA_DB_ALIAS = "read_replica"
 _force_write_db_for_context = Local()
 
 
-def force_write_db_for[T: Model](queryset: QuerySet[T] | Manager[T]) -> QuerySet[T]:
+def force_write_db_for[T: Model](qs_or_manager: QuerySet[T] | Manager[T]) -> QuerySet[T]:
     """Force the given queryset or manager to use the write DB, even for read queries.
 
     This is a helper function to make the intent clearer.
     """
-    return queryset.using(DEFAULT_DB_ALIAS)
+    return qs_or_manager.using(DEFAULT_DB_ALIAS)
 
 
 @contextmanager
