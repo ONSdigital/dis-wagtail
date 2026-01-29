@@ -33,10 +33,6 @@ Feature: A general use information page
         And the user refreshes the page
         Then the minimap is hidden
 
-    Scenario: The CMS user can see the date placeholder in the date field of the information page
-        When the user creates an information page as a child of the home page
-        Then the date placeholder "YYYY-MM-DD" is displayed in the "Last updated" textbox
-
     # TODO: Write the step definitions and implementation for this scenario
     # Scenario: Duplicate topics are removed when creating an information page
     #     When the user creates an information page as a child of the home page

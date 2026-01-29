@@ -1,4 +1,6 @@
 # pylint: disable=not-callable
+import re
+
 from behave import step, then, when
 from behave.runner import Context
 from django.urls import reverse
@@ -123,6 +125,10 @@ def the_user_can_successfully_publish_the_page(context: Context) -> None:
 def publish_page(context: Context) -> None:
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Publish").click()
+
+    match = re.search(r"/admin/pages/(\d+)/edit/", context.page.url)
+    if match:
+        context.page_id = int(match.group(1))
 
 
 def publish_snippet(context: Context) -> None:  # Create an alias so it reads better
