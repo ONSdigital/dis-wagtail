@@ -28,7 +28,7 @@ def user_switches_to_welsh_locale(context: Context) -> None:
 
 @step("the user switches to the English locale")
 def user_switches_to_english_locale(context: Context) -> None:
-    # Status tab is normally shown at this point
+    context.page.get_by_role("button", name="Status").click()
     context.page.get_by_role("button", name="Switch locales").click()
     context.page.get_by_role("link", name="English").click()
 
@@ -73,7 +73,7 @@ def user_returns_to_editing_the_welsh_statistical_article_page(
 def check_new_information_is_displayed_with_welsh_content(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Tudalen Gwybodaeth Profi")).to_be_visible()
     expect(context.page.get_by_text("Tudalen wybodaeth fy mhrawf")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Rhywfaint o gynnwys testun enghreifftiol")).to_be_visible()
+    expect(context.page.get_by_text("Rhywfaint o gynnwys testun enghreifftiol")).to_be_visible()
 
 
 @then("the page furniture is displayed in English")
