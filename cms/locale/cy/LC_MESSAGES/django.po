@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-20 11:34+0000\n"
+"POT-Creation-Date: 2026-01-29 17:46+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,27 +19,27 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
 "11) ? 2 : 3;\n"
 
-#: cms/articles/models.py:199 cms/core/enums.py:8
+#: cms/articles/models.py:217 cms/core/enums.py:8
 #: cms/core/formatting_utils.py:44
 msgid "Article"
 msgstr "Erthygl"
 
-#: cms/articles/models.py:461
+#: cms/articles/models.py:528
 msgid "Cite this article"
 msgstr "Dyfynnwch yr erthygl hon"
 
-#: cms/articles/models.py:463
+#: cms/articles/models.py:530
 #: cms/jinja2/templates/components/contact_details/contact_details.html:6
 #: cms/methodology/models.py:190 cms/release_calendar/models.py:246
 msgid "Contact details"
 msgstr "Manylion cyswllt"
 
-#: cms/articles/models.py:530
+#: cms/articles/models.py:597
 #, python-format
 msgid "All data related to %(article_title)s"
 msgstr "Yr holl ddata sy'n gysylltiedig â %(article_title)s"
 
-#: cms/articles/models.py:589
+#: cms/articles/models.py:656
 msgid "Release date"
 msgstr "Dyddiad y datganiad"
 
@@ -73,6 +73,10 @@ msgstr "Dangos popeth"
 msgid "Hide all"
 msgstr "Cuddio popeth"
 
+#: cms/core/blocks/markup.py:225
+msgid "Table"
+msgstr ""
+
 #: cms/core/blocks/related.py:60
 msgid "Related links"
 msgstr "Dolenni cysylltiedig"
@@ -94,6 +98,18 @@ msgstr "Cyfres amser"
 msgid "Topic"
 msgstr "Pwnc"
 
+#: cms/core/enums.py:13
+msgid "Information"
+msgstr ""
+
+#: cms/core/enums.py:14
+msgid "Report"
+msgstr ""
+
+#: cms/core/enums.py:15
+msgid "Webpage"
+msgstr ""
+
 #: cms/core/formatting_utils.py:56
 msgid "Page"
 msgstr "Tudalen"
@@ -108,7 +124,7 @@ msgid "Home"
 msgstr "Cartref"
 
 #: cms/datavis/blocks/base.py:416
-#: cms/jinja2/templates/components/streamfield/table_block.html:12
+#: cms/jinja2/templates/components/streamfield/table_block.html:13
 msgid "Footnotes"
 msgstr "Troednodiadau"
 
@@ -209,7 +225,7 @@ msgid "Hide all definitions"
 msgstr "Cuddio pob diffiniad"
 
 #: cms/jinja2/templates/components/streamfield/image_block.html:20
-#: cms/jinja2/templates/components/streamfield/table_block.html:8
+#: cms/jinja2/templates/components/streamfield/table_block.html:9
 msgid "Source"
 msgstr "Ffynhonnell"
 
@@ -217,12 +233,12 @@ msgstr "Ffynhonnell"
 msgid "Notes"
 msgstr ""
 
-#: cms/jinja2/templates/components/streamfield/image_block.html:44
-#: cms/jinja2/templates/components/streamfield/image_block.html:46
+#: cms/jinja2/templates/components/streamfield/image_block.html:43
+#: cms/jinja2/templates/components/streamfield/image_block.html:45
 msgid "Download image"
 msgstr ""
 
-#: cms/jinja2/templates/components/streamfield/image_block.html:52
+#: cms/jinja2/templates/components/streamfield/image_block.html:51
 msgid "Download this image"
 msgstr ""
 
@@ -418,14 +434,25 @@ msgstr ""
 "Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a href="
 "\"%(backup_url)s\">gwefan wrth gefn"
 
-#: cms/jinja2/templates/pages/information_page.html:9
-msgid "Last updated"
-msgstr "Diweddarwyd Diwethaf"
+#: cms/jinja2/templates/pages/information_page.html:10
+#, fuzzy
+#| msgid "Last updated"
+msgid "Last updated:"
+msgstr "Diweddarwyd Diwethaf:"
 
-#: cms/jinja2/templates/pages/information_page.html:56
-#: cms/jinja2/templates/pages/information_page.html:57
-msgid "Related content"
-msgstr "Cynnwys cysylltiedig"
+#: cms/jinja2/templates/pages/information_page.html:54
+#: cms/jinja2/templates/pages/methodology_page.html:90
+#: cms/jinja2/templates/pages/statistical_article_page.html:209
+#: cms/jinja2/templates/pages/topic_page.html:46
+msgid "Contents"
+msgstr "Cynnwys"
+
+#: cms/jinja2/templates/pages/information_page.html:54
+#: cms/jinja2/templates/pages/methodology_page.html:90
+#: cms/jinja2/templates/pages/statistical_article_page.html:209
+#: cms/jinja2/templates/pages/topic_page.html:46
+msgid "Sections in this page"
+msgstr "Adrannau ar y dudalen hon"
 
 #: cms/jinja2/templates/pages/login_page.html:10
 #: cms/jinja2/templates/pages/login_page.html:15
@@ -445,18 +472,6 @@ msgstr "Cyhoeddwyd"
 #: cms/jinja2/templates/pages/statistical_article_page.html:15
 msgid "Contact:"
 msgstr "Cyswllt"
-
-#: cms/jinja2/templates/pages/methodology_page.html:90
-#: cms/jinja2/templates/pages/statistical_article_page.html:209
-#: cms/jinja2/templates/pages/topic_page.html:46
-msgid "Contents"
-msgstr "Cynnwys"
-
-#: cms/jinja2/templates/pages/methodology_page.html:90
-#: cms/jinja2/templates/pages/statistical_article_page.html:209
-#: cms/jinja2/templates/pages/topic_page.html:46
-msgid "Sections in this page"
-msgstr "Adrannau ar y dudalen hon"
 
 #: cms/jinja2/templates/pages/methodology_page.html:112
 #: cms/methodology/models.py:188
@@ -531,9 +546,9 @@ msgid ""
 msgstr ""
 "Mae’r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnolgan y "
 "Swyddfa Rheoleiddio Ystadegau (OSR) ac a ganfuwyd ei fod yn cydymffurfio "
-"gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://"
-"code.statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</"
-"a>. Mae hyn yn golygu yn fras bod yr ystadegau:"
+"gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://code."
+"statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</a>. "
+"Mae hyn yn golygu yn fras bod yr ystadegau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:138
 msgid "meet user needs"
@@ -724,10 +739,10 @@ msgstr "Cyhoeddiadau cysylltiedig"
 msgid "To be confirmed"
 msgstr "I’w gadarnhau"
 
-#: cms/settings/base.py:367
+#: cms/settings/base.py:378
 msgid "English"
 msgstr "Saesneg"
 
-#: cms/settings/base.py:368
+#: cms/settings/base.py:379
 msgid "Welsh"
 msgstr "Cymraeg"
