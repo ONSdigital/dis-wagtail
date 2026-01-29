@@ -3,11 +3,11 @@ Feature: A general use information page
     Background:
         Given a superuser logs into the admin site
 
-    Scenario: A CMS user can create and publish an information page
+    Scenario: A CMS user can create and information page
         When the user creates an information page as a child of the home page
-        And the user adds content to the new information page
-        And the user clicks "Publish"
-        And the user clicks "View Live" on the publish confirmation banner
+        And  the user adds content to the new information page
+        Then the user can create the page
+        When the user opens the preview in a new tab
         Then the new information page with the added content is displayed
         And the user can see the breadcrumbs
 

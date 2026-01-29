@@ -30,12 +30,12 @@ Scenario: The Definition raises validation errors when name is duplicated
 
 Scenario: The user can add Definitions in a section of a page
     Given a topic page exists under the homepage
-    And a superuser logs into the admin site
-    And a Definition snippet exists
+    And  a superuser logs into the admin site
+    And  a Definition snippet exists
     When the user creates a methodology page as a child of the existing topic page
-    And the user populates the methodology page
-    And adds Definitions to the page content
-    And the user clicks "Publish"
-    And the user clicks "View Live" on the publish confirmation banner
+    And  the user populates the methodology page
+    And  adds Definitions to the page content
+    Then the user can create the page
+    When the user opens the preview in a new tab
     Then the user can see the Definition
-    And the user can click the Definition to see the definition
+    And  the user can click the Definition to see the definition
