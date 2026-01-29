@@ -266,6 +266,10 @@ else:
         ),
     }
 
+    # Allow overriding the database port for local development with multiple instances
+    if "DB_PORT" in env:
+        DATABASES["default"]["PORT"] = env["DB_PORT"]
+
     if "READ_REPLICA_DATABASE_URL" in env:
         DATABASES["read_replica"] = dj_database_url.config(
             env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age or 0
