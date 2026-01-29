@@ -140,7 +140,7 @@ class DBRouterTestCase(TransactionTestCase):
             self.assertEqual(router.db_for_read(Revision), READ_REPLICA_DB_ALIAS)
 
     def test_force_write_db_for_queryset(self):
-        """Check that the force_write_db util works as expected."""
+        """Check that the force_write_db_for util works as expected."""
         qs = User.objects.all()
 
         self.assertEqual(qs.db, READ_REPLICA_DB_ALIAS)
@@ -154,6 +154,9 @@ class DBRouterTestCase(TransactionTestCase):
             list(force_write_db_for(qs))
 
     def test_force_write_db(self):
+        """Check that the force_write_db context manager correctly forces the
+        default DB connection.
+        """
         self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
 
         with force_write_db():
