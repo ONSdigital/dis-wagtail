@@ -14,6 +14,7 @@ from functional_tests.step_helpers.utils import get_page_from_context
 RE_UNLOCKED = re.compile(r"Page '.*' is now unlocked\.")
 RE_CREATED = re.compile(r"Page '.*' created\.")
 RE_SAVED = re.compile(r"Page '.*' has been updated\.")
+RE_PUBLISHED = re.compile(r"Page '.*' has been published\.")
 
 
 @when("the user clicks the action button toggle")
@@ -47,7 +48,9 @@ def click_the_given_button(context: Context, button_text: str) -> None:
 
 @step('the user opens the preview in a new tab, using the "{preview_mode}" preview mode')
 def open_new_preview_tab_with_preview_mode(context: Context, preview_mode: str) -> None:
-    click_the_given_button(context, "Preview")
+    context.page.locator('[data-w-tooltip-content-value="Status"]').focus()
+    user_clicks_view_toggle_preview(context)
+
     context.page.get_by_label("Preview mode").select_option(preview_mode)
 
     with context.page.expect_popup() as preview_tab:
@@ -141,6 +144,11 @@ def the_user_can_successfully_create_the_page(context: Context) -> None:
 def the_user_can_successfully_save_the_page(context: Context) -> None:
     context.page.get_by_role("button", name="Save draft").click()
     expect(context.page.get_by_text(RE_SAVED)).to_be_visible()
+
+
+@then("the page is published")
+def the_page_is_published(context: Context) -> None:
+    expect(context.page.get_by_text(RE_PUBLISHED)).to_be_visible()
 
 
 def publish_page(context: Context) -> None:
@@ -244,7 +252,7 @@ def user_saves_in_navigation_settings(context: Context) -> None:
 
 
 @when("the user clicks toggle preview")
-def user_clicks_view_live(context: Context) -> None:
+def user_clicks_view_toggle_preview(context: Context) -> None:
     context.page.get_by_role("button", name="Toggle preview").click()
 
 

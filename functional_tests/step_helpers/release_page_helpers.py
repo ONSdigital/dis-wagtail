@@ -2,6 +2,7 @@ from collections.abc import Callable, Sequence
 
 from playwright.sync_api import Page, expect
 
+from cms.release_calendar.enums import ReleaseStatus
 from functional_tests.step_helpers.footer_menu_helpers import choose_page_link
 
 RELEASE_DATE = "#id_release_date"
@@ -47,6 +48,7 @@ def add_basic_table_block_under_pre_release_access(page: Page, data: bool = True
 def add_description_block_under_pre_release_access(page: Page, index: int = 0) -> None:
     """Inserts description and fills with text under pre-release access."""
     insert_block_under_pre_release_access(page, block_name="Description", index=index)
+    page.wait_for_timeout(50)
     page.get_by_role("region", name="Description *").get_by_role("textbox").fill("Description")
 
 
@@ -243,3 +245,15 @@ def handle_changes_to_release_date_feature(page: Page, feature: str) -> None:
         handler(page)
     else:
         raise ValueError(f"Unsupported feature: {feature}")
+
+
+def get_status_from_string(status_str: str) -> str:
+    match status_str.lower():
+        case "confirmed":
+            return ReleaseStatus.CONFIRMED
+        case "cancelled":
+            return ReleaseStatus.CANCELLED
+        case "published":
+            return ReleaseStatus.PUBLISHED
+        case _:
+            return ReleaseStatus.PROVISIONAL
