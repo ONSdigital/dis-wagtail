@@ -61,6 +61,11 @@ def _migrate_revisions(apps, direction):
 
         stream_data = content["content"]
 
+        # Skip empty content (optional StreamFields) such as on Index Pages
+        if not stream_data:
+            logger.info("Skipping revision %s with empty StreamField", revision.pk)
+            continue
+
         # Revisions store StreamField as JSON string
         if isinstance(stream_data, str):
             stream_data = json.loads(stream_data)
