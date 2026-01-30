@@ -417,12 +417,10 @@ class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):
     def test_can_lock__in_review(self):
         mark_page_as_ready_for_review(self.page)
 
-        for user in [self.user, self.superuser]:
-            with self.subTest(msg=f"{user=} cannot lock as they must be a PA or PO"):
-                tester = BasePagePermissionTester(user=user, page=self.page)
-                self.assertFalse(tester.can_lock())
+        tester = BasePagePermissionTester(user=self.user, page=self.page)
+        self.assertFalse(tester.can_lock())
 
-        for user in [self.publishing_officer, self.publishing_admin]:
+        for user in [self.publishing_officer, self.publishing_admin, self.superuser]:
             with self.subTest(msg=f"{user=} can lock"):
                 tester = BasePagePermissionTester(user=user, page=self.page)
                 self.assertTrue(tester.can_lock())

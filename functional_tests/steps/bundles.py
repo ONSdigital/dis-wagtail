@@ -326,7 +326,7 @@ def the_page_is_in_the_given_bundle_with_status(
     context: Context, page_str: str, bundle_status: Literal["Draft", "In Preview", "Ready to publish", "Published"]
 ):
     the_page = get_page_from_context(context, page_str)
-    bundle = context.bundle
+    bundle = getattr(context, "bundle", None)
     if not bundle:
         a_bundle_has_been_created(context)
         bundle = context.bundle

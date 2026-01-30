@@ -22,6 +22,9 @@ class GroupReviewTask(AbstractGroupApprovalTask):
     def get_description(cls) -> str:
         return "A workflow review task that requires the approver to be different than the last editor."
 
+    def user_can_lock(self, obj: Model, user: User) -> bool:
+        return self._user_in_groups(user) or user.is_superuser
+
     def user_can_unlock(self, obj: Model, user: User) -> bool:
         """Used for manual locks."""
         return user.has_perm("wagtailadmin.unlock_workflow_tasks")
