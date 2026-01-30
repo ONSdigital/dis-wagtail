@@ -66,7 +66,6 @@ def _migrate_revisions(apps, direction):
             logger.info("Skipping revision %s with empty StreamField", revision.pk)
             continue
 
-        # Revisions store StreamField as JSON string
         # Revisions store StreamField as JSON string, but some "content" fields
         # may contain non-JSON data (e.g., RichTextField HTML). Skip those.
         try:
