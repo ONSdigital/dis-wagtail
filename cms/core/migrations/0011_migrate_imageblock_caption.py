@@ -71,7 +71,7 @@ def _migrate_revisions(apps, direction):
         try:
             stream_data = json.loads(stream_data)
         except json.JSONDecodeError:
-            logger.info("Skipping revision %s with non-JSON content: %s", revision.pk, stream_data[:50])
+            logger.info("Skipping revision %s with non-JSON content", revision.pk)
             continue
 
         modified = _process_blocks(stream_data, direction)
