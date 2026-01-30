@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
 
 from django.conf import settings
+from django.http import HttpRequest
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -24,7 +25,6 @@ if TYPE_CHECKING:
     from datetime import date, datetime
 
     from django.db import models
-    from django.http import HttpRequest
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import (
         BaseGenericSetting as _WagtailBaseGenericSetting,
@@ -298,21 +298,25 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         parent_theme = page_topic.get_base_parent()
         return cast(str, parent_theme.title)
 
-    def _get_site_root_paths(self, request: HttpRequest | None = None) -> list[SiteRootPath]:
-        """Extends the core Page._get_site_root_paths to account for alternative domains."""
+    def _get_site_root_paths(self, request: HttpRequest | models.Model | None = None) -> list[SiteRootPath]:
+        """Extends the core Page._get_site_root_paths to account for alternative domains.
+
+        Note: while the method signature implies we get a request object, in reality it can be a model too.
+        """
         if not settings.CMS_USE_SUBDOMAIN_LOCALES:
             return cast(list["SiteRootPath"], super()._get_site_root_paths(request=request))
 
         from cms.locale.utils import get_mapped_site_root_paths  # pylint: disable=import-outside-toplevel
 
-        cache_object = request if request else self
+        cache_object = request if request is not None else self
         try:
             # pylint: disable=protected-access
             cached_paths: list[SiteRootPath] = cache_object._wagtail_cached_site_root_paths  # type: ignore[union-attr]
             # pylint: enable=protected-access
             return cached_paths
         except AttributeError:
-            paths = get_mapped_site_root_paths(request.get_host() if request is not None else None)
+            host = request.get_host() if isinstance(request, HttpRequest) else None
+            paths = get_mapped_site_root_paths(host)
             # pylint: disable=protected-access,attribute-defined-outside-init
             cache_object._wagtail_cached_site_root_paths = paths  # type: ignore[union-attr]
             # pylint: enable=protected-access,attribute-defined-outside-init

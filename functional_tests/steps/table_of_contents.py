@@ -51,7 +51,7 @@ def a_statistical_article_page_with_sections_exists(context: Context) -> None:
 @when("the user visits the statistical article page")
 def user_visits_the_statistical_article_page(context: Context) -> None:
     """Navigate to the statistical article page."""
-    context.page.goto(f"{context.base_url}{context.statistical_article_page.url}")
+    context.page.goto(context.statistical_article_page.full_url)
 
 
 @then("they should see the table of contents")

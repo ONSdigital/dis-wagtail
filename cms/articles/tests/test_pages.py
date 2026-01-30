@@ -403,21 +403,25 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         )
 
     def test_hero_rendering(self):
-        response = self.client.get(self.page.url)
+        request = get_dummy_request()
+        page_url = self.page.get_url(request=request)
+        response = self.client.get(page_url)
 
         # Breadcrumbs
         content = response.content.decode(encoding="utf-8")
 
         topic = self.page.get_parent().get_parent()
+        topic_full_url = topic.get_full_url(request=request)
         theme = topic.get_parent()
+        theme_full_url = theme.get_full_url(request=request)
 
         self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{topic.full_url}">{topic.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{topic_full_url}">{topic.title}</a>',
             content,
         )
 
         self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{theme.full_url}">{theme.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{theme_full_url}">{theme.title}</a>',
             content,
         )
 
@@ -427,7 +431,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.page.is_census = True
         self.page.save_revision().publish()
 
-        response = self.client.get(self.page.url)
+        response = self.client.get(page_url)
         self.assertContains(response, "ons-hero__census-logo")
 
         # Accreditation badge
@@ -435,7 +439,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
 
         self.page.is_accredited = True
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url)
+        response = self.client.get(page_url)
 
         self.assertContains(response, "ons-hero__badge")
 
@@ -443,7 +447,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.page.release_date = "2025-01-01"
         self.page.next_release_date = None
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url)
+        response = self.client.get(page_url)
         content = response.content.decode(encoding="utf-8")
 
         self.assertInHTML(
@@ -457,7 +461,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
 
         self.page.next_release_date = "2025-02-03"
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url)
+        response = self.client.get(page_url)
         content = response.content.decode(encoding="utf-8")
 
         self.assertInHTML(

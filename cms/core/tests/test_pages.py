@@ -86,16 +86,19 @@ class HomePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         content = response.content.decode(encoding="utf-8")
         self.assertInHTML(
-            ('<a href="/cy" lang="cy"><span class="ons-u-vh">Change language to </span>Cymraeg</a>'), content
+            '<a href="https://cy.ons.localhost/" lang="cy">'
+            '<span class="ons-u-vh">Change language to </span>Cymraeg</a>',
+            content,
         )
 
     def test_language_toggle_english_link(self):
         """Test that the English language toggle link is present on the Welsh home page."""
-        response = self.client.get("/cy")
+        response = self.client.get("/", headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
         content = response.content.decode(encoding="utf-8")
         self.assertInHTML(
-            ('<a href="/" lang="en"><span class="ons-u-vh">Change language to </span>English</a>'), content
+            ('<a href="https://ons.localhost/" lang="en"><span class="ons-u-vh">Change language to </span>English</a>'),
+            content,
         )
 
 

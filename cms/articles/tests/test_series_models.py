@@ -980,7 +980,8 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
         # Download chart from Welsh article
         welsh_series = welsh_article.get_parent().specific
         welsh_response = self.client.get(
-            f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id-2"
+            f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id-2",
+            headers={"host": "cy.ons.localhost"},
         )
         welsh_content = welsh_response.content.decode("utf-8")
 
@@ -1024,7 +1025,10 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
 
         # Attempt to download chart that doesn't exist in Welsh translation
         welsh_series = welsh_article.get_parent().specific
-        response = self.client.get(f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id")
+        response = self.client.get(
+            f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id",
+            headers={"host": "cy.ons.localhost"},
+        )
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_download_chart_welsh_translation_with_version(self):
@@ -1107,7 +1111,8 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
 
         # Download the original version (version 1)
         response = self.client.get(
-            f"{welsh_series.url}/editions/{welsh_article.slug}/versions/1/download-chart/test-chart-id"
+            f"{welsh_series.url}/editions/{welsh_article.slug}/versions/1/download-chart/test-chart-id",
+            headers={"host": "cy.ons.localhost"},
         )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
