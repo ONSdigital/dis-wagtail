@@ -108,6 +108,8 @@ class ValidateJWTTests(SimpleTestCase):
     def test_get_jwks_uses_configured_timeout(self):
         # Reset any cached JWKS before running the test.
         caches["memory"].clear()
+        # Re-import to ensure decorator cache is reset after other tests.
+        importlib.reload(utils)
 
         token = build_jwt(
             self.good_pair,

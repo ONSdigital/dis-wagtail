@@ -1,8 +1,11 @@
 import io
+import re
+from collections.abc import Mapping
 from threading import Lock
 from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
+from bs4 import BeautifulSoup, Tag
 from django.conf import settings
 from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import redirect as _redirect
@@ -14,10 +17,10 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.models import Page
 
-
 matplotlib_lock = Lock()
 
-FORMULA_INDICATOR = "$$"
+# A set of tuples containing the beginning and end indicators for LaTeX formulas
+FORMULA_INDICATORS: set[tuple[str, str]] = {("$$", "$$"), ("\\(", "\\)"), ("\\[", "\\]")}
 
 mpl.rcParams.update(
     {
@@ -34,7 +37,7 @@ if TYPE_CHECKING:
     from django_stubs_ext import StrOrPromise
 
 
-def get_content_type_for_page(page: "Page") -> "StrOrPromise":
+def get_content_type_for_page(page: Page) -> StrOrPromise:
     """Returns the content type for a given page."""
     label: StrOrPromise = page.specific_deferred.label
     return label
@@ -46,7 +49,7 @@ def get_related_content_type_label(content_type: str) -> str:
     return label
 
 
-def get_client_ip(request: "HttpRequest") -> str | None:
+def get_client_ip(request: HttpRequest) -> str | None:
     """Get the IP address of the client.
 
     It's assumed this has been overridden by `django-xff`
@@ -97,7 +100,7 @@ def redirect(
 
 
 def redirect_to_parent_listing(
-    *, page: "Page", request: "HttpRequest", listing_url_method_name: str
+    *, page: Page, request: HttpRequest, listing_url_method_name: str
 ) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
     """Redirects to the parent page's listing URL if available, otherwise to the parent page itself."""
     if not (parent := getattr(page.get_parent(), "specific_deferred", None)):
@@ -107,3 +110,91 @@ def redirect_to_parent_listing(
     if callable(method) and (redirect_url := method()):
         return redirect(redirect_url)
     return redirect(parent.get_url(request=request))
+
+
+def clean_cell_value(value: str | int | float) -> str | int | float:
+    """Cleans a cell value for CSV export.
+
+    Args:
+        value: The cell value to clean.
+
+    Returns:
+        The cleaned cell value as a string, int, or float.
+    """
+    if not isinstance(value, str):
+        return value
+
+    value = value.strip()
+
+    # Replace <br> tags (all variations) with newlines
+    value = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
+
+    if "<" not in value:
+        # Return early if there are no HTML tags to process
+        return value
+
+    # Strip all HTML tags except <a> tags (preserve links)
+    soup = BeautifulSoup(value, "html.parser")
+    for tag in soup.find_all(True):
+        if isinstance(tag, Tag) and tag.name != "a":
+            tag.unwrap()
+    # Use formatter=None to avoid escaping < characters in text content
+    return soup.decode(formatter=None)  # type: ignore[arg-type]
+
+
+def flatten_table_data(data: Mapping) -> list[list[str | int | float]]:
+    """Flattens table data by extracting cell values from headers and rows.
+
+    This is primarily used for the table block. Merged cells (colspan/rowspan)
+    have their values repeated across all spanned cells.
+
+    Args:
+        data: Data containing 'headers' and 'rows' keys with cell objects.
+
+    Returns:
+        List of rows, where each row is a list of cell values (strings, ints, or floats).
+    """
+    all_rows = [*data.get("headers", []), *data.get("rows", [])]
+    result: list[list[str | int | float]] = []
+    # Track columns filled by rowspan: {col_index: (value, remaining_rows)}
+    rowspan_tracker: dict[int, tuple[str | int | float, int]] = {}
+
+    # Use closure to access rowspan_tracker
+    def fill_rowspan_columns(processed_row: list[str | int | float], col_index: int) -> int:
+        """Fill columns blocked by previous rowspans, returning the updated column index."""
+        while col_index in rowspan_tracker:
+            value, remaining = rowspan_tracker[col_index]
+            processed_row.append(value)
+            if remaining == 1:
+                del rowspan_tracker[col_index]
+            else:
+                rowspan_tracker[col_index] = (value, remaining - 1)
+            col_index += 1
+        return col_index
+
+    for row in all_rows:
+        processed_row: list[str | int | float] = []
+        col_index = 0
+
+        for cell in row:
+            # Fill columns blocked by previous rowspans
+            col_index = fill_rowspan_columns(processed_row, col_index)
+
+            value = clean_cell_value(cell.get("value", ""))
+            colspan = cell.get("colspan", 1)
+            rowspan = cell.get("rowspan", 1)
+
+            # Add the cell value repeated for colspan
+            for _ in range(colspan):
+                processed_row.append(value)
+                # Track rowspan for this column
+                if rowspan > 1:
+                    rowspan_tracker[col_index] = (value, rowspan - 1)
+                col_index += 1
+
+        # Handle any remaining rowspan columns at end of row
+        fill_rowspan_columns(processed_row, col_index)  # Return value not needed
+
+        result.append(processed_row)
+
+    return result

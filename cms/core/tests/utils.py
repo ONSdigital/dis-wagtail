@@ -1,12 +1,14 @@
 import json
 import re
 import sys
+from io import StringIO
 from typing import TYPE_CHECKING
 from unittest import TestCase
 
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.conf.urls.i18n import is_language_prefix_patterns_used
+from django.core import management
 from django.core.files.base import ContentFile
 from django.test import SimpleTestCase
 from django.urls import clear_url_caches
@@ -83,10 +85,24 @@ class PanelBlockAssertions(SimpleTestCase):
     """Mixin that provides shared assertions for panel blocks."""
 
     def assertPanelBlockFields(  # pylint: disable=invalid-name
-        self, value: "StructValue", expected_fields: set[str], block_class: "DeclarativeSubBlocksMetaclass"
+        self, value: StructValue, expected_fields: set[str], block_class: DeclarativeSubBlocksMetaclass
     ) -> None:
         self.assertEqual(
             set(value.keys()),
             expected_fields,
             f"Unexpected fields in block value for {block_class.__name__}: {set(value.keys()) - expected_fields}",
         )
+
+
+def rebuild_internal_search_index():
+    """Used to rebuild the search index as we no longer use enqueue on commit for django-tasks."""
+    management.call_command(
+        "wagtail_update_index",
+        backend_name="default",
+        stdout=StringIO(),
+        chunk_size=50,
+    )
+
+
+def rebuild_references_index():
+    management.call_command("rebuild_references_index", stdout=StringIO())

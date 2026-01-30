@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, Self, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
 
 from django.conf import settings
 from django.utils.decorators import method_decorator
@@ -75,13 +75,13 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     class Meta:
         abstract = True
 
-    promote_panels: ClassVar[list["FieldPanel"]] = [
+    promote_panels: ClassVar[list[FieldPanel]] = [
         *Page.promote_panels,
         *ListingFieldsMixin.promote_panels,
         *SocialFieldsMixin.promote_panels,
     ]
 
-    additional_panel_tabs: ClassVar[list[tuple[list["FieldPanel"], str]]] = []
+    additional_panel_tabs: ClassVar[list[tuple[list[FieldPanel], str]]] = []
 
     _analytics_content_type: ClassVar[str | None] = None
 
@@ -112,7 +112,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         return edit_handler.bind_to_model(cls)
 
-    def permissions_for_user(self, user: "User") -> "PagePermissionTester":
+    def permissions_for_user(self, user: User) -> PagePermissionTester:
         """Override the permission tester class to use for our page models."""
         return BasePagePermissionTester(user, self)
 
@@ -144,12 +144,12 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         return False
 
     @property
-    def publication_date(self) -> "date | datetime | None":
+    def publication_date(self) -> date | datetime | None:
         """Return the publication date of the page."""
         # Use the release_date field if available, otherwise return last_published_at.
         return getattr(self, "release_date", self.last_published_at)
 
-    def get_breadcrumbs(self, request: Optional["HttpRequest"] = None) -> list[dict[str, object]]:
+    def get_breadcrumbs(self, request: HttpRequest | None = None) -> list[dict[str, object]]:
         """Returns the breadcrumbs for the page as a list of dictionaries compatible with the ONS design system
         breadcrumbs component.
         """
@@ -202,7 +202,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         return cast(dict[str, Any], extend(super().ld_entity(), page_ld_entity))
 
-    def get_canonical_url(self, request: "HttpRequest") -> str:
+    def get_canonical_url(self, request: HttpRequest) -> str:
         """Get the default canonical URL for the page for the given request.
         This will normally be this page's full URL, except:
         - If this page is an alias, the canonical URL should be for the original, aliased page.
@@ -214,7 +214,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return request.build_absolute_uri(request.get_full_path())
         return cast(str, canonical_page.get_full_url(request=request))
 
-    def get_url_parts(self, request: "Optional[HttpRequest]" = None) -> tuple[int, str, str] | None:
+    def get_url_parts(self, request: HttpRequest | None = None) -> tuple[int, str | None, str | None] | None:
         """Override get_url_parts to generate URLs without trailing slashes."""
         parts = super().get_url_parts(request)
 
@@ -228,7 +228,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         return site_id, root_url, page_path
 
-    def get_relative_path(self, request: Optional["HttpRequest"] = None) -> str:
+    def get_relative_path(self, request: HttpRequest | None = None) -> str:
         """Get the relative path for this page, without the domain or any locale prefix.
         This will be the path portion of the URL returned by `get_url_parts()`.
         """
@@ -249,7 +249,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             values["releaseDate"] = format_date_for_gtm(publication_date)
         return values
 
-    def get_analytics_values(self, request: "HttpRequest") -> dict[str, str | bool]:
+    def get_analytics_values(self, request: HttpRequest) -> dict[str, str | bool]:
         """Return a dictionary of analytics values for this page.
         By default, this only returns the cached analytics values, but it exists to be overridden in places where the
         analytics values require the request object.
@@ -257,7 +257,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         return self.cached_analytics_values
 
     @cached_property
-    def parent_topic_or_theme(self) -> "BasePage | None":
+    def parent_topic_or_theme(self) -> BasePage | None:
         """Returns the first parent topic or theme page of this page (including this page itself, if it is a topic or
         theme page), if one exists.
         """
@@ -296,7 +296,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         parent_theme = page_topic.get_base_parent()
         return cast(str, parent_theme.title)
 
-    def _get_site_root_paths(self, request: Optional["HttpRequest"] = None) -> list["SiteRootPath"]:
+    def _get_site_root_paths(self, request: HttpRequest | None = None) -> list[SiteRootPath]:
         """Extends the core Page._get_site_root_paths to account for alternative domains."""
         if not settings.CMS_USE_SUBDOMAIN_LOCALES:
             return cast(list["SiteRootPath"], super()._get_site_root_paths(request=request))
@@ -328,7 +328,7 @@ class BaseSiteSetting(WagtailBaseSiteSetting):
         abstract = True
 
     @classmethod
-    def for_site(cls, site: Optional["Site"]) -> Self:
+    def for_site(cls, site: Site | None) -> Self:
         """Get or create an instance of this setting for the site."""
         if site is None:
             raise cls.DoesNotExist(f"{cls} does not exist for site None.")

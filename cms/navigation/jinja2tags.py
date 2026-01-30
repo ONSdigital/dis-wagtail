@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class NavigationExtension(Extension):  # pylint: disable=abstract-method
     """Extends Jinja templates with what's needed to render the navigation."""
 
-    def __init__(self, environment: "Environment"):
+    def __init__(self, environment: Environment):
         super().__init__(environment)
 
         self.environment.globals.update(

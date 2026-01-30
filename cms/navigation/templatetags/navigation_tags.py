@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Literal, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Literal, TypedDict, cast
 
 import jinja2
 from django.http import HttpRequest
@@ -16,7 +16,7 @@ class NavigationItem(TypedDict, total=False):
     text: str
     url: str
     description: str
-    groupItems: list["NavigationItem"]
+    groupItems: list[NavigationItem]
     attributes: dict[str, str]
 
 
@@ -30,10 +30,10 @@ class FooterColumnData(TypedDict):
 
 
 def _extract_item(
-    value: "StructValue",
+    value: StructValue,
     text_key: Literal["text", "heading"],
     navigation_type: str,
-    request: Optional["HttpRequest"] = None,
+    request: HttpRequest | None = None,
     include_description: bool = False,
 ) -> NavigationItem:
     """Extracts text/url from the StructValue.
@@ -71,9 +71,7 @@ def _extract_item(
 
 
 @jinja2.pass_context
-def main_menu_highlights(
-    context: jinja2.runtime.Context, main_menu: Optional["MainMenu"] = None
-) -> list[NavigationItem]:
+def main_menu_highlights(context: jinja2.runtime.Context, main_menu: MainMenu | None = None) -> list[NavigationItem]:
     if not main_menu:
         return []
 
@@ -93,11 +91,11 @@ def main_menu_highlights(
 
 
 @jinja2.pass_context
-def main_menu_columns(context: jinja2.runtime.Context, main_menu: Optional["MainMenu"] = None) -> list[ColumnData]:
+def main_menu_columns(context: jinja2.runtime.Context, main_menu: MainMenu | None = None) -> list[ColumnData]:
     if not main_menu:
         return []
 
-    def extract_section_data(section: "StructValue", request: Optional["HttpRequest"] = None) -> NavigationItem | None:
+    def extract_section_data(section: StructValue, request: HttpRequest | None = None) -> NavigationItem | None:
         section_data = _extract_item(
             section["section_link"],
             text_key="heading",
@@ -135,7 +133,7 @@ def main_menu_columns(context: jinja2.runtime.Context, main_menu: Optional["Main
 
 @jinja2.pass_context
 def footer_menu_columns(
-    context: jinja2.runtime.Context, footer_menu: Optional["FooterMenu"] = None
+    context: jinja2.runtime.Context, footer_menu: FooterMenu | None = None
 ) -> list[FooterColumnData]:
     if not footer_menu:
         return []

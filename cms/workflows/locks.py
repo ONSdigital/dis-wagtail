@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.urls import reverse
 from django.utils.html import format_html
@@ -15,13 +15,13 @@ if TYPE_CHECKING:
 class PageInBundleReadyToBePublishedLock(BaseLock):
     """A lock that is enabled when the page is in a bundle that is ready to be published."""
 
-    def for_user(self, user: "User") -> bool:
+    def for_user(self, user: User) -> bool:
         return (
             getattr(self.object, "active_bundle", None) is not None
             and self.object.active_bundle.is_ready_to_be_published
         )
 
-    def get_message(self, user: "User") -> Union[str, "SafeString"]:
+    def get_message(self, user: User) -> str | SafeString:
         if user_can_manage_bundles(user):
             return format_html(
                 "This page is included in a bundle that is ready to be published. You must revert the bundle "
@@ -35,7 +35,7 @@ class PageInBundleReadyToBePublishedLock(BaseLock):
             bundle_title=self.object.active_bundle.name,
         )
 
-    def get_description(self, user: "User") -> "SafeString":
+    def get_description(self, user: User) -> SafeString:
         """Displayed in the sidebar info panel."""
         if user_can_manage_bundles(user):
             message = (

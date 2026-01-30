@@ -4,6 +4,7 @@ from django.urls import reverse
 from wagtail.blocks import StreamValue
 from wagtail.test.utils import WagtailPageTestCase
 
+from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
@@ -112,6 +113,8 @@ class TopicPageTests(WagtailPageTestCase):
         response = self.client.get(self.page.url)
         self.assertContains(response, "New figure title updated XYZ")
         self.assertContains(response, "New figure title updated ABC")
+        self.assertContains(response, "figurexyz")
+        self.assertContains(response, "figureabc")
 
     def test_copy_is_not_allowed(self):
         """Test that copying a TopicPage raises a warning."""
@@ -221,3 +224,123 @@ class TopicPageTests(WagtailPageTestCase):
             },
             self.page.table_of_contents,
         )
+
+    def test_topic_page_displays_with_broken_headline_figure_ids(self):
+        """Test that the topic page renders without headline figures, when it has broken headline figures which are not
+        present on the latest article in their series.
+        """
+        # Given
+        # The topic page has headline figures with IDs that do not exist in the statistical article.
+        self.page.headline_figures.extend(
+            [
+                (
+                    "figure",
+                    {
+                        "series": self.series,
+                        "figure_id": "broken1",
+                    },
+                ),
+                (
+                    "figure",
+                    {
+                        "series": self.series,
+                        "figure_id": "broken2",
+                    },
+                ),
+            ]
+        )
+        self.page.save_revision().publish()
+
+        # When
+        response = self.client.get(self.page.url)
+
+        # Then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.page.title)
+        self.assertNotContains(response, "Headline facts and figures")
+        self.assertNotContains(response, "figurexyz")
+        self.assertNotContains(response, "XYZ")
+        self.assertNotContains(response, "figureabc")
+        self.assertNotContains(response, "ABC")
+        self.assertNotContains(response, "broken1")
+        self.assertNotContains(response, "broken2")
+
+    def test_topic_page_displays_with_broken_headline_figures_missing_series(self):
+        """Test that the topic page renders without showing headline figures when it has headline figures from a series
+        that no longer exists.
+        """
+        # Given
+        self.page.headline_figures.extend(
+            [
+                (
+                    "figure",
+                    {
+                        "series": self.series,
+                        "figure_id": "figurexyz",
+                    },
+                ),
+                (
+                    "figure",
+                    {
+                        "series": self.series,
+                        "figure_id": "figureabc",
+                    },
+                ),
+            ]
+        )
+        self.page.save_revision().publish()
+
+        # The series containing the headline figures is deleted.
+        ArticleSeriesPage.objects.filter(id=self.series.id).delete()
+
+        # When
+        response = self.client.get(self.page.url)
+
+        # Then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.page.title)
+        self.assertNotContains(response, "Headline facts and figures")
+        self.assertNotContains(response, "figurexyz")
+        self.assertNotContains(response, "XYZ")
+        self.assertNotContains(response, "figureabc")
+        self.assertNotContains(response, "ABC")
+
+    def test_topic_page_displays_with_broken_headline_figures_missing_article(self):
+        """Test that the topic page renders renders without showing headline figures when it has headline figures from
+        an article that no longer exists.
+        """
+        # Given
+        self.page.headline_figures.extend(
+            [
+                (
+                    "figure",
+                    {
+                        "series": self.series,
+                        "figure_id": "figurexyz",
+                    },
+                ),
+                (
+                    "figure",
+                    {
+                        "series": self.series,
+                        "figure_id": "figureabc",
+                    },
+                ),
+            ]
+        )
+        self.page.save_revision().publish()
+
+        # The only article containing the headline figures is deleted
+        StatisticalArticlePage.objects.filter(id=self.statistical_article_page.id).delete()
+
+        # When
+        response = self.client.get(self.page.url)
+
+        # Then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.page.title)
+        self.assertNotContains(response, "Headline facts and figures")
+        self.assertNotContains(response, "figurexyz")
+        self.assertNotContains(response, "XYZ")
+        self.assertNotContains(response, "figureabc")
+        self.assertNotContains(response, "ABC")

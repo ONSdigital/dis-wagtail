@@ -1,11 +1,19 @@
 from typing import Any
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from wagtail.models import Site
 from wagtail_factories import DocumentFactory, ImageFactory
 
 from cms.private_media.constants import Privacy
 from cms.standard_pages.models import InformationPage
+
+# TODO: remove when Wagtail updates to django-tasks >= 0.11
+TASKS_ENQUEUE_ON_COMMIT = {
+    "default": {
+        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
+        "ENQUEUE_ON_COMMIT": False,
+    }
+}
 
 
 class SignalHandlersTestCase(TestCase):
@@ -38,8 +46,8 @@ class SignalHandlersTestCase(TestCase):
         """
         return [
             {"type": "heading", "value": "Test heading"},
-            {"type": "image", "value": self.private_image.id},
-            {"type": "image", "value": self.public_image.id},
+            {"type": "image", "value": {"image": self.private_image.id}},
+            {"type": "image", "value": {"image": self.public_image.id}},
             {
                 "type": "documents",
                 "value": [
@@ -68,6 +76,7 @@ class SignalHandlersTestCase(TestCase):
         self.public_document.refresh_from_db()
         self.assertEqual(self.public_document.privacy, expected_privacy)
 
+    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
     def test_publishing_a_page_makes_referenced_media_public(self):
         """Tests the impact of publishing a media-referencing page has on the privacy of referenced media."""
         self.test_page.content = self.generate_media_referencing_content()
@@ -76,6 +85,7 @@ class SignalHandlersTestCase(TestCase):
         self.test_page.save_revision().publish()
         self.assertMediaPrivacy(Privacy.PUBLIC)
 
+    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
     def test_unpublishing_a_page_makes_referenced_media_private(self):
         """Tests the impact of unpublishing a media-referencing page has on the privacy of referenced media."""
         self.test_page.content = self.generate_media_referencing_content()
@@ -95,6 +105,7 @@ class SignalHandlersTestCase(TestCase):
 
         self.test_page.unpublish()
 
+    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
     def test_unpublishing_a_page_when_media_is_referenced_by_a_draft_page(self):
         """Tests the impact of unpublishing a page that references media that is referenced by another draft page."""
         # Publish the first page, so that the reference index is populated, then unpublish it again
@@ -117,6 +128,7 @@ class SignalHandlersTestCase(TestCase):
         new_page.unpublish()
         self.assertMediaPrivacy(Privacy.PRIVATE)
 
+    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
     def test_unpublishing_a_page_when_media_is_referenced_by_a_live_page(self):
         """Tests the impact of unpublishing a page that references media that is referenced by another live page."""
         # Publish the first page, with references to media

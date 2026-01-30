@@ -17,6 +17,8 @@ SILENCED_SYSTEM_CHECKS = [
     "staticfiles.W004",
 ]
 
+TEST_RUNNER = "cms.core.tests.runner.OldConnectionsCleanupDiscoveryRunner"
+
 # Don't redirect to HTTPS in tests or send the HSTS header
 SECURE_SSL_REDIRECT = False
 SECURE_HSTS_SECONDS = 0
@@ -54,12 +56,10 @@ CACHES["default"] = {  # noqa: F405
     "BACKEND": "django.core.cache.backends.dummy.DummyCache",
 }
 
-# Enqueue background tasks on commit for tests
-# https://docs.wagtail.org/en/latest/releases/6.4.html#background-tasks-run-at-end-of-current-transaction
+# Explicitly set the ImmediateBackend for tasks (even though it is the default)
 TASKS = {
     "default": {
         "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
-        "ENQUEUE_ON_COMMIT": False,
     }
 }
 

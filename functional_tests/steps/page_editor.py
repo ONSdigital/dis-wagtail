@@ -1,4 +1,5 @@
-from behave import step, then, when  # pylint: disable=no-name-in-module
+# pylint: disable=not-callable
+from behave import step, then, when
 from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect
@@ -37,7 +38,7 @@ def click_the_given_button(context: Context, button_text: str) -> None:
     context.page.get_by_role("button", name=button_text).click()
 
 
-@step('The user opens the preview in a new tab, using the "{preview_mode}" preview mode')
+@step('the user opens the preview in a new tab, using the "{preview_mode}" preview mode')
 def open_new_preview_tab_with_preview_mode(context: Context, preview_mode: str) -> None:
     click_the_given_button(context, "Preview")
     context.page.get_by_label("Preview mode").select_option(preview_mode)
@@ -65,8 +66,13 @@ def the_page_has_a_welsh_alias(context: Context, page: str) -> None:
     the_page_str = page.lower().replace(" ", "_")
     if not the_page_str.endswith("_page"):
         the_page_str += "_page"
+    welsh_locale = Locale.objects.get(language_code="cy")
     the_page = getattr(context, the_page_str)
-    the_page.copy_for_translation(Locale.objects.get(language_code="cy"), copy_parents=True)
+    try:
+        the_page.get_translation(welsh_locale)
+    except the_page.DoesNotExist:
+        # If a translation doesn't already exist, create one
+        the_page.copy_for_translation(welsh_locale, copy_parents=True)
 
 
 @when("the user tries to create a new theme page")
@@ -195,7 +201,7 @@ def the_user_can_bulk_delete_a_theme_page_and_its_children(context: Context) -> 
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="Home English", exact=True).click()
     context.page.get_by_role("button", name=f"More options for '{context.topic_page.title}'").click()
-    context.page.get_by_role("link", name=f"Delete page '{context.topic_page.title}'").click()
+    context.page.get_by_role("link", name="Delete").click()
     expect(context.page.get_by_role("link", name="This topic page is referenced")).to_be_visible()
     expect(context.page.get_by_text("Are you sure you want to")).to_be_visible()
     context.page.get_by_role("button", name="Yes, delete it").click()
@@ -224,9 +230,9 @@ def user_open_page_actions_menu(context: Context) -> None:
 
 @step("the user has no option to copy the page")
 def user_has_no_option_to_copy_page(context: Context) -> None:
-    expect(context.page.get_by_role("link", name=f"Copy page '{context.page_title}'")).not_to_be_visible()
+    expect(context.page.get_by_role("link", name="Copy")).not_to_be_visible()
 
 
 @step("the user has the option to copy the page")
 def user_has_option_to_copy_page(context: Context) -> None:
-    expect(context.page.get_by_role("link", name=f"Copy page '{context.page_title}'")).to_be_visible()
+    expect(context.page.get_by_role("link", name="Copy")).to_be_visible()

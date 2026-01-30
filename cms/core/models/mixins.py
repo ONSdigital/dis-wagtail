@@ -43,7 +43,7 @@ class ListingFieldsMixin(models.Model):
     class Meta:
         abstract = True
 
-    promote_panels: ClassVar[list["Panel"]] = [
+    promote_panels: ClassVar[list[Panel]] = [
         MultiFieldPanel(
             heading="Listing information",
             children=[
@@ -70,7 +70,7 @@ class SocialFieldsMixin(models.Model):
     class Meta:
         abstract = True
 
-    promote_panels: ClassVar[list["Panel"]] = [
+    promote_panels: ClassVar[list[Panel]] = [
         MultiFieldPanel(
             heading="Social networks",
             children=[
@@ -86,7 +86,7 @@ class SubpageMixin:
 
     PAGE_SIZE = 24
 
-    def get_paginator_page(self, request: "HttpRequest") -> "Page":
+    def get_paginator_page(self, request: HttpRequest) -> Page:
         """Returns the requested page from the list of public and published child pages."""
         children = self.get_children().live().public().specific()  # type: ignore[attr-defined]
         paginator = Paginator(children, per_page=self.PAGE_SIZE)
@@ -95,7 +95,7 @@ class SubpageMixin:
         except (EmptyPage, ValueError) as e:
             raise Http404 from e
 
-    def get_context(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> dict:
+    def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
         """Add paginated subpages to the template context."""
         context: dict = super().get_context(request, *args, **kwargs)  # type: ignore[misc]
         context["subpages"] = self.get_paginator_page(request)

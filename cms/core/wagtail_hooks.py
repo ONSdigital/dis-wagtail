@@ -8,7 +8,7 @@ from wagtail import hooks
 from wagtail.admin import messages
 from wagtail.snippets.models import register_snippet
 
-from cms.core.viewsets import ContactDetailsViewSet, GlossaryViewSet
+from cms.core.viewsets import ContactDetailsViewSet, DefinitionViewSet
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -50,11 +50,11 @@ def global_admin_css() -> str:
 
 
 register_snippet(ContactDetailsViewSet)
-register_snippet(GlossaryViewSet)
+register_snippet(DefinitionViewSet)
 
 
 @hooks.register("after_edit_page")
-def after_edit_page(request: "HttpRequest", page: "Page") -> None:
+def after_edit_page(request: HttpRequest, page: Page) -> None:
     if page.locale.language_code != settings.LANGUAGE_CODE:
         return
 

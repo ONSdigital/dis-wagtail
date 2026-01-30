@@ -11,7 +11,7 @@ from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import create_bundle_viewer
-from cms.datavis.tests.factories import TableDataFactory
+from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
 from cms.teams.tests.factories import TeamFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_for_review
@@ -95,29 +95,7 @@ class RevisionChartDownloadViewTestCase(WagtailTestUtils, TestCase):
         editor = UserFactory(username="editor", access_admin=True)
         editor.groups.add(group)
 
-        self.client.logout()
         self.client.force_login(editor)
-
-        response = self.client.get(self.get_download_url())
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(response["Content-Type"], "text/csv")
-
-    def test_download_success_for_user_with_publish_permission(self):
-        """Test chart download for user with publish permission on the page."""
-        # Create a group with publish permission on the page
-        group, _ = Group.objects.get_or_create(name="Publishers")
-        GroupPagePermission.objects.create(
-            group=group,
-            page=Page.objects.get(pk=self.article.pk),
-            permission_type="publish",
-        )
-
-        # Create non-superuser with admin access and add to group
-        publisher = UserFactory(username="publisher", access_admin=True)
-        publisher.groups.add(group)
-
-        self.client.logout()
-        self.client.force_login(publisher)
 
         response = self.client.get(self.get_download_url())
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -381,3 +359,264 @@ class RevisionChartDownloadBundlePermissionsTestCase(WagtailTestUtils, TestCase)
 
         # Permission denied redirects with message (Wagtail standard behavior)
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+
+class RevisionTableDownloadViewTestCase(WagtailTestUtils, TestCase):
+    """Test RevisionTableDownloadView for downloading tables from page revisions."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.series = ArticleSeriesPageFactory()
+        cls.article = StatisticalArticlePageFactory(parent=cls.series)
+        cls.article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="Test Table Title",
+                                caption="Table caption",
+                                headers=[["Year", "Value"]],
+                                rows=[["2020", "100"], ["2021", "150"]],
+                            ),
+                            "id": "test-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        cls.article.save_revision().publish()
+        cls.revision_id = cls.article.latest_revision_id
+
+    def setUp(self):
+        self.login()
+
+    def get_download_url(self, page_id=None, revision_id=None, table_id="test-table-id"):
+        """Helper to build the download URL."""
+        return reverse(
+            "articles:revision_table_download",
+            kwargs={
+                "page_id": page_id or self.article.pk,
+                "revision_id": revision_id or self.revision_id,
+                "table_id": table_id,
+            },
+        )
+
+    def test_get_with_valid_table_returns_csv(self):
+        """Test successful table download for superuser."""
+        response = self.client.get(self.get_download_url())
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("test-table-title.csv", response["Content-Disposition"])
+
+        content = response.content.decode("utf-8")
+        self.assertIn("Year", content)
+        self.assertIn("2020", content)
+        self.assertIn("100", content)
+
+    def test_get_with_missing_table_returns_404(self):
+        """Test 404 when table_id does not exist in the revision."""
+        response = self.client.get(self.get_download_url(table_id="nonexistent-table"))
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_get_with_invalid_data_returns_404(self):
+        """Test 404 when table has no data."""
+        self.article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Empty Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(title="Empty Table", headers=[], rows=[]),
+                            "id": "empty-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        draft_revision = self.article.save_revision()
+
+        response = self.client.get(self.get_download_url(revision_id=draft_revision.pk, table_id="empty-table-id"))
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_permission_required(self):
+        """Test table download is denied for anonymous users."""
+        self.client.logout()
+
+        response = self.client.get(self.get_download_url())
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertIn("/admin/login/", response.url)
+
+    def test_bundle_preview_permission_allows_access(self):
+        """Test that a bundle viewer can download table CSVs from pages in their bundle."""
+        mark_page_as_ready_for_review(self.article)
+
+        preview_team = TeamFactory(name="Preview Team")
+        bundle = BundleFactory(in_review=True)
+        BundlePageFactory(parent=bundle, page=self.article)
+        BundleTeam.objects.create(parent=bundle, team=preview_team)
+
+        viewer = create_bundle_viewer()
+        viewer.teams.add(preview_team)
+
+        self.client.force_login(viewer)
+        response = self.client.get(self.get_download_url())
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
+
+
+class ChartAndTableDownloadTestCase(WagtailTestUtils, TestCase):
+    """Test downloading both chart and table CSVs from the same article."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.series = ArticleSeriesPageFactory()
+        cls.table_data = TableDataFactory(
+            table_data=[
+                ["Category", "Chart Value 1", "Chart Value 2"],
+                ["2020", "100", "150"],
+                ["2021", "120", "180"],
+            ]
+        )
+        cls.article = StatisticalArticlePageFactory(parent=cls.series)
+        cls.article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Mixed Content Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Population Growth Chart",
+                                "subtitle": "Annual growth rates",
+                                "theme": "primary",
+                                "table": cls.table_data,
+                            },
+                            "id": "population-chart",
+                        },
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="Regional Statistics Table",
+                                caption="Regional breakdown",
+                                headers=[["Region", "Population"]],
+                                rows=[["North", "5000000"], ["South", "7000000"]],
+                            ),
+                            "id": "regional-table",
+                        },
+                    ],
+                },
+            }
+        ]
+        cls.article.save_revision().publish()
+        cls.revision_id = cls.article.latest_revision_id
+
+    def setUp(self):
+        self.login()
+
+    def get_chart_download_url(self, chart_id="population-chart"):
+        """Helper to build the chart download URL."""
+        return reverse(
+            "articles:revision_chart_download",
+            kwargs={
+                "page_id": self.article.pk,
+                "revision_id": self.revision_id,
+                "chart_id": chart_id,
+            },
+        )
+
+    def get_table_download_url(self, table_id="regional-table"):
+        """Helper to build the table download URL."""
+        return reverse(
+            "articles:revision_table_download",
+            kwargs={
+                "page_id": self.article.pk,
+                "revision_id": self.revision_id,
+                "table_id": table_id,
+            },
+        )
+
+    def test_chart_csv_download_has_correct_data(self):
+        """Test chart CSV contains chart-specific data."""
+        response = self.client.get(self.get_chart_download_url())
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("population-growth-chart.csv", response["Content-Disposition"])
+
+        content = response.content.decode("utf-8")
+        # Verify chart data is present
+        self.assertIn("Category", content)
+        self.assertIn("Chart Value 1", content)
+        self.assertIn("Chart Value 2", content)
+        self.assertIn("2020", content)
+        self.assertIn("100", content)
+        self.assertIn("150", content)
+
+        # Verify table data is NOT in chart CSV
+        self.assertNotIn("Region", content)
+        self.assertNotIn("North", content)
+        self.assertNotIn("5000000", content)
+
+    def test_table_csv_download_has_correct_data(self):
+        """Test table CSV contains table-specific data."""
+        response = self.client.get(self.get_table_download_url())
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("regional-statistics-table.csv", response["Content-Disposition"])
+
+        content = response.content.decode("utf-8")
+        # Verify table data is present
+        self.assertIn("Region", content)
+        self.assertIn("Population", content)
+        self.assertIn("North", content)
+        self.assertIn("South", content)
+        self.assertIn("5000000", content)
+        self.assertIn("7000000", content)
+
+        # Verify chart data is NOT in table CSV
+        self.assertNotIn("Category", content)
+        self.assertNotIn("Chart Value 1", content)
+        self.assertNotIn("2020", content)
+
+    def test_both_downloads_work_independently(self):
+        """Test that both chart and table can be downloaded without interference."""
+        # Download chart first
+        chart_response = self.client.get(self.get_chart_download_url())
+        self.assertEqual(chart_response.status_code, HTTPStatus.OK)
+        chart_content = chart_response.content.decode("utf-8")
+
+        # Download table second
+        table_response = self.client.get(self.get_table_download_url())
+        self.assertEqual(table_response.status_code, HTTPStatus.OK)
+        table_content = table_response.content.decode("utf-8")
+
+        # Verify both have distinct content
+        self.assertNotEqual(chart_content, table_content)
+        self.assertIn("Chart Value 1", chart_content)
+        self.assertIn("Region", table_content)
+
+        # Download chart again to ensure no state issues
+        chart_response_2 = self.client.get(self.get_chart_download_url())
+        self.assertEqual(chart_response_2.status_code, HTTPStatus.OK)
+        chart_content_2 = chart_response_2.content.decode("utf-8")
+
+        # Verify second chart download matches first
+        self.assertEqual(chart_content, chart_content_2)
+
+        # Dwonload table again to ensure no state issues
+        table_response_2 = self.client.get(self.get_table_download_url())
+        self.assertEqual(table_response_2.status_code, HTTPStatus.OK)
+        table_content_2 = table_response_2.content.decode("utf-8")
+
+        # Verify second table download matches first
+        self.assertEqual(table_content, table_content_2)

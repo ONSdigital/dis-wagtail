@@ -9,11 +9,11 @@ if TYPE_CHECKING:
 
 
 @hooks.register("register_admin_viewset")
-def register_teams_viewset() -> "TeamsViewSet":
+def register_teams_viewset() -> TeamsViewSet:
     """Register the teams viewset."""
     return teams_viewset
 
 
 @hooks.register("register_admin_viewset")
-def register_teams_chooser_viewset() -> "TeamChooserViewSet":
+def register_teams_chooser_viewset() -> TeamChooserViewSet:
     return team_chooser_viewset

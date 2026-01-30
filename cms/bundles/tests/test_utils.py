@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from unittest.mock import MagicMock
 
 from django.test import TestCase
 
@@ -12,9 +13,13 @@ from cms.bundles.utils import (
     get_bundleable_page_types,
     get_data_admin_action_url,
     get_dataset_preview_key,
+    get_language_code_from_page,
     get_pages_in_active_bundles,
+    serialize_bundle_content_for_published_release_calendar_page,
 )
+from cms.core.tests.utils import rebuild_internal_search_index
 from cms.methodology.models import MethodologyPage
+from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.models import ReleaseCalendarPage
 from cms.standard_pages.models import IndexPage, InformationPage
 from cms.topics.models import TopicPage
@@ -352,3 +357,78 @@ class DatasetPreviewKeyTests(TestCase):
         expected = "dataset-cpih-time-series-1"
 
         self.assertEqual(key, expected)
+
+
+class GetLanguageCodeFromPageTests(TestCase):
+    """Tests for the get_language_code_from_page function."""
+
+    def test_normalizes_en_gb_to_en(self):
+        """Test that 'en-gb' locale is normalized to 'en'."""
+        mock_page = MagicMock()
+        mock_page.locale.language_code = "en-gb"
+
+        result = get_language_code_from_page(mock_page)
+
+        self.assertEqual(result, "en")
+
+    def test_returns_cy_unchanged(self):
+        """Test that 'cy' (Welsh) locale is returned unchanged."""
+        mock_page = MagicMock()
+        mock_page.locale.language_code = "cy"
+
+        result = get_language_code_from_page(mock_page)
+
+        self.assertEqual(result, "cy")
+
+    def test_returns_other_locales_unchanged(self):
+        """Test that other locale codes are returned unchanged."""
+        mock_page = MagicMock()
+        mock_page.locale.language_code = "fr"
+
+        result = get_language_code_from_page(mock_page)
+
+        self.assertEqual(result, "fr")
+
+
+class SerializeBundleContentTranslationTests(TestCase):
+    """Tests for translation of section titles in bundle content serialization."""
+
+    def test_english_section_titles(self):
+        """Test that section titles are in English when language_code is 'en'."""
+        bundle = BundleFactory()
+        article = StatisticalArticlePageFactory()
+        methodology = MethodologyPageFactory()
+        BundlePageFactory(parent=bundle, page=article)
+        BundlePageFactory(parent=bundle, page=methodology)
+
+        content = serialize_bundle_content_for_published_release_calendar_page(bundle, language_code="en")
+
+        self.assertEqual(len(content), 2)
+        self.assertEqual(content[0]["value"]["title"], "Publications")
+        self.assertEqual(content[1]["value"]["title"], "Quality and methodology")
+
+    def test_welsh_section_titles(self):
+        """Test that section titles are in Welsh when language_code is 'cy'."""
+        bundle = BundleFactory()
+        article = StatisticalArticlePageFactory()
+        methodology = MethodologyPageFactory()
+        BundlePageFactory(parent=bundle, page=article)
+        BundlePageFactory(parent=bundle, page=methodology)
+
+        rebuild_internal_search_index()
+
+        content = serialize_bundle_content_for_published_release_calendar_page(bundle, language_code="cy")
+
+        self.assertEqual(len(content), 2)
+        self.assertEqual(content[0]["value"]["title"], "Cyhoeddiadau")
+        self.assertEqual(content[1]["value"]["title"], "Ansawdd a methodoleg")
+
+    def test_default_language_is_english(self):
+        """Test that the default language code is English."""
+        bundle = BundleFactory()
+        article = StatisticalArticlePageFactory()
+        BundlePageFactory(parent=bundle, page=article)
+
+        content = serialize_bundle_content_for_published_release_calendar_page(bundle)
+
+        self.assertEqual(content[0]["value"]["title"], "Publications")

@@ -30,7 +30,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "//[ Accessiblity tests ]//": "",
-    "pa11y": "pa11y-ci --sitemap http://localhost:8000/sitemap.xml --config ./pa11y.config.js || (echo 'Please install pa11y-ci globally using: npm install -g pa11y-ci' && exit 1)",
+    "pa11y": "make pa11y",
     "//[ Build tasks ]//": "",
     "build": "webpack --mode development --progress",
     "build:prod": "webpack --mode production",

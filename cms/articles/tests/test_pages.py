@@ -910,6 +910,14 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
             html=True,
         )
 
+    def test_article_page_uses_correct_toc_class(self):
+        """Test that the article page uses the correct table of contents class."""
+        response = self.client.get(self.page.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "ons-js-table-of-contents-container")
+        self.assertNotContains(response, "ons-js-toc-container")
+
 
 class GeneralPageTests(WagtailPageTestCase):
     @classmethod

@@ -11,7 +11,7 @@ from wagtail_factories.blocks import (
 from cms.core.blocks.related import LinkBlock, RelatedContentBlock
 from cms.core.blocks.section_blocks import SectionBlock, SectionContentBlock
 from cms.core.models import ContactDetails
-from cms.core.models.snippets import GlossaryTerm
+from cms.core.models.snippets import Definition
 
 
 class DateTimeBlockFactory(BlockFactory):
@@ -60,11 +60,11 @@ class ContactDetailsFactory(factory.django.DjangoModelFactory):
     email = factory.Faker("email")
 
 
-class GlossaryTermFactory(factory.django.DjangoModelFactory):
-    """Factory for GlossaryTerm."""
+class DefinitionFactory(factory.django.DjangoModelFactory):
+    """Factory for Definition."""
 
     class Meta:
-        model = GlossaryTerm
+        model = Definition
 
     name = factory.Faker("text", max_nb_chars=20)
     definition = factory.Faker("text", max_nb_chars=100)

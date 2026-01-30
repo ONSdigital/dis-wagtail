@@ -41,6 +41,14 @@ class MethodologyPageTest(WagtailPageTestCase):
         self.assertContains(response, "Save or print this page")
         self.assertContains(response, "Cite this methodology")
 
+    def test_methodology_page_uses_correct_toc_class(self):
+        """Test that the methodology page uses the correct table of contents class."""
+        response = self.client.get(self.page.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "ons-js-table-of-contents-container")
+        self.assertNotContains(response, "ons-js-toc-container")
+
     def test_related_publications(self):
         response = self.client.get(self.page.url)
         self.assertNotContains(response, "Related publications")

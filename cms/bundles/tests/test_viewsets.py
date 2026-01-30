@@ -27,6 +27,7 @@ from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, Bun
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
+from cms.core.tests.utils import rebuild_internal_search_index
 from cms.datasets.tests.factories import DatasetFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.enums import ReleaseStatus
@@ -42,6 +43,14 @@ from cms.workflows.tests.utils import (
     mark_page_as_ready_to_publish,
     progress_page_workflow,
 )
+
+# TODO: remove when Wagtail updates to django-tasks >= 0.11
+TASKS_ENQUEUE_ON_COMMIT = {
+    "default": {
+        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
+        "ENQUEUE_ON_COMMIT": False,
+    }
+}
 
 
 class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
@@ -480,13 +489,22 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.post_with_action_and_test("action-approve", BundleStatus.APPROVED, self.inspect_url)
 
         response = self.client.get(self.edit_url)
-        self.assertNotContains(response, "Choose Release Calendar page")
-        self.assertNotContains(response, "Add page")
-        self.assertNotContains(response, "Add dataset")
-        self.assertNotContains(response, "Add preview team")
 
-        self.assertContains(response, "Statistical article page")
-        self.assertContains(response, self.statistical_article_page.get_admin_display_title())
+        self.assertContains(response, "content-locked")
+        form = response.context["form"]
+        self.assertTrue(form.fields["name"].disabled)
+        self.assertTrue(form.fields["release_calendar_page"].disabled)
+        self.assertEqual(form.formsets["bundled_pages"].max_num, 1)
+        self.assertEqual(form.formsets["bundled_pages"].min_num, 1)
+        self.assertEqual(len(form.formsets["bundled_pages"].forms), 1)
+
+        self.assertEqual(form.formsets["bundled_datasets"].max_num, 0)
+        self.assertEqual(form.formsets["bundled_datasets"].min_num, 0)
+        self.assertEqual(len(form.formsets["bundled_datasets"].forms), 0)
+
+        self.assertEqual(form.formsets["teams"].max_num, 0)
+        self.assertEqual(form.formsets["teams"].min_num, 0)
+        self.assertEqual(len(form.formsets["teams"].forms), 0)
 
     def test_view_passes_access_token_to_form(self):
         response = self.client.get(self.edit_url)
@@ -1224,6 +1242,7 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.bundle.name)
 
     def test_index_view_search(self):
+        rebuild_internal_search_index()
         response = self.client.get(self.bundle_index_url, query_params={"q": "test"})
         self.assertContains(response, self.approved_bundle.name)
         self.assertNotContains(response, self.published_bundle.name)
@@ -1244,6 +1263,7 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, "View &quot;Ready to publish&quot;")
 
     def test_index_view__previewers__search(self):
+        rebuild_internal_search_index()
         self.client.force_login(self.bundle_viewer)
 
         another_preview_team = Team.objects.create(identifier="bar", name="Another preview team")
@@ -1293,6 +1313,7 @@ class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
 
+    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
     def test_chooser_search(self):
         draft_bundle = BundleFactory(name="Draft")
         chooser_results_url = reverse(bundle_chooser_viewset.get_url_name("choose_results"))
@@ -1410,6 +1431,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, "There are no draft pages that are not in an active bundle.")
 
     def test_chooser_search(self):
+        rebuild_internal_search_index()
         response = self.client.get(f"{self.chooser_results_url}?q=Article")
 
         self.assertEqual(response.status_code, 200)

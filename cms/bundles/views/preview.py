@@ -17,6 +17,7 @@ from cms.bundles.models import Bundle
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 from cms.bundles.utils import (
     get_dataset_preview_key,
+    get_language_code_from_page,
     get_preview_items_for_bundle,
     serialize_bundle_content_for_preview_release_calendar_page,
     serialize_datasets_for_release_calendar_page,
@@ -55,7 +56,7 @@ class BundleContentsMixin:
 class PreviewBundlePageView(BundleContentsMixin, TemplateView):
     http_method_names: Sequence[str] = ["get"]
 
-    def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> TemplateResponse:
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
         bundle_id = kwargs["bundle_id"]
         bundle = get_object_or_404(Bundle, id=bundle_id)
 
@@ -102,7 +103,7 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
 class PreviewBundleReleaseCalendarView(BundleContentsMixin, TemplateView):
     http_method_names: Sequence[str] = ["get"]
 
-    def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> TemplateResponse:
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
         bundle_id = kwargs["bundle_id"]
         bundle = get_object_or_404(Bundle, id=bundle_id)
 
@@ -127,8 +128,10 @@ class PreviewBundleReleaseCalendarView(BundleContentsMixin, TemplateView):
 
         # Make adjustments to page for preview
         release_calendar_page.status = ReleaseStatus.PUBLISHED
+        language_code = get_language_code_from_page(release_calendar_page)
         release_calendar_page.content = cast(
-            StreamField, serialize_bundle_content_for_preview_release_calendar_page(bundle, self.request.user)
+            StreamField,
+            serialize_bundle_content_for_preview_release_calendar_page(bundle, self.request.user, language_code),
         )
         release_calendar_page.datasets = cast(StreamField, serialize_datasets_for_release_calendar_page(bundle))
 
@@ -197,7 +200,7 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
 
         return None
 
-    def get(self, request: "HttpRequest", *args: Any, **kwargs: Any) -> "TemplateResponse | HttpResponseRedirect":
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse | HttpResponseRedirect:
         bundle_id = kwargs["bundle_id"]
 
         if settings.DIS_DATASETS_BUNDLE_API_ENABLED is False:

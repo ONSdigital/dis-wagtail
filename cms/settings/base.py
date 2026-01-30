@@ -4,17 +4,28 @@
 import datetime
 import os
 import sys
+import warnings
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
+from wagtail.utils.deprecation import RemovedInWagtail80Warning
 
 from cms.core.elasticache import ElastiCacheIAMCredentialProvider
 from cms.core.jinja2 import custom_json_dumps
+
+# TODO: Remove once wagtailtables updates telepath import
+# https://github.com/overcastsoftware/wagtailtables/issues/7
+warnings.filterwarnings(
+    "ignore",
+    category=RemovedInWagtail80Warning,
+    module=r"wagtailtables\..*",
+    message=r"wagtail\.telepath has been moved to wagtail\.admin\.telepath",
+)
 
 env = os.environ.copy()
 
@@ -256,6 +267,10 @@ else:
         ),
     }
 
+    # Allow overriding the database port for local development with multiple instances
+    if "DB_PORT" in env:
+        DATABASES["default"]["PORT"] = env["DB_PORT"]
+
     if "READ_REPLICA_DATABASE_URL" in env:
         DATABASES["read_replica"] = dj_database_url.config(
             env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age or 0
@@ -373,11 +388,6 @@ _valid_language_codes = {code for code, _ in LANGUAGES}
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
 
-# User groups
-PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
-PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
-VIEWERS_GROUP_NAME = "Viewers"
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/stable/howto/static-files/
@@ -490,12 +500,9 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
 PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get("PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5)
 
 # Logging
-# This logging is configured to be used with Sentry and console logs. Console
+# This logging is configured to be used with ONS logging and console logs. Console
 # logs are widely used by platforms offering Docker deployments, e.g. Heroku.
-# We use Sentry to only send error logs so we're notified about errors that are
-# not Python exceptions.
-# We do not use default mail or file handlers because they are of no use for
-# us.
+# We do not use default mail or file handlers because they are of no use for us.
 # https://docs.djangoproject.com/en/stable/topics/logging/
 LOGGING = {
     "version": 1,
@@ -569,12 +576,12 @@ LOGGING = {
 # Use fixed strings in case import paths move
 match env.get("EMAIL_BACKEND_NAME", "").upper():
     case "SES":
-        EMAIL_BACKEND = "django_ses.SESBackend"
+        EMAIL_BACKEND = "django_ses.SESBackend"  # pylint: disable=invalid-name
         AWS_SES_REGION_NAME = env["AWS_REGION"]
         USE_SES_V2 = True
 
     case "SMTP":
-        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"  # pylint: disable=invalid-name
         # https://docs.djangoproject.com/en/stable/ref/settings/#email-host
         if "EMAIL_HOST" in env:
             EMAIL_HOST = env["EMAIL_HOST"]
@@ -599,7 +606,7 @@ match env.get("EMAIL_BACKEND_NAME", "").upper():
         EMAIL_USE_TLS = True
 
     case _:
-        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # pylint: disable=invalid-name
 
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#email-subject-prefix
@@ -617,35 +624,6 @@ if "SERVER_EMAIL" in env:
 
 # Do not include superusers in all moderation notifications.
 WAGTAILADMIN_NOTIFICATION_INCLUDE_SUPERUSERS = False
-
-# Sentry configuration.
-is_in_shell = len(sys.argv) > 1 and sys.argv[1] in ["shell", "shell_plus"]
-
-if "SENTRY_DSN" in env and not is_in_shell:
-    import sentry_sdk
-    from sentry_sdk.integrations.django import DjangoIntegration
-    from sentry_sdk.utils import get_default_release
-
-    sentry_kwargs: dict[str, str | list[Any] | None] = {
-        "dsn": env["SENTRY_DSN"],
-        "integrations": [DjangoIntegration()],
-    }
-
-    # There's a chooser to toggle between environments at the top right corner on sentry.io
-    # Values are typically 'staging' or 'production' but can be set to anything else if needed.
-    # `heroku config:set SENTRY_ENVIRONMENT=production`
-    if sentry_environment := env.get("SENTRY_ENVIRONMENT"):
-        sentry_kwargs.update({"environment": sentry_environment})
-
-    release = get_default_release()
-    if release is None:
-        # Assume this is a Heroku-hosted app with the "runtime-dyno-metadata" lab enabled.
-        # see https://devcenter.heroku.com/articles/dyno-metadata
-        # `heroku labs:enable runtime-dyno-metadata`
-        release = env.get("HEROKU_RELEASE_VERSION", None)
-
-    sentry_kwargs.update({"release": release})
-    sentry_sdk.init(**sentry_kwargs)  # type: ignore[arg-type]
 
 
 # Front-end cache
@@ -801,28 +779,6 @@ if "CSP_DEFAULT_SRC" in env:
         CONTENT_SECURITY_POLICY = {"DIRECTIVES": CSP_DIRECTIVES}
 
 
-# Basic authentication settings
-# These are settings to configure the third-party library:
-# https://gitlab.com/tmkn/django-basic-auth-ip-whitelist
-if env.get("BASIC_AUTH_ENABLED", "false").lower().strip() == "true":
-    # Insert basic auth as a first middleware to be checked first, before
-    # anything else.
-    MIDDLEWARE.insert(0, "baipw.middleware.BasicAuthIPWhitelistMiddleware")
-
-    # This is the credentials users will have to use to access the site.
-    BASIC_AUTH_LOGIN = env.get("BASIC_AUTH_LOGIN", "tbx")
-    BASIC_AUTH_PASSWORD = env.get("BASIC_AUTH_PASSWORD", "tbx")
-
-    # Wagtail requires Authorization header to be present for the previews
-    BASIC_AUTH_DISABLE_CONSUMING_AUTHORIZATION_HEADER = True
-
-    # This is the list of hosts that website can be accessed without basic auth
-    # check. This may be useful to e.g. white-list "llamasavers.com" but not
-    # "llamasavers.production.onsdigital.com".
-    if "BASIC_AUTH_WHITELISTED_HTTP_HOSTS" in env:
-        BASIC_AUTH_WHITELISTED_HTTP_HOSTS = env["BASIC_AUTH_WHITELISTED_HTTP_HOSTS"].split(",")
-
-
 # Django REST framework settings
 # Change default settings that enable basic auth.
 REST_FRAMEWORK = {"DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication",)}
@@ -877,6 +833,10 @@ WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", "/admin/login/")
 # Custom image model
 # https://docs.wagtail.io/en/stable/advanced_topics/images/custom_image_model.html
 WAGTAILIMAGES_IMAGE_MODEL = "images.CustomImage"
+# https://docs.wagtail.org/en/latest/reference/settings.html#wagtailimages-image-form-base
+WAGTAILIMAGES_IMAGE_FORM_BASE = "cms.images.forms.CustomImageForm"
+# Allowed image formats
+WAGTAILIMAGES_EXTENSIONS = ["avif", "jpg", "jpeg", "png", "webp"]
 WAGTAILIMAGES_FEATURE_DETECTION_ENABLED = False
 
 pixel_limit = env.get("WAGTAILIMAGES_MAX_IMAGE_PIXELS")
@@ -1048,9 +1008,9 @@ AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
 AWS_COGNITO_TEAM_SYNC_ENABLED = env.get("AWS_COGNITO_TEAM_SYNC_ENABLED", "false").lower() == "true"
 AWS_COGNITO_TEAM_SYNC_FREQUENCY = int(env.get("AWS_COGNITO_TEAM_SYNC_FREQUENCY", "1"))
 
-# Groups
-PUBLISHING_ADMIN_GROUP_NAME = "Publishing Admins"
-PUBLISHING_OFFICER_GROUP_NAME = "Publishing Officers"
+# User groups
+PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
+PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
 VIEWERS_GROUP_NAME = "Viewers"
 ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
 
