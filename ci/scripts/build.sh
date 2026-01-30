@@ -1,6 +1,8 @@
 #!/bin/sh
 set -eu
 
+# This script isn't necessary, it is to align with compiled code repos
+
 # These directories will exist in the Concourse build environment
 SRC_DIR="pull_request"
 DST_DIR="build"
