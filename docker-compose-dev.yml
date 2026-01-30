@@ -7,6 +7,7 @@ services:
       # Defaults for createdb/dropdb/pg_restore etc.
       PGDATABASE: ons
       PGUSER: ons
+      PGPORT: ${DB_PORT:-5432}
       # Values for initdb
       POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_USER: ons
@@ -15,13 +16,13 @@ services:
       - pgdata:/var/lib/postgresql/data
     attach: false
     ports:
-      - 5432:5432
+      - ${DB_PORT:-5432}:${DB_PORT:-5432}
 
   redis:
     image: redis:7.2
     attach: false
     ports:
-      - 6379:6379
+      - ${REDIS_PORT:-6379}:6379
 
   broker:
     image: bitnamilegacy/kafka:3.8 # Match Kafka version in production
@@ -51,13 +52,13 @@ services:
       # Enable auto-creation of topics
       KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
     ports:
-      - '9094:9094'
+      - '${KAFKA_PORT:-9094}:9094'
 
   mailpit:
     image: axllent/mailpit:latest
     ports:
-      - '1025:1025' # SMTP port
-      - '8025:8025' # HTTP UI at http://localhost:8025
+      - '${MAILPIT_SMTP_PORT:-1025}:1025' # SMTP port
+      - '${MAILPIT_UI_PORT:-8025}:8025' # HTTP UI at http://localhost:8025
 
 volumes:
   pgdata:
