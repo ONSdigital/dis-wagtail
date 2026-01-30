@@ -67,14 +67,13 @@ def _migrate_revisions(apps, direction):
             continue
 
         # Revisions store StreamField as JSON string
-        if isinstance(stream_data, str):
-            # Revisions store StreamField as JSON string, but some "content" fields
-            # may contain non-JSON data (e.g., RichTextField HTML). Skip those.
-            try:
-                stream_data = json.loads(stream_data)
-            except json.JSONDecodeError:
-                logger.info("Skipping revision %s with non-JSON content: %s", revision.pk, stream_data[:50])
-                continue
+        # Revisions store StreamField as JSON string, but some "content" fields
+        # may contain non-JSON data (e.g., RichTextField HTML). Skip those.
+        try:
+            stream_data = json.loads(stream_data)
+        except json.JSONDecodeError:
+            logger.info("Skipping revision %s with non-JSON content: %s", revision.pk, stream_data[:50])
+            continue
 
         modified = _process_blocks(stream_data, direction)
 
