@@ -73,9 +73,7 @@ def _migrate_revisions(apps, direction):
             if not stripped.startswith("["):
                 # StreamField JSON always starts with [ (it's an array of blocks)
                 # RichTextField HTML starts with <. This skips non-StreamField content.
-                logger.info(
-                    "Skipping revision %s with non-StreamField content: %s", revision.pk, stripped[:30]
-                )
+                logger.info("Skipping revision %s with non-StreamField content: %s", revision.pk, stripped[:30])
                 continue
             stream_data = json.loads(stream_data)
 
