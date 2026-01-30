@@ -166,11 +166,13 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
     @path("editions/<str:slug>/related-data/")
     def release_related_data(self, request: HttpRequest, slug: str) -> HttpResponse:
-        return self.release(request, slug, related_data=True)
+        response: HttpResponse = self.release(request, slug, related_data=True)
+        return response
 
     @path("editions/<str:slug>/versions/<int:version>/")
     def release_with_versions(self, request: HttpRequest, slug: str, version: int) -> HttpResponse:
-        return self.release(request, slug, version=version)
+        response: HttpResponse = self.release(request, slug, version=version)
+        return response
 
     @path("editions/<str:slug>/download-chart/<str:chart_id>/")
     def download_chart(self, request: HttpRequest, slug: str, chart_id: str) -> HttpResponse:
@@ -181,7 +183,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
     @path("editions/<str:slug>/versions/<int:version>/download-chart/<str:chart_id>/")
     def download_chart_with_version(self, request: HttpRequest, slug: str, version: int, chart_id: str) -> HttpResponse:
-        return self.release(request, slug, version=version, chart_id=chart_id)
+        response: HttpResponse = self.release(request, slug, version=version, chart_id=chart_id)
+        return response
 
     @path("editions/<str:slug>/download-table/<str:table_id>/")
     def download_table(self, request: HttpRequest, slug: str, table_id: str) -> HttpResponse:
@@ -192,7 +195,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
     @path("editions/<str:slug>/versions/<int:version>/download-table/<str:table_id>/")
     def download_table_with_version(self, request: HttpRequest, slug: str, version: int, table_id: str) -> HttpResponse:
-        return self.release(request, slug, version=version, table_id=table_id)
+        response: HttpResponse = self.release(request, slug, version=version, table_id=table_id)
+        return response
 
 
 # pylint: disable=too-many-public-methods
@@ -887,8 +891,8 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             return None
 
         site_id: int = url_parts[0]
-        root_url: str = url_parts[1]
-        page_path: str = url_parts[2]
+        root_url: str | None = url_parts[1]
+        page_path: str | None = url_parts[2]
 
         if not (root_url and page_path):
             return site_id, root_url, page_path

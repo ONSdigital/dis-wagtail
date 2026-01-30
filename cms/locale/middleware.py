@@ -27,7 +27,7 @@ class SubdomainLocaleMiddleware(LocaleMiddleware):
         self.use_locale_subdomain = settings.CMS_USE_SUBDOMAIN_LOCALES
         super().__init__(get_response)
 
-    def process_request(self, request: "HttpRequest") -> None:
+    def process_request(self, request: HttpRequest) -> None:
         if self.use_locale_subdomain and (lang_code := self._get_language_from_host(request)):
             translation.activate(lang_code)
             request.LANGUAGE_CODE = translation.get_language()
@@ -35,7 +35,7 @@ class SubdomainLocaleMiddleware(LocaleMiddleware):
 
         super().process_request(request)
 
-    def process_response(self, request: "HttpRequest", response: "HttpResponseBase") -> "HttpResponseBase":
+    def process_response(self, request: HttpRequest, response: HttpResponseBase) -> HttpResponseBase:
         if (
             self.use_locale_subdomain
             and (lang_code := self._get_language_from_host(request))
@@ -60,7 +60,7 @@ class SubdomainLocaleMiddleware(LocaleMiddleware):
         except LookupError:
             return None
 
-    def _get_language_from_host(self, request: "HttpRequest") -> str | None:
+    def _get_language_from_host(self, request: HttpRequest) -> str | None:
         if request.path.startswith(f"/{settings.WAGTAILADMIN_HOME_PATH.lstrip('/')}"):
             return None
 

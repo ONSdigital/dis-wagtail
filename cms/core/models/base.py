@@ -233,7 +233,9 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         This will be the path portion of the URL returned by `get_url_parts()`.
         """
         parts = self.get_url_parts(request=request)  # returns site_id, root_url, page_path | None
-        return parts[-1] if parts is not None else ""
+        if parts is None or parts[-1] is None:
+            return ""
+        return parts[-1]
 
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
