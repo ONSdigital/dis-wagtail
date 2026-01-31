@@ -1,7 +1,10 @@
 #!/bin/sh
 set -eu
 
-# This script isn't necessary, it is to align with compiled code repos
+# Temporary: required because the Concourse pipeline expects Dockerfile.concourse.
+# This exists to support repositories that still override the image registry
+# via string replacement in the Dockerfile rather than using build arguments.
+# Can be removed once all application Dockerfiles migrate to build args.
 
 # These directories will exist in the Concourse build environment
 SRC_DIR="pull_request"
