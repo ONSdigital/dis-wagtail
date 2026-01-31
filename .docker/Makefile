@@ -5,7 +5,7 @@
 
 DOCKERFILE := ../Dockerfile
 ECR_REPO_NAMESPACE := dis/apps
-ECR_REPO := $(ECR_REPO_NAMESPACE)/dis-wagtail-main
+ECR_REPO := $(ECR_REPO_NAMESPACE)/dis-wagtail-cms
 ECR_PROFILE_NAME ?= dp-ci
 ECR_AWS_ACCOUNT_ID := $(shell aws sts get-caller-identity --query "Account" --output text --profile $(ECR_PROFILE_NAME))
 AWS_REGION ?= eu-west-2
@@ -54,20 +54,3 @@ push_ecr:
 	@echo "🚀 Pushing $(ECR_REGISTRY)/$(ECR_REPO):$(TAG)..."
 	@docker push $(ECR_REGISTRY)/$(ECR_REPO):$(TAG) || (echo "❌ Failed to push $(ECR_REGISTRY)/$(ECR_REPO):$(TAG)"; exit 1)
 	@echo "✅ Successfully pushed $(ECR_REGISTRY)/$(ECR_REPO):$(TAG)"
-
-	@if aws ecr describe-images --repository-name $(ECR_REPO) --profile $(ECR_PROFILE_NAME) --image-ids imageTag=latest > /dev/null 2>&1; then \
-		echo "🗑️  Deleting remote 'latest' tag..."; \
-		output=$$(aws ecr batch-delete-image --repository-name $(ECR_REPO) --profile $(ECR_PROFILE_NAME) --image-ids imageTag=latest --output json); \
-		failures=$$(echo "$$output" | jq -r '.failures | length'); \
-		if [ "$$failures" -eq 0 ]; then \
-			echo "✅ 'latest' Tag deleted!"; \
-		else \
-			echo "❌ Tag deletion for 'latest' failed, this means the image currently tagged with 'latest' is not correct, this NEEDS to be resolved"; \
-			exit 1; \
-		fi; \
-	else \
-		echo "ℹ️  Remote 'latest' tag does not exist. Skipping deletion."; \
-	fi
-	@echo "🚀 Pushing $(ECR_REGISTRY)/$(ECR_REPO):latest..."
-	@docker push $(ECR_REGISTRY)/$(ECR_REPO):latest || (echo "❌ Failed to push $(ECR_REGISTRY)/$(ECR_REPO):latest"; exit 1)
-	@echo "✅ Successfully pushed $(ECR_REGISTRY)/$(ECR_REPO):latest"
