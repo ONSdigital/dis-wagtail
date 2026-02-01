@@ -46,3 +46,16 @@ Feature: A general use information page
         And the user adds the taxonomy topic "Inflation" twice
         And the user clicks the "Save Draft" button
         Then the duplicate topic error message is shown
+
+    Scenario: Index page lists child information pages alphabetically
+        Given an index page exists under the homepage
+        And the index page has the following information pages:
+            | page_name       | live  |
+            | Zebra Info      | true  |
+            | Alpha Info      | true  |
+            | Draft Only Info | false |
+            | Beta Info       | true  |
+        When the user visits the live index page
+        Then the live index page lists only live information pages in alphabetical order
+        When the user visits the index page preview
+        Then the index page preview lists live and draft information pages in alphabetical order

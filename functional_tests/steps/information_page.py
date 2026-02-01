@@ -2,11 +2,14 @@
 from behave import step, then, when
 from behave.runner import Context
 from django.conf import settings
+from django.urls import reverse
 from django.utils import translation
 from playwright.sync_api import expect
 
 from cms.core.custom_date_format import ons_date_format
 from cms.standard_pages.models import InformationPage
+from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
+from functional_tests.step_helpers.utils import str_to_bool
 
 
 @step("the user creates an information page as a child of the home page")
@@ -132,3 +135,79 @@ def only_one_instance_of_topic_is_saved(context: Context) -> None:
     expect(page.locator("#panel-child-taxonomy-topics-content")).to_contain_text(
         "Please correct the duplicate data for page and topic, which must be unique."
     )
+
+
+@step("an index page exists under the homepage")
+def index_page_exists_under_homepage(context: Context) -> None:
+    context.index_page = IndexPageFactory(title="Index Page")
+
+
+@step("the index page has the following information pages:")
+def index_page_has_information_pages(context: Context) -> None:
+    if not hasattr(context, "index_page"):
+        context.index_page = IndexPageFactory(title="Index Page")
+
+    context.index_information_pages = []
+
+    for row in context.table:
+        page_name = row.get("page_name")
+        live_value = row.get("live", "true")
+
+        if not page_name:
+            raise ValueError("Information pages table must include a 'page_name' column")
+
+        live = str_to_bool(live_value)
+
+        info_page = InformationPageFactory(parent=context.index_page, title=page_name, live=live)
+
+        if live and not info_page.live:
+            info_page.save_revision().publish()
+        elif not live and info_page.live:
+            info_page.unpublish()
+
+        context.index_information_pages.append(info_page)
+
+
+@when("the user visits the live index page")
+def user_visits_index_page(context: Context) -> None:
+    context.page.goto(f"{context.base_url}{context.index_page.url}")
+
+
+@when("the user visits the index page preview")
+def user_visits_index_page_preview(context: Context) -> None:
+    preview_url = reverse("wagtailadmin_pages:preview_on_edit", args=[context.index_page.pk])
+    context.page.goto(f"{context.base_url}{preview_url}")
+
+
+def _assert_information_pages_in_order(context: Context, expected_titles: list[str], label: str) -> None:
+    list_items = context.page.locator(".ons-document-list").first.locator(".ons-document-list__item").all()
+    actual_titles = []
+
+    for item in list_items:
+        title_link = item.locator(".ons-document-list__item-title a").first
+        title = title_link.text_content().strip()
+        actual_titles.append(title)
+
+    assert actual_titles == expected_titles, (
+        f"Expected {label} information pages in order {expected_titles}, but got {actual_titles}"
+    )
+
+
+@then("the live index page lists only live information pages in alphabetical order")
+def live_index_page_lists_only_live_information_pages(context: Context) -> None:
+    expected_titles = sorted(
+        [page.title for page in context.index_information_pages if page.live],
+        key=str.casefold,
+    )
+
+    _assert_information_pages_in_order(context, expected_titles, "live")
+
+
+@then("the index page preview lists live and draft information pages in alphabetical order")
+def preview_index_page_lists_live_and_draft_information_pages(context: Context) -> None:
+    expected_titles = sorted(
+        [page.title for page in context.index_information_pages],
+        key=str.casefold,
+    )
+
+    _assert_information_pages_in_order(context, expected_titles, "preview")
