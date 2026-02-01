@@ -33,9 +33,15 @@ Feature: A general use information page
         And the user refreshes the page
         Then the minimap is hidden
 
-    # TODO: Write the step definitions and implementation for this scenario
-    # Scenario: Duplicate topics are removed when creating an information page
-    #     When the user creates an information page as a child of the home page
-    #     And the user adds the same topic twice
-    #     And the user saves the page
-    #     Then only one instance of the topic is saved
+    @smoke
+    Scenario: Duplicate topics are removed when creating an information page
+        When the user creates an information page as a child of the home page
+        And the user adds content to the new information page
+        And the following taxonomy topics exist:
+            | topic     |
+            | Economy   |
+            | Inflation |
+            | CPI       |
+        And the user adds the taxonomy topic "Inflation" twice
+        And the user clicks the "Save Draft" button
+        Then the duplicate topic error message is shown

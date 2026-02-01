@@ -1,3 +1,25 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from cms.taxonomy.models import Topic
+
+
+def get_or_create_topic(topic_name: str, topic_cache: dict[str, Topic] | None = None) -> Topic:
+    """Get existing topic from cache or create a new one."""
+    if topic_cache is not None and topic_name in topic_cache:
+        return topic_cache[topic_name]
+
+    # Import lazily to avoid Django AppRegistryNotReady during Behave startup.
+    from cms.taxonomy.tests.factories import TopicFactory  # pylint: disable=import-outside-toplevel
+
+    topic = TopicFactory(title=topic_name)
+
+    if topic_cache is not None:
+        topic_cache[topic_name] = topic
+
+    return topic
+
+
 def str_to_bool(bool_string: str) -> bool:
     """Takes a string argument which indicates a boolean, and returns the corresponding boolean value.
     raises ValueError if input string is not one of the recognized boolean like values.

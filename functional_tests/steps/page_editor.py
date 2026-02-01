@@ -9,6 +9,7 @@ from wagtail.models import Locale
 
 from cms.themes.models import ThemeIndexPage
 from cms.themes.tests.factories import ThemeIndexPageFactory
+from functional_tests.step_helpers.utils import get_or_create_topic
 
 
 @when("the user clicks the action button toggle")
@@ -242,3 +243,20 @@ def user_has_no_option_to_copy_page(context: Context) -> None:
 @step("the user has the option to copy the page")
 def user_has_option_to_copy_page(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Copy")).to_be_visible()
+
+
+@step("the following taxonomy topics exist:")
+def create_topics_from_table(context: Context) -> None:
+    """Create taxonomy topics from a table of topic names."""
+    if not hasattr(context, "topic_cache"):
+        context.topic_cache = {}
+
+    context.topics = {}
+
+    for row in context.table:
+        topic_name = row.get("topic")
+        if not topic_name:
+            raise ValueError("Topic table must include a 'topic' column")
+
+        topic = get_or_create_topic(topic_name, context.topic_cache)
+        context.topics[topic_name] = topic

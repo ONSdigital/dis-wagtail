@@ -10,16 +10,15 @@ class StandardPagesAddViewTests(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.permission_denied_message = "Sorry, you do not have permission to access this area."
+        cls.index_page = IndexPageFactory()
 
     def setUp(self):
         self.login()
 
     def test_index_page_cannot_have_index_page_child(self):
         """Home -> Index Page -> Index Page should be forbidden."""
-        index_page = IndexPageFactory()
-
         response = self.client.get(
-            reverse("wagtailadmin_pages:add", args=("standard_pages", "indexpage", index_page.pk)),
+            reverse("wagtailadmin_pages:add", args=("standard_pages", "indexpage", self.index_page.pk)),
             follow=True,
         )
 
@@ -28,8 +27,7 @@ class StandardPagesAddViewTests(WagtailTestUtils, TestCase):
 
     def test_information_page_cannot_have_information_page_child(self):
         """Home -> Index Page -> Information Page -> Information Page should be forbidden."""
-        index_page = IndexPageFactory()
-        information_page = InformationPageFactory(parent=index_page)
+        information_page = InformationPageFactory(parent=self.index_page)
 
         response = self.client.get(
             reverse("wagtailadmin_pages:add", args=("standard_pages", "informationpage", information_page.pk)),
@@ -65,10 +63,8 @@ class StandardPagesAddViewTests(WagtailTestUtils, TestCase):
 
     def test_information_page_can_be_added_under_index_page(self):
         """Home -> Index Page -> Information Page should be allowed."""
-        index_page = IndexPageFactory()
-
         response = self.client.get(
-            reverse("wagtailadmin_pages:add", args=("standard_pages", "informationpage", index_page.pk)),
+            reverse("wagtailadmin_pages:add", args=("standard_pages", "informationpage", self.index_page.pk)),
             follow=True,
         )
 

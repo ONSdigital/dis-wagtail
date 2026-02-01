@@ -7,7 +7,7 @@ from wagtail.fields import RichTextField
 from wagtail.search import index
 
 from cms.bundles.mixins import BundledPageMixin
-from cms.core.analytics_utils import format_date_for_gtm
+from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, format_date_for_gtm
 from cms.core.blocks.stream_blocks import CoreStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
@@ -27,7 +27,7 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     template = "templates/pages/information_page.html"
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
-    # TODO: Confirm if the below content type is correct
+    # TODO: The below content type needs to be updated
     search_index_content_type: ClassVar[str] = "static_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
@@ -62,8 +62,7 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
         for block in self.content:  # pylint: disable=not-an-iterable,useless-suppression
             if hasattr(block.block, "to_table_of_contents_items"):
                 items += block.block.to_table_of_contents_items(block.value)
-        # TODO: Need to check the GTM stuff
-        # add_table_of_contents_gtm_attributes(items)
+        add_table_of_contents_gtm_attributes(items)
         return items
 
     def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
@@ -78,7 +77,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
-    # TODO: Confirm if the below content type is correct
+    # TODO: The below content type needs to be updated
     search_index_content_type: ClassVar[str] = "static_landing_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)

@@ -7,19 +7,20 @@
 
 {# fmt:off #}
     {% if page.last_published_at %}
-        {%- set last_updated_label = _("Last updated:") -%}
-        {%- set last_updated_item = {
-                "term": last_updated_label,
-                "descriptions": [
-                    {
-                        "description": page.last_published_at|ons_date("DATE_FORMAT")
-                    }
-                ]
-            }
-        -%}
+        {%- set last_updated_description = page.last_published_at|ons_date("DATE_FORMAT") -%}
     {% else %}
-        {%- set last_updated_item = None -%}
+        {%- set last_updated_description = "Populated on publish" -%}
     {% endif %}
+    {%- set last_updated_label = _("Last updated:") -%}
+    {%- set last_updated_item = {
+            "term": last_updated_label,
+            "descriptions": [
+                {
+                    "description": last_updated_description
+                }
+            ]
+        }
+    -%}
 {# fmt:on #}
 
 {% block header_area %}

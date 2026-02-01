@@ -112,3 +112,23 @@ def check_new_information_is_displayed_with_english_content_and_welsh_livery(
 def date_placeholder_is_displayed_in_date_input_field(context: Context, textbox_text: str, date_format: str) -> None:
     """Check date placeholder in the textbox."""
     expect(context.page.get_by_role("textbox", name=textbox_text)).to_have_attribute("placeholder", date_format)
+
+
+@step('the user adds the taxonomy topic "{topic_name}" twice')
+def user_adds_taxonomy_topic_twice(context: Context, topic_name: str) -> None:
+    page = context.page
+    page.get_by_role("tab", name="Taxonomy").click()
+
+    for _ in range(2):
+        page.get_by_role("button", name="Add topics").click()
+        page.get_by_role("checkbox", name=topic_name).check()
+        page.get_by_role("button", name="Confirm selection").click()
+
+
+@then("the duplicate topic error message is shown")
+def only_one_instance_of_topic_is_saved(context: Context) -> None:
+    page = context.page
+    page.get_by_role("tab", name="Taxonomy").click()
+    expect(page.locator("#panel-child-taxonomy-topics-content")).to_contain_text(
+        "Please correct the duplicate data for page and topic, which must be unique."
+    )
