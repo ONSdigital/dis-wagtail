@@ -74,20 +74,21 @@ def check_information_page_content(context: Context, default_language: bool = Tr
     expect(page.get_by_text("My test information page")).to_be_visible()
 
     if default_language:
-        expect(page.get_by_text("Last updated")).to_be_visible()
+        expect(page.get_by_text("Last updated:")).to_be_visible()
         expect(page.locator("dl")).to_contain_text(f"Last updated: {formatted_date}")
+        expect(page.get_by_label("Sections in this page").get_by_role("heading")).to_contain_text("Contents")
+        expect(page.get_by_label("Sections in this page")).to_contain_text("Section 1")
     else:
-        expect(page.get_by_text("Diweddarwyd Diwethaf")).to_be_visible()
+        expect(page.get_by_text("Diweddarwyd Diwethaf:")).to_be_visible()
         expect(page.locator("dl")).to_contain_text(f"Diweddarwyd Diwethaf: {formatted_date}")
+        expect(page.get_by_label("Adrannau ar y dudalen hon").get_by_role("heading")).to_contain_text("Cynnwys")
+        expect(page.get_by_label("Adrannau ar y dudalen hon")).to_contain_text("Section 1")
 
     expect(page.locator("#section-1")).to_contain_text("Some example rich text content")
     expect(page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
 
     expect(page.get_by_role("link", name="Test Home")).to_be_visible()
     expect(page.get_by_text("Our test home page")).to_be_visible()
-
-    expect(page.get_by_label("Sections in this page").get_by_role("heading")).to_contain_text("Contents")
-    expect(page.get_by_role("link", name="Section 1")).to_be_visible()
 
 
 @then("the new information page with the added content is displayed")
