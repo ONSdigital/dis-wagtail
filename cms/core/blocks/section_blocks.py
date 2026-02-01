@@ -85,12 +85,12 @@ class CoreSectionContentBlock(StreamBlock):
     information_panel = InformationPanelBlock()
     announcement_panel = AnnouncementPanelBlock()
     accordion = AccordionBlock()
-    video_embed = VideoEmbedBlock(group="Media")
     image = ImageBlock(group="Media")
     documents = DocumentsBlock(group="Media")
-    related_links = RelatedLinksBlock()
+    video_embed = VideoEmbedBlock(group="Media")
     table = ONSTableBlock(group="DataVis", allow_links=True)
     equation = EquationBlock(group="DataVis", icon="decimal")
+    related_links = RelatedLinksBlock()
     iframe_visualisation = IframeBlock(group="DataVis", label="Iframe Visualisation")
 
     class Meta:
