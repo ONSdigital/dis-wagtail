@@ -6,6 +6,7 @@ dict in this file so all tests agree on a single truth.
 import json
 
 from django.test import SimpleTestCase, override_settings
+from django.utils.html import strip_tags
 from wagtail.models import Page
 
 from cms.search.utils import build_page_uri
@@ -36,7 +37,7 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertEqual(payload["uri"], build_page_uri(page))
         expected_title = title if title is not None else page.title
         self.assertEqual(payload["title"], expected_title)
-        self.assertEqual(payload["summary"], page.summary)
+        self.assertEqual(payload["summary"], strip_tags(page.summary))
 
         expected_ct = EXPECTED_CONTENT_TYPES[type(page).__name__]
         self.assertEqual(payload["content_type"], expected_ct)
