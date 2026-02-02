@@ -9,12 +9,14 @@ helm:
     sandbox: # temporary - point sandbox to bleed
       - values/dis-bleed-internal.yaml
       - values/dis-bleed-external.yaml
-    staging: # temporary - point staging to bleed
-      - values/dis-bleed-internal.yaml
-      - values/dis-bleed-external.yaml
-    production: # temporary - point production to bleed
-      - values/dis-bleed-internal.yaml
-      - values/dis-bleed-external.yaml
+      - values/dis-sandbox-internal.yaml
+      - values/dis-sandbox-external.yaml
+    staging:
+      - values/dis-staging-internal.yaml
+      - values/dis-staging-external.yaml
+    production:
+      - values/dis-production-internal.yaml
+      - values/dis-production-external.yaml
   pull_request:
     # Auto-merge is intentionally disabled. Certain migrations require config changes to be
     # applied in lockstep. If the Helm chart auto-updates before configuration is in place,
