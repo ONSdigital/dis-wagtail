@@ -31,8 +31,7 @@ class ContactDetailsChooseMixin:
         ]
 
     def get_object_list(self) -> QuerySet[ContactDetails]:
-        queryset: QuerySet[ContactDetails] = super().get_object_list()
-        return queryset.filter(live=True)
+        return ContactDetails.objects.filter(live=True)
 
 
 class ContactDetailsChooseView(ContactDetailsChooseMixin, SnippetChooseView): ...
