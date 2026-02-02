@@ -19,7 +19,7 @@ def delete_pages(apps, schema_editor):
 
     # Deleting the wagtailcore.Page rows will cascade to:
     # - the specific page tables (standard_pages_informationpage, etc.)
-    # - revisions, log entries (depending on your DB constraints), etc.
+    # - revisions
     #
     # Important: order doesn't matter much, but deleting children first is safer.
     # Wagtail stores tree structure; bulk delete at DB level can leave treebeard state weird
