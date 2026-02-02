@@ -18,7 +18,8 @@ class PageReadyToBePublishedLock(WorkflowLock):
 
     It comes in effect when the page enters the "Ready to be published" workflow step.
     The page can be "unlocked" by moving back to the previous workflow step.
-    If the page bundle that is ready to be published, the bundle must be taken out of "Ready to be published" first.
+    If the page is in a bundle that is ready to be published, then the bundle must be taken out of
+    "Ready to be published" first.
     """
 
     def get_message(self, user: User) -> str | SafeString:
