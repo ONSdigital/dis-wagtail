@@ -175,8 +175,19 @@ def user_visits_index_page(context: Context) -> None:
 
 @when("the user visits the index page preview")
 def user_visits_index_page_preview(context: Context) -> None:
-    preview_url = reverse("wagtailadmin_pages:preview_on_edit", args=[context.index_page.pk])
-    context.page.goto(f"{context.base_url}{preview_url}")
+    edit_url = reverse("wagtailadmin_pages:edit", args=[context.index_page.pk])
+
+    context.page.goto(f"{context.base_url}{edit_url}")
+
+    preview_button = context.page.locator('button[aria-label="Toggle preview"]')
+    preview_button.click()
+
+    with context.page.expect_popup() as preview_tab:
+        context.page.get_by_role("link", name="Preview in new tab").click()
+    # closes context.page (admin page)
+    context.page.close()
+    # assigns context.page to the pop up tab
+    context.page = preview_tab.value
 
 
 def _assert_information_pages_in_order(context: Context, expected_titles: list[str], label: str) -> None:
