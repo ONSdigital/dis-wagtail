@@ -18,6 +18,8 @@ class TestContactDetailsChooserViewSet(WagtailTestUtils, TestCase):
             name="Cyswllt cyntaf", email="first@term.space", locale=Locale.objects.get(language_code="cy")
         )
 
+        cls.draft_contact = ContactDetailsFactory(name="Draft term", email="draft@term.space", live=False)
+
         chooser_viewset = cls.contact.snippet_viewset.chooser_viewset
         cls.chooser_url = reverse(chooser_viewset.get_url_name("choose"))
         cls.chooser_results_url = reverse(chooser_viewset.get_url_name("choose_results"))
@@ -39,6 +41,9 @@ class TestContactDetailsChooserViewSet(WagtailTestUtils, TestCase):
         self.assertContains(response, self.contact.email)
         self.assertContains(response, self.contact_cy.name)
         self.assertContains(response, self.contact_cy.email)
+
+        self.assertNotContains(response, self.draft_contact.name)
+        self.assertNotContains(response, self.draft_contact.email)
 
     def test_chooser_search(self):
         rebuild_internal_search_index()
@@ -66,7 +71,7 @@ class TestDefinitionChooserViewSet(WagtailTestUtils, TestCase):
         cls.term_cy = DefinitionFactory(
             name="Cyswllt cyntaf", definition="something else", locale=Locale.objects.get(language_code="cy")
         )
-
+        cls.draft_term = DefinitionFactory(name="Draft temr", definition="tbd", live=False)
         chooser_viewset = cls.term.snippet_viewset.chooser_viewset
         cls.chooser_url = reverse(chooser_viewset.get_url_name("choose"))
         cls.chooser_results_url = reverse(chooser_viewset.get_url_name("choose_results"))
@@ -84,6 +89,8 @@ class TestDefinitionChooserViewSet(WagtailTestUtils, TestCase):
         self.assertContains(response, "Name")
         self.assertContains(response, self.term.name)
         self.assertContains(response, self.term_cy.name)
+
+        self.assertNotContains(response, self.draft_term.name)
 
     def test_chooser_search(self):
         rebuild_internal_search_index()
