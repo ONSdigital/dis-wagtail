@@ -10,7 +10,7 @@ ECR_PROFILE_NAME ?= dp-ci
 ECR_AWS_ACCOUNT_ID := $(shell aws sts get-caller-identity --query "Account" --output text --profile $(ECR_PROFILE_NAME))
 AWS_REGION ?= eu-west-2
 ECR_REGISTRY := $(ECR_AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
-BUILD_ARGS := --build-arg="GIT_COMMIT=$(shell git rev-parse HEAD)" --build-arg="BUILD_TIME=$(shell date +%s)" --build-arg="TAG=$(TAG)"
+BUILD_ARGS := --build-arg="GIT_COMMIT=$(shell git rev-parse HEAD)" --build-arg="BUILD_TIME=$(shell date +%s)"
 
 .PHONY: create_ecr_repo
 create_ecr_repo:

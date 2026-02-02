@@ -191,9 +191,8 @@ USER root
 
 ARG GIT_COMMIT=""
 ARG BUILD_TIME=""
-ARG TAG=""
 
-ENV GIT_COMMIT=${GIT_COMMIT} BUILD_TIME=${BUILD_TIME} TAG=${TAG}
+ENV GIT_COMMIT=${GIT_COMMIT} BUILD_TIME=${BUILD_TIME}
 
 # Set default shell with pipefail option
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -261,7 +260,6 @@ FROM base AS web
 
 ARG GIT_COMMIT=""
 ARG BUILD_TIME=""
-ARG TAG=""
 
 # Set production environment variables
 ENV \
@@ -273,9 +271,7 @@ ENV \
     # Commit SHA from building the project
     GIT_COMMIT=${GIT_COMMIT} \
     # Time the container was built
-    BUILD_TIME=${BUILD_TIME} \
-    # Container tag
-    TAG=${TAG}
+    BUILD_TIME=${BUILD_TIME}
 
 # Copy in built static files and the application code. Run collectstatic so
 # whitenoise can serve static files for us.
