@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
+from django.core.cache import cache
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.admin import messages
-from wagtail.log_actions import LogFormatter
+from wagtail.log_actions import LogFormatter, log
 from wagtail.snippets.models import register_snippet
 
 from cms.core.viewsets import ContactDetailsViewSet, DefinitionViewSet
@@ -15,6 +16,8 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.log_actions import LogActionRegistry
     from wagtail.models import ModelLogEntry, Page
+
+PAGE_EDIT_VIEW_AUDIT_LOG_COOLDOWN_SECONDS = 30
 
 
 @hooks.register("register_icons")
@@ -53,6 +56,18 @@ def global_admin_css() -> str:
 
 register_snippet(ContactDetailsViewSet)
 register_snippet(DefinitionViewSet)
+
+
+@hooks.register("before_edit_page")
+def log_page_edit_view(request: HttpRequest, page: Page) -> None:
+    """Log when a user views the page edit view, with a cooldown to prevent duplicate entries."""
+    cache_key = f"page_edit_view_log:{page.pk}:{request.user.pk}"
+
+    if cache.get(cache_key):
+        return
+
+    log(action="pages.edit_view", instance=page)
+    cache.set(cache_key, True, timeout=PAGE_EDIT_VIEW_AUDIT_LOG_COOLDOWN_SECONDS)
 
 
 @hooks.register("after_edit_page")
@@ -113,3 +128,13 @@ def register_core_log_actions(actions: LogActionRegistry) -> None:
 
             except (KeyError, AttributeError):
                 return "Downloaded table CSV"
+
+    @actions.register_action("pages.edit_view")
+    class PageEditView(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for viewing the page edit view."""
+
+        label = "View page editor"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            return "Viewed page editor"

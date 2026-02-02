@@ -6,6 +6,7 @@ import time
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import F
@@ -374,11 +375,25 @@ class BundleInspectView(InspectView):
     """The Bundle inspect view class."""
 
     template_name = "bundles/wagtailadmin/inspect.html"
+    audit_log_cooldown_seconds = 30
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
         if not user_can_preview_bundle(self.request.user, self.object):
             raise PermissionDenied
+
+        self._log_bundle_view(request)
+
         return super().dispatch(request, *args, **kwargs)  # type: ignore[no-any-return]
+
+    def _log_bundle_view(self, request: HttpRequest) -> None:
+        """Log the bundle view with a cooldown to prevent duplicate entries."""
+        cache_key = f"bundle_inspect_log:{self.object.pk}:{request.user.pk}"
+
+        if cache.get(cache_key):
+            return
+
+        log(action="bundles.inspect", instance=self.object)
+        cache.set(cache_key, True, timeout=self.audit_log_cooldown_seconds)
 
     @cached_property
     def can_manage(self) -> bool:

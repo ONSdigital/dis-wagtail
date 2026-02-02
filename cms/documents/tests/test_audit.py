@@ -154,11 +154,12 @@ class DocumentAuditLoggingTestCase(WagtailTestUtils, TestCase):
             mock_logger.info.assert_called()
             call_args = mock_logger.info.call_args
 
-            # Verify the log message
-            self.assertEqual(call_args[0][0], "wagtail.create")
+            # Verify the log message format and action
+            self.assertEqual(call_args[0][0], "Audit event: %s")
+            self.assertEqual(call_args[0][1], "wagtail.create")
             extra = call_args[1]["extra"]
             self.assertEqual(extra["event"], "wagtail.create")
-            self.assertEqual(extra["object_type"], "customdocument")
+            self.assertEqual(extra["object_type"], "custom document")
 
     def test_document_delete_audit_log_mirrors_to_stdout(self):
         """Test that document delete audit log entry is mirrored to stdout."""
@@ -175,11 +176,12 @@ class DocumentAuditLoggingTestCase(WagtailTestUtils, TestCase):
             mock_logger.info.assert_called()
             call_args = mock_logger.info.call_args
 
-            # Verify the log message
-            self.assertEqual(call_args[0][0], "wagtail.delete")
+            # Verify the log message format and action
+            self.assertEqual(call_args[0][0], "Audit event: %s")
+            self.assertEqual(call_args[0][1], "wagtail.delete")
             extra = call_args[1]["extra"]
             self.assertEqual(extra["event"], "wagtail.delete")
-            self.assertEqual(extra["object_type"], "customdocument")
+            self.assertEqual(extra["object_type"], "custom document")
 
 
 class DocumentMultipleUploadAuditLoggingTestCase(WagtailTestUtils, TestCase):

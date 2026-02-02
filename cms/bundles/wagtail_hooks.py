@@ -351,3 +351,13 @@ def register_bundle_log_actions(actions: LogActionRegistry) -> None:
                 return f"Changed publication date from '{old}' to '{new}'"
             except KeyError:
                 return "Changed publication date"
+
+    @actions.register_action("bundles.inspect")
+    class InspectBundle(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for viewing the bundle inspect page."""
+
+        label = "View bundle details"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            return "Viewed bundle details"
