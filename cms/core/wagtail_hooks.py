@@ -138,3 +138,17 @@ def register_core_log_actions(actions: LogActionRegistry) -> None:
         def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             return "Viewed page editor"
+
+    @actions.register_action("pages.preview_mode_used")
+    class PreviewModeUse(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for viewing the page edit view."""
+
+        label = "Preview page"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            try:
+                preview_mode = log_entry.data.get("preview_mode", "unknown")
+                return f"Previewed page in mode: {preview_mode.replace('_', ' ')}"
+            except (KeyError, AttributeError):
+                return "Previewed page"

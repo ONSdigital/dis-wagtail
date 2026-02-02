@@ -9,7 +9,6 @@ from wagtail.models import PageLogEntry
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
-from cms.users.tests.factories import UserFactory
 
 
 class PageEditViewAuditLogTestCase(WagtailTestUtils, TestCase):
@@ -18,7 +17,7 @@ class PageEditViewAuditLogTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
-        cls.other_user = UserFactory(is_superuser=True)
+        cls.other_user = cls.create_superuser(username="other_admin")
         cls.page = StatisticalArticlePageFactory(title="Test Article")
 
     def setUp(self):
