@@ -12,6 +12,27 @@ from cms.standard_pages.tests.factories import IndexPageFactory, InformationPage
 from functional_tests.step_helpers.utils import str_to_bool
 
 
+def _get_information_page(context: Context) -> InformationPage:
+    """Retrieve the information page from context.
+
+    Expects either context.information_page to be set directly,
+    or context.page_title to perform a lookup (and cache the result).
+    """
+    if hasattr(context, "information_page"):
+        return context.information_page
+
+    if hasattr(context, "page_title"):
+        info_page = InformationPage.objects.filter(title=context.page_title).order_by("-last_published_at").first()
+        if info_page:
+            context.information_page = info_page  # Cache for subsequent calls
+            return info_page
+
+    raise AssertionError(
+        "Information page not found. Ensure context.information_page is set "
+        "or context.page_title matches an existing page."
+    )
+
+
 def _assert_information_pages_in_order(context: Context, expected_titles: list[str], label: str) -> None:
     list_items = context.page.locator(".ons-document-list").first.locator(".ons-document-list__item").all()
     actual_titles = []
@@ -70,18 +91,9 @@ def user_returns_to_editing_the_statistical_article_page(context: Context) -> No
     context.page.get_by_role("link", name="Test Info Page", exact=True).click()
 
 
-def _get_information_page(context: Context) -> InformationPage | None:
-    if hasattr(context, "page_id"):
-        return InformationPage.objects.get(pk=context.page_id)
-    return InformationPage.objects.filter(title=context.page_title).order_by("-last_published_at").first()
-
-
 def check_information_page_content(context: Context, default_language: bool = True) -> None:
     page = context.page
     info_page = _get_information_page(context)
-
-    if info_page is None:
-        raise AssertionError("Information page not found for content checks.")
 
     language_code = settings.LANGUAGE_CODE if default_language else "cy"
     with translation.override(language_code):
