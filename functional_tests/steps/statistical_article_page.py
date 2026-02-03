@@ -95,8 +95,9 @@ def user_populates_the_statistical_article_page(context: Context) -> None:
 
     page.get_by_label("Release date*").fill("2025-01-11")
 
-    page.wait_for_timeout(50)  # added to allow JS to be ready
+    page.wait_for_timeout(500)  # added to allow JS to be ready
     page.locator("#panel-child-content-content-content").get_by_title("Insert a block").click()
+    page.wait_for_timeout(50)
     page.get_by_label("Section heading*").fill("Heading")
     page.locator("#panel-child-content-content-content").get_by_role("region").get_by_role(
         "button", name="Insert a block"

@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     "cms.taxonomy",
     "cms.search",
     "cms.workflows",
+    "cms.test_data",
     "wagtail.sites",
     "wagtail.users",
     "wagtail.snippets",
@@ -498,6 +499,9 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
 
 PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get("PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5)
 
+# Is the application running interactively (such as a management command)
+INTERACTIVE = sys.stdout.isatty()
+
 # Logging
 # This logging is configured to be used with ONS logging and console logs. Console
 # logs are widely used by platforms offering Docker deployments, e.g. Heroku.
@@ -511,12 +515,12 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "json",
+            "formatter": "verbose" if INTERACTIVE else "json",
         },
         "gunicorn_access": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "gunicorn_json",
+            "formatter": "verbose" if INTERACTIVE else "gunicorn_json",
         },
     },
     "formatters": {

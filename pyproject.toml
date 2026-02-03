@@ -48,6 +48,8 @@ pyjwt = "^2.10.1"
 cryptography = "^46.0.3"
 django-pglock = "^1.8.0"
 wagtail-schema-org = "^4.1.1"
+wagtail-factories = "^4.2.1"
+pydantic = "^2.12.5"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
