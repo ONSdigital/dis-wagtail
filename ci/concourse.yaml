@@ -27,9 +27,9 @@ helm:
     sandbox:
       is_auto_merge: false # Do not auto merge the PR for sandbox. Triggered by application merge to the main branch
     staging:
-      is_auto_merge: false # Do not auto merge the PR for staging. Triggered by application release candidate tag (e,g. 1.0.0-rc.1)
+      is_auto_merge: false # Do not auto merge the PR for staging. Triggered by application release candidate tag (e,g. v1.0.0-rc.1)
     production:
-      is_auto_merge: false # Do not auto merge the PR for production. Triggered by application production tag (e.g. 1.0.0)
+      is_auto_merge: false # Do not auto merge the PR for production. Triggered by application production tag (e.g. v1.0.0)
 
 aws:
   ecr:
