@@ -45,7 +45,7 @@ Feature: CMS users can manage bundles
 
     Scenario Outline: A content editor updates the release calendar page details, after it has been assigned to a bundle and the change is reflected on the bundle edit page
         When the user manually creates a future release calendar page with a "Provisional" status
-        And the user clicks the "Save Draft" button
+        And the user clicks the "Save draft" button
         And the user navigates to the bundle creation page
         And the user enters a title
         And the user opens the release calendar page chooser
@@ -62,7 +62,7 @@ Feature: CMS users can manage bundles
 
     Scenario: A content editor cannot set a release calendar page to cancelled when it is in a bundle
         When the user manually creates a future release calendar page with a "Provisional" status
-        And the user clicks the "Save Draft" button
+        And the user clicks the "Save draft" button
         And the user navigates to the bundle creation page
         And the user enters a title
         And the user opens the release calendar page chooser

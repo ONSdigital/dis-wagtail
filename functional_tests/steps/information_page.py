@@ -32,6 +32,12 @@ def a_published_information_page_exists(context: Context) -> None:
                     },
                 ],
             },
+            {
+                "type": "equation",
+                "value": {
+                    "equation": "$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$",
+                },
+            },
         ],
     )
 
@@ -61,11 +67,17 @@ def a_published_information_page_translation_exists(context: Context) -> None:
         {
             "type": "related_links",
             "value": [
-                {"page": home_page.pk, "title": "Test Home", "description": "Our test home page"},
+                {"page": home_page.pk, "title": "Test Home", "description": "Ein tudalen gartref prawf"},
                 {
                     "page": home_page.pk,
                 },
             ],
+        },
+        {
+            "type": "equation",
+            "value": {
+                "equation": "$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$",
+            },
         },
     ]
 
@@ -120,7 +132,7 @@ def user_updates_info_page_contents(context: Context) -> None:
 
 
 @step("the user returns to editing the information page")
-def user_returns_to_editing_the_statistical_article_page(context: Context) -> None:
+def user_returns_to_editing_the_information_page(context: Context) -> None:
     context.page.get_by_role("link", name="Test Info Page", exact=True).click()
 
 
@@ -137,9 +149,11 @@ def check_information_page_content(context: Context, default_language: bool = Tr
 
     expect(page.get_by_text("Some example rich text content")).to_be_visible()
     if default_language:
-        expect(page.get_by_role("navigation", name="Related content").get_by_role("listitem")).to_be_visible()
+        expect(page.get_by_role("heading", name="Related links")).to_be_visible()
+        expect(page.get_by_text("Our test home page")).to_be_visible()
     else:
-        expect(page.get_by_role("navigation", name="Cynnwys cysylltiedig").get_by_role("listitem")).to_be_visible()
+        expect(page.get_by_role("heading", name="Dolenni cysylltiedig")).to_be_visible()
+        expect(page.get_by_text("Ein tudalen gartref prawf")).to_be_visible()
 
     expect(page.get_by_role("link", name="Test Home")).to_be_visible()
     expect(page.get_by_text("Our test home page")).to_be_visible()
@@ -168,6 +182,12 @@ def check_new_information_is_displayed_with_english_content_and_welsh_livery(
     context: Context,
 ) -> None:
     check_information_page_content(context, default_language=False)
+
+
+@then("the information page preview contains the populated data")
+def the_information_page_preview_contains_the_data(context: Context) -> None:
+    iframe = context.page.frame_locator("#w-preview-iframe")
+    check_information_page_content(iframe)
 
 
 @step('the date placeholder "{date_format}" is displayed in the "{textbox_text}" textbox')

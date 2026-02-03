@@ -2,7 +2,6 @@
 from behave import given, then, when
 from behave.runner import Context
 from django.conf import settings
-from playwright.sync_api import expect
 
 from cms.auth.utils import get_auth_config
 from functional_tests.step_helpers.auth_utils import AuthenticationTestHelper
@@ -144,14 +143,6 @@ def step_both_tabs_redirected_to_signin(context: Context) -> None:
         assert expected_path in tab.url, f"Tab {i + 1} was not redirected to login; URL is {tab.url}"
 
 
-@when("the user opens the preview pane")
-def step_open_preview_pane(context: Context) -> None:
-    """Open the preview pane in the Wagtail admin."""
-    context.page.get_by_role("button", name="Toggle preview").click()
-    iframe = context.page.frame_locator("#w-preview-iframe")
-    expect(iframe.get_by_text("Test Info Page", exact=True)).to_be_visible()
-
-
 @then("session management should not be initialised in the iframe")
 def step_session_not_initialised_in_iframe(context: Context) -> None:
     """Ensure session management only initialises once (in the parent), and not inside the iframe."""
@@ -166,7 +157,7 @@ def step_session_not_initialised_in_iframe(context: Context) -> None:
     )
 
     context.execute_steps("""
-        When the user clicks the "Save Draft" button
+        When the user clicks the "Save draft" button
     """)
 
     # small pause for any stray logs

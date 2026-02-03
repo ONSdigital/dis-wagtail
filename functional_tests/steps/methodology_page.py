@@ -8,7 +8,7 @@ from cms.methodology.tests.factories import MethodologyIndexPageFactory
 
 @step("the user creates a methodology page as a child of the existing topic page")
 def user_creates_methodology_page(context: Context) -> None:
-    methodology_index = MethodologyIndexPageFactory(parent=context.topic_page)
+    methodology_index = MethodologyIndexPageFactory(parent=context.topic_page, summary="")
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="View child pages of 'Home'").first.click()
     context.page.get_by_role("link", name=f"View child pages of '{context.topic_page.title}'").click()

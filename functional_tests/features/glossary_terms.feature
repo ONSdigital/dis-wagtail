@@ -17,10 +17,10 @@ Scenario: A CMS user can access the past revisions of the Definition
 
 Scenario: A CMS user can see the preview of the Definition
     Given a superuser logs into the admin site
-    And the user fills in Definition details
-    When the user clicks the "Preview" button
+    And  the user fills in Definition details
+    When the user clicks toggle preview
     Then the user can see the Definition in the preview tab
-    And the user can click the Definition to see the definition in the preview tab
+    And  the user can click the Definition to see the definition in the preview tab
 
 Scenario: The Definition raises validation errors when name is duplicated
     Given a superuser logs into the admin site

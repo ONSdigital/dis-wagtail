@@ -15,6 +15,7 @@ Feature: Users can create localised content in the CMS
     Scenario: The user is able to switch between different language versions of a page
         Given a published information page exists
         And  a published information page translation exists
+        When the user views the welsh information page
         Then the published information page is displayed with Welsh content
         And the user switches the page language to English
         Then the published information page is displayed with English content

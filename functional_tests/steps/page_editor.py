@@ -40,9 +40,6 @@ def user_clicks_view_live_on_publish_confirmation_banner(context: Context) -> No
 def click_the_given_button(context: Context, button_text: str) -> None:
     # Focus on the Status button to prevent overlap when trying to click the button
     context.page.locator('[data-w-tooltip-content-value="Status"]').focus()
-    if button_text in ("Save Draft", "Preview"):
-        # add a small delay to allow any client-side JS to initialise.
-        context.page.wait_for_timeout(500)
     context.page.get_by_role("button", name=button_text, exact=True).click()
 
 
