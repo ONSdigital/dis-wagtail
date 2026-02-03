@@ -7,6 +7,9 @@ helm:
   values_files:
     image_tag_key: tag
     sandbox:
+      # At the moment, the “sandbox” trigger is actually driven by merges to main,
+      # so we intentionally update both bleed and sandbox configuration together.
+      # This format will be changing in the near future and be relabeled as merges, rc tags, prod tags etc. instead of env names.
       - values/dis-bleed-internal.yaml
       - values/dis-bleed-external.yaml
       - values/dis-sandbox-internal.yaml
