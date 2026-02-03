@@ -33,4 +33,5 @@ helm:
 
 aws:
   ecr:
+    # the ECR repository location for the application image
     application: dis/apps/dis-wagtail-cms
