@@ -26,7 +26,7 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
 
     template = "templates/pages/information_page.html"
 
-    parent_page_types: ClassVar[list[str]] = ["home.HomePage", "IndexPage"]
+    parent_page_types: ClassVar[list[str]] = ["IndexPage"]
     # TODO: The below content type needs to be updated
     search_index_content_type: ClassVar[str] = "static_page"
 
