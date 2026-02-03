@@ -1,7 +1,13 @@
 from typing import TYPE_CHECKING
 
+from django.utils import timezone
+
 if TYPE_CHECKING:
+    from behave.runner import Context
+    from wagtail.models import Page
+
     from cms.taxonomy.models import Topic
+    from cms.users.models import User
 
 
 def get_or_create_topic(topic_name: str, topic_cache: dict[str, Topic] | None = None) -> Topic:
@@ -22,17 +28,6 @@ def get_or_create_topic(topic_name: str, topic_cache: dict[str, Topic] | None = 
         topic_cache[topic_name] = topic
 
     return topic
-
-
-from typing import TYPE_CHECKING
-
-from django.utils import timezone
-
-if TYPE_CHECKING:
-    from behave.runner import Context
-    from wagtail.models import Page
-
-    from cms.users.models import User
 
 
 def str_to_bool(bool_string: str) -> bool:

@@ -1,8 +1,6 @@
 # pylint: disable=not-callable
 import re
 
-import re
-
 from behave import step, then, when
 from behave.runner import Context
 from django.urls import reverse
@@ -11,8 +9,7 @@ from wagtail.models import Locale
 
 from cms.themes.models import ThemeIndexPage
 from cms.themes.tests.factories import ThemeIndexPageFactory
-from functional_tests.step_helpers.utils import get_or_create_topic
-from functional_tests.step_helpers.utils import get_page_from_context
+from functional_tests.step_helpers.utils import get_or_create_topic, get_page_from_context
 
 RE_UNLOCKED = re.compile(r"Page '.*' is now unlocked\.")
 
