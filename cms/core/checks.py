@@ -11,10 +11,11 @@ from wagtail.contrib.settings.models import (
 )
 from wagtail.models import get_page_models
 
-from cms.core.blocks.stream_blocks import CoreStoryBlock, SectionStoryBlock
+from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models.base import BaseGenericSetting, BaseSiteSetting
+from cms.standard_pages.blocks.stream_blocks import CoreStoryBlock
 
 
 @register

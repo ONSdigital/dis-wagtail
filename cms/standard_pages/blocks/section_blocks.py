@@ -14,24 +14,16 @@ from cms.core.blocks import (
     VideoEmbedBlock,
     WarningPanelBlock,
 )
-from cms.core.blocks.definitions import DefinitionsBlock
 from cms.core.blocks.embeddable import ImageBlock
 from cms.core.blocks.equation import EquationBlock
 from cms.core.blocks.markup import ONSTableBlock
-from cms.datavis.blocks import (
-    AreaChartBlock,
-    BarColumnChartBlock,
-    BarColumnConfidenceIntervalChartBlock,
-    IframeBlock,
-    LineChartBlock,
-    ScatterPlotBlock,
-)
+from cms.datavis.blocks import IframeBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StructValue
 
 
-class SectionContentBlock(StreamBlock):
+class CoreSectionContentBlock(StreamBlock):
     """The core section content block definition."""
 
     rich_text = RichTextBlock()
@@ -45,28 +37,19 @@ class SectionContentBlock(StreamBlock):
     video_embed = VideoEmbedBlock(group="Media")
     table = ONSTableBlock(group="DataVis", allow_links=True)
     equation = EquationBlock(group="DataVis", icon="decimal")
-    related_links = RelatedLinksBlock(icon="link")
-    definitions = DefinitionsBlock()
-
-    line_chart = LineChartBlock(group="DataVis", label="Line Chart")
-    bar_column_chart = BarColumnChartBlock(group="DataVis", label="Bar/Column Chart")
-    bar_column_confidence_interval_chart = BarColumnConfidenceIntervalChartBlock(
-        group="DataVis", label="Bar/Column Chart with Confidence Intervals"
-    )
-    scatter_plot = ScatterPlotBlock(group="DataVis", label="Scatter Plot")
-    area_chart = AreaChartBlock(group="DataVis", label="Area Chart")
+    related_links = RelatedLinksBlock()
     iframe_visualisation = IframeBlock(group="DataVis", label="Iframe Visualisation")
 
     class Meta:
-        template = "templates/components/streamfield/stream_block.html"
         block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
+        template = "templates/components/streamfield/stream_block.html"
 
 
-class SectionBlock(StructBlock):
+class CoreSectionBlock(StructBlock):
     """The core section block definition with headers."""
 
     title = HeadingBlock()
-    content = SectionContentBlock()
+    content = CoreSectionContentBlock()
 
     class Meta:
         template = "templates/components/streamfield/section_block.html"

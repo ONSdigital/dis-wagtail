@@ -2,16 +2,16 @@ from typing import TYPE_CHECKING
 
 from wagtail.blocks import StreamBlock
 
-from cms.core.blocks.section_blocks import SectionBlock
+from cms.standard_pages.blocks.section_blocks import CoreSectionBlock
 
 if TYPE_CHECKING:
     from wagtail.blocks import StreamValue
 
 
-class SectionStoryBlock(StreamBlock):
+class CoreStoryBlock(StreamBlock):
     """The core section StreamField block definition."""
 
-    section = SectionBlock()
+    section = CoreSectionBlock()
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
