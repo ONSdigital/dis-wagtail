@@ -17,22 +17,23 @@ def delete_pages(apps, schema_editor):
     if not ids_to_delete:
         return
 
-    # Deleting the wagtailcore.Page rows will cascade to:
-    # - the specific page tables (standard_pages_informationpage, etc.)
-    # - revisions
-    #
-    # Important: order doesn't matter much, but deleting children first is safer.
-    # Wagtail stores tree structure; bulk delete at DB level can leave treebeard state weird
-    # if we partially delete. We'll delete deepest pages first by path length.
+    # Collects page IDs - Gets the primary keys from both page types via page_ptr_id
+    # (the foreign key to Wagtail's base Page model)
+    # Orders by -path - Wagtail uses django-treebeard for page hierarchy,
+    # storing tree position in a path field. Longer paths = deeper in the tree.
+    # Deleting deepest first (children before parents) keeps the tree structure consistent during deletion.
+
+    # Deletes via the base Page model - This triggers Wagtail's deletion logic, which cascades to:
+    # The specific page tables (standard_pages_informationpage, etc.)
+    # - Page revisions
+    # - Any other related objects (search index entries, etc.)
     pages = Page.objects.filter(id__in=ids_to_delete).order_by("-path")
 
     for page in pages:
-        # This uses Wagtail's deletion logic (tree + related objects)
         page.delete()
 
 
 def noop_reverse(apps, schema_editor):
-    # Can't restore deleted content automatically
     pass
 
 

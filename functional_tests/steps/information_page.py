@@ -1,5 +1,5 @@
 # pylint: disable=not-callable
-from behave import step, then, when
+from behave import given, step, then, when
 from behave.runner import Context
 from django.conf import settings
 from django.urls import reverse
@@ -10,6 +10,20 @@ from cms.core.custom_date_format import ons_date_format
 from cms.standard_pages.models import InformationPage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from functional_tests.step_helpers.utils import str_to_bool
+
+
+def _assert_information_pages_in_order(context: Context, expected_titles: list[str], label: str) -> None:
+    list_items = context.page.locator(".ons-document-list").first.locator(".ons-document-list__item").all()
+    actual_titles = []
+
+    for item in list_items:
+        title_link = item.locator(".ons-document-list__item-title a").first
+        title = title_link.text_content().strip()
+        actual_titles.append(title)
+
+    assert actual_titles == expected_titles, (
+        f"Expected {label} information pages in order {expected_titles}, but got {actual_titles}"
+    )
 
 
 @step("the user creates an information page as a child of the home page")
@@ -137,7 +151,7 @@ def only_one_instance_of_topic_is_saved(context: Context) -> None:
     )
 
 
-@step("an index page exists under the homepage")
+@given("an index page exists under the homepage")
 def index_page_exists_under_homepage(context: Context) -> None:
     context.index_page = IndexPageFactory(title="Index Page")
 
@@ -188,20 +202,6 @@ def user_visits_index_page_preview(context: Context) -> None:
     context.page.close()
     # assigns context.page to the pop up tab
     context.page = preview_tab.value
-
-
-def _assert_information_pages_in_order(context: Context, expected_titles: list[str], label: str) -> None:
-    list_items = context.page.locator(".ons-document-list").first.locator(".ons-document-list__item").all()
-    actual_titles = []
-
-    for item in list_items:
-        title_link = item.locator(".ons-document-list__item-title a").first
-        title = title_link.text_content().strip()
-        actual_titles.append(title)
-
-    assert actual_titles == expected_titles, (
-        f"Expected {label} information pages in order {expected_titles}, but got {actual_titles}"
-    )
 
 
 @then("the live index page lists only live information pages in alphabetical order")

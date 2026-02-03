@@ -29,6 +29,8 @@ class InformationPageFactory(wagtail_factories.PageFactory):
     title = factory.Faker("sentence", nb_words=4)
     summary = "<p>Test summary</p>"
 
+    # StreamFieldFactory doesn't reliably handle nested StructBlocks/StreamBlocks,
+    # so we build the StreamValue manually with the exact structure Wagtail expects.
     @factory.lazy_attribute
     def content(self):
         return StreamValue(

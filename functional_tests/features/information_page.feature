@@ -36,20 +36,19 @@ Feature: A general use information page
     # TODO: This test needs updating once the regressed de-duplication for taxonomy topics is fixed
     # TODO: Update the last Then step to check that no duplicate topics are shown once fixed
     Scenario: Duplicate topics are removed when creating an information page
+        Given the following taxonomy topics exist:
+                | topic     |
+                | Economy   |
+                | Inflation |
+                | CPI       |
         When the user creates an information page as a child of the home page
         And the user adds content to the new information page
-        And the following taxonomy topics exist:
-            | topic     |
-            | Economy   |
-            | Inflation |
-            | CPI       |
         And the user adds the taxonomy topic "Inflation" twice
         And the user clicks the "Save Draft" button
         Then the duplicate topic error message is shown
 
     Scenario: Index page lists child information pages alphabetically
-        Given an index page exists under the homepage
-        And the index page has the following information pages:
+        Given the index page has the following information pages:
             | page_name       | live  |
             | Zebra Info      | true  |
             | Alpha Info      | true  |
