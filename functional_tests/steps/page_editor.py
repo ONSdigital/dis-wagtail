@@ -1,6 +1,8 @@
 # pylint: disable=not-callable
 import re
 
+import re
+
 from behave import step, then, when
 from behave.runner import Context
 from django.urls import reverse
@@ -10,6 +12,9 @@ from wagtail.models import Locale
 from cms.themes.models import ThemeIndexPage
 from cms.themes.tests.factories import ThemeIndexPageFactory
 from functional_tests.step_helpers.utils import get_or_create_topic
+from functional_tests.step_helpers.utils import get_page_from_context
+
+RE_UNLOCKED = re.compile(r"Page '.*' is now unlocked\.")
 
 
 @when("the user clicks the action button toggle")
@@ -188,19 +193,27 @@ def the_user_can_save_a_page(context: Context) -> None:
 
 
 @step("the user can publish a page")
+@step("the user can publish the page")
 def the_user_can_publish_a_page(context: Context) -> None:
     expect(context.page.get_by_role("button", name="More actions")).to_be_visible()
     context.page.get_by_role("button", name="More actions").click()
     expect(context.page.get_by_role("button", name="Publish")).to_be_visible()
 
 
+@step("the user can unlock the page")
+def the_user_unlock_a_page(context: Context) -> None:
+    context.page.get_by_role("button", name="Toggle status").click()
+    context.page.get_by_text("Lock", exact=True).click()
+    expect(context.page.get_by_text(RE_UNLOCKED)).to_be_visible()
+
+
 @step("the user can lock and unlock a page")
 def the_user_can_lock_and_unlock_a_page(context: Context) -> None:
     context.page.get_by_role("button", name="Toggle status").click()
     context.page.get_by_text("Lock", exact=True).click()
-    expect(context.page.get_by_text("'Test Info Page' was locked by you")).to_be_visible()
+    expect(context.page.get_by_text(re.compile(r"'.*' was locked by you"))).to_be_visible()
     context.page.get_by_text("Lock", exact=True).click()
-    expect(context.page.get_by_text("Page 'Test Info Page' is now unlocked.")).to_be_visible()
+    expect(context.page.get_by_text(RE_UNLOCKED)).to_be_visible()
 
 
 @step("the user can bulk delete the topic page and its children")
@@ -260,3 +273,17 @@ def create_topics_from_table(context: Context) -> None:
 
         topic = get_or_create_topic(topic_name, context.topic_cache)
         context.topics[topic_name] = topic
+
+
+@then("the published {page_str} page is displayed")
+def the_published_page_is_displayed(context: Context, page_str: str) -> None:
+    the_page = get_page_from_context(context, page_str)
+    # note: we don't display the summary anywhere other than the edit form, or the published page
+    expect(context.page.get_by_text(the_page.summary, exact=True)).to_be_visible()
+
+
+@then("the user cannot unlock the page")
+def the_user_cannot_unlock_a_page(context: Context) -> None:
+    context.page.get_by_role("button", name="Toggle status").click()
+    expect(context.page.get_by_text("Lock", exact=True)).to_have_count(0)
+    expect(context.page.get_by_text("Locked by another user")).to_be_visible()

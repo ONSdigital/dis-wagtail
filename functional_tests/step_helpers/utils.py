@@ -24,6 +24,17 @@ def get_or_create_topic(topic_name: str, topic_cache: dict[str, Topic] | None = 
     return topic
 
 
+from typing import TYPE_CHECKING
+
+from django.utils import timezone
+
+if TYPE_CHECKING:
+    from behave.runner import Context
+    from wagtail.models import Page
+
+    from cms.users.models import User
+
+
 def str_to_bool(bool_string: str) -> bool:
     """Takes a string argument which indicates a boolean, and returns the corresponding boolean value.
     raises ValueError if input string is not one of the recognized boolean like values.
@@ -50,3 +61,18 @@ def require_request(requests: list[str], predicate: callable, description: str) 
         f"No request matching {description} was captured "
         f"(checked {total} request{'s' if total != 1 else ''}; sample: {sample})"
     )
+
+
+def get_page_from_context(context: Context, page_str: str) -> Page | None:
+    the_page_attr = page_str.lower().replace(" ", "_")
+    if not the_page_attr.endswith("_page"):
+        the_page_attr += "_page"
+
+    return getattr(context, the_page_attr)
+
+
+def lock_page(the_page: Page, user: User):
+    the_page.locked = True
+    the_page.locked_by = user
+    the_page.locked_at = timezone.now()
+    the_page.save()
