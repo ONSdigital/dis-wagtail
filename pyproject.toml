@@ -1,6 +1,6 @@
 [tool.project]
 name = "cms"
-version = "0.6.0"
+version = "0.1.0"
 description = "The Wagtail CMS for managing and publishing content for the Office for National Statistics (ONS)"
 authors = ["ONSdigital"]
 license = "MIT"
@@ -57,7 +57,7 @@ types-requests = "^2.32.4.20260107"
 django-stubs = { version="^5.2.9", extras=["compatible-mypy"]}
 pylint = "^4.0.4"
 pylint-django = "^2.7.0"
-ruff = "0.14.10"  # keep version in sync with .pre-commit-config.yaml
+ruff = "0.14.14"  # keep version in sync with .pre-commit-config.yaml
 
 wagtail-factories = "^4.3.0"
 coverage = "^7.13.3"
