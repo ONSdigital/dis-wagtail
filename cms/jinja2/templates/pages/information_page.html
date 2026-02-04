@@ -9,6 +9,7 @@
     {% if page.last_published_at %}
         {%- set last_updated_description = page.last_published_at|ons_date("DATE_FORMAT") -%}
     {% else %}
+        {# Note: we don't mark "Populated on publish" for translations because it's only used for previews. #}
         {%- set last_updated_description = "Populated on publish" -%}
     {% endif %}
     {%- set last_updated_label = _("Last updated:") -%}

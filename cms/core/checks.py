@@ -15,7 +15,6 @@ from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models.base import BaseGenericSetting, BaseSiteSetting
-from cms.standard_pages.blocks.stream_blocks import CoreStoryBlock
 
 
 @register
@@ -42,7 +41,7 @@ def check_wagtail_pages(*args: Any, **kwargs: Any) -> Iterator[CheckMessage]:
         for field in model._meta.get_fields():
             if (
                 isinstance(field, StreamField)
-                and isinstance(field.block_types_arg, SectionStoryBlock | CoreStoryBlock)
+                and isinstance(field.block_types_arg, SectionStoryBlock)
                 and not issubclass(model.base_form_class, PageWithEquationsAdminForm)
             ):
                 yield Error(
