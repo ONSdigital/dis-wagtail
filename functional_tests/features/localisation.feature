@@ -32,11 +32,8 @@ Feature: Users can create localised content in the CMS
         And  the page furniture is displayed in Welsh
 
     Scenario: The user sees a message explaining the content is not translated when viewing a non-translated page
-        When the user creates an information page as a child of the home page
-        And  the user adds content to the new information page
-        And  the user clicks the "Save draft" button
-        And  the information page goes through the publishing steps with CMS user as user and Publishing Officer as reviewer
-        And  the user clicks "View Live" on the publish confirmation banner
+        Given a published information page exists
+        When the user views the information page
         And  the user switches the page language to Welsh
         Then a message is displayed explaining that the content is not translated
 

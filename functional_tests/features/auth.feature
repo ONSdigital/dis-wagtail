@@ -71,11 +71,9 @@ Feature: Wagtail Admin Cognito Authentication and Session Management
         Then both tabs are redirected to the login page
 
     Scenario: Preview iframe does not start separate session management
-        Given the user is authenticated
-        When the user navigates to the admin page
-        And  the user creates an information page as a child of the home page
-        And  the user adds basic statistical article page content
-        And  the user adds content to the new information page
+        Given an information page exists
+        And  the user is authenticated
+        When the user edits the information page
         And  the user clicks toggle preview
         Then session management should not be initialised in the iframe
         And  the information page preview contains the populated data
