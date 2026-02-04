@@ -17,7 +17,7 @@ def build_standard_resource_dict(page: Page) -> dict:
     This covers the non-release case (and also forms the base of the release case).
     """
     # Fallback to last_published_at if we don't have a release_date
-    release_date = getattr(page, "release_date", None) or getattr(page, "last_published_at", None)
+    release_date = getattr(page, "release_date", page.last_published_at)
     return {
         "uri": build_page_uri(page),
         "content_type": page.search_index_content_type,

@@ -45,7 +45,7 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertIsInstance(payload["topics"], list)
         self.assertEqual(payload["language"], page.locale.get_display_name())
 
-        release_date = getattr(page, "release_date", None) or getattr(page, "last_published_at", None)
+        release_date = getattr(page, "release_date", page.last_published_at)
         self.assertEqual(payload["release_date"], release_date.isoformat())
 
     def assert_release_fields_present(self, payload: dict) -> None:
