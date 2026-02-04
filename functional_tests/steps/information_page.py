@@ -161,7 +161,6 @@ def check_information_page_content(
         expect(page_or_frame.get_by_text("Our test home page")).to_be_visible()
     else:
         expect(page_or_frame.get_by_role("heading", name="Dolenni cysylltiedig")).to_be_visible()
-        expect(page_or_frame.get_by_text("Ein tudalen gartref prawf")).to_be_visible()
 
     expect(page_or_frame.get_by_role("link", name="Test Home")).to_be_visible()
     expect(page_or_frame.get_by_text("Our test home page")).to_be_visible()

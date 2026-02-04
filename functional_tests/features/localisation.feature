@@ -24,7 +24,6 @@ Feature: Users can create localised content in the CMS
 
     Scenario: The user sees English content and Welsh page furniture when viewing a non-translated page
         Given a published information page exists
-        And  a published information page translation exists
         When the user views the information page
         Then the published information page is displayed with English content
         And  the user switches the page language to Welsh

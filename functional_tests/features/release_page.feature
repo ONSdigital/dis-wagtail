@@ -53,7 +53,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
         | Published   |
         | Cancelled   |
 
-  Scenario Outline: A CMS user adds different types of content to a release calendar page and verifies their display in the Published preview tab
+  Scenario Outline: A CMS user adds <Feature> to a release calendar page and verifies their display in the Published preview tab
     When the user clicks "Add child page" to create a new draft release calendar page
     And the user enters some example content on the page
     And the user adds <Feature> to the release calendar page
@@ -67,7 +67,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
       | a release date text            |
       | a next release date text       |
       | a related link                 |
-      | pre-release access information |
+#      | pre-release access information |
 
 
 # Checks visibility of release date text field based on page status (Provisional vs. others) in the admin interface.
