@@ -9,3 +9,11 @@ Feature: There is a default home page
         When An external user navigates to the ONS beta site homepage
         And the user clicks on the Wagtail Core Default Login link
         Then they are redirected to the Wagtail admin login page
+
+    @smoke
+    Scenario: User initiates a search from the homepage
+        When An external user navigates to the ONS beta site homepage
+        When they click the search toggle button
+        And they enter "articles" in the search field
+        And they submit the search form
+        Then they should be redirected to the search page with query "articles"
