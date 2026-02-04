@@ -39,6 +39,8 @@
 {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
 {%- set search_input_label = _("Search the ONS") -%}
 {%- set search_button_text = _("Search") -%}
+{%- set search_nav_aria_label = _("Nav Search") -%}
+{%- set search_toggle_aria_label = _("Toggle search") -%}
 
 {%- set ogl_pre = _('All content is available under the') -%}
 {%- set ogl_text = 'Open Government Licence v3.0' -%}
@@ -71,8 +73,8 @@
         },
         "search": {
             "id": "search",
-            "navAriaLabel": 'Nav Search',
-            "toggleAriaLabel": 'Toggle search',
+            "navAriaLabel": search_nav_aria_label,
+            "toggleAriaLabel": search_toggle_aria_label,
             "form": {
                 "action":  search_action,
                 "inputLabel": search_input_label,
