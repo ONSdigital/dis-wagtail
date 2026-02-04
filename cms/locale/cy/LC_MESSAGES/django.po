@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-20 11:34+0000\n"
+"POT-Creation-Date: 2026-02-04 15:53+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,27 +19,27 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
 "11) ? 2 : 3;\n"
 
-#: cms/articles/models.py:199 cms/core/enums.py:8
+#: cms/articles/models.py:217 cms/core/enums.py:8
 #: cms/core/formatting_utils.py:44
 msgid "Article"
 msgstr "Erthygl"
 
-#: cms/articles/models.py:461
+#: cms/articles/models.py:528
 msgid "Cite this article"
 msgstr "Dyfynnwch yr erthygl hon"
 
-#: cms/articles/models.py:463
+#: cms/articles/models.py:530
 #: cms/jinja2/templates/components/contact_details/contact_details.html:6
 #: cms/methodology/models.py:190 cms/release_calendar/models.py:246
 msgid "Contact details"
 msgstr "Manylion cyswllt"
 
-#: cms/articles/models.py:530
+#: cms/articles/models.py:597
 #, python-format
 msgid "All data related to %(article_title)s"
 msgstr "Yr holl ddata sy'n gysylltiedig â %(article_title)s"
 
-#: cms/articles/models.py:589
+#: cms/articles/models.py:656
 msgid "Release date"
 msgstr "Dyddiad y datganiad"
 
@@ -72,6 +72,10 @@ msgstr "Dangos popeth"
 #: cms/jinja2/templates/components/streamfield/definitions_block.html:5
 msgid "Hide all"
 msgstr "Cuddio popeth"
+
+#: cms/core/blocks/markup.py:225
+msgid "Table"
+msgstr ""
 
 #: cms/core/blocks/related.py:60
 msgid "Related links"
@@ -108,7 +112,7 @@ msgid "Home"
 msgstr "Cartref"
 
 #: cms/datavis/blocks/base.py:416
-#: cms/jinja2/templates/components/streamfield/table_block.html:12
+#: cms/jinja2/templates/components/streamfield/table_block.html:13
 msgid "Footnotes"
 msgstr "Troednodiadau"
 
@@ -119,35 +123,51 @@ msgstr "Troednodiadau"
 msgid "Data"
 msgstr "Data"
 
-#: cms/jinja2/templates/base.html:32
+#: cms/jinja2/templates/base.html:34
 msgid "Beta"
 msgstr "Beta"
 
-#: cms/jinja2/templates/base.html:33
+#: cms/jinja2/templates/base.html:35
 msgid "This is a new service."
 msgstr "Mae hwn yn wasanaeth newydd."
 
-#: cms/jinja2/templates/base.html:34
+#: cms/jinja2/templates/base.html:36
 msgid "Menu"
 msgstr "Dewislen"
 
-#: cms/jinja2/templates/base.html:35
+#: cms/jinja2/templates/base.html:37
 msgid "Main menu"
 msgstr "Prif ddewislen"
 
-#: cms/jinja2/templates/base.html:36
+#: cms/jinja2/templates/base.html:38
 msgid "Toggle main menu"
 msgstr "Togl y brif ddewislen"
 
-#: cms/jinja2/templates/base.html:37
+#: cms/jinja2/templates/base.html:39
 msgid "Breadcrumbs"
 msgstr "Briwsion bara"
 
-#: cms/jinja2/templates/base.html:39
+#: cms/jinja2/templates/base.html:40
+msgid "Search the ONS"
+msgstr ""
+
+#: cms/jinja2/templates/base.html:41
+msgid "Search"
+msgstr ""
+
+#: cms/jinja2/templates/base.html:42
+msgid "Nav Search"
+msgstr ""
+
+#: cms/jinja2/templates/base.html:43
+msgid "Toggle search"
+msgstr ""
+
+#: cms/jinja2/templates/base.html:45
 msgid "All content is available under the"
 msgstr "Mae’r holl gynnwys ar gael o dan y"
 
-#: cms/jinja2/templates/base.html:42
+#: cms/jinja2/templates/base.html:48
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
@@ -209,7 +229,7 @@ msgid "Hide all definitions"
 msgstr "Cuddio pob diffiniad"
 
 #: cms/jinja2/templates/components/streamfield/image_block.html:20
-#: cms/jinja2/templates/components/streamfield/table_block.html:8
+#: cms/jinja2/templates/components/streamfield/table_block.html:9
 msgid "Source"
 msgstr "Ffynhonnell"
 
@@ -217,12 +237,12 @@ msgstr "Ffynhonnell"
 msgid "Notes"
 msgstr ""
 
-#: cms/jinja2/templates/components/streamfield/image_block.html:44
-#: cms/jinja2/templates/components/streamfield/image_block.html:46
+#: cms/jinja2/templates/components/streamfield/image_block.html:43
+#: cms/jinja2/templates/components/streamfield/image_block.html:45
 msgid "Download image"
 msgstr ""
 
-#: cms/jinja2/templates/components/streamfield/image_block.html:52
+#: cms/jinja2/templates/components/streamfield/image_block.html:51
 msgid "Download this image"
 msgstr ""
 
@@ -531,9 +551,9 @@ msgid ""
 msgstr ""
 "Mae’r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnolgan y "
 "Swyddfa Rheoleiddio Ystadegau (OSR) ac a ganfuwyd ei fod yn cydymffurfio "
-"gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://"
-"code.statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</"
-"a>. Mae hyn yn golygu yn fras bod yr ystadegau:"
+"gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://code."
+"statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</a>. "
+"Mae hyn yn golygu yn fras bod yr ystadegau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:138
 msgid "meet user needs"
@@ -724,10 +744,61 @@ msgstr "Cyhoeddiadau cysylltiedig"
 msgid "To be confirmed"
 msgstr "I’w gadarnhau"
 
-#: cms/settings/base.py:367
+#: cms/settings/base.py:382
 msgid "English"
 msgstr "Saesneg"
 
-#: cms/settings/base.py:368
+#: cms/settings/base.py:383
 msgid "Welsh"
 msgstr "Cymraeg"
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:8
+msgid "Submitted"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:14
+msgid "Not started"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:23
+#, python-format
+msgid "Changes requested by %(requested_by)s"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:27
+msgid "Changes requested"
+msgstr "Newidiadau i’r dyddiad rhyddhau hwn"
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:46
+#, python-format
+msgid "Cancelled by %(cancelled_by)s"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:50
+#, python-format
+msgid "Approved by %(approved_by)s"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:59
+msgid "with comment:"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:69
+msgid "Published"
+msgstr "Cyhoeddwyd"
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:76
+msgid "See full history"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:83
+msgid "Compare with live version"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:93
+msgid "Compare with previous version"
+msgstr ""
+
+#: cms/workflows/templates/workflows/confirm_unlock.html:12
+msgid "No, don't unlock"
+msgstr ""
