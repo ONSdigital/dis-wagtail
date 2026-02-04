@@ -917,8 +917,8 @@ DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "ons.gov.uk")
 ONS_COOKIES_PAGE_SLUG = "cookies"
 
-# Search page URL
-SEARCH_PAGE_URL = env.get("SEARCH_PAGE_URL", "/search")
+# Search redirect path
+ONS_SEARCH_REDIRECT_PATH = env.get("ONS_SEARCH_REDIRECT_PATH", "/search")
 
 # Project information
 BUILD_TIME = datetime.datetime.fromtimestamp(int(env["BUILD_TIME"])) if env.get("BUILD_TIME") else None

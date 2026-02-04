@@ -28,6 +28,8 @@
 
 {% set footer_menu = footer_menu | default(navigation_settings.footer_menu.localized) %}
 
+{%- set search_action = ONS_SEARCH_REDIRECT_PATH -%}
+
 {#- We set variables for text so that it gets picked up by makemessages -#}
 {%- set badge_label = _("Beta") -%}
 {%- set badge_html = _("This is a new service.") -%}
@@ -35,7 +37,8 @@
 {%- set menu_label = _("Main menu") -%}
 {%- set menu_toggle_aria_label = _("Toggle main menu") -%}
 {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
-{%- set search_action = SEARCH_PAGE_URL -%}
+{%- set search_input_label = _("Search the ONS") -%}
+{%- set search_button_text = _("Search") -%}
 
 {%- set ogl_pre = _('All content is available under the') -%}
 {%- set ogl_text = 'Open Government Licence v3.0' -%}
@@ -72,8 +75,8 @@
             "toggleAriaLabel": 'Toggle search',
             "form": {
                 "action":  search_action,
-                "inputLabel": "Search the ONS",
-                "buttonText": "Search"
+                "inputLabel": search_input_label,
+                "buttonText": search_button_text
             },
         },
     },
