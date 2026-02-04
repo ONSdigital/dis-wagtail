@@ -64,7 +64,17 @@
             },
             "keyLinks": main_menu_highlights(main_menu),
             "columns": main_menu_columns(main_menu)
-        }
+        },
+        "search": {
+            "id": "search",
+            "navAriaLabel": 'Nav Search',
+            "toggleAriaLabel": 'Toggle search',
+            "form": {
+                "action":  "https://www.ons.gov.uk/search" ,
+                "inputLabel": "Search the ONS",
+                "buttonText": "Search"
+            },
+        },
     },
     "footer": {
         "cols": footer_menu_columns(footer_menu),
@@ -160,7 +170,8 @@
             "title": pageConfig.header.title | default(pageConfig.title),
             "description": pageConfig.header.description,
             "titleAsH1": pageConfig.header.titleAsH1,
-            "titleLogo": pageConfig.header.titleLogo
+            "titleLogo": pageConfig.header.titleLogo,
+            "search": pageConfig.header.search
         })
     }}
 {# fmt:on #}
