@@ -28,6 +28,7 @@ class ContextProcessorTestCase(TestCase):
             "DEFAULT_OG_IMAGE_URL": settings.DEFAULT_OG_IMAGE_URL,
             "CONTACT_US_URL": settings.CONTACT_US_URL,
             "BACKUP_SITE_URL": settings.BACKUP_SITE_URL,
+            "SEARCH_PAGE_URL": settings.SEARCH_PAGE_URL,
             "COOKIES_PAGE_URL": f"/{settings.ONS_COOKIES_PAGE_SLUG}",
         }
         self.assertEqual(global_vars(self.request), expected)
