@@ -11,7 +11,7 @@ from wagtail.contrib.settings.models import (
 from wagtail.models import Page
 
 from cms.core.blocks.stream_blocks import SectionStoryBlock
-from cms.core.checks import check_wagtail_pages, check_wagtail_settings
+from cms.core.checks import check_page_models_for_story_block, check_wagtail_settings
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models.base import BaseGenericSetting, BaseSiteSetting
@@ -92,12 +92,12 @@ class CheckWagtailSettingsTests(TestCase):
         self.assertEqual(errors, [])
 
 
-class CheckWagtailPagesTests(TestCase):
-    """Tests for check_wagtail_pages which validates page models using SectionStoryBlock."""
+class CheckPageModelsForStoryBlockTests(TestCase):
+    """Tests for the check_page_models_for_story_block utility function."""
 
     @patch("cms.core.checks.get_page_models")
-    def test_page_with_section_story_block_without_correct_form_raises_error(self, mock_get_page_models):
-        """Pages using SectionStoryBlock without PageWithEquationsAdminForm should raise an error."""
+    def test_page_without_correct_form_raises_error(self, mock_get_page_models):
+        """Pages using a story block without PageWithEquationsAdminForm should raise an error."""
         mock_field = MagicMock(spec=StreamField)
         mock_field.block_types_arg = MagicMock(spec=SectionStoryBlock)
 
@@ -106,9 +106,9 @@ class CheckWagtailPagesTests(TestCase):
                 abstract = True
 
         BadPageModel._meta.get_fields = MagicMock(return_value=[mock_field])
-
         mock_get_page_models.return_value = [BadPageModel]
-        errors = list(check_wagtail_pages())
+
+        errors = list(check_page_models_for_story_block(SectionStoryBlock))
 
         self.assertEqual(len(errors), 1)
         self.assertIsInstance(errors[0], Error)
@@ -116,8 +116,8 @@ class CheckWagtailPagesTests(TestCase):
         self.assertIn("PageWithEquationsAdminForm", errors[0].hint)
 
     @patch("cms.core.checks.get_page_models")
-    def test_page_with_section_story_block_with_correct_form_no_error(self, mock_get_page_models):
-        """Pages using SectionStoryBlock with PageWithEquationsAdminForm should not raise errors."""
+    def test_page_with_correct_form_no_error(self, mock_get_page_models):
+        """Pages using a story block with PageWithEquationsAdminForm should not raise errors."""
         mock_field = MagicMock(spec=StreamField)
         mock_field.block_types_arg = MagicMock(spec=SectionStoryBlock)
 
@@ -128,41 +128,41 @@ class CheckWagtailPagesTests(TestCase):
                 abstract = True
 
         GoodPageModel._meta.get_fields = MagicMock(return_value=[mock_field])
-
         mock_get_page_models.return_value = [GoodPageModel]
-        errors = list(check_wagtail_pages())
+
+        errors = list(check_page_models_for_story_block(SectionStoryBlock))
 
         self.assertEqual(errors, [])
 
     @patch("cms.core.checks.get_page_models")
     def test_page_without_stream_field_no_error(self, mock_get_page_models):
         """Pages without StreamField should not raise errors."""
-        mock_field = MagicMock()  # Not a StreamField
+        mock_field = MagicMock()
 
         class RegularPageModel(Page):
             class Meta:
                 abstract = True
 
         RegularPageModel._meta.get_fields = MagicMock(return_value=[mock_field])
-
         mock_get_page_models.return_value = [RegularPageModel]
-        errors = list(check_wagtail_pages())
+
+        errors = list(check_page_models_for_story_block(SectionStoryBlock))
 
         self.assertEqual(errors, [])
 
     @patch("cms.core.checks.get_page_models")
-    def test_page_with_stream_field_without_section_story_block_no_error(self, mock_get_page_models):
-        """Pages with StreamField but not SectionStoryBlock should not raise errors."""
+    def test_page_with_different_story_block_no_error(self, mock_get_page_models):
+        """Pages with StreamField but different story block type should not raise errors."""
         mock_field = MagicMock(spec=StreamField)
-        mock_field.block_types_arg = MagicMock()  # Not a SectionStoryBlock
+        mock_field.block_types_arg = MagicMock()  # Not the target block type
 
-        class PageWithOtherStreamField(Page):
+        class PageWithOtherBlock(Page):
             class Meta:
                 abstract = True
 
-        PageWithOtherStreamField._meta.get_fields = MagicMock(return_value=[mock_field])
+        PageWithOtherBlock._meta.get_fields = MagicMock(return_value=[mock_field])
+        mock_get_page_models.return_value = [PageWithOtherBlock]
 
-        mock_get_page_models.return_value = [PageWithOtherStreamField]
-        errors = list(check_wagtail_pages())
+        errors = list(check_page_models_for_story_block(SectionStoryBlock))
 
         self.assertEqual(errors, [])
