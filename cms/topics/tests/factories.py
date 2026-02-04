@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 import factory
 import wagtail_factories
+from django.utils import timezone
 
 from cms.home.models import HomePage
 from cms.taxonomy.tests.factories import TopicFactory
@@ -13,6 +16,7 @@ class TopicPageFactory(wagtail_factories.PageFactory):
         model = TopicPage
 
     parent = factory.LazyFunction(lambda: HomePage.objects.first())  # pylint: disable=unnecessary-lambda
+    last_published_at = timezone.now() - timedelta(days=1)
     title = factory.Faker("sentence", nb_words=4)
     summary = factory.Faker("text", max_nb_chars=100)
     topic = factory.SubFactory(TopicFactory)

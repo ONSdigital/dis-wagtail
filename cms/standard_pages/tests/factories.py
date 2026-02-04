@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 import factory
 import wagtail_factories
+from django.utils import timezone
 from faker import Faker
 from wagtail.blocks import StreamValue
 
@@ -17,6 +20,7 @@ class IndexPageFactory(wagtail_factories.PageFactory):
         model = IndexPage
 
     parent = factory.LazyFunction(lambda: HomePage.objects.first())  # pylint: disable=unnecessary-lambda
+    last_published_at = timezone.now() - timedelta(days=1)
     title = factory.Faker("sentence", nb_words=4)
     summary = factory.Faker("text", max_nb_chars=100)
 
@@ -26,6 +30,7 @@ class InformationPageFactory(wagtail_factories.PageFactory):
         model = InformationPage
 
     parent = factory.SubFactory(IndexPageFactory)
+    last_published_at = timezone.now() - timedelta(days=1)
     title = factory.Faker("sentence", nb_words=4)
     summary = "<p>Test summary</p>"
 

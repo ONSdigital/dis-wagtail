@@ -11,6 +11,7 @@ from cms.search.publishers import BasePublisher, IAMKafkaTokenProvider, KafkaPub
 from cms.search.tests.helpers import ResourceDictAssertions
 from cms.search.utils import build_page_uri
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
+from cms.topics.tests.factories import TopicPageFactory
 
 
 class DummyPublisher(BasePublisher):
@@ -33,6 +34,7 @@ class BasePublisherTests(TestCase, WagtailTestUtils, ResourceDictAssertions):
             StatisticalArticlePageFactory(),
             StatisticalArticlePageFactory(news_headline=""),
             IndexPageFactory(slug="custom-slug-1"),
+            TopicPageFactory(),
         ]
 
         cls.publisher = DummyPublisher()

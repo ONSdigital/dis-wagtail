@@ -26,7 +26,6 @@ class SearchSignalsTest(TestCase):
             HomePage(),
             ReleaseCalendarIndex(),
             ThemePageFactory(),
-            TopicPageFactory(),
         ]
 
         # Pages that are NOT in SEARCH_INDEX_EXCLUDED_PAGE_TYPES
@@ -36,6 +35,7 @@ class SearchSignalsTest(TestCase):
             ReleaseCalendarPageFactory(),
             StatisticalArticlePageFactory(),
             IndexPageFactory(slug="custom-slug-1"),
+            TopicPageFactory(),
         ]
         cls.included_page = StatisticalArticlePageFactory()
 

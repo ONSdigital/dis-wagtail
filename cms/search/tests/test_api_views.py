@@ -30,7 +30,6 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
             HomePage(),
             ReleaseCalendarIndex(),
             ThemePageFactory(),
-            TopicPageFactory(),
             InformationPageFactory(parent=IndexPageFactory(slug="custom-slug-0"), live=False),  # Not live
         ]
 
@@ -42,6 +41,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
             StatisticalArticlePageFactory(),
             StatisticalArticlePageFactory(news_headline=""),
             IndexPageFactory(slug="custom-slug-1"),
+            TopicPageFactory(),
         ]
 
         cls.en = Locale.get_default()
