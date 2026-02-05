@@ -128,7 +128,6 @@ def health(request: HttpRequest) -> HttpResponse:
             "git_commit": settings.GIT_COMMIT,
             "language": "python",
             "language_version": platform.python_version(),
-            "version": settings.GIT_TAG,
         },
         "uptime": round((now - settings.START_TIME).total_seconds() * 1000),
         "start_time": settings.START_TIME.isoformat(),

@@ -143,7 +143,6 @@ class LivenessProbeTestCase(TestCase):
     },
     BUILD_TIME=datetime(2000, 1, 1).astimezone(UTC),
     GIT_COMMIT="commit",
-    GIT_TAG="1.2.3",
     START_TIME=datetime(2000, 1, 1).astimezone(UTC),
 )
 @time_machine.travel(datetime(2000, 1, 2), tick=False)
