@@ -1,7 +1,5 @@
 from typing import ClassVar
 
-from wagtail.models import PagePermissionTester
-
 from cms.core.models import BasePage
 from cms.core.permission_testers import StaticPagePermissionTester
 from cms.users.models import User
@@ -17,5 +15,5 @@ class HomePage(BasePage):  # type: ignore[django-manager-missing]
 
     _analytics_content_type: ClassVar[str] = "homepage"
 
-    def permissions_for_user(self, user: User) -> PagePermissionTester:
+    def permissions_for_user(self, user: User) -> StaticPagePermissionTester:
         return StaticPagePermissionTester(user, self)
