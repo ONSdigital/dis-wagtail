@@ -66,7 +66,7 @@ def get_page_from_context(context: Context, page_str: str) -> Page | None:
     return getattr(context, the_page_attr)
 
 
-def lock_page(the_page: Page, user: User):
+def lock_page(the_page: Page, user: User) -> None:
     the_page.locked = True
     the_page.locked_by = user
     the_page.locked_at = timezone.now()

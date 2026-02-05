@@ -9,7 +9,7 @@ from playwright.sync_api import expect
 from cms.core.custom_date_format import ons_date_format
 from cms.standard_pages.models import InformationPage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
-from functional_tests.step_helpers.utils import str_to_bool
+from functional_tests.step_helpers.utils import get_page_from_context, str_to_bool
 
 
 def _get_information_page(context: Context) -> InformationPage:
@@ -18,8 +18,9 @@ def _get_information_page(context: Context) -> InformationPage:
     Expects either context.information_page to be set directly,
     or context.page_title to perform a lookup (and cache the result).
     """
-    if hasattr(context, "information_page"):
-        return context.information_page
+    info_page = get_page_from_context(context, "information")
+    if info_page:
+        return info_page
 
     if hasattr(context, "page_title"):
         info_page = InformationPage.objects.filter(title=context.page_title).order_by("-last_published_at").first()
