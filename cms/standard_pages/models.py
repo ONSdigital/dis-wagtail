@@ -11,7 +11,7 @@ from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, forma
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
-from cms.standard_pages.blocks.stream_blocks import CoreStoryBlock
+from cms.standard_pages.section_blocks import CoreStoryBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -74,6 +74,9 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
 
 class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
+
+    page_description = "Use this page as a help landing page that lists help pages"
+
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]

@@ -20,7 +20,7 @@ from cms.core.blocks.markup import ONSTableBlock
 from cms.datavis.blocks import IframeBlock
 
 if TYPE_CHECKING:
-    from wagtail.blocks import StructValue
+    from wagtail.blocks import StreamValue, StructValue
 
 
 class CoreSectionContentBlock(StreamBlock):
@@ -57,3 +57,16 @@ class CoreSectionBlock(StructBlock):
     def to_table_of_contents_items(self, value: StructValue) -> list[dict[str, str]]:
         """Convert the value to the table of contents component macro format."""
         return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
+
+
+class CoreStoryBlock(StreamBlock):
+    """The core section StreamField block definition."""
+
+    section = CoreSectionBlock()
+
+    class Meta:
+        template = "templates/components/streamfield/stream_block.html"
+
+    def has_equations(self, value: StreamValue) -> bool:
+        """Checks if there are any equation blocks."""
+        return any(block.value["content"].first_block_by_name(block_name="equation") is not None for block in value)

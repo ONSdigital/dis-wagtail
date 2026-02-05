@@ -4,8 +4,8 @@ from faker import Faker
 from wagtail.blocks import StreamValue
 
 from cms.home.models import HomePage
-from cms.standard_pages.blocks.stream_blocks import CoreStoryBlock
 from cms.standard_pages.models import IndexPage, InformationPage
+from cms.standard_pages.section_blocks import CoreStoryBlock
 
 fake = Faker()
 

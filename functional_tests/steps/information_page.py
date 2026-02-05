@@ -59,7 +59,7 @@ def user_creates_information_page(context: Context) -> None:
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").click()
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Index page summary")
 
-    context.page.wait_for_timeout(5000)
+    context.page.wait_for_timeout(1000)
 
     context.execute_steps(
         """

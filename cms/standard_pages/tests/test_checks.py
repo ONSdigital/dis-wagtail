@@ -2,8 +2,8 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from cms.standard_pages.blocks.stream_blocks import CoreStoryBlock
 from cms.standard_pages.checks import check_wagtail_pages
+from cms.standard_pages.section_blocks import CoreStoryBlock
 
 
 class CheckStandardPagesTests(TestCase):
