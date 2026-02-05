@@ -175,6 +175,29 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
             .exists()
         )
 
+    def test_before_edit_page__prevents_expiry_schedule_mechanism_when_in_bundle(self):
+        """Test that users cannot set individual page publishing schedule while in a bundle."""
+        self.client.force_login(self.publishing_admin)
+
+        self.assertIsNone(self.page.expire_at)
+
+        expire_at = timezone.now() + datetime.timedelta(weeks=3)
+        data = self.get_simple_post_data(self.page)
+        data["expire_at"] = submittable_timestamp(expire_at)
+        del data["action-workflow-action"]
+        del data["workflow-action-name"]
+        response = self.client.post(self.edit_url, data, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cannot set page-level schedule while the page is in a bundle.")
+
+        self.assertIsNone(response.context["page"].expire_at)
+        self.assertFalse(
+            Revision.objects.for_instance(self.page)
+            .filter(content__go_live_at__startswith=str(expire_at.date()))
+            .exists()
+        )
+
     def test_before_edit_page__doesnt_prevent_scheduling_when_not_in_bundle(self):
         # un-bundle
         self.bundle.bundled_pages.all().delete()

@@ -113,7 +113,10 @@ def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
     if request.method != "POST":
         return None
 
-    if request.POST.get("go_live_at") and not page.go_live_at and in_active_bundle(page):
+    if in_active_bundle(page) and (
+        (request.POST.get("go_live_at") and not page.go_live_at)
+        or (request.POST.get("expire_at") and not page.expire_at)
+    ):
         messages.error(request, "Cannot set page-level schedule while the page is in a bundle.")
         return redirect("wagtailadmin_pages:edit", page.pk)
 

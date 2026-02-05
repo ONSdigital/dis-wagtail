@@ -78,7 +78,7 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
         self.assertRedirects(response, "/admin/")
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
-    def test_dispatch__doesnt_allow_adding_page_if_it_has_schedule(self):
+    def test_dispatch__doesnt_allow_adding_page_if_it_has_publication_schedule(self):
         """Tests that we get redirected away with a corresponding message when the page we try to add to the bundle if
         the page has a publishing schedule.
         """
@@ -86,6 +86,22 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
             with self.subTest():
                 self.statistical_article_page.go_live_at = go_live_at
                 self.statistical_article_page.save(update_fields=["go_live_at"])
+
+                response = self.client.get(self.add_url, follow=True)
+                self.assertRedirects(response, "/admin/")
+                self.assertContains(
+                    response,
+                    "Page &#x27;PSF: November 2024&#x27; cannot be bundled because it has a page-level schedule",
+                )
+
+    def test_dispatch__doesnt_allow_adding_page_if_it_has_expiry_schedule(self):
+        """Tests that we get redirected away with a corresponding message when the page we try to add to the bundle if
+        the page has a publishing schedule.
+        """
+        for expire_at in [timezone.now() + timedelta(days=1), timezone.now() - timedelta(days=1)]:
+            with self.subTest():
+                self.statistical_article_page.expire_at = expire_at
+                self.statistical_article_page.save(update_fields=["expire_at"])
 
                 response = self.client.get(self.add_url, follow=True)
                 self.assertRedirects(response, "/admin/")
