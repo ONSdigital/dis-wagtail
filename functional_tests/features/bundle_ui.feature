@@ -31,7 +31,7 @@ Scenario Outline: A User cannot create a bundle due to authorisation
     And the <role> logs in
     When the logged in user goes to the bundle page
     Then the logged in user cannot see the create button
-    
+
     Examples: bundles
        | role     |
        | Viewer   |
@@ -114,7 +114,7 @@ Scenario Outline: A User cannot find bundles page
     And the logged in user can see the create button
     And the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
-    When the logged in user tries to find a non existing release calendar page
+    When the logged in user tries to find a non existing bundle page
     Then the logged in user gets the following message for bundle_page
 
     Examples: bundles

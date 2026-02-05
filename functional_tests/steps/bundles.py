@@ -658,23 +658,22 @@ def go_to_bundle_page(context: Context) -> None:
     context.page.get_by_role("link", name="Bundles", exact=True).click()
 
 
-@when("the logged in user tries to find a non existing Release Calendar page")
+@step("the logged in user tries to find a non existing release calendar page")
 def find_release_calendar(context: Context) -> None:
     release_calendar_name = "PFM December 2025"
     context.page.get_by_role("button", name="Choose Release Calendar page").click()
     context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
 
 
-@then("the logged in user gets the following message for {search_type}")
+@step("the logged in user gets the following message for {search_type}")
 def search_alert(context: Context, search_type: str) -> None:
     search_name = "December 2025"
     if search_type == "release_calendar":
         search_name = "PFM December 2025"
-    alert_text = f'Sorry, there are no matches for "{search_name}"."'
+    alert_text = f"Sorry, there are no matches for \"{search_name}\""
     expect(context.page.get_by_role("alert")).to_contain_text(alert_text)
 
-
-@when("the logged in user tries to find a non existing bundle page")
+@step("the logged in user tries to find a non existing bundle page")
 def find_bundle_page(context: Context) -> None:
     bundle_page_name = "December 2025"
     context.page.get_by_role("button", name="Add page").click()
