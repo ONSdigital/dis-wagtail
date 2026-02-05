@@ -603,13 +603,13 @@ def fail_to_save_bundle_name(context: Context) -> None:
     expect(context.page.locator("#panel-child-name-errors")).to_contain_text("This field is required.")
 
 
-@step("the logged in user gets a failure message due duplicate name")
+@step("the logged in user gets a failure message due to duplicate name")
 def existing_failure_message(context: Context) -> None:
     expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
     expect(context.page.locator("#panel-child-name-errors")).to_contain_text("Bundle with this Name already exists.")
 
 
-@step("the logged in user fails to create a bundle due duplicate schedule")
+@step("the logged in user gets a failure message due to duplicate schedule")
 def schedule_failure_message(context: Context) -> None:
     expect(context.page.locator("#panel-child-scheduling-child-release_calendar_page-errors")).to_contain_text(
         "You must choose either a Release Calendar page or a Publication date, not both."
@@ -656,3 +656,26 @@ def add_schedule_date(context: Context) -> None:
 @step("the logged in user goes to the bundle page")
 def go_to_bundle_page(context: Context) -> None:
     context.page.get_by_role("link", name="Bundles", exact=True).click()
+
+
+@when("the logged in user tries to find a non existing Release Calendar page")
+def find_release_calendar(context: Context) -> None:
+    release_calendar_name = "PFM December 2025"
+    context.page.get_by_role("button", name="Choose Release Calendar page").click()
+    context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
+
+
+@then("the logged in user gets the following message for {search_type}")
+def search_alert(context: Context, search_type: str) -> None:
+    search_name = "December 2025"
+    if search_type == "release_calendar":
+        search_name = "PFM December 2025"
+    alert_text = f"Sorry, there are no matches for \"{search_name}\".\""
+    expect(context.page.get_by_role("alert")).to_contain_text(alert_text)
+
+
+@when("the logged in user tries to find a non existing bundle page")
+def find_bundle_page(context: Context) -> None:
+    bundle_page_name = "December 2025"
+    context.page.get_by_role("button", name="Add page").click()
+    context.page.get_by_role("textbox", name="Search term").fill(bundle_page_name)

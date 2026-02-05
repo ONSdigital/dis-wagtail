@@ -31,6 +31,7 @@ Scenario Outline: A User cannot create a bundle due to authorisation
     And the <role> logs in
     When the logged in user goes to the bundle page
     Then the logged in user cannot see the create button
+    
     Examples: bundles
        | role     |
        | Viewer   |
@@ -60,7 +61,7 @@ Scenario Outline: A User cannot create a bundle due to already existing
     And the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
     When the user clicks "Save as draft"
-    Then the logged in user gets a failure message due duplicate name
+    Then the logged in user gets a failure message due to duplicate name
 
     Examples: bundles
        | number_of_bundles | role               | creator_role        |  bundle_details                                                                                                                                                |
@@ -79,12 +80,48 @@ Scenario Outline: A User cannot save a bundle due to duplicate schedule
     And the logged in user adds a Release Calendar page to the bundle
     And the logged in user add a schedule date to the bundle
     When the user clicks "Save as draft"
-    Then the logged in user fails to create a bundle due duplicate schedule
+    Then the logged in user gets a failure message due to duplicate schedule
 
     Examples: bundles
        | role               | creator_role      |
        | Publishing Officer |Publishing Admin   |
        | Publishing Admin   |Publishing Officer |
+
+
+Scenario Outline: A User cannot find release schedule page
+    Given there is a <role> user
+    And there is a <creator_role> user
+    And there is a release calendar page approved by <creator_role>
+    And the <role> logs in
+    And the logged in user goes to the bundle page
+    And the logged in user can see the create button
+    And the logged in user can create a bundle
+    And the logged in user adds a Name to the bundle
+    When the logged in user tries to find a non existing release calendar page
+    Then the logged in user gets the following message for release_calendar
+
+    Examples: bundles
+       | role               | creator_role      |
+       | Publishing Officer |Publishing Admin   |
+       | Publishing Admin   |Publishing Officer |
+
+Scenario Outline: A User cannot find bundles page
+    Given there is a <role> user
+    And there is a <creator_role> user
+    And there is a release calendar page approved by <creator_role>
+    And the <role> logs in
+    And the logged in user goes to the bundle page
+    And the logged in user can see the create button
+    And the logged in user can create a bundle
+    And the logged in user adds a Name to the bundle
+    When the logged in user tries to find a non existing release calendar page
+    Then the logged in user gets the following message for bundle_page
+
+    Examples: bundles
+       | role               | creator_role      |
+       | Publishing Officer |Publishing Admin   |
+       | Publishing Admin   |Publishing Officer |
+
 
 
 #---- Bundle UI Edit-----
