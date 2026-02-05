@@ -6,6 +6,7 @@ from django.utils import timezone
 from wagtail.models import DraftStateMixin, Page, Revision
 
 from cms.bundles.mixins import BundledPageMixin
+from cms.core.db_router import force_write_db
 
 if TYPE_CHECKING:
     from django.core.management.base import CommandParser
@@ -26,6 +27,7 @@ class Command(BaseCommand):
             help="Dry run -- don't change anything.",
         )
 
+    @force_write_db()
     def handle(self, *args: Any, **options: dict[str, Any]) -> None:
         dry_run = False
         if options["dry-run"]:

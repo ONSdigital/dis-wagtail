@@ -197,7 +197,7 @@ const webpackConfig = (environment, argv) => {
       proxy: [
         {
           context: () => true,
-          target: 'http://localhost:8000',
+          target: `http://localhost:${process.env.WEB_PORT || 8000}`,
         },
       ],
       client: {
