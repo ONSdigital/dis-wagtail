@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.functions import Lower
 from wagtail.fields import RichTextField
-from wagtail.models import PreviewableMixin, RevisionMixin, TranslatableMixin
+from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin, TranslatableMixin
 from wagtail.search import index
 
 if TYPE_CHECKING:
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from cms.users.models import User
 
 
-class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
+class ContactDetails(TranslatableMixin, DraftStateMixin, RevisionMixin, index.Indexed, models.Model):
     """A model for contact details.
 
     Note that this is registered as a snippet in core.wagtail_hooks to allow customising the icon.
@@ -26,6 +26,7 @@ class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField()
     phone = models.CharField(max_length=255, blank=True)
+    _revisions = GenericRelation("wagtailcore.Revision", related_query_name="contact_details")
 
     panels: ClassVar[list[Panel]] = [
         "name",
@@ -40,6 +41,7 @@ class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
         index.AutocompleteField("email"),
         index.SearchField("phone"),
         index.FilterField("locale"),
+        index.FilterField("live"),
     ]
 
     class Meta(TranslatableMixin.Meta):
@@ -72,7 +74,7 @@ class ContactDetails(TranslatableMixin, index.Indexed, models.Model):
         return str(self.name)
 
 
-class Definition(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Indexed, models.Model):
+class Definition(TranslatableMixin, PreviewableMixin, DraftStateMixin, RevisionMixin, index.Indexed, models.Model):
     """A model for definitions."""
 
     # Note: Definitions were formerly known as GlossaryTerms
@@ -87,7 +89,7 @@ class Definition(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Index
         related_name="owned_definitions",
     )
 
-    revisions = GenericRelation("wagtailcore.Revision", related_query_name="definition")
+    _revisions = GenericRelation("wagtailcore.Revision", related_query_name="definition")
 
     panels: ClassVar[list[Panel]] = [
         "name",
@@ -101,6 +103,7 @@ class Definition(TranslatableMixin, PreviewableMixin, RevisionMixin, index.Index
         index.SearchField("definition"),
         index.AutocompleteField("definition"),
         index.FilterField("locale"),
+        index.FilterField("live"),
     ]
 
     class Meta:
