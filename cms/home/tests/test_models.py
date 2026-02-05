@@ -1,14 +1,19 @@
 from django.test import TestCase, override_settings
 from wagtail.coreutils import get_dummy_request
 
+from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.utils import TranslationResetMixin
 from cms.home.models import HomePage
+from cms.users.tests.factories import UserFactory
 
 
 class HomePageTestCase(TranslationResetMixin, TestCase):
     def setUp(self):
         self.home_page = HomePage.objects.get(slug="home")
         self.url = self.home_page.get_url()
+
+    def test_permission_tester_inherits_from_basepagepermissiontester(self):
+        self.assertIsInstance(self.home_page.permissions_for_user(UserFactory()), BasePagePermissionTester)
 
     def test_loads(self):
         """Test the homepage loads."""

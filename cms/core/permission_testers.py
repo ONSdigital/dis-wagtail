@@ -13,11 +13,27 @@ class BasePagePermissionTester(PagePermissionTester):
         Return False if the page's language doesn't match the default site language (English).
         This enforces that English pages must be created first, then translated, disallowing creation of pages in other
         languages first.
+
+        Also extends the logic to consider max_count_per_parent.
+        TODO: remove when https://github.com/wagtail/wagtail/issues/13286 is fixed
         """
         if self.page.locale.language_code != settings.LANGUAGE_CODE:
             return False
-        can_add: bool = super().can_add_subpage()
-        return can_add
+
+        # TODO: once https://github.com/wagtail/wagtail/issues/13286 is fixed
+        # replace this with `return super().can_add_subpage()`
+        if not self.user.is_active:
+            return False
+        if (specific_class := self.page.specific_class) is None:
+            return False
+        creatable_subpage_models = [
+            page_model
+            for page_model in specific_class.creatable_subpage_models()
+            if page_model.can_create_at(self.page)
+        ]
+        if specific_class is None or not creatable_subpage_models:
+            return False
+        return self.user.is_superuser or ("add" in self.permissions)
 
     def can_copy(self) -> bool:
         """Determine if this can be copied.

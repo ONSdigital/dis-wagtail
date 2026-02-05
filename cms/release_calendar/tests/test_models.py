@@ -13,6 +13,7 @@ from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundleFactory
 from cms.core.custom_date_format import ons_date_format, ons_default_datetime
 from cms.core.models import ContactDetails
+from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.utils import rebuild_internal_search_index
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
@@ -35,6 +36,9 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
 
         # Request is created with each test to avoid mutation side effects
         self.request = RequestFactory().get("/")
+
+    def test_permission_tester_inherits_from_basepagepermissiontester(self):
+        self.assertIsInstance(self.page.permissions_for_user(self.superuser), BasePagePermissionTester)
 
     def test_template(self):
         """Check the template used."""
