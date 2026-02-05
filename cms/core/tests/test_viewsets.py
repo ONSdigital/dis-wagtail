@@ -71,7 +71,7 @@ class TestDefinitionChooserViewSet(WagtailTestUtils, TestCase):
         cls.term_cy = DefinitionFactory(
             name="Cyswllt cyntaf", definition="something else", locale=Locale.objects.get(language_code="cy")
         )
-        cls.draft_term = DefinitionFactory(name="Draft temr", definition="tbd", live=False)
+        cls.draft_term = DefinitionFactory(name="Draft term", definition="tbd", live=False)
         chooser_viewset = cls.term.snippet_viewset.chooser_viewset
         cls.chooser_url = reverse(chooser_viewset.get_url_name("choose"))
         cls.chooser_results_url = reverse(chooser_viewset.get_url_name("choose_results"))

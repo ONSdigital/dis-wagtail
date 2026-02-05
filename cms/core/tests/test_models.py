@@ -67,12 +67,13 @@ class ContactDetailsTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(ContactDetails.objects.count(), 2)
         self.assertTrue(ContactDetails.objects.last().live)
 
-    def test_publishing_officer_cannot_add(self):
+    def test_publishing_officer_cannot_access_the_add_page(self):
         self.client.force_login(self.publishing_officer)
 
         response = self.client.get(self.add_url, follow=True)
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
+    def test_publishing_officer_cannot_publish(self):
         response = self.client.post(
             self.add_url,
             data={"name": "New contact", "email": "new@example.com", "action-publish": "action-publish"},
@@ -105,12 +106,13 @@ class DefinitionTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(Definition.objects.count(), 1)
         self.assertTrue(Definition.objects.last().live)
 
-    def test_publishing_officer_cannot_add(self):
+    def test_publishing_officer_cannot_access_the_add_page(self):
         self.client.force_login(self.publishing_officer)
 
         response = self.client.get(self.add_url, follow=True)
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
+    def test_publishing_officer_cannot_publish(self):
         response = self.client.post(
             self.add_url,
             data={"name": "New definition", "definition": rich_text("definition"), "action-publish": "action-publish"},
