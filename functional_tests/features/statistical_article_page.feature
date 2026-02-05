@@ -91,7 +91,7 @@ Feature: Statistical Article Page components
         Given a published statistical article page with headline figures exists
         And  the user edits the ancestor topic
         And  the user adds two headline figures to the topic page
-        And  the user clicks "Publish"
+        And  the topic page goes through the publishing steps with superuser as user and Publishing Officer as reviewer
         And  the user returns to editing the statistical article page
         Then the user cannot delete the referenced headline figures
 

@@ -38,11 +38,14 @@ def require_request(requests: list[str], predicate: callable, description: str) 
 
 
 def get_page_from_context(context: Context, page_str: str) -> Page | None:
-    the_page_attr = page_str.lower().replace(" ", "_")
-    if not the_page_attr.endswith("_page"):
-        the_page_attr += "_page"
+    try:
+        return context.topic_pages[page_str]
+    except AttributeError, KeyError:
+        the_page_attr = page_str.lower().replace(" ", "_")
+        if not the_page_attr.endswith("_page"):
+            the_page_attr += "_page"
 
-    return getattr(context, the_page_attr)
+        return getattr(context, the_page_attr)
 
 
 def lock_page(the_page: Page, user: User):

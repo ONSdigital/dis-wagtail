@@ -9,8 +9,8 @@ Feature: CMS users can draft, edit, and publish topic pages
         When the user edits the topic page
         And the user clicks the "Choose Article Series page" button
         And the user selects the article series
-        And publishes the page
-        And the user visits the topic page
+        And the user clicks the "Save draft" button
+        And the user views the topic page draft
         Then the topic page with the example content is displayed
         And the user can see the topic page featured article
 
@@ -56,7 +56,7 @@ Feature: CMS users can draft, edit, and publish topic pages
         And  the statistical article page is "published"
         When the user edits the ancestor topic
         And  the user adds two headline figures to the topic page
-        And  the user clicks "Publish"
+        And  the topic page goes through the publishing steps with superuser as user and Publishing Officer as reviewer
         And  the user clicks "View Live" on the publish confirmation banner
         Then the published topic page has the added headline figures
         And  the headline figures on the topic page link to the statistical page
@@ -66,12 +66,12 @@ Feature: CMS users can draft, edit, and publish topic pages
         And  the statistical article page is "published"
         When the user edits the ancestor topic
         And  the user adds two headline figures to the topic page
-        And  the user clicks "Publish"
+        And  the topic page goes through the publishing steps with superuser as user and Publishing Officer as reviewer
         And  the user clicks "View Live" on the publish confirmation banner
         Then the published topic page has the added headline figures in the correct order
         And  the user edits the ancestor topic
         When the user reorders the headline figures on the topic page
-        And  the user clicks "Publish"
+        And  the topic page goes through the publishing steps with superuser as user and Publishing Officer as reviewer
         And  the user clicks "View Live" on the publish confirmation banner
         Then the published topic page has reordered headline figures
 
@@ -80,7 +80,7 @@ Feature: CMS users can draft, edit, and publish topic pages
         And  the statistical article page is "published"
         When the user edits the ancestor topic
         And  the user adds two headline figures to the topic page
-        And  the user clicks "Publish"
+        And  the topic page goes through the publishing steps with superuser as user and Publishing Officer as reviewer
         And  the user clicks "View Live" on the publish confirmation banner
         Then the published topic page has the added headline figures in the correct order
         When the user returns to editing the statistical article page
@@ -94,8 +94,8 @@ Feature: CMS users can draft, edit, and publish topic pages
         Given a topic page exists under the homepage
         When the user edits the topic page
         And looks up and selects a dataset
-        And the user clicks "Publish"
-        And the user views the topic page
+        And the user clicks the "Save draft" button
+        And the user views the topic page draft
         Then the selected datasets are displayed on the page
         And the user sees the 'View all related data' link
 
@@ -103,8 +103,8 @@ Feature: CMS users can draft, edit, and publish topic pages
         Given a topic page exists under the homepage
         When the user edits the topic page
         And the user adds a time series page link
-        And the user clicks "Publish"
-        And the user views the topic page
+        And the user clicks the "Save draft" button
+        And the user views the topic page draft
         Then the time series section is displayed on the page
         And the user sees the 'View all related time series' link
         And the time series item appears in the table of contents
@@ -148,9 +148,9 @@ Feature: CMS users can draft, edit, and publish topic pages
             | series           | article   | release_date | topic   |
             | Article Series 3 | Article 4 | 2025-01-04   | Economy |
         When the user edits "Topic Page A"
-        And the user manually adds "Manual Article 1" in the highlighted "articles" section
-        And the user clicks "Publish"
-        And the user visits "Topic Page A"
+        And  the user manually adds "Manual Article 1" in the highlighted "articles" section
+        And  the Topic Page A page goes through the publishing steps with superuser as user and Publishing Officer as reviewer
+        And  the user visits "Topic Page A"
         Then the highlighted "articles" section is visible
         And the highlighted "articles" are displayed in this order:
             | article_name                            |
@@ -176,9 +176,9 @@ Feature: CMS users can draft, edit, and publish topic pages
             | series   | article          | release_date | topic   |
             | C Series | Tagged Article C | 2025-01-05   | Economy |
         When the user edits "Topic Page A"
-        And the user manually adds "Descendant Article 1" in the highlighted "articles" section
-        And the user clicks "Publish"
-        And the user visits "Topic Page A"
+        And  the user manually adds "Descendant Article 1" in the highlighted "articles" section
+        And  the Topic Page A page goes through the publishing steps with superuser as user and Publishing Officer as reviewer
+        And  the user visits "Topic Page A"
         Then the highlighted "articles" section is visible
         And the highlighted "articles" are displayed in this order:
             | article_name                   |
@@ -225,9 +225,9 @@ Feature: CMS users can draft, edit, and publish topic pages
             | title              | publication_date | topic   |
             | Methodology Page 4 | 2025-01-04       | Economy |
         When the user edits "Topic Page A"
-        And the user manually adds "Manual Methodology 1" in the highlighted "methodologies" section
-        And the user clicks "Publish"
-        And the user visits "Topic Page A"
+        And  the user manually adds "Manual Methodology 1" in the highlighted "methodologies" section
+        And  the Topic Page A page goes through the publishing steps with superuser as user and Publishing Officer as reviewer
+        And  the user visits "Topic Page A"
         Then the highlighted "methodologies" section is visible
         And the highlighted "methodologies" are displayed in this order:
             | methodology_name     |
@@ -253,9 +253,9 @@ Feature: CMS users can draft, edit, and publish topic pages
             | title                     | publication_date | topic   |
             | Tagged Methodology Page C | 2025-01-05       | Economy |
         When the user edits "Topic Page A"
-        And the user manually adds "Descendant Methodology Page 1" in the highlighted "methodologies" section
-        And the user clicks "Publish"
-        And the user visits "Topic Page A"
+        And  the user manually adds "Descendant Methodology Page 1" in the highlighted "methodologies" section
+        And  the Topic Page A page goes through the publishing steps with superuser as user and Publishing Officer as reviewer
+        And  the user visits "Topic Page A"
         Then the highlighted "methodologies" section is visible
         And the highlighted "methodologies" are displayed in this order:
             | methodology_name              |

@@ -71,14 +71,14 @@ Feature: Topic page creation and configuration in the Wagtail admin
         Given a topic page exists under the homepage
         When the user edits the topic page
         And the user adds an external related article without a title
-        And the user clicks "Publish"
+        And the user clicks the "Save draft" button
         Then the user sees the validation error "This field is required when providing an external URL"
 
     Scenario: Related article must have either internal page or external URL
         Given a topic page exists under the homepage
         When the user edits the topic page
         And the user adds an empty related article
-        And the user clicks "Publish"
+        And the user clicks the "Save draft" button
         Then the user sees the validation error "You must select an internal page or provide an external URL"
 
     # Edge Case Handling - Time Series
