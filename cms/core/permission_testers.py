@@ -1,5 +1,5 @@
 from django.conf import settings
-from wagtail.models import PagePermissionTester
+from wagtail.models import Page, PagePermissionTester
 
 
 class BasePagePermissionTester(PagePermissionTester):
@@ -38,3 +38,25 @@ class BasePagePermissionTester(PagePermissionTester):
 
         can_lock: bool = super().can_lock()
         return can_lock
+
+
+class StaticPagePermissionTester(BasePagePermissionTester):
+    """A permissions tester which lets users modify the page itself, but otherwise not change the page."""
+
+    def can_copy(self) -> bool:
+        return False
+
+    def can_delete(self, ignore_bulk: bool = False) -> bool:
+        return False
+
+    def can_unpublish(self) -> bool:
+        return False
+
+    def can_set_view_restrictions(self) -> bool:
+        return False
+
+    def can_move(self) -> bool:
+        return False
+
+    def can_copy_to(self, destination: Page, recursive: bool = False) -> bool:
+        return False

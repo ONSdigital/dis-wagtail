@@ -4,7 +4,7 @@ from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.bundles.tests.utils import grant_all_page_permissions
-from cms.core.permission_testers import BasePagePermissionTester
+from cms.core.permission_testers import BasePagePermissionTester, StaticPagePermissionTester
 from cms.home.models import HomePage
 from cms.standard_pages.models import InformationPage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
@@ -115,3 +115,38 @@ class TestCustomPagePermissions(WagtailTestUtils, TestCase):
         new_copy_page = InformationPage.objects.get(slug=new_slug)
         self.assertEqual(new_copy_page.title, new_title)
         self.assertEqual(new_copy_page.get_parent().pk, english_info_page.get_parent().pk)
+
+
+class StaticPagePermissionTesterTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.publishing_admin_group = GroupFactory(name="Publishing Admins", access_admin=True)
+        grant_all_page_permissions(cls.publishing_admin_group)
+        cls.publishing_admin = UserFactory(username="publishing_admin")
+        cls.publishing_admin.groups.add(cls.publishing_admin_group)
+        cls.english_home_page = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
+        cls.welsh_home_page = HomePage.objects.get(locale__language_code="cy")
+
+    def test_cannot_change_page(self):
+        for method in [
+            "can_copy",
+            "can_delete",
+            "can_unpublish",
+            "can_set_view_restrictions",
+            "can_move",
+        ]:
+            with self.subTest(method):
+                self.assertFalse(
+                    getattr(StaticPagePermissionTester(self.publishing_admin, self.english_home_page), method)()
+                )
+                self.assertFalse(
+                    getattr(StaticPagePermissionTester(self.publishing_admin, self.welsh_home_page), method)()
+                )
+
+    def test_cannot_copy_to(self):
+        self.assertFalse(
+            StaticPagePermissionTester(self.publishing_admin, self.english_home_page).can_copy_to(self.welsh_home_page)
+        )
+        self.assertFalse(
+            StaticPagePermissionTester(self.publishing_admin, self.welsh_home_page).can_copy_to(self.english_home_page)
+        )
