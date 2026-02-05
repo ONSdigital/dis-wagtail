@@ -74,6 +74,7 @@ class ContactDetailsTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
     def test_publishing_officer_cannot_publish(self):
+        self.client.force_login(self.publishing_officer)
         response = self.client.post(
             self.add_url,
             data={"name": "New contact", "email": "new@example.com", "action-publish": "action-publish"},
@@ -113,6 +114,7 @@ class DefinitionTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
     def test_publishing_officer_cannot_publish(self):
+        self.client.force_login(self.publishing_officer)
         response = self.client.post(
             self.add_url,
             data={"name": "New definition", "definition": rich_text("definition"), "action-publish": "action-publish"},
