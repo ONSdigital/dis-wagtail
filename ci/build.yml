@@ -4,8 +4,8 @@ platform: linux
 image_resource:
   type: registry-image
   source:
-    repository: alpine
-    tag: 3.23.3
+    repository: golang
+    tag: 1.24.12-bookworm
     registry_mirror:
       host: ((ecr_repository_uri))
     aws_access_key_id: ((aws_access_key_id))
