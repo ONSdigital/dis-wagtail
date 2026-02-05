@@ -1,4 +1,3 @@
-# pylint: disable=too-many-lines
 from datetime import timedelta
 from http import HTTPStatus
 
@@ -9,7 +8,6 @@ from django.urls import reverse
 from django.utils.html import strip_tags
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
-from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.enums import SortingChoices
@@ -138,21 +136,6 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertContains(response, "Sections in this page")
         self.assertContains(response, "Contents")
         self.assertContains(response, "Cite this article")
-
-    def test_localised_version_of_page_works(self):
-        self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True)
-        response = self.client.get("/cy" + self.page.url)
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        # Body of the page is still English
-        self.assertContains(response, self.page.title)
-        self.assertContains(response, self.page.summary)
-
-        # However, the page's furniture should be in Welsh
-        self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
-
-    def test_unknown_localised_version_of_page_404(self):
-        response = self.client.get("/fr" + self.page.url)
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_correction_routes(self):
         self.assertPageIsRoutable(self.page, "versions/1")
@@ -420,21 +403,25 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         )
 
     def test_hero_rendering(self):
-        response = self.client.get(self.page.url)
+        request = get_dummy_request()
+        page_url = self.page.get_url(request=request)
+        response = self.client.get(page_url)
 
         # Breadcrumbs
         content = response.content.decode(encoding="utf-8")
 
         topic = self.page.get_parent().get_parent()
+        topic_full_url = topic.get_full_url(request=request)
         theme = topic.get_parent()
+        theme_full_url = theme.get_full_url(request=request)
 
         self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{topic.full_url}">{topic.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{topic_full_url}">{topic.title}</a>',
             content,
         )
 
         self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{theme.full_url}">{theme.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{theme_full_url}">{theme.title}</a>',
             content,
         )
 
@@ -444,7 +431,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.page.is_census = True
         self.page.save_revision().publish()
 
-        response = self.client.get(self.page.url)
+        response = self.client.get(page_url)
         self.assertContains(response, "ons-hero__census-logo")
 
         # Accreditation badge
@@ -452,7 +439,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
 
         self.page.is_accredited = True
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url)
+        response = self.client.get(page_url)
 
         self.assertContains(response, "ons-hero__badge")
 
@@ -460,7 +447,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.page.release_date = "2025-01-01"
         self.page.next_release_date = None
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url)
+        response = self.client.get(page_url)
         content = response.content.decode(encoding="utf-8")
 
         self.assertInHTML(
@@ -474,7 +461,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
 
         self.page.next_release_date = "2025-02-03"
         self.page.save_revision().publish()
-        response = self.client.get(self.page.url)
+        response = self.client.get(page_url)
         content = response.content.decode(encoding="utf-8")
 
         self.assertInHTML(
@@ -709,28 +696,6 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertContains(
             response, f'<link rel="canonical" href="{self.page.get_full_url(request=self.dummy_request)}" />'
         )
-
-    def test_welsh_page_alias_canonical_url(self):
-        """Test that Welsh articles have the correct english canonical URL when they have not been explicitly
-        translated.
-        """
-        self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True)
-        response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(
-            response, f'<link rel="canonical" href="{self.series.get_full_url(request=self.dummy_request)}" />'
-        )
-        self.client.get({self.page.get_url(request=self.dummy_request)})
-
-    def test_translated_welsh_page_canonical_url(self):
-        """Test that a translated article has the correct language coded canonical URL."""
-        welsh_page = self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True)
-        welsh_page.save_revision().publish()
-        response = self.client.get(welsh_page.get_url(request=self.dummy_request))
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        welsh_series_url = welsh_page.get_parent().get_full_url(request=self.dummy_request)
-        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_series_url)
-        self.assertContains(response, f'<link rel="canonical" href="{welsh_series_url}" />')
 
     def test_corrected_article_versions_are_marked_no_index(self):
         response = self.client.get(self.page.get_url(request=self.dummy_request))

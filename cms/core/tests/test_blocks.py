@@ -258,7 +258,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.link,
             {
-                "url": self.home_page.url,
+                "url": "/",
                 "text": "Example",
                 "description": "A link",
                 "metadata": {"object": {"text": "Page"}},
@@ -274,7 +274,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.link,
             {
-                "url": self.home_page.url,
+                "url": "/",
                 "text": self.home_page.title,
                 "description": "",
                 "metadata": {"object": {"text": "Page"}},
@@ -294,7 +294,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.link,
             {
-                "url": statistical_article.url,
+                "url": statistical_article.get_relative_path(),
                 "text": statistical_article.display_title,
                 "description": "Our test description",
                 "metadata": {
@@ -351,7 +351,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.get_related_link(),
             {
-                "title": {"url": self.home_page.url, "text": "Example 2"},
+                "title": {"url": "/", "text": "Example 2"},
                 "description": "A link",
                 "metadata": {"object": {"text": "Time series"}},
                 "attributes": {
@@ -374,7 +374,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.get_related_link(),
             {
-                "title": {"url": self.home_page.url, "text": self.home_page.title},
+                "title": {"url": "/", "text": self.home_page.title},
                 "metadata": {"object": {"text": "Dataset"}},
                 "attributes": {
                     "data-ga-event": "navigation-click",
@@ -462,7 +462,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertEqual(related_link["attributes"]["data-ga-click-position"], 1)
 
         # Attributes specific to internal links
-        self.assertEqual(related_link["attributes"]["data-ga-click-path"], article_page.get_url())
+        self.assertEqual(related_link["attributes"]["data-ga-click-path"], article_page.get_relative_path())
         self.assertEqual(related_link["attributes"]["data-ga-click-content-type"], article_page.analytics_content_type)
         self.assertEqual(
             related_link["attributes"]["data-ga-click-content-group"], article_page.analytics_content_group
@@ -509,7 +509,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertEqual(related_link["attributes"]["data-ga-click-position"], 1)
 
         # Attributes specific to internal links
-        self.assertEqual(related_link["attributes"]["data-ga-click-path"], self.home_page.get_url())
+        self.assertEqual(related_link["attributes"]["data-ga-click-path"], self.home_page.get_relative_path())
         self.assertEqual(
             related_link["attributes"]["data-ga-click-content-type"], self.home_page.analytics_content_type
         )
