@@ -43,10 +43,10 @@ class TestGoogleTagManagerTestCase(TestCase):
         self.assertIn(settings.GOOGLE_TAG_MANAGER_CONTAINER_ID, response.rendered_content)
 
 
-class ReadinessProbeTestCase(SimpleTestCase):
-    """Tests for the readiness probe endpoint."""
+class LivenessProbeTestCase(SimpleTestCase):
+    """Tests for the liveness probe endpoint."""
 
-    url = reverse("internal:readiness")
+    url = reverse("internal:liveness")
 
     def test_success(self):
         response = self.client.get(self.url)
@@ -79,12 +79,12 @@ class ReadinessProbeTestCase(SimpleTestCase):
         }
     },
 )
-class LivenessProbeTestCase(TestCase):
-    """Tests for the liveness probe."""
+class ReadinessProbeTestCase(TestCase):
+    """Tests for the readiness probe endpoint."""
 
     databases = "__all__"
 
-    url = reverse("internal:liveness")
+    url = reverse("internal:readiness")
 
     def test_success(self):
         response = self.client.get(self.url)

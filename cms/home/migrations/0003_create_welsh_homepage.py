@@ -39,6 +39,7 @@ def create_welsh_homepage(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("home", "0002_create_homepage"),
+        ("core", "0007_remove_glossaryterm_core_glossary_term_name_unique_and_more"),
     ]
 
     operations = [

@@ -266,6 +266,10 @@ else:
         ),
     }
 
+    # Allow overriding the database port for local development with multiple instances
+    if "DB_PORT" in env:
+        DATABASES["default"]["PORT"] = env["DB_PORT"]
+
     if "READ_REPLICA_DATABASE_URL" in env:
         DATABASES["read_replica"] = dj_database_url.config(
             env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age or 0
@@ -828,6 +832,10 @@ WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", "/admin/login/")
 # Custom image model
 # https://docs.wagtail.io/en/stable/advanced_topics/images/custom_image_model.html
 WAGTAILIMAGES_IMAGE_MODEL = "images.CustomImage"
+# https://docs.wagtail.org/en/latest/reference/settings.html#wagtailimages-image-form-base
+WAGTAILIMAGES_IMAGE_FORM_BASE = "cms.images.forms.CustomImageForm"
+# Allowed image formats
+WAGTAILIMAGES_EXTENSIONS = ["avif", "jpg", "jpeg", "png", "webp"]
 WAGTAILIMAGES_FEATURE_DETECTION_ENABLED = False
 
 pixel_limit = env.get("WAGTAILIMAGES_MAX_IMAGE_PIXELS")

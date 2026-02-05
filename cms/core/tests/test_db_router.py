@@ -8,7 +8,7 @@ from modelsearch.signal_handlers import post_save_signal_handler
 from wagtail.models import Page, Revision
 from wagtail_factories import ImageFactory
 
-from cms.core.db_router import READ_REPLICA_DB_ALIAS, ExternalEnvRouter
+from cms.core.db_router import READ_REPLICA_DB_ALIAS, ExternalEnvRouter, force_write_db, force_write_db_for
 from cms.core.tests import TransactionTestCase
 from cms.home.models import HomePage
 from cms.images.models import CustomImage, Rendition
@@ -54,6 +54,20 @@ class DBRouterTestCase(TransactionTestCase):
         self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
 
         with transaction.atomic():
+            self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
+
+        self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
+
+    def test_uses_write_db_in_nested_transaction(self):
+        """Check the default is used for reads in a nested transaction."""
+        self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
+
+        with transaction.atomic():
+            self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
+
+            with transaction.atomic():
+                self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
+
             self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
 
         self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
@@ -124,6 +138,36 @@ class DBRouterTestCase(TransactionTestCase):
         # In the external env, no writes will be done, so the replica is safe.
         with override_settings(IS_EXTERNAL_ENV=True):
             self.assertEqual(router.db_for_read(Revision), READ_REPLICA_DB_ALIAS)
+
+    def test_force_write_db_for_queryset(self):
+        """Check that the force_write_db_for util works as expected."""
+        qs = User.objects.all()
+
+        self.assertEqual(qs.db, READ_REPLICA_DB_ALIAS)
+        self.assertEqual(force_write_db_for(qs).db, DEFAULT_DB_ALIAS)
+
+        with self.assertNumQueriesConnection():
+            # Calling the method doesn't perform any queries
+            force_write_db_for(qs)
+
+        with self.assertNumQueriesConnection(default=1):
+            list(force_write_db_for(qs))
+
+    def test_force_write_db(self):
+        """Check that the force_write_db context manager correctly forces the
+        default DB connection.
+        """
+        self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
+
+        with force_write_db():
+            self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
+
+            with force_write_db():
+                self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
+
+            self.assertEqual(router.db_for_read(Page), DEFAULT_DB_ALIAS)
+
+        self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
 
 
 @override_settings(IS_EXTERNAL_ENV=True)

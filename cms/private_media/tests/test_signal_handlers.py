@@ -46,8 +46,8 @@ class SignalHandlersTestCase(TestCase):
         """
         return [
             {"type": "heading", "value": "Test heading"},
-            {"type": "image", "value": self.private_image.id},
-            {"type": "image", "value": self.public_image.id},
+            {"type": "image", "value": {"image": self.private_image.id}},
+            {"type": "image", "value": {"image": self.public_image.id}},
             {
                 "type": "documents",
                 "value": [
