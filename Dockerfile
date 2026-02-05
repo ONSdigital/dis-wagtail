@@ -282,6 +282,11 @@ ARG UID=1000
 # ARG GID
 ARG GID=1000
 
+ARG USERNAME=cms
+
+# Explicitly set the runtime user
+USER $USERNAME
+
 COPY --chown=$UID:$GID . .
 
 # Get the Design System templates
