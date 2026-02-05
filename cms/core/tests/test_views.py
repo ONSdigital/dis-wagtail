@@ -169,7 +169,6 @@ class HealthProbeTestCase(TestCase):
                 "git_commit": "commit",
                 "language": "python",
                 "language_version": platform.python_version(),
-                "version": "1.2.3",
             },
         )
 
