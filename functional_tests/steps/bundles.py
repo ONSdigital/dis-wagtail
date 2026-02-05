@@ -20,9 +20,9 @@ from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
-from functional_tests.step_helpers.utils import get_page_from_context
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 from functional_tests.step_helpers.users import create_user
+from functional_tests.step_helpers.utils import get_page_from_context
 from functional_tests.steps.release_page import click_add_child_page, navigate_to_release_calendar_page
 
 tomorrow = timezone.now() + timedelta(days=1)
@@ -670,7 +670,7 @@ def search_alert(context: Context, search_type: str) -> None:
     search_name = "December 2025"
     if search_type == "release_calendar":
         search_name = "PFM December 2025"
-    alert_text = f"Sorry, there are no matches for \"{search_name}\".\""
+    alert_text = f'Sorry, there are no matches for "{search_name}"."'
     expect(context.page.get_by_role("alert")).to_contain_text(alert_text)
 
 
