@@ -166,7 +166,7 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         response = self.client.post(self.edit_url, data, follow=True)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Cannot set individual an publishing schedule while the page is in a bundle.")
+        self.assertContains(response, "Cannot set page-level schedule while the page is in a bundle.")
 
         self.assertIsNone(response.context["page"].go_live_at)
         self.assertFalse(
@@ -195,7 +195,7 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         response = self.client.post(self.edit_url, data, follow=True)
 
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Cannot set individual an publishing schedule while the page is in a bundle.")
+        self.assertNotContains(response, "Cannot set page-level schedule while the page is in a bundle.")
 
         # Check that revision with go_live_at in its content JSON exists
         self.assertTrue(

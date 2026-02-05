@@ -67,7 +67,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
       | a release date text            |
       | a next release date text       |
       | a related link                 |
-#      | pre-release access information |
+      | pre-release access information |
 
 
 # Checks visibility of release date text field based on page status (Provisional vs. others) in the admin interface.
