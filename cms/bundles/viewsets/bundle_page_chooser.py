@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django import forms
-from django.utils import timezone
 from wagtail.admin.forms.choosers import BaseFilterForm, LocaleFilterMixin, SearchFilterMixin
 from wagtail.admin.ui.tables import Column, DateColumn, LocaleColumn
 from wagtail.admin.ui.tables.pages import PageStatusColumn
@@ -53,8 +52,8 @@ class PagesWithDraftsMixin:
         pre_filter_q = (
             Page.objects.type(*get_bundleable_page_types())
             .filter(has_unpublished_changes=True, alias_of__isnull=True)
-            .exclude(go_live_at__gte=timezone.now())
-        )  # exclude any scheduled pages with future go-live date
+            .exclude(go_live_at__isnull=False)
+        )  # exclude any scheduled pages with a go-live date
         return (
             Page.objects.specific(defer=True)
             # using pk_in because the direct has_unpublished_changes and alias_of filter
