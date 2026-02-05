@@ -26,7 +26,7 @@ class BasePublisherTests(TestCase, WagtailTestUtils, ResourceDictAssertions):
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
-        # Pages that are NOT in SEARCH_INDEX_EXCLUDED_PAGE_TYPES
+        # Pages included in the search index, as they are not in SEARCH_INDEX_EXCLUDED_PAGE_TYPES
         cls.included_pages = [
             InformationPageFactory(),
             MethodologyPageFactory(),
