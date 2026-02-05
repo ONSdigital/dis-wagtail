@@ -1,5 +1,5 @@
 from django.conf import settings
-from wagtail.models import PagePermissionTester
+from wagtail.models import Page, PagePermissionTester
 
 from cms.bundles.utils import in_active_bundle
 from cms.workflows.utils import is_page_ready_to_publish
@@ -91,3 +91,25 @@ class BasePagePermissionTester(PagePermissionTester):
 
         can_publish_subpage: bool = super().can_publish_subpage()
         return can_publish_subpage
+
+
+class StaticPagePermissionTester(BasePagePermissionTester):
+    """A permissions tester which lets users modify the page itself, but otherwise not change the page."""
+
+    def can_copy(self) -> bool:
+        return False
+
+    def can_delete(self, ignore_bulk: bool = False) -> bool:
+        return False
+
+    def can_unpublish(self) -> bool:
+        return False
+
+    def can_set_view_restrictions(self) -> bool:
+        return False
+
+    def can_move(self) -> bool:
+        return False
+
+    def can_copy_to(self, destination: Page, recursive: bool = False) -> bool:
+        return False

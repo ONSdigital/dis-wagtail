@@ -24,3 +24,11 @@ Feature: Custom permissions for the CMS, independent of RBAC group permissions
         When the user edits the information page
         And  the user opens the page actions menu
         Then the user has the option to copy the page
+
+    Scenario: A CMS user cannot modify the homepage
+        Given the user navigates to the admin page navigator
+        When the user navigates to the English home page in the Wagtail page explorer
+        And the user opens the page actions menu
+        And the user clicks the Edit menu item
+        And the user opens the page actions menu
+        Then the user cannot modify the page

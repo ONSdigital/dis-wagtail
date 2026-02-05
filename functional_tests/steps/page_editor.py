@@ -286,6 +286,17 @@ def user_has_option_to_copy_page(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Copy")).to_be_visible()
 
 
+@step("the user cannot modify the page")
+def user_cannot_modify_page(context: Context) -> None:
+    user_has_no_option_to_copy_page(context)
+    expect(context.page.get_by_role("link", name="Copy")).not_to_be_visible()
+    expect(context.page.get_by_role("link", name="Move")).not_to_be_visible()
+    expect(context.page.get_by_role("link", name="Delete")).not_to_be_visible()
+    expect(context.page.get_by_role("link", name="Unpublish")).not_to_be_visible()
+    context.page.get_by_role("button", name="Status").click()
+    expect(context.page.get_by_role("link", name="Change privacy")).not_to_be_visible()
+
+
 @then("the published {page_str} page is displayed")
 def the_published_page_is_displayed(context: Context, page_str: str) -> None:
     the_page = get_page_from_context(context, page_str)
