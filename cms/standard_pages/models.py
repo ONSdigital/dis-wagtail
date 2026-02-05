@@ -77,7 +77,6 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
 
     page_description = "Use this page as a help landing page that lists help pages"
 
-
     parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
     # TODO: The below content type needs to be updated
