@@ -32,7 +32,7 @@ def remove_publishing_officers_publish_permission(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core", "0011_migrate_imageblock_caption"),
+        ("core", "0012_make_contactdetails_and_definition_revisionable_and_draftable"),
     ]
 
     operations = [

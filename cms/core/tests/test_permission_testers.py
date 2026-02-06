@@ -51,7 +51,7 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
         tester = BasePagePermissionTester(user=self.publishing_admin, page=welsh_info_page)
         self.assertFalse(tester.can_copy())
 
-    def test_can_publish__in_active_bundle(self):
+    def test_can_publish__denied_when_page_in_active_bundle(self):
         BundlePageFactory(parent=self.bundle, page=self.information_page)
 
         for user in [self.superuser, self.publishing_admin, self.publishing_officer, self.user]:
@@ -60,7 +60,7 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
                 self.assertFalse(tester.can_publish())
                 self.assertFalse(tester.can_publish_subpage())
 
-    def test_can_publish__no_bundle_but_in_ready_for_review(self):
+    def test_can_publish__denied_when_no_bundle_but_page_only_in_ready_for_review(self):
         mark_page_as_ready_for_review(self.information_page)
         for user in [self.superuser, self.publishing_admin, self.publishing_officer, self.user]:
             with self.subTest(f"{user=} cannot publish when page not ready to publish, outside of bundle"):
@@ -68,7 +68,7 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
                 self.assertFalse(tester.can_publish())
                 self.assertFalse(tester.can_publish_subpage())
 
-    def test_can_publish__no_bundle_but_in_ready_to_publish(self):
+    def test_can_publish__allowed_for_editorial_users_when_no_bundle_but_page_in_ready_to_publish(self):
         mark_page_as_ready_to_publish(self.information_page)
         for user in [self.superuser, self.publishing_admin, self.publishing_officer]:
             with self.subTest(f"{user=} can publish when page not ready to publish, outside of bundle"):
@@ -76,14 +76,13 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
                 self.assertTrue(tester.can_publish())
                 self.assertTrue(tester.can_publish_subpage())
 
-        with self.subTest(
-            f"Non-priviledge{self.user=} cannot publish when page not ready to publish, outside of bundle"
-        ):
-            tester = BasePagePermissionTester(user=self.user, page=self.information_page)
-            self.assertFalse(tester.can_publish())
-            self.assertFalse(tester.can_publish_subpage())
+    def test_can_publish__denied_for_non_priviledged_user_when_no_bundle_but_page_in_ready_to_publish(self):
+        mark_page_as_ready_to_publish(self.information_page)
+        tester = BasePagePermissionTester(user=self.user, page=self.information_page)
+        self.assertFalse(tester.can_publish())
+        self.assertFalse(tester.can_publish_subpage())
 
-    def test_can_publish__no_active_bundle_or_workflow(self):
+    def test_can_publish__denied_when_no_active_bundle_or_workflow(self):
         BundlePageFactory(parent=self.bundle, page=self.information_page)
         self.bundle.status = BundleStatus.PUBLISHED
         self.bundle.save(update_fields=["status"])
