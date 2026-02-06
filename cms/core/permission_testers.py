@@ -1,5 +1,5 @@
 from django.conf import settings
-from wagtail.models import PagePermissionTester
+from wagtail.models import Page, PagePermissionTester
 
 
 class BasePagePermissionTester(PagePermissionTester):
@@ -26,3 +26,37 @@ class BasePagePermissionTester(PagePermissionTester):
             return False
         can_copy_page: bool = super().can_copy()
         return can_copy_page
+
+    def can_lock(self) -> bool:
+        """Overrides the core can_lock to prevent superusers from manually locking workflow tasks.
+
+        For all other ones, defer to core, even if there is a tad of repeat logic.
+        """
+        if current_workflow_task := self.page.current_workflow_task:
+            can_lock_via_task: bool = current_workflow_task.user_can_lock(self.page, self.user)
+            return can_lock_via_task
+
+        can_lock: bool = super().can_lock()
+        return can_lock
+
+
+class StaticPagePermissionTester(BasePagePermissionTester):
+    """A permissions tester which lets users modify the page itself, but otherwise not change the page."""
+
+    def can_copy(self) -> bool:
+        return False
+
+    def can_delete(self, ignore_bulk: bool = False) -> bool:
+        return False
+
+    def can_unpublish(self) -> bool:
+        return False
+
+    def can_set_view_restrictions(self) -> bool:
+        return False
+
+    def can_move(self) -> bool:
+        return False
+
+    def can_copy_to(self, destination: Page, recursive: bool = False) -> bool:
+        return False
