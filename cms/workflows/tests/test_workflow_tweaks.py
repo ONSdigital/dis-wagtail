@@ -78,14 +78,18 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
             }
         )
 
-    def test_amend_page_action_menu_items_hook(self):
+    def test_amend_page_action_menu_items_hook__not_in_bundle(self):
+        # un-bundle
+        self.bundle.bundled_pages.all().delete()
+
         # Mark the page as ready for review
-        mark_page_as_ready_for_review(self.page, self.publishing_admin)
+        workflow_state = mark_page_as_ready_for_review(self.page, self.publishing_admin)
 
         # Log in as publishing_admin (who was the last editor)
         self.client.force_login(self.publishing_admin)
         response = self.client.get(self.edit_url)
 
+        self.assertNotContains(response, 'data-workflow-action-name="locked-approve"')
         self.assertNotContains(response, 'data-workflow-action-name="approve"')
         self.assertNotContains(response, "Approve")
         self.assertNotContains(response, "Approve with comment")
@@ -94,9 +98,62 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         self.client.force_login(self.publishing_officer)
         response = self.client.get(self.edit_url)
 
+        self.assertNotContains(response, 'data-workflow-action-name="locked-approve"')
         self.assertContains(response, 'data-workflow-action-name="approve"')
         self.assertContains(response, "Approve")
         self.assertContains(response, "Approve with comment")
+
+        # Now mark as ready to publish. Both PA and PO should be able to publish
+        progress_page_workflow(workflow_state, self.publishing_officer)
+
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, 'data-workflow-action-name="locked-approve"')
+        self.assertContains(response, "Publish")
+        self.assertContains(response, "Unlock editing")
+
+        # .. and check as PA too
+        self.client.force_login(self.publishing_admin)
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, 'data-workflow-action-name="locked-approve"')
+        self.assertContains(response, "Publish")
+        self.assertContains(response, "Unlock editing")
+
+    def test_amend_page_action_menu_items_hook__in_bundle(self):
+        # Mark the page as ready for review
+        workflow_state = mark_page_as_ready_for_review(self.page, self.publishing_admin)
+
+        # Log in as publishing_admin (who was the last editor)
+        self.client.force_login(self.publishing_admin)
+        response = self.client.get(self.edit_url)
+
+        self.assertNotContains(response, 'data-workflow-action-name="locked-approve"')
+        self.assertNotContains(response, 'data-workflow-action-name="approve"')
+        self.assertNotContains(response, "Approve")
+        self.assertNotContains(response, "Approve with comment")
+
+        # Log in as the second user (who was not the last editor)
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(self.edit_url)
+
+        self.assertNotContains(response, 'data-workflow-action-name="locked-approve"')
+        self.assertContains(response, 'data-workflow-action-name="approve"')
+        self.assertContains(response, "Approve")
+        self.assertContains(response, "Approve with comment")
+
+        # Now mark as ready to publish. The page should be locked
+        progress_page_workflow(workflow_state, self.publishing_officer)
+
+        response = self.client.get(self.edit_url)
+        self.assertNotContains(response, 'data-workflow-action-name="locked-approve"')
+        self.assertNotContains(response, 'data-workflow-action-name="approve"')
+        self.assertContains(response, "Unlock editing")
+
+        # .. and check as PA too
+        self.client.force_login(self.publishing_admin)
+        response = self.client.get(self.edit_url)
+        self.assertNotContains(response, 'data-workflow-action-name="locked-approve"')
+        self.assertNotContains(response, 'data-workflow-action-name="approve"')
+        self.assertContains(response, "Unlock editing")
 
     def test_cancel_workflow_action_menu_item(self):
         # Log in as publishing_admin (who was the last editor)

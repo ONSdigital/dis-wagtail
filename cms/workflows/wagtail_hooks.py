@@ -64,10 +64,6 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
     final_menu_items = []
     for item in updated_menu_items:
         if item.name in ["approve", "locked-approve"]:
-            # skip adding this item when the current user was the last editor to prevent self-approval
-            if is_self_approver:
-                continue
-
             # tidy up the "approve" action label, both for when we're lock in ready to publish,
             # and when the workflow was "unlocked". i.e. moved back a step. Account for scheduled publishing
             if is_final_task:
@@ -79,6 +75,11 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
                     )
                 else:
                     label = "Publish" if "with comment" not in item.label else "Publish with comment"
+
+            elif is_self_approver:
+                # anyone with the publish permission can do so once in "ready to be published".
+                # before that, hide the action item if the current user was the last editor to prevent self-approval
+                continue
             else:
                 label = "Approve" if "with comment" not in item.label else "Approve with comment"
             item.label = label
