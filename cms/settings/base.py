@@ -918,7 +918,7 @@ ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "ons.
 ONS_COOKIES_PAGE_SLUG = "cookies"
 
 # Search redirect path
-ONS_SEARCH_REDIRECT_PATH = env.get("ONS_SEARCH_REDIRECT_PATH", "/search")
+ONS_WEBSITE_SEARCH_PATH = env.get("ONS_WEBSITE_SEARCH_PATH", "/search")
 
 # Project information
 BUILD_TIME = datetime.datetime.fromtimestamp(int(env["BUILD_TIME"])) if env.get("BUILD_TIME") else None
