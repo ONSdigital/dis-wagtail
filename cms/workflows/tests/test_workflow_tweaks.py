@@ -538,6 +538,17 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         self.assertFalse(draft_page.live)
         self.assertContains(response, f"Page &#x27;{draft_page.get_admin_display_title()}&#x27; has been published.")
 
+    def test_submit_with_workflow_action_after_workflow_cancelled_raises_validation_error(self):
+        # TODO: remove when https://github.com/wagtail/wagtail/issues/13856 is fixed
+
+        self.client.force_login(self.publishing_admin)
+
+        data = self.get_simple_post_data(self.page)
+        data["workflow-action-name"] = "approve"
+        response = self.client.post(self.edit_url, data, follow=True)
+
+        self.assertContains(response, "Could not perform the action as the page is no longer in a workflow.")
+
 
 class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):
     @classmethod

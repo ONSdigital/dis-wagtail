@@ -110,6 +110,20 @@ def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: Http
 
 
 @hooks.register("before_edit_page")
+def before_edit_page_post_workflow_action_without_workflow(request: HttpRequest, page: Page) -> HttpResponse | None:
+    # Prevent errors when the workflow is cancelled by someone else, just before a user submits a workflow action
+    # TODO: remove when https://github.com/wagtail/wagtail/issues/13856 is fixed
+    if (
+        request.method == "POST"
+        and request.POST.get("action-workflow-action") == "true"
+        and not page.current_workflow_task
+    ):
+        messages.error(request, "Could not perform the action as the page is no longer in a workflow.")
+        return redirect("wagtailadmin_pages:edit", page.pk)
+    return None
+
+
+@hooks.register("before_edit_page")
 def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
     if request.method != "POST":
         return None
