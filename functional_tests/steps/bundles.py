@@ -1,5 +1,6 @@
 # pylint: disable=not-callable
 from datetime import datetime, time, timedelta
+from typing import Literal
 
 from behave import given, step, then, when
 from behave.runner import Context
@@ -8,12 +9,13 @@ from django.utils import timezone
 from playwright.sync_api import expect
 
 from cms.bundles.enums import BundleStatus
-from cms.bundles.models import BundleTeam
+from cms.bundles.models import BundlePage, BundleTeam
 from cms.bundles.tests.factories import BundleFactory
 from cms.core.custom_date_format import ons_date_format
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
+from functional_tests.step_helpers.utils import get_page_from_context
 from functional_tests.steps.release_page import click_add_child_page, navigate_to_release_calendar_page
 
 tomorrow = timezone.now() + timedelta(days=1)
@@ -317,3 +319,28 @@ def user_sees_validation_error_preventing_cancellation(context: Context) -> None
     expect(
         context.page.get_by_text("Please unlink the release calendar page from the bundle before cancelling")
     ).to_be_visible()
+
+
+@step('the {page_str} page is in a "{bundle_status}" bundle')
+def the_page_is_in_the_given_bundle_with_status(
+    context: Context, page_str: str, bundle_status: Literal["Draft", "In Preview", "Ready to publish", "Published"]
+):
+    the_page = get_page_from_context(context, page_str)
+    bundle = getattr(context, "bundle", None)
+    if not bundle:
+        a_bundle_has_been_created(context)
+        bundle = context.bundle
+
+    match bundle_status.lower():
+        case "in preview":
+            status = BundleStatus.IN_REVIEW
+        case "ready to publish":
+            status = BundleStatus.APPROVED
+        case "published":
+            status = BundleStatus.PUBLISHED
+        case _:
+            status = BundleStatus.DRAFT
+
+    bundle.status = status
+    bundle.bundled_pages.add(BundlePage(page=the_page))
+    bundle.save()

@@ -136,8 +136,10 @@ class BaseGroupPermissionTestCase(TestCase):
 
     def check_and_remove_from_user_permissions_helper(self, app: str, model: str, permission_type: str) -> None:
         """Assert the user has the permission and if so remove it from the temporary user permission list."""
-        self.assertTrue(self.user.has_perm(f"{app}.{permission_type}_{model}"))
-        permission = Permission.objects.get(content_type__app_label=app, codename=f"{permission_type}_{model}")
+        permission_str = f"{app}.{permission_type}_{model}" if model else f"{app}.{permission_type}"
+        codename = f"{permission_type}_{model}" if model else permission_type
+        self.assertTrue(self.user.has_perm(permission_str))
+        permission = Permission.objects.get(content_type__app_label=app, codename=codename)
         self.user_permissions.remove(permission)
         self.assertNotIn(permission, self.user_permissions)
 
@@ -207,12 +209,13 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
 
         self.check_and_remove_from_user_permissions_helper("teams", "team", "view")
 
+        default_permissions_plus_publish = [*WAGTAIL_PERMISSION_TYPES, "publish"]
         # Snippet permissions (app, model, permission types)
         snippet_permissions = [
-            ("core", "definition", WAGTAIL_PERMISSION_TYPES),
-            ("core", "contactdetails", WAGTAIL_PERMISSION_TYPES),
-            ("navigation", "mainmenu", [*WAGTAIL_PERMISSION_TYPES, "publish"]),
-            ("navigation", "footermenu", [*WAGTAIL_PERMISSION_TYPES, "publish"]),
+            ("core", "definition", default_permissions_plus_publish),
+            ("core", "contactdetails", default_permissions_plus_publish),
+            ("navigation", "mainmenu", default_permissions_plus_publish),
+            ("navigation", "footermenu", default_permissions_plus_publish),
         ]
 
         for app, model, permission_types in snippet_permissions:
@@ -229,6 +232,8 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
         self.check_and_remove_from_user_permissions_helper("release_calendar", "notice", "modify")
 
         self.check_and_remove_from_user_permissions_helper("datasets", "datasets", "access_unpublished")
+
+        self.check_and_remove_from_user_permissions_helper("wagtailadmin", "", "unlock_workflow_tasks")
 
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
