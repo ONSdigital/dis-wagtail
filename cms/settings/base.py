@@ -960,7 +960,6 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = {
     "ReleaseCalendarIndex",
     "ThemeIndexPage",
     "ThemePage",
-    "TopicPage",
     "CookiesPage",
     "Page",
 }

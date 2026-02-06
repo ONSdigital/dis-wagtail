@@ -64,5 +64,9 @@ class StatisticalArticlePageFactory(wagtail_factories.PageFactory):
     is_accredited = False
     is_census = False
     show_cite_this_page = True
-    first_published_at = factory.LazyFunction(timezone.now)
-    last_published_at = factory.LazyFunction(timezone.now)
+    first_published_at = factory.LazyAttribute(
+        lambda o: timezone.now() - timedelta(days=10) if getattr(o, "live", True) else None
+    )
+    last_published_at = factory.LazyAttribute(
+        lambda o: timezone.now() - timedelta(days=1) if getattr(o, "live", True) else None
+    )
