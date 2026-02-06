@@ -50,7 +50,6 @@ def external_user_clicks_search_toggle_button(context: Context) -> None:
 @when('they enter "{search_query}" in the search field')
 def external_user_enters_search_query(context: Context, search_query: str) -> None:
     search_field = context.page.get_by_role("searchbox", name="Search the ONS")
-    search_field.click()
     search_field.fill(search_query)
 
 
