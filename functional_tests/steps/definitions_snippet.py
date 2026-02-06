@@ -40,6 +40,7 @@ def validation_error_is_displayed_for_duplicated_definition(
 def definition_is_visible_in_index_view_with_the_required_columns(
     context: Context,
 ) -> None:
+    context.page.goto(f"{context.base_url}/admin/snippets/core/definition/")
     expect(context.page.get_by_role("columnheader", name="Name")).to_contain_text("Name")
     expect(context.page.locator("tr:nth-child(1) > td:nth-child(2)")).to_contain_text("Term")
 

@@ -212,12 +212,13 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
 
         self.check_and_remove_from_user_permissions_helper("teams", "team", "view")
 
+        default_permissions_plus_publish = [*WAGTAIL_PERMISSION_TYPES, "publish"]
         # Snippet permissions (app, model, permission types)
         snippet_permissions = [
-            ("core", "definition", WAGTAIL_PERMISSION_TYPES),
-            ("core", "contactdetails", WAGTAIL_PERMISSION_TYPES),
-            ("navigation", "mainmenu", [*WAGTAIL_PERMISSION_TYPES, "publish"]),
-            ("navigation", "footermenu", [*WAGTAIL_PERMISSION_TYPES, "publish"]),
+            ("core", "definition", default_permissions_plus_publish),
+            ("core", "contactdetails", default_permissions_plus_publish),
+            ("navigation", "mainmenu", default_permissions_plus_publish),
+            ("navigation", "footermenu", default_permissions_plus_publish),
         ]
 
         for app, model, permission_types in snippet_permissions:
