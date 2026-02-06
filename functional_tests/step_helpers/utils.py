@@ -6,7 +6,28 @@ if TYPE_CHECKING:
     from behave.runner import Context
     from wagtail.models import Page
 
+    from cms.taxonomy.models import Topic
     from cms.users.models import User
+
+
+def get_or_create_topic(topic_name: str, topic_cache: dict[str, Topic] | None = None) -> Topic:
+    """Get existing topic from cache/database or create a new one."""
+    if topic_cache is not None and topic_name in topic_cache:
+        return topic_cache[topic_name]
+
+    # Import lazily to avoid Django AppRegistryNotReady during Behave startup.
+    from cms.taxonomy.models import Topic  # pylint: disable=import-outside-toplevel
+    from cms.taxonomy.tests.factories import TopicFactory  # pylint: disable=import-outside-toplevel
+
+    # Check database first
+    topic = Topic.objects.filter(title=topic_name).first()
+    if topic is None:
+        topic = TopicFactory(title=topic_name)
+
+    if topic_cache is not None:
+        topic_cache[topic_name] = topic
+
+    return topic
 
 
 def str_to_bool(bool_string: str) -> bool:
@@ -42,10 +63,10 @@ def get_page_from_context(context: Context, page_str: str) -> Page | None:
     if not the_page_attr.endswith("_page"):
         the_page_attr += "_page"
 
-    return getattr(context, the_page_attr)
+    return getattr(context, the_page_attr, None)
 
 
-def lock_page(the_page: Page, user: User):
+def lock_page(the_page: Page, user: User) -> None:
     the_page.locked = True
     the_page.locked_by = user
     the_page.locked_at = timezone.now()

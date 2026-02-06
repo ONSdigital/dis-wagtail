@@ -9,7 +9,7 @@ from wagtail_factories.blocks import (
 )
 
 from cms.core.blocks.related import LinkBlock, RelatedContentBlock
-from cms.core.blocks.section_blocks import SectionBlock, SectionContentBlock
+from cms.core.blocks.section_blocks import SectionContentBlock
 from cms.core.models import ContactDetails
 from cms.core.models.snippets import Definition
 
@@ -82,16 +82,6 @@ class SectionContentBlockFactory(StructBlockFactory):
             "rich_text": factory.SubFactory(RichTextBlockFactory),
         }
     )
-
-
-class SectionBlockFactory(StructBlockFactory):
-    """Factory for Section StructBlock."""
-
-    class Meta:
-        model = SectionBlock
-
-    title = factory.Faker("text", max_nb_chars=50)
-    content = factory.SubFactory(SectionContentBlockFactory)
 
 
 class LinkBlockFactory(StructBlockFactory):

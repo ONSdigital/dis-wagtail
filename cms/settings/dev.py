@@ -137,6 +137,7 @@ MIGRATION_LINTER_OPTIONS = {
         "0003_topic_slug",  # Ignoring NOT NULL constraint
         "0007_rename_bundle_api_content_id_bundle_bundle_api_bundle_id",  # Ignoring RENAMING constraint
         "0010_rename_glossaryterm_to_definition",  # Ignoring RENAMING table (GlossaryTerm -> Definition)
+        "0005_remove_indexpage_content_and_more",  # Ignoring dropping fields
         "0012_make_contactdetails_and_definition_revisionable_and_draftable",  # Ignoring NOT NULL
     ],
 }

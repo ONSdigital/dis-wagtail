@@ -1,13 +1,13 @@
 import factory
 import wagtail_factories
-from django.utils import timezone
+from faker import Faker
+from wagtail.blocks import StreamValue
 
-from cms.core.tests.factories import (
-    RelatedContentBlockFactory,
-    SectionBlockFactory,
-)
 from cms.home.models import HomePage
+from cms.standard_pages.blocks import CoreStoryBlock
 from cms.standard_pages.models import IndexPage, InformationPage
+
+fake = Faker()
 
 
 class IndexPageFactory(wagtail_factories.PageFactory):
@@ -20,25 +20,29 @@ class IndexPageFactory(wagtail_factories.PageFactory):
     title = factory.Faker("sentence", nb_words=4)
     summary = factory.Faker("text", max_nb_chars=100)
 
-    featured_items = wagtail_factories.StreamFieldFactory(
-        {"featured_item": factory.SubFactory(RelatedContentBlockFactory)}
-    )
-
-    content = factory.Faker("text", max_nb_chars=100)
-
-    related_links = wagtail_factories.StreamFieldFactory(
-        {"related_link": factory.SubFactory(RelatedContentBlockFactory)}
-    )
-
 
 class InformationPageFactory(wagtail_factories.PageFactory):
-    """Factory for InformationPage."""
-
     class Meta:
         model = InformationPage
 
     parent = factory.SubFactory(IndexPageFactory)
     title = factory.Faker("sentence", nb_words=4)
-    summary = factory.Faker("text", max_nb_chars=100)
-    last_updated = factory.LazyFunction(lambda: timezone.now().date())
-    content = wagtail_factories.StreamFieldFactory({"section": factory.SubFactory(SectionBlockFactory)})
+    summary = "<p>Test summary</p>"
+
+    # StreamFieldFactory doesn't reliably handle nested StructBlocks/StreamBlocks,
+    # so we build the StreamValue manually with the exact structure Wagtail expects.
+    @factory.lazy_attribute
+    def content(self):
+        return StreamValue(
+            CoreStoryBlock(),
+            [
+                {
+                    "type": "section",
+                    "value": {
+                        "title": fake.sentence(),
+                        "content": [{"type": "rich_text", "value": f"<p>{fake.paragraph()}</p>"}],
+                    },
+                }
+            ],
+            is_lazy=True,
+        )

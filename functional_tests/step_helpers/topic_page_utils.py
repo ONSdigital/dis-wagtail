@@ -7,7 +7,7 @@ from cms.articles.tests.factories import (
 )
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.taxonomy.models import GenericPageToTaxonomyTopic
-from cms.taxonomy.tests.factories import TopicFactory
+from functional_tests.step_helpers.utils import get_or_create_topic
 
 if TYPE_CHECKING:
     from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage, StatisticalArticlePage
@@ -42,12 +42,6 @@ class TopicContentBuilder:
     def _tag_page_with_topic(self, page: ArticleSeriesPage | MethodologyPage, topic: Topic) -> None:
         """Create relationship between series, methodology page and topic."""
         GenericPageToTaxonomyTopic.objects.create(page=page, topic=topic)
-
-    def get_or_create_topic(self, topic_name: str) -> str:
-        """Get existing topic or create new one."""
-        if topic_name not in self.topic_cache:
-            self.topic_cache[topic_name] = TopicFactory(title=topic_name)
-        return self.topic_cache[topic_name]
 
     def _create_series(
         self, topic_page: TopicPage, series_title: str, article_index: ArticlesIndexPage | None
@@ -127,7 +121,7 @@ class TopicContentBuilder:
                     self.article_index_cache[topic_page_id] = article_index
 
                 # Tag the series with topic
-                topic = self.get_or_create_topic(series_topic_name or topic_page.topic.title)
+                topic = get_or_create_topic(series_topic_name or topic_page.topic.title, self.topic_cache)
                 self._tag_page_with_topic(series, topic)
 
                 self.series_cache[series_key] = series
@@ -168,7 +162,7 @@ class TopicContentBuilder:
 
             # Tag the methodology with topic if specified
             if topic_name:
-                topic = self.get_or_create_topic(topic_name)
+                topic = get_or_create_topic(topic_name, self.topic_cache)
                 self._tag_page_with_topic(methodology, topic)
 
             created_methodologies[methodology_title] = methodology
