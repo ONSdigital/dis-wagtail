@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Any
 from django.http import Http404, HttpResponse
 from wagtail.contrib.routable_page.models import path
 
+from cms.core.blocks.constants import CHART_BLOCK_TYPES, TABLE_BLOCK_TYPES
 from cms.data_downloads.utils import create_data_csv_download_response_from_data, flatten_table_data
-from cms.datavis.constants import CHART_BLOCK_TYPES, TABLE_BLOCK_TYPES
 
 if TYPE_CHECKING:
     from django.http import HttpRequest

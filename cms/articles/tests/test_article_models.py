@@ -17,12 +17,12 @@ from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfiel
 from cms.articles.enums import SortingChoices
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.analytics_utils import format_date_for_gtm
+from cms.core.blocks.constants import CHART_BLOCK_TYPES
 from cms.core.tests.factories import ContactDetailsFactory
 from cms.core.tests.utils import extract_datalayer_pushed_values
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.datasets.tests.factories import DatasetFactory
-from cms.datavis.constants import CHART_BLOCK_TYPES
 from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
 from cms.topics.models import TopicPage
 
