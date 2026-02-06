@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "cms.auth",
     "cms.bundles",
     "cms.core",
+    "cms.data_downloads",
     "cms.datasets",
     "cms.datavis",
     "cms.documents",

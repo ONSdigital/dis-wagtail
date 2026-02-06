@@ -15,8 +15,10 @@ from cms.core.fields import StreamField
 from cms.core.formatting_utils import get_document_metadata
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
+from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
 from cms.core.utils import get_content_type_for_page
 from cms.core.widgets import date_widget
+from cms.data_downloads.mixins import CoreDataDownloadMixin
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -24,7 +26,9 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import Panel
 
 
-class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+class InformationPage(  # type: ignore[django-manager-missing]
+    CoreDataDownloadMixin, BundledPageMixin, NoTrailingSlashRoutablePageMixin, GenericTaxonomyMixin, BasePage
+):
     """A generic information page model."""
 
     base_form_class = PageWithEquationsAdminForm

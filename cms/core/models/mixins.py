@@ -12,7 +12,12 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
 
-__all__ = ["ListingFieldsMixin", "SocialFieldsMixin", "SubpageMixin"]
+__all__ = [
+    "ListingFieldsMixin",
+    "NoTrailingSlashRoutablePageMixin",
+    "SocialFieldsMixin",
+    "SubpageMixin",
+]
 
 
 class ListingFieldsMixin(models.Model):
