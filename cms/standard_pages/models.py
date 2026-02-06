@@ -11,7 +11,7 @@ from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, forma
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
-from cms.standard_pages.section_blocks import CoreStoryBlock
+from cms.standard_pages.blocks import CoreStoryBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:

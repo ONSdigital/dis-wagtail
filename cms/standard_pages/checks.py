@@ -4,7 +4,7 @@ from typing import Any
 from django.core.checks import CheckMessage, Tags, register
 
 from cms.core.checks import check_page_models_for_story_block
-from cms.standard_pages.section_blocks import CoreStoryBlock
+from cms.standard_pages.blocks import CoreStoryBlock
 
 
 @register(Tags.models)
