@@ -55,7 +55,7 @@ def user_creates_information_page(context: Context) -> None:
     context.page.get_by_role("button", name="Actions", exact=True).click()
 
     context.page.get_by_role("link", name="Add child page").click()
-    context.page.get_by_role("link", name="Index page", exact=True).click()
+    context.page.locator("a[href^='/admin/pages/add/standard_pages/indexpage/']").click()
     context.page.get_by_role("textbox", name="Title*").fill("Index page 1")
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").click()
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Index page summary")

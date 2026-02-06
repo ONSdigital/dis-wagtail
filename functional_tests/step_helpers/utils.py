@@ -63,7 +63,7 @@ def get_page_from_context(context: Context, page_str: str) -> Page | None:
     if not the_page_attr.endswith("_page"):
         the_page_attr += "_page"
 
-    return getattr(context, the_page_attr)
+    return getattr(context, the_page_attr, None)
 
 
 def lock_page(the_page: Page, user: User) -> None:
