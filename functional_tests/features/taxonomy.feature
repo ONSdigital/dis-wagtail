@@ -2,11 +2,11 @@ Feature: Users can tag pages with topics
 
     Scenario Outline: Theme and Topic pages can be tagged with a single topic
         Given a superuser logs into the admin site
-        And a topic exists
+        And  a topic exists
         When the user tries to create a new <page> page
-        And the user fills in the required <page> page content
+        And  the user fills in the required <page> page content
         Then the user can link the page to the existing topic in the taxonomy editor tab
-        And the user can successfully publish the page
+        And  the user can create the page
 
         Examples:
             | page  |

@@ -9,8 +9,8 @@ Feature: Topic page creation and configuration in the Wagtail admin
         When the user tries to create a new topic page
         And the user fills in the required topic page content
         And the user selects the taxonomy topic
-        And the user clicks "Publish"
-        Then the user sees the success message "Page 'Test Title' created and published"
+        And the user clicks the "Save draft" button
+        Then the user sees the success message "Page 'Test Title' created"
 
     # Field Validation
     Scenario: Topic page requires a title
@@ -18,7 +18,7 @@ Feature: Topic page creation and configuration in the Wagtail admin
         When the user tries to create a new topic page
         And the user fills in the topic page summary
         And the user selects the taxonomy topic
-        And the user clicks "Publish"
+        And the user clicks the "Save draft" button
         Then the user sees the validation error "This field is required"
 
     Scenario: Topic page requires a summary when publishing
@@ -26,19 +26,19 @@ Feature: Topic page creation and configuration in the Wagtail admin
         When the user tries to create a new topic page
         And the user fills in the topic page title
         And the user selects the taxonomy topic
-        And the user clicks "Publish"
+        And the user clicks the "Save draft" button
         Then the user sees the validation error "This field is required" in the summary field
 
     Scenario: Topic page requires a taxonomy topic
         When the user tries to create a new topic page
         And the user fills in the required topic page content
-        And the user clicks "Publish"
+        And the user clicks the "Save draft" button
         Then the user sees the taxonomy validation error
 
     Scenario: Topic page allows zero headline figures
         Given a topic page exists under the homepage
         When the user edits the topic page
-        And the user clicks "Publish"
+        And the user clicks the "Save draft" button
         Then the user does not see headline figure validation errors
 
     # Drafting and Previewing
@@ -47,7 +47,7 @@ Feature: Topic page creation and configuration in the Wagtail admin
         When the user tries to create a new topic page
         And the user fills in the required topic page content
         And the user selects the taxonomy topic
-        And the user clicks the "Save Draft" button
+        And the user clicks the "Save draft" button
         Then the user sees the draft saved message
         And the user can continue editing the page
 
@@ -56,7 +56,7 @@ Feature: Topic page creation and configuration in the Wagtail admin
         When the user tries to create a new topic page
         And the user fills in the required topic page content
         And the user selects the taxonomy topic
-        And the user clicks the "Save Draft" button
+        And the user clicks the "Save draft" button
         When the user navigates to the page history menu
         Then the saved draft version is visible
 
@@ -71,14 +71,14 @@ Feature: Topic page creation and configuration in the Wagtail admin
         Given a topic page exists under the homepage
         When the user edits the topic page
         And the user adds an external related article without a title
-        And the user clicks "Publish"
+        And the user clicks the "Save draft" button
         Then the user sees the validation error "This field is required when providing an external URL"
 
     Scenario: Related article must have either internal page or external URL
         Given a topic page exists under the homepage
         When the user edits the topic page
         And the user adds an empty related article
-        And the user clicks "Publish"
+        And the user clicks the "Save draft" button
         Then the user sees the validation error "You must select an internal page or provide an external URL"
 
     # Edge Case Handling - Time Series
@@ -86,5 +86,5 @@ Feature: Topic page creation and configuration in the Wagtail admin
         Given a topic page exists under the homepage
         When the user edits the topic page
         And the user adds a time series link with an invalid URL
-        And the user clicks "Publish"
+        And the user clicks the "Save draft" button
         Then the user sees the time series URL validation error

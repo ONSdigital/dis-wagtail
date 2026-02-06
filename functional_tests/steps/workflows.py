@@ -1,8 +1,10 @@
 # pylint: disable=not-callable
+from datetime import timedelta
 from typing import Literal
 
 from behave import step, then
 from behave.runner import Context
+from django.utils import timezone
 from playwright.sync_api import expect
 
 from cms.workflows.tests.utils import (
@@ -12,6 +14,12 @@ from cms.workflows.tests.utils import (
 )
 from functional_tests.step_helpers.users import create_user
 from functional_tests.step_helpers.utils import get_page_from_context, lock_page
+from functional_tests.steps.cms_login import a_user_is_logged_in
+from functional_tests.steps.page_editor import (
+    click_the_given_button,
+    the_user_edits_a_page,
+    user_clicks_action_menu_toggle,
+)
 
 
 @step('the {page_str} page is "{workflow_stage}"')
@@ -26,6 +34,19 @@ def the_given_page_is_in_workflow_stage(
             mark_page_as_ready_to_publish(the_page)
         else:
             progress_page_workflow(the_page.current_workflow_state)
+    elif workflow_stage.lower() == "published":
+        the_page.save_revision().publish()
+
+
+@step('the {page_str} scheduled page is at "{workflow_stage}"')
+def the_given_scheduled_page_is_in_workflow_stage(
+    context: Context, page_str: str, workflow_stage: Literal["in preview", "ready to publish"]
+) -> None:
+    the_page = get_page_from_context(context, page_str)
+    the_page.go_live_at = timezone.now() + timedelta(days=1)
+    the_page.save_revision()
+
+    the_given_page_is_in_workflow_stage(context, page_str, workflow_stage)
 
 
 @step("the user is the last {page_str} page editor")
@@ -92,3 +113,17 @@ def the_user_can_unlock_the_workflow(context: Context):
     context.page.get_by_role("button", name="Toggle status").click()
     expect(context.page.get_by_role("complementary", name="status")).to_contain_text("Sent to In Preview now")
     expect(context.page.get_by_role("link", name="Page locked", exact=True)).to_have_count(0)
+
+
+@step("the {page_str} page goes through the publishing steps with {user} as user and {approver} as reviewer")
+def the_page_goes_through_the_publishing_steps(context: Context, page_str: str, user: str, approver: str) -> None:
+    user_clicks_action_menu_toggle(context)
+    click_the_given_button(context, "Submit to Release review")
+    a_user_is_logged_in(context, approver)
+    the_user_edits_a_page(context, page_str)
+    user_clicks_action_menu_toggle(context)
+    click_the_given_button(context, "Approve")
+    a_user_is_logged_in(context, user)
+    the_user_edits_a_page(context, page_str)
+    user_clicks_action_menu_toggle(context)
+    click_the_given_button(context, "Publish")

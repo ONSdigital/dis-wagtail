@@ -1,19 +1,67 @@
 # pylint: disable=not-callable
+import datetime
+from datetime import timedelta
+
 from behave import given, step, then, when
 from behave.runner import Context
 from django.urls import reverse
 from playwright.sync_api import expect
+from wagtail.models import Revision
 
 from cms.core.custom_date_format import ons_default_datetime
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from functional_tests.step_helpers.release_page_helpers import (
     add_feature,
     display_feature_in_preview_tab,
+    get_status_from_string,
     handle_changes_to_release_date_feature,
     handle_pre_release_access_feature,
     handle_release_calendar_page_errors,
 )
 from functional_tests.steps.page_editor import user_clicks_publish
+
+
+@given("a release calendar page exists")
+def a_release_calendar_page_exists(context: Context) -> Revision:
+    context.release_calendar_page = ReleaseCalendarPageFactory()
+    return context.release_calendar_page.save_revision()
+
+
+@given('a "{status_str}" published release calendar page exists')
+def a_published_release_calendar_page_exists(context: Context, status_str: str) -> None:
+    context.release_calendar_page = ReleaseCalendarPageFactory(
+        title="My Release",
+        status=get_status_from_string(status_str),
+        release_date=datetime.datetime(year=2024, month=12, day=25, hour=9, minute=30),
+        summary="My example release page",
+        is_accredited=True,
+        contact_details=context.contact_details_snippet,
+    )
+    context.release_calendar_page.content = [
+        {
+            "type": "release_content",
+            "value": {
+                "title": "My Example Content Link",
+                "links": [{"page": context.release_calendar_page.get_parent().pk}],
+            },
+        }
+    ]
+    context.release_calendar_page.save_revision().publish()
+
+
+@given('a "{status_str}" published release calendar page with a date change log exists')
+def a_release_calendar_page_with_date_change_log_exists(context: Context, status_str: str) -> None:
+    context.release_calendar_page = ReleaseCalendarPageFactory(status=get_status_from_string(status_str))
+    context.release_calendar_page.save_revision().publish()
+    release_date = context.release_calendar_page.release_date
+    context.release_calendar_page.release_date = release_date + timedelta(days=1)
+    context.release_calendar_page.changes_to_release_date = [
+        {
+            "type": "date_change_log",
+            "value": {"previous_date": release_date, "reason_for_change": "The reason"},
+        }
+    ]
+    context.release_calendar_page.save_revision().publish()
 
 
 @given("the user navigates to the release calendar page")
@@ -258,13 +306,3 @@ def user_publishes_confirmed_release_page_with_example_content(
     set_page_status(context, "Confirmed")
     user_enters_example_content_on_release_page(context)
     user_clicks_publish(context)
-
-
-@then("the release calendar page is successfully updated")
-def release_calendar_page_is_successfully_updated(context: Context) -> None:
-    expect(context.page.get_by_text("Page 'My Release' has been updated.")).to_be_visible()
-
-
-@then("the release calendar page is successfully published")
-def release_calendar_page_is_successfully_published(context: Context) -> None:
-    expect(context.page.get_by_text("Page 'My Release' has been published.")).to_be_visible()

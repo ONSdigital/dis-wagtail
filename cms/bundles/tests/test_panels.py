@@ -1,8 +1,10 @@
+import datetime
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils import WagtailTestUtils
 
@@ -36,10 +38,26 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
         """Test panel content when page is not in any bundles."""
         content = self.get_bound_panel(self.page).content
         self.assertIn("This page is not part of any bundles", content)
+        self.assertNotIn(
+            "This page is not part of any bundles. It cannot be bundled because it has a page-level schedule.", content
+        )
 
         # note: next=/ comes from the fact that this is a dummy request.
         url = reverse("bundles:add_to_bundle", args=(self.page.pk,), query={"next": "/"})
         self.assertIn(f'<a href="{url}" class="button button-small button-secondary">Add to Bundle</a></p>', content)
+        self.assertNotIn(
+            "This page is not part of any bundles. It cannot be bundled because it has a page-level schedule.", content
+        )
+
+    def test_panel_content_without_bundles__but_with_schedule(self):
+        self.page.go_live_at = timezone.now() + datetime.timedelta(days=1)
+        self.page.save_revision()
+
+        content = self.get_bound_panel(self.page).content
+        self.assertIn(
+            "This page is not part of any bundles. It cannot be bundled because it has a page-level schedule.", content
+        )
+        self.assertNotIn("Add to Bundle", content)
 
     @patch("cms.bundles.panels.user_can_manage_bundles", return_value=False)
     def test_panel_content_without_bundles__if_user_cannot_manage(self, _mock_can_manage_bundles):
