@@ -18,10 +18,11 @@ from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
-from cms.core.models.mixins import CSVDownloadMixin, NoTrailingSlashRoutablePageMixin
+from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
 from cms.core.query import order_by_pk_position
 from cms.core.utils import redirect_to_parent_listing
 from cms.core.widgets import date_widget
+from cms.data_downloads.mixins import DataDownloadMixin
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -76,7 +77,7 @@ class MethodologyRelatedPage(Orderable):
 
 
 class MethodologyPage(  # type: ignore[django-manager-missing]
-    CSVDownloadMixin,
+    DataDownloadMixin,
     BundledPageMixin,
     NoTrailingSlashRoutablePageMixin,
     GenericTaxonomyMixin,

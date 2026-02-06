@@ -9,7 +9,7 @@ from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
 
-from cms.core.utils import flatten_table_data
+from cms.data_downloads.utils import flatten_table_data
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 
 if TYPE_CHECKING:
@@ -247,7 +247,7 @@ class ONSTableBlock(TinyTableBlock):
             return "#"
 
         return reverse(
-            "core:revision_table_download",
+            "data_downloads:revision_table_download",
             kwargs={"page_id": page.pk, "revision_id": revision_id, "table_id": block_id},
         )
 

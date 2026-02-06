@@ -222,7 +222,7 @@ class GetDownloadConfigTests(SimpleTestCase):
 
         csv_item = config["itemsList"][1]
         # Should use the admin URL for revision chart download
-        self.assertEqual(csv_item["url"], "/admin/core/pages/123/revisions/456/download-chart/test-block-id/")
+        self.assertEqual(csv_item["url"], "/admin/data-downloads/pages/123/revisions/456/download-chart/test-block-id/")
 
     def test_download_config_in_preview_mode_without_revision_uses_hash(self):
         """In preview mode without revision info, CSV URL should fall back to '#'."""

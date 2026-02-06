@@ -4,10 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from cms.core.custom_date_format import ons_date_format
 
-# Re-exports for backwards compatibility
-from cms.core.utils import create_data_csv_download_response_from_data, sanitize_data_for_csv
-
-__all__ = ["create_data_csv_download_response_from_data", "sanitize_data_for_csv", "serialize_correction_or_notice"]
+__all__ = ["serialize_correction_or_notice"]
 
 if TYPE_CHECKING:
     from wagtail.blocks.stream_block import StreamChild
