@@ -135,6 +135,7 @@ class BundleEditView(EditView):
     template_name = "bundles/wagtailadmin/edit.html"
     has_content_changes: bool = False
     start_time: float | None = None
+    audit_log_cooldown_seconds = 30
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         if (instance := self.get_object()) and instance.status == BundleStatus.PUBLISHED:
@@ -143,6 +144,8 @@ class BundleEditView(EditView):
         if request.method == "POST" and self.get_action(request) not in self.get_available_actions():
             # someone's trying to POST with an action that is not available, so bail out early
             raise PermissionDenied
+
+        self._log_bundle_view(request)
 
         response: HttpResponseBase = super().dispatch(request, *args, **kwargs)
         return response
@@ -242,6 +245,21 @@ class BundleEditView(EditView):
         )
 
         return instance
+
+    def _log_bundle_view(self, request: HttpRequest) -> None:
+        """Log the bundle view with a cooldown to prevent duplicate entries."""
+        instance = self.get_object()
+
+        if not instance or not instance.pk:
+            return
+
+        cache_key = f"bundle_edit_log:{instance.pk}:{request.user.pk}"
+
+        if cache.get(cache_key):
+            return
+
+        log(action="bundles.edit_view", instance=instance)
+        cache.set(cache_key, True, timeout=self.audit_log_cooldown_seconds)
 
     def _log_content_changes(self, instance: Bundle, original_state: dict[str, Any]) -> None:
         """Log changes to bundle content (teams, pages, datasets, schedule)."""

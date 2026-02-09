@@ -514,6 +514,100 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.edit_url)
         self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
 
+    def test_edit_view__creates_audit_log_entry(self):
+        """Test that viewing the edit page creates an audit log entry."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+
+        response = self.client.get(self.edit_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        log_entry = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.user, self.publishing_officer)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_cooldown_prevents_duplicate_entries(self):
+        """Test that viewing the edit page multiple times within the cooldown period
+        only creates one audit log entry.
+        """
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+        cache.clear()
+
+        # First visit - should create a log entry
+        self.client.get(self.edit_url)
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(first_count, 1)
+
+        # Second visit within cooldown - should NOT create another log entry
+        self.client.get(self.edit_url)
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(second_count, 1)
+
+        # Third visit within cooldown - still no new entry
+        self.client.get(self.edit_url)
+        third_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(third_count, 1)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_cooldown_allows_new_entry_after_expiry(self):
+        """Test that a new audit log entry is created after the cooldown expires."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+        cache.clear()
+
+        # First visit
+        self.client.get(self.edit_url)
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(first_count, 1)
+
+        # Clear cache to simulate cooldown expiry
+        cache.clear()
+
+        # Second visit after cooldown expiry - should create a new log entry
+        self.client.get(self.edit_url)
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(second_count, 2)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_different_users_get_separate_cooldowns(self):
+        """Test that different users have separate cooldown periods."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+        cache.clear()
+
+        # First user views the page
+        self.client.force_login(self.publishing_officer)
+        self.client.get(self.edit_url)
+
+        # Second user views the same page - should also create a log entry
+        self.client.force_login(self.superuser)
+        self.client.get(self.edit_url)
+
+        log_entries = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view")
+        self.assertEqual(log_entries.count(), 2)
+
+        users = set(log_entries.values_list("user_id", flat=True))
+        self.assertEqual(users, {self.publishing_officer.pk, self.superuser.pk})
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_different_bundles_get_separate_cooldowns(self):
+        """Test that different bundles have separate cooldown periods for the same user."""
+        ModelLogEntry.objects.filter(action="bundles.edit_view").delete()
+        cache.clear()
+
+        # View first bundle
+        self.client.get(self.edit_url)
+
+        # View second bundle - should also create a log entry
+        another_bundle = BundleFactory(name="Another Bundle")
+        another_edit_url = reverse("bundle:edit", args=[another_bundle.id])
+        self.client.get(another_edit_url)
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.edit_view")
+        self.assertEqual(log_entries.count(), 2)
+
+        bundle_ids = set(log_entries.values_list("object_id", flat=True))
+        self.assertEqual(bundle_ids, {str(self.bundle.pk), str(another_bundle.pk)})
+
 
 class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseBase):
     LONG_TEXT = "Some long description to test truncation. " * 500

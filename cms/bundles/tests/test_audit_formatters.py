@@ -332,3 +332,16 @@ class BundleDatasetsChangedFormatterTestCase(TestCase):
         message = entry.formatter.format_message(entry)
 
         self.assertEqual(message, "Changed datasets in bundle")
+
+
+class EditBundleViewFormatterTestCase(TestCase):
+    """Test the bundles.edit_view log formatter."""
+
+    def test_edit_bundle_view_formatter_message(self) -> None:
+        """Test formatter returns the correct message."""
+        bundle = BundleFactory()
+        entry = log(action="bundles.edit_view", instance=bundle)
+
+        message = entry.formatter.format_message(entry)
+
+        self.assertEqual(message, "Viewed bundle editor")

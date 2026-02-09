@@ -267,6 +267,16 @@ def register_bundle_log_actions(actions: LogActionRegistry) -> None:
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-log-actions
     """
 
+    @actions.register_action("bundles.edit_view")
+    class EditBundleView(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for viewing the bundle editor."""
+
+        label = "View bundle editor"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            return "Viewed bundle editor"
+
     @actions.register_action("bundles.update_status")
     class ChangeBundleStatus(LogFormatter):  # pylint: disable=unused-variable
         """LogFormatter class for the bundle status change actions."""
