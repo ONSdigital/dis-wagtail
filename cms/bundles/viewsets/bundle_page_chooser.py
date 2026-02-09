@@ -53,7 +53,12 @@ class PagesWithDraftsMixin:
         pre_filter_q = (
             Page.objects.type(*get_bundleable_page_types())
             .filter(has_unpublished_changes=True, alias_of__isnull=True)
-            .exclude(Q(go_live_at__isnull=False) | Q(expire_at__isnull=False))
+            .exclude(
+                Q(go_live_at__isnull=False)
+                | Q(expire_at__isnull=False)
+                | Q(latest_revision__content__go_live_at__isnull=False)  # live + scheduled go-live draft
+                | Q(latest_revision__content__expire_at__isnull=False)  # live + scheduled expiry draft
+            )
         )  # exclude any scheduled pages with a go-live or expiry date
         return (
             Page.objects.specific(defer=True)

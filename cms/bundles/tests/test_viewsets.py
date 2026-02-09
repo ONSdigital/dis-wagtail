@@ -1427,9 +1427,10 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         )
         scheduled_page.save_revision()
 
-        page_with_go_live_in_the_past = InformationPageFactory(
-            title="Page with go-live in the past", live=False, go_live_at=datetime(2025, 3, 22, 9, 30, tzinfo=UTC)
-        )
+        page_with_go_live_in_the_past = InformationPageFactory(title="Page with go-live in the past")
+        page_with_go_live_in_the_past.save_revision().publish()
+
+        page_with_go_live_in_the_past.go_live_at = datetime(2025, 3, 22, 9, 30, tzinfo=UTC)
         page_with_go_live_in_the_past.save_revision()
 
         response = self.client.get(self.chooser_url)
