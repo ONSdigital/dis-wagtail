@@ -179,11 +179,6 @@ def only_one_instance_of_topic_is_saved(context: Context) -> None:
     )
 
 
-@given("an index page exists under the homepage")
-def index_page_exists_under_homepage(context: Context) -> None:
-    context.index_page = IndexPageFactory(title="Index Page")
-
-
 @step("the index page has the following information pages:")
 def index_page_has_information_pages(context: Context) -> None:
     if not hasattr(context, "index_page"):
@@ -201,11 +196,6 @@ def index_page_has_information_pages(context: Context) -> None:
         live = str_to_bool(live_value)
 
         info_page = InformationPageFactory(parent=context.index_page, title=page_name, live=live)
-
-        if live and not info_page.live:
-            info_page.save_revision().publish()
-        elif not live and info_page.live:
-            info_page.unpublish()
 
         context.index_information_pages.append(info_page)
 
