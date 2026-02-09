@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 from django.utils.html import json_script as _json_script
 from django_jinja import library
 from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
-from wagtail.models import Locale
+from wagtail.models import Locale, Page
 
 from cms.core.custom_date_format import ons_date_format
 
@@ -19,7 +19,6 @@ if TYPE_CHECKING:
 
 class LocaleURLsDict(TypedDict):
     locale: Locale
-    variant: Page
     url: str
 
 
@@ -88,7 +87,6 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
         results.append(
             {
                 "locale": locale,
-                "variant": variant,
                 "url": url,
             }
         )
