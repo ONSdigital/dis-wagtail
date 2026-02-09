@@ -1,5 +1,5 @@
 # pylint: disable=not-callable
-from behave import given, step, then, when
+from behave import step, then, when
 from behave.runner import Context
 from django.conf import settings
 from django.urls import reverse
