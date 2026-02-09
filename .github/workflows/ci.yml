@@ -242,7 +242,12 @@ jobs:
         run: make compilemessages
 
       - name: Run Functional Tests
-        run: make functional-tests
+        run: |
+          make functional-tests-up
+          poetry run ./manage.py migrate --noinput --settings cms.settings.functional_test
+          poetry run behave functional_tests --tags="not @slow_mo"
+          PLAYWRIGHT_SLOW_MO=200 poetry run behave functional_tests -tags="@slow_mo"
+          make functional-tests-down
 
       - name: Upload Failure Traces
         uses: actions/upload-artifact@v6
