@@ -53,7 +53,6 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
         | Published   |
         | Cancelled   |
 
-  @slow_mo
   Scenario Outline: A CMS user adds <Feature> to a release calendar page and verifies their display in the Published preview tab
     When the user clicks "Add child page" to create a new draft release calendar page
     And the user enters some example content on the page
