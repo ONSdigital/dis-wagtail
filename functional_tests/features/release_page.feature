@@ -53,15 +53,13 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
         | Published   |
         | Cancelled   |
 
-  @slow_mo
   Scenario Outline: A CMS user adds <Feature> to a release calendar page and verifies their display in the Published preview tab
-    When the user clicks "Add child page" to create a new draft release calendar page
-    And the user enters some example content on the page
-    And the user adds <Feature> to the release calendar page
-    And the user clicks the "Save draft" button
-    And the user opens the preview in a new tab, using the "Published" preview mode
+    Given a release calendar page exists
+    When the user edits the release calendar page
+    And  the user adds <Feature> to the release calendar page
+    And  the user opens the preview in a new tab, using the "Published" preview mode
     Then the example content is displayed in the preview tab
-    And <Feature> is displayed in the release calendar page preview tab
+    And  <Feature> is displayed in the release calendar page preview tab
 
     Examples:
       | Feature                        |

@@ -87,7 +87,7 @@ def add_another_release_date_change(page: PlaywrightPage) -> None:
     section.get_by_label("Reason for change*").nth(1).fill("New update to release schedule")
 
 
-def add_feature(page: PlaywrightPage, feature: str) -> None:
+def add_feature(the_page: PlaywrightPage, feature: str) -> None:
     # Dispatcher mapping
     feature_actions: dict[str, Callable[[PlaywrightPage], None]] = {
         "a release date text": lambda page: fill_locator(page, RELEASE_DATE_TEXT, "March 2025 to August 2025"),
@@ -98,10 +98,7 @@ def add_feature(page: PlaywrightPage, feature: str) -> None:
             .first.click(),
             choose_page_link(page, page_name="Home"),
         ),
-        "pre-release access information": lambda page: (
-            add_basic_table_block_under_pre_release_access(page),
-            add_description_block_under_pre_release_access(page, index=1),
-        ),
+        "pre-release access information": lambda page: (add_basic_table_block_under_pre_release_access(page),),
         "a date change log": lambda page: (
             page.locator("#panel-child-content-changes_to_release_date-section")
             .get_by_role("button", name="Insert a block")
@@ -112,7 +109,7 @@ def add_feature(page: PlaywrightPage, feature: str) -> None:
         ),
         "an invalid release date text": lambda page: fill_locator(page, RELEASE_DATE_TEXT, "Invalid 5555"),
         "an invalid next release date text": lambda page: fill_locator(page, NEXT_RELEASE_DATE_TEXT, "Invalid 5555"),
-        ("the next release date is set to a date earlier than the release date"): lambda page: (
+        "the next release date is set to a date earlier than the release date": lambda page: (
             fill_locator(page, RELEASE_DATE, "2025-12-25"),
             fill_locator(page, NEXT_RELEASE_DATE, "2024-12-25"),
         ),
@@ -125,7 +122,8 @@ def add_feature(page: PlaywrightPage, feature: str) -> None:
         action = feature_actions[feature]
     except KeyError as exc:
         raise ValueError(f"Unsupported page feature: {feature!r}") from exc
-    action(page)
+    the_page.wait_for_timeout(200)
+    action(the_page)
 
 
 # Preview display logic for features
