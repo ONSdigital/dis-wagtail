@@ -11,7 +11,12 @@ from wagtail.test.utils import WagtailTestUtils
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
-from cms.bundles.panels import BundleDatasetChooserWidget, BundleMultipleChooserPanel, BundleNotePanel
+from cms.bundles.panels import (
+    HAS_PAGE_LEVEL_SCHEDULE_MESSAGE,
+    BundleDatasetChooserWidget,
+    BundleMultipleChooserPanel,
+    BundleNotePanel,
+)
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 
 if TYPE_CHECKING:
@@ -38,25 +43,45 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
         """Test panel content when page is not in any bundles."""
         content = self.get_bound_panel(self.page).content
         self.assertIn("This page is not part of any bundles", content)
-        self.assertNotIn(
-            "This page is not part of any bundles. It cannot be bundled because it has a page-level schedule.", content
-        )
+        self.assertNotIn(HAS_PAGE_LEVEL_SCHEDULE_MESSAGE, content)
 
         # note: next=/ comes from the fact that this is a dummy request.
         url = reverse("bundles:add_to_bundle", args=(self.page.pk,), query={"next": "/"})
         self.assertIn(f'<a href="{url}" class="button button-small button-secondary">Add to Bundle</a></p>', content)
-        self.assertNotIn(
-            "This page is not part of any bundles. It cannot be bundled because it has a page-level schedule.", content
-        )
+        self.assertNotIn(HAS_PAGE_LEVEL_SCHEDULE_MESSAGE, content)
 
     def test_panel_content_without_bundles__but_with_schedule(self):
         self.page.go_live_at = timezone.now() + datetime.timedelta(days=1)
+        revision = self.page.save_revision()
+
+        content = self.get_bound_panel(self.page).content
+        self.assertIn(HAS_PAGE_LEVEL_SCHEDULE_MESSAGE, content)
+        self.assertNotIn("Add to Bundle", content)
+
+        # now publish the page, and add a new schedule draft
+        revision.publish()
+        self.page.go_live_at = timezone.now() + datetime.timedelta(days=2)
         self.page.save_revision()
 
         content = self.get_bound_panel(self.page).content
-        self.assertIn(
-            "This page is not part of any bundles. It cannot be bundled because it has a page-level schedule.", content
-        )
+        self.assertIn(HAS_PAGE_LEVEL_SCHEDULE_MESSAGE, content)
+        self.assertNotIn("Add to Bundle", content)
+
+    def test_panel_content_without_bundles__but_with_expiry(self):
+        self.page.expire_at = timezone.now() + datetime.timedelta(days=1)
+        revision = self.page.save_revision()
+
+        content = self.get_bound_panel(self.page).content
+        self.assertIn(HAS_PAGE_LEVEL_SCHEDULE_MESSAGE, content)
+        self.assertNotIn("Add to Bundle", content)
+
+        # now publish the page, and add a new schedule draft
+        revision.publish()
+        self.page.expire_at = timezone.now() + datetime.timedelta(days=2)
+        self.page.save_revision()
+
+        content = self.get_bound_panel(self.page).content
+        self.assertIn(HAS_PAGE_LEVEL_SCHEDULE_MESSAGE, content)
         self.assertNotIn("Add to Bundle", content)
 
     @patch("cms.bundles.panels.user_can_manage_bundles", return_value=False)
