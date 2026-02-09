@@ -64,11 +64,11 @@ def before_all(context: Context) -> None:
         )
 
 
-def configure_and_launch_playwright_browser(context: Context) -> None:
+def configure_and_launch_playwright_browser(context: Context, slow_mo: int = 0) -> None:
     """Configures and launches a playwright browser and browser context for use in the tests."""
     browser_type = os.getenv("PLAYWRIGHT_BROWSER", "chromium")
     headless = str_to_bool(os.getenv("PLAYWRIGHT_HEADLESS", "True"))
-    slow_mo = int(os.getenv("PLAYWRIGHT_SLOW_MO", "0"))
+    slow_mo = int(os.getenv("PLAYWRIGHT_SLOW_MO", slow_mo))
     default_browser_timeout = int(os.getenv("PLAYWRIGHT_DEFAULT_BROWSER_TIMEOUT", "5_000"))
 
     browser_kwargs = {
@@ -127,6 +127,11 @@ def before_scenario(context: Context, scenario: Scenario) -> None:
         context._requests = []  # pylint: disable=protected-access
         context.playwright_context.route("**/*", capture_request(context))
 
+    if "slow_mo" in scenario.tags and "PLAYWRIGHT_SLOW_MO" not in os.environ:
+        # replace the original browser with a slow-motion verion
+        context.browser.close()
+        configure_and_launch_playwright_browser(context, slow_mo=200)
+
     context.page = context.playwright_context.new_page()
 
     # For debugging purposes, log all console messages from the page;
@@ -151,6 +156,11 @@ def after_scenario(context: Context, scenario: Scenario) -> None:
     elif context.playwright_trace:
         # Else end the trace chunk without saving to a file
         context.playwright_context.tracing.stop_chunk()
+
+    if "slow_mo" in scenario.tags and "PLAYWRIGHT_SLOW_MO" not in os.environ:
+        # reset the browser
+        context.browser.close()
+        configure_and_launch_playwright_browser(context)
 
     context.page.close()
 

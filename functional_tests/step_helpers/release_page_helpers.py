@@ -99,7 +99,6 @@ def add_feature(page: PlaywrightPage, feature: str) -> None:
             choose_page_link(page, page_name="Home"),
         ),
         "pre-release access information": lambda page: (
-            page.wait_for_timeout(1000),
             add_basic_table_block_under_pre_release_access(page),
             add_description_block_under_pre_release_access(page, index=1),
         ),
