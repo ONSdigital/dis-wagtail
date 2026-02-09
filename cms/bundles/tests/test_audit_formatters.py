@@ -256,3 +256,79 @@ class BundlePagesChangedFormatterTestCase(TestCase):
         message = entry.formatter.format_message(entry)
 
         self.assertEqual(message, "Changed pages in bundle")
+
+
+class BundleDatasetsChangedFormatterTestCase(TestCase):
+    """Test the bundles.datasets_changed log formatter."""
+
+    def test_datasets_changed_formatter_both_added_and_removed(self) -> None:
+        """Test formatter with both added and removed datasets."""
+        bundle = BundleFactory()
+        entry = log(
+            action="bundles.datasets_changed",
+            instance=bundle,
+            data={
+                "added_datasets": ["Dataset 1", "Dataset 2"],
+                "removed_datasets": ["Dataset 3"],
+            },
+        )
+
+        message = entry.formatter.format_message(entry)
+
+        self.assertIn("Changed datasets in bundle", str(message))
+        self.assertIn("Added:", str(message))
+        self.assertIn("<strong>Dataset 1</strong>", str(message))
+        self.assertIn("<strong>Dataset 2</strong>", str(message))
+        self.assertIn("Removed:", str(message))
+        self.assertIn("<strong>Dataset 3</strong>", str(message))
+
+    def test_datasets_changed_formatter_only_added(self) -> None:
+        """Test formatter with only added datasets."""
+        bundle = BundleFactory()
+        entry = log(
+            action="bundles.datasets_changed",
+            instance=bundle,
+            data={
+                "added_datasets": ["Dataset 1"],
+                "removed_datasets": [],
+            },
+        )
+
+        message = entry.formatter.format_message(entry)
+
+        self.assertIn("Changed datasets in bundle", str(message))
+        self.assertIn("Added:", str(message))
+        self.assertIn("<strong>Dataset 1</strong>", str(message))
+        self.assertNotIn("Removed:", str(message))
+
+    def test_datasets_changed_formatter_only_removed(self) -> None:
+        """Test formatter with only removed datasets."""
+        bundle = BundleFactory()
+        entry = log(
+            action="bundles.datasets_changed",
+            instance=bundle,
+            data={
+                "added_datasets": [],
+                "removed_datasets": ["Dataset 3"],
+            },
+        )
+
+        message = entry.formatter.format_message(entry)
+
+        self.assertIn("Changed datasets in bundle", str(message))
+        self.assertNotIn("Added:", str(message))
+        self.assertIn("Removed:", str(message))
+        self.assertIn("<strong>Dataset 3</strong>", str(message))
+
+    def test_datasets_changed_formatter_fallback(self) -> None:
+        """Test formatter fallback when data is missing."""
+        bundle = BundleFactory()
+        entry = log(
+            action="bundles.datasets_changed",
+            instance=bundle,
+            data={},
+        )
+
+        message = entry.formatter.format_message(entry)
+
+        self.assertEqual(message, "Changed datasets in bundle")

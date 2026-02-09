@@ -348,31 +348,20 @@ def register_bundle_log_actions(actions: LogActionRegistry) -> None:
                 context="Changed pages in bundle",
             )
 
-    @actions.register_action("bundles.dataset_added")
-    class AddBundleDataset(LogFormatter):  # pylint: disable=unused-variable
-        """LogFormatter class for adding datasets to bundles."""
+    @actions.register_action("bundles.datasets_changed")
+    class ChangeBundleDatasets(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for dataset changes to bundles."""
 
-        label = "Add dataset to bundle"
-
-        def format_message(self, log_entry: ModelLogEntry) -> Any:
-            """Returns the formatted log message."""
-            try:
-                return f"Added dataset '{log_entry.data['dataset_title']}'"
-            except KeyError:
-                return "Added dataset"
-
-    @actions.register_action("bundles.dataset_removed")
-    class RemoveBundleDataset(LogFormatter):  # pylint: disable=unused-variable
-        """LogFormatter class for removing datasets from bundles."""
-
-        label = "Remove dataset from bundle"
+        label = "Change datasets in bundle"
 
         def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
-            try:
-                return f"Removed dataset '{log_entry.data['dataset_title']}'"
-            except KeyError:
-                return "Removed dataset"
+            return format_added_removed_message(
+                log_entry,
+                added_key="added_datasets",
+                removed_key="removed_datasets",
+                context="Changed datasets in bundle",
+            )
 
     @actions.register_action("bundles.schedule_changed")
     class ChangeBundleSchedule(LogFormatter):  # pylint: disable=unused-variable

@@ -300,13 +300,23 @@ class BundleEditView(EditView):
         added = new_datasets - original_datasets
         removed = original_datasets - new_datasets
 
-        for dataset_id in added:
-            dataset = Dataset.objects.get(id=dataset_id)
-            log(action="bundles.dataset_added", instance=instance, data={"dataset_title": dataset.title})
+        if not added and not removed:
+            return
 
-        for dataset_id in removed:
-            dataset = Dataset.objects.get(id=dataset_id)
-            log(action="bundles.dataset_removed", instance=instance, data={"dataset_title": dataset.title})
+        # Fetch dataset titles in bulk
+        added_datasets = list(Dataset.objects.filter(id__in=added).values_list("title", flat=True)) if added else []
+        removed_datasets = (
+            list(Dataset.objects.filter(id__in=removed).values_list("title", flat=True)) if removed else []
+        )
+
+        log(
+            action="bundles.datasets_changed",
+            instance=instance,
+            data={
+                "added_datasets": added_datasets,
+                "removed_datasets": removed_datasets,
+            },
+        )
 
     def _log_schedule_changes(self, instance: Bundle, original_pub_date: Any) -> None:
         """Log publication date changes."""
