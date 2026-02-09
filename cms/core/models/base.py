@@ -161,7 +161,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         breadcrumbs = []
         homepage_depth = 2
-        for ancestor_page in self.get_ancestors().specific().defer_streamfields():
+        for ancestor_page in self.get_ancestors().specific(defer=True):
             if ancestor_page.is_root():
                 continue
             if ancestor_page.depth <= homepage_depth:
