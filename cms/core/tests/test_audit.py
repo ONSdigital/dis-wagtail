@@ -66,15 +66,15 @@ class AuditSignalHandlerTestCase(WagtailTestUtils, TestCase):
 
         with patch("cms.core.audit.audit_logger") as mock_logger:
             log(
-                action="bundles.team_added",
+                action="bundles.teams_changed",
                 instance=bundle,
-                data={"team_name": "Test Team"},
+                data={"added_teams": ["Test Team"], "removed_teams": []},
             )
 
             # Verify data is included
             call_args: tuple[tuple[Any, ...], dict[str, Any]] = mock_logger.info.call_args
             extra: dict[str, Any] = call_args[1]["extra"]
-            assert extra["data"] == {"team_name": "Test Team"}
+            assert extra["data"] == {"added_teams": ["Test Team"], "removed_teams": []}
 
     def test_log_entry_without_user(self) -> None:
         """Test that log entries without a user don't crash."""

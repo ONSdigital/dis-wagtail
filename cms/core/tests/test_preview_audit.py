@@ -193,3 +193,21 @@ class BasePagePreviewAuditLogTestCase(WagtailTestUtils, TestCase):
 
             # Verify _log_preview was called
             mock_log_preview.assert_called_once_with(request, "default")
+
+    def test_log_preview_does_not_log_unsaved_pages(self) -> None:
+        """Test that _log_preview returns early for unsaved pages (no primary key)."""
+        # Create an unsaved page (not persisted to database)
+        unsaved_page = StatisticalArticlePageFactory.build(title="Unsaved Article")
+        self.assertIsNone(unsaved_page.pk)
+
+        initial_count = PageLogEntry.objects.filter(action="pages.preview_mode_used").count()
+
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        # Should not raise an exception and should return early
+        unsaved_page._log_preview(request, "default")  # pylint: disable=protected-access
+
+        # Verify no log entry was created
+        final_count = PageLogEntry.objects.filter(action="pages.preview_mode_used").count()
+        self.assertEqual(initial_count, final_count)

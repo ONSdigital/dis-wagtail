@@ -256,13 +256,21 @@ class BundleEditView(EditView):
         added = new_teams - original_teams
         removed = original_teams - new_teams
 
-        for team_id in added:
-            team = Team.objects.get(id=team_id)
-            log(action="bundles.team_added", instance=instance, data={"team_name": team.name})
+        if not added and not removed:
+            return
 
-        for team_id in removed:
-            team = Team.objects.get(id=team_id)
-            log(action="bundles.team_removed", instance=instance, data={"team_name": team.name})
+        # Fetch team names in bulk
+        added_teams = list(Team.objects.filter(id__in=added).values_list("name", flat=True)) if added else []
+        removed_teams = list(Team.objects.filter(id__in=removed).values_list("name", flat=True)) if removed else []
+
+        log(
+            action="bundles.teams_changed",
+            instance=instance,
+            data={
+                "added_teams": added_teams,
+                "removed_teams": removed_teams,
+            },
+        )
 
     def _log_page_changes(self, instance: Bundle, original_pages: set[int]) -> None:
         """Log page additions and removals."""
@@ -270,13 +278,21 @@ class BundleEditView(EditView):
         added = new_pages - original_pages
         removed = original_pages - new_pages
 
-        for page_id in added:
-            page = Page.objects.get(id=page_id)
-            log(action="bundles.page_added", instance=instance, data={"page_title": page.title})
+        if not added and not removed:
+            return
 
-        for page_id in removed:
-            page = Page.objects.get(id=page_id)
-            log(action="bundles.page_removed", instance=instance, data={"page_title": page.title})
+        # Fetch page titles in bulk
+        added_pages = list(Page.objects.filter(id__in=added).values_list("title", flat=True)) if added else []
+        removed_pages = list(Page.objects.filter(id__in=removed).values_list("title", flat=True)) if removed else []
+
+        log(
+            action="bundles.pages_changed",
+            instance=instance,
+            data={
+                "added_pages": added_pages,
+                "removed_pages": removed_pages,
+            },
+        )
 
     def _log_dataset_changes(self, instance: Bundle, original_datasets: set[int]) -> None:
         """Log dataset additions and removals."""
