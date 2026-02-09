@@ -63,6 +63,9 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
     if not page:
         return []
 
+    if prebuilt_locale_urls := getattr(page, "_locale_urls", None):
+        return prebuilt_locale_urls  # type: ignore[no-any-return]
+
     default_locale = Locale.get_default()
 
     variants = {variant.locale_id: variant for variant in page.get_translations(inclusive=True).defer_streamfields()}
@@ -89,6 +92,8 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
                 "url": url,
             }
         )
+
+    page._locale_urls = results  # pylint: disable=protected-access
 
     return results
 
