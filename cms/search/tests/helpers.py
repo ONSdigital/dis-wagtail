@@ -38,6 +38,9 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertEqual(payload["uri"], build_page_uri(page))
         expected_title = title if title is not None else page.title
         self.assertEqual(payload["title"], expected_title)
+
+        # The resource builder uses get_text_for_indexing() for search/Kafka payloads,
+        # so we only strip the source summary for comparison instead of re-sanitising.
         self.assertEqual(payload["summary"], strip_tags(page.summary))
 
         expected_ct = EXPECTED_CONTENT_TYPES[type(page).__name__]

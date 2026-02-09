@@ -9,7 +9,7 @@ from playwright.sync_api import expect
 from cms.core.custom_date_format import ons_date_format
 from cms.standard_pages.models import InformationPage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
-from functional_tests.step_helpers.utils import str_to_bool
+from functional_tests.step_helpers.utils import get_page_from_context, str_to_bool
 
 
 def _get_information_page(context: Context) -> InformationPage:
@@ -18,8 +18,9 @@ def _get_information_page(context: Context) -> InformationPage:
     Expects either context.information_page to be set directly,
     or context.page_title to perform a lookup (and cache the result).
     """
-    if hasattr(context, "information_page"):
-        return context.information_page
+    info_page = get_page_from_context(context, "information")
+    if info_page:
+        return info_page
 
     if hasattr(context, "page_title"):
         info_page = InformationPage.objects.filter(title=context.page_title).order_by("-last_published_at").first()
@@ -54,12 +55,12 @@ def user_creates_information_page(context: Context) -> None:
     context.page.get_by_role("button", name="Actions", exact=True).click()
 
     context.page.get_by_role("link", name="Add child page").click()
-    context.page.get_by_role("link", name="Index page", exact=True).click()
+    context.page.locator("a[href^='/admin/pages/add/standard_pages/indexpage/']").click()
     context.page.get_by_role("textbox", name="Title*").fill("Index page 1")
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").click()
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Index page summary")
 
-    context.page.wait_for_timeout(5000)
+    context.page.wait_for_timeout(1000)
 
     context.execute_steps(
         """

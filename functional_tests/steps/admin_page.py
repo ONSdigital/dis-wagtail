@@ -13,7 +13,7 @@ def the_user_can_see_reports_menu_item(context: Context, menu_item: str) -> None
 
 
 @when("the user clicks the {menu_item} menu item")
-def user_navigates_to_snippets_admin_page(context: Context, menu_item: str) -> None:
+def user_clicks_the_menu_item(context: Context, menu_item: str) -> None:
     role = "button" if menu_item in ("Reports", "Pages", "Settings") else "link"
     context.page.get_by_role(role, name=menu_item, exact=True).click()
 
