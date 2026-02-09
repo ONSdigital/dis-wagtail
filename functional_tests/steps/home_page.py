@@ -68,7 +68,7 @@ def external_user_redirected_to_search_page(context: Context, search_query: str)
     )
 
     query_params = parse_qs(parsed_url.query)
-    actual_query = (query_params.get("q") or [None])[0]  # Changed to 'q'
+    actual_query = query_params.get("q", [None])[0]
 
     assert actual_query == search_query, (
         f"Expected query param 'q={search_query}', got 'q={actual_query}' in URL: {current_url}"
