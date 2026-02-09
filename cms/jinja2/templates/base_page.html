@@ -42,8 +42,10 @@
             {% endif %}
         {% endwith %}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="{{ site.root_url }}{{ page.url }}" />
-        <meta property="og:title" content="{{ page.seo_title or page.title }}" />
+        {% if page %}
+            <meta property="og:url" content="{{ page.get_full_url(request) }}" />
+            <meta property="og:title" content="{{ page.seo_title or page.title }}" />
+        {% endif %}
         <meta property="og:description" content="{{ page.social_text|default or settings.core.SocialMediaSettings.default_sharing_text }}" />
         <meta property="og:site_name" content="{{ settings.core.SocialMediaSettings.site_name }}" />
     {% endwith %}
