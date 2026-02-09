@@ -10,15 +10,11 @@ from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import 
 from wagtail.models import Locale
 
 from cms.core.custom_date_format import ons_date_format
-from cms.core.models import SocialMediaSettings
 
 register = template.Library()
 
 if TYPE_CHECKING:
     from django.utils.safestring import SafeString
-    from wagtail.models import Page, Site
-
-    from cms.images.models import CustomImage
 
 
 class LocaleURLsDict(TypedDict):
@@ -37,22 +33,6 @@ class TranslationURLDict(TypedDict):
 class HreflangDict(TypedDict):
     url: str
     lang: str
-
-
-# Social text
-@register.filter(name="social_text")
-def social_text(page: Page, site: Site) -> str:
-    """Returns the given page social text, or the default sharing image as defined in the social media settings."""
-    social_text_str: str = getattr(page, "social_text", "")
-    return social_text_str or SocialMediaSettings.for_site(site).default_sharing_text
-
-
-# Social image
-@register.filter(name="social_image")
-def social_image(page: Page, site: Site) -> CustomImage | None:
-    """Returns the given page social image, or the default sharing image as defined in the social media settings."""
-    the_social_image: CustomImage | None = getattr(page, "social_image", None)
-    return the_social_image or SocialMediaSettings.for_site(site).default_sharing_image
 
 
 @library.global_function

@@ -23,8 +23,8 @@
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:site" content="@{{ settings.core.SocialMediaSettings.twitter_handle }}" />
         <meta name="twitter:title" content="{{ page.seo_title or page.title }}" />
-        <meta name="twitter:description" content="{{ page|social_text(current_site) }}">
-        {% with social_image=page|social_image(current_site) %}
+        <meta name="twitter:description" content="{{ page.social_text|default or settings.core.SocialMediaSettings.default_sharing_text }}">
+        {% with social_image=page.social_image|default or settings.core.SocialMediaSettings.default_sharing_image %}
             {% if social_image  %}
                 {% with twitter_img=image(social_image, "width-1000") %}
                     <meta name="twitter:image" content="{{ twitter_img.url }}">
@@ -44,7 +44,7 @@
         <meta property="og:type" content="website" />
         <meta property="og:url" content="{{ site.root_url }}{{ page.url }}" />
         <meta property="og:title" content="{{ page.seo_title or page.title }}" />
-        <meta property="og:description" content="{{ page|social_text(current_site) }}" />
+        <meta property="og:description" content="{{ page.social_text|default or settings.core.SocialMediaSettings.default_sharing_text }}" />
         <meta property="og:site_name" content="{{ settings.core.SocialMediaSettings.site_name }}" />
     {% endwith %}
 {% endblock social %}
