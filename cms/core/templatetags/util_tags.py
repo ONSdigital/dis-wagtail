@@ -67,7 +67,7 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
 
     default_locale = Locale.get_default()
 
-    variants = {variant.locale_id: variant for variant in page.get_translations(inclusive=True).defer_streamfields()}
+    variants = {variant.locale_id: variant for variant in Page.objects.translation_of(page, inclusive=True)}
     default_page = variants.get(default_locale.pk)
 
     results: list[LocaleURLsDict] = []
