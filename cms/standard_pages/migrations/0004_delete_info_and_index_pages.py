@@ -32,11 +32,12 @@ def delete_pages(apps, schema_editor):
     # - Page revisions
     # - Any other related objects (search index entries, etc.)
     pages = Page.objects.filter(id__in=ids_to_delete).order_by("-path")
+    deleted_count = pages.count()
 
     for page in pages.iterator():
         page.delete()
 
-    logger.info("Deleted %s pages.", pages.count())
+    logger.info("Deleted %s pages.", deleted_count)
 
 
 class Migration(migrations.Migration):
