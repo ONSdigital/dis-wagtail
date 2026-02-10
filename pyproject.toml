@@ -124,6 +124,8 @@ ignore = [
     "C901",
     # Allow non-top-level imports
     "PLC0415",
+    # contextlib.suppress is slower
+    "SIM105"
 ]
 
 [tool.ruff.lint.pydocstyle]
