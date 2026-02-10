@@ -874,7 +874,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertIn("download", result["options"])
         self.assertIn("title", result["options"]["download"])
         self.assertIn("itemsList", result["options"]["download"])
-        self.assertEqual(result["options"]["download"]["title"], "Download: The table")
+        self.assertEqual(result["options"]["download"]["title"], "Download this table")
         self.assertEqual(len(result["options"]["download"]["itemsList"]), 1)
         self.assertIn("CSV", result["options"]["download"]["itemsList"][0]["text"])
         self.assertIn("url", result["options"]["download"]["itemsList"][0])

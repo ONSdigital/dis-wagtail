@@ -222,9 +222,8 @@ class ONSTableBlock(TinyTableBlock):
             else self._build_table_download_url(page, block_id, parent_context.get("superseded_version"))
         )
 
-        title = value.get("title") or value.get("caption") or _("Table")
         return {
-            "title": f"{_('Download')}: {title}",
+            "title": _("Download this table"),
             "itemsList": [{"text": f"{_('Download CSV')}{size_suffix}", "url": csv_url}],
         }
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-20 11:34+0000\n"
+"POT-Creation-Date: 2026-02-10 10:17+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,39 +19,39 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
 "11) ? 2 : 3;\n"
 
-#: cms/articles/models.py:199 cms/core/enums.py:8
+#: cms/articles/models.py:211 cms/core/enums.py:8
 #: cms/core/formatting_utils.py:44
 msgid "Article"
 msgstr "Erthygl"
 
-#: cms/articles/models.py:461
+#: cms/articles/models.py:443
 msgid "Cite this article"
 msgstr "Dyfynnwch yr erthygl hon"
 
-#: cms/articles/models.py:463
+#: cms/articles/models.py:445
 #: cms/jinja2/templates/components/contact_details/contact_details.html:6
-#: cms/methodology/models.py:190 cms/release_calendar/models.py:246
+#: cms/methodology/models.py:198 cms/release_calendar/models.py:246
 msgid "Contact details"
 msgstr "Manylion cyswllt"
 
-#: cms/articles/models.py:530
+#: cms/articles/models.py:512
 #, python-format
 msgid "All data related to %(article_title)s"
 msgstr "Yr holl ddata sy'n gysylltiedig â %(article_title)s"
 
-#: cms/articles/models.py:589
+#: cms/articles/models.py:571
 msgid "Release date"
 msgstr "Dyddiad y datganiad"
 
-#: cms/articles/utils.py:27
+#: cms/articles/utils.py:26
 msgid "Correction"
 msgstr "Cywiriad"
 
-#: cms/articles/utils.py:27
+#: cms/articles/utils.py:26
 msgid "Notice"
 msgstr "Hysbysiad"
 
-#: cms/articles/utils.py:37
+#: cms/articles/utils.py:36
 msgid "View superseded version"
 msgstr "Gweld fersiwn wedi’i disodli"
 
@@ -73,6 +73,14 @@ msgstr "Dangos popeth"
 msgid "Hide all"
 msgstr "Cuddio popeth"
 
+#: cms/core/blocks/markup.py:226
+msgid "Download this table"
+msgstr ""
+
+#: cms/core/blocks/markup.py:227
+msgid "Download CSV"
+msgstr ""
+
 #: cms/core/blocks/related.py:60
 msgid "Related links"
 msgstr "Dolenni cysylltiedig"
@@ -81,7 +89,7 @@ msgstr "Dolenni cysylltiedig"
 msgid "Dataset"
 msgstr "Set ddata"
 
-#: cms/core/enums.py:10 cms/methodology/models.py:82
+#: cms/core/enums.py:10 cms/methodology/models.py:90
 msgid "Methodology"
 msgstr "Methodoleg"
 
@@ -108,7 +116,7 @@ msgid "Home"
 msgstr "Cartref"
 
 #: cms/datavis/blocks/base.py:416
-#: cms/jinja2/templates/components/streamfield/table_block.html:12
+#: cms/jinja2/templates/components/streamfield/table_block.html:13
 msgid "Footnotes"
 msgstr "Troednodiadau"
 
@@ -209,7 +217,7 @@ msgid "Hide all definitions"
 msgstr "Cuddio pob diffiniad"
 
 #: cms/jinja2/templates/components/streamfield/image_block.html:20
-#: cms/jinja2/templates/components/streamfield/table_block.html:8
+#: cms/jinja2/templates/components/streamfield/table_block.html:9
 msgid "Source"
 msgstr "Ffynhonnell"
 
@@ -217,12 +225,12 @@ msgstr "Ffynhonnell"
 msgid "Notes"
 msgstr ""
 
-#: cms/jinja2/templates/components/streamfield/image_block.html:44
-#: cms/jinja2/templates/components/streamfield/image_block.html:46
+#: cms/jinja2/templates/components/streamfield/image_block.html:43
+#: cms/jinja2/templates/components/streamfield/image_block.html:45
 msgid "Download image"
 msgstr ""
 
-#: cms/jinja2/templates/components/streamfield/image_block.html:52
+#: cms/jinja2/templates/components/streamfield/image_block.html:51
 msgid "Download this image"
 msgstr ""
 
@@ -399,8 +407,8 @@ msgstr ""
 #: cms/jinja2/templates/pages/errors/500.html:7
 #, python-format
 msgid ""
-"If the web address is correct, or you selected a link or button, <a href="
-"\"%(contact_url)s\">contact us</a>."
+"If the web address is correct, or you selected a link or button, <a "
+"href=\"%(contact_url)s\">contact us</a>."
 msgstr ""
 "Os yw’r cyfeiriad gwe yn gywir, neu os ydych wedi dewis dolen neu botwm,<a "
 "href=\"%(contact_url)s\">cysylltwch â ni</a>."
@@ -412,11 +420,11 @@ msgstr "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth"
 #: cms/jinja2/templates/pages/errors/500.html:6
 #, python-format
 msgid ""
-"Our scheduled publications can also be found on our <a href=\"%(backup_url)s"
-"\">backup site</a>."
+"Our scheduled publications can also be found on our <a "
+"href=\"%(backup_url)s\">backup site</a>."
 msgstr ""
-"Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a href="
-"\"%(backup_url)s\">gwefan wrth gefn"
+"Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a "
+"href=\"%(backup_url)s\">gwefan wrth gefn"
 
 #: cms/jinja2/templates/pages/information_page.html:9
 msgid "Last updated"
@@ -459,7 +467,7 @@ msgid "Sections in this page"
 msgstr "Adrannau ar y dudalen hon"
 
 #: cms/jinja2/templates/pages/methodology_page.html:112
-#: cms/methodology/models.py:188
+#: cms/methodology/models.py:196
 msgid "Cite this methodology"
 msgstr "Dyfynnwch y fethodoleg hon"
 
@@ -525,9 +533,9 @@ msgstr "Ynglyn â’r data"
 msgid ""
 "These are accredited official statistics. They have been independently "
 "reviewed by the Office for Statistics Regulation (OSR) and found to comply "
-"with the standards of trustworthiness, quality and value in the <a href="
-"\"https://code.statisticsauthority.gov.uk/the-code/\">Code of Practice for "
-"Statistics</a>. This broadly means that the statistics:"
+"with the standards of trustworthiness, quality and value in the <a "
+"href=\"https://code.statisticsauthority.gov.uk/the-code/\">Code of Practice "
+"for Statistics</a>. This broadly means that the statistics:"
 msgstr ""
 "Mae’r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnolgan y "
 "Swyddfa Rheoleiddio Ystadegau (OSR) ac a ganfuwyd ei fod yn cydymffurfio "
@@ -716,7 +724,7 @@ msgstr "Archwilio mwy"
 msgid "Continue"
 msgstr "Parhau"
 
-#: cms/methodology/models.py:176 cms/methodology/models.py:186
+#: cms/methodology/models.py:184 cms/methodology/models.py:194
 msgid "Related publications"
 msgstr "Cyhoeddiadau cysylltiedig"
 
@@ -724,10 +732,65 @@ msgstr "Cyhoeddiadau cysylltiedig"
 msgid "To be confirmed"
 msgstr "I’w gadarnhau"
 
-#: cms/settings/base.py:367
+#: cms/settings/base.py:383
 msgid "English"
 msgstr "Saesneg"
 
-#: cms/settings/base.py:368
+#: cms/settings/base.py:384
 msgid "Welsh"
 msgstr "Cymraeg"
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:8
+msgid "Submitted"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:14
+msgid "Not started"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:23
+#, python-format
+msgid "Changes requested by %(requested_by)s"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:27
+#, fuzzy
+#| msgid "Changes to this release date"
+msgid "Changes requested"
+msgstr "Newidiadau i’r dyddiad rhyddhau hwn"
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:46
+#, python-format
+msgid "Cancelled by %(cancelled_by)s"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:50
+#, python-format
+msgid "Approved by %(approved_by)s"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:59
+msgid "with comment:"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:69
+#, fuzzy
+#| msgid "Published:"
+msgid "Published"
+msgstr "Cyhoeddwyd"
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:76
+msgid "See full history"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:83
+msgid "Compare with live version"
+msgstr ""
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:93
+msgid "Compare with previous version"
+msgstr ""
+
+#: cms/workflows/templates/workflows/confirm_unlock.html:12
+msgid "No, don't unlock"
+msgstr ""
