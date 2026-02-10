@@ -1,0 +1,41 @@
+application:
+  repo_name: dis-wagtail
+  branch:
+    main: feat/setup-ci
+helm:
+  repo_name: dis-helm-cms-service-chart
+  values_files:
+    image_tag_key: tag
+    sandbox:
+      # At the moment, the “sandbox” trigger is actually driven by merges to main,
+      # so we intentionally update both bleed and sandbox configuration together.
+      # This format will be changing in the near future and be relabeled as merges,
+      # rc tags, prod tags etc. instead of env names.
+      - values/dis-bleed-internal.yaml
+      - values/dis-bleed-external.yaml
+      - values/dis-sandbox-internal.yaml
+      - values/dis-sandbox-external.yaml
+    staging:
+      - values/dis-staging-internal.yaml
+      - values/dis-staging-external.yaml
+    production:
+      - values/dis-production-internal.yaml
+      - values/dis-production-external.yaml
+  pull_request:
+    # Auto-merge is intentionally disabled. Certain migrations require config changes
+    # to be applied in lockstep. If the Helm chart auto-updates before configuration
+    # is in place, the deployment may break and cause service disruption.
+    sandbox:
+      # Do not auto merge the PR for sandbox. Triggered by application merge to the main branch
+      is_auto_merge: false
+    staging:
+      # Do not auto merge the PR for staging. Triggered by application release candidate tag (e.g. v1.0.0-rc.1)
+      is_auto_merge: false
+    production:
+      # Do not auto merge the PR for production. Triggered by application production tag (e.g. v1.0.0)
+      is_auto_merge: false
+
+aws:
+  ecr:
+    # the ECR repository location for the application image
+    application: dis/apps/dis-wagtail-cms
