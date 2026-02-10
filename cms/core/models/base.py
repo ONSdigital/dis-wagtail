@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
+from typing import TYPE_CHECKING, ClassVar, Self, cast
 
 from django.conf import settings
 from django.utils.decorators import method_decorator
@@ -10,7 +10,6 @@ from wagtail.models import Page
 from wagtail.query import PageQuerySet
 from wagtail.utils.decorators import cached_classmethod
 from wagtailschemaorg.models import PageLDMixin
-from wagtailschemaorg.utils import extend
 
 from cms.core.analytics_utils import format_date_for_gtm
 from cms.core.cache import get_default_cache_control_decorator
@@ -191,13 +190,13 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
     def ld_entity(self) -> dict[str, object]:
         """Add page breadcrumbs to the JSON LD properties."""
-        page_ld_entity: dict[str, object] = {"@type": self.schema_org_type}
+        page_ld_entity: dict[str, object] = {**super().ld_entity(), "@type": self.schema_org_type}
         page_ld_entity.update(self.breadcrumbs_as_jsonld)
 
         if not page_ld_entity.get("description", ""):
             page_ld_entity["description"] = self.search_description or self.listing_summary
 
-        return cast(dict[str, Any], extend(super().ld_entity(), page_ld_entity))
+        return page_ld_entity
 
     def get_canonical_url(self, request: HttpRequest) -> str:
         """Get the default canonical URL for the page for the given request.
