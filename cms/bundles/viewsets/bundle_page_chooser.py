@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from django import forms
-from django.db.models import Q
 from wagtail.admin.forms.choosers import BaseFilterForm, LocaleFilterMixin, SearchFilterMixin
 from wagtail.admin.ui.tables import Column, DateColumn, LocaleColumn
 from wagtail.admin.ui.tables.pages import PageStatusColumn
@@ -50,16 +49,15 @@ class PagesWithDraftsMixin:
         - have unpublished changes
         - are not in another active bundle
         """
-        pre_filter_q = (
-            Page.objects.type(*get_bundleable_page_types())
-            .filter(has_unpublished_changes=True, alias_of__isnull=True)
-            .exclude(
-                Q(go_live_at__isnull=False)
-                | Q(expire_at__isnull=False)
-                | Q(latest_revision__content__go_live_at__isnull=False)  # live + scheduled go-live draft
-                | Q(latest_revision__content__expire_at__isnull=False)  # live + scheduled expiry draft
-            )
-        )  # exclude any scheduled pages with a go-live or expiry date
+        pre_filter_q = Page.objects.type(*get_bundleable_page_types()).filter(
+            has_unpublished_changes=True,
+            alias_of__isnull=True,  # not an alias
+            go_live_at__isnull=True,  # scheduled go-live draft
+            expire_at__isnull=True,  # scheduled expiry draft
+            latest_revision__content__go_live_at=None,  # live + scheduled go-live draft
+            latest_revision__content__expire_at=None,  # live + scheduled expiry draft
+        )
+
         return (
             Page.objects.specific(defer=True)
             # using pk_in because the direct has_unpublished_changes and alias_of filter
