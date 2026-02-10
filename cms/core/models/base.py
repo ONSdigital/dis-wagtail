@@ -150,12 +150,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         """Returns the breadcrumbs for the page as a list of dictionaries compatible with the ONS design system
         breadcrumbs component.
         """
-        # TODO make request non-optional once wagtailschemaorg supports passing through the request.
+        # TODO cache and make request non-optional once wagtailschemaorg supports passing through the request.
         # https://github.com/neon-jungle/wagtail-schema.org/issues/29
-
-        if prebuilt_breadcrumbs := getattr(self, "_breadcrumbs", None):
-            return prebuilt_breadcrumbs  # type: ignore[no-any-return]
-
         breadcrumbs = []
         homepage_depth = 2
         for ancestor_page in self.get_ancestors().specific(defer=True):
@@ -167,8 +163,6 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
                 breadcrumbs.append({"url": ancestor_page.get_full_url(request=request), "text": ancestor_page.title})
         if request and getattr(request, "is_for_subpage", False):
             breadcrumbs.append({"url": self.get_full_url(request=request), "text": self.title})
-
-        self._breadcrumbs = breadcrumbs  # pylint: disable=attribute-defined-outside-init
         return breadcrumbs
 
     @cached_property
