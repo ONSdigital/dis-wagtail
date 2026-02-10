@@ -21,8 +21,6 @@ def delete_pages(apps, schema_editor):
     if not ids_to_delete.exists():
         return
 
-    logger.info("Deleting %s pages...", ids_to_delete.count())
-
     # Collects page IDs - Gets the primary keys from both page types via page_ptr_id
     # (the foreign key to Wagtail's base Page model)
     # Orders by -path - Wagtail uses django-treebeard for page hierarchy,
@@ -37,7 +35,6 @@ def delete_pages(apps, schema_editor):
 
     deleted = 0
     for page in pages.iterator():
-        logger.info("Deleting page id=%s", page.id)
         page.delete()
         deleted += 1
 
