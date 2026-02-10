@@ -10,3 +10,7 @@ class CoreConfig(AppConfig):
 
     def ready(self) -> None:
         from . import checks  # noqa pylint: disable=import-outside-toplevel,unused-import
+
+        from .signal_handlers import register_signals  # pylint: disable=import-outside-toplevel
+
+        register_signals()
