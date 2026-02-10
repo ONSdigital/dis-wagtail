@@ -670,8 +670,9 @@ def search_alert(context: Context, search_type: str) -> None:
     search_name = "December 2025"
     if search_type == "release_calendar":
         search_name = "PFM December 2025"
-    alert_text = f"Sorry, there are no matches for \"{search_name}\""
+    alert_text = f'Sorry, there are no matches for "{search_name}"'
     expect(context.page.get_by_role("alert")).to_contain_text(alert_text)
+
 
 @step("the logged in user tries to find a non existing bundle page")
 def find_bundle_page(context: Context) -> None:
