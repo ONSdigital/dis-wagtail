@@ -188,9 +188,7 @@ class ONSTableBlock(TinyTableBlock):
         # Add download config if block_id and page context available
         block_id = context.get("block_id")
         if block_id and parent_context:
-            options["download"] = self._get_download_config(
-                value=value, parent_context=parent_context, block_id=block_id, data=data
-            )
+            options["download"] = self._get_download_config(parent_context=parent_context, block_id=block_id, data=data)
 
         table_context = {
             "title": value.get("title"),
@@ -202,7 +200,7 @@ class ONSTableBlock(TinyTableBlock):
 
         return table_context
 
-    def _get_download_config(self, *, value: dict, parent_context: dict, block_id: str, data: dict) -> dict[str, Any]:
+    def _get_download_config(self, *, parent_context: dict, block_id: str, data: dict) -> dict[str, Any]:
         """Build download config for ONS Downloads component."""
         page = parent_context.get("page")
         if not page:
