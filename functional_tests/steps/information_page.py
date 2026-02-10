@@ -57,16 +57,13 @@ def user_creates_information_page(context: Context) -> None:
     context.page.get_by_role("link", name="Add child page").click()
     context.page.locator("a[href^='/admin/pages/add/standard_pages/indexpage/']").click()
     context.page.get_by_role("textbox", name="Title*").fill("Index page 1")
-    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").click()
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Index page summary")
 
     context.page.wait_for_timeout(1000)
 
-    context.execute_steps(
-        """
+    context.execute_steps("""
         When the user clicks "Publish"
-        """
-    )
+    """)
 
     context.page.get_by_role("button", name="More options for 'Index Page").click()
     context.page.get_by_text("Add child page").click()

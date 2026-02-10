@@ -36,7 +36,7 @@ def delete_pages(apps, schema_editor):
     for page in pages.iterator():
         page.delete()
 
-    logger.info("Deleted %s pages.", len(ids_to_delete))
+    logger.info("Deleted %s pages.", pages.count())
 
 
 class Migration(migrations.Migration):
