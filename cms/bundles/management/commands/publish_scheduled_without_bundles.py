@@ -80,7 +80,7 @@ class Command(BaseCommand):
 
             for rp in revisions_for_publish:
                 go_live_at_ts = rp.approved_go_live_at.timestamp()
-                scheduler.enterabs(go_live_at_ts, 1, self._publish_model_action, argument=(rp,))
+                scheduler.enterabs(go_live_at_ts, 10, self._publish_model_action, argument=(rp,))
 
         # 3. Run the scheduler to run publish / unpublish content (if any)
         scheduler.run()
