@@ -1,4 +1,6 @@
 # pylint: disable=not-callable
+from urllib.parse import parse_qs, urlparse
+
 from behave import then, when
 from behave.runner import Context
 from playwright.sync_api import expect
@@ -38,3 +40,36 @@ def user_redirected_to_wagtail_admin_login_page(context: Context) -> None:
 def navigate_to_english_home_page_in_page_explorer(context: Context) -> None:
     context.page.get_by_role("button", name="Pages").click()
     context.page.get_by_role("link", name="Home English").click()
+
+
+@when("they click the search toggle button")
+def external_user_clicks_search_toggle_button(context: Context) -> None:
+    context.page.get_by_role("button", name="Toggle search").click()
+
+
+@when('they enter "{search_query}" in the search field')
+def external_user_enters_search_query(context: Context, search_query: str) -> None:
+    search_field = context.page.get_by_role("searchbox", name="Search the ONS")
+    search_field.fill(search_query)
+
+
+@when("they submit the search form")
+def external_user_submits_search_form(context: Context) -> None:
+    context.page.get_by_role("button", name="Search", exact=True).click()
+
+
+@then('they should be redirected to the search page with query "{search_query}"')
+def external_user_redirected_to_search_page(context: Context, search_query: str) -> None:
+    current_url = context.page.url
+    parsed_url = urlparse(current_url)
+
+    assert parsed_url.path.rstrip("/").endswith("/search"), (
+        f"Expected URL path to end with '/search', got: '{parsed_url.path}'"
+    )
+
+    query_params = parse_qs(parsed_url.query)
+    actual_query = query_params.get("q", [None])[0]
+
+    assert actual_query == search_query, (
+        f"Expected query param 'q={search_query}', got 'q={actual_query}' in URL: {current_url}"
+    )
