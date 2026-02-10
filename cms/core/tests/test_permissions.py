@@ -225,7 +225,6 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
         for permission_type in [*WAGTAIL_PERMISSION_TYPES, "view"]:
             self.check_and_remove_from_user_permissions_helper("bundles", "bundle", permission_type)
 
-        self.check_and_remove_from_user_permissions_helper("navigation", "navigationsettings", "change")
         self.check_and_remove_from_user_permissions_helper("core", "socialmediasettings", "change")
         self.check_and_remove_from_user_permissions_helper("wagtailcore", "logentry", "view")
 
@@ -234,6 +233,13 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
         self.check_and_remove_from_user_permissions_helper("datasets", "datasets", "access_unpublished")
 
         self.check_and_remove_from_user_permissions_helper("wagtailadmin", "", "unlock_workflow_tasks")
+
+        self.check_and_remove_from_user_permissions_helper(
+            "simple_translation", "simpletranslation", "submit_translation"
+        )
+
+        # Publishing Admins should not have change_navigationsettings permission
+        self.assertFalse(self.user.has_perm("navigation.change_navigationsettings"))
 
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
@@ -284,6 +290,12 @@ class PublishingOfficerPermissionsTestCase(BaseGroupPermissionTestCase):
 
         self.check_and_remove_from_user_permissions_helper("datasets", "datasets", "access_unpublished")
 
+        # Publishing Officers should not have change_navigationsettings permission
+        self.assertFalse(self.user.has_perm("navigation.change_navigationsettings"))
+
+        # Publishing Officers should not have submit_translation permission
+        self.assertFalse(self.user.has_perm("simple_translation.submit_translation"))
+
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
 
@@ -331,6 +343,12 @@ class ViewerPermissionsTestCase(BaseGroupPermissionTestCase):
         self.check_and_remove_from_user_permissions_helper("wagtailadmin", "admin", "access")
 
         self.check_and_remove_from_user_permissions_helper("bundles", "bundle", "view")
+
+        # Viewers should not have change_navigationsettings permission
+        self.assertFalse(self.user.has_perm("navigation.change_navigationsettings"))
+
+        # Viewers should not have submit_translation permission
+        self.assertFalse(self.user.has_perm("simple_translation.submit_translation"))
 
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
