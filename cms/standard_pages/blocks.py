@@ -24,7 +24,13 @@ if TYPE_CHECKING:
 
 
 class CoreSectionContentBlock(StreamBlock):
-    """The core section content block definition."""
+    """StreamField content blocks for standard page sections.
+
+    This is a standard-pages-only variant of the core content blocks with a
+    deliberate, smaller number of options compared to the full set.
+    It keeps the essentials (text, panels, media, tables/equations, related links)
+    and excludes other datavis blocks that are not used by standard pages.
+    """
 
     rich_text = RichTextBlock()
     quote = QuoteBlock()
