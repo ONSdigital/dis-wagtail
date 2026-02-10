@@ -923,7 +923,6 @@ ONS_WEBSITE_SEARCH_PATH = env.get("ONS_WEBSITE_SEARCH_PATH", "/search")
 # Project information
 BUILD_TIME = datetime.datetime.fromtimestamp(int(env["BUILD_TIME"])) if env.get("BUILD_TIME") else None
 GIT_COMMIT = env.get("GIT_COMMIT") or None
-TAG = env.get("TAG") or None
 START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
