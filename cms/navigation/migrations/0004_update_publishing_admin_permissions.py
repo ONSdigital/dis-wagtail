@@ -21,8 +21,16 @@ def update_publishing_admin_permissions(apps, schema_editor):
     )
     publishing_admins.permissions.remove(change_nav_perm)
 
-    # Add submit_translation permission
-    submit_translation_perm = Permission.objects.get(codename="submit_translation")
+    # Add submit_translation permission - create if it doesn't exist
+    translation_ct, _ = ContentType.objects.get_or_create(
+        app_label="simple_translation",
+        model="simpletranslation",
+    )
+    submit_translation_perm, _ = Permission.objects.get_or_create(
+        content_type=translation_ct,
+        codename="submit_translation",
+        defaults={"name": "Can submit translations"},
+    )
     publishing_admins.permissions.add(submit_translation_perm)
 
 
@@ -50,7 +58,7 @@ def reverse_update_publishing_admin_permissions(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("navigation", "0003_footermenu_locale_footermenu_translation_key_and_more"),  # The previous migration
+        ("navigation", "0003_footermenu_locale_footermenu_translation_key_and_more"),
     ]
 
     operations = [
