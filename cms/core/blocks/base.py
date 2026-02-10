@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from django.forms.utils import ErrorList
-from django.utils.functional import cached_property
 from wagtail.blocks import (
     CharBlock,
     PageChooserBlock,
@@ -17,13 +16,15 @@ from cms.core.formatting_utils import get_document_metadata_date
 from cms.core.utils import get_content_type_for_page, get_related_content_type_label
 
 if TYPE_CHECKING:
+    from django.http import HttpRequest
+
     from cms.core.models import BasePage
 
 
 class LinkBlockStructValue(StructValue):
     """Custom StructValue for link blocks."""
 
-    def get_link(self, context: dict | None = None) -> dict[str, str | dict[str, Any]] | None:
+    def get_link(self, request: HttpRequest | None = None) -> dict[str, str | dict[str, Any]] | None:
         """A convenience property that returns the block value in a consistent way,
         regardless of the chosen values (be it a Wagtail page or external link).
         """
@@ -42,7 +43,7 @@ class LinkBlockStructValue(StructValue):
         if (page := self.get("page")) and page.live:
             page = page.specific_deferred
             value = {
-                "url": page.get_url(request=context.get("request") if context else None),
+                "url": page.get_url(request=request),
                 "text": title or getattr(page, "display_title", page.title),
             }
             if has_description:
@@ -77,7 +78,7 @@ class LinkBlockStructValue(StructValue):
 
         Ref: https://service-manual.ons.gov.uk/design-system/components/document-list
         """
-        if link := self.get_link(context=context):
+        if link := self.get_link(context.get("request") if context else None):
             related_link: dict[str, str | dict[str, str | dict[str, Any]]] = {
                 "title": {"text": link["text"], "url": link["url"]},
             }
@@ -128,10 +129,6 @@ class LinkBlockStructValue(StructValue):
             )
 
         return attributes
-
-    @cached_property
-    def link(self) -> dict | None:
-        return self.get_link()
 
 
 class LinkBlock(StructBlock):
