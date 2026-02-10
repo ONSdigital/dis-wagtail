@@ -23,6 +23,12 @@ from functional_tests.steps.page_editor import user_clicks_publish
 
 @given("a release calendar page exists")
 def a_release_calendar_page_exists(context: Context) -> Revision:
+    context.release_calendar_page = ReleaseCalendarPageFactory()
+    return context.release_calendar_page.save_revision()
+
+
+@given("a sample release calendar page exists")
+def a_sample_release_calendar_page_exists(context: Context) -> Revision:
     context.release_calendar_page = ReleaseCalendarPageFactory(
         title="My Release",
         release_date=datetime.datetime(year=2024, month=12, day=25, hour=9, minute=30),
@@ -44,6 +50,7 @@ def a_release_calendar_page_exists(context: Context) -> Revision:
 
 @given('a "{status_str}" published release calendar page exists')
 def a_published_release_calendar_page_exists(context: Context, status_str: str) -> None:
+    a_sample_release_calendar_page_exists(context)
     context.release_calendar_page.status = get_status_from_string(status_str)
     context.release_calendar_page.save_revision().publish()
 

@@ -54,7 +54,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
         | Cancelled   |
 
   Scenario Outline: A CMS user adds <Feature> to a release calendar page and verifies their display in the Published preview tab
-    Given a release calendar page exists
+    Given a sample release calendar page exists
     When the user edits the release calendar page
     And  the user adds <Feature> to the release calendar page
     And  the user opens the preview in a new tab, using the "Published" preview mode
