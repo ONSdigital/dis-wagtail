@@ -143,7 +143,6 @@ class ReadinessProbeTestCase(TestCase):
     },
     BUILD_TIME=datetime(2000, 1, 1).astimezone(UTC),
     GIT_COMMIT="commit",
-    TAG="1.2.3",
     START_TIME=datetime(2000, 1, 1).astimezone(UTC),
 )
 @time_machine.travel(datetime(2000, 1, 2), tick=False)
@@ -170,7 +169,6 @@ class HealthProbeTestCase(TestCase):
                 "git_commit": "commit",
                 "language": "python",
                 "language_version": platform.python_version(),
-                "version": "1.2.3",
             },
         )
 
