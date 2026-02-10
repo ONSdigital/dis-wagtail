@@ -135,35 +135,35 @@ msgstr "Troednodiadau"
 msgid "Data"
 msgstr "Data"
 
-#: cms/jinja2/templates/base.html:32
+#: cms/jinja2/templates/base.html:34
 msgid "Beta"
 msgstr "Beta"
 
-#: cms/jinja2/templates/base.html:33
+#: cms/jinja2/templates/base.html:35
 msgid "This is a new service."
 msgstr "Mae hwn yn wasanaeth newydd."
 
-#: cms/jinja2/templates/base.html:34
+#: cms/jinja2/templates/base.html:36
 msgid "Menu"
 msgstr "Dewislen"
 
-#: cms/jinja2/templates/base.html:35
+#: cms/jinja2/templates/base.html:37
 msgid "Main menu"
 msgstr "Prif ddewislen"
 
-#: cms/jinja2/templates/base.html:36
+#: cms/jinja2/templates/base.html:38
 msgid "Toggle main menu"
 msgstr "Togl y brif ddewislen"
 
-#: cms/jinja2/templates/base.html:37
+#: cms/jinja2/templates/base.html:39
 msgid "Breadcrumbs"
 msgstr "Briwsion bara"
 
-#: cms/jinja2/templates/base.html:39
+#: cms/jinja2/templates/base.html:41
 msgid "All content is available under the"
 msgstr "Mae’r holl gynnwys ar gael o dan y"
 
-#: cms/jinja2/templates/base.html:42
+#: cms/jinja2/templates/base.html:44
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
@@ -415,8 +415,8 @@ msgstr ""
 #: cms/jinja2/templates/pages/errors/500.html:7
 #, python-format
 msgid ""
-"If the web address is correct, or you selected a link or button, <a href="
-"\"%(contact_url)s\">contact us</a>."
+"If the web address is correct, or you selected a link or button, <a "
+"href=\"%(contact_url)s\">contact us</a>."
 msgstr ""
 "Os yw’r cyfeiriad gwe yn gywir, neu os ydych wedi dewis dolen neu botwm,<a "
 "href=\"%(contact_url)s\">cysylltwch â ni</a>."
@@ -428,11 +428,11 @@ msgstr "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth"
 #: cms/jinja2/templates/pages/errors/500.html:6
 #, python-format
 msgid ""
-"Our scheduled publications can also be found on our <a href=\"%(backup_url)s"
-"\">backup site</a>."
+"Our scheduled publications can also be found on our <a "
+"href=\"%(backup_url)s\">backup site</a>."
 msgstr ""
-"Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a href="
-"\"%(backup_url)s\">gwefan wrth gefn"
+"Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a "
+"href=\"%(backup_url)s\">gwefan wrth gefn"
 
 #: cms/jinja2/templates/pages/information_page.html:15
 msgid "Last updated:"
@@ -543,9 +543,9 @@ msgstr "Ynglyn â’r data"
 msgid ""
 "These are accredited official statistics. They have been independently "
 "reviewed by the Office for Statistics Regulation (OSR) and found to comply "
-"with the standards of trustworthiness, quality and value in the <a href="
-"\"https://code.statisticsauthority.gov.uk/the-code/\">Code of Practice for "
-"Statistics</a>. This broadly means that the statistics:"
+"with the standards of trustworthiness, quality and value in the <a "
+"href=\"https://code.statisticsauthority.gov.uk/the-code/\">Code of Practice "
+"for Statistics</a>. This broadly means that the statistics:"
 msgstr ""
 "Mae’r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnolgan y "
 "Swyddfa Rheoleiddio Ystadegau (OSR) ac a ganfuwyd ei fod yn cydymffurfio "
