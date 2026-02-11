@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from playwright.sync_api import Page as PlaywrightPage
 
 
-def create_information_page(context: Context, extended=True) -> None:
+def create_information_page(context: Context) -> None:
     home_page = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
     content = [
         {"type": "rich_text", "value": "<p>Some example rich text content</p>"},
@@ -34,20 +34,32 @@ def create_information_page(context: Context, extended=True) -> None:
             ],
         },
     ]
-    if extended:
-        content.append({"type": "equation", "value": {"equation": "$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$"}})
 
-    context.information_page = InformationPageFactory(
-        title="Test Info Page",
-        summary="<p>My test information page</p>",
-        last_updated="2024-01-01",
-        content=content,
-    )
+    kwargs = {
+        "title": "Test Info Page",
+        "summary": "<p>My test information page</p>",
+        "content": [{"type": "section", "value": {"content": content, "title": "Section 1"}}],
+    }
+    if index_page := get_page_from_context(context, "index"):
+        kwargs["parent"] = index_page
+
+    context.information_page = InformationPageFactory(**kwargs)
+
+
+@step("a index page exists")
+def an_index_page_exists(context: Context) -> None:
+    context.index_page = IndexPageFactory()
+
+
+@step("a published index page exists")
+def a_published_index_page_exists(context: Context) -> None:
+    context.index_page = IndexPageFactory()
+    context.index_page.save_revision().publish()
 
 
 @step("an information page exists")
 def an_information_page_exists(context: Context) -> None:
-    create_information_page(context, extended=False)
+    create_information_page(context)
 
 
 @step("a published information page exists")
@@ -75,22 +87,24 @@ def a_published_information_page_translation_exists(context: Context) -> None:
     context.welsh_information_page.title = "Tudalen Gwybodaeth Profi"
     context.welsh_information_page.summary = "<p>Tudalen wybodaeth fy mhrawf<p>"
     context.welsh_information_page.content = [
-        {"type": "rich_text", "value": "<p>Rhywfaint o gynnwys testun enghreifftiol</p>"},
         {
-            "type": "related_links",
-            "value": [
-                {"page": home_page.pk, "title": "Test Home", "description": "Ein tudalen gartref prawf"},
-                {
-                    "page": home_page.pk,
-                },
-            ],
-        },
-        {
-            "type": "equation",
+            "type": "section",
             "value": {
-                "equation": "$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$",
+                "title": "Section 1",
+                "content": [
+                    {"type": "rich_text", "value": "<p>Rhywfaint o gynnwys testun enghreifftiol</p>"},
+                    {
+                        "type": "related_links",
+                        "value": [
+                            {"page": home_page.pk, "title": "Test Home", "description": "Ein tudalen gartref prawf"},
+                            {
+                                "page": home_page.pk,
+                            },
+                        ],
+                    },
+                ],
             },
-        },
+        }
     ]
 
     context.welsh_information_page.save_revision().publish()
@@ -102,8 +116,7 @@ def _get_information_page(context: Context) -> InformationPage:
     Expects either context.information_page to be set directly,
     or context.page_title to perform a lookup (and cache the result).
     """
-    info_page = get_page_from_context(context, "information")
-    if info_page:
+    if info_page := get_page_from_context(context, "information"):
         return info_page
 
     if hasattr(context, "page_title"):
@@ -132,43 +145,16 @@ def _assert_information_pages_in_order(context: Context, expected_titles: list[s
     )
 
 
-@step("the user creates an information page as a child of the index page")
+@step("the user goes to add an information page as a child of the index page")
 def user_creates_information_page(context: Context) -> None:
-    context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Edit 'Home'").first.click()
-    context.page.get_by_role("button", name="Actions", exact=True).click()
+    if not hasattr(context, "index_page"):
+        an_index_page_exists(context)
 
-    context.page.get_by_role("link", name="Add child page").click()
-    context.page.locator("a[href^='/admin/pages/add/standard_pages/indexpage/']").click()
-    context.page.get_by_role("textbox", name="Title*").fill("Index page 1")
-    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Index page summary")
-
-    context.page.wait_for_timeout(1000)
-
-    context.execute_steps("""
-        When the user clicks "Publish"
-    """)
-
-    context.page.get_by_role("button", name="More options for 'Index Page").click()
-    context.page.get_by_text("Add child page").click()
-
-
-@step("the user creates a draft information page as a child of the index page")
-def user_creates_draft_information_page(context: Context) -> None:
-    context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Edit 'Home'").first.click()
-    context.page.get_by_role("button", name="Actions", exact=True).click()
-
-    context.page.get_by_role("link", name="Add child page").click()
-    context.page.locator("a[href^='/admin/pages/add/standard_pages/indexpage/']").click()
-    context.page.get_by_role("textbox", name="Title*").fill("Index page 1")
-    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Index page summary")
-
-    context.page.wait_for_timeout(1000)
-    context.page.get_by_role("button", name="Save Draft").click()
-
-    context.page.get_by_role("button", name="Actions", exact=True).click()
-    context.page.get_by_role("link", name="Add child page").click()
+    add_url = reverse(
+        "wagtailadmin_pages:add",
+        args=("standard_pages", "informationpage", context.index_page.pk),
+    )
+    context.page.goto(f"{context.base_url}{add_url}")
 
 
 @step("the user adds content to the new information page")
@@ -184,16 +170,19 @@ def user_adds_info_page_contents(context: Context) -> None:
     context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Some example rich text content")
 
     context.page.get_by_role("button", name="Insert a block").nth(2).click()
-    context.page.get_by_text("Equation").click()
-    context.page.locator('[data-controller="wagtailmathjax"]').fill("$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$")
-    context.page.wait_for_timeout(5000)
-
-    context.page.get_by_role("button", name="Insert a block").nth(2).click()
     context.page.get_by_text("Related links").click()
     context.page.get_by_role("button", name="Choose a page").click()
     context.page.get_by_role("cell", name="Home English", exact=True).get_by_role("link").click()
     context.page.get_by_role("textbox", name="Title", exact=True).fill("Test Home")
     context.page.get_by_role("textbox", name="Description").fill("Our test home page")
+
+
+@step("the user adds an equation")
+def user_adds_equation(context: Context) -> None:
+    context.page.get_by_role("button", name="Insert a block").nth(2).click()
+    context.page.get_by_text("Equation", exact=True).click()
+    context.page.locator('[data-controller="wagtailmathjax"]').fill("$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$")
+    context.page.wait_for_timeout(5000)
 
 
 @when("the user updates the content of the information page")
@@ -210,7 +199,6 @@ def check_information_page_content(
     page_or_frame: PlaywrightPage | FrameLocator,
     information_page: InformationPage | None = None,
     default_language: bool = True,
-    extended: bool = True,
 ) -> None:
     expect(page_or_frame.get_by_role("heading", name="Test Info Page")).to_be_visible()
     expect(page_or_frame.get_by_text("My test information page")).to_be_visible()
@@ -227,12 +215,10 @@ def check_information_page_content(
             expect(page_or_frame.locator("dl")).to_contain_text(f"Diweddarwyd Diwethaf: {formatted_date}")
 
     if default_language:
-        expect(page_or_frame.get_by_role("heading", name="Related links")).to_be_visible()
         expect(page_or_frame.get_by_text("Our test home page")).to_be_visible()
         expect(page_or_frame.get_by_label("Sections in this page").get_by_role("heading")).to_contain_text("Contents")
         expect(page_or_frame.get_by_label("Sections in this page")).to_contain_text("Section 1")
     else:
-        expect(page_or_frame.get_by_role("heading", name="Dolenni cysylltiedig")).to_be_visible()
         expect(page_or_frame.get_by_label("Adrannau ar y dudalen hon").get_by_role("heading")).to_contain_text(
             "Cynnwys"
         )
@@ -240,9 +226,6 @@ def check_information_page_content(
 
     expect(page_or_frame.get_by_role("link", name="Test Home")).to_be_visible()
     expect(page_or_frame.get_by_text("Our test home page")).to_be_visible()
-
-    if extended:
-        expect(page_or_frame.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
 
 
 @then("the new information page with the added content is displayed")
@@ -257,9 +240,7 @@ def check_new_information_is_displayed_with_english_content(context: Context) ->
 
 @then("the published information page is displayed with basic English content")
 def check_new_information_is_displayed_with_basic_english_content(context: Context) -> None:
-    check_information_page_content(
-        context.page, information_page=context.information_page, default_language=True, extended=False
-    )
+    check_information_page_content(context.page, information_page=context.information_page, default_language=True)
 
 
 @then("the published information page is displayed with English content and Welsh livery")
@@ -272,7 +253,7 @@ def check_new_information_is_displayed_with_english_content_and_welsh_livery(
 @then("the information page preview contains the populated data")
 def the_information_page_preview_contains_the_data(context: Context) -> None:
     iframe = context.page.frame_locator("#w-preview-iframe")
-    check_information_page_content(iframe, extended=False)
+    check_information_page_content(iframe)
 
 
 @step('the date placeholder "{date_format}" is displayed in the "{textbox_text}" textbox')
@@ -336,6 +317,8 @@ def user_visits_index_page_preview(context: Context) -> None:
     preview_button = context.page.locator('button[aria-label="Toggle preview"]')
     preview_button.click()
 
+    context.page.wait_for_timeout(500)
+
     with context.page.expect_popup() as preview_tab:
         context.page.get_by_role("link", name="Preview in new tab").click()
     # closes context.page (admin page)
@@ -362,3 +345,8 @@ def preview_index_page_lists_live_and_draft_information_pages(context: Context) 
     )
 
     _assert_information_pages_in_order(context, expected_titles, "preview")
+
+
+@then("the equation is rendered")
+def the_equation_is_rendered(context: Context) -> None:
+    expect(context.page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()

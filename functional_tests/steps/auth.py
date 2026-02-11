@@ -6,6 +6,7 @@ from django.conf import settings
 from cms.auth.utils import get_auth_config
 from functional_tests.step_helpers.auth_utils import AuthenticationTestHelper
 from functional_tests.step_helpers.utils import require_request
+from functional_tests.steps.page_editor import click_the_given_button
 
 
 @given("the user is authenticated")
@@ -85,6 +86,7 @@ def step_refresh_page(context: Context) -> None:
 
 
 @when('the user clicks the "Log out" button in the Wagtail UI')
+@when("the user logs out from one tab")
 def step_click_logout(context: Context) -> None:
     """Trigger the logout flow."""
     context.page.locator("button.sidebar-footer__account").click()
@@ -115,14 +117,6 @@ def step_two_tabs(context: Context) -> None:
     page_2.goto(f"{context.base_url}/admin/")
 
     context.pages = [page_1, page_2]
-
-
-@when("the user logs out from one tab")
-def step_logout_one_tab(context: Context) -> None:
-    """Perform logout in Tab 1 by re-using the existing logout click."""
-    context.execute_steps("""
-        When the user clicks the "Log out" button in the Wagtail UI
-    """)
 
 
 @then("both tabs should remain logged in")
@@ -156,9 +150,7 @@ def step_session_not_initialised_in_iframe(context: Context) -> None:
         ),
     )
 
-    context.execute_steps("""
-        When the user clicks the "Save draft" button
-    """)
+    click_the_given_button(context, "Save draft")
 
     # small pause for any stray logs
     context.page.wait_for_timeout(1000)
