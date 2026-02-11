@@ -415,7 +415,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                             "event": "publish_page_failed",
                         },
                     )
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             # Log exception, but don't raise it so publishing can continue
             logger.exception("Page publish failed", extra={"bundle_id": bundle.pk, "page_id": page.pk})
             pages_publish_successful = False
