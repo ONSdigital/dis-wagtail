@@ -3,7 +3,6 @@ Feature: A general use information page
     Background:
         Given a superuser logs into the admin site
 
-    @smoke
     Scenario: A CMS user can create and publish an information page
         When the user creates an information page as a child of the index page
         And the user adds content to the new information page
