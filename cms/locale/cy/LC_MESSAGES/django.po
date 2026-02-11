@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-06 14:53+0000\n"
+"POT-Creation-Date: 2026-02-09 17:57+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -97,6 +97,18 @@ msgstr "Cyfres amser"
 #: cms/topics/models.py:146
 msgid "Topic"
 msgstr "Pwnc"
+
+#: cms/core/enums.py:13
+msgid "Information"
+msgstr ""
+
+#: cms/core/enums.py:14
+msgid "Report"
+msgstr ""
+
+#: cms/core/enums.py:15
+msgid "Webpage"
+msgstr ""
 
 #: cms/core/formatting_utils.py:56
 msgid "Page"
@@ -422,14 +434,23 @@ msgstr ""
 "Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a "
 "href=\"%(backup_url)s\">gwefan wrth gefn"
 
-#: cms/jinja2/templates/pages/information_page.html:9
-msgid "Last updated"
-msgstr "Diweddarwyd Diwethaf"
+#: cms/jinja2/templates/pages/information_page.html:15
+msgid "Last updated:"
+msgstr "Diweddarwyd Diwethaf:"
 
 #: cms/jinja2/templates/pages/information_page.html:56
-#: cms/jinja2/templates/pages/information_page.html:57
-msgid "Related content"
-msgstr "Cynnwys cysylltiedig"
+#: cms/jinja2/templates/pages/methodology_page.html:91
+#: cms/jinja2/templates/pages/statistical_article_page.html:210
+#: cms/jinja2/templates/pages/topic_page.html:46
+msgid "Contents"
+msgstr "Cynnwys"
+
+#: cms/jinja2/templates/pages/information_page.html:56
+#: cms/jinja2/templates/pages/methodology_page.html:91
+#: cms/jinja2/templates/pages/statistical_article_page.html:210
+#: cms/jinja2/templates/pages/topic_page.html:46
+msgid "Sections in this page"
+msgstr "Adrannau ar y dudalen hon"
 
 #: cms/jinja2/templates/pages/login_page.html:10
 #: cms/jinja2/templates/pages/login_page.html:15
@@ -450,24 +471,17 @@ msgstr "Cyhoeddwyd"
 msgid "Contact:"
 msgstr "Cyswllt"
 
-#: cms/jinja2/templates/pages/methodology_page.html:90
-#: cms/jinja2/templates/pages/statistical_article_page.html:209
-#: cms/jinja2/templates/pages/topic_page.html:46
-msgid "Contents"
-msgstr "Cynnwys"
-
-#: cms/jinja2/templates/pages/methodology_page.html:90
-#: cms/jinja2/templates/pages/statistical_article_page.html:209
-#: cms/jinja2/templates/pages/topic_page.html:46
-msgid "Sections in this page"
+#: cms/jinja2/templates/pages/methodology_page.html:12
+#: cms/jinja2/templates/pages/statistical_article_page.html:16
+msgid "Save or print this page"
 msgstr "Adrannau ar y dudalen hon"
 
-#: cms/jinja2/templates/pages/methodology_page.html:112
+#: cms/jinja2/templates/pages/methodology_page.html:113
 #: cms/methodology/models.py:188
 msgid "Cite this methodology"
 msgstr "Dyfynnwch y fethodoleg hon"
 
-#: cms/jinja2/templates/pages/methodology_page.html:118
+#: cms/jinja2/templates/pages/methodology_page.html:119
 #, python-format
 msgid ""
 "Office for National Statistics (ONS), last revised "
@@ -487,7 +501,7 @@ msgstr "Rhyddhau"
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:6
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:12
 #: cms/jinja2/templates/pages/statistical_article_page.html:13
-#: cms/jinja2/templates/pages/statistical_article_page.html:19
+#: cms/jinja2/templates/pages/statistical_article_page.html:20
 msgid "Release date:"
 msgstr "Dyddiad rhyddhau"
 
@@ -579,7 +593,7 @@ msgid "Statistical articles"
 msgstr "Erthyglau ystadegol"
 
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:45
-#: cms/jinja2/templates/pages/statistical_article_page.html:29
+#: cms/jinja2/templates/pages/statistical_article_page.html:30
 msgid "Latest release"
 msgstr "Cyhoeddiad nesaf"
 
@@ -592,77 +606,77 @@ msgid "Related data"
 msgstr "Dyddiad y datganiad"
 
 #: cms/jinja2/templates/pages/statistical_article_page.html:12
-#: cms/jinja2/templates/pages/statistical_article_page.html:18
+#: cms/jinja2/templates/pages/statistical_article_page.html:19
 msgid "Statistical article"
 msgstr "Erthygl ystadegol"
 
 #: cms/jinja2/templates/pages/statistical_article_page.html:14
-#: cms/jinja2/templates/pages/statistical_article_page.html:20
+#: cms/jinja2/templates/pages/statistical_article_page.html:21
 msgid "Next release:"
 msgstr "Cyhoeddiad nesaf"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:24
+#: cms/jinja2/templates/pages/statistical_article_page.html:25
 msgid "This version has been amended since publication"
 msgstr "Mae’r fersiwn hon wedi’i diwygio ers ei chyhoeddi"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:25
+#: cms/jinja2/templates/pages/statistical_article_page.html:26
 msgid "View amended version"
 msgstr "Gweld y fersiwn ddiwygiedig"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:30
+#: cms/jinja2/templates/pages/statistical_article_page.html:31
 msgid "View previous releases"
 msgstr "Gweld datganiadau blaenorol"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:35
+#: cms/jinja2/templates/pages/statistical_article_page.html:36
 msgid "Not the latest release"
 msgstr "Nid y datganiad diweddaraf"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:36
+#: cms/jinja2/templates/pages/statistical_article_page.html:37
 msgid "View latest release"
 msgstr "Gweld y datganiad diweddaraf"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:70
+#: cms/jinja2/templates/pages/statistical_article_page.html:71
 msgid "To be announced"
 msgstr "I’w gyhoeddi"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:139
+#: cms/jinja2/templates/pages/statistical_article_page.html:140
 msgid "Show detail"
 msgstr "Dangos manylion"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:140
+#: cms/jinja2/templates/pages/statistical_article_page.html:141
 msgid "Hide detail"
 msgstr "Cuddio manylion"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:142
+#: cms/jinja2/templates/pages/statistical_article_page.html:143
 msgid "Corrections and notices"
 msgstr "Cywiriadau a hysbysiadau"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:144
+#: cms/jinja2/templates/pages/statistical_article_page.html:145
 msgid "Notices"
 msgstr "Hysbysiadau"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:146
+#: cms/jinja2/templates/pages/statistical_article_page.html:147
 msgid "Corrections"
 msgstr "Cywiriadau"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:164
+#: cms/jinja2/templates/pages/statistical_article_page.html:165
 #: cms/jinja2/templates/pages/topic_page.html:31
 msgid "Headline facts and figures"
 msgstr "Y prif ffeithiau a ffigurau"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:189
+#: cms/jinja2/templates/pages/statistical_article_page.html:190
 msgid "Explore Data"
 msgstr "Archwilio Data"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:190
+#: cms/jinja2/templates/pages/statistical_article_page.html:191
 msgid "View data used in this article"
 msgstr "Gweld y data a ddefnyddir yn yr erthygl hon"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:231
+#: cms/jinja2/templates/pages/statistical_article_page.html:232
 msgid "Cite this analysis"
 msgstr "Dyfynnwch y dadansoddiad hwn"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:236
+#: cms/jinja2/templates/pages/statistical_article_page.html:237
 #, python-format
 msgid ""
 "Office for National Statistics (ONS), released %(release_date)s, ONS "

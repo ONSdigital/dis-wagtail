@@ -9,7 +9,7 @@ from wagtail.models import Locale
 
 from cms.themes.models import ThemeIndexPage
 from cms.themes.tests.factories import ThemeIndexPageFactory
-from functional_tests.step_helpers.utils import get_page_from_context
+from functional_tests.step_helpers.utils import get_or_create_topic, get_page_from_context
 
 RE_UNLOCKED = re.compile(r"Page '.*' is now unlocked\.")
 RE_CREATED = re.compile(r"Page '.*' created\.")
@@ -295,6 +295,23 @@ def user_cannot_modify_page(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Unpublish")).not_to_be_visible()
     context.page.get_by_role("button", name="Status").click()
     expect(context.page.get_by_role("link", name="Change privacy")).not_to_be_visible()
+
+
+@step("the following taxonomy topics exist:")
+def create_topics_from_table(context: Context) -> None:
+    """Create taxonomy topics from a table of topic names."""
+    if not hasattr(context, "topic_cache"):
+        context.topic_cache = {}
+
+    context.topics = {}
+
+    for row in context.table:
+        topic_name = row.get("topic")
+        if not topic_name:
+            raise ValueError("Topic table must include a 'topic' column")
+
+        topic = get_or_create_topic(topic_name, context.topic_cache)
+        context.topics[topic_name] = topic
 
 
 @then("the published {page_str} page is displayed")
