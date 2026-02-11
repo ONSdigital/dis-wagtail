@@ -103,14 +103,14 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
         for use with the Design system Document list component.
         """
         if self.featured_items:
-            return self._get_formatted_featured_items()
+            return self._get_formatted_featured_items(request)
         return self._get_formatted_child_pages(request)
 
-    def _get_formatted_featured_items(self) -> list[dict[str, str | dict[str, str]]]:
+    def _get_formatted_featured_items(self, request: HttpRequest) -> list[dict[str, str | dict[str, str]]]:
         """Format items from self.featured_items."""
         formatted_items = []
         for featured_item in self.featured_items:
-            link = featured_item.value.link
+            link = featured_item.value.get_link(request)
             if link is None:
                 continue
 
@@ -144,25 +144,26 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
             )
         return formatted_items
 
-    def get_formatted_related_links_list(self) -> list[dict[str, str]]:
+    def get_formatted_related_links_list(self, request: HttpRequest) -> list[dict[str, str]]:
         """Returns a formatted list of related links for both external and internal pages
         for use with the Design System list component.
         """
-        formatted_links = [
-            {
-                "title": related_link.value.link.get("text"),
-                "url": related_link.value.link.get("url"),
-            }
-            for related_link in self.related_links
-        ]
-
+        formatted_links = []
+        for related_link in self.related_links:
+            link = related_link.value.get_link(request)
+            formatted_links.append(
+                {
+                    "title": link.get("text"),
+                    "url": link.get("url"),
+                }
+            )
         return formatted_links
 
     def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
         context: dict = super().get_context(request, *args, **kwargs)
 
         context["formatted_items"] = self.get_formatted_items(request)
-        context["related_links_list"] = self.get_formatted_related_links_list()
+        context["related_links_list"] = self.get_formatted_related_links_list(request)
 
         return context
 

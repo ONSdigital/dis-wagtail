@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from django.test import TestCase, override_settings
+from django.test import RequestFactory, TestCase, override_settings
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
@@ -22,6 +22,8 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         )
 
         cls.page_url = cls.index_page.url
+
+        cls.request_factory = RequestFactory()
 
     def test_no_featured_items_displayed_when_no_children_and_no_custom_featured_items_selected(self):
         """Test that the Featured Items block isn't displayed when the Index Page has no child pages
@@ -135,7 +137,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
 
         self.index_page.related_links = [{"type": "related_link", "value": {"page": internal_page.id}}]
 
-        formatted_related_links = self.index_page.get_formatted_related_links_list()
+        formatted_related_links = self.index_page.get_formatted_related_links_list(self.request_factory.get("/"))
 
         self.assertEqual(formatted_related_links, [{"title": internal_page.title, "url": internal_page.url}])
 
@@ -147,7 +149,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
             {"type": "related_link", "value": {"title": "An external page", "external_url": "external-url.com"}}
         ]
 
-        formatted_related_links = self.index_page.get_formatted_related_links_list()
+        formatted_related_links = self.index_page.get_formatted_related_links_list(self.request_factory.get("/"))
 
         self.assertEqual(formatted_related_links, [{"title": "An external page", "url": "external-url.com"}])
 
