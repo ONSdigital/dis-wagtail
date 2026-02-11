@@ -7,7 +7,7 @@ from cms.bundles.tests.utils import grant_all_page_permissions
 from cms.core.permission_testers import BasePagePermissionTester, StaticPagePermissionTester
 from cms.home.models import HomePage
 from cms.standard_pages.models import InformationPage
-from cms.standard_pages.tests.factories import InformationPageFactory
+from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.users.tests.factories import GroupFactory, UserFactory
 
 
@@ -20,6 +20,8 @@ class TestBasePagePermissionTester(TestCase):
         cls.publishing_admin.groups.add(cls.publishing_admin_group)
         cls.english_home_page = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
         cls.welsh_home_page = HomePage.objects.get(locale__language_code="cy")
+        cls.english_index_page = IndexPageFactory(parent=cls.english_home_page)
+        cls.welsh_index_page = IndexPageFactory(parent=cls.welsh_home_page)
 
     def test_can_add_subpage_english(self):
         tester = BasePagePermissionTester(user=self.publishing_admin, page=self.english_home_page)
@@ -31,13 +33,13 @@ class TestBasePagePermissionTester(TestCase):
         self.assertFalse(tester.can_add_subpage())
 
     def test_can_copy_english(self):
-        english_info_page = InformationPageFactory(parent=self.english_home_page)
+        english_info_page = InformationPageFactory(parent=self.english_index_page)
         tester = BasePagePermissionTester(user=self.publishing_admin, page=english_info_page)
         self.assertTrue(tester.can_copy())
 
     def test_can_copy_welsh(self):
         """Test that can_copy returns False for a Welsh page."""
-        welsh_info_page = InformationPageFactory(parent=self.welsh_home_page)
+        welsh_info_page = InformationPageFactory(parent=self.welsh_index_page)
         tester = BasePagePermissionTester(user=self.publishing_admin, page=welsh_info_page)
         self.assertFalse(tester.can_copy())
 
@@ -46,6 +48,10 @@ class TestCustomPagePermissions(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.permission_denied_message = "Sorry, you do not have permission to access this area."
+        cls.english_home_page = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
+        cls.welsh_home_page = HomePage.objects.get(locale__language_code="cy")
+        cls.english_index_page = IndexPageFactory(parent=cls.english_home_page)
+        cls.welsh_index_page = IndexPageFactory(parent=cls.welsh_home_page)
 
     def setUp(self):
         self.login()
@@ -53,9 +59,9 @@ class TestCustomPagePermissions(WagtailTestUtils, TestCase):
     def test_user_cannot_add_welsh_topic_page_first(self):
         # Creating an information page in Welsh should be forbidden
         # Should only be possible through translating an English page
-        welsh_home_page_pk = HomePage.objects.get(locale__language_code="cy").pk
+        welsh_index_page_pk = self.welsh_index_page.pk
         response = self.client.get(
-            reverse("wagtailadmin_pages:add", args=("standard_pages", "informationpage", welsh_home_page_pk)),
+            reverse("wagtailadmin_pages:add", args=("standard_pages", "informationpage", welsh_index_page_pk)),
             follow=True,
         )
 
@@ -64,9 +70,9 @@ class TestCustomPagePermissions(WagtailTestUtils, TestCase):
 
     def test_user_can_add_english_topic_page_first(self):
         # Creating an English information page should be allowed
-        home_page_pk = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE).pk
+        index_page_pk = self.english_index_page.pk
         response = self.client.get(
-            reverse("wagtailadmin_pages:add", args=("standard_pages", "informationpage", home_page_pk)),
+            reverse("wagtailadmin_pages:add", args=("standard_pages", "informationpage", index_page_pk)),
             follow=True,
         )
 
@@ -75,7 +81,7 @@ class TestCustomPagePermissions(WagtailTestUtils, TestCase):
 
     def test_user_cannot_copy_welsh_page(self):
         welsh_info_page = InformationPageFactory(
-            parent=HomePage.objects.get(locale__language_code="cy"),
+            parent=self.welsh_index_page,
         )
         new_slug = welsh_info_page.slug + "-copy"
         response = self.client.post(
@@ -95,7 +101,7 @@ class TestCustomPagePermissions(WagtailTestUtils, TestCase):
 
     def test_user_can_copy_english_page(self):
         english_info_page = InformationPageFactory(
-            parent=HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE),
+            parent=self.english_index_page,
         )
         new_slug = english_info_page.slug + "-copy"
         new_title = english_info_page.title + " Copy"

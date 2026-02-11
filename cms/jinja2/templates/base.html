@@ -28,6 +28,8 @@
 
 {% set footer_menu = footer_menu | default(navigation_settings.footer_menu.localized) %}
 
+{%- set search_action = ONS_WEBSITE_SEARCH_PATH -%}
+
 {#- We set variables for text so that it gets picked up by makemessages -#}
 {%- set badge_label = _("Beta") -%}
 {%- set badge_html = _("This is a new service.") -%}
@@ -64,7 +66,14 @@
             },
             "keyLinks": main_menu_highlights(main_menu),
             "columns": main_menu_columns(main_menu)
-        }
+        },
+        "search": {
+            "id": "search",
+            "form": {
+                "action":  search_action,
+                "inputName": "q"
+            },
+        },
     },
     "footer": {
         "cols": footer_menu_columns(footer_menu),
@@ -160,7 +169,8 @@
             "title": pageConfig.header.title | default(pageConfig.title),
             "description": pageConfig.header.description,
             "titleAsH1": pageConfig.header.titleAsH1,
-            "titleLogo": pageConfig.header.titleLogo
+            "titleLogo": pageConfig.header.titleLogo,
+            "search": pageConfig.header.search
         })
     }}
 {# fmt:on #}
