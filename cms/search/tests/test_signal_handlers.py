@@ -212,15 +212,20 @@ class SearchSignalsTest(TestCase):
             sender=Page, instance=topic_page, url_path_before=url_path_before, url_path_after=topic_page.url_path
         )
 
-        # Expect only the article page to have search update events published, topic and series pages are excluded
-        self.mock_publisher.publish_created_or_updated.assert_called_once_with(
-            article_page,
-            old_url_path=build_old_descendant_path(
-                parent_page=topic_page,
-                descendant_page=article_page,
-                parent_path_before=url_path_before,
-                parent_path_after=topic_page.url_path,
-            ),
+        # Expect the topic and article page to have search update events published, the series pages are excluded
+        self.mock_publisher.publish_created_or_updated.assert_has_calls(
+            [call(topic_page, old_url_path=url_path_before)],
+            [
+                call(
+                    article_page,
+                    old_url_path=build_old_descendant_path(
+                        parent_page=topic_page,
+                        descendant_page=article_page,
+                        parent_path_before=url_path_before,
+                        parent_path_after=topic_page.url_path,
+                    ),
+                )
+            ],
         )
 
     def test_on_page_slug_changed(self):
@@ -280,7 +285,7 @@ class SearchSignalsTest(TestCase):
         """Changing the slug of a page should trigger publish_created_or_updated for descendants
         if they are not excluded.
         """
-        parent_page = TopicPageFactory(slug="old-slug")  # An excluded parent page
+        parent_page = TopicPageFactory(slug="old-slug")
         descendant_page = ArticleSeriesPageFactory(parent=parent_page)
         parent_page.save_revision().publish()
         parent_page.slug = "new-slug"
@@ -293,8 +298,10 @@ class SearchSignalsTest(TestCase):
         self.mock_publisher.publish_created_or_updated.reset_mock()
         page_slug_changed.send(sender=type(parent_page), instance=parent_page, instance_before=parent_page_before)
 
-        # The only descendant page is excluded, so no search update events should be published
-        self.mock_publisher.publish_created_or_updated.assert_not_called()
+        # The only descendant page is excluded, so only the parent page should have a search update event published
+        self.mock_publisher.publish_created_or_updated.assert_has_calls(
+            [call(parent_page, old_url_path=parent_page_before.url_path)]
+        )
 
     def test_on_page_slug_changed_draft_descendant(self):
         """Changing the slug of a page should trigger publish_created_or_updated for descendants
