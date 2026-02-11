@@ -48,7 +48,12 @@ class AddToBundleView(FormView):
         if url_has_allowed_host_and_scheme(url=redirect_to, allowed_hosts={self.request.get_host()}):
             self.goto_next = redirect_to
 
-        if self.page_to_add.go_live_at or self.page_to_add.expire_at:  # type: ignore[attr-defined]
+        if (
+            self.page_to_add.go_live_at  # type: ignore[attr-defined]
+            or self.page_to_add.expire_at  # type: ignore[attr-defined]
+            or self.page_to_add.latest_revision.content.get("go_live_at") is not None  # type: ignore[attr-defined]
+            or self.page_to_add.latest_revision.content.get("expire_at") is not None  # type: ignore[attr-defined]
+        ):
             admin_display_title = self.page_to_add.get_admin_display_title()  # type: ignore[attr-defined]
             messages.warning(
                 request, f"Page '{admin_display_title}' cannot be bundled because it has a page-level schedule."
