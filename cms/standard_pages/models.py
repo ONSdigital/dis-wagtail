@@ -51,7 +51,7 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
     def cached_analytics_values(self) -> dict[str, str | bool]:
         values = super().cached_analytics_values
         if self.last_published_at:
-            values["lastUpdatedDate"] = format_date_for_gtm(self.last_published_at.date())
+            values["lastUpdatedDate"] = format_date_for_gtm(self.last_published_at)
         return values
 
     @cached_property
@@ -74,7 +74,10 @@ class InformationPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
 class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
 
-    page_description = "Use this page as a help landing page that lists help pages"
+    page_description = (
+        "An index page that serves as a landing hub, listing and signposting users to related pages "
+        "within a section, e.g. pages like /help."
+    )
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]

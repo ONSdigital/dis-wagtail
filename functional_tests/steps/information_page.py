@@ -1,5 +1,5 @@
 # pylint: disable=not-callable
-from behave import given, step, then, when
+from behave import step, then, when
 from behave.runner import Context
 from django.conf import settings
 from django.urls import reverse
@@ -57,19 +57,34 @@ def user_creates_information_page(context: Context) -> None:
     context.page.get_by_role("link", name="Add child page").click()
     context.page.locator("a[href^='/admin/pages/add/standard_pages/indexpage/']").click()
     context.page.get_by_role("textbox", name="Title*").fill("Index page 1")
-    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").click()
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Index page summary")
 
     context.page.wait_for_timeout(1000)
 
-    context.execute_steps(
-        """
+    context.execute_steps("""
         When the user clicks "Publish"
-        """
-    )
+    """)
 
     context.page.get_by_role("button", name="More options for 'Index Page").click()
     context.page.get_by_text("Add child page").click()
+
+
+@step("the user creates a draft information page as a child of the index page")
+def user_creates_draft_information_page(context: Context) -> None:
+    context.page.get_by_role("button", name="Pages").click()
+    context.page.get_by_role("link", name="Edit 'Home'").first.click()
+    context.page.get_by_role("button", name="Actions", exact=True).click()
+
+    context.page.get_by_role("link", name="Add child page").click()
+    context.page.locator("a[href^='/admin/pages/add/standard_pages/indexpage/']").click()
+    context.page.get_by_role("textbox", name="Title*").fill("Index page 1")
+    context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Index page summary")
+
+    context.page.wait_for_timeout(1000)
+    context.page.get_by_role("button", name="Save Draft").click()
+
+    context.page.get_by_role("button", name="Actions", exact=True).click()
+    context.page.get_by_role("link", name="Add child page").click()
 
 
 @step("the user adds content to the new information page")
@@ -179,11 +194,6 @@ def only_one_instance_of_topic_is_saved(context: Context) -> None:
     )
 
 
-@given("an index page exists under the homepage")
-def index_page_exists_under_homepage(context: Context) -> None:
-    context.index_page = IndexPageFactory(title="Index Page")
-
-
 @step("the index page has the following information pages:")
 def index_page_has_information_pages(context: Context) -> None:
     if not hasattr(context, "index_page"):
@@ -201,11 +211,6 @@ def index_page_has_information_pages(context: Context) -> None:
         live = str_to_bool(live_value)
 
         info_page = InformationPageFactory(parent=context.index_page, title=page_name, live=live)
-
-        if live and not info_page.live:
-            info_page.save_revision().publish()
-        elif not live and info_page.live:
-            info_page.unpublish()
 
         context.index_information_pages.append(info_page)
 
