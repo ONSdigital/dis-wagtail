@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
 
@@ -92,6 +92,14 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
                 tester = BasePagePermissionTester(user=user, page=self.information_page)
                 self.assertFalse(tester.can_publish())
                 self.assertFalse(tester.can_publish_subpage())
+
+    @override_settings(ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT=True)
+    def test_can_publish__allowed_for_editorial_users_when_override_setting_says_so(self):
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer]:
+            with self.subTest(f"{user=} can publish when page not ready to publish, outside of bundle"):
+                tester = BasePagePermissionTester(user=user, page=self.information_page)
+                self.assertTrue(tester.can_publish())
+                self.assertTrue(tester.can_publish_subpage())
 
 
 class TestCustomPagePermissions(WagtailTestUtils, TestCase):

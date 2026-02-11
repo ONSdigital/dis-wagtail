@@ -65,6 +65,10 @@ class BasePagePermissionTester(PagePermissionTester):
         - the page must not be in an active bundle
         - the page must be in the approved (i.e. in the "Ready to publish" workflow step)
         """
+        if getattr(settings, "ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT", False):
+            original_can_publish: bool = super().can_publish()
+            return original_can_publish
+
         if in_active_bundle(self.page):
             return False
 
@@ -83,6 +87,10 @@ class BasePagePermissionTester(PagePermissionTester):
         to be able to publish root itself. (Also, can_publish_subpage returns false if the page
         does not allow subpages at all.)
         """
+        if getattr(settings, "ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT", False):
+            original_can_publish_subpage: bool = super().can_publish_subpage()
+            return original_can_publish_subpage
+
         if in_active_bundle(self.page):
             return False
 
