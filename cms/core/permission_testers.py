@@ -31,7 +31,7 @@ class BasePagePermissionTester(PagePermissionTester):
             for page_model in specific_class.creatable_subpage_models()
             if page_model.can_create_at(self.page)
         ]
-        if specific_class is None or not creatable_subpage_models:
+        if not creatable_subpage_models:
             return False
         return self.user.is_superuser or ("add" in self.permissions)
 

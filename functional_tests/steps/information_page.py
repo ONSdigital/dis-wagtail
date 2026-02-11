@@ -11,8 +11,8 @@ from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import InformationPageFactory
 
 if TYPE_CHECKING:
-    from playwright._impl._locator import FrameLocator
-    from playwright._impl._page import Page as PlaywrightPage
+    from playwright.sync_api import FrameLocator
+    from playwright.sync_api import Page as PlaywrightPage
 
 
 def create_information_page(context: Context, extended=True) -> None:

@@ -50,7 +50,7 @@ Feature: CMS users can manage bundles
         And  the user opens the release calendar page chooser
         And  the user selects the existing release calendar page
         And  the user clicks "Save as draft"
-        When the user updates the selected release calendar page's title, release date and sets the status to "<New Status>"
+        And  the user updates the selected release calendar page's title, release date and sets the status to "<New Status>"
         And  returns to the bundle edit page
         Then the user sees the updated release calendar page's title, release date and the status "<New Status>"
 

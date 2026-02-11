@@ -12,7 +12,7 @@ NEXT_RELEASE_DATE = "#id_next_release_date"
 NEXT_RELEASE_DATE_TEXT = "#id_next_release_date_text"
 
 if TYPE_CHECKING:
-    from playwright._impl._page import Page as PlaywrightPage
+    from playwright.sync_api import Page as PlaywrightPage
 
 
 def fill_locator(page: PlaywrightPage, locator: str, text: str) -> None:

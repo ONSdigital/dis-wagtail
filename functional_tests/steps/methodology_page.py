@@ -107,8 +107,6 @@ def validation_error_displayed_when_incorrect_date_selected(context: Context) ->
 def mandatory_fields_raise_validation_error_when_not_set(context: Context) -> None:
     expect(context.page.get_by_text("The page could not be created due to validation errors")).to_be_visible()
 
-    # expect(context.page.get_by_text("This field is required")).to_be_visible()
-
     for locator in [
         "#panel-child-content-title-content .error-message",
         "#panel-child-content-summary-content .error-message",
