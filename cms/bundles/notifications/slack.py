@@ -83,7 +83,7 @@ def notify_slack_of_publication_start(bundle: Bundle, user: User | None = None, 
 
 
 def notify_slack_of_publish_end(
-    bundle: Bundle, elapsed: float, user: User | None = None, url: str | None = None
+    bundle: Bundle, elapsed: float, user: User | None = None, url: str | None = None, successful: bool = True
 ) -> None:
     """Sends a Slack notification for Bundle publication end."""
     if (webhook_url := settings.SLACK_NOTIFICATIONS_WEBHOOK_URL) is None:
@@ -94,7 +94,8 @@ def notify_slack_of_publish_end(
     fields = [
         {"title": "Title", "value": bundle.name, "short": True},
         {"title": "User", "value": user.get_full_name() if user else "System", "short": True},
-        {"title": "Pages", "value": bundle.get_bundled_pages().count(), "short": True},
+        {"title": "Total Pages", "value": bundle.get_bundled_pages().count(), "short": True},
+        {"title": "Published Pages", "value": bundle.get_bundled_pages().live().count(), "short": True},
         {"title": "Total time", "value": f"{elapsed:.3f} seconds"},
     ]
     if url:
@@ -104,7 +105,7 @@ def notify_slack_of_publish_end(
 
     response = client.send(
         text="Finished bundle publication",
-        attachments=[{"color": "good", "fields": fields}],
+        attachments=[{"color": "good" if successful else "danger", "fields": fields}],
         unfurl_links=False,
         unfurl_media=False,
     )

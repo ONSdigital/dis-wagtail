@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from functools import cache
 from typing import TYPE_CHECKING, Any, Literal, cast
 
+from django.db import transaction
 from django.urls import reverse
 from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
@@ -373,7 +374,7 @@ def update_bundle_linked_release_calendar_page(bundle: Bundle) -> None:
         revision.publish()
 
 
-def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
+def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     """Publishes a given bundle.
 
     This means it publishes the related pages, as well as updates the linked release calendar.
@@ -392,43 +393,71 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
     )
     start_time = time.time()
     notifications.notify_slack_of_publication_start(bundle, url=bundle.full_inspect_url)
-    for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision"):
-        if workflow_state := page.current_workflow_state:
-            # finish the workflow
-            workflow_state.current_task_state.approve()
-        elif page.latest_revision:
-            # just run publish
-            page.latest_revision.publish(log_action="wagtail.publish.scheduled")
-        else:
-            logger.error(
-                "Did not publish page as it is not in a workflow or has no revisions",
-                extra={
-                    "bundle_id": bundle.pk,
-                    "page_id": page.pk,
-                    "event": "publish_page_failed",
-                },
-            )
 
-    # update the related release calendar and publish
-    if bundle.release_calendar_page_id:
-        update_bundle_linked_release_calendar_page(bundle)
+    pages_publish_successful = True
 
-    if update_status:
-        bundle.status = BundleStatus.PUBLISHED
-        bundle.save()
+    for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision").not_live():
+        try:
+            # Durable ensures no other savepoint will roll back the publish
+            with transaction.atomic(durable=True):
+                if workflow_state := page.current_workflow_state:
+                    # finish the workflow
+                    workflow_state.current_task_state.approve()
+                elif page.latest_revision:
+                    # just run publish
+                    page.latest_revision.publish(log_action="wagtail.publish.scheduled")
+                else:
+                    logger.error(
+                        "Did not publish page as it is not in a workflow or has no revisions",
+                        extra={
+                            "bundle_id": bundle.pk,
+                            "page_id": page.pk,
+                            "event": "publish_page_failed",
+                        },
+                    )
+        except Exception:
+            # Log exception, but don't raise it so publishing can continue
+            logger.exception("Page publish failed", extra={"bundle_id": bundle.pk, "page_id": page.pk})
+            pages_publish_successful = False
+
+    if pages_publish_successful:
+        # update the related release calendar and publish
+        if bundle.release_calendar_page_id:
+            update_bundle_linked_release_calendar_page(bundle)
+
+        if update_status:
+            bundle.status = BundleStatus.PUBLISHED
+            bundle.save()
+
     publish_duration = time.time() - start_time
-    logger.info(
-        "Published bundle",
-        extra={
-            "bundle_id": bundle.pk,
-            "duration": round(publish_duration * 1000, 3),
-            "event": "published_bundle",
-        },
+
+    if pages_publish_successful:
+        logger.info(
+            "Published bundle",
+            extra={
+                "bundle_id": bundle.pk,
+                "duration": round(publish_duration * 1000, 3),
+                "event": "published_bundle",
+            },
+        )
+    else:
+        logger.error(
+            "Bundle publish failed",
+            extra={
+                "bundle_id": bundle.pk,
+                "duration": round(publish_duration * 1000, 3),
+                "event": "publish_failed",
+            },
+        )
+
+    notifications.notify_slack_of_publish_end(
+        bundle, publish_duration, url=bundle.full_inspect_url, successful=pages_publish_successful
     )
 
-    notifications.notify_slack_of_publish_end(bundle, publish_duration, url=bundle.full_inspect_url)
+    if pages_publish_successful:
+        log(action="wagtail.publish.scheduled", instance=bundle)
 
-    log(action="wagtail.publish.scheduled", instance=bundle)
+    return pages_publish_successful
 
 
 def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:

@@ -40,18 +40,15 @@ class Command(BaseCommand):
         )
 
     def _handle_bundle_action(self, bundle: Bundle) -> None:
-        try:
-            # Refresh the bundle immediately before publishing, in case it's changed.
-            bundle.refresh_from_db()
+        # Refresh the bundle immediately before publishing, in case it's changed.
+        bundle.refresh_from_db()
 
-            # Confirm the bundle is still approved
-            if bundle.status != BundleStatus.APPROVED:
-                logger.error("Bundle no longer approved", extra={"bundle_id": bundle.pk})
-                return
+        # Confirm the bundle is still approved
+        if bundle.status != BundleStatus.APPROVED:
+            logger.error("Bundle no longer approved", extra={"bundle_id": bundle.pk})
+            return
 
-            publish_bundle(bundle)
-        except Exception:  # pylint: disable=broad-exception-caught
-            logger.exception("Publish failed", extra={"bundle_id": bundle.pk, "event": "publish_failed"})
+        publish_bundle(bundle)
 
     @force_write_db()
     def handle(self, *args: Any, **options: Any) -> None:
