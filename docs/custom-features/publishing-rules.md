@@ -9,7 +9,6 @@ See `BasePagePermissionTester` in `cms/core/permission_testers.py`.
 Additionally, our workflows module tidies up the page action menu based on the stage of the workflow and the
 various conditions around it. See `cms/workflows/wagtail_hooks.py`
 
-
 ## Local development
 
 To bypass the workflow enforcement locally, set `ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT = True`
