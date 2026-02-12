@@ -16,7 +16,8 @@ Feature: A general use information page
         Given an information page exists
         When the user edits the information page
         And  the user adds an equation
-        And  the user opens the preview in a new tab
+        And  the user clicks the "Save draft" button
+        And  the user views the information page draft
         Then the equation is rendered
 
     Scenario: Rich text toolbar is pinned by default
