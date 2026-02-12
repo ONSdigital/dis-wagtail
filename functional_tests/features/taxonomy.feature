@@ -32,5 +32,5 @@ Feature: Users can tag pages with topics
     Scenario: Other page types, for example the information page, can be tagged with multiple topics
         Given a superuser logs into the admin site
         And two topics exist
-        When the user creates an information page as a child of the index page
+        When the user goes to add an information page as a child of the index page
         Then the user can tag the page with both topics in the taxonomy editor tab

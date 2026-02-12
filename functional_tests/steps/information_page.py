@@ -170,7 +170,7 @@ def user_adds_info_page_contents(context: Context) -> None:
     context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Some example rich text content")
 
     context.page.get_by_role("button", name="Insert a block").nth(2).click()
-    context.page.get_by_text("Related links").click()
+    context.page.get_by_text("Related links", exact=True).click()
     context.page.get_by_role("button", name="Choose a page").click()
     context.page.get_by_role("cell", name="Home English", exact=True).get_by_role("link").click()
     context.page.get_by_role("textbox", name="Title", exact=True).fill("Test Home")
@@ -204,7 +204,7 @@ def check_information_page_content(
     expect(page_or_frame.get_by_text("My test information page")).to_be_visible()
     expect(page_or_frame.locator("#section-1")).to_contain_text("Some example rich text content")
 
-    if information_page is not None:
+    if information_page is not None and information_page.last_published_at:
         language_code = settings.LANGUAGE_CODE if default_language else "cy"
         with translation.override(language_code):
             formatted_date = ons_date_format(information_page.last_published_at, "DATE_FORMAT")

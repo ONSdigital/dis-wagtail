@@ -46,9 +46,9 @@ def user_populates_the_information_page_with_welsh_content(context: Context) -> 
 
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Tudalen wybodaeth fy mhrawf")
     context.page.wait_for_timeout(50)  # added to allow JS to be ready
-    context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill(
-        "Rhywfaint o gynnwys testun enghreifftiol"
-    )
+    context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").filter(
+        has_text="Some example rich text content"
+    ).fill("Rhywfaint o gynnwys testun enghreifftiol")
     context.page.wait_for_timeout(500)  # ensure that the rich text content is picked up
 
 
