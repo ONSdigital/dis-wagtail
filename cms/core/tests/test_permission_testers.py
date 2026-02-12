@@ -1,7 +1,10 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.bundles.enums import BundleStatus
@@ -22,7 +25,7 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
         cls.publishing_officer = UserFactory(username="publishing_officer")
         cls.publishing_officer.groups.add(Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME))
         cls.superuser = cls.create_superuser(username="admin")
-        cls.user = UserFactory(access_admin=True)
+        cls.user = UserFactory(access_admin=True, username="non_editor")
 
         cls.english_home_page = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
         cls.welsh_home_page = HomePage.objects.get(locale__language_code="cy")
@@ -101,6 +104,32 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
                 tester = BasePagePermissionTester(user=user, page=self.english_index_page)
                 self.assertTrue(tester.can_publish())
                 self.assertTrue(tester.can_publish_subpage())
+
+    def test_can_unschedule(self):
+        go_live_at = timezone.now() + timedelta(minutes=1)
+        self.english_index_page.go_live_at = go_live_at
+        self.english_index_page.save_revision().publish()
+
+        self.assertTrue(self.english_index_page.approved_schedule)
+        self.assertEqual(self.english_index_page.latest_revision.approved_go_live_at, go_live_at)
+
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer]:
+            with self.subTest(f"{user=} can unschedule when page scheduled"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertTrue(tester.can_unschedule())
+
+    def test_cannot_unschedule__if_no_schedule(self):
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer, self.user]:
+            with self.subTest(f"{user=} cannot unschedule if no schedule"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertFalse(tester.can_unschedule())
+
+    def test_cannot_unschedule__if_in_bundle(self):
+        BundlePageFactory(parent=self.bundle, page=self.english_index_page)
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer, self.user]:
+            with self.subTest(f"{user=} cannot unschedule if page is in bundle"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertFalse(tester.can_unschedule())
 
 
 class TestCustomPagePermissions(WagtailTestUtils, TestCase):

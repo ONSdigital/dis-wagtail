@@ -1,4 +1,5 @@
 from django.conf import settings
+from wagtail.locks import ScheduledForPublishLock
 from wagtail.models import Page, PagePermissionTester
 
 from cms.bundles.utils import in_active_bundle
@@ -99,6 +100,16 @@ class BasePagePermissionTester(PagePermissionTester):
 
         can_publish_subpage: bool = super().can_publish_subpage()
         return can_publish_subpage
+
+    def can_unschedule(self) -> bool:
+        if not isinstance(self.page.get_lock(), ScheduledForPublishLock):
+            return False
+
+        if in_active_bundle(self.page):
+            return False
+
+        can_publish: bool = super().can_publish()
+        return can_publish
 
 
 class StaticPagePermissionTester(BasePagePermissionTester):
