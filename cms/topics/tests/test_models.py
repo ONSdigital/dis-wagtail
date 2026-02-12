@@ -14,6 +14,7 @@ from cms.articles.tests.factories import (
     ArticleSeriesPageFactory,
     StatisticalArticlePageFactory,
 )
+from cms.core.permission_testers import BasePagePermissionTester
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
@@ -60,6 +61,9 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         cls.another_methodology = MethodologyPageFactory(
             parent=cls.methodology.get_parent(), publication_date=datetime(2024, 11, 1)
         )
+
+    def test_permission_tester_inherits_from_basepagepermissiontester(self):
+        self.assertIsInstance(self.topic_page.permissions_for_user(self.superuser), BasePagePermissionTester)
 
     def test_topic_label(self):
         self.assertEqual(self.topic_page.label, "Topic")

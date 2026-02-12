@@ -5,12 +5,19 @@ Feature: Role Based Access Control Permission as defined in data migrations
         When a Publishing Admin logs into the admin site
         Then the user can see the Reports menu item
 
-    Scenario: A Publishing Admin can create and publish pages
-        When a Publishing Admin logs into the admin site
+    Scenario Outline: A <publishing user> can create but not publish pages directly
+        When a <publishing user> logs into the admin site
         Then the user can see the Pages menu item
-        And the user creates an information page as a child of the index page
+        When the user goes to add an information page as a child of the index page
         And the user can save a draft version of the page
-        And the user can publish a page
+        Then the user cannot publish the page
+
+    Examples:
+        | publishing user    |
+        | superuser          |
+        | Publishing Admin   |
+        | Publishing Officer |
+
 
     Scenario: A Publishing Admin can bulk delete pages
         Given a topic page exists under the homepage
@@ -19,7 +26,7 @@ Feature: Role Based Access Control Permission as defined in data migrations
         Then the user can bulk delete the topic page and its children
 
     Scenario: A Publishing Admin can lock and unlock a page
-        Given a statistical article exists 
+        Given a statistical article exists
         And a Publishing Admin logs into the admin site
         And the user can see the Pages menu item
         When the user edits the statistical article page
@@ -67,7 +74,7 @@ Feature: Role Based Access Control Permission as defined in data migrations
     Scenario: A Publishing Officer can create pages
         When a Publishing Officer logs into the admin site
         Then the user can see the Pages menu item
-        And the user creates a draft information page as a child of the index page
+        When the user goes to add an information page as a child of the index page
         And the user adds content to the new information page
         And the user can save a draft version of the page
 

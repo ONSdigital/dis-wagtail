@@ -50,8 +50,14 @@ class PagesWithDraftsMixin:
         - are not in another active bundle
         """
         pre_filter_q = Page.objects.type(*get_bundleable_page_types()).filter(
-            has_unpublished_changes=True, alias_of__isnull=True
+            has_unpublished_changes=True,
+            alias_of__isnull=True,  # not an alias
+            go_live_at__isnull=True,  # scheduled go-live draft
+            expire_at__isnull=True,  # scheduled expiry draft
+            latest_revision__content__go_live_at=None,  # live + scheduled go-live draft
+            latest_revision__content__expire_at=None,  # live + scheduled expiry draft
         )
+
         return (
             Page.objects.specific(defer=True)
             # using pk_in because the direct has_unpublished_changes and alias_of filter
