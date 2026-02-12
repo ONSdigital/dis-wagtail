@@ -6,6 +6,7 @@ import time
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import F
@@ -21,6 +22,7 @@ from wagtail.admin.views.generic import CreateView, DeleteView, EditView, IndexV
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.admin.widgets import HeaderButton, ListingButton
 from wagtail.log_actions import log
+from wagtail.models import Page
 
 from cms.bundles.action_menu import BundleActionMenu
 from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError, BundleAPIClientError404
@@ -33,6 +35,8 @@ from cms.bundles.notifications.slack import (
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 from cms.bundles.utils import get_data_admin_action_url, publish_bundle
 from cms.core.custom_date_format import ons_date_format
+from cms.datasets.models import Dataset
+from cms.teams.models import Team
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
@@ -40,11 +44,9 @@ if TYPE_CHECKING:
     from django.http import HttpResponseBase
     from django.template.response import TemplateResponse
     from django.utils.safestring import SafeString
-    from wagtail.models import Page
 
     from cms.bundles.forms import BundleAdminForm
     from cms.bundles.models import BundlesQuerySet
-    from cms.datasets.models import Dataset
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +135,7 @@ class BundleEditView(EditView):
     template_name = "bundles/wagtailadmin/edit.html"
     has_content_changes: bool = False
     start_time: float | None = None
+    audit_log_cooldown_seconds = 30
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         if (instance := self.get_object()) and instance.status == BundleStatus.PUBLISHED:
@@ -141,6 +144,8 @@ class BundleEditView(EditView):
         if request.method == "POST" and self.get_action(request) not in self.get_available_actions():
             # someone's trying to POST with an action that is not available, so bail out early
             raise PermissionDenied
+
+        self._log_bundle_view(request)
 
         response: HttpResponseBase = super().dispatch(request, *args, **kwargs)
         return response
@@ -191,6 +196,14 @@ class BundleEditView(EditView):
         return response
 
     def save_instance(self) -> Bundle:
+        # Capture before state for comparison
+        original_state = {
+            "teams": set(self.object.teams.values_list("team_id", flat=True)),
+            "pages": set(self.object.bundled_pages.values_list("page_id", flat=True)),
+            "datasets": set(self.object.bundled_datasets.values_list("dataset_id", flat=True)),
+            "pub_date": self.object.publication_date,
+        }
+
         instance: Bundle = self.form.save()
         self.has_content_changes = self.form.has_changed()
 
@@ -198,6 +211,9 @@ class BundleEditView(EditView):
             return instance
 
         log(action="wagtail.edit", instance=instance, content_changed=True, data={"fields": self.form.changed_data})
+
+        # Log content changes
+        self._log_content_changes(instance, original_state)
 
         if "status" not in self.form.changed_data:
             return instance
@@ -229,6 +245,103 @@ class BundleEditView(EditView):
         )
 
         return instance
+
+    def _log_bundle_view(self, request: HttpRequest) -> None:
+        """Log the bundle view with a cooldown to prevent duplicate entries."""
+        instance = self.get_object()
+
+        if not instance or not instance.pk:
+            return
+
+        cache_key = f"bundle_edit_log:{instance.pk}:{request.user.pk}"
+
+        if cache.get(cache_key):
+            return
+
+        log(action="bundles.edit_view", instance=instance)
+        cache.set(cache_key, True, timeout=self.audit_log_cooldown_seconds)
+
+    def _log_content_changes(self, instance: Bundle, original_state: dict[str, Any]) -> None:
+        """Log changes to bundle content (teams, pages, datasets, schedule)."""
+        self._log_team_changes(instance, original_state["teams"])
+        self._log_page_changes(instance, original_state["pages"])
+        self._log_dataset_changes(instance, original_state["datasets"])
+        self._log_schedule_changes(instance, original_state["pub_date"])
+
+    def _log_team_changes(self, instance: Bundle, original_teams: set[int]) -> None:
+        """Log team additions and removals."""
+        new_teams = set(instance.teams.values_list("team_id", flat=True))
+        added = new_teams - original_teams
+        removed = original_teams - new_teams
+
+        if not added and not removed:
+            return
+
+        # Fetch team names in bulk
+        added_teams = list(Team.objects.filter(id__in=added).values_list("name", flat=True)) if added else []
+        removed_teams = list(Team.objects.filter(id__in=removed).values_list("name", flat=True)) if removed else []
+
+        log(
+            action="bundles.teams_changed",
+            instance=instance,
+            data={
+                "added_teams": added_teams,
+                "removed_teams": removed_teams,
+            },
+        )
+
+    def _log_page_changes(self, instance: Bundle, original_pages: set[int]) -> None:
+        """Log page additions and removals."""
+        new_pages = set(instance.bundled_pages.values_list("page_id", flat=True))
+        added = new_pages - original_pages
+        removed = original_pages - new_pages
+
+        if not added and not removed:
+            return
+
+        # Fetch page titles in bulk
+        added_pages = list(Page.objects.filter(id__in=added).values_list("title", flat=True)) if added else []
+        removed_pages = list(Page.objects.filter(id__in=removed).values_list("title", flat=True)) if removed else []
+
+        log(
+            action="bundles.pages_changed",
+            instance=instance,
+            data={
+                "added_pages": added_pages,
+                "removed_pages": removed_pages,
+            },
+        )
+
+    def _log_dataset_changes(self, instance: Bundle, original_datasets: set[int]) -> None:
+        """Log dataset additions and removals."""
+        new_datasets = set(instance.bundled_datasets.values_list("dataset_id", flat=True))
+        added = new_datasets - original_datasets
+        removed = original_datasets - new_datasets
+
+        if not added and not removed:
+            return
+
+        # Fetch dataset titles in bulk
+        added_datasets = list(Dataset.objects.filter(id__in=added).values_list("title", flat=True)) if added else []
+        removed_datasets = (
+            list(Dataset.objects.filter(id__in=removed).values_list("title", flat=True)) if removed else []
+        )
+
+        log(
+            action="bundles.datasets_changed",
+            instance=instance,
+            data={
+                "added_datasets": added_datasets,
+                "removed_datasets": removed_datasets,
+            },
+        )
+
+    def _log_schedule_changes(self, instance: Bundle, original_pub_date: Any) -> None:
+        """Log publication date changes."""
+        if instance.publication_date != original_pub_date:
+            old_date = original_pub_date.strftime("%Y-%m-%d %H:%M") if original_pub_date else None
+            new_date = instance.publication_date.strftime("%Y-%m-%d %H:%M") if instance.publication_date else None
+            log(action="bundles.schedule_changed", instance=instance, data={"old": old_date, "new": new_date})
 
     def run_after_hook(self) -> HttpResponseBase | None:
         """This method allows calling hooks or additional logic after an action has been executed.
@@ -306,11 +419,25 @@ class BundleInspectView(InspectView):
     """The Bundle inspect view class."""
 
     template_name = "bundles/wagtailadmin/inspect.html"
+    audit_log_cooldown_seconds = 30
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
         if not user_can_preview_bundle(self.request.user, self.object):
             raise PermissionDenied
+
+        self._log_bundle_view(request)
+
         return super().dispatch(request, *args, **kwargs)  # type: ignore[no-any-return]
+
+    def _log_bundle_view(self, request: HttpRequest) -> None:
+        """Log the bundle view with a cooldown to prevent duplicate entries."""
+        cache_key = f"bundle_inspect_log:{self.object.pk}:{request.user.pk}"
+
+        if cache.get(cache_key):
+            return
+
+        log(action="bundles.inspect", instance=self.object)
+        cache.set(cache_key, True, timeout=self.audit_log_cooldown_seconds)
 
     @cached_property
     def can_manage(self) -> bool:
@@ -675,10 +802,6 @@ class BundleDeleteView(DeleteView):
 
         try:
             client.delete_bundle(instance.bundle_api_bundle_id)
-            logger.info(
-                "Deleted bundle from Bundle API",
-                extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id},
-            )
         except BundleAPIClientError404:
             logger.warning(
                 "Bundle not found in Bundle API when deleting CMS bundle",

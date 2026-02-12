@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, cast
 from django.db.models import QuerySet
 from django.urls import include, path
 from django.utils.functional import cached_property
+from django.utils.html import format_html, format_html_join
 from wagtail import hooks
 from wagtail.admin.ui.components import Component
 from wagtail.admin.ui.menus.pages import PageMenuItem
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.urls import URLPattern
     from django.urls.resolvers import URLResolver
+    from django.utils.safestring import SafeString
     from laces.typing import RenderContext
     from wagtail.log_actions import LogActionRegistry
     from wagtail.models import ModelLogEntry, Page
@@ -199,6 +201,64 @@ def add_latest_bundles_panel(request: HttpRequest, panels: list[Component]) -> N
     panels.append(BundlesInReviewPanel(request))
 
 
+def format_added_removed_items(added_items: list[str], removed_items: list[str], context: str | None = None) -> Any:
+    """Format added and removed items for audit log messages.
+
+    Args:
+        added_items: List of item names that were added
+        removed_items: List of item names that were removed
+        context: Optional context text to display before the list
+
+    Returns:
+        Formatted HTML string with added and removed items
+    """
+    parts: list[SafeString] = []
+
+    if context:
+        parts.append(format_html("{}", context))
+
+    if added_items:
+        items_html = format_html_join(", ", "<strong>{}</strong>", ((name,) for name in added_items))
+        parts.append(format_html("Added: {}", items_html))
+    if removed_items:
+        items_html = format_html_join(", ", "<strong>{}</strong>", ((name,) for name in removed_items))
+        parts.append(format_html("Removed: {}", items_html))
+
+    # Join parts with <br> using format_html to ensure safety
+    if not parts:
+        return ""
+
+    # Build the result by concatenating SafeStrings with <br> tags
+    result = parts[0]
+    for part in parts[1:]:
+        result = format_html("{}<br>{}", result, part)
+
+    return result
+
+
+def format_added_removed_message(
+    log_entry: ModelLogEntry, added_key: str, removed_key: str, context: str | None = None
+) -> Any:
+    """Format added and removed items for audit log messages.
+
+    Args:
+        log_entry: The log entry containing the data
+        added_key: The key in log_entry.data for added items
+        removed_key: The key in log_entry.data for removed items
+        context: Optional context text to display before the list
+    Returns:
+        Formatted string with added and removed items
+    """
+    try:
+        added_items = log_entry.data.get(added_key, [])
+        removed_items = log_entry.data.get(removed_key, [])
+        if not added_items and not removed_items:
+            return context or ""
+        return format_added_removed_items(added_items, removed_items, context=context)
+    except (KeyError, TypeError):
+        return context or ""
+
+
 @hooks.register("register_log_actions")
 def register_bundle_log_actions(actions: LogActionRegistry) -> None:
     """Registers custom logging actions.
@@ -206,6 +266,16 @@ def register_bundle_log_actions(actions: LogActionRegistry) -> None:
     @see https://docs.wagtail.org/en/stable/extending/audit_log.html
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-log-actions
     """
+
+    @actions.register_action("bundles.edit_view")
+    class EditBundleView(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for viewing the bundle editor."""
+
+        label = "View bundle editor"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            return "Viewed bundle editor"
 
     @actions.register_action("bundles.update_status")
     class ChangeBundleStatus(LogFormatter):  # pylint: disable=unused-variable
@@ -258,3 +328,72 @@ def register_bundle_log_actions(actions: LogActionRegistry) -> None:
                 return f"Attempted preview of {log_entry.data['type']} '{log_entry.data['title']}'."
             except KeyError:
                 return "Attempted to preview an item."
+
+    @actions.register_action("bundles.teams_changed")
+    class ChangeBundleTeams(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for preview team changes to bundles."""
+
+        label = "Change preview teams"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            return format_added_removed_message(
+                log_entry,
+                added_key="added_teams",
+                removed_key="removed_teams",
+                context="Changed preview teams for bundle",
+            )
+
+    @actions.register_action("bundles.pages_changed")
+    class ChangeBundlePages(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for page changes to bundles."""
+
+        label = "Change pages in bundle"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            return format_added_removed_message(
+                log_entry,
+                added_key="added_pages",
+                removed_key="removed_pages",
+                context="Changed pages in bundle",
+            )
+
+    @actions.register_action("bundles.datasets_changed")
+    class ChangeBundleDatasets(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for dataset changes to bundles."""
+
+        label = "Change datasets in bundle"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            return format_added_removed_message(
+                log_entry,
+                added_key="added_datasets",
+                removed_key="removed_datasets",
+                context="Changed datasets in bundle",
+            )
+
+    @actions.register_action("bundles.schedule_changed")
+    class ChangeBundleSchedule(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for bundle publication date changes."""
+
+        label = "Change bundle schedule"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            try:
+                old = log_entry.data.get("old", "Not set")
+                new = log_entry.data.get("new", "Not set")
+                return f"Changed publication date from '{old}' to '{new}'"
+            except KeyError:
+                return "Changed publication date"
+
+    @actions.register_action("bundles.inspect")
+    class InspectBundle(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for viewing the bundle inspect page."""
+
+        label = "View bundle details"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            return "Viewed bundle details"
