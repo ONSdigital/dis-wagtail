@@ -18,11 +18,11 @@ def create_footer_menu(context: Context) -> None:
     context.footer_menu = FooterMenuFactory()
 
 
-@step("the user creates a footer menu instance")
-def user_creates_footer_menu_instance(context: Context) -> None:
+@when("the user opens an existing footer menu for editing")
+def user_opens_existing_footer_menu(context: Context) -> None:
     context.page.get_by_role("link", name="Snippets").click()
     context.page.get_by_role("link", name="Footer menus").click()
-    context.page.get_by_role("link", name="Add footer menu").click()
+    context.page.get_by_role("link", name="Footer Menu (English)").click()
 
 
 @when("the user populates the footer menu with an internal link")
