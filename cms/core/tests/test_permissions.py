@@ -235,7 +235,7 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
         self.check_and_remove_from_user_permissions_helper("wagtailadmin", "", "unlock_workflow_tasks")
 
         self.check_and_remove_from_user_permissions_helper(
-            "simple_translation", "simpletranslation", "submit_translation"
+            "simple_translation", "", "submit_translation"
         )
 
         # Publishing Admins should not have change_navigationsettings permission
