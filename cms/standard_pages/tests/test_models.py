@@ -2,8 +2,10 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.core.permission_testers import BasePagePermissionTester
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
+from cms.users.tests.factories import UserFactory
 
 
 class IndexPageTestCase(WagtailTestUtils, TestCase):
@@ -17,6 +19,9 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         )
 
         cls.page_url = cls.index_page.url
+
+    def test_permission_tester_inherits_from_basepagepermissiontester(self):
+        self.assertIsInstance(self.index_page.permissions_for_user(UserFactory()), BasePagePermissionTester)
 
     def test_no_featured_items_displayed_when_no_children_and_no_custom_featured_items_selected(self):
         """Test that the Featured Items block isn't displayed when the Index Page has no child pages
@@ -81,6 +86,9 @@ class InformationPageTestCase(WagtailTestUtils, TestCase):
         cls.page = InformationPageFactory(title="Test Information Page")
 
         cls.page_url = cls.page.url
+
+    def test_permission_tester_inherits_from_basepagepermissiontester(self):
+        self.assertIsInstance(self.page.permissions_for_user(UserFactory()), BasePagePermissionTester)
 
     def test_page_loads(self):
         """Test that the Information Page loads correctly."""
