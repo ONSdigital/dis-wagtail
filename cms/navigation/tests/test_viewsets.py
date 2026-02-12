@@ -25,7 +25,6 @@ class MainMenuViewSetTestCase(WagtailTestUtils, TestCase):
     def test_main_menu_add_view_can_be_accessed_when_none_exists(self):
         """If no MainMenu exists, the user should be able to access the add view."""
         MainMenu.objects.all().delete()
-        self.assertEqual(MainMenu.objects.count(), 0, "No MainMenu should exist after cleanup.")
         response = self.client.get(self.add_url)
 
         self.assertEqual(
@@ -63,7 +62,6 @@ class FooterMenuViewSetTestCase(WagtailTestUtils, TestCase):
     def test_footer_menu_add_view_can_be_accessed_when_none_exist(self):
         """If FooterMenu does not exist, the user should be able to access the add view."""
         FooterMenu.objects.all().delete()
-        self.assertEqual(FooterMenu.objects.count(), 0, "No Footer Menu should exist yet.")
         response = self.client.get(self.add_url)
 
         self.assertEqual(
