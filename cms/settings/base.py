@@ -1054,3 +1054,6 @@ WAGTAILIMAGES_MAX_UPLOAD_SIZE = MAX_UPLOAD_SIZE
 DOCUMENTS_MAX_UPLOAD_SIZE = MAX_UPLOAD_SIZE
 
 WAGTAILDOCS_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "xml", "ppt", "pptx", "txt", "rtf", "csv"]
+
+
+WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_publish"
