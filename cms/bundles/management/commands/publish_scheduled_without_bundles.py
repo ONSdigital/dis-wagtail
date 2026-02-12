@@ -97,10 +97,10 @@ class Command(BaseCommand):
             model for model in apps.get_models() if issubclass(model, DraftStateMixin) and not issubclass(model, Page)
         ]
         for model in models:
-            yield from model.objects.filter(live=True, expire_at__lt=max_expire_at)
+            yield from model.objects.filter(live=True, expire_at__lte=max_expire_at)
 
     def _models_to_publish(self, max_approved_go_live_at: datetime) -> Iterable[Revision]:
-        preliminary_revs_for_publishing = Revision.objects.filter(approved_go_live_at__lt=max_approved_go_live_at)
+        preliminary_revs_for_publishing = Revision.objects.filter(approved_go_live_at__lte=max_approved_go_live_at)
         for rev in preliminary_revs_for_publishing:
             content_object = rev.as_object()
             if not isinstance(content_object, BundledPageMixin) or not content_object.in_active_bundle:
