@@ -16,20 +16,23 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class CoreDataDownloadMixin:
-    """Mixin providing data download functionality for pages with CoreStoryBlock content.
+class DataDownloadMixin:
+    """Mixin providing data download functionality for pages with section-based content.
 
-    Provides routable endpoints for downloading table data as CSV files.
-    Searches for blocks directly in the content stream.
+    Provides routable endpoints for downloading table and chart data as CSV files.
+    Searches for blocks within sections in the content stream.
 
     Requires:
-        - The page to have a `content` StreamField using CoreStoryBlock
+        - The page to have a `content` StreamField with sections (e.g., SectionStoryBlock or CoreStoryBlock)
         - The page to inherit from RoutablePageMixin (or a subclass like NoTrailingSlashRoutablePageMixin)
     """
 
     def _iter_content_blocks(self) -> Iterator[StreamChild]:
-        """Yields content blocks from the page. Override in subclasses for different structures."""
-        yield from getattr(self, "content", None) or []
+        """Yields content blocks from within sections."""
+        for section_block in getattr(self, "content", None) or []:
+            if section_block.block_type != "section":
+                continue
+            yield from section_block.value.get("content", [])
 
     def _get_block_in_types_by_id(self, block_types: frozenset[str], block_id: str) -> dict[str, Any]:
         """Find a block by its unique block ID for specified block types.
@@ -121,24 +124,6 @@ class CoreDataDownloadMixin:
         table_data = self.get_table(table_id)
         title = table_data.get("title") or table_data.get("caption") or "table"
         return create_data_csv_download_response_from_data(csv_data, title=title)
-
-
-class DataDownloadMixin(CoreDataDownloadMixin):
-    """Mixin providing data download functionality for pages with SectionStoryBlock content.
-
-    Extends CoreDataDownloadMixin to search for blocks within sections, and adds chart download support.
-
-    Requires:
-        - The page to have a `content` StreamField using SectionStoryBlock
-        - The page to inherit from RoutablePageMixin (or a subclass like NoTrailingSlashRoutablePageMixin)
-    """
-
-    def _iter_content_blocks(self) -> Iterator[StreamChild]:
-        """Yields content blocks from within sections."""
-        for section_block in getattr(self, "content", None) or []:
-            if section_block.block_type != "section":
-                continue
-            yield from section_block.value.get("content", [])
 
     def get_chart(self, chart_id: str) -> dict[str, Any]:
         """Finds a chart block by its unique block ID in content sections.

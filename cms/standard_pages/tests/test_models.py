@@ -3,8 +3,8 @@ from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.home.models import HomePage
 from cms.datavis.tests.factories import make_table_block_value
+from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 
 
@@ -169,15 +169,23 @@ class InformationPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
         """Test get_table returns the correct table from content."""
         self.page.content = [
             {
-                "type": "table",
-                "value": make_table_block_value(title="Test Table 1"),
-                "id": "test-table-id-1",
-            },
-            {
-                "type": "table",
-                "value": make_table_block_value(title="Test Table 2"),
-                "id": "test-table-id-2",
-            },
+                "type": "section",
+                "value": {
+                    "title": "Test Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(title="Test Table 1"),
+                            "id": "test-table-id-1",
+                        },
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(title="Test Table 2"),
+                            "id": "test-table-id-2",
+                        },
+                    ],
+                },
+            }
         ]
 
         table = self.page.get_table("test-table-id-1")
@@ -197,13 +205,21 @@ class InformationPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
         """Test get_table_data_for_csv flattens table data correctly."""
         self.page.content = [
             {
-                "type": "table",
-                "value": make_table_block_value(
-                    title="CSV Test Table",
-                    headers=[["Year", "Value"]],
-                    rows=[["2020", "100"], ["2021", "150"]],
-                ),
-                "id": "csv-table-id",
+                "type": "section",
+                "value": {
+                    "title": "CSV Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="CSV Test Table",
+                                headers=[["Year", "Value"]],
+                                rows=[["2020", "100"], ["2021", "150"]],
+                            ),
+                            "id": "csv-table-id",
+                        }
+                    ],
+                },
             }
         ]
 
@@ -227,13 +243,21 @@ class InformationPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
         """Test download_table returns a CSV response."""
         self.page.content = [
             {
-                "type": "table",
-                "value": make_table_block_value(
-                    title="Download Test Table",
-                    headers=[["Col1", "Col2"]],
-                    rows=[["A", "B"]],
-                ),
-                "id": "download-table-id",
+                "type": "section",
+                "value": {
+                    "title": "Download Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="Download Test Table",
+                                headers=[["Col1", "Col2"]],
+                                rows=[["A", "B"]],
+                            ),
+                            "id": "download-table-id",
+                        }
+                    ],
+                },
             }
         ]
         self.page.save_revision().publish()
@@ -258,15 +282,23 @@ class InformationPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
         """Test get_table_data_for_csv raises ValueError when table has no data."""
         self.page.content = [
             {
-                "type": "table",
+                "type": "section",
                 "value": {
-                    "title": "Empty Data Table",
-                    "data": {
-                        "headers": [],
-                        "rows": [],
-                    },
+                    "title": "Empty Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": {
+                                "title": "Empty Data Table",
+                                "data": {
+                                    "headers": [],
+                                    "rows": [],
+                                },
+                            },
+                            "id": "empty-data-table-id",
+                        }
+                    ],
                 },
-                "id": "empty-data-table-id",
             }
         ]
 
@@ -279,14 +311,22 @@ class InformationPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
         """Test download_table uses caption for filename when title is empty."""
         self.page.content = [
             {
-                "type": "table",
-                "value": make_table_block_value(
-                    title="",
-                    caption="Caption Table",
-                    headers=[["A"]],
-                    rows=[["1"]],
-                ),
-                "id": "caption-table-id",
+                "type": "section",
+                "value": {
+                    "title": "Caption Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="",
+                                caption="Caption Table",
+                                headers=[["A"]],
+                                rows=[["1"]],
+                            ),
+                            "id": "caption-table-id",
+                        }
+                    ],
+                },
             }
         ]
         self.page.save_revision().publish()
@@ -301,15 +341,23 @@ class InformationPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
         """Test download_table uses 'table' as filename when no title or caption."""
         self.page.content = [
             {
-                "type": "table",
+                "type": "section",
                 "value": {
-                    "title": "",
-                    "data": {
-                        "headers": [[{"value": "H", "type": "th"}]],
-                        "rows": [[{"value": "V", "type": "td"}]],
-                    },
+                    "title": "No Title Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": {
+                                "title": "",
+                                "data": {
+                                    "headers": [[{"value": "H", "type": "th"}]],
+                                    "rows": [[{"value": "V", "type": "td"}]],
+                                },
+                            },
+                            "id": "no-title-table-id",
+                        }
+                    ],
                 },
-                "id": "no-title-table-id",
             }
         ]
         self.page.save_revision().publish()
@@ -325,15 +373,23 @@ class InformationPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
         """Test get_table only matches table block types."""
         self.page.content = [
             {
-                "type": "rich_text",
-                "value": "Some text",
-                "id": "rich-text-id",
-            },
-            {
-                "type": "table",
-                "value": make_table_block_value(title="Actual Table"),
-                "id": "table-id",
-            },
+                "type": "section",
+                "value": {
+                    "title": "Mixed Content Section",
+                    "content": [
+                        {
+                            "type": "rich_text",
+                            "value": "Some text",
+                            "id": "rich-text-id",
+                        },
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(title="Actual Table"),
+                            "id": "table-id",
+                        },
+                    ],
+                },
+            }
         ]
 
         # Should not find rich_text block even with matching ID pattern
@@ -345,9 +401,17 @@ class InformationPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
         """Test get_table returns empty dict for blocks without an id."""
         self.page.content = [
             {
-                "type": "table",
-                "value": make_table_block_value(title="Table Without ID"),
-                # No "id" key
+                "type": "section",
+                "value": {
+                    "title": "No ID Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(title="Table Without ID"),
+                            # No "id" key
+                        }
+                    ],
+                },
             }
         ]
 
@@ -358,13 +422,21 @@ class InformationPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
         """Test download_table endpoint is accessible via URL."""
         self.page.content = [
             {
-                "type": "table",
-                "value": make_table_block_value(
-                    title="URL Test Table",
-                    headers=[["X"]],
-                    rows=[["Y"]],
-                ),
-                "id": "url-test-table-id",
+                "type": "section",
+                "value": {
+                    "title": "URL Test Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="URL Test Table",
+                                headers=[["X"]],
+                                rows=[["Y"]],
+                            ),
+                            "id": "url-test-table-id",
+                        }
+                    ],
+                },
             }
         ]
         self.page.save_revision().publish()

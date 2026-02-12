@@ -12,7 +12,7 @@ from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
 from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
-from cms.data_downloads.mixins import CoreDataDownloadMixin
+from cms.data_downloads.mixins import DataDownloadMixin
 from cms.standard_pages.blocks import CoreStoryBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 class InformationPage(  # type: ignore[django-manager-missing]
-    CoreDataDownloadMixin, BundledPageMixin, NoTrailingSlashRoutablePageMixin, GenericTaxonomyMixin, BasePage
+    DataDownloadMixin, BundledPageMixin, NoTrailingSlashRoutablePageMixin, GenericTaxonomyMixin, BasePage
 ):
     """A generic information page model."""
 
