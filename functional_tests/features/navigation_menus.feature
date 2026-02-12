@@ -13,18 +13,18 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
 
     Scenario: A publishing admin edits and publishes a footer menu
         When the user opens an existing footer menu for editing
-        And the user populates the footer menu with an external link
+        And the footer menu is populated with 3 columns
         And the user clicks "Publish"
         Then a banner confirming changes is displayed
-        And the footer menu is displayed on the homepage with an external link
+        And the footer menu appears on the home page
 
+    @smoke
     Scenario: A publishing admin edits and publishes a main menu
         When the user opens an existing main menu for editing
-        And the user populates the main menu with an external link
+        And the main menu is populated with 3 columns
         And the user clicks "Publish"
         Then a banner confirming changes is displayed
-        And the main menu is displayed on the homepage with an external link
-
+        And the main menu appears on the home page
 
     # Field Validation and Error Handling
     Scenario: Validation error when footer menu is left empty
