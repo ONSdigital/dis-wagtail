@@ -9,6 +9,7 @@
 {%- set last_revised_label = _("Last revised:") -%}
 {%- set published_label = _("Published:") -%}
 {%- set contact_label = _("Contact:") -%}
+{%- set save_or_print_label = _("Save or print this page") -%}
 
 {% block header_area %}
     {# fmt:off #}
@@ -96,7 +97,7 @@
                         "itemsList": table_of_contents,
                         "relatedLinks": related_publications,
                         "button": {
-                            "text": _("Save or print this page")
+                            "text": save_or_print_label
                         }
                     })
                 -}}

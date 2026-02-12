@@ -10,3 +10,6 @@ class RelatedContentType(models.TextChoices):
     METHODOLOGY = "METHODOLOGY", _("Methodology")
     TIME_SERIES = "TIME_SERIES", _("Time series")
     TOPIC = "TOPIC", _("Topic")
+    INFORMATION = "INFORMATION", _("Information")
+    REPORT = "REPORT", _("Report")
+    WEBPAGE = "WEBPAGE", _("Webpage")

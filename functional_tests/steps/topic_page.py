@@ -13,6 +13,7 @@ from cms.articles.tests.factories import (
 from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
 from functional_tests.step_helpers.topic_page_utils import TopicContentBuilder
+from functional_tests.step_helpers.utils import get_or_create_topic
 
 
 @given("a topic page exists under the homepage")
@@ -176,6 +177,9 @@ def create_topic_pages_from_table(context: Context) -> None:
     """Create multiple topic pages from a table."""
     context.topic_pages = {}  # Store all topic pages by title
 
+    if not hasattr(context, "topic_cache"):
+        context.topic_cache = {}
+
     # Initialise builder if not exists
     if not hasattr(context, "topic_page_builder"):
         context.topic_page_builder = TopicContentBuilder()
@@ -185,7 +189,7 @@ def create_topic_pages_from_table(context: Context) -> None:
         topic_name = row["topic"]
 
         # Create or reuse the topic
-        topic = context.topic_page_builder.get_or_create_topic(topic_name)
+        topic = get_or_create_topic(topic_name, context.topic_cache)
 
         # Create the topic page
         topic_page = TopicPageFactory(title=title, topic=topic)
