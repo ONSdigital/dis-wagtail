@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from wagtail.documents.forms import BaseDocumentForm
 
 MAX_CHARACTER_LIMIT = 100
+DOCUMENTS_MAX_UPLOAD_SIZE = settings.DOCUMENTS_MAX_UPLOAD_SIZE
+DOCUMENTS_MAX_UPLOAD_SIZE_MB = DOCUMENTS_MAX_UPLOAD_SIZE / (1024 * 1024)
 
 
 class ONSDocumentForm(BaseDocumentForm):
@@ -16,7 +18,6 @@ class ONSDocumentForm(BaseDocumentForm):
 
     def clean_file(self) -> Any:
         file = self.cleaned_data.get("file")
-        if file and file.size > settings.DOCUMENTS_MAX_UPLOAD_SIZE:
-            max_size_mb = settings.DOCUMENTS_MAX_UPLOAD_SIZE / (1024 * 1024)
-            raise ValidationError(f"File size must be less than {max_size_mb:.2f} MB.")
+        if file and file.size > DOCUMENTS_MAX_UPLOAD_SIZE:
+            raise ValidationError(f"File size must be less than {DOCUMENTS_MAX_UPLOAD_SIZE_MB:.2f} MB.")
         return file
