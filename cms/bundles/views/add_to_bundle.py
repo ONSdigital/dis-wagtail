@@ -51,9 +51,9 @@ class AddToBundleView(FormView):
             raise PermissionDenied
 
         self.goto_next = None
-        redirect_to = request.GET.get("next", "")
-        if url_has_allowed_host_and_scheme(url=redirect_to, allowed_hosts={self.request.get_host()}):
-            self.goto_next = redirect_to
+        possible_next = request.GET.get("next", "")
+        if url_has_allowed_host_and_scheme(url=possible_next, allowed_hosts={self.request.get_host()}):
+            self.goto_next = possible_next
 
         if self._has_instance_level_schedule(self.page_to_add):
             admin_display_title = self.page_to_add.get_admin_display_title()  # type: ignore[attr-defined]
