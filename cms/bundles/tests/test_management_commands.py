@@ -305,7 +305,7 @@ class PublishScheduledWithoutBundlesCommandTestCase(TestCase):
         cls.statistical_article = StatisticalArticlePageFactory(title="The Statistical Article", live=False)
         cls.bundle = BundleFactory(name="Test Bundle", bundled_pages=[cls.statistical_article])
 
-        cls.publication_date = timezone.now() - timedelta(minutes=1)
+        cls.publication_date = timezone.now().replace(second=0) - timedelta(minutes=1)
         cls.statistical_article.save_revision(approved_go_live_at=cls.publication_date)
 
     def setUp(self):
