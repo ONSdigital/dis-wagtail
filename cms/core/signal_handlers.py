@@ -1,7 +1,8 @@
 from typing import Any
 
+from django.apps import apps
 from django.db.models.signals import pre_save
-from wagtail.models import Page, Revision, get_page_models
+from wagtail.models import DraftStateMixin, Page, Revision
 
 
 def remove_go_live_seconds(
@@ -29,7 +30,8 @@ def remove_approved_go_live_seconds(
 
 
 def register_signal_handlers() -> None:
-    for model in get_page_models():
-        pre_save.connect(remove_go_live_seconds, sender=model)
+    for model in apps.get_models():
+        if issubclass(model, DraftStateMixin):
+            pre_save.connect(remove_go_live_seconds, sender=model)
 
     pre_save.connect(remove_approved_go_live_seconds, sender=Revision)
