@@ -28,7 +28,7 @@ def remove_approved_go_live_seconds(
         instance.approved_go_live_at = instance.approved_go_live_at.replace(second=0)
 
 
-def register_signals() -> None:
+def register_signal_handlers() -> None:
     for model in get_page_models():
         pre_save.connect(remove_go_live_seconds, sender=model)
 
