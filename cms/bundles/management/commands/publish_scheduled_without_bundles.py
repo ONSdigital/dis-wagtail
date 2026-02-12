@@ -1,3 +1,4 @@
+import logging
 import sched
 import time
 from collections.abc import Iterable
@@ -7,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.apps import apps
 from django.core.management.base import BaseCommand
+from django.db import transaction
 from django.utils import timezone
 from wagtail.models import DraftStateMixin, Page, Revision
 
@@ -15,6 +17,8 @@ from cms.core.db_router import force_write_db
 
 if TYPE_CHECKING:
     from django.core.management.base import CommandParser
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -85,11 +89,25 @@ class Command(BaseCommand):
         # 3. Run the scheduler to run publish / unpublish content (if any)
         scheduler.run()
 
+    @transaction.atomic()
     def _unpublish_model_action(self, instance: DraftStateMixin) -> None:
-        instance.unpublish(set_expired=True, log_action="wagtail.unpublish.scheduled")
+        try:
+            instance.unpublish(set_expired=True, log_action="wagtail.unpublish.scheduled")
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception(
+                "Unpublish failed",
+                extra={"type": instance._meta.label_lower, "pk": instance.pk, "event": "unpublish_failed"},
+            )
 
+    @transaction.atomic()
     def _publish_model_action(self, instance: Revision) -> None:
-        instance.publish(log_action="wagtail.publish.scheduled")
+        try:
+            instance.publish(log_action="wagtail.publish.scheduled")
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception(
+                "Publish failed",
+                extra={"type": instance._meta.label_lower, "pk": instance.pk, "event": "publish_failed"},
+            )
 
     def _models_to_unpublish(self, max_expire_at: datetime) -> Iterable[DraftStateMixin]:
         models = [Page]
