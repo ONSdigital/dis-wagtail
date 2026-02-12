@@ -2,17 +2,13 @@ from typing import TYPE_CHECKING
 
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
-from django.urls import include, path
 from wagtail import hooks
 from wagtail.admin import messages
 
-from cms.articles import admin_urls
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
-    from django.urls import URLPattern
-    from django.urls.resolvers import URLResolver
     from wagtail.models import Page
 
 
@@ -80,12 +76,3 @@ def before_unpublish_page(request: HttpRequest, page: Page) -> HttpResponseRedir
             return redirect("wagtailadmin_pages:unpublish", page.pk)
 
     return None
-
-
-@hooks.register("register_admin_urls")
-def register_admin_urls() -> list[URLPattern | URLResolver]:
-    """Registers the admin urls for Articles.
-
-    @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-urls.
-    """
-    return [path("articles/", include(admin_urls))]

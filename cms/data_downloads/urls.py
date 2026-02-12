@@ -2,7 +2,7 @@ from django.urls import path
 
 from .views import RevisionChartDownloadView, RevisionTableDownloadView
 
-app_name = "articles"
+app_name = "data_downloads"
 urlpatterns = [
     path(
         "pages/<int:page_id>/revisions/<int:revision_id>/download-chart/<str:chart_id>/",
