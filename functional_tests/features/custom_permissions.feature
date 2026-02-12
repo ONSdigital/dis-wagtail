@@ -13,24 +13,16 @@ Feature: Custom permissions for the CMS, independent of RBAC group permissions
         Then the user has the option to create a child page under the "Home" page
 
     Scenario: A CMS user has no option to copy a Welsh page
-        Given the user creates an information page as a child of the index page
-        And the user adds content to the new information page
-        And the user clicks "Publish"
-        And the user returns to editing the information page
-        And the user switches to the Welsh locale
-        And the user converts the alias into an ordinary page
-        And the user adds Welsh content to the information page
-        And the user clicks "Publish"
-        When the user returns to editing the Welsh information page
-        And the user opens the page actions menu
+        Given a published information page exists
+        And  a published information page translation exists
+        When the user edits the welsh information page
+        And  the user opens the page actions menu
         Then the user has no option to copy the page
 
     Scenario: A CMS user has the option to copy an English page
-        Given the user creates an information page as a child of the index page
-        And the user adds content to the new information page
-        And the user clicks "Publish"
-        And the user returns to editing the information page
-        And the user opens the page actions menu
+        Given an information page exists
+        When the user edits the information page
+        And  the user opens the page actions menu
         Then the user has the option to copy the page
 
     Scenario: A CMS user cannot modify the homepage

@@ -8,9 +8,9 @@ if TYPE_CHECKING:
     from cms.users.models import User
 
 
-def progress_page_workflow(workflow_state: WorkflowState) -> None:
+def progress_page_workflow(workflow_state: WorkflowState, user: User | None = None) -> None:
     task_state = workflow_state.current_task_state
-    task_state.task.on_action(task_state, user=None, action_name="approve")
+    task_state.task.on_action(task_state, user=user, action_name="approve")
 
 
 def mark_page_as_ready_for_review(page: Page, user: User | None = None) -> WorkflowState:

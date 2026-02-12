@@ -13,7 +13,7 @@ from cms.articles.tests.factories import (
 from cms.methodology.tests.factories import MethodologyIndexPageFactory, MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
 from functional_tests.step_helpers.topic_page_utils import TopicContentBuilder
-from functional_tests.step_helpers.utils import get_or_create_topic
+from functional_tests.step_helpers.utils import get_or_create_topic, get_page_from_context
 
 
 @given("a topic page exists under the homepage")
@@ -54,11 +54,6 @@ def the_user_select_article_series(context: Context) -> None:
 def user_edits_the_ancestor_topic(context: Context) -> None:
     edit_url = reverse("wagtailadmin_pages:edit", args=(context.topic_page.id,))
     context.page.goto(f"{context.base_url}{edit_url}")
-
-
-@step("the user views the topic page")
-def user_views_the_topic_page(context: Context) -> None:
-    context.page.goto(f"{context.base_url}{context.topic_page.url}")
 
 
 @step("the user clicks to add headline figures to the topic page")
@@ -133,12 +128,12 @@ def the_published_topic_page_has_reordered_headline_figures(context: Context) ->
 def the_headline_figures_on_the_topic_page_link_to_the_statistical_page(
     context: Context,
 ) -> None:
-    page = context.page
-    page.get_by_text("First headline figure").click()
-    expect(page.get_by_role("heading", name="The article page")).to_be_visible()
-    page.go_back()
-    page.get_by_text("Second headline figure").click()
-    expect(page.get_by_role("heading", name="The article page")).to_be_visible()
+    the_page = get_page_from_context(context, "statistical article")
+    context.page.get_by_text("First headline figure").click()
+    expect(context.page.get_by_role("heading", name=the_page.display_title)).to_be_visible()
+    context.page.go_back()
+    context.page.get_by_text("Second headline figure").click()
+    expect(context.page.get_by_role("heading", name=the_page.display_title)).to_be_visible()
 
 
 @when("the user adds a time series page link")

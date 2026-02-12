@@ -7,9 +7,11 @@ from django.test import RequestFactory, TestCase, override_settings
 from django.utils.formats import date_format
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.factories import ContactDetailsFactory
 from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
 from cms.methodology.tests.factories import MethodologyPageFactory, MethodologyRelatedPageFactory
+from cms.users.tests.factories import UserFactory
 
 
 class MethodologyPageTestCase(WagtailTestUtils, TestCase):
@@ -24,6 +26,9 @@ class MethodologyPageTestCase(WagtailTestUtils, TestCase):
             contact_details=None,
         )
         self.page_url = self.page.url
+
+    def test_permission_tester_inherits_from_basepagepermissiontester(self):
+        self.assertIsInstance(self.page.permissions_for_user(UserFactory()), BasePagePermissionTester)
 
     def test_table_of_contents_with_content(self):
         """Test table_of_contents with content blocks."""
