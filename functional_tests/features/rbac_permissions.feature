@@ -56,18 +56,6 @@ Feature: Role Based Access Control Permission as defined in data migrations
         When the user clicks the Snippets menu item
         Then the user can add Contact details snippet
 
-    Scenario: A Publishing Admin can manage and publish Main Menu
-        Given a Publishing Admin logs into the admin site
-        And the user can see the Snippets menu item
-        When the user clicks the Snippets menu item
-        Then the user can create and publish the Main menus snippet
-
-    Scenario: A Publishing Admin can manage and publish Footer Menu
-        Given a Publishing Admin logs into the admin site
-        And the user can see the Snippets menu item
-        When the user clicks the Snippets menu item
-        Then the user can create and publish the Footer menus snippet
-
     Scenario: A Publishing Admin can add Bundles
         Given a Publishing Admin logs into the admin site
         And the user can see the Bundles menu item

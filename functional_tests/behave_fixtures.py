@@ -32,6 +32,10 @@ def django_test_runner(context: Context) -> None:
     # Initialize DSLR and take a snapshot of the clean, post migration test database
     initialize_dslr()
     context.clean_snapshot_name = "clean_snapshot"
+    existing_snapshot = find_snapshot(context.clean_snapshot_name)
+    # Remove stale snapshots so each run captures the post-migration state.
+    if existing_snapshot:
+        delete_snapshot(existing_snapshot)
     create_snapshot(context.clean_snapshot_name)
 
     # Yield to resume the tests execution

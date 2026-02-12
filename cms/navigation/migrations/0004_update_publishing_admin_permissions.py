@@ -21,6 +21,24 @@ def update_publishing_admin_permissions(apps, schema_editor):
     )
     publishing_admins.permissions.remove(change_nav_perm)
 
+    # Remove delete_mainmenu permission
+    main_menu = apps.get_model("navigation", "MainMenu")
+    main_menu_ct = ContentType.objects.get_for_model(main_menu)
+    delete_main_menu_perm = Permission.objects.get(
+        content_type=main_menu_ct,
+        codename="delete_mainmenu",
+    )
+    publishing_admins.permissions.remove(delete_main_menu_perm)
+
+    # Remove delete_footermenu permission
+    footer_menu = apps.get_model("navigation", "FooterMenu")
+    footer_menu_ct = ContentType.objects.get_for_model(footer_menu)
+    delete_footer_menu_perm = Permission.objects.get(
+        content_type=footer_menu_ct,
+        codename="delete_footermenu",
+    )
+    publishing_admins.permissions.remove(delete_footer_menu_perm)
+
     # Add submit_translation permission - create if it doesn't exist
     translation_ct, _ = ContentType.objects.get_or_create(
         app_label="simple_translation",
@@ -50,6 +68,24 @@ def reverse_update_publishing_admin_permissions(apps, schema_editor):
         codename="change_navigationsettings",
     )
     publishing_admins.permissions.add(change_nav_perm)
+
+    # Re-add delete_mainmenu permission
+    main_menu = apps.get_model("navigation", "MainMenu")
+    main_menu_ct = ContentType.objects.get_for_model(main_menu)
+    delete_main_menu_perm = Permission.objects.get(
+        content_type=main_menu_ct,
+        codename="delete_mainmenu",
+    )
+    publishing_admins.permissions.add(delete_main_menu_perm)
+
+    # Re-add delete_footermenu permission
+    footer_menu = apps.get_model("navigation", "FooterMenu")
+    footer_menu_ct = ContentType.objects.get_for_model(footer_menu)
+    delete_footer_menu_perm = Permission.objects.get(
+        content_type=footer_menu_ct,
+        codename="delete_footermenu",
+    )
+    publishing_admins.permissions.add(delete_footer_menu_perm)
 
     # Remove submit_translation permission
     submit_translation_perm = Permission.objects.get(codename="submit_translation")
