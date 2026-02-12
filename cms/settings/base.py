@@ -1048,10 +1048,7 @@ DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "
 
 WAGTAILDOCS_DOCUMENT_FORM_BASE = "cms.documents.forms.ONSDocumentForm"
 
-MAX_UPLOAD_SIZE = int(env.get("MAX_UPLOAD_SIZE", 10 * 1024 * 1024))  # 10MB default
-
-WAGTAILIMAGES_MAX_UPLOAD_SIZE = MAX_UPLOAD_SIZE
-DOCUMENTS_MAX_UPLOAD_SIZE = MAX_UPLOAD_SIZE
+DOCUMENTS_MAX_UPLOAD_SIZE = int(env.get("DOCUMENTS_MAX_UPLOAD_SIZE", 50 * 1024 * 1024))  # 50MB default
 
 WAGTAILDOCS_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "xml", "ppt", "pptx", "txt", "rtf", "csv"]
 
