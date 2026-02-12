@@ -9,7 +9,6 @@ from functional_tests.step_helpers.navigation_menus_helpers import (
     fill_column_link,
     fill_column_title,
     generate_columns,
-    generate_full_main_menu,
     insert_block,
 )
 
