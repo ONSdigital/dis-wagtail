@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from playwright.sync_api import expect
 
 from cms.release_calendar.enums import ReleaseStatus
-from functional_tests.step_helpers.footer_menu_helpers import choose_page_link
+from functional_tests.step_helpers.navigation_menus_helpers import choose_page_link
 
 RELEASE_DATE = "#id_release_date"
 RELEASE_DATE_TEXT = "#id_release_date_text"
