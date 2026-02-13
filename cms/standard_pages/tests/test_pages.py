@@ -58,7 +58,5 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
         Site.objects.filter(is_default_site=False).delete()
         reset_url_caches()
 
-        reset_url_caches()
-
         response = self.client.get("/cy")
         self.assertContains(response, 'href="/cy/cookies"')

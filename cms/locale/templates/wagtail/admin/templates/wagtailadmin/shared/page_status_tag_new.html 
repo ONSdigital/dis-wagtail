@@ -5,12 +5,12 @@
 
 {% if page.live %}
     {% pageurl page as page_url %}
-    {% if pageurl is not None %}
+    {% if page_url is not None %}
         {% test_page_is_public page as is_public %}
         {% trans 'Live' as live_label %}
         {% comment %} Two copies of the tag, visibility is toggled by the privacy switch JS {% endcomment %}
         <a
-            href="{{ page.url }}"
+            href="{{ page_url }}"
             target="_blank"
             rel="noreferrer"
             class="{% classnames 'page-status-tag' is_public|yesno:',w-hidden' %}"
@@ -26,7 +26,7 @@
             {{ live_label }}
         </a>
         <a
-            href="{{ page.url }}"
+            href="{{ page_url }}"
             target="_blank"
             rel="noreferrer"
             class="{% classnames 'page-status-tag' is_public|yesno:'w-hidden,' %}"
