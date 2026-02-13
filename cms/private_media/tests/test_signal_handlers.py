@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 from django.test import TestCase, override_settings
@@ -38,29 +39,59 @@ class SignalHandlersTestCase(TestCase):
 
     def generate_non_media_referencing_content(self) -> list[dict[str, Any]]:
         """Returns a raw StreamField value that includes a heading."""
-        return [{"type": "heading", "value": "Test heading"}]
+        return [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Test heading",
+                    "content": [
+                        {"type": "rich_text", "value": "<p>Some text</p>", "id": str(uuid.uuid4())},
+                    ],
+                },
+                "id": str(uuid.uuid4()),
+            }
+        ]
 
     def generate_media_referencing_content(self) -> list[dict[str, Any]]:
         """Returns a raw StreamField value that includes image and document blocks that
         reference all media created in setUp().
         """
         return [
-            {"type": "heading", "value": "Test heading"},
-            {"type": "image", "value": {"image": self.private_image.id}},
-            {"type": "image", "value": {"image": self.public_image.id}},
             {
-                "type": "documents",
-                "value": [
-                    {
-                        "type": "document",
-                        "value": {"document": self.private_document.id, "title": "Private document", "description": ""},
-                    },
-                    {
-                        "type": "document",
-                        "value": {"document": self.public_document.id, "title": "Public document", "description": ""},
-                    },
-                ],
-            },
+                "type": "section",
+                "value": {
+                    "title": "Test heading",
+                    "content": [
+                        {"type": "image", "value": {"image": self.private_image.id}, "id": str(uuid.uuid4())},
+                        {"type": "image", "value": {"image": self.public_image.id}, "id": str(uuid.uuid4())},
+                        {
+                            "type": "documents",
+                            "value": [
+                                {
+                                    "type": "document",
+                                    "value": {
+                                        "document": self.private_document.id,
+                                        "title": "Private document",
+                                        "description": "",
+                                    },
+                                    "id": str(uuid.uuid4()),
+                                },
+                                {
+                                    "type": "document",
+                                    "value": {
+                                        "document": self.public_document.id,
+                                        "title": "Public document",
+                                        "description": "",
+                                    },
+                                    "id": str(uuid.uuid4()),
+                                },
+                            ],
+                            "id": str(uuid.uuid4()),
+                        },
+                    ],
+                },
+                "id": str(uuid.uuid4()),
+            }
         ]
 
     def assertMediaPrivacy(self, expected_privacy: Privacy):  # pylint: disable=invalid-name

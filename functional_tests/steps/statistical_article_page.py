@@ -1,5 +1,7 @@
 # pylint: disable=not-callable
+import uuid
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 from behave import given, step, then, when
 from behave.runner import Context
@@ -13,6 +15,10 @@ from cms.articles.tests.factories import (
 )
 from cms.datavis.tests.factories import TableDataFactory
 from cms.topics.models import TopicPage
+from functional_tests.step_helpers.utils import get_page_from_context
+
+if TYPE_CHECKING:
+    from wagtail.models import Revision
 
 
 @given("an article series page exists")
@@ -27,9 +33,76 @@ def an_article_series_exists(context: Context) -> None:
 @given("a statistical article exists")
 @given("the user has created a statistical article in a series")
 @given("a statistical article page has been published under the topic page")
-def a_statistical_article_exists(context: Context) -> None:
+def a_statistical_article_exists(context: Context) -> Revision:
     an_article_series_exists(context)
-    context.statistical_article_page = StatisticalArticlePageFactory(parent=context.article_series_page)
+    context.statistical_article_page = StatisticalArticlePageFactory(
+        parent=context.article_series_page, news_headline=""
+    )
+    context.original_statistical_article_page_title = context.statistical_article_page.title
+    return context.statistical_article_page.save_revision()
+
+
+@given("a published statistical article exists")
+def a_published_statistical_article_exists(context: Context) -> None:
+    a_statistical_article_exists(context)
+    context.statistical_article_page.content = [
+        {"type": "section", "value": {"title": "Content", "content": [{"type": "rich_text", "value": "text"}]}}
+    ]
+    context.statistical_article_page.save_revision().publish()
+
+
+@given("a statistical article page with headline figures exists")
+def a_statistical_article_page_with_headline_figures_exists(context: Context) -> Revision:
+    a_statistical_article_exists(context)
+    context.statistical_article_page.headline_figures = [
+        (
+            "figure",
+            {
+                "figure_id": "figure_1",
+                "title": "First headline figure",
+                "figure": "~123%",
+                "supporting_text": "First supporting text",
+            },
+        ),
+        (
+            "figure",
+            {
+                "figure_id": "figure_2",
+                "title": "Second headline figure",
+                "figure": "~321%",
+                "supporting_text": "Second supporting text",
+            },
+        ),
+    ]
+    context.statistical_article_page.headline_figures_figure_ids = "figure_1,figure_2"
+    return context.statistical_article_page.save_revision()
+
+
+@given("a published statistical article page with headline figures exists")
+def a_published_statistical_article_page_with_headline_figures_exists(context: Context) -> None:
+    revision = a_statistical_article_page_with_headline_figures_exists(context)
+    revision.publish()
+
+
+@given("a published statistical article page with a correction exists")
+def a_published_statistical_article_page_with_a_correction_exists(context: Context):
+    revision = a_statistical_article_exists(context)
+    context.statistical_article_page.content = [
+        {"type": "section", "value": {"title": "Content", "content": [{"type": "rich_text", "value": "text"}]}}
+    ]
+    context.statistical_article_page.corrections = [
+        (
+            "correction",
+            {
+                "version_id": 1,
+                "previous_version": revision.id,
+                "when": "2025-03-13 13:59",
+                "frozen": True,
+                "text": "First correction text",
+            },
+        )
+    ]
+    context.statistical_article_page.save_revision().publish()
 
 
 @given("a statistical article page with equations exists")
@@ -94,6 +167,7 @@ def user_populates_the_statistical_article_page(context: Context) -> None:
     page.get_by_label("Release date*").fill("2025-01-11")
 
     page.wait_for_timeout(50)  # added to allow JS to be ready
+    page.get_by_role("textbox", name="Release Edition").focus()  # focus up to prevent any overlap with the action menu
     page.locator("#panel-child-content-content-content").get_by_title("Insert a block").click()
     page.get_by_label("Section heading*").fill("Heading")
     page.locator("#panel-child-content-content-content").get_by_role("region").get_by_role(
@@ -114,6 +188,53 @@ def user_clicks_on_view_superseded_version(context: Context) -> None:
     page = context.page
     page.get_by_text("Show detail").click()
     page.get_by_role("link", name="View superseded version").click()
+
+
+@step("the {page_str} has a chart")
+def the_page_has_a_chart(context: Context, page_str: str):
+    the_page = get_page_from_context(context, page_str)
+    the_page.content = [
+        {
+            "type": "section",
+            "value": {
+                "content": [
+                    {
+                        "type": "line_chart",
+                        "id": uuid.uuid4(),
+                        "value": {
+                            "annotations": [],
+                            "audio_description": "desc",
+                            "caption": "",
+                            "footnotes": "This is a lovely footnote",
+                            "options": [],
+                            "show_legend": True,
+                            "show_markers": False,
+                            "subtitle": "subtitle",
+                            "table": {
+                                "table_data": '{"data": [["Foo","Bar"],["1234","1337"],["",""],["",""],["",""]]}',
+                                "table_type": "table",
+                            },
+                            "theme": "primary",
+                            "title": "line chart",
+                            "x_axis": {"tick_interval_desktop": None, "tick_interval_mobile": None, "title": ""},
+                            "y_axis": {
+                                "custom_reference_line": None,
+                                "end_on_tick": True,
+                                "max": None,
+                                "min": None,
+                                "start_on_tick": True,
+                                "tick_interval_desktop": None,
+                                "tick_interval_mobile": None,
+                                "title": "",
+                            },
+                        },
+                    },
+                ],
+                "title": "section",
+            },
+        }
+    ]
+    the_page.save_revision()
 
 
 @step("the user adds a chart to the content")
@@ -153,24 +274,34 @@ def user_adds_table_with_pasted_content(context: Context) -> None:
     page.locator('[data-contentpath="footnotes"] [role="textbox"]').fill("some footnotes")
 
 
+def check_populated_data(locator):
+    expect(locator.get_by_text("Statistical article", exact=True)).to_be_visible()
+    expect(locator.get_by_role("heading", name="The article page")).to_be_visible()
+    expect(locator.get_by_text("Page summary")).to_be_visible()
+    expect(locator.get_by_text("11 January 2025", exact=True)).to_be_visible()
+    expect(locator.get_by_role("heading", name="Cite this analysis")).to_be_visible()
+
+    expect(locator.get_by_role("heading", name="Heading")).to_be_visible()
+    expect(locator.get_by_role("heading", name="Content")).to_be_visible()
+
+
 @then("the published statistical article page is displayed with the populated data")
 def the_statistical_article_page_is_displayed_with_the_populated_data(
     context: Context,
 ) -> None:
-    expect(context.page.get_by_text("Statistical article", exact=True)).to_be_visible()
-    expect(context.page.get_by_role("heading", name="The article page")).to_be_visible()
-    expect(context.page.get_by_text("Page summary")).to_be_visible()
-    expect(context.page.get_by_text("11 January 2025", exact=True)).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Cite this analysis")).to_be_visible()
+    check_populated_data(context.page)
 
-    expect(context.page.get_by_role("heading", name="Heading")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Content")).to_be_visible()
+
+@step("the statistical article page preview contains the populated data")
+def step_open_preview_pane(context: Context) -> None:
+    iframe = context.page.frame_locator("#w-preview-iframe")
+    check_populated_data(iframe)
 
 
 @then("the user can view the superseded statistical article page")
 def user_can_view_the_superseded_statistical_article_page(context: Context) -> None:
     expect(context.page.get_by_role("heading", name=context.original_statistical_article_page_title)).to_be_visible()
-    expect(context.page.get_by_text("Content", exact=True)).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Content", exact=True)).to_be_visible()
 
 
 @step("the user returns to editing the statistical article page")
@@ -180,6 +311,7 @@ def user_returns_to_editing_the_statistical_article_page(context: Context) -> No
 
 
 @then("the published statistical article page has the added table")
+@then("the statistical article page draft has the added table")
 def the_published_statistical_article_page_has_the_added_table(
     context: Context,
 ) -> None:
@@ -276,17 +408,22 @@ def user_adds_a_notice(context: Context) -> None:
 @step("the user adds an accordion section with title and content")
 def user_adds_accordion_section(context: Context) -> None:
     page = context.page
-    context.page.wait_for_timeout(250)
-    page.get_by_label("Content ()").get_by_title("Insert a block").nth(3).click()
+    # context.page.wait_for_timeout(250)
     page.wait_for_timeout(50)  # added to allow JS to be ready
+    page.locator("#panel-child-content-content-content").get_by_title("Insert a block").click()
+    page.get_by_label("Section heading*").fill("Heading")
+    page.locator("#panel-child-content-content-content").get_by_role("region").get_by_role(
+        "button", name="Insert a block"
+    ).click()
     page.get_by_text("Accordion").click()
     page.get_by_label("Title*").fill("Test Accordion Section")
     page.wait_for_timeout(50)  # added to allow JS to be ready
-    page.get_by_role("region", name="Content*").get_by_role("textbox").nth(3).fill("Test accordion content")
+    page.get_by_role("region", name="Content*").get_by_role("textbox").nth(2).fill("Test accordion content")
     context.page.wait_for_timeout(500)  # Wait for JS to process
 
 
 @then("the published statistical article page has the added correction")
+@then("the statistical article page draft has the added correction")
 def the_published_statistical_article_page_has_the_added_correction(
     context: Context,
 ) -> None:
@@ -296,6 +433,7 @@ def the_published_statistical_article_page_has_the_added_correction(
 
 
 @then("the published statistical article page has the added accordion section")
+@then("the statistical article page draft has the added accordion section")
 def the_published_statistical_article_page_has_the_added_accordion_section(
     context: Context,
 ) -> None:
@@ -338,7 +476,7 @@ def user_can_click_on_view_detail_to_expand_block(context: Context, block_type: 
     expect(context.page.get_by_text(date)).to_be_hidden()
 
 
-@then("the published statistical article page has the corrections and notices block")
+@then("the statistical article page has the corrections and notices block")
 def the_published_statistical_article_page_has_the_corrections_and_notices_block(
     context: Context,
 ) -> None:
@@ -395,6 +533,7 @@ def the_published_statistical_article_page_has_corrections_in_chronological_orde
 
 
 @then("the published statistical article page has the added notice")
+@then("the statistical article page draft has the added notice")
 def the_published_statistical_article_page_has_the_added_notice(
     context: Context,
 ) -> None:
@@ -615,12 +754,6 @@ def user_leaves_featured_chart_fields_blank(context: Context) -> None:
     featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
     expect(featured_chart_content.get_by_title("Insert a block")).to_be_visible()
     expect(featured_chart_content.locator("[data-streamfield-child]")).to_have_count(0)
-
-
-@then("submitting the Wagtail page edit form is successful")
-def submitting_the_wagtail_page_edit_form_is_successful(context: Context) -> None:
-    expect(context.page.locator(".messages").locator(".success")).to_be_visible()
-    expect(context.page.locator(".messages").locator(".error")).not_to_be_visible()
 
 
 @step('the user selects the "featured chart" preview mode')

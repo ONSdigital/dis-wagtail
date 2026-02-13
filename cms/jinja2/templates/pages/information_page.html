@@ -3,22 +3,25 @@
 {% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
+{% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
 {# fmt:off #}
-    {% if page.last_updated %}
-        {%- set last_updated_label = _("Last updated") -%}
-        {%- set last_updated_item = {
-                "term": last_updated_label,
-                "descriptions": [
-                    {
-                        "description": page.last_updated|ons_date("DATE_FORMAT")
-                    }
-                ]
-            }
-        -%}
+    {% if page.last_published_at %}
+        {%- set last_updated_description = page.last_published_at|ons_date("DATE_FORMAT") -%}
     {% else %}
-        {%- set last_updated_item = None -%}
+        {# Note: we don't mark "Populated on publish" for translations because it's only used for previews. #}
+        {%- set last_updated_description = "Populated on publish" -%}
     {% endif %}
+    {%- set last_updated_label = _("Last updated:") -%}
+    {%- set last_updated_item = {
+            "term": last_updated_label,
+            "descriptions": [
+                {
+                    "description": last_updated_description
+                }
+            ]
+        }
+    -%}
 {# fmt:on #}
 
 {% block header_area %}
@@ -48,27 +51,23 @@
 {% endblock %}
 
 {% block main %}
-    <div class="ons-grid">
-        <div class="ons-grid__col ons-col-8@m">
-            {% include_block page.content %}
-
-            {% if page.related_pages %}
-                {%- set related_content_aria_label = _('Related content') -%}
-                {%- set related_content_title = _('Related content') -%}
-
+    <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--xl ons-js-table-of-contents-container">
+        <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
+            {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
                 {# fmt:off #}
                 {{-
-                    onsRelatedContent({
-                        "ariaLabel": related_content_aria_label,
-                        "rows": [{
-                            "id": 'related-content',
-                            "title": related_content_title,
-                            "itemsList": page.related_pages
-                        }]
+                    onsTableOfContents({
+                        "title": toc_title,
+                        "ariaLabel": toc_aria_label,
+                        "itemsList": table_of_contents
                     })
                 -}}
                 {# fmt:on #}
-            {% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="ons-grid__col ons-col-8@m">
+            {% include_block page.content %}
         </div>
     </div>
 {% endblock %}

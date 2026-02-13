@@ -1,5 +1,6 @@
 # pylint: disable=not-callable
 from datetime import datetime, time, timedelta
+from typing import Literal
 
 from behave import given, step, then, when
 from behave.runner import Context
@@ -8,18 +9,19 @@ from django.utils import timezone
 from playwright.sync_api import expect
 
 from cms.bundles.enums import BundleStatus
-from cms.bundles.models import BundleTeam
+from cms.bundles.models import BundlePage, BundleTeam
 from cms.bundles.tests.factories import BundleFactory
 from cms.core.custom_date_format import ons_date_format
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
+from functional_tests.step_helpers.utils import get_page_from_context
 from functional_tests.steps.release_page import click_add_child_page, navigate_to_release_calendar_page
 
 tomorrow = timezone.now() + timedelta(days=1)
 
 
-@step("a bundle has been created")
+@given("a bundle has been created")
 def a_bundle_has_been_created(context: Context) -> None:
     context.bundle = BundleFactory()
 
@@ -83,7 +85,7 @@ def the_selected_datasets_are_displayed(context: Context) -> None:
 
 
 # bundle create amend
-@step("a bundle has been created with a creator")
+@given("a bundle has been created with a creator")
 def a_bundle_has_been_created_with_user(context: Context) -> None:
     context.bundle_creator = UserFactory()
     context.bundle = BundleFactory(created_by=context.bundle_creator)
@@ -95,6 +97,12 @@ def delete_bundle_creator(context: Context) -> None:
 
 
 # bundle goto
+@step("the user edits the bundle")
+@step("the user goes to edit the bundle")
+def user_edits_the_bundle(context: Context):
+    context.page.goto(context.base_url + reverse("bundle:edit", args=[context.bundle.pk]))
+
+
 @step("the user goes to the bundle inspect page")
 def go_to_bundle_inspect(context: Context) -> None:
     context.page.goto(context.base_url + reverse("bundle:inspect", args=[context.bundle.pk]))
@@ -168,9 +176,18 @@ def release_calendar_page_with_status_and_future_date_exists(context: Context, s
     context.release_calendar_page = ReleaseCalendarPageFactory(
         release_date=tomorrow,
         status=status.upper(),
+        summary="My example release page",
         notice="default notice",
+        live=False,
     )
-    context.release_calendar_page.save_revision().save()
+    context.release_calendar_page.save_revision()
+
+    # Save the values to access later
+    context.saved_release_calendar_page_details = {
+        "title": context.release_calendar_page.title,
+        "release_date_value": ons_date_format(tomorrow, "DATETIME_FORMAT"),
+        "status": status,
+    }
 
 
 @step('the user manually creates a future release calendar page with a "{status}" status')
@@ -192,7 +209,7 @@ def user_manually_creates_future_release_calendar(context: Context, status: str)
     }
 
 
-@when("the user enters a title")
+@when("the user enters a bundle title")
 def user_enters_title(context: Context) -> None:
     context.page.get_by_role("textbox", name="Name*").fill("Test Bundles")
 
@@ -317,3 +334,28 @@ def user_sees_validation_error_preventing_cancellation(context: Context) -> None
     expect(
         context.page.get_by_text("Please unlink the release calendar page from the bundle before cancelling")
     ).to_be_visible()
+
+
+@step('the {page_str} page is in a "{bundle_status}" bundle')
+def the_page_is_in_the_given_bundle_with_status(
+    context: Context, page_str: str, bundle_status: Literal["Draft", "In Preview", "Ready to publish", "Published"]
+):
+    the_page = get_page_from_context(context, page_str)
+    bundle = getattr(context, "bundle", None)
+    if not bundle:
+        a_bundle_has_been_created(context)
+        bundle = context.bundle
+
+    match bundle_status.lower():
+        case "in preview":
+            status = BundleStatus.IN_REVIEW
+        case "ready to publish":
+            status = BundleStatus.APPROVED
+        case "published":
+            status = BundleStatus.PUBLISHED
+        case _:
+            status = BundleStatus.DRAFT
+
+    bundle.status = status
+    bundle.bundled_pages.add(BundlePage(page=the_page))
+    bundle.save()
