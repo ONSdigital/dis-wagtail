@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 import jinja2
 from django import template
+from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import json_script as _json_script
 from django_jinja import library
@@ -83,11 +84,13 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
     if not page:
         return []
 
+    # TODO: if request.is_preview -> use view_draft URLs
     default_locale = Locale.get_default()
 
     variants = {variant.locale_id: variant for variant in page.get_translations(inclusive=True).defer_streamfields()}
     default_page = variants.get(default_locale.pk)
 
+    use_subdomain_locale = settings.CMS_USE_SUBDOMAIN_LOCALES
     results: list[LocaleURLsDict] = []
     for locale in Locale.objects.all().order_by("pk"):
         variant = variants.get(locale.pk, default_page)
@@ -95,12 +98,17 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
             # In case a preview of a non-existent page is requested
             continue
 
-        url = variant.get_url(request=context["request"])
         # If there's no real translation in this locale, prepend
         # the locale code to the default page's URL so that strings in
         # templates can be localized:
-        if variant == default_page and locale.pk != variant.locale_id:
-            url = f"/{locale.language_code}{url}"
+        if use_subdomain_locale:
+            # Use the full URL to handle locale subdomains
+            url = variant.get_full_url(request=context["request"])
+        elif variant == default_page and locale.pk != variant.locale_id:
+            # Handle the specific case for the default page with a different locale
+            url = f"/{locale.language_code}{variant.get_url(request=context['request'])}"
+        else:
+            url = variant.get_url(request=context["request"])
 
         results.append(
             {
