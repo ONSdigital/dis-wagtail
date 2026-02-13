@@ -41,7 +41,6 @@ def the_user_has_featured_the_series(context: Context) -> None:
 
 
 @when("the user visits the topic page")
-@step("the user views the topic page")
 def visit_topic_page(context: Context) -> None:
     context.page.goto(context.topic_page.full_url)
 
