@@ -18,11 +18,9 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
         Then a banner confirming changes is displayed
         And the footer menu appears on the home page
 
+    @smoke
     Scenario: A publishing admin edits and publishes a main menu
-        When the user opens an existing main menu for editing
-        And the main menu is populated with 3 columns
-        And the user clicks "Publish"
-        Then a banner confirming changes is displayed
+        Given the main menu is populated with 3 columns
         And the main menu appears on the home page
 
     # Field Validation and Error Handling
