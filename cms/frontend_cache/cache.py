@@ -1,11 +1,8 @@
-from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 from django.conf import settings
 from wagtail.contrib.frontend_cache.utils import _get_page_cached_urls, purge_url_from_cache
 from wagtail.models import Page, ReferenceIndex, Site
-
-from cms.images.models import CustomImage
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -26,42 +23,20 @@ def get_urls_featuring_object(obj: Model) -> set[str]:
     This includes URLs for:
     -   Pages that directly reference the object (e.g. via relationship fields
         or StreamField blocks)
-    -   If the object is an image: Pages that directly reference a page
-        that use the object as their listing image
 
-    NOTE: To find urls for featuring multiple objects, use `get_urls_featuring_objects` instead.
+    NOTE: To find urls for featuring multiple objects of the same type, use `get_urls_featuring_objects` instead.
     """
-    urls = set()
-
-    page_ids = [
-        int(val)
-        for val in ReferenceIndex.objects.filter(
-            base_content_type__model="page",
-            base_content_type__app_label="wagtailcore",
-            to_content_type__model=obj._meta.model_name_lower,
-            to_content_type__app_label=obj._meta.app_label_lower,
-            to_object_id=obj.pk,
-        ).values_list("object_id", flat=True)
-    ]
-
-    pages_with_listing_images = []
-    for page in Page.objects.filter(id__in=page_ids).specific(defer=True).iterator():
-        urls.update(_get_page_cached_urls(page))
-        if isinstance(obj, CustomImage) and page.listing_image_id == obj.pk:
-            pages_with_listing_images.append(page)
-
-    urls.update(get_urls_featuring_objects(pages_with_listing_images))
-    return urls
+    return get_urls_featuring_objects([obj])
 
 
-def get_urls_featuring_objects(objects: Iterable[Model]):
+def get_urls_featuring_objects(objects: list[Model]) -> set[str]:
     """For multiple instances of the same model, return a set of URLs that make use of them in some way.
 
     This includes URLs for:
     -   Pages that directly reference the objects (e.g. via relationship fields
         or StreamField blocks)
     """
-    urls = {}
+    urls: set[str] = set()
 
     if not objects:
         return urls
@@ -73,13 +48,13 @@ def get_urls_featuring_objects(objects: Iterable[Model]):
         for val in ReferenceIndex.objects.filter(
             base_content_type__model="page",
             base_content_type__app_label="wagtailcore",
-            to_content_type__model=objects[0]._meta.model_name.lower(),
+            to_content_type__model=objects[0]._meta.model_name.lower(),  # type: ignore[union-attr]
             to_content_type__app_label=objects[0]._meta.app_label.lower(),
             to_object_id__in=object_ids,
         ).values_list("object_id", flat=True)
     ]
 
-    for page in Page.objects.filter(id__in=page_ids).specific(defer=True).iterator():
+    for page in Page.objects.filter(id__in=page_ids).specific(defer=True).live().iterator():
         urls.update(_get_page_cached_urls(page))
 
     return urls
