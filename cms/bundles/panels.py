@@ -20,6 +20,10 @@ if TYPE_CHECKING:
 
     from cms.release_calendar.models import ReleaseCalendarPage
 
+HAS_PAGE_LEVEL_SCHEDULE_MESSAGE = (
+    "This page is not part of any bundles. It cannot be bundled because it has a page-level schedule."
+)
+
 
 class BundleDatasetChooserWidget(dataset_chooser_viewset.widget_class):  # type: ignore[name-defined]
     """Custom dataset chooser widget that adds for_bundle=true parameter to the chooser URL."""
@@ -52,6 +56,19 @@ class BundleNotePanel(HelpPanel):
             super().__init__(**kwargs)
             self.content = self._content_for_instance(self.instance)
 
+        def _has_instance_level_schedule(self, instance: Model) -> bool:
+            """Checks whether the given instance has a publication or expiry schedule."""
+            if getattr(instance, "go_live_at", None):
+                return True
+            if getattr(instance, "expire_at", None):
+                return True
+
+            if revision := getattr(instance, "latest_revision", None):
+                # the instance likely has a live version, so check the latest revision
+                return revision.content.get("go_live_at") is not None or revision.content.get("expire_at") is not None
+
+            return False
+
         def _content_for_instance(self, instance: Model) -> str | SafeString:
             if not hasattr(instance, "active_bundle"):
                 return ""
@@ -69,7 +86,10 @@ class BundleNotePanel(HelpPanel):
                     return format_html(html, link, bundle.get_status_display())
                 return format_html(html, bundle.name, bundle.get_status_display())
 
-            if can_manage and instance.pk:
+            if self._has_instance_level_schedule(instance):
+                return format_html("<p>{}</p>", HAS_PAGE_LEVEL_SCHEDULE_MESSAGE)
+
+            if instance.pk and can_manage:
                 return format_html(
                     "<p>This page is not part of any bundles. "
                     '<a href="{}" class="button button-small button-secondary">Add to Bundle</a></p>',

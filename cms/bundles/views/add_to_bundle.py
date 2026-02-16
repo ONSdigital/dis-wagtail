@@ -28,6 +28,13 @@ class AddToBundleView(FormView):
     page_to_add: Page = None
     goto_next: str | None = None
 
+    def _has_instance_level_schedule(self, page: Page) -> bool:
+        if page.go_live_at or page.expire_at:
+            return True
+        if revision := page.latest_revision:
+            return revision.content.get("go_live_at") is not None or revision.content.get("expire_at") is not None
+        return False
+
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         self.page_to_add = get_object_or_404(
             Page.objects.specific().defer_streamfields(), id=self.kwargs["page_to_add_id"]
@@ -44,9 +51,20 @@ class AddToBundleView(FormView):
             raise PermissionDenied
 
         self.goto_next = None
-        redirect_to = request.GET.get("next", "")
-        if url_has_allowed_host_and_scheme(url=redirect_to, allowed_hosts={self.request.get_host()}):
-            self.goto_next = redirect_to
+        possible_next = request.GET.get("next", "")
+        if url_has_allowed_host_and_scheme(url=possible_next, allowed_hosts={self.request.get_host()}):
+            self.goto_next = possible_next
+
+        if self._has_instance_level_schedule(self.page_to_add):
+            admin_display_title = self.page_to_add.get_admin_display_title()  # type: ignore[attr-defined]
+            messages.warning(
+                request, f"Page '{admin_display_title}' cannot be bundled because it has a page-level schedule."
+            )
+
+            if self.goto_next:
+                return redirect(self.goto_next)
+
+            return redirect("wagtailadmin_home")
 
         if self.page_to_add.in_active_bundle:
             text_list = get_text_list(

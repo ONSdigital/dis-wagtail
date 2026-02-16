@@ -18,7 +18,10 @@ assign_permission_to_group = importlib.import_module(
 
 WAGTAIL_PERMISSION_TYPES = ["add", "change", "delete"]
 
-WAGTAIL_PAGE_PERMISSION_TYPES = ["add", "change", "bulk_delete", "lock", "publish", "unlock"]
+WAGTAIL_PAGE_PERMISSION_TYPES = {"add", "change", "bulk_delete", "lock", "publish", "unlock"}
+
+PUBLISHING_OFFICERS_PERMISSIONS = {"add", "change", "publish"}
+PUBLISHING_ADMINS_PERMISSIONS = WAGTAIL_PAGE_PERMISSION_TYPES
 
 
 class TestPermissions(TestCase):
@@ -209,12 +212,15 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
 
         self.check_and_remove_from_user_permissions_helper("teams", "team", "view")
 
+        default_permissions_plus_publish = [*WAGTAIL_PERMISSION_TYPES, "publish"]
+        menu_permissions_plus_publish = [perm for perm in default_permissions_plus_publish if perm != "delete"]
+
         # Snippet permissions (app, model, permission types)
         snippet_permissions = [
-            ("core", "definition", WAGTAIL_PERMISSION_TYPES),
-            ("core", "contactdetails", WAGTAIL_PERMISSION_TYPES),
-            ("navigation", "mainmenu", [*WAGTAIL_PERMISSION_TYPES, "publish"]),
-            ("navigation", "footermenu", [*WAGTAIL_PERMISSION_TYPES, "publish"]),
+            ("core", "definition", default_permissions_plus_publish),
+            ("core", "contactdetails", default_permissions_plus_publish),
+            ("navigation", "mainmenu", menu_permissions_plus_publish),
+            ("navigation", "footermenu", menu_permissions_plus_publish),
         ]
 
         for app, model, permission_types in snippet_permissions:
@@ -224,7 +230,6 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
         for permission_type in [*WAGTAIL_PERMISSION_TYPES, "view"]:
             self.check_and_remove_from_user_permissions_helper("bundles", "bundle", permission_type)
 
-        self.check_and_remove_from_user_permissions_helper("navigation", "navigationsettings", "change")
         self.check_and_remove_from_user_permissions_helper("core", "socialmediasettings", "change")
         self.check_and_remove_from_user_permissions_helper("wagtailcore", "logentry", "view")
 
@@ -233,6 +238,11 @@ class PublishingAdminPermissionsTestCase(BaseGroupPermissionTestCase):
         self.check_and_remove_from_user_permissions_helper("datasets", "datasets", "access_unpublished")
 
         self.check_and_remove_from_user_permissions_helper("wagtailadmin", "", "unlock_workflow_tasks")
+
+        self.check_and_remove_from_user_permissions_helper("simple_translation", "", "submit_translation")
+
+        # Publishing Admins should not have change_navigationsettings permission
+        self.assertFalse(self.user.has_perm("navigation.change_navigationsettings"))
 
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
@@ -283,17 +293,23 @@ class PublishingOfficerPermissionsTestCase(BaseGroupPermissionTestCase):
 
         self.check_and_remove_from_user_permissions_helper("datasets", "datasets", "access_unpublished")
 
+        # Publishing Officers should not have change_navigationsettings permission
+        self.assertFalse(self.user.has_perm("navigation.change_navigationsettings"))
+
+        # Publishing Officers should not have submit_translation permission
+        self.assertFalse(self.user.has_perm("simple_translation.submit_translation"))
+
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
 
     def test_publishing_officer_can_create_and_change_pages(self):
         """Check that the Publishing Officer can only add and change pages."""
-        for permission_type in WAGTAIL_PAGE_PERMISSION_TYPES:
-            if permission_type in ("add", "change"):
-                self.page_permission_check_helper(permission_type, has_permission=True)
-            else:
-                # Publishing Officers should not have bulk_delete, lock, publish or unlock permissions
-                self.page_permission_check_helper(permission_type, has_permission=False)
+        for permission_type in PUBLISHING_OFFICERS_PERMISSIONS:
+            self.page_permission_check_helper(permission_type, has_permission=True)
+
+        for permission_type in WAGTAIL_PAGE_PERMISSION_TYPES - PUBLISHING_OFFICERS_PERMISSIONS:
+            # Publishing Officers should not have bulk_delete, lock or unlock permissions
+            self.page_permission_check_helper(permission_type, has_permission=False)
 
     def test_publishing_officer_cannot_manage_images(self):
         """Check that the Publishing Officer cannot manage image collection."""
@@ -330,6 +346,12 @@ class ViewerPermissionsTestCase(BaseGroupPermissionTestCase):
         self.check_and_remove_from_user_permissions_helper("wagtailadmin", "admin", "access")
 
         self.check_and_remove_from_user_permissions_helper("bundles", "bundle", "view")
+
+        # Viewers should not have change_navigationsettings permission
+        self.assertFalse(self.user.has_perm("navigation.change_navigationsettings"))
+
+        # Viewers should not have submit_translation permission
+        self.assertFalse(self.user.has_perm("simple_translation.submit_translation"))
 
         # Check that there are no other unexpected permissions
         self.assertListEqual([], self.user_permissions)
