@@ -190,7 +190,7 @@ def create_populated_footer_menu(context: Context) -> None:
     generate_columns(context, num_columns=3)
 
 
-@given("the main menu is populated with 3 columns")
+@given("the main menu is populated with columns, sections, and topic links")
 def create_populated_main_menu(context: Context) -> None:
     menu = MainMenu.objects.first()
     assert menu is not None, "Expected MainMenu snippet to exist (migration should create it)."
@@ -260,13 +260,32 @@ def create_populated_main_menu(context: Context) -> None:
     menu.columns = columns
     menu.save()
 
-    # --------------------
-    # Save useful things on context for later assertions
-    # --------------------
     context.main_menu = menu
     context.info_page = info_page
     context.main_menu_highlights = highlights
     context.main_menu_columns = columns
+
+
+@then("the main menu displays the configured columns, sections, and topic links")
+def main_menu_displays_configured_content(context: Context) -> None:
+    context.page.get_by_role("button", name="Toggle menu").click()
+    nav = context.page.locator('nav[aria-label="Main menu"]')
+    expect(nav).to_be_visible()
+
+    # Highlights (titles + descriptions)
+    for highlight in context.main_menu_highlights:
+        title = highlight["value"]["title"]
+        description = highlight["value"]["description"]
+        expect(nav).to_contain_text(title)
+        expect(nav).to_contain_text(description)
+
+    # Sections + topic links
+    for col_idx in range(1, 4):
+        for sec_idx in range(1, 4):
+            expect(nav).to_contain_text(f"Section {col_idx}.{sec_idx}")
+            expect(nav).to_contain_text(f"Topic page {col_idx}.{sec_idx}")
+            expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.1")
+            expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.2")
 
 
 @then("the footer menu appears on the home page")

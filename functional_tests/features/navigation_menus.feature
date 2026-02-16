@@ -1,4 +1,4 @@
-Feature: CMS users can manage footer menus via the Wagtail admin interface
+Feature: CMS users can manage navigation menus via the Wagtail admin interface
 
     Background:
         Given a Publishing Admin logs into the admin site
@@ -18,10 +18,10 @@ Feature: CMS users can manage footer menus via the Wagtail admin interface
         Then a banner confirming changes is displayed
         And the footer menu appears on the home page
 
-    @smoke
-    Scenario: A publishing admin edits and publishes a main menu
-        Given the main menu is populated with 3 columns
-        And the main menu appears on the home page
+    Scenario: A publishing admin sees the main menu rendered correctly on the home page
+        Given the main menu is populated with columns, sections, and topic links
+        When the publishing admin visits the home page
+        Then the main menu displays the configured columns, sections, and topic links
 
     # Field Validation and Error Handling
     Scenario: Validation error when footer menu is left empty
