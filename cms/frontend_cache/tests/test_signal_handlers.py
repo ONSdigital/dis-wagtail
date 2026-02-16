@@ -2,10 +2,10 @@ from unittest.mock import patch
 
 from django.test import TestCase
 from wagtail.coreutils import get_dummy_request
-from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.core.models import ContactDetails, Definition
 from cms.frontend_cache.signal_handlers import _get_indexed_page_models
 from cms.home.models import HomePage
 from cms.methodology.models import MethodologyPage
@@ -21,7 +21,7 @@ from cms.topics.tests.factories import TopicPageFactory
 
 
 @patch("cms.frontend_cache.cache.purge_urls_from_cache")
-class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
+class PageFrontEndCacheInvalidationTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.home_page = HomePage.objects.first()
@@ -67,6 +67,13 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                 ThemeIndexPage,
             },
         )
+
+    @patch("cms.frontend_cache.cache.purge_page_from_frontend_cache")
+    def test_excluded_page_types__dont_react(self, patched_purge_page, patched_purge_urls):
+        self.home_page.save_revision().publish()
+
+        patched_purge_page.assert_not_called()
+        patched_purge_urls.assert_not_called()
 
     def _get_base_expected_statistical_page_urls_to_purge(self, with_translation=True):
         series_url = self.series_page.get_full_url(self.request)
@@ -178,3 +185,56 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
 
         self.information_page.unpublish()
         patched_purge_page.assert_called_once_with(self.information_page)
+
+
+@patch("cms.frontend_cache.cache.purge_urls_from_cache")
+class PageViaSnippetFrontEndCacheInvalidationTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.request = get_dummy_request()
+        cls.contact = ContactDetails.objects.create(name="PSF", email="psf@ons.gov.uk")
+        cls.definition = Definition.objects.create(name="Term", definition="Definition")
+
+        content = [
+            {
+                "type": "definitions",
+                "value": [{"id": "d880c8a3-51ac-4dd7-b8d8-4cee0decf37d", "type": "item", "value": cls.definition.pk}],
+            }
+        ]
+
+        cls.statistical_article = StatisticalArticlePageFactory(
+            content=[{"type": "section", "value": {"content": content, "title": "Section"}}],
+            contact_details=cls.contact,
+        )
+
+        # should not appear in purge calls
+        cls.draft_statistical_article = StatisticalArticlePageFactory(
+            content=[{"type": "section", "value": {"content": content, "title": "Section"}}],
+            contact_details=cls.contact,
+            live=False,
+        )
+
+    def setUp(self):
+        # doing this here to avoid noise from deferred internal search index update via tasks
+        with self.captureOnCommitCallbacks(execute=True):
+            self.statistical_article.save()
+
+    def test_publish__contact_details(self, mocked_purge_urls):
+        self.contact.save_revision().publish()
+
+        mocked_purge_urls.assert_called_once_with({self.statistical_article.get_full_url(self.request)})
+
+    def test_unpublish__contact_details(self, mocked_purge_urls):
+        self.contact.save_revision().publish()
+
+        mocked_purge_urls.assert_called_once_with({self.statistical_article.get_full_url(self.request)})
+
+    def test_publish__definition(self, mocked_purge_urls):
+        self.definition.save_revision().publish()
+
+        mocked_purge_urls.assert_called_once_with({self.statistical_article.get_full_url(self.request)})
+
+    def test_unpublish__definition(self, mocked_purge_page):
+        self.definition.save_revision().publish()
+
+        mocked_purge_page.assert_called_once_with({self.statistical_article.get_full_url(self.request)})

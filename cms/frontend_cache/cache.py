@@ -80,6 +80,7 @@ def get_urls_featuring_objects(objects: list[Model]) -> set[str]:
         .values_list("page_id", flat=True)
     )
 
+    # TODO: aliases
     for page in Page.objects.filter(id__in=page_ids).specific(defer=True).live().iterator():
         urls.update(get_page_cached_urls(page))
 
@@ -122,4 +123,9 @@ def purge_page_from_frontend_cache(page: Page) -> None:
         urls.update(get_page_cached_urls(page.get_parent().specific_deferred))
 
     urls.update(get_urls_featuring_object(page))
+    purge_urls_from_cache(urls)
+
+
+def purge_page_containing_snippet_from_cache(obj: Model) -> None:
+    urls = get_urls_featuring_object(obj)
     purge_urls_from_cache(urls)
