@@ -48,7 +48,6 @@ Feature: Role Based Access Control Permission as defined in data migrations
         When a Publishing Admin logs into the admin site
         And the user can see the Settings menu item
         And the user clicks the Settings menu item
-        And the user can see the Navigation settings menu item
         And the user can see the Social media settings menu item
 
     Scenario: A Publishing Admin can manage Definitions
