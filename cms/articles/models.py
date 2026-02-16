@@ -186,6 +186,9 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         response: HttpResponse = self.release(request, slug, version=version, table_id=table_id)
         return response
 
+    def get_cached_paths(self) -> list[str]:
+        return ["/", "/related-data", "/editions"]
+
 
 # pylint: disable=too-many-public-methods
 class StatisticalArticlePage(  # type: ignore[django-manager-missing]
