@@ -7,7 +7,8 @@ from wagtail.test.utils import WagtailTestUtils
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
-from cms.search.publishers import BasePublisher, IAMKafkaTokenProvider, KafkaPublisher, LogPublisher
+from cms.search.publishers import BasePublisher, LogPublisher
+from cms.search.publishers.kafka import IAMKafkaTokenProvider, KafkaPublisher
 from cms.search.tests.helpers import ResourceDictAssertions
 from cms.search.utils import build_page_uri
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
@@ -101,7 +102,7 @@ class KafkaPublisherTests(TestCase, ResourceDictAssertions):
         publisher = KafkaPublisher()
         page = self.information_page
 
-        result = publisher.publish_created_or_updated(page)
+        publisher.publish_created_or_updated(page)
 
         # Check calls to producer
         mock_producer.send.assert_called_once()
@@ -113,7 +114,6 @@ class KafkaPublisherTests(TestCase, ResourceDictAssertions):
         self.assert_base_fields(message_called, page)
 
         mock_future.get.assert_called_once_with(timeout=10)
-        self.assertEqual(result, mock_future.get.return_value)
 
     @patch("cms.search.publishers.KafkaProducer")
     def test_publish_deleted(self, mock_producer_class):
