@@ -110,27 +110,6 @@ def a_published_information_page_translation_exists(context: Context) -> None:
     context.welsh_information_page.save_revision().publish()
 
 
-def _get_information_page(context: Context) -> InformationPage:
-    """Retrieve the information page from context.
-
-    Expects either context.information_page to be set directly,
-    or context.page_title to perform a lookup (and cache the result).
-    """
-    if info_page := get_page_from_context(context, "information"):
-        return info_page
-
-    if hasattr(context, "page_title"):
-        info_page = InformationPage.objects.filter(title=context.page_title).order_by("-last_published_at").first()
-        if info_page:
-            context.information_page = info_page  # Cache for subsequent calls
-            return info_page
-
-    raise AssertionError(
-        "Information page not found. Ensure context.information_page is set "
-        "or context.page_title matches an existing page."
-    )
-
-
 def _assert_information_pages_in_order(context: Context, expected_titles: list[str], label: str) -> None:
     list_items = context.page.locator(".ons-document-list").first.locator(".ons-document-list__item").all()
     actual_titles = []
