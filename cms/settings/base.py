@@ -859,6 +859,8 @@ WAGTAILADMIN_RICH_TEXT_EDITORS = {
 # https://docs.wagtail.io/en/stable/advanced_topics/documents/custom_document_model.html
 WAGTAILDOCS_DOCUMENT_MODEL = "documents.CustomDocument"
 WAGTAILDOCS_DOCUMENT_FORM_BASE = "cms.documents.forms.ONSDocumentForm"
+DOCUMENTS_MAX_UPLOAD_SIZE = int(env.get("DOCUMENTS_MAX_UPLOAD_SIZE", 50 * 1024 * 1024))  # 50MB default
+WAGTAILDOCS_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "xml", "ppt", "pptx", "txt", "rtf", "csv"]
 
 
 # Document serve method - avoid serving files directly from the storage.
@@ -1045,10 +1047,6 @@ CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "true").lower()
 HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS = int(env.get("HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS", 10))
 
 DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "100"))
-
-DOCUMENTS_MAX_UPLOAD_SIZE = int(env.get("DOCUMENTS_MAX_UPLOAD_SIZE", 50 * 1024 * 1024))  # 50MB default
-
-WAGTAILDOCS_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "xml", "ppt", "pptx", "txt", "rtf", "csv"]
 
 
 WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_publish"
