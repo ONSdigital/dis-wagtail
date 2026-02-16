@@ -240,11 +240,6 @@ def check_new_information_is_displayed_with_english_content(context: Context) ->
     check_information_page_content(context.page, information_page=context.information_page, default_language=True)
 
 
-@then("the published information page is displayed with basic English content")
-def check_new_information_is_displayed_with_basic_english_content(context: Context) -> None:
-    check_information_page_content(context.page, information_page=context.information_page, default_language=True)
-
-
 @then("the published information page is displayed with English content and Welsh livery")
 def check_new_information_is_displayed_with_english_content_and_welsh_livery(
     context: Context,
