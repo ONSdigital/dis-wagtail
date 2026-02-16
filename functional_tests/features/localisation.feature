@@ -1,13 +1,13 @@
 Feature: Users can create localised content in the CMS
     Background:
-        Given a CMS user logs into the admin site
+        Given a Publishing Officer logs into the admin site
 
     Scenario: The user is able to create a translated version of a page
         Given a published information page exists
         When the user edits the welsh information page
         And  the user converts the alias into an ordinary page
         And  the user adds Welsh content to the information page
-        And  the welsh information page goes through the publishing steps with CMS user as user and Publishing Officer as reviewer
+        And  the welsh information page goes through the publishing steps with Publishing Officer as user and Publishing Admin as reviewer
         And  the user clicks "View Live" on the publish confirmation banner
         Then the published information page is displayed with Welsh content
         And the page furniture is displayed in Welsh
@@ -41,7 +41,7 @@ Feature: Users can create localised content in the CMS
         And  a published information page translation exists
         When the user edits the information page
         And  the user updates the content of the information page
-        And  the information page goes through the publishing steps with CMS user as user and Publishing Officer as reviewer
+        And  the information page goes through the publishing steps with Publishing Officer as user and Publishing Admin as reviewer
         Then a warning is displayed explaining that the page has existing translations
 
     Scenario: The user doesn't change the translation when editing the English page
@@ -49,11 +49,11 @@ Feature: Users can create localised content in the CMS
         When the user edits the welsh information page
         And  the user converts the alias into an ordinary page
         And  the user adds Welsh content to the information page
-        And  the welsh information page goes through the publishing steps with CMS user as user and Publishing Officer as reviewer
+        And  the welsh information page goes through the publishing steps with Publishing Officer as user and Publishing Admin as reviewer
         When the user edits the welsh information page
         And  the user switches to the English locale
         And  the user updates the content of the information page
-        And  the information page goes through the publishing steps with CMS user as user and Publishing Officer as reviewer
+        And  the information page goes through the publishing steps with Publishing Officer as user and Publishing Admin as reviewer
         And  the user views the welsh information page
         Then the published information page is displayed with Welsh content
 
@@ -63,7 +63,7 @@ Feature: Users can create localised content in the CMS
         And  the user switches to the Welsh locale
         And  the user converts the alias into an ordinary page
         And  the user adds Welsh content to the information page
-        And the welsh information page goes through the publishing steps with CMS user as user and Publishing Officer as reviewer
+        And  the welsh information page goes through the publishing steps with Publishing Officer as user and Publishing Admin as reviewer
         And  the user clicks "View Live" on the publish confirmation banner
         And  the user switches the page language to English
         Then the published information page is displayed with basic English content
