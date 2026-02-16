@@ -186,12 +186,18 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
         self.information_page.unpublish()
         patched_purge_page.assert_called_once_with(self.information_page)
 
+    def test_page_delete(self, patched_purge_urls):
+        self.index_page.delete()
+
+        patched_purge_urls.assert_called_with(
+            {self.index_page.get_full_url(self.request), self.information_page.get_full_url(self.request)}
+        )
+
 
 @patch("cms.frontend_cache.cache.purge_urls_from_cache")
 class PageViaSnippetFrontEndCacheInvalidationTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.request = get_dummy_request()
         cls.contact = ContactDetails.objects.create(name="PSF", email="psf@ons.gov.uk")
         cls.definition = Definition.objects.create(name="Term", definition="Definition")
 
@@ -214,6 +220,8 @@ class PageViaSnippetFrontEndCacheInvalidationTestCase(TestCase):
             live=False,
         )
 
+        cls.statistical_article_url = cls.statistical_article.get_full_url(get_dummy_request())
+
     def setUp(self):
         # doing this here to avoid noise from deferred internal search index update via tasks
         with self.captureOnCommitCallbacks(execute=True):
@@ -222,19 +230,24 @@ class PageViaSnippetFrontEndCacheInvalidationTestCase(TestCase):
     def test_publish__contact_details(self, mocked_purge_urls):
         self.contact.save_revision().publish()
 
-        mocked_purge_urls.assert_called_once_with({self.statistical_article.get_full_url(self.request)})
+        mocked_purge_urls.assert_called_once_with({self.statistical_article_url})
 
     def test_unpublish__contact_details(self, mocked_purge_urls):
         self.contact.save_revision().publish()
 
-        mocked_purge_urls.assert_called_once_with({self.statistical_article.get_full_url(self.request)})
+        mocked_purge_urls.assert_called_once_with({self.statistical_article_url})
 
     def test_publish__definition(self, mocked_purge_urls):
         self.definition.save_revision().publish()
 
-        mocked_purge_urls.assert_called_once_with({self.statistical_article.get_full_url(self.request)})
+        mocked_purge_urls.assert_called_once_with({self.statistical_article_url})
 
-    def test_unpublish__definition(self, mocked_purge_page):
+    def test_unpublish__definition(self, mocked_purge_urls):
         self.definition.save_revision().publish()
 
-        mocked_purge_page.assert_called_once_with({self.statistical_article.get_full_url(self.request)})
+        mocked_purge_urls.assert_called_once_with({self.statistical_article_url})
+
+    def test_delete(self, mocked_purge_urls):
+        self.contact.delete()
+
+        mocked_purge_urls.assert_called_once_with({self.statistical_article_url})
