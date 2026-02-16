@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
+from django.db.models import IntegerField
+from django.db.models.functions import Cast
 from wagtail.contrib.frontend_cache.utils import purge_url_from_cache, purge_urls_from_cache
 from wagtail.models import Page, ReferenceIndex, Site
 
@@ -66,16 +68,17 @@ def get_urls_featuring_objects(objects: list[Model]) -> set[str]:
         to_content_type_model = objects[0]._meta.model_name.lower()  # type: ignore[union-attr]
         to_content_type_app_label = objects[0]._meta.app_label.lower()
 
-    page_ids = [
-        int(val)
-        for val in ReferenceIndex.objects.filter(
+    page_ids = (
+        ReferenceIndex.objects.filter(
             base_content_type__model="page",
             base_content_type__app_label="wagtailcore",
             to_content_type__model=to_content_type_model,
             to_content_type__app_label=to_content_type_app_label,
             to_object_id__in=object_ids,
-        ).values_list("object_id", flat=True)
-    ]
+        )
+        .annotate(page_id=Cast("object_id", output_field=IntegerField()))
+        .values_list("page_id", flat=True)
+    )
 
     for page in Page.objects.filter(id__in=page_ids).specific(defer=True).live().iterator():
         urls.update(get_page_cached_urls(page))
