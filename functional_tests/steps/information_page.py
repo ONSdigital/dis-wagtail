@@ -39,6 +39,7 @@ def create_information_page(context: Context) -> None:
         "title": "Test Info Page",
         "summary": "<p>My test information page</p>",
         "content": [{"type": "section", "value": {"content": content, "title": "Section 1"}}],
+        "live": False,
     }
     if index_page := get_page_from_context(context, "index"):
         kwargs["parent"] = index_page
@@ -65,7 +66,6 @@ def an_information_page_exists(context: Context) -> None:
 @step("a published information page exists")
 def a_published_information_page_exists(context: Context) -> None:
     create_information_page(context)
-    context.information_page.save_revision().publish()
 
     cy = Locale.objects.get(language_code="cy")
     if not context.information_page.has_translation(cy):
@@ -74,6 +74,8 @@ def a_published_information_page_exists(context: Context) -> None:
         )
     else:
         context.welsh_information_page = context.information_page.get_translation(cy)
+
+    context.information_page.save_revision().publish()
 
 
 @step("a published information page translation exists")
@@ -305,7 +307,10 @@ def index_page_has_information_pages(context: Context) -> None:
 
 @when("the user visits the live index page")
 def user_visits_index_page(context: Context) -> None:
-    context.page.goto(f"{context.base_url}{context.index_page.url}")
+    page_url = context.index_page.url
+    if page_url.startswith("/"):
+        page_url = f"{context.base_url}{page_url}"
+    context.page.goto(page_url)
 
 
 @when("the user visits the index page preview")

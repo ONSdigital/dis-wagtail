@@ -88,7 +88,10 @@ def the_user_views_a_page_draft(context: Context, page_str: str) -> None:
 @step("the user views the {page_str} page")
 def the_user_views_the_given_page(context: Context, page_str: str) -> None:
     the_page = get_page_from_context(context, page_str)
-    context.page.goto(f"{context.base_url}{the_page.url}")
+    page_url = the_page.url
+    if page_url.startswith("/"):
+        page_url = f"{context.base_url}{page_url}"
+    context.page.goto(page_url)
 
 
 @step("the {page} page has a Welsh translation")
