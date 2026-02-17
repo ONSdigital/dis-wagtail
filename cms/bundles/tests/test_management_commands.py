@@ -572,7 +572,7 @@ class SendPrePublishNotificationsCommandTestCase(TestCase):
         self.call_command()
 
         # Should send pre-publish notification
-        mock_notify_pre_publish.assert_called_once()
+        mock_notify_pre_publish.assert_called_once_with(bundle, scheduled_time)
 
         # Should not send failure notification
         mock_notify_failure.assert_not_called()

@@ -239,7 +239,14 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
 
     @property
     def is_ready_to_be_published(self) -> bool:
-        return self.status == BundleStatus.APPROVED
+        """Check if bundle is ready to be published.
+
+        Returns True for statuses that allow (re)publishing:
+        - APPROVED: Initial approval, ready for first publish
+        - PARTIALLY_PUBLISHED: Some content published, can retry failed items
+        - FAILED: Publication failed, can retry
+        """
+        return self.status in (BundleStatus.APPROVED, BundleStatus.PARTIALLY_PUBLISHED, BundleStatus.FAILED)
 
     @property
     def can_be_manually_published(self) -> bool:
