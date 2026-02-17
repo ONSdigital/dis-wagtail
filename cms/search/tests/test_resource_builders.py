@@ -12,6 +12,7 @@ from cms.search.tests.helpers import ResourceDictAssertions
 from cms.search.utils import build_resource_dict
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
+from cms.topics.tests.factories import TopicPageFactory
 
 
 class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
@@ -42,6 +43,11 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
         cls.index_page = IndexPageFactory(
             title="Index Page Title",
             summary="Index summary",
+        )
+
+        cls.topic_page = TopicPageFactory(
+            title="Topic Page Title",
+            summary="Topic summary",
         )
 
         cls.release_page_provisional = ReleaseCalendarPageFactory(
@@ -118,8 +124,14 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
         self.assertIn("release_date", result)
 
     def test_index_page(self):
-        """IndexPage is also a standard page (content_type=static_landing_page)."""
+        """IndexPage is also a standard page (content_type=static_page)."""
         page = self.index_page
+        result = build_resource_dict(page)
+        self.assert_base_fields(result, page)
+
+    def test_topic_page(self):
+        """TopicPage is also a standard page (content_type=product_page)."""
+        page = self.topic_page
         result = build_resource_dict(page)
         self.assert_base_fields(result, page)
 
@@ -267,3 +279,26 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
 
         self.assert_base_fields(result, page)
         self.assertNotIn("uri_old", result)
+
+    def test_standard_page_release_date_uses_release_date_when_present(self):
+        """If a page has release_date, build_resource_dict should use it."""
+        # Given
+        page = self.article_page
+
+        # When
+        result = build_resource_dict(page)
+
+        # Then
+        self.assertEqual(result["release_date"], page.release_date.isoformat())
+
+    def test_standard_page_release_date_falls_back_to_last_published_at(self):
+        """If a page has no release_date, build_resource_dict should use last_published_at."""
+        # Given
+        page = self.info_page
+
+        # When
+        result = build_resource_dict(page)
+        self.assertIsNone(getattr(page, "release_date", None))
+
+        # Then
+        self.assertEqual(result["release_date"], page.last_published_at.isoformat())

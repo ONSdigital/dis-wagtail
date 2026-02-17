@@ -45,7 +45,7 @@ django-ses = "^4.7.0"
 aws-msk-iam-sasl-signer-python = "^1.0.2"
 wagtailtables = "^0.2.2"
 pyjwt = "^2.11.0"
-cryptography = "^46.0.4"
+cryptography = "^46.0.5"
 django-pglock = "^1.8.0"
 wagtail-schema-org = "^4.1.1"
 
