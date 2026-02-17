@@ -101,9 +101,7 @@ class PublishBundlesCommandTestCase(TestCase):
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
 
-        self.assertEqual(
-            self.bundle.get_bundled_pages().not_live().count(), 0
-        )
+        self.assertEqual(self.bundle.get_bundled_pages().not_live().count(), 0)
         self.statistical_article.refresh_from_db()
         self.assertTrue(self.statistical_article.live)
 
