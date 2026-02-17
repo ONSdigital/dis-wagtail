@@ -461,7 +461,7 @@ class PublishBundleFailureTests(TestCase):
     @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
     def test_publish_bundle__sets_failed_status_on_total_failure(
-        self, mock_notify_start, mock_notify_failure, mock_logger
+        self, _mock_notify_start, mock_notify_failure, _mock_logger
     ):
         """Test publish_bundle sets FAILED status when all pages fail."""
         # Create pages with no revisions - will fail to publish
@@ -488,7 +488,7 @@ class PublishBundleFailureTests(TestCase):
     @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
     def test_publish_bundle__sets_partially_published_on_partial_failure(
-        self, mock_notify_start, mock_notify_failure, mock_logger
+        self, _mock_notify_start, mock_notify_failure, _mock_logger
     ):
         """Test publish_bundle sets PARTIALLY_PUBLISHED status when some pages fail."""
         # Create page1 with revision (will succeed), page2 without (will fail)
@@ -514,7 +514,7 @@ class PublishBundleFailureTests(TestCase):
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    def test_publish_bundle__returns_true_on_success(self, mock_notify_start, mock_notify_end):
+    def test_publish_bundle__returns_true_on_success(self, _mock_notify_start, mock_notify_end):
         """Test publish_bundle returns True when all pages publish successfully."""
         page1 = StatisticalArticlePageFactory(title="Article 1", live=False)
         page1.save_revision()
@@ -536,7 +536,7 @@ class PublishBundleFailureTests(TestCase):
     @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
     def test_publish_bundle__logs_error_for_pages_without_revisions(
-        self, mock_notify_start, mock_notify_failure, mock_logger
+        self, _mock_notify_start, _mock_notify_failure, mock_logger
     ):
         """Test publish_bundle logs errors for pages that cannot be published."""
         page1 = StatisticalArticlePageFactory(title="Article 1", live=False)
@@ -559,7 +559,7 @@ class PublishBundleFailureTests(TestCase):
     @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
     def test_publish_bundle__does_not_change_status_when_update_status_false(
-        self, mock_notify_start, mock_notify_end, mock_notify_failure
+        self, _mock_notify_start, _mock_notify_end, mock_notify_failure
     ):
         """Test publish_bundle does not update status when update_status=False."""
         page1 = StatisticalArticlePageFactory(title="Article 1", live=False)

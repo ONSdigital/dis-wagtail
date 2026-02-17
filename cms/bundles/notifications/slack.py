@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from collections.abc import Callable
 from datetime import datetime
@@ -10,11 +12,10 @@ from slack_sdk.errors import SlackApiError
 from slack_sdk.web import WebClient
 from slack_sdk.webhook import WebhookClient
 
-from cms.bundles.models import Bundle
-
 if TYPE_CHECKING:
     from django.utils.functional import _StrOrPromise
 
+    from cms.bundles.models import Bundle
     from cms.users.models import User
 
 
