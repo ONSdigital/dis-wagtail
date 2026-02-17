@@ -81,16 +81,7 @@ def _send_and_update_message(
     attachments = [{"color": color, "fields": fields}]
 
     try:
-        if force_new:
-            # Always create a new message without storing timestamp
-            client.chat_postMessage(
-                channel=channel,
-                text=text,
-                attachments=attachments,
-                unfurl_links=False,
-                unfurl_media=False,
-            )
-        elif bundle.slack_notification_ts:
+        if not force_new and bundle.slack_notification_ts:
             # Try to update existing message
             response = client.chat_update(
                 channel=channel,
@@ -112,7 +103,7 @@ def _send_and_update_message(
                 unfurl_media=False,
             )
             # Store timestamp for future updates
-            if response and response.get("ok") and response.get("ts"):
+            if not force_new and response and response.get("ok") and response.get("ts"):
                 bundle.slack_notification_ts = response["ts"]
                 bundle.save(update_fields=["slack_notification_ts"])
 

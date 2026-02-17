@@ -49,7 +49,12 @@ class ONSDatasetApiQuerySet(APIQuerySet):
 
         return results
 
-    def fetch_api_response(self, url: str | None = None, params: Mapping | None = None) -> dict:
+    def fetch_api_response(self, url: str | None = None, params: Mapping | None = None) -> dict:  # noqa: PLR0912
+        # Import here to avoid circular import
+        from cms.bundles.notifications.api_failures import (  # pylint: disable=import-outside-toplevel
+            notify_slack_of_dataset_api_failure,
+        )
+
         # Add Authorization header if token is set
         headers = dict(self.http_headers) if self.http_headers else {}
         if self.token:
@@ -70,6 +75,11 @@ class ONSDatasetApiQuerySet(APIQuerySet):
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
                 logger.warning("Rate limit exceeded when fetching datasets", extra={"url": url})
+                notify_slack_of_dataset_api_failure(
+                    page=None,
+                    exception_message=f"Rate limit exceeded: HTTP {e.response.status_code}",
+                    alert_type="Warning",
+                )
                 raise
             # Check for 5xx server errors (500-599)
             if e.response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
@@ -77,21 +87,52 @@ class ONSDatasetApiQuerySet(APIQuerySet):
                     "Server error when fetching datasets",
                     extra={"url": url, "status_code": e.response.status_code},
                 )
+                notify_slack_of_dataset_api_failure(
+                    page=None,
+                    exception_message=f"Server error: HTTP {e.response.status_code}",
+                    alert_type="Critical",
+                )
                 raise
+            # Other HTTP errors (4xx)
+            notify_slack_of_dataset_api_failure(
+                page=None,
+                exception_message=f"HTTP error: {e.response.status_code}",
+                alert_type="Warning",
+            )
             raise
         except requests.exceptions.RequestException as e:
             logger.error("Request failed when fetching datasets", extra={"url": url, "error": str(e)})
+            # Determine if this is a timeout
+            if isinstance(e, requests.exceptions.Timeout):
+                error_msg = "Timeout when fetching datasets"
+            else:
+                error_msg = f"Network error when fetching datasets: {e!s}"
+            notify_slack_of_dataset_api_failure(
+                page=None,
+                exception_message=error_msg,
+                alert_type="Warning",
+            )
             raise
 
         try:
             api_response: dict = response.json()
         except ValueError as e:
             logger.error("Failed to parse JSON response when fetching datasets", extra={"url": url, "params": params})
+            notify_slack_of_dataset_api_failure(
+                page=None,
+                exception_message="Failed to parse JSON response from datasets API",
+                alert_type="Warning",
+            )
             raise ValueError("Failed to parse JSON response from datasets API") from e
 
         # api_response should be a dict, let's raise a clear error if not
         if not isinstance(api_response, dict):
             logger.error("Invalid API response format when fetching datasets", extra={"url": url, "params": params})
+            notify_slack_of_dataset_api_failure(
+                page=None,
+                exception_message="Invalid API response format, expected a dictionary-like object",
+                alert_type="Warning",
+            )
             raise ValueError("Invalid API response format, expected a dictionary-like object")
 
         if is_detail_request:

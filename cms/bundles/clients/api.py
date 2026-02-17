@@ -79,7 +79,7 @@ class BundleAPIClient:
 
         return max(cls.MIN_LIMIT, min(limit, cls.MAX_LIMIT))
 
-    def _make_request(  # pylint: disable=too-many-arguments  # noqa: PLR0913
+    def _make_request(  # pylint: disable=too-many-arguments,too-many-locals  # noqa: PLR0913
         self,
         method: str,
         endpoint: str,
@@ -128,6 +128,11 @@ class BundleAPIClient:
             return self._process_response(response)
 
         except requests.exceptions.HTTPError as e:
+            # Import here to avoid circular import
+            from cms.bundles.notifications.api_failures import (  # pylint: disable=import-outside-toplevel
+                notify_slack_of_third_party_api_failure,
+            )
+
             error_msg, errors = self._format_http_error(e)
             logger_extra: dict[str, Any] = {
                 "method": method,
@@ -143,14 +148,37 @@ class BundleAPIClient:
                 extra=logger_extra,
             )
 
+            # Determine alert type based on status code
+            alert_type = "Critical" if e.response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR else "Warning"
+
+            # Send Slack notification for API failure
+            notify_slack_of_third_party_api_failure(
+                service_name="Bundle API",
+                exception_message=error_msg,
+                alert_type=alert_type,
+            )
+
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise BundleAPIClientError404(error_msg, errors) from e
 
             raise BundleAPIClientError(error_msg, errors) from e
 
         except requests.exceptions.RequestException as e:
+            # Import here to avoid circular import
+            from cms.bundles.notifications.api_failures import (  # pylint: disable=import-outside-toplevel
+                notify_slack_of_third_party_api_failure,
+            )
+
             error_msg = f"Network error for {method} {url}: {e!s}"
             logger.error("Network error for %s %s: %s", method, url, e)
+
+            # Send Slack notification for API failure
+            notify_slack_of_third_party_api_failure(
+                service_name="Bundle API",
+                exception_message=error_msg,
+                alert_type="Warning",
+            )
+
             raise BundleAPIClientError(error_msg) from e
 
     @staticmethod

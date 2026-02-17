@@ -8,6 +8,10 @@ from slack_sdk.errors import SlackApiError
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
+from cms.bundles.notifications.api_failures import (
+    notify_slack_of_dataset_api_failure,
+    notify_slack_of_third_party_api_failure,
+)
 from cms.bundles.notifications.slack import (
     _format_publish_datetime,
     _get_bundle_notification_context,
@@ -646,3 +650,219 @@ class BundleFailureNotificationTestCase(TestCase):
         # Verify timestamp was NOT updated
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.slack_notification_ts, original_ts)
+
+
+class NotifyDatasetAPIFailureTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = StatisticalArticlePageFactory(title="Test Page")
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.api_failures.get_slack_client")
+    def test_notify_dataset_api_failure__with_page(self, mock_get_client):
+        """Should send notification with page context."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.return_value = {"ok": True}
+        mock_get_client.return_value = mock_client
+
+        notify_slack_of_dataset_api_failure(
+            page=self.page,
+            exception_message="Timeout when fetching dataset",
+            alert_type="Warning",
+        )
+
+        mock_client.chat_postMessage.assert_called_once()
+        call_kwargs = mock_client.chat_postMessage.call_args[1]
+        self.assertEqual(call_kwargs["channel"], "C024BE91L")
+        self.assertEqual(call_kwargs["text"], "Data API Call Failure")
+        self.assertEqual(call_kwargs["attachments"][0]["color"], "danger")
+        self.assertFalse(call_kwargs["unfurl_links"])
+        self.assertFalse(call_kwargs["unfurl_media"])
+
+        # Check fields
+        fields = call_kwargs["attachments"][0]["fields"]
+        self.assertEqual(len(fields), 3)
+        self.assertEqual(fields[0]["title"], "Page Name")
+        self.assertIn("Test Page", fields[0]["value"])
+        self.assertEqual(fields[1]["title"], "Alert Type")
+        self.assertEqual(fields[1]["value"], "Warning")
+        self.assertEqual(fields[2]["title"], "Exception")
+        self.assertEqual(fields[2]["value"], "Timeout when fetching dataset")
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.api_failures.get_slack_client")
+    def test_notify_dataset_api_failure__without_page(self, mock_get_client):
+        """Should send notification without page context."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.return_value = {"ok": True}
+        mock_get_client.return_value = mock_client
+
+        notify_slack_of_dataset_api_failure(
+            page=None,
+            exception_message="Server error: HTTP 500",
+            alert_type="Critical",
+        )
+
+        mock_client.chat_postMessage.assert_called_once()
+        call_kwargs = mock_client.chat_postMessage.call_args[1]
+
+        # Check fields - should not have page field
+        fields = call_kwargs["attachments"][0]["fields"]
+        self.assertEqual(len(fields), 2)
+        self.assertEqual(fields[0]["title"], "Alert Type")
+        self.assertEqual(fields[0]["value"], "Critical")
+        self.assertEqual(fields[1]["title"], "Exception")
+        self.assertEqual(fields[1]["value"], "Server error: HTTP 500")
+
+    @override_settings(SLACK_NOTIFICATION_CHANNEL="")
+    def test_notify_dataset_api_failure__no_channel_configured(self):
+        """Should not send notification when channel is not configured."""
+        result = notify_slack_of_dataset_api_failure(
+            page=None,
+            exception_message="Test error",
+            alert_type="Warning",
+        )
+        self.assertIsNone(result)
+
+    @override_settings(SLACK_BOT_TOKEN=None, SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.api_failures.get_slack_client")
+    def test_notify_dataset_api_failure__no_bot_token(self, mock_get_client):
+        """Should not send notification when bot token is not configured."""
+        mock_get_client.return_value = None
+
+        with self.assertLogs("cms.bundles", level="WARNING") as logs:
+            notify_slack_of_dataset_api_failure(
+                page=None,
+                exception_message="Test error",
+                alert_type="Warning",
+            )
+            self.assertIn("Slack Bot API client not configured", logs.output[0])
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.api_failures.get_slack_client")
+    def test_notify_dataset_api_failure__slack_api_error(self, mock_get_client):
+        """Should log error when Slack API call fails."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.side_effect = Exception("Slack API error")
+        mock_get_client.return_value = mock_client
+
+        with self.assertLogs("cms.bundles", level="ERROR") as logs:
+            notify_slack_of_dataset_api_failure(
+                page=None,
+                exception_message="Test error",
+                alert_type="Warning",
+            )
+            self.assertIn("Failed to send dataset API failure notification", logs.output[0])
+
+
+class NotifyThirdPartyAPIFailureTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.bundle = BundleFactory(name="Test Bundle")
+        cls.page = StatisticalArticlePageFactory(title="Test Page")
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.api_failures.get_slack_client")
+    def test_notify_third_party_api_failure__with_bundle(self, mock_get_client):
+        """Should send notification with bundle context."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.return_value = {"ok": True}
+        mock_get_client.return_value = mock_client
+
+        notify_slack_of_third_party_api_failure(
+            service_name="Bundle API",
+            exception_message="HTTP 500 error: Internal Server Error",
+            alert_type="Critical",
+            bundle=self.bundle,
+        )
+
+        mock_client.chat_postMessage.assert_called_once()
+        call_kwargs = mock_client.chat_postMessage.call_args[1]
+        self.assertEqual(call_kwargs["channel"], "C024BE91L")
+        self.assertEqual(call_kwargs["text"], "API Call Failure to Bundle API failed")
+        self.assertEqual(call_kwargs["attachments"][0]["color"], "danger")
+        self.assertFalse(call_kwargs["unfurl_links"])
+        self.assertFalse(call_kwargs["unfurl_media"])
+
+        # Check fields
+        fields = call_kwargs["attachments"][0]["fields"]
+        self.assertEqual(len(fields), 3)
+        self.assertEqual(fields[0]["title"], "Bundle Name")
+        self.assertIn("Test Bundle", fields[0]["value"])
+        self.assertEqual(fields[1]["title"], "Alert Type")
+        self.assertEqual(fields[1]["value"], "Critical")
+        self.assertEqual(fields[2]["title"], "Exception")
+        self.assertEqual(fields[2]["value"], "HTTP 500 error: Internal Server Error")
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.api_failures.get_slack_client")
+    def test_notify_third_party_api_failure__with_page(self, mock_get_client):
+        """Should send notification with page context."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.return_value = {"ok": True}
+        mock_get_client.return_value = mock_client
+
+        notify_slack_of_third_party_api_failure(
+            service_name="Custom API",
+            exception_message="Connection timeout",
+            alert_type="Warning",
+            page=self.page,
+        )
+
+        mock_client.chat_postMessage.assert_called_once()
+        call_kwargs = mock_client.chat_postMessage.call_args[1]
+
+        # Check fields
+        fields = call_kwargs["attachments"][0]["fields"]
+        self.assertEqual(len(fields), 3)
+        self.assertEqual(fields[0]["title"], "Page Name")
+        self.assertIn("Test Page", fields[0]["value"])
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.api_failures.get_slack_client")
+    def test_notify_third_party_api_failure__without_context(self, mock_get_client):
+        """Should send notification without bundle or page context."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.return_value = {"ok": True}
+        mock_get_client.return_value = mock_client
+
+        notify_slack_of_third_party_api_failure(
+            service_name="External Service",
+            exception_message="Network error",
+            alert_type="Warning",
+        )
+
+        mock_client.chat_postMessage.assert_called_once()
+        call_kwargs = mock_client.chat_postMessage.call_args[1]
+
+        # Check fields - should only have alert type and exception
+        fields = call_kwargs["attachments"][0]["fields"]
+        self.assertEqual(len(fields), 2)
+        self.assertEqual(fields[0]["title"], "Alert Type")
+        self.assertEqual(fields[1]["title"], "Exception")
+
+    @override_settings(SLACK_NOTIFICATION_CHANNEL="")
+    def test_notify_third_party_api_failure__no_channel_configured(self):
+        """Should not send notification when channel is not configured."""
+        result = notify_slack_of_third_party_api_failure(
+            service_name="Test API",
+            exception_message="Test error",
+            alert_type="Warning",
+        )
+        self.assertIsNone(result)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.api_failures.get_slack_client")
+    def test_notify_third_party_api_failure__slack_api_error(self, mock_get_client):
+        """Should log error when Slack API call fails."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.side_effect = Exception("Slack API error")
+        mock_get_client.return_value = mock_client
+
+        with self.assertLogs("cms.bundles", level="ERROR") as logs:
+            notify_slack_of_third_party_api_failure(
+                service_name="Bundle API",
+                exception_message="Test error",
+                alert_type="Critical",
+            )
+            self.assertIn("Failed to send third-party API failure notification", logs.output[0])
