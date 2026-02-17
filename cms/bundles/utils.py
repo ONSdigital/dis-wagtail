@@ -1,5 +1,4 @@
 import logging
-import time
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -7,6 +6,7 @@ from functools import cache
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
 from wagtail.coreutils import resolve_model_string
@@ -390,18 +390,40 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
             "event": "publishing_bundle",
         },
     )
-    start_time = time.time()
-    notifications.notify_slack_of_publication_start(bundle, url=bundle.full_inspect_url)
+    start_time = timezone.now()
+
+    # Send publishing started notification
+    notifications.notify_slack_of_publication_start(
+        bundle=bundle,
+        start_time=bundle.scheduled_publication_date or start_time,
+        url=bundle.full_inspect_url,
+    )
+
+    # Track successful page publications
+    pages_published = 0
     for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision"):
-        if workflow_state := page.current_workflow_state:
-            # finish the workflow
-            workflow_state.current_task_state.approve()
-        elif page.latest_revision:
-            # just run publish
-            page.latest_revision.publish(log_action="wagtail.publish.scheduled")
-        else:
-            logger.error(
-                "Did not publish page as it is not in a workflow or has no revisions",
+        try:
+            if workflow_state := page.current_workflow_state:
+                # finish the workflow
+                workflow_state.current_task_state.approve()
+                pages_published += 1
+            elif page.latest_revision:
+                # just run publish
+                page.latest_revision.publish(log_action="wagtail.publish.scheduled")
+                pages_published += 1
+            else:
+                logger.error(
+                    "Did not publish page as it is not in a workflow or has no revisions",
+                    extra={
+                        "bundle_id": bundle.pk,
+                        "page_id": page.pk,
+                        "event": "publish_page_failed",
+                    },
+                )
+        except Exception:  # pylint: disable=broad-exception-caught
+            # Catch all exceptions to ensure bundle publishing continues for other pages
+            logger.exception(
+                "Failed to publish page",
                 extra={
                     "bundle_id": bundle.pk,
                     "page_id": page.pk,
@@ -416,7 +438,10 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
     if update_status:
         bundle.status = BundleStatus.PUBLISHED
         bundle.save()
-    publish_duration = time.time() - start_time
+
+    end_time = timezone.now()
+    publish_duration = (end_time - start_time).total_seconds()
+
     logger.info(
         "Published bundle",
         extra={
@@ -426,7 +451,14 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
         },
     )
 
-    notifications.notify_slack_of_publish_end(bundle, publish_duration, url=bundle.full_inspect_url)
+    # Send publishing ended notification
+    notifications.notify_slack_of_publish_end(
+        bundle=bundle,
+        start_time=start_time,
+        end_time=end_time,
+        pages_published=pages_published,
+        url=bundle.full_inspect_url,
+    )
 
     log(action="wagtail.publish.scheduled", instance=bundle)
 

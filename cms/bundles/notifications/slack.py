@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any
 
@@ -102,6 +103,68 @@ def _send_and_update_message(
                 logger.exception("Failed to create fallback Slack message")
 
 
+def _get_publish_type(bundle: Bundle) -> str:
+    """Determine the publish type for a bundle.
+
+    Returns:
+        "Release Calendar" if bundle has a release calendar page,
+        "Scheduled" if bundle has a publication date,
+        "Manual" otherwise.
+    """
+    if bundle.release_calendar_page_id:
+        return "Release Calendar"
+    if bundle.publication_date:
+        return "Scheduled"
+    return "Manual"
+
+
+def _format_publish_datetime(dt: datetime) -> str:
+    """Format datetime as DD/MM/YYYY - HH:MM:SS.
+
+    Args:
+        dt: The datetime to format.
+
+    Returns:
+        Formatted string in DD/MM/YYYY - HH:MM:SS format.
+    """
+    return dt.strftime("%d/%m/%Y - %H:%M:%S")
+
+
+def _get_example_page_url(bundle: Bundle) -> str | None:
+    """Get the example page URL for a bundle.
+
+    Returns the release calendar page URL if available,
+    otherwise the first bundled page URL.
+
+    Args:
+        bundle: The bundle to get the example page URL for.
+
+    Returns:
+        The example page URL or None if no pages available.
+    """
+    if release_page := bundle.release_calendar_page:
+        return str(release_page.full_url)
+
+    first_page = bundle.get_bundled_pages().first()
+    return str(first_page.full_url) if first_page else None
+
+
+def _get_bundle_notification_context(bundle: Bundle) -> dict[str, str | int | None]:
+    """Extract common notification context for a bundle.
+
+    Args:
+        bundle: The bundle to extract context from.
+
+    Returns:
+        Dictionary containing publish_type, page_count, and example_page_url.
+    """
+    return {
+        "publish_type": _get_publish_type(bundle),
+        "page_count": bundle.get_bundled_pages().count(),
+        "example_page_url": _get_example_page_url(bundle),
+    }
+
+
 def notify_slack_of_status_change(
     bundle: Bundle,
     old_status: _StrOrPromise,
@@ -165,105 +228,91 @@ def notify_slack_of_status_change(
         logger.error("Unable to notify Slack of bundle status change: %s", response.body)
 
 
-def notify_slack_of_publication_start(bundle: Bundle, user: User | None = None, url: str | None = None) -> None:
-    """Send a Slack notification for Bundle publication start.
+def notify_slack_of_publication_start(
+    bundle: Bundle,
+    start_time: datetime,
+    url: str | None = None,
+) -> None:
+    """Send notification when bundle publishing starts.
 
-    Uses webhook for backward compatibility unless Bot API is fully configured.
+    Includes bundle name, publish type, scheduled start time, page count,
+    and example page URL. Uses amber color to indicate publishing in progress.
+
+    Args:
+        bundle: The bundle being published.
+        start_time: The scheduled start time (publication_date or current time).
+        url: The URL to link to the bundle (optional).
     """
-    # Use Bot API if fully configured, otherwise fall back to webhook
-    if settings.SLACK_BOT_TOKEN and settings.SLACK_NOTIFICATION_CHANNEL:
-        fields: list[dict[Any, Any]] = [
-            {"title": "Title", "value": bundle.name, "short": True},
-            {"title": "User", "value": user.get_full_name() if user else "System", "short": True},
-            {"title": "Pages", "value": bundle.get_bundled_pages().count(), "short": True},
-        ]
-        if url:
-            fields.append({"title": "Link", "value": url, "short": False})
-
-        _send_and_update_message(
-            bundle=bundle,
-            text="Starting bundle publication",
-            color="good",
-            fields=fields,
-        )
+    if not settings.SLACK_NOTIFICATION_CHANNEL:
         return
 
-    # Fallback to webhook for backward compatibility
-    if (webhook_url := settings.SLACK_NOTIFICATIONS_WEBHOOK_URL) is None:
-        return
+    context = _get_bundle_notification_context(bundle)
 
-    client = WebhookClient(webhook_url)
-
-    fields = [
-        {"title": "Title", "value": bundle.name, "short": True},
-        {"title": "User", "value": user.get_full_name() if user else "System", "short": True},
-        {"title": "Pages", "value": bundle.get_bundled_pages().count(), "short": True},
+    fields: list[dict[Any, Any]] = [
+        {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
+        {"title": "Publish Type", "value": context["publish_type"], "short": True},
+        {"title": "Scheduled Start", "value": _format_publish_datetime(start_time), "short": True},
+        {"title": "Page Count", "value": str(context["page_count"]), "short": True},
     ]
-    if url:
-        fields.append(
-            {"title": "Link", "value": url, "short": False},
-        )
 
-    response = client.send(
-        text="Starting bundle publication",
-        attachments=[{"color": "good", "fields": fields}],
-        unfurl_links=False,
-        unfurl_media=False,
+    if context["example_page_url"]:
+        fields.append({"title": "Example Page", "value": context["example_page_url"], "short": False})
+
+    text = "Publishing the bundle has started"
+
+    _send_and_update_message(
+        bundle=bundle,
+        text=text,
+        color="warning",  # Amber
+        fields=fields,
     )
-
-    if response.status_code != HTTPStatus.OK:
-        logger.error("Unable to notify Slack of bundle publication start: %s", response.body)
 
 
 def notify_slack_of_publish_end(
-    bundle: Bundle, elapsed: float, user: User | None = None, url: str | None = None
+    bundle: Bundle,
+    start_time: datetime,
+    end_time: datetime,
+    pages_published: int,
+    url: str | None = None,
 ) -> None:
-    """Send a Slack notification for Bundle publication end.
+    """Send notification when bundle publishing ends successfully.
 
-    Uses webhook for backward compatibility unless Bot API is fully configured.
+    Includes bundle name, publish type, start/end times, duration, page counts,
+    and example page URL. Uses green color to indicate successful completion.
+
+    Args:
+        bundle: The bundle that was published.
+        start_time: The time publishing started.
+        end_time: The time publishing ended.
+        pages_published: Number of pages successfully published.
+        url: The URL to link to the bundle (optional).
     """
-    # Use Bot API if fully configured, otherwise fall back to webhook
-    if settings.SLACK_BOT_TOKEN and settings.SLACK_NOTIFICATION_CHANNEL:
-        fields: list[dict[Any, Any]] = [
-            {"title": "Title", "value": bundle.name, "short": True},
-            {"title": "User", "value": user.get_full_name() if user else "System", "short": True},
-            {"title": "Pages", "value": bundle.get_bundled_pages().count(), "short": True},
-            {"title": "Total time", "value": f"{elapsed:.3f} seconds"},
-        ]
-        if url:
-            fields.append({"title": "Link", "value": url, "short": False})
-
-        _send_and_update_message(
-            bundle=bundle,
-            text="Finished bundle publication",
-            color="good",
-            fields=fields,
-        )
+    if not settings.SLACK_NOTIFICATION_CHANNEL:
         return
 
-    # Fallback to webhook for backward compatibility
-    if (webhook_url := settings.SLACK_NOTIFICATIONS_WEBHOOK_URL) is None:
-        return
+    context = _get_bundle_notification_context(bundle)
 
-    client = WebhookClient(webhook_url)
+    # Calculate elapsed time in seconds
+    elapsed_seconds = (end_time - start_time).total_seconds()
 
-    fields = [
-        {"title": "Title", "value": bundle.name, "short": True},
-        {"title": "User", "value": user.get_full_name() if user else "System", "short": True},
-        {"title": "Pages", "value": bundle.get_bundled_pages().count(), "short": True},
-        {"title": "Total time", "value": f"{elapsed:.3f} seconds"},
+    fields: list[dict[Any, Any]] = [
+        {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
+        {"title": "Publish Type", "value": context["publish_type"], "short": True},
+        {"title": "Publish Start", "value": _format_publish_datetime(start_time), "short": True},
+        {"title": "Publish End", "value": _format_publish_datetime(end_time), "short": True},
+        {"title": "Duration", "value": f"{elapsed_seconds:.3f} seconds", "short": True},
+        {"title": "Page Count", "value": str(context["page_count"]), "short": True},
+        {"title": "Pages Published", "value": str(pages_published), "short": True},
     ]
-    if url:
-        fields.append(
-            {"title": "Link", "value": url, "short": False},
-        )
 
-    response = client.send(
-        text="Finished bundle publication",
-        attachments=[{"color": "good", "fields": fields}],
-        unfurl_links=False,
-        unfurl_media=False,
+    if context["example_page_url"]:
+        fields.append({"title": "Example Page", "value": context["example_page_url"], "short": False})
+
+    text = "Publishing the bundle has ended"
+
+    _send_and_update_message(
+        bundle=bundle,
+        text=text,
+        color="good",  # Green
+        fields=fields,
     )
-
-    if response.status_code != HTTPStatus.OK:
-        logger.error("Unable to notify Slack of bundle publication finish: %s", response.body)

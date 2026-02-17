@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
@@ -8,6 +9,10 @@ from slack_sdk.errors import SlackApiError
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.notifications.slack import (
+    _format_publish_datetime,
+    _get_bundle_notification_context,
+    _get_example_page_url,
+    _get_publish_type,
     _send_and_update_message,
     get_slack_client,
     notify_slack_of_publication_start,
@@ -15,6 +20,7 @@ from cms.bundles.notifications.slack import (
     notify_slack_of_status_change,
 )
 from cms.bundles.tests.factories import BundleFactory
+from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.users.tests.factories import UserFactory
 
 
@@ -191,37 +197,54 @@ class SlackNotificationsBotAPITestCase(TestCase):
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack._send_and_update_message")
     def test_notify_slack_of_publication_start__bot_api(self, mock_send):
-        """Should use Bot API when fully configured."""
-        notify_slack_of_publication_start(self.bundle, self.user, self.inspect_url)
+        """Should use Bot API with required fields."""
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        notify_slack_of_publication_start(self.bundle, start_time, self.inspect_url)
 
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
 
         self.assertEqual(call_kwargs["bundle"], self.bundle)
-        self.assertEqual(call_kwargs["text"], "Starting bundle publication")
-        self.assertEqual(call_kwargs["color"], "good")
-        self.assertIn({"title": "Title", "value": "First Bundle", "short": True}, call_kwargs["fields"])
-        self.assertIn({"title": "User", "value": "Publishing Officer", "short": True}, call_kwargs["fields"])
-        self.assertIn({"title": "Pages", "value": 1, "short": True}, call_kwargs["fields"])
-        self.assertIn({"title": "Link", "value": self.inspect_url, "short": False}, call_kwargs["fields"])
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has started")
+        self.assertEqual(call_kwargs["color"], "warning")  # Amber
+
+        fields = call_kwargs["fields"]
+        self.assertEqual(fields[0]["title"], "Bundle Name")
+        self.assertIn("First Bundle", fields[0]["value"])
+        self.assertIn(self.inspect_url, fields[0]["value"])
+
+        self.assertIn({"title": "Publish Type", "value": "Manual", "short": True}, fields)
+        self.assertIn({"title": "Scheduled Start", "value": "17/02/2026 - 10:00:00", "short": True}, fields)
+        self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack._send_and_update_message")
     def test_notify_slack_of_publish_end__bot_api(self, mock_send):
-        """Should use Bot API when fully configured."""
-        notify_slack_of_publish_end(self.bundle, 1.234, self.user, self.inspect_url)
+        """Should use Bot API with required fields."""
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
+        pages_published = 1
+
+        notify_slack_of_publish_end(self.bundle, start_time, end_time, pages_published, self.inspect_url)
 
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
 
         self.assertEqual(call_kwargs["bundle"], self.bundle)
-        self.assertEqual(call_kwargs["text"], "Finished bundle publication")
-        self.assertEqual(call_kwargs["color"], "good")
-        self.assertIn({"title": "Title", "value": "First Bundle", "short": True}, call_kwargs["fields"])
-        self.assertIn({"title": "User", "value": "Publishing Officer", "short": True}, call_kwargs["fields"])
-        self.assertIn({"title": "Pages", "value": 1, "short": True}, call_kwargs["fields"])
-        self.assertIn({"title": "Total time", "value": "1.234 seconds"}, call_kwargs["fields"])
-        self.assertIn({"title": "Link", "value": self.inspect_url, "short": False}, call_kwargs["fields"])
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended")
+        self.assertEqual(call_kwargs["color"], "good")  # Green
+
+        fields = call_kwargs["fields"]
+        self.assertEqual(fields[0]["title"], "Bundle Name")
+        self.assertIn("First Bundle", fields[0]["value"])
+        self.assertIn(self.inspect_url, fields[0]["value"])
+
+        self.assertIn({"title": "Publish Type", "value": "Manual", "short": True}, fields)
+        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00", "short": True}, fields)
+        self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01", "short": True}, fields)
+        self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": True}, fields)
+        self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
+        self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
 
 
 class SlackNotificationsWebhookTestCase(TestCase):
@@ -293,88 +316,123 @@ class SlackNotificationsWebhookTestCase(TestCase):
         notify_slack_of_status_change(self.bundle, BundleStatus.DRAFT, self.user)
         mock_client.assert_not_called()
 
-    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk", SLACK_BOT_TOKEN=None)
-    @patch("cms.bundles.notifications.slack.WebhookClient")
-    def test_notify_slack_of_publication_start__webhook_fallback(self, mock_client):
-        """Should use webhook when Bot API is not configured."""
-        mock_client.return_value.send.return_value = self.mock_response
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack._send_and_update_message")
+    def test_notify_slack_of_publication_start__with_release_calendar(self, mock_send):
+        """Should include release calendar URL as example page."""
+        release_page = ReleaseCalendarPageFactory()
+        bundle = BundleFactory(name="Release Bundle", release_calendar_page=release_page)
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
 
-        notify_slack_of_publication_start(self.bundle, self.user, self.inspect_url)
+        notify_slack_of_publication_start(bundle, start_time, url=self.inspect_url)
 
-        mock_client.return_value.send.assert_called_once()
-        call_kwargs = mock_client.return_value.send.call_args[1]
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Starting bundle publication")
-        self.assertListEqual(
-            call_kwargs["attachments"][0]["fields"],
-            [
-                {"title": "Title", "value": "First Bundle", "short": True},
-                {"title": "User", "value": "Publishing Officer", "short": True},
-                {"title": "Pages", "value": 1, "short": True},
-                {"title": "Link", "value": self.inspect_url, "short": False},
-            ],
+        fields = call_kwargs["fields"]
+        self.assertIn({"title": "Publish Type", "value": "Release Calendar", "short": True}, fields)
+
+        # Check that example page field is present with release calendar URL
+        example_page_field = next((f for f in fields if f["title"] == "Example Page"), None)
+        self.assertIsNotNone(example_page_field)
+        self.assertEqual(example_page_field["value"], release_page.full_url)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="")
+    @patch("cms.bundles.notifications.slack._send_and_update_message")
+    def test_notify_slack_of_publication_start__no_channel_configured(self, mock_send):
+        """Should return early if no channel is configured."""
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        notify_slack_of_publication_start(self.bundle, start_time)
+        mock_send.assert_not_called()
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack._send_and_update_message")
+    def test_notify_slack_of_publish_end__with_scheduled_bundle(self, mock_send):
+        """Should show Scheduled publish type for bundle with publication_date."""
+        bundle = BundleFactory(
+            name="Scheduled Bundle",
+            publication_date=datetime(2026, 2, 17, 9, 30, 0, tzinfo=UTC),
+            bundled_pages=[StatisticalArticlePageFactory()],
+        )
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 2, tzinfo=UTC)
+
+        notify_slack_of_publish_end(bundle, start_time, end_time, 1, url=self.inspect_url)
+
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args[1]
+
+        fields = call_kwargs["fields"]
+        self.assertIn({"title": "Publish Type", "value": "Scheduled", "short": True}, fields)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="")
+    @patch("cms.bundles.notifications.slack._send_and_update_message")
+    def test_notify_slack_of_publish_end__no_channel_configured(self, mock_send):
+        """Should return early if no channel is configured."""
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 1, tzinfo=UTC)
+        notify_slack_of_publish_end(self.bundle, start_time, end_time, 1)
+        mock_send.assert_not_called()
+
+
+class HelperFunctionsTestCase(TestCase):
+    """Tests for Slack notification helper functions."""
+
+    def test_get_publish_type__release_calendar(self):
+        """Should return 'Release Calendar' when bundle has release_calendar_page_id."""
+        release_page = ReleaseCalendarPageFactory()
+        bundle = BundleFactory(release_calendar_page=release_page)
+        self.assertEqual(_get_publish_type(bundle), "Release Calendar")
+
+    def test_get_publish_type__scheduled(self):
+        """Should return 'Scheduled' when bundle has publication_date."""
+        bundle = BundleFactory(publication_date=datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC))
+        self.assertEqual(_get_publish_type(bundle), "Scheduled")
+
+    def test_get_publish_type__manual(self):
+        """Should return 'Manual' when bundle has neither."""
+        bundle = BundleFactory(publication_date=None, release_calendar_page=None)
+        self.assertEqual(_get_publish_type(bundle), "Manual")
+
+    def test_format_publish_datetime(self):
+        """Should format datetime as DD/MM/YYYY - HH:MM:SS."""
+        dt = datetime(2026, 2, 17, 14, 30, 45, tzinfo=UTC)
+        formatted = _format_publish_datetime(dt)
+        self.assertEqual(formatted, "17/02/2026 - 14:30:45")
+
+    def test_get_example_page_url__release_calendar(self):
+        """Should return release calendar URL when bundle has release_calendar_page_id."""
+        release_page = ReleaseCalendarPageFactory()
+        bundle = BundleFactory(release_calendar_page=release_page)
+        url = _get_example_page_url(bundle)
+        self.assertEqual(url, release_page.full_url)
+
+    def test_get_example_page_url__first_page(self):
+        """Should return first bundled page URL when no release calendar."""
+        page = StatisticalArticlePageFactory()
+        bundle = BundleFactory(bundled_pages=[page], release_calendar_page=None)
+        url = _get_example_page_url(bundle)
+        self.assertIsNotNone(url)
+        self.assertIn(page.slug, url)
+
+    def test_get_example_page_url__no_pages(self):
+        """Should return None when no pages available."""
+        bundle = BundleFactory(bundled_pages=[], release_calendar_page=None)
+        url = _get_example_page_url(bundle)
+        self.assertIsNone(url)
+
+    def test_get_bundle_notification_context(self):
+        """Should return dict with publish_type, page_count, and example_page_url."""
+        page1 = StatisticalArticlePageFactory()
+        page2 = StatisticalArticlePageFactory()
+        bundle = BundleFactory(
+            bundled_pages=[page1, page2],
+            publication_date=datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC),
         )
 
-    def test_notify_slack_of_publication_start__no_webhook_url(self):
-        """Should return early if no webhook URL is configured."""
-        with patch("slack_sdk.webhook.WebhookClient") as mock_client:
-            notify_slack_of_publication_start(self.bundle, self.user)
-            mock_client.assert_not_called()
+        context = _get_bundle_notification_context(bundle)
 
-    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk", SLACK_BOT_TOKEN=None)
-    @patch("cms.bundles.notifications.slack.WebhookClient")
-    def test_notify_slack_of_publish_start__error_logging(self, mock_client):
-        """Should log error if Slack request fails."""
-        with self.assertLogs("cms.bundles") as logs_recorder:
-            self.mock_response.status_code = HTTPStatus.BAD_REQUEST
-            self.mock_response.body = "Error message"
-            mock_client.return_value.send.return_value = self.mock_response
-
-            notify_slack_of_publication_start(self.bundle, self.user)
-
-            self.assertIn("Unable to notify Slack of bundle publication start: Error message", logs_recorder.output[0])
-
-    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk", SLACK_BOT_TOKEN=None)
-    @patch("cms.bundles.notifications.slack.WebhookClient")
-    def test_notify_slack_of_publish_end__webhook_fallback(self, mock_client):
-        """Should use webhook when Bot API is not configured."""
-        mock_client.return_value.send.return_value = self.mock_response
-
-        notify_slack_of_publish_end(self.bundle, 1.234, self.user, self.inspect_url)
-
-        mock_client.return_value.send.assert_called_once()
-        call_kwargs = mock_client.return_value.send.call_args[1]
-
-        self.assertEqual(call_kwargs["text"], "Finished bundle publication")
-        fields = call_kwargs["attachments"][0]["fields"]
-
-        self.assertListEqual(
-            fields,
-            [
-                {"title": "Title", "value": "First Bundle", "short": True},
-                {"title": "User", "value": "Publishing Officer", "short": True},
-                {"title": "Pages", "value": 1, "short": True},
-                {"title": "Total time", "value": "1.234 seconds"},
-                {"title": "Link", "value": self.inspect_url, "short": False},
-            ],
-        )
-        self.assertEqual(len(fields), 5)  # Including URL and elapsed time
-
-    def test_notify_slack_of_publish_end__no_webhook_url(self):
-        """Should return early if no webhook URL is configured."""
-        with patch("slack_sdk.webhook.WebhookClient") as mock_client:
-            notify_slack_of_publish_end(self.bundle, 1.234, self.user)
-            mock_client.assert_not_called()
-
-    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk", SLACK_BOT_TOKEN=None)
-    @patch("cms.bundles.notifications.slack.WebhookClient")
-    def test_notify_slack_of_publish_end__error_logging(self, mock_client):
-        """Should log error if Slack request fails."""
-        with self.assertLogs("cms.bundles") as logs_recorder:
-            self.mock_response.status_code = HTTPStatus.BAD_REQUEST
-            self.mock_response.body = "Error message"
-            mock_client.return_value.send.return_value = self.mock_response
-
-            notify_slack_of_publish_end(self.bundle, 1.234, self.user, self.inspect_url)
-
-            self.assertIn("Unable to notify Slack of bundle publication finish: Error message", logs_recorder.output[0])
+        self.assertEqual(context["publish_type"], "Scheduled")
+        self.assertEqual(context["page_count"], 2)
+        self.assertIsNotNone(context["example_page_url"])
+        self.assertIn(page1.slug, context["example_page_url"])
