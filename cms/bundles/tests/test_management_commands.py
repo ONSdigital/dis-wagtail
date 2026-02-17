@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from io import StringIO
 from unittest.mock import patch
 
@@ -351,3 +351,171 @@ class PublishScheduledWithoutBundlesCommandTestCase(TestCase):
         self.call_command()
 
         self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
+
+
+@override_settings(SLACK_PUBLISH_PREVIEW_MINUTES=30)
+class SendPrePublishNotificationsCommandTestCase(TestCase):
+    def setUp(self):
+        self.stdout = StringIO()
+        self.stderr = StringIO()
+
+    def call_command(self, *args, **kwargs):
+        """Helper to call the management command."""
+        call_command(
+            "send_pre_publish_notifications",
+            *args,
+            stdout=self.stdout,
+            stderr=self.stderr,
+            **kwargs,
+        )
+
+    @patch("cms.bundles.management.commands.send_pre_publish_notifications.notify_slack_of_bundle_pre_publish")
+    def test_send_pre_publish_notifications__no_bundles(self, mock_notify):
+        """Should output message when no bundles require notification."""
+        self.call_command()
+
+        output = self.stdout.getvalue()
+        self.assertIn("No bundles requiring pre-publish notifications.", output)
+        mock_notify.assert_not_called()
+
+    @patch("cms.bundles.management.commands.send_pre_publish_notifications.notify_slack_of_bundle_pre_publish")
+    def test_send_pre_publish_notifications__eligible_bundle_with_publication_date(self, mock_notify):
+        """Should send notification for bundle with publication_date within threshold."""
+        # Create bundle scheduled to publish in 20 minutes (within 30 minute threshold)
+        scheduled_time = timezone.now() + timedelta(minutes=20)
+        bundle = BundleFactory(
+            name="Test Bundle",
+            status=BundleStatus.APPROVED,
+            publication_date=scheduled_time,
+        )
+
+        self.call_command()
+
+        mock_notify.assert_called_once()
+        call_args = mock_notify.call_args[0]
+        self.assertEqual(call_args[0], bundle)
+        # Second arg should be the scheduled_date (from annotation)
+        self.assertIsInstance(call_args[1], datetime)
+
+        output = self.stdout.getvalue()
+        self.assertIn(f"Sent pre-publish notification for bundle: {bundle.name}", output)
+
+    @patch("cms.bundles.management.commands.send_pre_publish_notifications.notify_slack_of_bundle_pre_publish")
+    def test_send_pre_publish_notifications__eligible_bundle_with_release_calendar(self, mock_notify):
+        """Should send notification for bundle with release_calendar_page within threshold."""
+        # Create bundle scheduled via release calendar in 20 minutes
+        scheduled_time = timezone.now() + timedelta(minutes=20)
+        release_page = ReleaseCalendarPageFactory(release_date=scheduled_time)
+        bundle = BundleFactory(
+            name="Release Bundle",
+            status=BundleStatus.APPROVED,
+            publication_date=None,
+            release_calendar_page=release_page,
+        )
+
+        self.call_command()
+
+        mock_notify.assert_called_once()
+        call_args = mock_notify.call_args[0]
+        self.assertEqual(call_args[0], bundle)
+
+        output = self.stdout.getvalue()
+        self.assertIn(f"Sent pre-publish notification for bundle: {bundle.name}", output)
+
+    @patch("cms.bundles.management.commands.send_pre_publish_notifications.notify_slack_of_bundle_pre_publish")
+    def test_send_pre_publish_notifications__skips_already_notified(self, mock_notify):
+        """Should skip bundles that already have slack_notification_ts."""
+        scheduled_time = timezone.now() + timedelta(minutes=15)
+        BundleFactory(
+            name="Already Notified",
+            status=BundleStatus.APPROVED,
+            publication_date=scheduled_time,
+            slack_notification_ts="1503435956.000247",
+        )
+
+        self.call_command()
+
+        mock_notify.assert_not_called()
+        output = self.stdout.getvalue()
+        self.assertIn("No bundles requiring pre-publish notifications.", output)
+
+    @patch("cms.bundles.management.commands.send_pre_publish_notifications.notify_slack_of_bundle_pre_publish")
+    def test_send_pre_publish_notifications__skips_bundles_outside_threshold(self, mock_notify):
+        """Should skip bundles scheduled outside the threshold window."""
+        # Bundle scheduled 45 minutes in future (outside 30 minute threshold)
+        far_future_time = timezone.now() + timedelta(minutes=45)
+        BundleFactory(
+            name="Too Far in Future",
+            status=BundleStatus.APPROVED,
+            publication_date=far_future_time,
+        )
+
+        # Bundle scheduled in the past
+        past_time = timezone.now() - timedelta(minutes=5)
+        BundleFactory(
+            name="In the Past",
+            status=BundleStatus.APPROVED,
+            publication_date=past_time,
+        )
+
+        self.call_command()
+
+        mock_notify.assert_not_called()
+
+    @patch("cms.bundles.management.commands.send_pre_publish_notifications.notify_slack_of_bundle_pre_publish")
+    def test_send_pre_publish_notifications__skips_non_approved_bundles(self, mock_notify):
+        """Should only notify approved bundles."""
+        scheduled_time = timezone.now() + timedelta(minutes=15)
+
+        # Create bundles with various statuses
+        BundleFactory(
+            name="Draft Bundle",
+            status=BundleStatus.DRAFT,
+            publication_date=scheduled_time,
+        )
+        BundleFactory(
+            name="In Review Bundle",
+            status=BundleStatus.IN_REVIEW,
+            publication_date=scheduled_time,
+        )
+
+        self.call_command()
+
+        mock_notify.assert_not_called()
+
+    @patch("cms.bundles.management.commands.send_pre_publish_notifications.notify_slack_of_bundle_pre_publish")
+    def test_send_pre_publish_notifications__handles_multiple_bundles(self, mock_notify):
+        """Should send notifications for all eligible bundles."""
+        scheduled_time = timezone.now() + timedelta(minutes=20)
+
+        bundle1 = BundleFactory(
+            name="Bundle 1",
+            status=BundleStatus.APPROVED,
+            publication_date=scheduled_time,
+        )
+        bundle2 = BundleFactory(
+            name="Bundle 2",
+            status=BundleStatus.APPROVED,
+            publication_date=scheduled_time + timedelta(minutes=5),
+        )
+
+        self.call_command()
+
+        self.assertEqual(mock_notify.call_count, 2)
+        output = self.stdout.getvalue()
+        self.assertIn(f"Sent pre-publish notification for bundle: {bundle1.name}", output)
+        self.assertIn(f"Sent pre-publish notification for bundle: {bundle2.name}", output)
+
+    @patch("cms.bundles.management.commands.send_pre_publish_notifications.notify_slack_of_bundle_pre_publish")
+    def test_send_pre_publish_notifications__skips_bundles_without_scheduled_date(self, mock_notify):
+        """Should skip bundles without publication_date or release_calendar_page."""
+        BundleFactory(
+            name="No Schedule",
+            status=BundleStatus.APPROVED,
+            publication_date=None,
+            release_calendar_page=None,
+        )
+
+        self.call_command()
+
+        mock_notify.assert_not_called()

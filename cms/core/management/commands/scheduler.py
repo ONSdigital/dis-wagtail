@@ -49,6 +49,9 @@ class Command(BaseCommand):
         # See https://apscheduler.readthedocs.io/en/3.x/modules/triggers/cron.html#expression-types
         self.add_management_command("publish_scheduled_without_bundles", CronTrigger(minute="*/5"))
 
+        # Send pre-publish notifications every 5 minutes
+        self.add_management_command("send_pre_publish_notifications", CronTrigger(minute="*/5"))
+
         # Sync teams
         if settings.AWS_COGNITO_TEAM_SYNC_ENABLED:
             self.add_management_command(

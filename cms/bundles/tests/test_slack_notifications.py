@@ -15,6 +15,7 @@ from cms.bundles.notifications.slack import (
     _get_publish_type,
     _send_and_update_message,
     get_slack_client,
+    notify_slack_of_bundle_pre_publish,
     notify_slack_of_publication_start,
     notify_slack_of_publish_end,
     notify_slack_of_status_change,
@@ -245,6 +246,35 @@ class SlackNotificationsBotAPITestCase(TestCase):
         self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": True}, fields)
         self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
         self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack._send_and_update_message")
+    def test_notify_slack_of_bundle_pre_publish__bot_api(self, mock_send):
+        """Should send pre-publish notification with required fields."""
+        scheduled_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        notify_slack_of_bundle_pre_publish(self.bundle, scheduled_time)
+
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args[1]
+
+        self.assertEqual(call_kwargs["bundle"], self.bundle)
+        self.assertEqual(call_kwargs["text"], "Preparing bundle for publication")
+        self.assertEqual(call_kwargs["color"], "warning")  # Amber
+
+        fields = call_kwargs["fields"]
+        self.assertEqual(fields[0]["title"], "Bundle Name")
+        self.assertIn("First Bundle", fields[0]["value"])
+        self.assertIn(self.bundle.full_inspect_url, fields[0]["value"])
+
+        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00", "short": True}, fields)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="")
+    @patch("cms.bundles.notifications.slack._send_and_update_message")
+    def test_notify_slack_of_bundle_pre_publish__no_channel_configured(self, mock_send):
+        """Should return early if no channel is configured."""
+        scheduled_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        notify_slack_of_bundle_pre_publish(self.bundle, scheduled_time)
+        mock_send.assert_not_called()
 
 
 class SlackNotificationsWebhookTestCase(TestCase):

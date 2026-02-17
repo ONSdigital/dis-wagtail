@@ -316,3 +316,34 @@ def notify_slack_of_publish_end(
         color="good",  # Green
         fields=fields,
     )
+
+
+def notify_slack_of_bundle_pre_publish(
+    bundle: Bundle,
+    scheduled_time: datetime,
+) -> None:
+    """Send pre-publish notification for a bundle.
+
+    Creates initial Slack message that will be updated when publishing starts
+    and completes. Uses amber color to indicate upcoming publication.
+
+    Args:
+        bundle: The bundle scheduled for publication.
+        scheduled_time: The scheduled publication datetime.
+    """
+    if not settings.SLACK_NOTIFICATION_CHANNEL:
+        return
+
+    fields: list[dict[Any, Any]] = [
+        {"title": "Bundle Name", "value": f"<{bundle.full_inspect_url}|{bundle.name}>", "short": False},
+        {"title": "Publish Start", "value": _format_publish_datetime(scheduled_time), "short": True},
+    ]
+
+    text = "Preparing bundle for publication"
+
+    _send_and_update_message(
+        bundle=bundle,
+        text=text,
+        color="warning",  # Amber
+        fields=fields,
+    )
