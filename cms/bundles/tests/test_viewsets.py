@@ -1607,6 +1607,43 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.page_draft.get_admin_display_title(), 1)
 
+    @time_machine.travel(datetime(2026, 1, 1, 12, 37, tzinfo=UTC), tick=False)
+    def test_chooser__excludes_scheduled_pages_regardless_of_date(self):
+        scheduled_page = InformationPageFactory(
+            title="Scheduled page", live=False, go_live_at=datetime(2026, 3, 22, 9, 30, tzinfo=UTC)
+        )
+        scheduled_page.save_revision()
+
+        page_with_go_live_in_the_past = InformationPageFactory(title="Page with go-live in the past")
+        page_with_go_live_in_the_past.save_revision().publish()
+
+        page_with_go_live_in_the_past.go_live_at = datetime(2025, 3, 22, 9, 30, tzinfo=UTC)
+        page_with_go_live_in_the_past.save_revision()
+
+        response = self.client.get(self.chooser_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, page_with_go_live_in_the_past.get_admin_display_title())
+        self.assertNotContains(response, scheduled_page.get_admin_display_title())
+
+    @time_machine.travel(datetime(2026, 1, 1, 12, 37, tzinfo=UTC), tick=False)
+    def test_chooser__excludes_scheduled_expiry_pages_regardless_of_date(self):
+        scheduled_page = InformationPageFactory(
+            title="Scheduled page", live=False, expire_at=datetime(2026, 3, 22, 9, 30, tzinfo=UTC)
+        )
+        scheduled_page.save_revision()
+
+        page_with_go_live_in_the_past = InformationPageFactory(
+            title="Page with go-live in the past", live=False, expire_at=datetime(2025, 3, 22, 9, 30, tzinfo=UTC)
+        )
+        page_with_go_live_in_the_past.save_revision()
+
+        response = self.client.get(self.chooser_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, page_with_go_live_in_the_past.get_admin_display_title())
+        self.assertNotContains(response, scheduled_page.get_admin_display_title())
+
     def test_choose_view__no_results(self):
         self.page_draft.save_revision().publish()
         self.page_live_plus_draft.save_revision().publish()

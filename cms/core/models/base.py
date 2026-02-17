@@ -30,13 +30,9 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.template.response import TemplateResponse
     from wagtail.admin.panels import FieldPanel
-    from wagtail.contrib.settings.models import (
-        BaseGenericSetting as _WagtailBaseGenericSetting,
-    )
-    from wagtail.contrib.settings.models import (
-        BaseSiteSetting as _WagtailBaseSiteSetting,
-    )
-    from wagtail.models import PagePermissionTester, Site
+    from wagtail.contrib.settings.models import BaseGenericSetting as _WagtailBaseGenericSetting
+    from wagtail.contrib.settings.models import BaseSiteSetting as _WagtailBaseSiteSetting
+    from wagtail.models import Site
 
     class WagtailBaseSiteSetting(_WagtailBaseSiteSetting, models.Model):
         """Explicit class definition for type checking. Indicates we're inheriting from Django's model."""
@@ -46,12 +42,8 @@ if TYPE_CHECKING:
 
     from cms.users.models import User
 else:
-    from wagtail.contrib.settings.models import (
-        BaseGenericSetting as WagtailBaseGenericSetting,
-    )
-    from wagtail.contrib.settings.models import (
-        BaseSiteSetting as WagtailBaseSiteSetting,
-    )
+    from wagtail.contrib.settings.models import BaseGenericSetting as WagtailBaseGenericSetting
+    from wagtail.contrib.settings.models import BaseSiteSetting as WagtailBaseSiteSetting
 
 __all__ = ["BasePage", "BaseSiteSetting"]
 
@@ -117,7 +109,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         return edit_handler.bind_to_model(cls)
 
-    def permissions_for_user(self, user: User) -> PagePermissionTester:
+    def permissions_for_user(self, user: User) -> BasePagePermissionTester:
         """Override the permission tester class to use for our page models."""
         return BasePagePermissionTester(user, self)
 

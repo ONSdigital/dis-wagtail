@@ -863,6 +863,9 @@ WAGTAILADMIN_RICH_TEXT_EDITORS = {
 # Custom document model
 # https://docs.wagtail.io/en/stable/advanced_topics/documents/custom_document_model.html
 WAGTAILDOCS_DOCUMENT_MODEL = "documents.CustomDocument"
+WAGTAILDOCS_DOCUMENT_FORM_BASE = "cms.documents.forms.ONSDocumentForm"
+DOCUMENTS_MAX_UPLOAD_SIZE = int(env.get("DOCUMENTS_MAX_UPLOAD_SIZE", 50 * 1024 * 1024))  # 50MB default
+WAGTAILDOCS_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "xml", "ppt", "pptx", "txt", "rtf", "csv"]
 
 
 # Document serve method - avoid serving files directly from the storage.
@@ -922,10 +925,12 @@ DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "ons.gov.uk")
 ONS_COOKIES_PAGE_SLUG = "cookies"
 
+# Search redirect path
+ONS_WEBSITE_SEARCH_PATH = env.get("ONS_WEBSITE_SEARCH_PATH", "/search")
+
 # Project information
 BUILD_TIME = datetime.datetime.fromtimestamp(int(env["BUILD_TIME"])) if env.get("BUILD_TIME") else None
 GIT_COMMIT = env.get("GIT_COMMIT") or None
-TAG = env.get("TAG") or None
 START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
@@ -965,7 +970,6 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = {
     "ReleaseCalendarIndex",
     "ThemeIndexPage",
     "ThemePage",
-    "TopicPage",
     "CookiesPage",
     "Page",
 }
@@ -1048,3 +1052,6 @@ CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "true").lower()
 HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS = int(env.get("HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS", 10))
 
 DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "100"))
+
+
+WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_publish"

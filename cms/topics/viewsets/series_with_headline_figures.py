@@ -76,7 +76,6 @@ class SeriesWithHeadlineFiguresChooserMixin:
             return ArticleSeriesPage.objects.none()
 
         series_pages = ArticleSeriesPage.objects.all().only("path", "depth", "title", "pk").order_by("path")
-
         # using this rather than inline import to placate pyright complaining about cyclic imports
         topic_page_model = resolve_model_string("topics.TopicPage")
         try:

@@ -1,11 +1,10 @@
-{% load wagtailadmin_tags i18n %}
+{% load wagtailadmin_tags %}
 
 <ol class="workflow-timeline">
 
     <li class="workflow-timeline__item workflow-timeline__item--approved">
         <div class="workflow-timeline__line"></div>
-        {% icon name="circle-check" classname="workflow-timeline__icon" %}
-        {% trans "Submitted" %}
+        {% icon name="circle-check" classname="workflow-timeline__icon" %}Submitted
     </li>
 
     {# Workflow tasks #}
@@ -20,11 +19,9 @@
                             <div class="w-flex w-flex-col">
                                 <strong>{{ task.name }}</strong>
                                 {% if task.task_state.finished_by %}
-                                    {% blocktrans trimmed with requested_by=task.task_state.finished_by|user_display_name %}
-                                        Changes requested by {{ requested_by }}
-                                    {% endblocktrans %}
+                                    Changes requested by {{ task.task_state.finished_by|user_display_name }}
                                 {% else %}
-                                    {% trans "Changes requested" %}
+                                    Changes requested
                                 {% endif %}
                             </div>
                         </div>
@@ -43,20 +40,16 @@
                         {{ task.name }}
                         {% if task.task_state.finished_by %}
                             {% if status == "cancelled" %}
-                                {% blocktrans trimmed with cancelled_by=task.task_state.finished_by|user_display_name %}
-                                    Cancelled by {{ cancelled_by }}
-                                {% endblocktrans %}
+                                Cancelled by {{ task.task_state.finished_by|user_display_name }}
                             {% else %}
-                                {% blocktrans trimmed with approved_by=task.task_state.finished_by|user_display_name %}
-                                    Approved by {{ approved_by }}
-                                {% endblocktrans %}
+                                Approved by {{ task.task_state.finished_by|user_display_name }}
                             {% endif %}
                         {% endif %}
                     {% endif %}
 
                     {% if task.task_state and task.task_state.get_comment %}
                         <div class="w-ml-[1.875rem] w-w-full">
-                            {% trans "with comment:" %} <em>"{{ task.task_state.get_comment }}"</em>
+                            with comment: <em>"{{ task.task_state.get_comment }}"</em>
                         </div>
                     {% endif %}
                 </li>
@@ -66,21 +59,21 @@
 
     {# Published status #}
     <li class="workflow-timeline__item workflow-timeline__item--pending">
-        {% icon name="radio-empty" classname="workflow-timeline__icon" %}{% trans "Published" %}
+        {% icon name="radio-empty" classname="workflow-timeline__icon" %}Published
     </li>
 </ol>
 
 {# Footer Actions #}
 <div class="workflow-timeline__footer">
     <a href="{{ workflow_history_url }}" class="button">
-        {% trans "See full history" %}
+        See full history
     </a>
 
     {% with object.get_latest_revision as latest_revision %}
         <div class="w-flex">
             {% if object.live_revision %}
                 <a href="{% url revisions_compare_url_name object.pk|admin_urlquote 'live' latest_revision.id %}" class="workflow-timeline__footer-link">
-                    {% trans "Compare with live version" %}
+                    Compare with live version
                 </a>
             {% endif %}
             {% with latest_revision.get_previous as previous_revision %}
@@ -90,7 +83,7 @@
                         <div class="w-mx-2" aria-hidden="true">|</div>
                     {% endif %}
                     <a href="{% url revisions_compare_url_name object.pk|admin_urlquote previous_revision.id latest_revision.id %}"
-                       class="workflow-timeline__footer-link">{% trans 'Compare with previous version' %}</a>
+                       class="workflow-timeline__footer-link">Compare with previous version</a>
                 {% endif %}
             {% endwith %}
         </div>
