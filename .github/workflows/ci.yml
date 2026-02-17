@@ -90,7 +90,7 @@ jobs:
 
   test-python:
     runs-on: ubuntu-latest
-    needs: [compile-static]
+    needs: [lint, lint-front-end, compile-static]
     env:
       DJANGO_SETTINGS_MODULE: cms.settings.test
       DATABASE_URL: postgres://postgres:postgres@localhost/postgres # pragma: allowlist secret secretlint-disable-line
@@ -202,7 +202,7 @@ jobs:
         run: ./.github/check_docker_ignore.py
 
   functional-tests:
-    needs: [compile-static]
+    needs: [lint, lint-front-end, compile-static]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # Allow all shards to run even if one fails
