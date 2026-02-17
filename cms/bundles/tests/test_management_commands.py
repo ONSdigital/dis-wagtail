@@ -519,3 +519,63 @@ class SendPrePublishNotificationsCommandTestCase(TestCase):
         self.call_command()
 
         mock_notify.assert_not_called()
+
+    @patch("cms.bundles.management.commands.send_pre_publish_notifications.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.management.commands.send_pre_publish_notifications.notify_slack_of_bundle_pre_publish")
+    def test_send_pre_publish_notifications__sends_failure_when_validation_fails(
+        self, mock_notify_pre_publish, mock_notify_failure
+    ):
+        """Should send failure notification when bundle validation fails."""
+        scheduled_time = timezone.now() + timedelta(minutes=15)
+        page = StatisticalArticlePageFactory(title="Unready Page", live=False)
+        bundle = BundleFactory(
+            name="Invalid Bundle",
+            status=BundleStatus.APPROVED,
+            publication_date=scheduled_time,
+            bundled_pages=[page],
+        )
+
+        # Don't mark page as ready to publish
+        self.call_command()
+
+        # Should not send pre-publish notification
+        mock_notify_pre_publish.assert_not_called()
+
+        # Should send failure notification
+        mock_notify_failure.assert_called_once()
+        call_kwargs = mock_notify_failure.call_args[1]
+        self.assertEqual(call_kwargs["bundle"], bundle)
+        self.assertEqual(call_kwargs["failure_type"], "pre_publish_failed")
+        self.assertIn("not ready to publish", call_kwargs["exception_message"])
+        self.assertEqual(call_kwargs["alert_type"], "Warning")
+
+        output = self.stdout.getvalue()
+        self.assertIn("Bundle validation failed", output)
+
+    @patch("cms.bundles.management.commands.send_pre_publish_notifications.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.management.commands.send_pre_publish_notifications.notify_slack_of_bundle_pre_publish")
+    def test_send_pre_publish_notifications__sends_pre_publish_when_validation_passes(
+        self, mock_notify_pre_publish, mock_notify_failure
+    ):
+        """Should send pre-publish notification when bundle validation passes."""
+        scheduled_time = timezone.now() + timedelta(minutes=15)
+        page = StatisticalArticlePageFactory(title="Ready Page", live=False)
+        mark_page_as_ready_to_publish(page)
+
+        bundle = BundleFactory(
+            name="Valid Bundle",
+            status=BundleStatus.APPROVED,
+            publication_date=scheduled_time,
+            bundled_pages=[page],
+        )
+
+        self.call_command()
+
+        # Should send pre-publish notification
+        mock_notify_pre_publish.assert_called_once()
+
+        # Should not send failure notification
+        mock_notify_failure.assert_not_called()
+
+        output = self.stdout.getvalue()
+        self.assertIn("Sent pre-publish notification for bundle: Valid Bundle", output)

@@ -373,14 +373,18 @@ def update_bundle_linked_release_calendar_page(bundle: Bundle) -> None:
         revision.publish()
 
 
-def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
+def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     """Publishes a given bundle.
 
     This means it publishes the related pages, as well as updates the linked release calendar.
+
+    Returns:
+        True if all pages published successfully, False if any pages failed.
     """
     # using this rather than inline import to placate pyright complaining about cyclic imports
     notifications = __import__(
-        "cms.bundles.notifications.slack", fromlist=["notify_slack_of_publication_start", "notify_slack_of_publish_end"]
+        "cms.bundles.notifications.slack",
+        fromlist=["notify_slack_of_publication_start", "notify_slack_of_publish_end", "notify_slack_of_bundle_failure"],
     )
 
     logger.info(
@@ -399,9 +403,13 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
         url=bundle.full_inspect_url,
     )
 
-    # Track successful page publications
+    # Track successful and failed page publications
     pages_published = 0
+    failed_pages: list[Page] = []
+    total_pages = 0
+
     for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision"):
+        total_pages += 1
         try:
             if workflow_state := page.current_workflow_state:
                 # finish the workflow
@@ -412,6 +420,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
                 page.latest_revision.publish(log_action="wagtail.publish.scheduled")
                 pages_published += 1
             else:
+                failed_pages.append(page)
                 logger.error(
                     "Did not publish page as it is not in a workflow or has no revisions",
                     extra={
@@ -422,6 +431,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
                 )
         except Exception:  # pylint: disable=broad-exception-caught
             # Catch all exceptions to ensure bundle publishing continues for other pages
+            failed_pages.append(page)
             logger.exception(
                 "Failed to publish page",
                 extra={
@@ -435,9 +445,36 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
     if bundle.release_calendar_page_id:
         update_bundle_linked_release_calendar_page(bundle)
 
+    # Handle failures
+    if failed_pages:
+        if update_status:
+            # Determine severity and status
+            if pages_published == 0:
+                # Total failure - no pages published
+                bundle.status = BundleStatus.FAILED
+                alert_type = "Critical"
+            else:
+                # Partial failure - some pages published
+                bundle.status = BundleStatus.PARTIALLY_PUBLISHED
+                alert_type = "Fail"
+
+            bundle.save(update_fields=["status"])
+
+            # Send failure notification
+            notifications.notify_slack_of_bundle_failure(
+                bundle=bundle,
+                failure_type="publication_failed",
+                exception_message=f"{len(failed_pages)} of {total_pages} page(s) failed to publish",
+                alert_type=alert_type,
+            )
+
+        log(action="wagtail.publish.scheduled", instance=bundle)
+        return False
+
+    # Success path
     if update_status:
         bundle.status = BundleStatus.PUBLISHED
-        bundle.save()
+        bundle.save(update_fields=["status"])
 
     end_time = timezone.now()
     publish_duration = (end_time - start_time).total_seconds()
@@ -461,6 +498,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> None:
     )
 
     log(action="wagtail.publish.scheduled", instance=bundle)
+    return True
 
 
 def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:

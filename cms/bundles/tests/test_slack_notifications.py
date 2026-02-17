@@ -15,6 +15,7 @@ from cms.bundles.notifications.slack import (
     _get_publish_type,
     _send_and_update_message,
     get_slack_client,
+    notify_slack_of_bundle_failure,
     notify_slack_of_bundle_pre_publish,
     notify_slack_of_publication_start,
     notify_slack_of_publish_end,
@@ -466,3 +467,182 @@ class HelperFunctionsTestCase(TestCase):
         self.assertEqual(context["page_count"], 2)
         self.assertIsNotNone(context["example_page_url"])
         self.assertIn(page1.slug, context["example_page_url"])
+
+
+class BundleFailureNotificationTestCase(TestCase):
+    """Tests for bundle failure notifications."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.bundle = BundleFactory(name="Failed Bundle", bundled_pages=[StatisticalArticlePageFactory()])
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.get_slack_client")
+    def test_notify_bundle_failure__pre_publish_failed(self, mock_get_client):
+        """Should send failure notification for pre-publish failure."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.return_value = {"ok": True, "ts": "1503435956.000247"}
+        mock_get_client.return_value = mock_client
+
+        notify_slack_of_bundle_failure(
+            bundle=self.bundle,
+            failure_type="pre_publish_failed",
+            exception_message="Page 'Test Page' is not ready to publish",
+            alert_type="Warning",
+        )
+
+        mock_client.chat_postMessage.assert_called_once()
+        call_kwargs = mock_client.chat_postMessage.call_args[1]
+
+        self.assertEqual(call_kwargs["channel"], "C024BE91L")
+        self.assertEqual(call_kwargs["text"], "Bundle failed to enter Pre-publish state")
+        self.assertEqual(call_kwargs["attachments"][0]["color"], "danger")
+        self.assertFalse(call_kwargs["unfurl_links"])
+        self.assertFalse(call_kwargs["unfurl_media"])
+
+        fields = call_kwargs["attachments"][0]["fields"]
+        self.assertEqual(fields[0]["title"], "Bundle Name")
+        self.assertIn("Failed Bundle", fields[0]["value"])
+        self.assertIn({"title": "Publish Type", "value": "Manual", "short": True}, fields)
+        self.assertIn({"title": "Alert Type", "value": "Warning", "short": True}, fields)
+        self.assertIn(
+            {"title": "Exception", "value": "Page 'Test Page' is not ready to publish", "short": False}, fields
+        )
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.get_slack_client")
+    def test_notify_bundle_failure__publication_failed_critical(self, mock_get_client):
+        """Should send critical alert when all pages fail to publish."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.return_value = {"ok": True, "ts": "1503435956.000247"}
+        mock_get_client.return_value = mock_client
+
+        notify_slack_of_bundle_failure(
+            bundle=self.bundle,
+            failure_type="publication_failed",
+            exception_message="3 of 3 page(s) failed to publish",
+            alert_type="Critical",
+        )
+
+        mock_client.chat_postMessage.assert_called_once()
+        call_kwargs = mock_client.chat_postMessage.call_args[1]
+
+        self.assertEqual(call_kwargs["text"], "Bundle Publication Failure Detected")
+        self.assertEqual(call_kwargs["attachments"][0]["color"], "danger")
+
+        fields = call_kwargs["attachments"][0]["fields"]
+        self.assertIn({"title": "Alert Type", "value": "Critical", "short": True}, fields)
+        self.assertIn({"title": "Exception", "value": "3 of 3 page(s) failed to publish", "short": False}, fields)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.get_slack_client")
+    def test_notify_bundle_failure__publication_failed_partial(self, mock_get_client):
+        """Should send fail alert when some pages fail to publish."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.return_value = {"ok": True, "ts": "1503435956.000247"}
+        mock_get_client.return_value = mock_client
+
+        notify_slack_of_bundle_failure(
+            bundle=self.bundle,
+            failure_type="publication_failed",
+            exception_message="1 of 3 page(s) failed to publish",
+            alert_type="Fail",
+        )
+
+        mock_client.chat_postMessage.assert_called_once()
+        call_kwargs = mock_client.chat_postMessage.call_args[1]
+
+        fields = call_kwargs["attachments"][0]["fields"]
+        self.assertIn({"title": "Alert Type", "value": "Fail", "short": True}, fields)
+        self.assertIn({"title": "Exception", "value": "1 of 3 page(s) failed to publish", "short": False}, fields)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.get_slack_client")
+    def test_notify_bundle_failure__with_scheduled_bundle(self, mock_get_client):
+        """Should show correct publish type for scheduled bundles."""
+        bundle = BundleFactory(
+            name="Scheduled Bundle",
+            publication_date=datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC),
+            bundled_pages=[StatisticalArticlePageFactory()],
+        )
+        mock_client = Mock()
+        mock_client.chat_postMessage.return_value = {"ok": True, "ts": "1503435956.000247"}
+        mock_get_client.return_value = mock_client
+
+        notify_slack_of_bundle_failure(
+            bundle=bundle,
+            failure_type="publication_failed",
+            exception_message="Test error",
+            alert_type="Critical",
+        )
+
+        mock_client.chat_postMessage.assert_called_once()
+        call_kwargs = mock_client.chat_postMessage.call_args[1]
+
+        fields = call_kwargs["attachments"][0]["fields"]
+        self.assertIn({"title": "Publish Type", "value": "Scheduled", "short": True}, fields)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="")
+    @patch("cms.bundles.notifications.slack.get_slack_client")
+    def test_notify_bundle_failure__no_channel_configured(self, mock_get_client):
+        """Should return early if no channel is configured."""
+        notify_slack_of_bundle_failure(
+            bundle=self.bundle,
+            failure_type="publication_failed",
+            exception_message="Test error",
+            alert_type="Critical",
+        )
+        mock_get_client.assert_not_called()
+
+    @override_settings(SLACK_BOT_TOKEN=None, SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.get_slack_client")
+    def test_notify_bundle_failure__no_client(self, mock_get_client):
+        """Should return early with warning if client is not configured."""
+        mock_get_client.return_value = None
+
+        with self.assertLogs("cms.bundles", level="WARNING") as logs:
+            notify_slack_of_bundle_failure(
+                bundle=self.bundle,
+                failure_type="publication_failed",
+                exception_message="Test error",
+                alert_type="Critical",
+            )
+            self.assertIn("Slack Bot API client not configured", logs.output[0])
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.get_slack_client")
+    def test_notify_bundle_failure__slack_api_error(self, mock_get_client):
+        """Should log exception if Slack API call fails."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.side_effect = SlackApiError("invalid_auth", response={"error": "invalid_auth"})
+        mock_get_client.return_value = mock_client
+
+        with self.assertLogs("cms.bundles", level="ERROR") as logs:
+            notify_slack_of_bundle_failure(
+                bundle=self.bundle,
+                failure_type="publication_failed",
+                exception_message="Test error",
+                alert_type="Critical",
+            )
+            self.assertIn("Failed to send/update Slack message", logs.output[0])
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.get_slack_client")
+    def test_notify_bundle_failure__does_not_update_slack_notification_ts(self, mock_get_client):
+        """Should not store message timestamp for failure notifications."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.return_value = {"ok": True, "ts": "1503435956.000247"}
+        mock_get_client.return_value = mock_client
+
+        original_ts = self.bundle.slack_notification_ts
+
+        notify_slack_of_bundle_failure(
+            bundle=self.bundle,
+            failure_type="publication_failed",
+            exception_message="Test error",
+            alert_type="Critical",
+        )
+
+        # Verify timestamp was NOT updated
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.slack_notification_ts, original_ts)

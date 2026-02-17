@@ -1,10 +1,11 @@
 from datetime import UTC, datetime
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from cms.articles.models import StatisticalArticlePage
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.utils import (
     BundleAPIBundleMetadata,
@@ -17,6 +18,7 @@ from cms.bundles.utils import (
     get_pages_in_active_bundles,
     in_active_bundle,
     in_bundle_ready_to_be_published,
+    publish_bundle,
     serialize_bundle_content_for_published_release_calendar_page,
 )
 from cms.core.tests.utils import rebuild_internal_search_index
@@ -448,3 +450,127 @@ class SerializeBundleContentTranslationTests(TestCase):
         content = serialize_bundle_content_for_published_release_calendar_page(bundle)
 
         self.assertEqual(content[0]["value"]["title"], "Publications")
+
+
+class PublishBundleFailureTests(TestCase):
+    """Tests for publish_bundle failure handling."""
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.utils.logger")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    def test_publish_bundle__sets_failed_status_on_total_failure(
+        self, mock_notify_start, mock_notify_failure, mock_logger
+    ):
+        """Test publish_bundle sets FAILED status when all pages fail."""
+        # Create pages with no revisions - will fail to publish
+        page1 = StatisticalArticlePageFactory(title="Article 1", live=False)
+        page2 = StatisticalArticlePageFactory(title="Article 2", live=False)
+        bundle = BundleFactory(approved=True, bundled_pages=[page1, page2])
+
+        result = publish_bundle(bundle, update_status=True)
+
+        self.assertFalse(result)
+        bundle.refresh_from_db()
+        self.assertEqual(bundle.status, BundleStatus.FAILED)
+
+        # Verify failure notification was sent with Critical alert
+        mock_notify_failure.assert_called_once()
+        call_kwargs = mock_notify_failure.call_args[1]
+        self.assertEqual(call_kwargs["bundle"], bundle)
+        self.assertEqual(call_kwargs["failure_type"], "publication_failed")
+        self.assertEqual(call_kwargs["exception_message"], "2 of 2 page(s) failed to publish")
+        self.assertEqual(call_kwargs["alert_type"], "Critical")
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.utils.logger")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    def test_publish_bundle__sets_partially_published_on_partial_failure(
+        self, mock_notify_start, mock_notify_failure, mock_logger
+    ):
+        """Test publish_bundle sets PARTIALLY_PUBLISHED status when some pages fail."""
+        # Create page1 with revision (will succeed), page2 without (will fail)
+        page1 = StatisticalArticlePageFactory(title="Article 1", live=False)
+        page1.save_revision()
+        page2 = StatisticalArticlePageFactory(title="Article 2", live=False)
+        bundle = BundleFactory(approved=True, bundled_pages=[page1, page2])
+
+        result = publish_bundle(bundle, update_status=True)
+
+        self.assertFalse(result)
+        bundle.refresh_from_db()
+        self.assertEqual(bundle.status, BundleStatus.PARTIALLY_PUBLISHED)
+
+        # Verify failure notification was sent with Fail alert
+        mock_notify_failure.assert_called_once()
+        call_kwargs = mock_notify_failure.call_args[1]
+        self.assertEqual(call_kwargs["bundle"], bundle)
+        self.assertEqual(call_kwargs["failure_type"], "publication_failed")
+        self.assertEqual(call_kwargs["exception_message"], "1 of 2 page(s) failed to publish")
+        self.assertEqual(call_kwargs["alert_type"], "Fail")
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    def test_publish_bundle__returns_true_on_success(self, mock_notify_start, mock_notify_end):
+        """Test publish_bundle returns True when all pages publish successfully."""
+        page1 = StatisticalArticlePageFactory(title="Article 1", live=False)
+        page1.save_revision()
+        page2 = StatisticalArticlePageFactory(title="Article 2", live=False)
+        page2.save_revision()
+        bundle = BundleFactory(approved=True, bundled_pages=[page1, page2])
+
+        result = publish_bundle(bundle, update_status=True)
+
+        self.assertTrue(result)
+        bundle.refresh_from_db()
+        self.assertEqual(bundle.status, BundleStatus.PUBLISHED)
+
+        # Verify success notification was sent
+        mock_notify_end.assert_called_once()
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.utils.logger")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    def test_publish_bundle__logs_error_for_pages_without_revisions(
+        self, mock_notify_start, mock_notify_failure, mock_logger
+    ):
+        """Test publish_bundle logs errors for pages that cannot be published."""
+        page1 = StatisticalArticlePageFactory(title="Article 1", live=False)
+        page1.save_revision()
+        page2 = StatisticalArticlePageFactory(title="Article 2", live=False)
+        # page2 has no revision and no workflow state - will fail
+        bundle = BundleFactory(approved=True, bundled_pages=[page1, page2])
+
+        result = publish_bundle(bundle, update_status=True)
+
+        self.assertFalse(result)
+        bundle.refresh_from_db()
+        self.assertEqual(bundle.status, BundleStatus.PARTIALLY_PUBLISHED)
+
+        # Verify failure was logged
+        mock_logger.error.assert_called()
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    def test_publish_bundle__does_not_change_status_when_update_status_false(
+        self, mock_notify_start, mock_notify_end, mock_notify_failure
+    ):
+        """Test publish_bundle does not update status when update_status=False."""
+        page1 = StatisticalArticlePageFactory(title="Article 1", live=False)
+        bundle = BundleFactory(approved=True, bundled_pages=[page1])
+        original_status = bundle.status
+
+        # Page without revision will fail
+        result = publish_bundle(bundle, update_status=False)
+
+        self.assertFalse(result)
+        bundle.refresh_from_db()
+        self.assertEqual(bundle.status, original_status)
+
+        # Failure notification should not be sent when update_status=False
+        mock_notify_failure.assert_not_called()
