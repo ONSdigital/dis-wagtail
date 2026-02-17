@@ -39,6 +39,7 @@ def create_information_page(context: Context) -> None:
         "title": "Test Info Page",
         "summary": "<p>My test information page</p>",
         "content": [{"type": "section", "value": {"content": content, "title": "Section 1"}}],
+        "live": False,
     }
     if index_page := get_page_from_context(context, "index"):
         kwargs["parent"] = index_page
@@ -65,7 +66,6 @@ def an_information_page_exists(context: Context) -> None:
 @step("a published information page exists")
 def a_published_information_page_exists(context: Context) -> None:
     create_information_page(context)
-    context.information_page.save_revision().publish()
 
     cy = Locale.objects.get(language_code="cy")
     if not context.information_page.has_translation(cy):
@@ -74,6 +74,8 @@ def a_published_information_page_exists(context: Context) -> None:
         )
     else:
         context.welsh_information_page = context.information_page.get_translation(cy)
+
+    context.information_page.save_revision().publish()
 
 
 @step("a published information page translation exists")
@@ -108,27 +110,6 @@ def a_published_information_page_translation_exists(context: Context) -> None:
     ]
 
     context.welsh_information_page.save_revision().publish()
-
-
-def _get_information_page(context: Context) -> InformationPage:
-    """Retrieve the information page from context.
-
-    Expects either context.information_page to be set directly,
-    or context.page_title to perform a lookup (and cache the result).
-    """
-    if info_page := get_page_from_context(context, "information"):
-        return info_page
-
-    if hasattr(context, "page_title"):
-        info_page = InformationPage.objects.filter(title=context.page_title).order_by("-last_published_at").first()
-        if info_page:
-            context.information_page = info_page  # Cache for subsequent calls
-            return info_page
-
-    raise AssertionError(
-        "Information page not found. Ensure context.information_page is set "
-        "or context.page_title matches an existing page."
-    )
 
 
 def _assert_information_pages_in_order(context: Context, expected_titles: list[str], label: str) -> None:
@@ -235,11 +216,6 @@ def check_new_information_is_displayed_with_content(context: Context) -> None:
 
 @then("the published information page is displayed with English content")
 def check_new_information_is_displayed_with_english_content(context: Context) -> None:
-    check_information_page_content(context.page, information_page=context.information_page, default_language=True)
-
-
-@then("the published information page is displayed with basic English content")
-def check_new_information_is_displayed_with_basic_english_content(context: Context) -> None:
     check_information_page_content(context.page, information_page=context.information_page, default_language=True)
 
 

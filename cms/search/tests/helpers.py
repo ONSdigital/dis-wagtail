@@ -15,8 +15,9 @@ EXPECTED_CONTENT_TYPES = {
     "ReleaseCalendarPage": "release",
     "StatisticalArticlePage": "statistical_article",
     "InformationPage": "static_page",
-    "IndexPage": "static_landing_page",
+    "IndexPage": "static_page",
     "MethodologyPage": "static_methodology",
+    "TopicPage": "product_page",
 }
 
 
@@ -46,6 +47,9 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertEqual(payload["content_type"], expected_ct)
         self.assertIsInstance(payload["topics"], list)
         self.assertEqual(payload["language"], page.locale.get_display_name())
+
+        release_date = getattr(page, "release_date", page.last_published_at)
+        self.assertEqual(payload["release_date"], release_date.isoformat())
 
     def assert_release_fields_present(self, payload: dict) -> None:
         for key in ("release_date", "finalised", "cancelled", "published", "date_changes"):

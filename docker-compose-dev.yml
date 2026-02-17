@@ -1,9 +1,8 @@
 ---
 services:
   db:
-    image: postgres:16
+    image: pgautoupgrade/pgautoupgrade:18-debian
     environment:
-      PGDATA: /var/lib/postgresql/data/pgdata
       # Defaults for createdb/dropdb/pg_restore etc.
       PGDATABASE: ons
       PGUSER: ons
@@ -11,7 +10,6 @@ services:
       # Values for initdb
       POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_USER: ons
-      REDIS_URL: redis://redis:6379
     volumes:
       - pgdata:/var/lib/postgresql/data
     attach: false
