@@ -10,6 +10,7 @@ from wagtail.admin.telepath import register
 from wagtail.blocks.struct_block import StructValue
 from wagtailtables.blocks import TableAdapter, TableBlock
 
+from cms.core.utils import strip_unwanted_control_chars_from_json
 from cms.datavis.utils import numberfy
 
 RowType = list[str | float | int]
@@ -61,6 +62,11 @@ class SimpleTableBlock(TableBlock):
 
     class Meta:
         value_class = SimpleTableStructValue
+
+    def _to_struct_value(self, block_items: Any) -> SimpleTableStructValue:
+        value = super()._to_struct_value(block_items)
+        value["table_data"] = strip_unwanted_control_chars_from_json(value["table_data"])
+        return value
 
 
 class SimpleTableBlockAdapter(TableAdapter):

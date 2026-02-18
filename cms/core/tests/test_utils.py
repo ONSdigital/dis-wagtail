@@ -1,3 +1,4 @@
+import json
 import urllib.parse
 from unittest.mock import Mock, patch
 
@@ -6,6 +7,7 @@ from django.test import RequestFactory, SimpleTestCase, TestCase, override_setti
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.utils import (
+    UNWANTED_CONTROL_CHARACTERS,
     clean_cell_value,
     flatten_table_data,
     get_client_ip,
@@ -13,6 +15,7 @@ from cms.core.utils import (
     latex_formula_to_svg,
     redirect,
     redirect_to_parent_listing,
+    strip_unwanted_control_chars_from_json,
 )
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageFactory
@@ -584,3 +587,13 @@ class CleanCellValueTestCase(SimpleTestCase):
 
             clean_cell_value("text with <b>html</b>")
             mock_bs.assert_called_once()
+
+
+class ControlCharactersTestCase(SimpleTestCase):
+    def test_strips_unwanted_control_chars_from_encoded_json(self):
+        for char in UNWANTED_CONTROL_CHARACTERS:
+            with self.subTest(char):
+                self.assertEqual(
+                    json.loads(strip_unwanted_control_chars_from_json(json.dumps(f"The character is {char}"))),
+                    "The character is ",
+                )

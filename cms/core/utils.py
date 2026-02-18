@@ -1,6 +1,9 @@
 import io
+import json
 import re
+import string
 from collections.abc import Mapping
+from itertools import chain
 from threading import Lock
 from typing import TYPE_CHECKING, Any
 
@@ -18,6 +21,17 @@ if TYPE_CHECKING:
     from wagtail.models import Page
 
 matplotlib_lock = Lock()
+
+# C0 and C1
+CONTROL_CHARACTERS = frozenset(chr(z) for z in chain(range(32), range(0x7F, 0xA0)))
+
+# Allow whitespace
+UNWANTED_CONTROL_CHARACTERS = CONTROL_CHARACTERS - set(string.whitespace)
+
+# Pre-encode control characters in pattern to replace without decoding
+JSON_ENCODED_UNWANTED_CONTROL_CHARS_RE = re.compile(
+    "|".join(re.escape(json.dumps(z).strip('"')) for z in UNWANTED_CONTROL_CHARACTERS)
+)
 
 # A set of tuples containing the beginning and end indicators for LaTeX formulas
 FORMULA_INDICATORS: set[tuple[str, str]] = {("$$", "$$"), ("\\(", "\\)"), ("\\[", "\\]")}
@@ -198,3 +212,8 @@ def flatten_table_data(data: Mapping) -> list[list[str | int | float]]:
         result.append(processed_row)
 
     return result
+
+
+def strip_unwanted_control_chars_from_json(data: str) -> str:
+    """Remove control characters (C0 and C1) from JSON string (without decoding)."""
+    return JSON_ENCODED_UNWANTED_CONTROL_CHARS_RE.sub("", data)
