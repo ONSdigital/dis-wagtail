@@ -9,10 +9,7 @@ from wagtail.blocks import (
     StreamBlockValidationError,
     StructBlock,
     StructValue,
-    URLBlock,
 )
-from django.utils.functional import cached_property
-from wagtail.blocks import CharBlock, PageChooserBlock, StreamBlockValidationError, StructBlock, StructValue
 
 from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
 from cms.core.formatting_utils import get_document_metadata_date

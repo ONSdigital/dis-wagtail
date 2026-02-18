@@ -1,7 +1,4 @@
-from datetime import datetime
-
 from django.test import RequestFactory, TestCase, override_settings
-from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
 
@@ -24,6 +21,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         cls.page_url = cls.index_page.url
 
         cls.request_factory = RequestFactory()
+
     def test_permission_tester_inherits_from_basepagepermissiontester(self):
         self.assertIsInstance(self.index_page.permissions_for_user(UserFactory()), BasePagePermissionTester)
 
