@@ -6,6 +6,7 @@ dict in this file so all tests agree on a single truth.
 import json
 
 from django.test import SimpleTestCase, override_settings
+from django.utils.html import strip_tags
 from wagtail.models import Page
 
 from cms.search.utils import build_page_uri
@@ -14,8 +15,9 @@ EXPECTED_CONTENT_TYPES = {
     "ReleaseCalendarPage": "release",
     "StatisticalArticlePage": "statistical_article",
     "InformationPage": "static_page",
-    "IndexPage": "static_landing_page",
+    "IndexPage": "static_page",
     "MethodologyPage": "static_methodology",
+    "TopicPage": "product_page",
 }
 
 
@@ -36,12 +38,18 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertEqual(payload["uri"], build_page_uri(page))
         expected_title = title if title is not None else page.title
         self.assertEqual(payload["title"], expected_title)
-        self.assertEqual(payload["summary"], page.summary)
+
+        # The resource builder uses get_text_for_indexing() for search/Kafka payloads,
+        # so we only strip the source summary for comparison instead of re-sanitising.
+        self.assertEqual(payload["summary"], strip_tags(page.summary))
 
         expected_ct = EXPECTED_CONTENT_TYPES[type(page).__name__]
         self.assertEqual(payload["content_type"], expected_ct)
         self.assertIsInstance(payload["topics"], list)
         self.assertEqual(payload["language"], page.locale.get_display_name())
+
+        release_date = getattr(page, "release_date", page.last_published_at)
+        self.assertEqual(payload["release_date"], release_date.isoformat())
 
     def assert_release_fields_present(self, payload: dict) -> None:
         for key in ("release_date", "finalised", "cancelled", "published", "date_changes"):

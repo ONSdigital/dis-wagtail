@@ -15,3 +15,7 @@ PREVIOUS_RELEASES_PER_PAGE = 3
 # SEARCH_INDEX_PUBLISHER_BACKEND = "" # comment this out to use LogPublisher
 # Can configure kafka servers below
 # KAFKA_SERVERS = env.get("KAFKA_SERVERS", "localhost:9094").split(",")
+
+
+# Set to False to enforce workflow-led publishing of pages
+ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT = True

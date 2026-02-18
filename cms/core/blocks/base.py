@@ -11,7 +11,10 @@ from wagtail.blocks import (
     StructValue,
     URLBlock,
 )
+from django.utils.functional import cached_property
+from wagtail.blocks import CharBlock, PageChooserBlock, StreamBlockValidationError, StructBlock, StructValue
 
+from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
 from cms.core.formatting_utils import get_document_metadata_date
 from cms.core.utils import get_content_type_for_page, get_related_content_type_label
 
@@ -135,7 +138,7 @@ class LinkBlock(StructBlock):
     """Link block with page or link validation."""
 
     page = PageChooserBlock(required=False)
-    external_url = URLBlock(required=False, label="or External Link")
+    external_url = RelativeOrAbsoluteURLBlock(required=False, label="or External Link")
     title = CharBlock(
         help_text="Populate when adding an external link. "
         "When choosing a page, you can leave it blank to use the page’s own title",

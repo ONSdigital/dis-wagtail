@@ -9,9 +9,12 @@ from wagtail.models import Locale
 
 from cms.themes.models import ThemeIndexPage
 from cms.themes.tests.factories import ThemeIndexPageFactory
-from functional_tests.step_helpers.utils import get_page_from_context
+from functional_tests.step_helpers.utils import get_or_create_topic, get_page_from_context
 
 RE_UNLOCKED = re.compile(r"Page '.*' is now unlocked\.")
+RE_CREATED = re.compile(r"Page '.*' created\.")
+RE_SAVED = re.compile(r"Page '.*' has been updated\.")
+RE_PUBLISHED = re.compile(r"Page '.*' has been published\.")
 
 
 @when("the user clicks the action button toggle")
@@ -37,33 +40,55 @@ def user_clicks_view_live_on_publish_confirmation_banner(context: Context) -> No
 def click_the_given_button(context: Context, button_text: str) -> None:
     # Focus on the Status button to prevent overlap when trying to click the button
     context.page.locator('[data-w-tooltip-content-value="Status"]').focus()
-    if button_text in ("Save Draft", "Preview"):
-        # add a small delay to allow any client-side JS to initialise.
-        context.page.wait_for_timeout(500)
-    context.page.get_by_role("button", name=button_text).click()
+    context.page.get_by_role("button", name=button_text, exact=True).click()
+
+
+@step("the user opens the preview in a new tab")
+def open_new_preview_tab(context: Context) -> None:
+    context.page.locator('[data-w-tooltip-content-value="Status"]').focus()
+    user_clicks_view_toggle_preview(context)
+
+    with context.page.expect_popup() as preview_tab:
+        context.page.get_by_role("link", name="Preview in new tab").click()
+    # closes context.page (admin page)
+    context.page.close()
+    # assigns context.page to the pop-up tab
+    context.page = preview_tab.value
 
 
 @step('the user opens the preview in a new tab, using the "{preview_mode}" preview mode')
 def open_new_preview_tab_with_preview_mode(context: Context, preview_mode: str) -> None:
-    click_the_given_button(context, "Preview")
+    context.page.locator('[data-w-tooltip-content-value="Status"]').focus()
+    user_clicks_view_toggle_preview(context)
+
     context.page.get_by_label("Preview mode").select_option(preview_mode)
 
     with context.page.expect_popup() as preview_tab:
         context.page.get_by_role("link", name="Preview in new tab").click()
     # closes context.page (admin page)
     context.page.close()
-    # assigns context.page to the pop up tab
+    # assigns context.page to the pop-up tab
     context.page = preview_tab.value
 
 
-@when("the user edits the {page} page")
-def the_user_edits_a_page(context: Context, page: str) -> None:
-    the_page = page.lower().replace(" ", "_")
-
-    if not the_page.endswith("_page"):
-        the_page += "_page"
-    edit_url = reverse("wagtailadmin_pages:edit", args=[getattr(context, the_page).pk])
+@when("the user edits the {page_str} page")
+def the_user_edits_a_page(context: Context, page_str: str) -> None:
+    the_page = get_page_from_context(context, page_str)
+    edit_url = reverse("wagtailadmin_pages:edit", args=[the_page.pk])
     context.page.goto(f"{context.base_url}{edit_url}")
+
+
+@step("the user views the {page_str} page draft")
+def the_user_views_a_page_draft(context: Context, page_str: str) -> None:
+    the_page = get_page_from_context(context, page_str)
+    view_draft_url = reverse("wagtailadmin_pages:view_draft", args=(the_page.id,))
+    context.page.goto(f"{context.base_url}{view_draft_url}")
+
+
+@step("the user views the {page_str} page")
+def the_user_views_the_given_page(context: Context, page_str: str) -> None:
+    the_page = get_page_from_context(context, page_str)
+    context.page.goto(f"{context.base_url}{the_page.url}")
 
 
 @step("the {page} page has a Welsh translation")
@@ -119,10 +144,21 @@ def user_fills_required_topic_theme_page_content(context: Context) -> None:
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Test Summary")
 
 
-@then("the user can successfully publish the page")
-def the_user_can_successfully_publish_the_page(context: Context) -> None:
-    publish_page(context)
-    expect(context.page.get_by_text(f"Page '{context.page_title}' created and published")).to_be_visible()
+@then("the user can create the page")
+def the_user_can_successfully_create_the_page(context: Context) -> None:
+    context.page.get_by_role("button", name="Save draft").click()
+    expect(context.page.get_by_text(RE_CREATED)).to_be_visible()
+
+
+@then("the user can save the page")
+def the_user_can_successfully_save_the_page(context: Context) -> None:
+    context.page.get_by_role("button", name="Save draft").click()
+    expect(context.page.get_by_text(RE_SAVED)).to_be_visible()
+
+
+@then("the page is published")
+def the_page_is_published(context: Context) -> None:
+    expect(context.page.get_by_text(RE_PUBLISHED)).to_be_visible()
 
 
 def publish_page(context: Context) -> None:
@@ -185,7 +221,6 @@ def the_user_can_save_a_page(context: Context) -> None:
     expect(context.page.get_by_role("button", name="Save draft")).to_be_visible()
 
 
-@step("the user can publish a page")
 @step("the user can publish the page")
 def the_user_can_publish_a_page(context: Context) -> None:
     expect(context.page.get_by_role("button", name="More actions")).to_be_visible()
@@ -227,7 +262,7 @@ def user_saves_in_navigation_settings(context: Context) -> None:
 
 
 @when("the user clicks toggle preview")
-def user_clicks_view_live(context: Context) -> None:
+def user_clicks_view_toggle_preview(context: Context) -> None:
     context.page.get_by_role("button", name="Toggle preview").click()
 
 
@@ -262,6 +297,23 @@ def user_cannot_modify_page(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Change privacy")).not_to_be_visible()
 
 
+@step("the following taxonomy topics exist:")
+def create_topics_from_table(context: Context) -> None:
+    """Create taxonomy topics from a table of topic names."""
+    if not hasattr(context, "topic_cache"):
+        context.topic_cache = {}
+
+    context.topics = {}
+
+    for row in context.table:
+        topic_name = row.get("topic")
+        if not topic_name:
+            raise ValueError("Topic table must include a 'topic' column")
+
+        topic = get_or_create_topic(topic_name, context.topic_cache)
+        context.topics[topic_name] = topic
+
+
 @then("the published {page_str} page is displayed")
 def the_published_page_is_displayed(context: Context, page_str: str) -> None:
     the_page = get_page_from_context(context, page_str)
@@ -274,3 +326,10 @@ def the_user_cannot_unlock_a_page(context: Context) -> None:
     context.page.get_by_role("button", name="Toggle status").click()
     expect(context.page.get_by_text("Lock", exact=True)).to_have_count(0)
     expect(context.page.get_by_text("Locked by another user")).to_be_visible()
+
+
+@step("the user cannot publish the page")
+def the_user_cannot_publish_a_page(context: Context) -> None:
+    expect(context.page.get_by_role("button", name="More actions")).to_be_visible()
+    context.page.get_by_role("button", name="More actions").click()
+    expect(context.page.get_by_role("button", name="Publish")).to_have_count(0)
