@@ -673,13 +673,11 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         return data
 
-    def ld_entity(self) -> dict[str, object]:
+    def ld_entity(self, request: HttpRequest) -> dict[str, object]:
         """Add statistical article specific schema properties to JSON LD."""
-        # TODO pass through request to this, once wagtailschemaorg supports it
-        # https://github.com/neon-jungle/wagtail-schema.org/issues/29
         return {
-            **super().ld_entity(),
-            "url": self.get_full_url(),
+            **super().ld_entity(request),
+            "url": self.get_full_url(request=request),
             "headline": self.seo_title or self.listing_title or self.get_full_display_title(),
             "description": self.search_description or self.listing_summary or strip_tags(self.summary),
             "datePublished": self.release_date.isoformat(),
@@ -695,7 +693,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             },
             "mainEntityOfPage": {
                 "@type": "WebPage",
-                "@id": self.get_full_url(),
+                "@id": self.get_full_url(request=request),
             },
         }
 

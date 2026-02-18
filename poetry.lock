@@ -3669,21 +3669,21 @@ wagtail = "*"
 
 [[package]]
 name = "wagtail-schema-org"
-version = "4.1.1"
+version = "5.0.0"
 description = "Add Schema.org JSON-LD to your website"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "wagtail-schema.org-4.1.1.tar.gz", hash = "sha256:23b68ee7d7db710d7c6f253c96bcbdc2b14543fc86a62374d837ffaa50e85096"},
-    {file = "wagtail_schema.org-4.1.1-py2.py3-none-any.whl", hash = "sha256:0bb84bd0ac2aeec49a16a8dc7deab9e6d0754613b83a69407f7eefcd4ed1ae51"},
+    {file = "wagtail_schema_org-5.0.0-py2.py3-none-any.whl", hash = "sha256:1397f9b73399a975fbc10f1f8285a9d81e6308a4b93aecce5d99c58c25cb8d13"},
+    {file = "wagtail_schema_org-5.0.0.tar.gz", hash = "sha256:e7cac7b422021bdbb986db8e305132cbb98c676091598c2df171ac898752b651"},
 ]
 
 [package.dependencies]
-wagtail = ">=4.1"
+wagtail = ">=6.3"
 
 [package.extras]
-testing = ["jinja2 (>=2.10,<3.0)", "markupsafe (==2.0.1)"]
+testing = ["jinja2 (>=2.10,<4.0)", "markupsafe (==2.1.5)"]
 
 [[package]]
 name = "wagtail-tinytableblock"
@@ -3828,4 +3828,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "b3293a810c5c86100c63f6ce19456022e4bcee39e93e654d8ec8decc0b94d133"
+content-hash = "00ca7dc9026809dc873332ea0d74f50d0709811036f3abdc64773f12c63f6889"
