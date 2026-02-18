@@ -257,7 +257,7 @@ class PageViaSnippetFrontEndCacheInvalidationTestCase(TestCase):
         mocked_purge_urls.assert_called_once_with({self.statistical_article_url})
 
     def test_unpublish__contact_details(self, mocked_purge_urls):
-        self.contact.save_revision().publish()
+        self.contact.unpublish()
 
         mocked_purge_urls.assert_called_once_with({self.statistical_article_url})
 
@@ -267,7 +267,7 @@ class PageViaSnippetFrontEndCacheInvalidationTestCase(TestCase):
         mocked_purge_urls.assert_called_once_with({self.statistical_article_url})
 
     def test_unpublish__definition(self, mocked_purge_urls):
-        self.definition.save_revision().publish()
+        self.definition.unpublish()
 
         mocked_purge_urls.assert_called_once_with({self.statistical_article_url})
 
