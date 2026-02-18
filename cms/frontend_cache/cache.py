@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
-from django.db.models import IntegerField
+from django.db.models import IntegerField, Q
 from django.db.models.functions import Cast
 from wagtail.contrib.frontend_cache.utils import purge_url_from_cache, purge_urls_from_cache
 from wagtail.models import Page, ReferenceIndex, Site
@@ -80,14 +80,20 @@ def get_urls_featuring_objects(objects: list[Model]) -> set[str]:
         .values_list("page_id", flat=True)
     )
 
-    # TODO: aliases
-    for page in Page.objects.filter(id__in=page_ids).specific(defer=True).live().iterator():
+    for page in (
+        Page.objects.filter(Q(id__in=page_ids) | Q(alias_of__in=page_ids)).specific(defer=True).live().iterator()
+    ):
         urls.update(get_page_cached_urls(page))
 
     return urls
 
 
 def get_related_topic_page_urls(page: Page) -> set[str]:
+    if page.alias_of_id is not None:
+        # skip if the given page is an alias. Aliases are not published directly, but
+        # via their source page, which then accounts for related topics and their aliases.
+        return set()
+
     parent_topic = TopicPage.objects.ancestor_of(page).first().specific_deferred
     urls = set(get_page_cached_urls(parent_topic))
 
@@ -107,10 +113,6 @@ def get_related_topic_page_urls(page: Page) -> set[str]:
 def purge_page_from_frontend_cache(page: Page) -> None:
     # get the page urls
     urls = set(get_page_cached_urls(page))
-
-    # include translation aliases urls
-    for translation in page.get_translations().filter(alias_of__isnull=False).specific(defer=True):
-        urls.update(get_page_cached_urls(translation))
 
     # expand to custom logic
     if isinstance(page, StatisticalArticlePage):

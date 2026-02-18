@@ -1,7 +1,8 @@
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from django.test import TestCase
 from wagtail.coreutils import get_dummy_request
+from wagtail.models import Locale
 
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.articles.tests.factories import StatisticalArticlePageFactory
@@ -44,6 +45,10 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
 
         cls.methodology_page = MethodologyPageFactory(parent__parent=cls.topic_page, title="Methodology")
         GenericPageToTaxonomyTopic.objects.create(page=cls.methodology_page, topic=cls.topic_2)
+
+        cls.methodology_page_translation = cls.methodology_page.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True
+        )
 
         cls.index_page = IndexPageFactory(title="Index page")
         cls.information_page = InformationPageFactory(parent=cls.index_page, title="Info page")
@@ -120,12 +125,23 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
     def test_page_publish__methodology(self, patched_purge_urls):
         self.methodology_page.save_revision().publish()
 
-        expected_urls = {
-            self.methodology_page.get_full_url(self.request),
-            self.topic_page.get_full_url(self.request),
-            self.topic_page_translation.get_full_url(self.request),
-        }
-        patched_purge_urls.assert_called_once_with(expected_urls)
+        self.assertEqual(patched_purge_urls.call_count, 2)
+        patched_purge_urls.assert_has_calls(
+            [
+                # the published page
+                call(
+                    {
+                        self.methodology_page.get_full_url(self.request),
+                        self.topic_page.get_full_url(self.request),
+                        self.topic_page_translation.get_full_url(self.request),
+                    }
+                ),
+                # the follow-up alias page, as called by PublishPageRevisionAction
+                # https://github.com/wagtail/wagtail/blob/faadee05ca/wagtail/actions/publish_page_revision.py#L61
+                # https://github.com/wagtail/wagtail/blob/faadee05ca/wagtail/models/pages.py#L1176
+                call({self.methodology_page_translation.get_full_url(self.request)}),
+            ]
+        )
 
     def test_page_publish__methodology_with_related_terms(self, patched_purge_urls):
         # now publish the second topic, then our page.
@@ -133,14 +149,22 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
         patched_purge_urls.reset_mock()
         self.methodology_page.save_revision().publish()
 
-        expected_urls = {
-            self.methodology_page.get_full_url(self.request),
-            self.topic_page.get_full_url(self.request),
-            self.topic_page_translation.get_full_url(self.request),
-            self.another_topic_page.get_full_url(self.request),
-            self.another_topic_page_translation.get_full_url(self.request),
-        }
-        patched_purge_urls.assert_called_once_with(expected_urls)
+        patched_purge_urls.assert_has_calls(
+            [
+                # the published page + linked
+                call(
+                    {
+                        self.methodology_page.get_full_url(self.request),
+                        self.topic_page.get_full_url(self.request),
+                        self.topic_page_translation.get_full_url(self.request),
+                        self.another_topic_page.get_full_url(self.request),
+                        self.another_topic_page_translation.get_full_url(self.request),
+                    }
+                ),
+                # the alias page
+                call({self.methodology_page_translation.get_full_url(self.request)}),
+            ]
+        )
 
     def test_page_publish__information_page(self, patched_purge_urls):
         self.information_page.save_revision().publish()
