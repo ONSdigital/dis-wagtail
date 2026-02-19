@@ -370,7 +370,6 @@ def notify_slack_of_bundle_pre_publish(
 @require_slack_config
 def notify_slack_of_bundle_failure(
     bundle: Bundle,
-    failure_type: str,
     exception_message: str,
     alert_type: str = "Critical",
 ) -> None:
@@ -381,18 +380,10 @@ def notify_slack_of_bundle_failure(
 
     Args:
         bundle: The bundle that failed.
-        failure_type: Type of failure ("pre_publish_failed" or "publication_failed").
         exception_message: Brief description of the error.
-        alert_type: Alert severity ("Critical", "Fail", or "Warning").
+        alert_type: Alert severity ("Critical" or "Fail").
     """
     publish_type = _get_publish_type(bundle)
-
-    # Determine title based on failure type
-    titles = {
-        "pre_publish_failed": "Bundle failed to enter Pre-publish state",
-        "publication_failed": "Bundle Publication Failure Detected",
-    }
-    title = titles.get(failure_type, "Bundle Publication Failure Detected")
 
     fields: list[dict[Any, Any]] = [
         {"title": "Bundle Name", "value": f"<{bundle.full_inspect_url}|{bundle.name}>", "short": False},
@@ -403,7 +394,7 @@ def notify_slack_of_bundle_failure(
 
     _send_and_update_message(
         bundle=bundle,
-        text=title,
+        text="Bundle Publication Failure Detected",
         color="danger",
         fields=fields,
         force_new=True,

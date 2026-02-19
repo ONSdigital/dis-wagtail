@@ -463,7 +463,6 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
             # Send failure notification
             notifications.notify_slack_of_bundle_failure(
                 bundle=bundle,
-                failure_type="publication_failed",
                 exception_message=f"{len(failed_pages)} of {total_pages} page(s) failed to publish",
                 alert_type=alert_type,
             )

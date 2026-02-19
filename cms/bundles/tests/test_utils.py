@@ -479,7 +479,6 @@ class PublishBundleFailureTests(TestCase):
         mock_notify_failure.assert_called_once()
         call_kwargs = mock_notify_failure.call_args[1]
         self.assertEqual(call_kwargs["bundle"], bundle)
-        self.assertEqual(call_kwargs["failure_type"], "publication_failed")
         self.assertEqual(call_kwargs["exception_message"], "2 of 2 page(s) failed to publish")
         self.assertEqual(call_kwargs["alert_type"], "Critical")
 
@@ -507,7 +506,6 @@ class PublishBundleFailureTests(TestCase):
         mock_notify_failure.assert_called_once()
         call_kwargs = mock_notify_failure.call_args[1]
         self.assertEqual(call_kwargs["bundle"], bundle)
-        self.assertEqual(call_kwargs["failure_type"], "publication_failed")
         self.assertEqual(call_kwargs["exception_message"], "1 of 2 page(s) failed to publish")
         self.assertEqual(call_kwargs["alert_type"], "Fail")
 

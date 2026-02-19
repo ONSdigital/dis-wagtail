@@ -483,39 +483,6 @@ class BundleFailureNotificationTestCase(TestCase):
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.get_slack_client")
-    def test_notify_bundle_failure__pre_publish_failed(self, mock_get_client):
-        """Should send failure notification for pre-publish failure."""
-        mock_client = Mock()
-        mock_client.chat_postMessage.return_value = {"ok": True, "ts": "1503435956.000247"}
-        mock_get_client.return_value = mock_client
-
-        notify_slack_of_bundle_failure(
-            bundle=self.bundle,
-            failure_type="pre_publish_failed",
-            exception_message="Page 'Test Page' is not ready to publish",
-            alert_type="Warning",
-        )
-
-        mock_client.chat_postMessage.assert_called_once()
-        call_kwargs = mock_client.chat_postMessage.call_args[1]
-
-        self.assertEqual(call_kwargs["channel"], "C024BE91L")
-        self.assertEqual(call_kwargs["text"], "Bundle failed to enter Pre-publish state")
-        self.assertEqual(call_kwargs["attachments"][0]["color"], "danger")
-        self.assertFalse(call_kwargs["unfurl_links"])
-        self.assertFalse(call_kwargs["unfurl_media"])
-
-        fields = call_kwargs["attachments"][0]["fields"]
-        self.assertEqual(fields[0]["title"], "Bundle Name")
-        self.assertIn("Failed Bundle", fields[0]["value"])
-        self.assertIn({"title": "Publish Type", "value": "Manual", "short": True}, fields)
-        self.assertIn({"title": "Alert Type", "value": "Warning", "short": True}, fields)
-        self.assertIn(
-            {"title": "Exception", "value": "Page 'Test Page' is not ready to publish", "short": False}, fields
-        )
-
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
-    @patch("cms.bundles.notifications.slack.get_slack_client")
     def test_notify_bundle_failure__publication_failed_critical(self, mock_get_client):
         """Should send critical alert when all pages fail to publish."""
         mock_client = Mock()
@@ -524,7 +491,6 @@ class BundleFailureNotificationTestCase(TestCase):
 
         notify_slack_of_bundle_failure(
             bundle=self.bundle,
-            failure_type="publication_failed",
             exception_message="3 of 3 page(s) failed to publish",
             alert_type="Critical",
         )
@@ -549,7 +515,6 @@ class BundleFailureNotificationTestCase(TestCase):
 
         notify_slack_of_bundle_failure(
             bundle=self.bundle,
-            failure_type="publication_failed",
             exception_message="1 of 3 page(s) failed to publish",
             alert_type="Fail",
         )
@@ -576,7 +541,6 @@ class BundleFailureNotificationTestCase(TestCase):
 
         notify_slack_of_bundle_failure(
             bundle=bundle,
-            failure_type="publication_failed",
             exception_message="Test error",
             alert_type="Critical",
         )
@@ -593,7 +557,6 @@ class BundleFailureNotificationTestCase(TestCase):
         """Should return early if no channel is configured."""
         notify_slack_of_bundle_failure(
             bundle=self.bundle,
-            failure_type="publication_failed",
             exception_message="Test error",
             alert_type="Critical",
         )
@@ -608,7 +571,6 @@ class BundleFailureNotificationTestCase(TestCase):
         with self.assertLogs("cms.bundles", level="WARNING") as logs:
             notify_slack_of_bundle_failure(
                 bundle=self.bundle,
-                failure_type="publication_failed",
                 exception_message="Test error",
                 alert_type="Critical",
             )
@@ -625,7 +587,6 @@ class BundleFailureNotificationTestCase(TestCase):
         with self.assertLogs("cms.bundles", level="ERROR") as logs:
             notify_slack_of_bundle_failure(
                 bundle=self.bundle,
-                failure_type="publication_failed",
                 exception_message="Test error",
                 alert_type="Critical",
             )
@@ -643,7 +604,6 @@ class BundleFailureNotificationTestCase(TestCase):
 
         notify_slack_of_bundle_failure(
             bundle=self.bundle,
-            failure_type="publication_failed",
             exception_message="Test error",
             alert_type="Critical",
         )

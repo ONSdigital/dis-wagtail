@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
+from cms.bundles.notifications.slack import notify_slack_of_bundle_pre_publish
 from cms.bundles.utils import publish_bundle
 from cms.core.db_router import force_write_db
 
@@ -96,5 +97,6 @@ class Command(BaseCommand):
                 bundle_scheduler.enterabs(bundle_ts, 1, self._handle_bundle_action, argument=(bundle,))
                 if bundle_ts > now_ts:
                     self.stdout.write(f"Publishing {bundle.name} in {bundle_ts - now_ts:.0f}s")
+                    notify_slack_of_bundle_pre_publish(bundle, bundle.release_date)
 
             bundle_scheduler.run()
