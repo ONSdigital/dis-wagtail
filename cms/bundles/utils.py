@@ -427,7 +427,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
 
         if update_status:
             bundle.status = BundleStatus.PUBLISHED
-            bundle.save()
+            bundle.save(update_fields=["status"])
 
         log(action="wagtail.publish.scheduled", instance=bundle)
 
