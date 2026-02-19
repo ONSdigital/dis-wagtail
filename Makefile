@@ -197,12 +197,17 @@ functional-tests-down:  ## Stop the functional tests docker compose dependencies
 
 .PHONY: functional-tests-run
 functional-tests-run: load-design-system-templates collectstatic ## Only run the functional tests (dependencies must be run separately)
-	# Run migrations to work around Django bug (#35967)
-	poetry run ./manage.py migrate --noinput --settings cms.settings.functional_test
 	poetry run behave functional_tests
 
 .PHONY: functional-tests
 functional-tests: functional-tests-up functional-tests-run functional-tests-down  ## Run the functional tests with dependencies (all in one)
+
+.PHONY: functional-tests-list
+functional-tests-list:  ## Run the functional tests against a specific list of features
+	[ -n "$(FEATURES)" ] || { echo 'FEATURES is empty' ; exit 1 ; }
+	@echo "Running $$(echo $(FEATURES) | wc -w) feature files:"
+	@for f in $(FEATURES); do echo "  - $$f"; done
+	poetry run behave $(FEATURES)
 
 .PHONY: playwright-install
 playwright-install:  ## Install Playwright dependencies

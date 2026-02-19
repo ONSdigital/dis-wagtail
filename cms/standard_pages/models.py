@@ -31,7 +31,6 @@ class InformationPage(  # type: ignore[django-manager-missing]
     template = "templates/pages/information_page.html"
 
     parent_page_types: ClassVar[list[str]] = ["IndexPage"]
-    # TODO: The below content type needs to be updated
     search_index_content_type: ClassVar[str] = "static_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
@@ -86,8 +85,7 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
     subpage_types: ClassVar[list[str]] = ["IndexPage", "InformationPage"]
-    # TODO: The below content type needs to be updated
-    search_index_content_type: ClassVar[str] = "static_landing_page"
+    search_index_content_type: ClassVar[str] = "static_page"
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 

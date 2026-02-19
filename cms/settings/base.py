@@ -859,6 +859,9 @@ WAGTAILADMIN_RICH_TEXT_EDITORS = {
 # Custom document model
 # https://docs.wagtail.io/en/stable/advanced_topics/documents/custom_document_model.html
 WAGTAILDOCS_DOCUMENT_MODEL = "documents.CustomDocument"
+WAGTAILDOCS_DOCUMENT_FORM_BASE = "cms.documents.forms.ONSDocumentForm"
+DOCUMENTS_MAX_UPLOAD_SIZE = int(env.get("DOCUMENTS_MAX_UPLOAD_SIZE", 50 * 1024 * 1024))  # 50MB default
+WAGTAILDOCS_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "xml", "ppt", "pptx", "txt", "rtf", "csv"]
 
 
 # Document serve method - avoid serving files directly from the storage.
@@ -963,7 +966,6 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = {
     "ReleaseCalendarIndex",
     "ThemeIndexPage",
     "ThemePage",
-    "TopicPage",
     "CookiesPage",
     "Page",
 }
