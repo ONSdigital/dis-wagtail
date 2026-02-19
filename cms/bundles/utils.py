@@ -429,9 +429,9 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
             bundle.status = BundleStatus.PUBLISHED
             bundle.save()
 
-    publish_duration = time.time() - start_time
+        log(action="wagtail.publish.scheduled", instance=bundle)
 
-    if pages_publish_successful:
+        publish_duration = time.time() - start_time
         logger.info(
             "Published bundle",
             extra={
@@ -441,6 +441,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
             },
         )
     else:
+        publish_duration = time.time() - start_time
         logger.error(
             "Bundle publish failed",
             extra={
@@ -453,9 +454,6 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     notifications.notify_slack_of_publish_end(
         bundle, publish_duration, url=bundle.full_inspect_url, successful=pages_publish_successful
     )
-
-    if pages_publish_successful:
-        log(action="wagtail.publish.scheduled", instance=bundle)
 
     return pages_publish_successful
 
