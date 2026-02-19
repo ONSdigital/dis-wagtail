@@ -15,6 +15,7 @@ from wagtail.utils.timestamps import render_timestamp
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
+from cms.bundles.mixins import BundledPageMixin
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.factories import BasePageFactory
@@ -582,6 +583,12 @@ class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
                 "workflow-action-name": "approve",
             }
         )
+
+    def test_page_is_not_bundleable(self):
+        """Confirm BasePageFactory produces a page without BundledPageMixin,
+        so the rest of this test class is actually testing non-bundled behaviour.
+        """
+        self.assertNotIsInstance(self.page, BundledPageMixin)
 
     def test_submitter_cannot_self_approve__action_menu(self):
         """The submitter should not see the approve action in the menu."""
