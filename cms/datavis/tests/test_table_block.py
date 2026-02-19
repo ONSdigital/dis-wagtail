@@ -1,5 +1,6 @@
 from django.test import TestCase
 
+from cms.core.utils import UNWANTED_CONTROL_CHARACTERS
 from cms.datavis.blocks.table import SimpleTableBlock, SimpleTableStructValue, TableDataType
 from cms.datavis.tests.factories import TableDataFactory
 
@@ -61,3 +62,19 @@ class SimpleTableBlockTestCase(TestCase):
         value = self.get_value(block_data)
         self.assertEqual([1, 2, 3], value.rows[0])
         self.assertEqual([4.0, 5.07, 6.3], value.rows[1])
+
+    def test_strips_unwanted_control_characters(self):
+        block_data = TableDataFactory(
+            table_data=[
+                ["name", "value"],
+                *[["unwanted", char] for char in UNWANTED_CONTROL_CHARACTERS],
+            ]
+        )
+        self.assertEqual(
+            self.get_value(block_data).rows,
+            [["unwanted", ""]] * len(UNWANTED_CONTROL_CHARACTERS),
+        )
+        self.assertEqual(
+            SimpleTableBlock().clean(block_data).rows,
+            [["unwanted", ""]] * len(UNWANTED_CONTROL_CHARACTERS),
+        )
