@@ -17,6 +17,7 @@ from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.core.permission_testers import BasePagePermissionTester
+from cms.core.tests.factories import BasePageFactory
 from cms.home.models import HomePage
 from cms.users.tests.factories import UserFactory
 from cms.workflows.locks import PageReadyToBePublishedLock
@@ -29,7 +30,9 @@ from cms.workflows.tests.utils import (
 from cms.workflows.utils import is_page_ready_to_publish
 
 
-class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
+class WorkflowTweaksBaseTestCase(WagtailTestUtils, TestCase):
+    """Shared helpers for workflow tweak tests."""
+
     @classmethod
     def setUpTestData(cls):
         cls.publishing_admin = UserFactory()
@@ -37,6 +40,19 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         cls.publishing_officer = UserFactory()
         cls.publishing_officer.groups.add(Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME))
 
+    def assertActionIn(self, action, menu_items):  # pylint: disable=invalid-name
+        actions = {item.name for item in menu_items}
+        self.assertIn(action, actions)
+
+    def assertActionNotIn(self, action, menu_items):  # pylint: disable=invalid-name
+        actions = {item.name for item in menu_items}
+        self.assertNotIn(action, actions)
+
+
+class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
         cls.page = StatisticalArticlePageFactory()
         cls.edit_url = reverse("wagtailadmin_pages:edit", args=[cls.page.id])
 
@@ -47,14 +63,6 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         # mark the bundle as ready to publish
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
-
-    def assertActionIn(self, action, menu_items):  # pylint: disable=invalid-name
-        actions = {item.name for item in menu_items}
-        self.assertIn(action, actions)
-
-    def assertActionNotIn(self, action, menu_items):  # pylint: disable=invalid-name
-        actions = {item.name for item in menu_items}
-        self.assertNotIn(action, actions)
 
     def get_simple_post_data(self, page):
         return nested_form_data(
@@ -548,6 +556,135 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         response = self.client.post(self.edit_url, data, follow=True)
 
         self.assertContains(response, "Could not perform the action as the page is no longer in a workflow.")
+
+
+class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
+    """Tests for workflow hook behaviour on pages without BundledPageMixin.
+
+    Ensures that after removing the BundledPageMixin guard from
+    amend_page_action_menu_items, pages like ArticleSeriesPage (pre-mixin)
+    still enforce self-approval prevention, correct menu items, and allow
+    page-level scheduling.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.page = BasePageFactory()
+        cls.edit_url = reverse("wagtailadmin_pages:edit", args=[cls.page.id])
+
+    def get_simple_post_data(self, page):
+        return nested_form_data(
+            {
+                "title": page.title,
+                "slug": page.slug,
+                "action-workflow-action": "true",
+                "workflow-action-name": "approve",
+            }
+        )
+
+    def test_submitter_cannot_self_approve__action_menu(self):
+        """The submitter should not see the approve action in the menu."""
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_for_review(self.page, self.publishing_admin)
+
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertActionNotIn("approve", menu_items)
+        self.assertActionNotIn("locked-approve", menu_items)
+
+    def test_submitter_cannot_self_approve__post(self):
+        """POST with approve action by the submitter is blocked with an error message."""
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_for_review(self.page, self.publishing_admin)
+        latest_revision = self.page.latest_revision
+
+        data = self.get_simple_post_data(self.page)
+        response = self.client.post(self.edit_url, data, follow=True)
+
+        self.assertContains(
+            response, "Cannot self-approve your changes. Please ask another Publishing team member to do so."
+        )
+        self.page.refresh_from_db()
+        self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)
+
+    def test_non_submitter_sees_approve_action(self):
+        """A different publishing team member can see and use the approve action."""
+        mark_page_as_ready_for_review(self.page, self.publishing_admin)
+
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertActionIn("approve", menu_items)
+        labels = {item.label for item in menu_items}
+        self.assertIn("Approve", labels)
+        self.assertIn("Approve with comment", labels)
+
+    def test_cancel_workflow_available_in_review(self):
+        """Cancel workflow action is present during the review stage."""
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_for_review(self.page, self.publishing_admin)
+
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, 'name="action-cancel-workflow"')
+
+    def test_ready_to_publish__publish_and_unlock_actions_present(self):
+        """When ready to publish with no bundle, both Publish and Unlock editing are shown."""
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_to_publish(self.page, self.publishing_officer)
+
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertEqual(len(menu_items), 2)  # unlock + locked-approve
+        self.assertActionIn("locked-approve", menu_items)
+        self.assertActionIn("unlock", menu_items)
+
+        labels = {item.label for item in menu_items}
+        self.assertIn("Publish", labels)
+        self.assertIn("Unlock editing", labels)
+
+    def test_page_level_go_live_scheduling_allowed(self):
+        """Page-level go_live_at scheduling is not blocked for non-bundled pages."""
+        self.client.force_login(self.publishing_admin)
+
+        go_live_at = timezone.now() + datetime.timedelta(weeks=3)
+        data = self.get_simple_post_data(self.page)
+        data["go_live_at"] = submittable_timestamp(go_live_at)
+        del data["action-workflow-action"]
+        del data["workflow-action-name"]
+
+        response = self.client.post(self.edit_url, data, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Cannot set page-level schedule while the page is in a bundle.")
+        self.assertTrue(
+            Revision.objects.for_instance(self.page)
+            .filter(content__go_live_at__startswith=str(go_live_at.date()))
+            .exists()
+        )
+
+    def test_page_level_expire_at_scheduling_allowed(self):
+        """Page-level expire_at scheduling is not blocked for non-bundled pages."""
+        self.client.force_login(self.publishing_admin)
+
+        expire_at = timezone.now() + datetime.timedelta(weeks=3)
+        data = self.get_simple_post_data(self.page)
+        data["expire_at"] = submittable_timestamp(expire_at)
+        del data["action-workflow-action"]
+        del data["workflow-action-name"]
+
+        response = self.client.post(self.edit_url, data, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Cannot set page-level schedule while the page is in a bundle.")
+        self.assertTrue(
+            Revision.objects.for_instance(self.page)
+            .filter(content__expire_at__startswith=str(expire_at.date()))
+            .exists()
+        )
 
 
 class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):

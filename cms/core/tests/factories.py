@@ -1,6 +1,7 @@
 import factory
 import wagtail_factories
 from wagtail import blocks
+from wagtail.models import Page
 from wagtail.rich_text import RichText
 from wagtail_factories.blocks import (
     BlockFactory,
@@ -12,6 +13,7 @@ from cms.core.blocks.related import LinkBlock, RelatedContentBlock
 from cms.core.blocks.section_blocks import SectionContentBlock
 from cms.core.models import ContactDetails
 from cms.core.models.snippets import Definition
+from cms.home.models import HomePage
 
 
 class DateTimeBlockFactory(BlockFactory):
@@ -68,6 +70,16 @@ class DefinitionFactory(factory.django.DjangoModelFactory):
 
     name = factory.Faker("text", max_nb_chars=20)
     definition = factory.Faker("text", max_nb_chars=100)
+
+
+class BasePageFactory(wagtail_factories.PageFactory):
+    """Factory for a basic BasePage implementation."""
+
+    class Meta:
+        model = HomePage
+
+    parent = factory.LazyFunction(Page.get_first_root_node)
+    title = factory.Faker("sentence", nb_words=4)
 
 
 class SectionContentBlockFactory(StructBlockFactory):
