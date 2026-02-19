@@ -28,7 +28,7 @@ from functional_tests.steps.release_page import click_add_child_page, navigate_t
 tomorrow = timezone.now() + timedelta(days=1)
 
 
-@step("a bundle has been created")
+@given("a bundle has been created")
 def a_bundle_has_been_created(context: Context) -> None:
     context.bundle = BundleFactory()
 
@@ -92,7 +92,7 @@ def the_selected_datasets_are_displayed(context: Context) -> None:
 
 
 # bundle create amend
-@step("a bundle has been created with a creator")
+@given("a bundle has been created with a creator")
 def a_bundle_has_been_created_with_user(context: Context) -> None:
     context.bundle_creator = UserFactory()
     context.bundle = BundleFactory(created_by=context.bundle_creator)
@@ -104,6 +104,12 @@ def delete_bundle_creator(context: Context) -> None:
 
 
 # bundle goto
+@step("the user edits the bundle")
+@step("the user goes to edit the bundle")
+def user_edits_the_bundle(context: Context):
+    context.page.goto(context.base_url + reverse("bundle:edit", args=[context.bundle.pk]))
+
+
 @step("the user goes to the bundle inspect page")
 def go_to_bundle_inspect(context: Context) -> None:
     context.page.goto(context.base_url + reverse("bundle:inspect", args=[context.bundle.pk]))
@@ -177,9 +183,18 @@ def release_calendar_page_with_status_and_future_date_exists(context: Context, s
     context.release_calendar_page = ReleaseCalendarPageFactory(
         release_date=tomorrow,
         status=status.upper(),
+        summary="My example release page",
         notice="default notice",
+        live=False,
     )
-    context.release_calendar_page.save_revision().save()
+    context.release_calendar_page.save_revision()
+
+    # Save the values to access later
+    context.saved_release_calendar_page_details = {
+        "title": context.release_calendar_page.title,
+        "release_date_value": ons_date_format(tomorrow, "DATETIME_FORMAT"),
+        "status": status,
+    }
 
 
 @step('the user manually creates a future release calendar page with a "{status}" status')
@@ -201,7 +216,7 @@ def user_manually_creates_future_release_calendar(context: Context, status: str)
     }
 
 
-@when("the user enters a title")
+@when("the user enters a bundle title")
 def user_enters_title(context: Context) -> None:
     context.page.get_by_role("textbox", name="Name*").fill("Test Bundles")
 
