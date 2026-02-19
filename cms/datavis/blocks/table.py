@@ -64,7 +64,7 @@ class SimpleTableBlock(TableBlock):
         value_class = SimpleTableStructValue
 
     def _to_struct_value(self, block_items: Any) -> SimpleTableStructValue:
-        value = super()._to_struct_value(block_items)
+        value: SimpleTableStructValue = super()._to_struct_value(block_items)
         value["table_data"] = strip_unwanted_control_chars_from_json(value["table_data"])
         return value
 
