@@ -293,6 +293,43 @@ class MethodologyPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
         with self.assertRaises(Http404):
             self.page.download_table(request, "nonexistent-table-id")
 
+    def test_download_table_endpoint_via_url(self):
+        """Test download_table endpoint is accessible via URL."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "URL Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="URL Test Table",
+                                headers=[["X"]],
+                                rows=[["Y"]],
+                            ),
+                            "id": "url-test-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        response = self.client.get(f"{self.page.url}/download-table/url-test-table-id")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+
+    def test_download_table_endpoint_returns_404_for_nonexistent_table(self):
+        """Test download_table endpoint returns 404 when table not found."""
+        self.page.content = []
+        self.page.save_revision().publish()
+
+        response = self.client.get(f"{self.page.url}/download-table/nonexistent-id")
+
+        self.assertEqual(response.status_code, 404)
+
     def test_download_chart_returns_csv(self):
         """Test download_chart returns a CSV response."""
         self.page.content = [
