@@ -68,7 +68,7 @@ class DocumentAuditLoggingTestCase(WagtailTestUtils, TestCase):
 
     def test_document_edit_creates_audit_log_entry(self):
         """Test that editing a document creates an audit log entry."""
-        document = DocumentFactory(collection=self.root_collection)
+        document = DocumentFactory(collection=self.root_collection, file__filename="test.txt")
 
         initial_count = ModelLogEntry.objects.filter(
             action="wagtail.edit",
