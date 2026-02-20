@@ -132,6 +132,7 @@ class BundleAPIClient:
             from cms.bundles.notifications.api_failures import (  # pylint: disable=import-outside-toplevel
                 notify_slack_of_third_party_api_failure,
             )
+            from cms.bundles.notifications.slack import BundleAlertType  # pylint: disable=import-outside-toplevel
 
             error_msg, errors = self._format_http_error(e)
             logger_extra: dict[str, Any] = {
@@ -149,7 +150,11 @@ class BundleAPIClient:
             )
 
             # Determine alert type based on status code
-            alert_type = "Critical" if e.response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR else "Warning"
+            alert_type = (
+                BundleAlertType.CRITICAL
+                if e.response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR
+                else BundleAlertType.WARNING
+            )
 
             # Send Slack notification for API failure
             notify_slack_of_third_party_api_failure(
@@ -168,6 +173,7 @@ class BundleAPIClient:
             from cms.bundles.notifications.api_failures import (  # pylint: disable=import-outside-toplevel
                 notify_slack_of_third_party_api_failure,
             )
+            from cms.bundles.notifications.slack import BundleAlertType  # pylint: disable=import-outside-toplevel
 
             error_msg = f"Network error for {method} {url}: {e!s}"
             logger.error("Network error for %s %s: %s", method, url, e)
@@ -176,7 +182,7 @@ class BundleAPIClient:
             notify_slack_of_third_party_api_failure(
                 service_name="Bundle API",
                 exception_message=error_msg,
-                alert_type="Warning",
+                alert_type=BundleAlertType.WARNING,
             )
 
             raise BundleAPIClientError(error_msg) from e

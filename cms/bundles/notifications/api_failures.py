@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from django.conf import settings
 
-from cms.bundles.notifications.slack import get_slack_client, require_slack_config
+from cms.bundles.notifications.slack import BundleAlertType, get_slack_client, require_slack_config
 
 if TYPE_CHECKING:
     from wagtail.models import Page
@@ -18,7 +18,7 @@ logger = logging.getLogger("cms.bundles")
 def notify_slack_of_dataset_api_failure(
     page: Page | None,
     exception_message: str,
-    alert_type: str = "Warning",
+    alert_type: BundleAlertType = BundleAlertType.WARNING,
 ) -> None:
     """Send notification when Dataset API call fails.
 
@@ -28,7 +28,7 @@ def notify_slack_of_dataset_api_failure(
     Args:
         page: Optional page related to the dataset API call.
         exception_message: Brief description of the error.
-        alert_type: Alert severity ("Critical", "Warning").
+        alert_type: Alert severity.
     """
     # TODO: Consider implementing rate limiting to prevent flooding Slack with repeated errors
 
@@ -65,7 +65,7 @@ def notify_slack_of_dataset_api_failure(
 def notify_slack_of_third_party_api_failure(
     service_name: str,
     exception_message: str,
-    alert_type: str = "Warning",
+    alert_type: BundleAlertType = BundleAlertType.WARNING,
     bundle: Bundle | None = None,
     page: Page | None = None,
 ) -> None:
@@ -77,7 +77,7 @@ def notify_slack_of_third_party_api_failure(
     Args:
         service_name: Name of the third-party service (e.g., "Bundle API").
         exception_message: Brief description of the error.
-        alert_type: Alert severity ("Critical", "Warning").
+        alert_type: Alert severity.
         bundle: Optional bundle related to the API call.
         page: Optional page related to the API call.
     """

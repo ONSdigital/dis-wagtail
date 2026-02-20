@@ -14,6 +14,7 @@ from cms.bundles.notifications.api_failures import (
     notify_slack_of_third_party_api_failure,
 )
 from cms.bundles.notifications.slack import (
+    BundleAlertType,
     _format_publish_datetime,
     _get_bundle_notification_context,
     _get_example_page_url,
@@ -492,7 +493,7 @@ class BundleFailureNotificationTestCase(TestCase):
         notify_slack_of_bundle_failure(
             bundle=self.bundle,
             exception_message="3 of 3 page(s) failed to publish",
-            alert_type="Critical",
+            alert_type=BundleAlertType.CRITICAL,
         )
 
         mock_client.chat_postMessage.assert_called_once()
@@ -516,7 +517,7 @@ class BundleFailureNotificationTestCase(TestCase):
         notify_slack_of_bundle_failure(
             bundle=self.bundle,
             exception_message="1 of 3 page(s) failed to publish",
-            alert_type="Fail",
+            alert_type=BundleAlertType.FAIL,
         )
 
         mock_client.chat_postMessage.assert_called_once()
@@ -542,7 +543,7 @@ class BundleFailureNotificationTestCase(TestCase):
         notify_slack_of_bundle_failure(
             bundle=bundle,
             exception_message="Test error",
-            alert_type="Critical",
+            alert_type=BundleAlertType.CRITICAL,
         )
 
         mock_client.chat_postMessage.assert_called_once()
@@ -558,7 +559,7 @@ class BundleFailureNotificationTestCase(TestCase):
         notify_slack_of_bundle_failure(
             bundle=self.bundle,
             exception_message="Test error",
-            alert_type="Critical",
+            alert_type=BundleAlertType.CRITICAL,
         )
         mock_get_client.assert_not_called()
 
@@ -572,7 +573,7 @@ class BundleFailureNotificationTestCase(TestCase):
             notify_slack_of_bundle_failure(
                 bundle=self.bundle,
                 exception_message="Test error",
-                alert_type="Critical",
+                alert_type=BundleAlertType.CRITICAL,
             )
             self.assertIn("Slack Bot API client not configured", logs.output[0])
 
@@ -588,7 +589,7 @@ class BundleFailureNotificationTestCase(TestCase):
             notify_slack_of_bundle_failure(
                 bundle=self.bundle,
                 exception_message="Test error",
-                alert_type="Critical",
+                alert_type=BundleAlertType.CRITICAL,
             )
             self.assertIn("Failed to send/update Slack message", logs.output[0])
 
@@ -605,7 +606,7 @@ class BundleFailureNotificationTestCase(TestCase):
         notify_slack_of_bundle_failure(
             bundle=self.bundle,
             exception_message="Test error",
-            alert_type="Critical",
+            alert_type=BundleAlertType.CRITICAL,
         )
 
         # Verify timestamp was NOT updated
@@ -629,7 +630,7 @@ class NotifyDatasetAPIFailureTestCase(TestCase):
         notify_slack_of_dataset_api_failure(
             page=self.page,
             exception_message="Timeout when fetching dataset",
-            alert_type="Warning",
+            alert_type=BundleAlertType.WARNING,
         )
 
         mock_client.chat_postMessage.assert_called_once()
@@ -661,7 +662,7 @@ class NotifyDatasetAPIFailureTestCase(TestCase):
         notify_slack_of_dataset_api_failure(
             page=None,
             exception_message="Server error: HTTP 500",
-            alert_type="Critical",
+            alert_type=BundleAlertType.CRITICAL,
         )
 
         mock_client.chat_postMessage.assert_called_once()
@@ -681,7 +682,7 @@ class NotifyDatasetAPIFailureTestCase(TestCase):
         result = notify_slack_of_dataset_api_failure(
             page=None,
             exception_message="Test error",
-            alert_type="Warning",
+            alert_type=BundleAlertType.WARNING,
         )
         self.assertIsNone(result)
 
@@ -695,7 +696,7 @@ class NotifyDatasetAPIFailureTestCase(TestCase):
             notify_slack_of_dataset_api_failure(
                 page=None,
                 exception_message="Test error",
-                alert_type="Warning",
+                alert_type=BundleAlertType.WARNING,
             )
             self.assertIn("Slack Bot API client not configured", logs.output[0])
 
@@ -711,7 +712,7 @@ class NotifyDatasetAPIFailureTestCase(TestCase):
             notify_slack_of_dataset_api_failure(
                 page=None,
                 exception_message="Test error",
-                alert_type="Warning",
+                alert_type=BundleAlertType.WARNING,
             )
             self.assertIn("Failed to send dataset API failure notification", logs.output[0])
 
@@ -733,7 +734,7 @@ class NotifyThirdPartyAPIFailureTestCase(TestCase):
         notify_slack_of_third_party_api_failure(
             service_name="Bundle API",
             exception_message="HTTP 500 error: Internal Server Error",
-            alert_type="Critical",
+            alert_type=BundleAlertType.CRITICAL,
             bundle=self.bundle,
         )
 
@@ -766,7 +767,7 @@ class NotifyThirdPartyAPIFailureTestCase(TestCase):
         notify_slack_of_third_party_api_failure(
             service_name="Custom API",
             exception_message="Connection timeout",
-            alert_type="Warning",
+            alert_type=BundleAlertType.WARNING,
             page=self.page,
         )
 
@@ -790,7 +791,7 @@ class NotifyThirdPartyAPIFailureTestCase(TestCase):
         notify_slack_of_third_party_api_failure(
             service_name="External Service",
             exception_message="Network error",
-            alert_type="Warning",
+            alert_type=BundleAlertType.WARNING,
         )
 
         mock_client.chat_postMessage.assert_called_once()
@@ -808,7 +809,7 @@ class NotifyThirdPartyAPIFailureTestCase(TestCase):
         result = notify_slack_of_third_party_api_failure(
             service_name="Test API",
             exception_message="Test error",
-            alert_type="Warning",
+            alert_type=BundleAlertType.WARNING,
         )
         self.assertIsNone(result)
 
@@ -824,6 +825,6 @@ class NotifyThirdPartyAPIFailureTestCase(TestCase):
             notify_slack_of_third_party_api_failure(
                 service_name="Bundle API",
                 exception_message="Test error",
-                alert_type="Critical",
+                alert_type=BundleAlertType.CRITICAL,
             )
             self.assertIn("Failed to send third-party API failure notification", logs.output[0])

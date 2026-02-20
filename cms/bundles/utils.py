@@ -384,7 +384,12 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     # using this rather than inline import to placate pyright complaining about cyclic imports
     notifications = __import__(
         "cms.bundles.notifications.slack",
-        fromlist=["notify_slack_of_publication_start", "notify_slack_of_publish_end", "notify_slack_of_bundle_failure"],
+        fromlist=[
+            "BundleAlertType",
+            "notify_slack_of_publication_start",
+            "notify_slack_of_publish_end",
+            "notify_slack_of_bundle_failure",
+        ],
     )
 
     logger.info(
@@ -452,11 +457,11 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
             if pages_published == 0:
                 # Total failure - no pages published
                 bundle.status = BundleStatus.FAILED
-                alert_type = "Critical"
+                alert_type = notifications.BundleAlertType.CRITICAL
             else:
                 # Partial failure - some pages published
                 bundle.status = BundleStatus.PARTIALLY_PUBLISHED
-                alert_type = "Fail"
+                alert_type = notifications.BundleAlertType.FAIL
 
             bundle.save(update_fields=["status"])
 

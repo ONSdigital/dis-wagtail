@@ -54,6 +54,7 @@ class ONSDatasetApiQuerySet(APIQuerySet):
         from cms.bundles.notifications.api_failures import (  # pylint: disable=import-outside-toplevel
             notify_slack_of_dataset_api_failure,
         )
+        from cms.bundles.notifications.slack import BundleAlertType  # pylint: disable=import-outside-toplevel
 
         # Add Authorization header if token is set
         headers = dict(self.http_headers) if self.http_headers else {}
@@ -78,7 +79,7 @@ class ONSDatasetApiQuerySet(APIQuerySet):
                 notify_slack_of_dataset_api_failure(
                     page=None,
                     exception_message=f"Rate limit exceeded: HTTP {e.response.status_code}",
-                    alert_type="Warning",
+                    alert_type=BundleAlertType.WARNING,
                 )
                 raise
             # Check for 5xx server errors (500-599)
@@ -90,14 +91,14 @@ class ONSDatasetApiQuerySet(APIQuerySet):
                 notify_slack_of_dataset_api_failure(
                     page=None,
                     exception_message=f"Server error: HTTP {e.response.status_code}",
-                    alert_type="Critical",
+                    alert_type=BundleAlertType.CRITICAL,
                 )
                 raise
             # Other HTTP errors (4xx)
             notify_slack_of_dataset_api_failure(
                 page=None,
                 exception_message=f"HTTP error: {e.response.status_code}",
-                alert_type="Warning",
+                alert_type=BundleAlertType.WARNING,
             )
             raise
         except requests.exceptions.RequestException as e:
@@ -110,7 +111,7 @@ class ONSDatasetApiQuerySet(APIQuerySet):
             notify_slack_of_dataset_api_failure(
                 page=None,
                 exception_message=error_msg,
-                alert_type="Warning",
+                alert_type=BundleAlertType.WARNING,
             )
             raise
 
@@ -121,7 +122,7 @@ class ONSDatasetApiQuerySet(APIQuerySet):
             notify_slack_of_dataset_api_failure(
                 page=None,
                 exception_message="Failed to parse JSON response from datasets API",
-                alert_type="Warning",
+                alert_type=BundleAlertType.WARNING,
             )
             raise ValueError("Failed to parse JSON response from datasets API") from e
 
@@ -131,7 +132,7 @@ class ONSDatasetApiQuerySet(APIQuerySet):
             notify_slack_of_dataset_api_failure(
                 page=None,
                 exception_message="Invalid API response format, expected a dictionary-like object",
-                alert_type="Warning",
+                alert_type=BundleAlertType.WARNING,
             )
             raise ValueError("Invalid API response format, expected a dictionary-like object")
 

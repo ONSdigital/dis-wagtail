@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from datetime import datetime
+from enum import Enum
 from functools import wraps
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any
@@ -20,6 +21,14 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger("cms.bundles")
+
+
+class BundleAlertType(str, Enum):
+    """Alert severity levels for Slack bundle notifications."""
+
+    CRITICAL = "Critical"
+    FAIL = "Fail"
+    WARNING = "Warning"
 
 
 def require_slack_config[T: Callable[..., Any]](func: T) -> T:
@@ -371,7 +380,7 @@ def notify_slack_of_bundle_pre_publish(
 def notify_slack_of_bundle_failure(
     bundle: Bundle,
     exception_message: str,
-    alert_type: str = "Critical",
+    alert_type: BundleAlertType = BundleAlertType.CRITICAL,
 ) -> None:
     """Send failure notification for a bundle.
 
@@ -381,7 +390,7 @@ def notify_slack_of_bundle_failure(
     Args:
         bundle: The bundle that failed.
         exception_message: Brief description of the error.
-        alert_type: Alert severity ("Critical" or "Fail").
+        alert_type: Alert severity.
     """
     publish_type = _get_publish_type(bundle)
 

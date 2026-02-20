@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 from cms.articles.models import StatisticalArticlePage
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
+from cms.bundles.notifications.slack import BundleAlertType
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.utils import (
     BundleAPIBundleMetadata,
@@ -480,7 +481,7 @@ class PublishBundleFailureTests(TestCase):
         call_kwargs = mock_notify_failure.call_args[1]
         self.assertEqual(call_kwargs["bundle"], bundle)
         self.assertEqual(call_kwargs["exception_message"], "2 of 2 page(s) failed to publish")
-        self.assertEqual(call_kwargs["alert_type"], "Critical")
+        self.assertEqual(call_kwargs["alert_type"], BundleAlertType.CRITICAL)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
     @patch("cms.bundles.utils.logger")
@@ -507,7 +508,7 @@ class PublishBundleFailureTests(TestCase):
         call_kwargs = mock_notify_failure.call_args[1]
         self.assertEqual(call_kwargs["bundle"], bundle)
         self.assertEqual(call_kwargs["exception_message"], "1 of 2 page(s) failed to publish")
-        self.assertEqual(call_kwargs["alert_type"], "Fail")
+        self.assertEqual(call_kwargs["alert_type"], BundleAlertType.FAIL)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
