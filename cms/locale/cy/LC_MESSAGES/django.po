@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-12 14:14+0000\n"
+"POT-Creation-Date: 2026-02-19 10:27+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -93,12 +93,12 @@ msgstr "Set ddata"
 msgid "Methodology"
 msgstr "Methodoleg"
 
-#: cms/core/enums.py:11 cms/topics/models.py:270
+#: cms/core/enums.py:11 cms/topics/models.py:249
 msgid "Time series"
 msgstr "Cyfres amser"
 
 #: cms/core/enums.py:12 cms/jinja2/templates/pages/topic_page.html:9
-#: cms/topics/models.py:146
+#: cms/topics/models.py:125
 msgid "Topic"
 msgstr "Pwnc"
 
@@ -123,7 +123,7 @@ msgstr "Tudalen"
 msgid "Released"
 msgstr "Rhyddhawyd"
 
-#: cms/core/models/base.py:164
+#: cms/core/models/base.py:156
 msgid "Home"
 msgstr "Cartref"
 
@@ -135,7 +135,7 @@ msgstr "Troednodiadau"
 #: cms/datavis/blocks/table.py:57
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:94
 #: cms/jinja2/templates/pages/topic_page.html:113
-#: cms/release_calendar/models.py:235 cms/topics/models.py:268
+#: cms/release_calendar/models.py:235 cms/topics/models.py:247
 msgid "Data"
 msgstr "Data"
 
@@ -697,11 +697,11 @@ msgstr ""
 msgid "Theme"
 msgstr "Thema"
 
-#: cms/jinja2/templates/pages/topic_page.html:67 cms/topics/models.py:260
+#: cms/jinja2/templates/pages/topic_page.html:67 cms/topics/models.py:239
 msgid "Featured"
 msgstr "Dan Sylw"
 
-#: cms/jinja2/templates/pages/topic_page.html:77 cms/topics/models.py:262
+#: cms/jinja2/templates/pages/topic_page.html:77 cms/topics/models.py:241
 msgid "Related articles"
 msgstr "Erthyglau cysylltiedig"
 
@@ -709,7 +709,7 @@ msgstr "Erthyglau cysylltiedig"
 msgid "View all related articles"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:95 cms/topics/models.py:264
+#: cms/jinja2/templates/pages/topic_page.html:95 cms/topics/models.py:243
 msgid "Methods and quality information"
 msgstr "Dulliau a gwybodaeth o ansawdd"
 
@@ -729,8 +729,8 @@ msgstr ""
 msgid "View all related time series"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:149 cms/topics/models.py:266
-#: cms/topics/tests/test_models.py:544 cms/topics/tests/test_models.py:548
+#: cms/jinja2/templates/pages/topic_page.html:149 cms/topics/models.py:245
+#: cms/topics/tests/test_models.py:548 cms/topics/tests/test_models.py:552
 msgid "Explore more"
 msgstr "Archwilio mwy"
 
@@ -754,57 +754,20 @@ msgstr "Saesneg"
 msgid "Welsh"
 msgstr "Cymraeg"
 
-#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:8
-msgid "Submitted"
-msgstr ""
-
-#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:14
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:13
 msgid "Not started"
-msgstr ""
-
-#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:23
-#, python-format
-msgid "Changes requested by %(requested_by)s"
-msgstr ""
-
-#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:27
-#, fuzzy
-#| msgid "Changes to this release date"
-msgid "Changes requested"
-msgstr "Newidiadau i’r dyddiad rhyddhau hwn"
-
-#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:46
-#, python-format
-msgid "Cancelled by %(cancelled_by)s"
-msgstr ""
-
-#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:50
-#, python-format
-msgid "Approved by %(approved_by)s"
-msgstr ""
-
-#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:59
-msgid "with comment:"
-msgstr ""
-
-#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:69
-#, fuzzy
-#| msgid "Published:"
-msgid "Published"
-msgstr "Cyhoeddwyd"
-
-#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:76
-msgid "See full history"
-msgstr ""
-
-#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:83
-msgid "Compare with live version"
-msgstr ""
-
-#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:93
-msgid "Compare with previous version"
 msgstr ""
 
 #: cms/workflows/templates/workflows/confirm_unlock.html:12
 msgid "No, don't unlock"
 msgstr ""
+
+#, fuzzy
+#~| msgid "Changes to this release date"
+#~ msgid "Changes requested"
+#~ msgstr "Newidiadau i’r dyddiad rhyddhau hwn"
+
+#, fuzzy
+#~| msgid "Published:"
+#~ msgid "Published"
+#~ msgstr "Cyhoeddwyd"
