@@ -511,7 +511,7 @@ def edit_bundle(context: Context) -> None:
     context.page.get_by_role("link", name=context.bundles[-1].name, exact=True).click()
 
 
-@step("the logged in user can add a release schedule")
+@step("the logged in user can adds a release schedule")
 def add_release_calendar_in_edit(context: Context) -> None:
     # add Release Calendar
     bundle_status = f"Bundle '{context.bundles[-1].name}' updated."
@@ -527,7 +527,7 @@ def add_release_calendar_in_edit(context: Context) -> None:
     expect(context.page.get_by_role("status")).to_contain_text(bundle_status)
 
 
-@step("the logged in user can add preview team")
+@step("the logged in user can adds preview team")
 def add_preview_team_in_edit(context: Context) -> None:
     # add preview team
     context.page.get_by_role("button", name="Add preview team").click()
@@ -537,7 +537,7 @@ def add_preview_team_in_edit(context: Context) -> None:
     context.page.get_by_role("button", name="Save").click()
 
 
-@step("the logged in user can add pages")
+@step("the logged in user can adds pages")
 def add_article_page_in_edit(context: Context) -> None:
     # add Article
     bundle_status = f"Bundle '{context.bundles[-1].name}' updated."
@@ -662,7 +662,7 @@ def add_release_calendar_to_bundle(context: Context) -> None:
     context.page.get_by_role("row", name=context.release_calendar_page.title).get_by_role("link").click()
 
 
-@step("the logged in user add a schedule date to the bundle")
+@step("the logged in user adds a schedule date to the bundle")
 def add_schedule_date(context: Context) -> None:
     now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
     context.page.get_by_role("textbox", name="or Publication date").fill(now)
@@ -723,14 +723,14 @@ def get_search_match(context: Context, role: str) -> None:
     expect(context.page.get_by_role("table")).to_contain_text(table_text)
 
 
-@then("the logged in user gets match for release calendar search")
+@step("the logged in user gets match for release calendar search")
 def get_release_calendar_search_match(context: Context) -> None:
     release_calendar_name = context.release_calendar_page.title
     context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
     expect(context.page.get_by_role("cell", name=release_calendar_name)).to_be_visible()
 
 
-@then("the logged in user gets no match for release calendar search")
+@step("the logged in user gets no match for release calendar search")
 def get_release_calendar_search_no_match(context: Context) -> None:
     release_calendar_name = "PFM December 2025"
     release_calendar_alert = f'Sorry, there are no matches for "{release_calendar_name}"'
@@ -754,7 +754,7 @@ def find_existing_bundled_page(context: Context) -> None:
     context.page.get_by_role("textbox", name="Search term").fill(bundled_page_name)
 
 
-@then("the logged in user gets match for bundled_page search")
+@step("the logged in user gets match for bundled_page search")
 def get_bundled_page_search_match(context: Context) -> None:
     article_series_page_name = context.article_series_page.title
     bundled_page_name = context.statistical_article_page.title
@@ -762,7 +762,7 @@ def get_bundled_page_search_match(context: Context) -> None:
     expect(context.page.locator("td").filter(has_text=search_result)).to_be_visible()
 
 
-@then("the logged in user gets no match for bundled_page search")
+@step("the logged in user gets no match for bundled_page search")
 def get_bundled_page_search_no_match(context: Context) -> None:
     bundled_page_name = "PFM December 2025"
     bundled_page_alert = f'Sorry, there are no matches for "{bundled_page_name}"'

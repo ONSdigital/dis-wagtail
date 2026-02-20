@@ -82,7 +82,7 @@ Scenario Outline: A User cannot save a bundle due to duplicate schedule
     And the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
     And the logged in user adds a Release Calendar page to the bundle
-    And the logged in user add a schedule date to the bundle
+    And the logged in user adds a schedule date to the bundle
     When the user clicks "Save as draft"
     Then the logged in user gets a failure message due to duplicate schedule
 
@@ -210,9 +210,9 @@ Scenario Outline: A User can edit a bundle
     And the <role> can find the bundle
     And the logged in user searches for the bundle name
     When the logged in user goes to edit bundle
-    And the logged in user can add a release schedule
-    And the logged in user can add pages
-    And the logged in user can add preview team
+    And the logged in user can adds a release schedule
+    And the logged in user can adds pages
+    And the logged in user can adds preview team
     Then the user clicks "Save as draft"
     And the logged in user sends the bundle to preview
     And the logged in user gets a bundle update message
