@@ -226,7 +226,7 @@ class CoreBlocksTestCase(TestCase):
         block = RelatedContentBlock()
 
         value = block.to_python({})
-        self.assertIsNone(value.link)
+        self.assertIsNone(value.get_link())
 
         value = block.to_python(
             {
@@ -238,7 +238,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": "https://ons.gov.uk",
                 "text": "Example",
@@ -256,7 +256,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": self.home_page.url,
                 "text": "Example",
@@ -272,7 +272,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": self.home_page.url,
                 "text": self.home_page.title,
@@ -292,7 +292,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": statistical_article.url,
                 "text": statistical_article.display_title,
