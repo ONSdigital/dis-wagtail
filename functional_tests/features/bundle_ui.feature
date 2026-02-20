@@ -26,8 +26,8 @@ Scenario Outline: A User cannot create a bundle due to authorisation
 Scenario Outline: A User can create a bundle
     Given there is a <role> user
     And the <role> logs in
-    And the logged in user goes to the bundle page
-    And the logged in user can see the create button
+    When the logged in user goes to the bundle page
+    Then the logged in user can see the create button
     When the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
     And the user clicks "Save as draft"
@@ -44,7 +44,6 @@ Scenario Outline: A User cannot create a bundle due to field validation
     Given there is a <role> user
     And the <role> logs in
     And the logged in user goes to the bundle page
-    And the logged in user can see the create button
     When the logged in user can create a bundle
     And the user clicks "Save as draft"
     Then the logged in user gets a failure message due to field validation
@@ -61,7 +60,6 @@ Scenario Outline: A User cannot create a bundle due to already existing
     And there are <number_of_bundles> bundles with <bundle_details>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    And the logged in user can see the create button
     And the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
     When the user clicks "Save as draft"
@@ -78,7 +76,6 @@ Scenario Outline: A User cannot save a bundle due to duplicate schedule
     And there is a release calendar page approved by <creator_role>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    And the logged in user can see the create button
     And the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
     And the logged in user adds a Release Calendar page to the bundle
@@ -136,7 +133,6 @@ Scenario Outline: A User can find release schedule page
     And there is a release calendar page approved by <creator_role>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    And the logged in user can see the create button
     And the logged in user can create a bundle
     And the logged in user adds a Name to the bundle
     When the logged in user tries to find an existing release calendar page
