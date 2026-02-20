@@ -1017,6 +1017,9 @@ PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
 VIEWERS_GROUP_NAME = "Viewers"
 ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
 
+# Flag to enable direct publishing of pages without going through the workflow process.
+ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT = env.get("ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT", "false").lower() == "true"
+
 # Cookie Names
 ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
 REFRESH_TOKEN_COOKIE_NAME = "refresh_token"  # noqa: S105
