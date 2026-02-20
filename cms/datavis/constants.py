@@ -48,14 +48,3 @@ class BarColumnConfidenceIntervalChartTypeChoices(TextChoices):
 
 
 AXIS_TITLE_HELP_TEXT = "Only use axis titles if it is not clear from the title and subtitle what the axis represents."
-
-# Block type names for chart blocks in SectionContentBlock
-CHART_BLOCK_TYPES: frozenset[str] = frozenset(
-    {
-        "line_chart",
-        "bar_column_chart",
-        "bar_column_confidence_interval_chart",
-        "scatter_plot",
-        "area_chart",
-    }
-)
