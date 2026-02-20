@@ -198,9 +198,11 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         request_factory = RequestFactory()
         request_factory_server_name = request_factory._base_environ()["SERVER_NAME"]  # pylint: disable=protected-access
 
+        page_path = self.page.get_relative_path()
+
         self.assertContains(
             response,
-            f'<link rel="canonical" href="http://{request_factory_server_name}{self.page.url}/related-data">',
+            f'<link rel="canonical" href="http://{request_factory_server_name}{page_path}/related-data">',
             html=True,
         )
 
@@ -1135,7 +1137,7 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
         self.assertIn("url", data["title"])
         parsed = urlparse(data["title"]["url"])
         self.assertEqual(parsed.netloc, "", "URL should be relative")
-        self.assertEqual(parsed.path, self.page.url)
+        self.assertEqual(parsed.path, self.page.get_url(request=get_dummy_request()))
 
         self.assertEqual(data["metadata"]["text"], "Article")
         self.assertEqual(data["metadata"]["date"]["prefix"], "Release date")
@@ -1199,9 +1201,15 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(9, parent=cls.article_series)
-        cls.previous_releases_url = (
-            f"{cls.article_series.url}/{cls.article_series.reverse_subpage('previous_releases')}"
+        cls.previous_releases_url = "/".join(
+            [
+                cls.article_series.get_url(get_dummy_request()),
+                cls.article_series.reverse_subpage("previous_releases"),
+            ]
         )
+
+    def setUp(self):
+        self.dummy_request = get_dummy_request()
 
     def test_breadcrumb_does_contains_series_url(self):
         response = self.client.get(self.previous_releases_url)
@@ -1221,7 +1229,7 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
         for article in self.articles:
             with self.subTest(article=article):
                 self.assertContains(response, article.get_admin_display_title())
-                self.assertContains(response, article.url)
+                self.assertContains(response, article.get_url(request=self.dummy_request))
         self.assertContains(response, 'class="ons-document-list__item"', count=self.total_batch)
         self.assertContains(response, "Latest release", count=1)
 

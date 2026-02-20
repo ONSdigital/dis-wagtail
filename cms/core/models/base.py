@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
 
 from django.conf import settings
+from django.http import HttpRequest
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import ObjectList, TabbedInterface
-from wagtail.coreutils import WAGTAIL_APPEND_SLASH
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
 from wagtail.utils.decorators import cached_classmethod
@@ -25,11 +25,10 @@ if TYPE_CHECKING:
     from datetime import date, datetime
 
     from django.db import models
-    from django.http import HttpRequest
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import BaseGenericSetting as _WagtailBaseGenericSetting
     from wagtail.contrib.settings.models import BaseSiteSetting as _WagtailBaseSiteSetting
-    from wagtail.models import Site
+    from wagtail.models.sites import Site, SiteRootPath
 
     class WagtailBaseSiteSetting(_WagtailBaseSiteSetting, models.Model):
         """Explicit class definition for type checking. Indicates we're inheriting from Django's model."""
@@ -206,13 +205,28 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return request.build_absolute_uri(request.get_full_path())
         return cast(str, canonical_page.get_full_url(request=request))
 
-    def get_url(self, request: HttpRequest | None = None, current_site: Site | None = None) -> str | None:
-        """Override get_url to return URLs without trailing slashes."""
-        url: str = super().get_url(request, current_site)
+    def get_url_parts(self, request: HttpRequest | None = None) -> tuple[int, str | None, str | None] | None:
+        """Override get_url_parts to generate URLs without trailing slashes."""
+        parts = super().get_url_parts(request)
 
-        if not WAGTAIL_APPEND_SLASH and url and url != "/":
-            return url.rstrip("/")
-        return url
+        if parts is None:
+            return None
+
+        site_id, root_url, page_path = parts
+
+        if not settings.WAGTAIL_APPEND_SLASH and page_path and page_path != "/":
+            page_path = page_path.rstrip("/")
+
+        return site_id, root_url, page_path
+
+    def get_relative_path(self, request: HttpRequest | None = None) -> str:
+        """Get the relative path for this page, without the domain or any locale prefix.
+        This will be the path portion of the URL returned by `get_url_parts()`.
+        """
+        parts = self.get_url_parts(request=request)  # returns site_id, root_url, page_path | None
+        if parts is None or parts[-1] is None:
+            return ""
+        return parts[-1]
 
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
@@ -274,6 +288,30 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         parent_theme = page_topic.get_base_parent()
         return cast(str, parent_theme.title)
+
+    def _get_site_root_paths(self, request: HttpRequest | models.Model | None = None) -> list[SiteRootPath]:
+        """Extends the core Page._get_site_root_paths to account for alternative domains.
+
+        Note: while the method signature implies we get a request object, in reality it can be a model too.
+        """
+        if not settings.CMS_USE_SUBDOMAIN_LOCALES:
+            return cast(list["SiteRootPath"], super()._get_site_root_paths(request=request))
+
+        from cms.locale.utils import get_mapped_site_root_paths  # pylint: disable=import-outside-toplevel
+
+        cache_object = request if request is not None else self
+        try:
+            # pylint: disable=protected-access
+            cached_paths: list[SiteRootPath] = cache_object._wagtail_cached_site_root_paths  # type: ignore[union-attr]
+            # pylint: enable=protected-access
+            return cached_paths
+        except AttributeError:
+            host = request.get_host() if isinstance(request, HttpRequest) else None
+            paths = get_mapped_site_root_paths(host)
+            # pylint: disable=protected-access,attribute-defined-outside-init
+            cache_object._wagtail_cached_site_root_paths = paths  # type: ignore[union-attr]
+            # pylint: enable=protected-access,attribute-defined-outside-init
+            return paths
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

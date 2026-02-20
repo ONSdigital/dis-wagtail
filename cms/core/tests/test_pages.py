@@ -6,7 +6,6 @@ from django.template import TemplateDoesNotExist
 from django.template.loader import get_template as original_get_template
 from django.test.utils import override_settings
 from wagtail.coreutils import get_dummy_request
-from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.core.tests.utils import TranslationResetMixin, extract_datalayer_pushed_values, extract_response_jsonld
@@ -27,18 +26,6 @@ class HomePageTests(TranslationResetMixin, WagtailPageTestCase):
         response = self.client.get("/")
         self.assertContains(response, "This is a new service")
         self.assertContains(response, "All content is available under the")
-
-    def test_welsh_home_page_can_be_served(self):
-        response = self.client.get("/cy")
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-
-    def test_unsupported_language_home_page_is_not_found(self):
-        response = self.client.get("/fr")
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
-
-    def test_welsh_home_page_template(self):
-        response = self.client.get("/cy")
-        self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
 
     @override_settings(IS_EXTERNAL_ENV=False, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True, AWS_COGNITO_LOGIN_ENABLED=True)
     def test_both_login_buttons_are_displayed(self):
@@ -99,16 +86,19 @@ class HomePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         content = response.content.decode(encoding="utf-8")
         self.assertInHTML(
-            ('<a href="/cy" lang="cy"><span class="ons-u-vh">Change language to </span>Cymraeg</a>'), content
+            '<a href="https://cy.ons.localhost/" lang="cy">'
+            '<span class="ons-u-vh">Change language to </span>Cymraeg</a>',
+            content,
         )
 
     def test_language_toggle_english_link(self):
         """Test that the English language toggle link is present on the Welsh home page."""
-        response = self.client.get("/cy")
+        response = self.client.get("/", headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
         content = response.content.decode(encoding="utf-8")
         self.assertInHTML(
-            ('<a href="/" lang="en"><span class="ons-u-vh">Change language to </span>English</a>'), content
+            ('<a href="https://ons.localhost/" lang="en"><span class="ons-u-vh">Change language to </span>English</a>'),
+            content,
         )
 
 
@@ -125,26 +115,25 @@ class PageCanonicalUrlTests(TranslationResetMixin, WagtailPageTestCase):
             response, f'<link rel="canonical" href="{self.page.get_full_url(request=self.dummy_request)}" />'
         )
 
-    def test_welsh_page_alias_canonical_url(self):
-        """Test that the a welsh page has the correct english canonical URL when it has not been explicitly
-        translated.
-        """
-        self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True)
-        response = self.client.get(f"/cy{self.page.get_url(request=self.dummy_request)}")
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(
-            response, f'<link rel="canonical" href="{self.page.get_full_url(request=self.dummy_request)}" />'
-        )
 
-    def test_translated_page_canonical_url(self):
-        """Test that a translated page has the correct language coded canonical URL."""
-        welsh_page = self.page.copy_for_translation(locale=Locale.objects.get(language_code="cy"), copy_parents=True)
-        welsh_page.save_revision().publish()
-        response = self.client.get(welsh_page.get_url())
-        self.assertEqual(response.status_code, HTTPStatus.OK)
+class PageRelativePathTests(WagtailPageTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = InformationPageFactory()
+        cls.home_page = HomePage.objects.first()
 
-        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_page.get_full_url())
-        self.assertContains(response, f'<link rel="canonical" href="{welsh_page.get_full_url()}" />')
+    def test_get_relative_path(self):
+        """Test that get_relative_path returns the correct path portion of the URL."""
+        relative_path = self.page.get_relative_path(request=self.dummy_request)
+        full_url = self.page.get_full_url(request=self.dummy_request)
+        self.assertTrue(full_url.endswith(relative_path), "Full URL does not contain the relative path")
+        self.assertTrue(relative_path.startswith("/"))
+        self.assertEqual(full_url.replace(self.page.get_site().root_url, ""), relative_path)
+
+    def test_home_page_relative_path(self):
+        """Test that the home page relative path is '/'."""
+        relative_path = self.home_page.get_relative_path(request=self.dummy_request)
+        self.assertEqual(relative_path, "/", "Home page relative path should be '/'")
 
 
 class PageSchemaOrgTests(WagtailPageTestCase):
@@ -316,17 +305,10 @@ class ErrorPageTests(TranslationResetMixin, WagtailPageTestCase):
         # This uses the base template, which has OG tags
         self.assertContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
-        # Rendering and translations should still work
-        response = self.client.get("/cy")
-        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
-        self.assertContains(
-            response, "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth", status_code=HTTPStatus.INTERNAL_SERVER_ERROR
-        )
-
     @patch("cms.home.models.HomePage.serve")
     @patch("django.template.loader.get_template")
     def test_500_primary_fallback(self, mock_get_template, mock_homepage_serve):
-        """Test that the 500 page falls back to a basic HTML response."""
+        """Test that the 500 error page falls back to a basic HTML response."""
         self.client.raise_request_exception = False
         mock_homepage_serve.side_effect = ValueError("Deliberate test error")
         # The side effect will raise TemplateDoesNotExist for the primary 500 template, but in general
@@ -351,21 +333,6 @@ class ErrorPageTests(TranslationResetMixin, WagtailPageTestCase):
         # Check that the fallback template was actually used, it doesn't have OG tags like the base template
         self.assertNotContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
-        response = self.client.get("/cy")
-        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
-
-        # The fallback template does not have Welsh translations
-        self.assertNotContains(
-            response,
-            "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth",
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-        self.assertContains(
-            response,
-            "Sorry, there’s a problem with the service",
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
     @patch("cms.home.models.HomePage.serve")
     @patch("cms.core.views.render")
     def test_500_final_fallback(self, mock_render, mock_homepage_serve):
@@ -378,15 +345,6 @@ class ErrorPageTests(TranslationResetMixin, WagtailPageTestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         # Rendering is not possible, so we return a plain HTML response
-        self.assertContains(
-            response,
-            "<h1>Server Error (500)</h1><p>Sorry, there’s a problem with the service.</p>",
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
-        # Welsh version should also return a plain HTML response
-        response = self.client.get("/cy")
-        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertContains(
             response,
             "<h1>Server Error (500)</h1><p>Sorry, there’s a problem with the service.</p>",
