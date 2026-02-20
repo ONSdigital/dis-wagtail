@@ -4,12 +4,10 @@ from collections.abc import Mapping
 from threading import Lock
 from typing import TYPE_CHECKING, Any
 
-import matplotlib as mpl
 from bs4 import BeautifulSoup, Tag
 from django.conf import settings
 from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import redirect as _redirect
-from matplotlib.figure import Figure
 
 from cms.core.enums import RelatedContentType
 
@@ -22,15 +20,12 @@ matplotlib_lock = Lock()
 # A set of tuples containing the beginning and end indicators for LaTeX formulas
 FORMULA_INDICATORS: set[tuple[str, str]] = {("$$", "$$"), ("\\(", "\\)"), ("\\[", "\\]")}
 
-mpl.rcParams.update(
-    {
-        # Use LaTeX to render text in matplotlib
-        "text.usetex": True,
-        # Load the amsmath package for LaTeX
-        "text.latex.preamble": r"\usepackage{amsmath}",
-    }
-)
-
+MATPLOTLIB_CONTEXT = {
+    # Use LaTeX to render text in matplotlib
+    "text.usetex": True,
+    # Load the amsmath package for LaTeX
+    "text.latex.preamble": r"\usepackage{amsmath}",
+}
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -70,15 +65,17 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
     Returns:
         str: A string containing the SVG representation of the LaTeX expression.
     """
-    with matplotlib_lock:
+    # Only import matplotlib when needed, as the import is large and rarely used
+    import matplotlib as mpl  # pylint: disable=import-outside-toplevel
+    from matplotlib.figure import Figure  # pylint: disable=import-outside-toplevel
+
+    with matplotlib_lock, mpl.rc_context(MATPLOTLIB_CONTEXT):
         fig = Figure()
-        svg_buffer = io.StringIO()
-        try:
+
+        with io.StringIO() as svg_buffer:
             fig.text(0, 0, rf"${latex}$", fontsize=fontsize)
             fig.savefig(svg_buffer, format="svg", bbox_inches="tight", transparent=transparent)
             svg_string = svg_buffer.getvalue()
-        finally:
-            svg_buffer.close()
 
         # Remove first 3 lines of the SVG string
         svg_string = "\n".join(svg_string.split("\n")[3:])
