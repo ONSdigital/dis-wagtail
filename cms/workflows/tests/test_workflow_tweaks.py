@@ -41,14 +41,6 @@ class WorkflowTweaksBaseTestCase(WagtailTestUtils, TestCase):
         cls.publishing_officer = UserFactory()
         cls.publishing_officer.groups.add(Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME))
 
-    def assertActionIn(self, action, menu_items):  # pylint: disable=invalid-name
-        actions = {item.name for item in menu_items}
-        self.assertIn(action, actions)
-
-    def assertActionNotIn(self, action, menu_items):  # pylint: disable=invalid-name
-        actions = {item.name for item in menu_items}
-        self.assertNotIn(action, actions)
-
     def assertItemWithPropertyIn(self, attr_name, expected_value, items):  # pylint: disable=invalid-name
         values = {getattr(item, attr_name) for item in items}
         msg = f"Value '{expected_value}' not found in {attr_name}s. Found: {values}"
@@ -429,11 +421,12 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         menu_items = response.context["action_menu"].menu_items
 
         self.assertEqual(len(menu_items), 3)
-        self.assertActionIn("action-unpublish", menu_items)
-        self.assertActionIn("action-cancel-workflow", menu_items)
-        self.assertActionIn("reject", menu_items)
-        self.assertActionNotIn("action-publish", menu_items)
-        self.assertActionNotIn("approve", menu_items)
+
+        self.assertItemWithPropertyIn("name", "action-unpublish", menu_items)
+        self.assertItemWithPropertyIn("name", "action-cancel-workflow", menu_items)
+        self.assertItemWithPropertyIn("name", "reject", menu_items)
+        self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
+        self.assertItemWithPropertyNotIn("name", "approve", menu_items)
 
     def test_action_menu_locked_item_first_in_list(self):
         self.client.force_login(self.publishing_admin)
@@ -462,12 +455,12 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         # unpublish, approve, approve with comment, reject
         self.assertEqual(len(menu_items), 4)
 
-        self.assertActionIn("approve", menu_items)
-        self.assertActionIn("reject", menu_items)
-        self.assertActionIn("action-unpublish", menu_items)
-        self.assertActionNotIn("action-publish", menu_items)
-        self.assertActionNotIn("locked-approve", menu_items)
-        self.assertActionNotIn("unlock", menu_items)
+        self.assertItemWithPropertyIn("name", "approve", menu_items)
+        self.assertItemWithPropertyIn("name", "reject", menu_items)
+        self.assertItemWithPropertyIn("name", "action-unpublish", menu_items)
+        self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
+        self.assertItemWithPropertyNotIn("name", "locked-approve", menu_items)
+        self.assertItemWithPropertyNotIn("name", "unlock", menu_items)
 
         self.assertItemWithPropertyIn("label", "Approve", menu_items)
         self.assertItemWithPropertyIn("label", "Approve with comment", menu_items)
@@ -481,8 +474,8 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
 
         self.assertEqual(len(menu_items), 1)  # unlock
 
-        self.assertActionIn("unlock", menu_items)
-        self.assertActionNotIn("locked-approve", menu_items)
+        self.assertItemWithPropertyIn("name", "unlock", menu_items)
+        self.assertItemWithPropertyNotIn("name", "locked-approve", menu_items)
 
         self.assertItemWithPropertyIn("label", "Unlock editing", menu_items)
         self.assertItemWithPropertyNotIn("label", "Publish", menu_items)
@@ -497,8 +490,8 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         menu_items = response.context["action_menu"].menu_items
 
         self.assertEqual(len(menu_items), 2)  # unlock, publish
-        self.assertActionIn("unlock", menu_items)
-        self.assertActionIn("locked-approve", menu_items)
+        self.assertItemWithPropertyIn("name", "unlock", menu_items)
+        self.assertItemWithPropertyIn("name", "locked-approve", menu_items)
 
         self.assertItemWithPropertyIn("label", "Publish", menu_items)
         self.assertItemWithPropertyIn("label", "Unlock editing", menu_items)
@@ -605,8 +598,8 @@ class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
 
-        self.assertActionNotIn("approve", menu_items)
-        self.assertActionNotIn("locked-approve", menu_items)
+        self.assertItemWithPropertyNotIn("name", "approve", menu_items)
+        self.assertItemWithPropertyNotIn("name", "locked-approve", menu_items)
 
     def test_submitter_cannot_self_approve__post(self):
         """POST with approve action by the submitter is blocked with an error message."""
@@ -631,7 +624,7 @@ class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
 
-        self.assertActionIn("approve", menu_items)
+        self.assertItemWithPropertyIn("name", "approve", menu_items)
 
         self.assertItemWithPropertyIn("label", "Approve", menu_items)
         self.assertItemWithPropertyIn("label", "Approve with comment", menu_items)
@@ -653,8 +646,8 @@ class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
         menu_items = response.context["action_menu"].menu_items
 
         self.assertEqual(len(menu_items), 2)  # unlock + locked-approve
-        self.assertActionIn("locked-approve", menu_items)
-        self.assertActionIn("unlock", menu_items)
+        self.assertItemWithPropertyIn("name", "locked-approve", menu_items)
+        self.assertItemWithPropertyIn("name", "unlock", menu_items)
 
         self.assertItemWithPropertyIn("label", "Publish", menu_items)
         self.assertItemWithPropertyIn("label", "Unlock editing", menu_items)
