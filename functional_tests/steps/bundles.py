@@ -674,8 +674,15 @@ def go_to_bundle_page(context: Context) -> None:
 
 
 @step("the logged in user tries to find a non existing release calendar page")
-def find_release_calendar(context: Context) -> None:
+def find_release_calendar_non_existing(context: Context) -> None:
     release_calendar_name = "PFM December 2025"
+    context.page.get_by_role("button", name="Choose Release Calendar page").click()
+    context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
+
+
+@step("the logged in user tries to find an existing release calendar page")
+def find_release_calendar_existing(context: Context) -> None:
+    release_calendar_name = context.release_calendar_page.title
     context.page.get_by_role("button", name="Choose Release Calendar page").click()
     context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
 
@@ -689,8 +696,74 @@ def search_alert(context: Context, search_type: str) -> None:
     expect(context.page.get_by_role("alert")).to_contain_text(alert_text)
 
 
-@step("the logged in user tries to find a non existing bundle page")
-def find_bundle_page(context: Context) -> None:
-    bundle_page_name = "December 2025"
+@step("the logged in user searches for the expected bundle name")
+def search_for_bundle_expected_name(context: Context) -> None:
+    bundle_name = "December 2025"
+    context.page.get_by_role("textbox", name="Search term").fill(bundle_name)
+
+
+@step("the logged in user searches for the bundle name")
+def search_for_bundle(context: Context) -> None:
+    bundle_name = context.bundles[-1].name
+    context.page.get_by_role("textbox", name="Search term").fill(bundle_name)
+
+
+@step("the logged in user gets no match response in bundles search")
+def get_search_no_match(context: Context) -> None:
+    unfound_response = "No bundles match your query."
+    expect(context.page.get_by_text(unfound_response)).to_be_visible()
+
+
+@step("the logged in user gets match response in bundles search for user {role}")
+def get_search_match(context: Context, role: str) -> None:
+    table_text = f"{context.bundles[-1].name} Edit Inspect"
+    if role == "Viewer":
+        table_text = f"{context.bundles[-1].name} Inspect"
+
+    expect(context.page.get_by_role("table")).to_contain_text(table_text)
+
+
+@then("the logged in user gets match for release calendar search")
+def get_release_calendar_search_match(context: Context) -> None:
+    release_calendar_name = context.release_calendar_page.title
+    context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
+    expect(context.page.get_by_role("cell", name=release_calendar_name)).to_be_visible()
+
+
+@then("the logged in user gets no match for release calendar search")
+def get_release_calendar_search_no_match(context: Context) -> None:
+    release_calendar_name = "PFM December 2025"
+    release_calendar_alert = f'Sorry, there are no matches for "{release_calendar_name}"'
+    expect(context.page.get_by_role("alert")).to_contain_text(release_calendar_alert)
+
+
+@step("the logged in user tries to find a non existing bundled_page")
+def find_non_existing_bundled_page(context: Context) -> None:
+    bundled_page_name = "PFM December 2025"
+    context.page.get_by_role("button", name="Choose Release Calendar page").click()
+    context.page.get_by_role("textbox", name="Search term").fill(bundled_page_name)
+
+
+@step("the logged in user tries to find an existing bundled_page")
+def find_existing_bundled_page(context: Context) -> None:
+    bundled_page_name = context.statistical_article_page.title
+
     context.page.get_by_role("button", name="Add page").click()
-    context.page.get_by_role("textbox", name="Search term").fill(bundle_page_name)
+    context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
+    context.page.wait_for_timeout(200)
+    context.page.get_by_role("textbox", name="Search term").fill(bundled_page_name)
+
+
+@then("the logged in user gets match for bundled_page search")
+def get_bundled_page_search_match(context: Context) -> None:
+    article_series_page_name = context.article_series_page.title
+    bundled_page_name = context.statistical_article_page.title
+    search_result = f"{article_series_page_name}: {bundled_page_name}"
+    expect(context.page.locator("td").filter(has_text=search_result)).to_be_visible()
+
+
+@then("the logged in user gets no match for bundled_page search")
+def get_bundled_page_search_no_match(context: Context) -> None:
+    bundled_page_name = "PFM December 2025"
+    bundled_page_alert = f'Sorry, there are no matches for "{bundled_page_name}"'
+    expect(context.page.get_by_role("alert")).to_contain_text(bundled_page_alert)
