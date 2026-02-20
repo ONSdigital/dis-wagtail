@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views import View
 from wagtail.admin.auth import user_has_any_page_permission, user_passes_test
+from wagtail.log_actions import log
 from wagtail.models import Page, Revision
 
 from cms.articles.utils import create_data_csv_download_response_from_data
@@ -156,6 +157,15 @@ class RevisionChartDownloadView(View):
         """
         revision_page = get_revision_page_for_request(request, page_id, revision_id)
         csv_data, title = get_csv_data_from_chart(revision_page, chart_id)
+
+        log(
+            action="content.chart_download",
+            instance=revision_page,
+            data={
+                "chart_id": chart_id,
+                "revision_id": revision_id,
+            },
+        )
         return create_data_csv_download_response_from_data(csv_data, title=title)
 
 
@@ -184,4 +194,13 @@ class RevisionTableDownloadView(View):
         """
         revision_page = get_revision_page_for_request(request, page_id, revision_id)
         csv_data, title = get_csv_data_from_table(revision_page, table_id)
+
+        log(
+            action="content.table_download",
+            instance=revision_page,
+            data={
+                "table_id": table_id,
+                "revision_id": revision_id,
+            },
+        )
         return create_data_csv_download_response_from_data(csv_data, title=title)
