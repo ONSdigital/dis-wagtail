@@ -138,17 +138,17 @@ class SlackNotificationsTestCase(TestCase):
         self.assertEqual(call_kwargs["text"], "Finished bundle publication")
         fields = call_kwargs["attachments"][0]["fields"]
 
-        self.assertListEqual(
+        self.assertEqual(
             fields,
             [
                 {"title": "Title", "value": "First Bundle", "short": True},
                 {"title": "User", "value": "Publishing Officer", "short": True},
-                {"title": "Pages", "value": 1, "short": True},
+                {"title": "Total Pages", "value": 1, "short": True},
+                {"title": "Published Pages", "value": 1, "short": True},
                 {"title": "Total time", "value": "1.234 seconds"},
                 {"title": "Link", "value": self.inspect_url, "short": False},
             ],
         )
-        self.assertEqual(len(fields), 5)  # Including URL and elapsed time
 
     def test_notify_slack_of_publish_end__no_webhook_url(self):
         """Should return early if no webhook URL is configured."""
