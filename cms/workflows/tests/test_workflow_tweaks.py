@@ -49,6 +49,16 @@ class WorkflowTweaksBaseTestCase(WagtailTestUtils, TestCase):
         actions = {item.name for item in menu_items}
         self.assertNotIn(action, actions)
 
+    def assertItemWithPropertyIn(self, attr_name, expected_value, items):  # pylint: disable=invalid-name
+        values = {getattr(item, attr_name) for item in items}
+        msg = f"Value '{expected_value}' not found in {attr_name}s. Found: {values}"
+        self.assertIn(expected_value, values, msg=msg)
+
+    def assertItemWithPropertyNotIn(self, attr_name, expected_value, items):  # pylint: disable=invalid-name
+        values = {getattr(item, attr_name) for item in items}
+        msg = f"Value '{expected_value}' unexpectedly found in {attr_name}s. Found: {values}"
+        self.assertNotIn(expected_value, values, msg=msg)
+
 
 class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
     @classmethod
@@ -459,9 +469,8 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         self.assertActionNotIn("locked-approve", menu_items)
         self.assertActionNotIn("unlock", menu_items)
 
-        labels = {item.label for item in menu_items}
-        self.assertIn("Approve", labels)
-        self.assertIn("Approve with comment", labels)
+        self.assertItemWithPropertyIn("label", "Approve", menu_items)
+        self.assertItemWithPropertyIn("label", "Approve with comment", menu_items)
 
     def test_action_menu_labels__in_ready_to_publish__in_bundle(self):
         self.client.force_login(self.publishing_admin)
@@ -475,10 +484,9 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         self.assertActionIn("unlock", menu_items)
         self.assertActionNotIn("locked-approve", menu_items)
 
-        labels = {item.label for item in menu_items}
-        self.assertIn("Unlock editing", labels)
-        self.assertNotIn("Publish", labels)
-        self.assertNotIn("Approve and Publish", labels)
+        self.assertItemWithPropertyIn("label", "Unlock editing", menu_items)
+        self.assertItemWithPropertyNotIn("label", "Publish", menu_items)
+        self.assertItemWithPropertyNotIn("label", "Approve and Publish", menu_items)
 
     def test_action_menu_labels__in_ready_to_publish__no_bundle(self):
         self.client.force_login(self.publishing_admin)
@@ -492,10 +500,9 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         self.assertActionIn("unlock", menu_items)
         self.assertActionIn("locked-approve", menu_items)
 
-        labels = {item.label for item in menu_items}
-        self.assertIn("Publish", labels)
-        self.assertIn("Unlock editing", labels)
-        self.assertNotIn("Approve and Publish", labels)
+        self.assertItemWithPropertyIn("label", "Publish", menu_items)
+        self.assertItemWithPropertyIn("label", "Unlock editing", menu_items)
+        self.assertItemWithPropertyNotIn("label", "Approve and Publish", menu_items)
 
     def test_locked_approve_action__publishes_page(self):
         self.client.force_login(self.publishing_admin)
@@ -625,9 +632,9 @@ class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
         menu_items = response.context["action_menu"].menu_items
 
         self.assertActionIn("approve", menu_items)
-        labels = {item.label for item in menu_items}
-        self.assertIn("Approve", labels)
-        self.assertIn("Approve with comment", labels)
+
+        self.assertItemWithPropertyIn("label", "Approve", menu_items)
+        self.assertItemWithPropertyIn("label", "Approve with comment", menu_items)
 
     def test_cancel_workflow_available_in_review(self):
         """Cancel workflow action is present during the review stage."""
@@ -649,9 +656,8 @@ class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
         self.assertActionIn("locked-approve", menu_items)
         self.assertActionIn("unlock", menu_items)
 
-        labels = {item.label for item in menu_items}
-        self.assertIn("Publish", labels)
-        self.assertIn("Unlock editing", labels)
+        self.assertItemWithPropertyIn("label", "Publish", menu_items)
+        self.assertItemWithPropertyIn("label", "Unlock editing", menu_items)
 
     def test_page_level_go_live_scheduling_allowed(self):
         """Page-level go_live_at scheduling is not blocked for non-bundled pages."""

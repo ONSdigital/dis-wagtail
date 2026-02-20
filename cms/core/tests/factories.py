@@ -9,11 +9,11 @@ from wagtail_factories.blocks import (
     StructBlockFactory,
 )
 
+from cms.articles.models import ArticlesIndexPage
 from cms.core.blocks.related import LinkBlock, RelatedContentBlock
 from cms.core.blocks.section_blocks import SectionContentBlock
 from cms.core.models import ContactDetails
 from cms.core.models.snippets import Definition
-from cms.home.models import HomePage
 
 
 class DateTimeBlockFactory(BlockFactory):
@@ -73,10 +73,14 @@ class DefinitionFactory(factory.django.DjangoModelFactory):
 
 
 class BasePageFactory(wagtail_factories.PageFactory):
-    """Factory for a basic BasePage implementation."""
+    """Factory for a basic BasePage implementation.
+    This is used for testing purposes to test non-bundleable pages
+    without needing to create a specific page model.
+    ArticlesIndexPage page will not be bundleable in the future.
+    """
 
     class Meta:
-        model = HomePage
+        model = ArticlesIndexPage
 
     parent = factory.LazyFunction(Page.get_first_root_node)
     title = factory.Faker("sentence", nb_words=4)
