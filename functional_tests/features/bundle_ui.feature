@@ -206,9 +206,9 @@ Scenario Outline: A User can edit a bundle
     And the <role> can find the bundle
     And the logged in user searches for the bundle name
     When the logged in user goes to edit bundle
-    And the logged in user can adds a release schedule
-    And the logged in user can adds pages
-    And the logged in user can adds preview team
+    And the logged in user can add a release schedule
+    And the logged in user can add pages
+    And the logged in user can add preview team
     Then the user clicks "Save as draft"
     And the logged in user sends the bundle to preview
     And the logged in user gets a bundle update message

@@ -511,7 +511,7 @@ def edit_bundle(context: Context) -> None:
     context.page.get_by_role("link", name=context.bundles[-1].name, exact=True).click()
 
 
-@step("the logged in user can adds a release schedule")
+@step("the logged in user can add a release schedule")
 def add_release_calendar_in_edit(context: Context) -> None:
     # add Release Calendar
     bundle_status = f"Bundle '{context.bundles[-1].name}' updated."
@@ -527,7 +527,7 @@ def add_release_calendar_in_edit(context: Context) -> None:
     expect(context.page.get_by_role("status")).to_contain_text(bundle_status)
 
 
-@step("the logged in user can adds preview team")
+@step("the logged in user can add preview team")
 def add_preview_team_in_edit(context: Context) -> None:
     # add preview team
     context.page.get_by_role("button", name="Add preview team").click()
@@ -537,7 +537,7 @@ def add_preview_team_in_edit(context: Context) -> None:
     context.page.get_by_role("button", name="Save").click()
 
 
-@step("the logged in user can adds pages")
+@step("the logged in user can add pages")
 def add_article_page_in_edit(context: Context) -> None:
     # add Article
     bundle_status = f"Bundle '{context.bundles[-1].name}' updated."
