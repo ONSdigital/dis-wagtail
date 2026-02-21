@@ -4,17 +4,8 @@ from functools import partial
 from cache_memoize import cache_memoize
 from django.conf import settings
 from django.views.decorators.cache import cache_control
-from wagtail.contrib.frontend_cache.utils import purge_url_from_cache
-from wagtail.models import Site
 
-
-def purge_cache_on_all_sites(path: str) -> None:
-    """Purge the given path on all defined sites."""
-    if settings.DEBUG:
-        return
-
-    for site in Site.objects.all():
-        purge_url_from_cache(site.root_url.rstrip("/") + path)
+memory_cache = partial(cache_memoize, cache_alias="memory")
 
 
 def get_default_cache_control_kwargs() -> dict[str, int | bool]:
@@ -38,6 +29,3 @@ def get_default_cache_control_decorator() -> Callable:
     """
     cache_control_kwargs = get_default_cache_control_kwargs()
     return cache_control(**cache_control_kwargs)
-
-
-memory_cache = partial(cache_memoize, cache_alias="memory")
