@@ -6,6 +6,3 @@ services:
     ports: !override
       - 8000:8000 # Django development server
       - 8001:8001 # mkdocs server
-    # Example domain labelling when using Orbstack for subdomain support.
-    # labels:
-    #  - dev.orbstack.domains=web.dis-wagtail.orb.local,*.web.dis-wagtail.orb.local
