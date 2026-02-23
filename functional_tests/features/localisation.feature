@@ -66,4 +66,4 @@ Feature: Users can create localised content in the CMS
         And  the welsh information page goes through the publishing steps with Publishing Officer as user and Publishing Admin as reviewer
         And  the user clicks "View Live" on the publish confirmation banner
         And  the user switches the page language to English
-        Then the published information page is displayed with basic English content
+        Then the published information page is displayed with English content

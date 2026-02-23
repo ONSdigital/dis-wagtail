@@ -407,7 +407,7 @@ class BaseChartBlock(BaseVisualisationBlock):
             return "#"
 
         return reverse(
-            "articles:revision_chart_download",
+            "data_downloads:revision_chart_download",
             kwargs={"page_id": page.pk, "revision_id": revision_id, "chart_id": block_id},
         )
 

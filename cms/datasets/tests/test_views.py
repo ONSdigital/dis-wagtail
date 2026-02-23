@@ -920,7 +920,9 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
     def test_get_objects_skips_bulk_update_when_metadata_unchanged(
         self, mock_ons_dataset, mock_dataset, mock_get_dataset
     ):
-        """Test that bulk_update is skipped when existing metadata matches API data."""
+        """Test that bulk_update is skipped when existing metadata matches API data and
+        that only selected datasets are returned.
+        """
         # Mock the API dataset
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Same Title"
@@ -940,7 +942,8 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         existing_dataset.title = "Same Title"
         existing_dataset.description = "Same Description"
 
-        mock_dataset.objects.filter.side_effect = [[existing_dataset]]
+        # The first call to filter is for existing_datasets_map, the second is for the final queryset
+        mock_dataset.objects.filter.side_effect = [[existing_dataset], [existing_dataset]]
         mock_dataset.objects.bulk_create.return_value = None
 
         request = self.factory.get("/chooser/")
@@ -954,8 +957,14 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         mock_dataset.objects.bulk_update.assert_not_called()
         mock_dataset.objects.bulk_create.assert_not_called()
 
-        # Since no operations were performed, there is no .using call.
-        self.assertEqual(result, mock_dataset.objects.all.return_value)
+        # Since no operations were performed, there is no .using call
+        self.assertFalse(mock_dataset.objects.using.called)
+        # Filter should have been called twice - once for existing_datasets_map and once for final queryset
+        self.assertEqual(mock_dataset.objects.filter.call_count, 2)
+        # No calls to fetch all datasets
+        self.assertEqual(mock_dataset.objects.all.call_count, 0)
+        # Only the matching existing dataset should be returned.
+        self.assertEqual(result, [existing_dataset])
 
     @patch("cms.datasets.views.get_dataset_for_published_state")
     @patch("cms.datasets.views.Dataset")
@@ -1081,7 +1090,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
     @patch("cms.datasets.views.Dataset")
     @patch("cms.datasets.views.ONSDataset")
     def test_get_objects_skips_update_when_api_has_empty_values(self, mock_ons_dataset, mock_dataset, mock_get_dataset):
-        """Test that empty/None values from API don't trigger bulk updates."""
+        """Test that empty/None values from API don't trigger bulk updates and only selected datasets are returned."""
         # Mock API dataset with empty values
         mock_api_dataset = Mock()
         mock_api_dataset.title = None
@@ -1101,7 +1110,8 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         existing_dataset.title = "Existing Title"
         existing_dataset.description = "Existing Description"
 
-        mock_dataset.objects.filter.side_effect = [[existing_dataset]]
+        # The first call to filter is for existing_datasets_map, the second is for the final queryset
+        mock_dataset.objects.filter.side_effect = [[existing_dataset], [existing_dataset]]
         mock_dataset.objects.bulk_create.return_value = None
 
         request = self.factory.get("/chooser/")
@@ -1119,5 +1129,11 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         mock_dataset.objects.bulk_update.assert_not_called()
         mock_dataset.objects.bulk_create.assert_not_called()
 
-        # Since no operations were performed, there is no .using call.
-        self.assertEqual(result, mock_dataset.objects.all.return_value)
+        # Since no operations were performed, there is no .using call
+        self.assertFalse(mock_dataset.objects.using.called)
+        # Filter should have been called twice - once for existing_datasets_map and once for final queryset
+        self.assertEqual(mock_dataset.objects.filter.call_count, 2)
+        # No calls to fetch all datasets
+        self.assertEqual(mock_dataset.objects.all.call_count, 0)
+        # Only the matching existing dataset should be returned.
+        self.assertEqual(result, [existing_dataset])

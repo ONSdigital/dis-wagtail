@@ -5,9 +5,7 @@ on: # yamllint disable-line rule:truthy
   push:
     branches: [main]
   pull_request:
-    branches:
-      - main
-      - 'feature/datavis'
+    branches: [main]
 
 concurrency:
   group: '${{ github.head_ref || github.ref }}-${{ github.workflow }}'
@@ -32,7 +30,7 @@ jobs:
           cache: poetry
 
       - name: Install dependencies
-        run: make install-dev
+        run: poetry install --no-root
 
       - name: Lint Python
         run: make lint-py
@@ -46,7 +44,15 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
-      - name: Install npm dependencies
+          cache: npm
+
+      - id: node-cache
+        uses: actions/cache@v5
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/.nvmrc') }}-${{ hashFiles('**/package-lock.json') }}
+
+      - if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm ci --no-audit
       - name: CSS linting
         run: npm run lint:css
@@ -55,33 +61,36 @@ jobs:
       - name: Prettier
         run: npm run lint:format
 
-  compile_static:
+  compile-static:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
+          cache: npm
+
       - id: node-cache
         uses: actions/cache@v5
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/.nvmrc') }}-${{ hashFiles('**/package-lock.json') }}
+
       - if: steps.node-cache.outputs.cache-hit != 'true'
+        name: Install npm dependencies
         run: npm ci --no-audit
-      - run: npm run build:prod
-      - uses: actions/upload-artifact@v6
+
+      - name: Compile static files
+        run: npm run build:prod
+
+      - uses: actions/upload-artifact@v4
         with:
           name: static
           path: cms/static_compiled/
 
   test-python:
     runs-on: ubuntu-latest
-    needs:
-      - lint
-      - lint-front-end
-      - compile_static
-
+    needs: [lint, lint-front-end, compile-static]
     env:
       DJANGO_SETTINGS_MODULE: cms.settings.test
       DATABASE_URL: postgres://postgres:postgres@localhost/postgres # pragma: allowlist secret secretlint-disable-line
@@ -92,13 +101,12 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres # pragma: allowlist secret
           POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
+        ports: ['5432:5432']
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
       broker:
@@ -125,8 +133,7 @@ jobs:
           KAFKA_CFG_NUM_PARTITIONS: '3'
           # Enable auto-creation of topics
           KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
-        ports:
-          - '9092:9092'
+        ports: ['9092:9092']
 
     steps:
       - uses: actions/checkout@v6
@@ -141,7 +148,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          make install-dev
+          poetry install --no-root
           sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
 
       - uses: actions/download-artifact@v7
@@ -151,7 +158,7 @@ jobs:
 
       - name: Fetch Design System templates
         run: make load-design-system-templates
-      - name: collectstatic
+      - name: Collect static files
         run: poetry run ./manage.py collectstatic --verbosity 0 --noinput --clear
       - name: System checks
         run: poetry run ./manage.py check
@@ -159,8 +166,6 @@ jobs:
         run: poetry run ./manage.py makemigrations --check --noinput
       - name: Create cache table
         run: poetry run ./manage.py createcachetable
-      - name: Run migrations to work around Django bug (#35967)
-        run: poetry run ./manage.py locked_migrate
       - name: Compile translations
         run: make compilemessages
       - name: Test
@@ -182,7 +187,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Build Docker Image
+      - name: Build Docker Image # Verify that the Dockerfile is valid and can build the web image
         run: docker build --target web -t ons .
 
   repository_checks:
@@ -197,17 +202,16 @@ jobs:
         run: ./.github/check_docker_ignore.py
 
   functional-tests:
+    needs: [lint, lint-front-end, compile-static]
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false # Allow all shards to run even if one fails
       matrix:
-        browser:
-          - chromium
-    needs:
-      - lint
-      - lint-front-end
-      - compile_static
-
+        browser: [chromium]
+        shard: [1, 2, 3, 4, 5, 6]
     env:
+      TOTAL_SHARDS: 6 # Must match the number of shards in the matrix above
+      SHUFFLE_SEED: ${{ github.run_id }}
       DJANGO_SETTINGS_MODULE: cms.settings.functional_test
       SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
       PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
@@ -227,8 +231,14 @@ jobs:
 
       - name: Install dependencies
         run: |
-          make install-dev
+          poetry install --no-root
           sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
+
+      - name: Cache Playwright binaries
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-pw-${{ matrix.browser }}
 
       - name: Playwright Install
         run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
@@ -241,12 +251,25 @@ jobs:
       - name: Compile translations
         run: make compilemessages
 
-      - name: Run Functional Tests
-        run: make functional-tests
+      - name: Load Design System templates
+        run: make load-design-system-templates
 
-      - name: Upload Failure Traces
-        uses: actions/upload-artifact@v6
+      - name: Collect static files
+        run: make collectstatic
+
+      - name: Select feature subset
+        run: |
+          SHARD_INDEX=${{ matrix.shard }} ./.github/split_functional_test_features.sh > features.txt
+
+      - name: Run functional tests
+        run: |
+          make functional-tests-up
+          make functional-tests-list FEATURES="$(paste -sd' ' features.txt)"
+          make functional-tests-down
+
+      - name: Upload failure traces
         if: failure()
+        uses: actions/upload-artifact@v6
         with:
-          name: playwright-traces-${{ matrix.browser }}
+          name: playwright-traces-${{ matrix.browser }}-shard-${{ matrix.shard }}
           path: playwright_traces/
