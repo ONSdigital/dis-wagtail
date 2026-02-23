@@ -42,7 +42,7 @@ def the_user_has_featured_the_series(context: Context) -> None:
 
 @when("the user visits the topic page")
 def visit_topic_page(context: Context) -> None:
-    context.page.goto(f"{context.base_url}{context.topic_page.url}")
+    context.page.goto(context.topic_page.full_url)
 
 
 @when("the user selects the article series")
@@ -218,7 +218,7 @@ def create_items_for_topic_page(context: Context, topic_page_title: str, item_ty
 @when('the user visits "{topic_page_title}"')
 def user_visits_topic_page(context: Context, topic_page_title: str) -> None:
     topic_page = context.topic_pages[topic_page_title]
-    context.page.goto(f"{context.base_url}{topic_page.url}")
+    context.page.goto(topic_page.full_url)
 
 
 @when('the user edits "{topic_page_title}"')

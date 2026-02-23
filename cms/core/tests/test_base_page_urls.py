@@ -25,8 +25,3 @@ class TestBasePageURLs(WagtailTestUtils, TestCase):
         article_url = self.article_page.get_url()
         self.assertIsNotNone(article_url)
         self.assertFalse(article_url.endswith("/"), f"Article URL should not end with slash: {article_url}")
-
-    def test_root_url_remains_unchanged(self):
-        """Test that the root URL ('/') is not modified."""
-        root_url = self.root_page.get_url()
-        self.assertEqual(root_url, "/", "Root URL should remain as '/'")

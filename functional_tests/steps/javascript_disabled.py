@@ -26,13 +26,11 @@ def the_user_has_javascript_enabled(
 @then("the user can see the equation fallback")
 def the_user_can_see_the_equation_fallback(context: Context) -> None:
     # Article created in a_statistical_article_page_with_equations_exists()
-    url = context.statistical_article_page.url
-    context.page.goto(f"{context.base_url}{url}")
+    context.page.goto(context.statistical_article_page.full_url)
     expect(context.page.locator("#svgfallback")).to_be_visible()
 
 
 @then("the user cannot see the equation fallback")
-def the_user_cannot_see_the_equation_fallback(context: Context) -> None:
-    url = context.statistical_article_page.url
-    context.page.goto(f"{context.base_url}{url}")
+def the_user_cannot_see_the_equation_fallback(context: Context):
+    context.page.goto(context.statistical_article_page.full_url)
     expect(context.page.locator("#svgfallback")).not_to_be_visible()

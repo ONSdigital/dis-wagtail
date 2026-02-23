@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.html import strip_tags
@@ -42,6 +42,7 @@ from cms.datavis.blocks.featured_charts import FeaturedChartBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
+    from django.http import HttpRequest, HttpResponse
     from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
 
@@ -126,8 +127,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
             raise Http404
 
         request.is_for_subpage = True  # type: ignore[attr-defined]
-
-        return cast("HttpResponse", latest.related_data(request, *args, **kwargs))
+        response: HttpResponse = latest.related_data(request, *args, **kwargs)
+        return response
 
     @path("editions/")
     def previous_releases(self, request: HttpRequest) -> TemplateResponse:
@@ -153,15 +154,18 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     def release(self, request: HttpRequest, slug: str, **kwargs: Any) -> HttpResponse:
         if not (edition := StatisticalArticlePage.objects.live().child_of(self).filter(slug=slug).first()):
             raise Http404
-        return cast("HttpResponse", edition.serve(request, serve_as_edition=True, **kwargs))
+        response: HttpResponse = edition.serve(request, serve_as_edition=True, **kwargs)
+        return response
 
     @path("editions/<str:slug>/related-data/")
     def release_related_data(self, request: HttpRequest, slug: str) -> HttpResponse:
-        return cast("HttpResponse", self.release(request, slug, related_data=True))
+        response: HttpResponse = self.release(request, slug, related_data=True)
+        return response
 
     @path("editions/<str:slug>/versions/<int:version>/")
     def release_with_versions(self, request: HttpRequest, slug: str, version: int) -> HttpResponse:
-        return cast("HttpResponse", self.release(request, slug, version=version))
+        response: HttpResponse = self.release(request, slug, version=version)
+        return response
 
     @path("editions/<str:slug>/download-chart/<str:chart_id>/")
     def download_chart(self, request: HttpRequest, slug: str, chart_id: str) -> HttpResponse:
@@ -627,7 +631,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
                 # Special case for sub-routes of latest article in a series
                 url = request.canonical_url  # type: ignore[attr-defined]
                 return cast(str, url)
-            return cast(str, canonical_page.get_parent().get_full_url(request=request))
+            return cast(str, canonical_page.get_parent().specific_deferred.get_full_url(request=request))
 
         return super().get_canonical_url(request=request)
 
@@ -719,9 +723,8 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         canonical_page = self.alias_of.specific_deferred if self.alias_of_id else self
         if canonical_page.is_latest:
             request.canonical_url = (  # type: ignore[attr-defined]
-                canonical_page.get_parent().get_full_url(request=request) + "/related-data"
+                canonical_page.get_parent().specific_deferred.get_full_url(request) + "/related-data"
             )
-
         paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
         try:
             paginated_datasets = paginator.page(request.GET.get("page", 1))
@@ -814,7 +817,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         if self.is_latest and request.path == self.get_url(request):
             # If this is the latest release, but the request path is the full page URL, not the evergreen latest,
             # then include the evergreen latest URL (the parent series URL) in the analytics values.
-            values["pageURL"] = self.get_parent().get_full_url(request)
+            values["pageURL"] = self.get_parent().specific_deferred.get_full_url(request)
         return values
 
     @cached_property

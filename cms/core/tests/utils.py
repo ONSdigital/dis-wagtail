@@ -1,14 +1,17 @@
 import json
 import re
+import sys
 from io import StringIO
 from typing import TYPE_CHECKING
 from unittest import TestCase
 
 from bs4 import BeautifulSoup
 from django.conf import settings
+from django.conf.urls.i18n import is_language_prefix_patterns_used
 from django.core import management
 from django.core.files.base import ContentFile
 from django.test import SimpleTestCase
+from django.urls import clear_url_caches
 from django.utils import translation
 
 from cms.documents.models import CustomDocument
@@ -61,6 +64,21 @@ def extract_datalayer_pushed_values(html_content: str) -> dict[str, object]:
         arg_values = json.loads(datalayer_arg)
         datalayer_values.update(arg_values)
     return datalayer_values
+
+
+def reset_url_caches():
+    # Make sure the cache is empty before we are doing our tests.
+    clear_url_caches()
+    # Force reload of URLconf module to re-evaluate i18n_patterns
+    root_urlconf = getattr(settings, "ROOT_URLCONF", None)
+    if root_urlconf and root_urlconf in sys.modules:
+        del sys.modules[root_urlconf]
+        # Also delete any submodules
+        modules_to_delete = [mod for mod in sys.modules if mod.startswith(root_urlconf + ".")]
+        for mod in modules_to_delete:
+            del sys.modules[mod]
+
+    is_language_prefix_patterns_used.cache_clear()
 
 
 class PanelBlockAssertions(SimpleTestCase):

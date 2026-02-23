@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     "cms.datasets",
     "cms.datavis",
     "cms.documents",
+    "cms.locale",
     "cms.home",
     "cms.images",
     "cms.private_media",
@@ -143,7 +144,7 @@ MIDDLEWARE = [
     # SecurityMiddleware.
     # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
     "cms.core.whitenoise.CMSWhiteNoiseMiddleware",
-    "django.middleware.locale.LocaleMiddleware",
+    "cms.locale.middleware.SubdomainLocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -153,7 +154,7 @@ MIDDLEWARE = [
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 ]
 
-# Some middleware isn't needed for a external environment.
+# Some middleware isn't needed for an external environment.
 # Disable them to improve performance
 if not IS_EXTERNAL_ENV:
     common_middleware_index = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")
@@ -1045,6 +1046,32 @@ CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH = env.get("CMS_SEARCH_NOTIFY_ON_DELETE_
 
 # Domain-based locale configuration
 CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "true").lower() == "true"
+CMS_HOSTNAME_LOCALE_MAP = {}  # helps determine the locale for a hostname when using subdomain locales.
+
+# Used to generate full URLs for language alternatives when using one of the alternative domains.
+# Wagtail's Sites are configured with the main domains, but we need to handle the internal ones too.
+CMS_HOSTNAME_ALTERNATIVES = {}
+if CMS_USE_SUBDOMAIN_LOCALES and (config_string := env.get("CMS_HOSTNAME_LOCALE_MAP", "")):
+    # The env var is expected to have the following format:
+    # en:default_domain,alternative_domain|cy:default_domain,alternative_domain
+    # Which then gets converted to dict in the form of {domain: lang_code}
+    for locale_config in config_string.strip().split("|"):
+        if not locale_config.strip():
+            continue
+
+        # Split lang_code from domains
+        lang_code, domains_str = locale_config.strip().split(":", 1)
+        domains = [d.strip() for d in domains_str.split(",") if d.strip()]
+
+        if domains:
+            default_domain = domains[0]
+            for domain in domains:
+                CMS_HOSTNAME_LOCALE_MAP[domain] = lang_code
+
+            # there should be only one domain, but guard for cases where there is no alternate, or there multiple
+            alternative_domains = domains[1:]
+            if len(alternative_domains) == 1:
+                CMS_HOSTNAME_ALTERNATIVES[default_domain] = alternative_domains[0]
 
 # This must remain lower than the Gunicorn worker timeout.
 # Note, the Gunicorn timeout may itself be overridden in deployment config (e.g. gunicorn.conf.py, Helm chart values).

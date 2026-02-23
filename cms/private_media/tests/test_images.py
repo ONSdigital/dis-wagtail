@@ -293,7 +293,7 @@ class TestPrivateImageManager(TestCase):
         # Serve URLs for private image renditions should have been purged as part of the update
         for obj in self.private_images:
             for rendition in obj.renditions.all():
-                self.assertIn("http://localhost" + rendition.url, PURGED_URLS)
+                self.assertIn("https://ons.localhost" + rendition.url, PURGED_URLS)
 
         # Verify all images are now public
         for obj in self.model.objects.only("_privacy", "file_permissions_last_set", "privacy_last_changed"):
@@ -322,7 +322,7 @@ class TestPrivateImageManager(TestCase):
         # Serve URLs for public image renditions should have been purged as part of the update
         for obj in self.public_images:
             for rendition in obj.renditions.all():
-                self.assertIn("http://localhost" + rendition.serve_url, PURGED_URLS)
+                self.assertIn("https://ons.localhost" + rendition.serve_url, PURGED_URLS)
 
         # Verify all images are now private
         for image in self.model.objects.only("_privacy", "file_permissions_last_set", "privacy_last_changed"):

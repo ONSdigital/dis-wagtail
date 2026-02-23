@@ -1,6 +1,7 @@
 from django.http import Http404
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
+from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.core.permission_testers import BasePagePermissionTester
@@ -20,7 +21,10 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
             summary="This is an example",
         )
 
-        cls.page_url = cls.index_page.url
+        cls.page_url = cls.index_page.get_url(request=get_dummy_request())
+
+    def setUp(self):
+        self.dummy_request = get_dummy_request()
 
     def test_permission_tester_inherits_from_basepagepermissiontester(self):
         self.assertIsInstance(self.index_page.permissions_for_user(UserFactory()), BasePagePermissionTester)
@@ -46,7 +50,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, child_page.title)
-        self.assertContains(response, child_page.url)
+        self.assertContains(response, child_page.get_url(request=self.dummy_request))
         self.assertContains(response, child_page.summary)
 
     def test_children_displayed_as_featured_items_with_listing_info_when_no_custom_featured_items_selected(self):
@@ -67,7 +71,7 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.assertContains(response, child_page_listing_info.listing_title)
-        self.assertContains(response, child_page_listing_info.url)
+        self.assertContains(response, child_page_listing_info.get_url(request=self.dummy_request))
         self.assertContains(response, child_page_listing_info.listing_summary)
 
         self.assertNotContains(response, child_page_listing_info.title)
@@ -87,7 +91,7 @@ class InformationPageTestCase(WagtailTestUtils, TestCase):
     def setUpTestData(cls):
         cls.page = InformationPageFactory(title="Test Information Page")
 
-        cls.page_url = cls.page.url
+        cls.page_url = cls.page.get_url(request=get_dummy_request())
 
     def test_permission_tester_inherits_from_basepagepermissiontester(self):
         self.assertIsInstance(self.page.permissions_for_user(UserFactory()), BasePagePermissionTester)

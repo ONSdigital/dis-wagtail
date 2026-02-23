@@ -7,18 +7,27 @@ from cms.core.templatetags.util_tags import (
     get_hreflangs,
     get_translation_urls,
 )
+from cms.core.tests.utils import reset_url_caches
 from cms.home.models import HomePage
 
 
-class LangageTemplateTagTests(TestCase):
+@override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
+class LanguageTemplateTagTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = HomePage.objects.first()
+
+    def setUp(self):
+        self.dummy_request = get_dummy_request()
+        reset_url_caches()
+
+    def tearDown(self):
+        reset_url_caches()
+
     def test_get_translation_urls(self):
         """Test that get_translation_urls returns the correct URLs."""
-        # Mock request and page
-        request = get_dummy_request()
-        page = HomePage.objects.first()
-
         # Call the function
-        urls = get_translation_urls({"request": request, "page": page})
+        urls = get_translation_urls({"request": self.dummy_request, "page": self.page})
 
         # Check the output format
         self.assertIsInstance(urls, list)
@@ -36,12 +45,8 @@ class LangageTemplateTagTests(TestCase):
 
     def test_get_hreflangs(self):
         """Test that get_hreflangs returns the correct hreflang URLs."""
-        # Mock request and page
-        request = get_dummy_request()
-        page = HomePage.objects.first()
-
         # Call the function
-        hreflangs = get_hreflangs({"request": request, "page": page})
+        hreflangs = get_hreflangs({"request": self.dummy_request, "page": self.page})
 
         # Check the output format
         self.assertIsInstance(hreflangs, list)
@@ -56,9 +61,11 @@ class LangageTemplateTagTests(TestCase):
         self.assertEqual(hreflangs[1]["lang"], "cy")
         self.assertEqual(hreflangs[1]["url"], "/cy")
 
-    @override_settings(LANGUAGE_CODE="pl")
-    @override_settings(LANGUAGES=[("pl", "Polish"), ("cy", "Welsh")])
-    @override_settings(WAGTAIL_CONTENT_LANGUAGES=[("pl", "Polish"), ("cy", "Welsh")])
+    @override_settings(
+        LANGUAGE_CODE="pl",
+        LANGUAGES=[("pl", "Polish"), ("cy", "Welsh")],
+        WAGTAIL_CONTENT_LANGUAGES=[("pl", "Polish"), ("cy", "Welsh")],
+    )
     def test_get_hreflangs_with_different_base_locale(self):
         """Test that get_hreflangs returns the correct hreflang URLs with a different base locale."""
         # Replace the default locale with Polish
@@ -66,12 +73,8 @@ class LangageTemplateTagTests(TestCase):
         main_locale.language_code = "pl"
         main_locale.save()
 
-        # Mock request and page
-        request = get_dummy_request()
-        page = HomePage.objects.first()
-
         # Call the function
-        hreflangs = get_hreflangs({"request": request, "page": page})
+        hreflangs = get_hreflangs({"request": self.dummy_request, "page": self.page})
 
         # Check the output format
         self.assertIsInstance(hreflangs, list)

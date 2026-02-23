@@ -36,7 +36,7 @@ class LinkBlockStructValue(StructValue):
         if (page := self.get("page")) and page.live:
             page = page.specific_deferred
             value = {
-                "url": page.get_url(request=context.get("request") if context else None),
+                "url": page.get_relative_path(request=context.get("request") if context else None),
                 "text": title or getattr(page, "display_title", page.title),
             }
             if has_description:

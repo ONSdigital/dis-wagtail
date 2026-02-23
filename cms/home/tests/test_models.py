@@ -9,7 +9,7 @@ from cms.users.tests.factories import UserFactory
 
 class HomePageTestCase(TranslationResetMixin, TestCase):
     def setUp(self):
-        self.home_page = HomePage.objects.get(slug="home")
+        self.home_page = HomePage.objects.first()
         self.url = self.home_page.get_url()
 
     def test_permission_tester_inherits_from_basepagepermissiontester(self):
