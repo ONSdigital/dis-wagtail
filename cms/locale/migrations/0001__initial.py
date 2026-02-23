@@ -12,7 +12,9 @@ def update_english_site_entry(apps, schema_editor):
     default_hostname = _get_default_hostnames_by_country_code().get(settings.LANGUAGE_CODE, "ons.gov.uk")
     default_site = Site.objects.get(is_default_site=True)
 
-    update_fields = []
+    update_fields = ["site_name"]
+    default_site.site_name = "Office for National Statistics"
+
     if default_site.hostname != default_hostname:
         default_site.hostname = default_hostname
         update_fields.append("hostname")
