@@ -394,7 +394,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     start_time = time.time()
     notifications.notify_slack_of_publication_start(bundle, url=bundle.full_inspect_url)
 
-    pages_publish_successful = True
+    failed_page_publishes: list[int] = []
 
     for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision").not_live():
         try:
@@ -418,9 +418,9 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
         except Exception:  # pylint: disable=broad-exception-caught
             # Log exception, but don't raise it so publishing can continue
             logger.exception("Page publish failed", extra={"bundle_id": bundle.pk, "page_id": page.pk})
-            pages_publish_successful = False
+            failed_page_publishes.append(page.pk)
 
-    if pages_publish_successful:
+    if not failed_page_publishes:
         # update the related release calendar and publish
         if bundle.release_calendar_page_id:
             update_bundle_linked_release_calendar_page(bundle)
@@ -448,14 +448,15 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                 "bundle_id": bundle.pk,
                 "duration": round(publish_duration * 1000, 3),
                 "event": "publish_failed",
+                "failed_pages": failed_page_publishes,
             },
         )
 
     notifications.notify_slack_of_publish_end(
-        bundle, publish_duration, url=bundle.full_inspect_url, successful=pages_publish_successful
+        bundle, publish_duration, url=bundle.full_inspect_url, successful=not failed_page_publishes
     )
 
-    return pages_publish_successful
+    return bool(failed_page_publishes)
 
 
 def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
