@@ -9,7 +9,7 @@ from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
 
-from cms.core.utils import flatten_table_data
+from cms.core.utils import flatten_table_data, strip_unwanted_control_chars_from_json
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 
 if TYPE_CHECKING:
@@ -70,6 +70,9 @@ class BasicTableBlock(WagtailTableBlock):
         icon = "table"
         template = "templates/components/streamfield/basic_table_block.html"
         label = "Basic table"
+
+    def value_from_form(self, value: str) -> dict:
+        return super().value_from_form(strip_unwanted_control_chars_from_json(value))
 
     def _get_header(self, value: dict) -> list[dict[str, str]]:
         """Prepares the table header for the Design System."""
