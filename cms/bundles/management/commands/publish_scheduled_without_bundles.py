@@ -66,14 +66,15 @@ class Command(BaseCommand):
         self.stdout.write("Expired objects to be deactivated:")
         if expired_objects:
             for obj in sorted(expired_objects, key=attrgetter("expire_at")):
-                self.stdout.write(f"{obj.expire_at.isoformat()}\t{obj!r}")
+                self.stdout.write(f"{obj.expire_at.isoformat()}\t{obj!r} ({obj.pk})")
         else:
             self.stdout.write("No expired objects to be deactivated found.")
         self.stdout.write("\n---------------------------------")
         self.stdout.write("Revisions to be published:")
         if revisions_for_publish:
             for rp in sorted(revisions_for_publish, key=attrgetter("approved_go_live_at")):
-                self.stdout.write(f"{rp.approved_go_live_at.isoformat()}\t{rp.as_object()!r}")
+                obj = rp.as_object()
+                self.stdout.write(f"{rp.approved_go_live_at.isoformat()}\t{obj!r} ({obj.pk})")
         else:
             self.stdout.write("No objects to go live.")
 
