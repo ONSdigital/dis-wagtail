@@ -1,8 +1,10 @@
+from django.http import Http404
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.core.permission_testers import BasePagePermissionTester
+from cms.datavis.tests.factories import make_table_block_value
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.users.tests.factories import UserFactory
@@ -164,3 +166,301 @@ class StandardPagesAddViewTests(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, self.permission_denied_message)
+
+
+class InformationPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
+    """Test InformationPage CSV download functionality via CoreCSVDownloadMixin."""
+
+    def setUp(self):
+        self.page = InformationPageFactory(title="Information Page")
+        self.factory = RequestFactory()
+
+    def test_get_table_returns_table_block_by_id(self):
+        """Test get_table returns the correct table from content."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Test Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(title="Test Table 1"),
+                            "id": "test-table-id-1",
+                        },
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(title="Test Table 2"),
+                            "id": "test-table-id-2",
+                        },
+                    ],
+                },
+            }
+        ]
+
+        table = self.page.get_table("test-table-id-1")
+        self.assertEqual(table["title"], "Test Table 1")
+
+        table = self.page.get_table("test-table-id-2")
+        self.assertEqual(table["title"], "Test Table 2")
+
+    def test_get_table_returns_empty_dict_when_not_found(self):
+        """Test get_table returns empty dict when table_id is not found."""
+        self.page.content = []
+
+        table = self.page.get_table("unknown-table-id")
+        self.assertEqual(table, {})
+
+    def test_get_table_data_for_csv_extracts_headers_and_rows(self):
+        """Test get_table_data_for_csv flattens table data correctly."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "CSV Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="CSV Test Table",
+                                headers=[["Year", "Value"]],
+                                rows=[["2020", "100"], ["2021", "150"]],
+                            ),
+                            "id": "csv-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+
+        csv_data = self.page.get_table_data_for_csv("csv-table-id")
+
+        self.assertEqual(csv_data[0], ["Year", "Value"])
+        self.assertEqual(csv_data[1], ["2020", "100"])
+        self.assertEqual(csv_data[2], ["2021", "150"])
+        self.assertEqual(len(csv_data), 3)
+
+    def test_get_table_data_for_csv_raises_for_missing_table(self):
+        """Test get_table_data_for_csv raises ValueError for missing table."""
+        self.page.content = []
+
+        with self.assertRaises(ValueError) as context:
+            self.page.get_table_data_for_csv("nonexistent-table-id")
+
+        self.assertIn("not found", str(context.exception))
+
+    def test_download_table_returns_csv(self):
+        """Test download_table returns a CSV response."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Download Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="Download Test Table",
+                                headers=[["Col1", "Col2"]],
+                                rows=[["A", "B"]],
+                            ),
+                            "id": "download-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        request = self.factory.get("/fake-path/")
+        response = self.page.download_table(request, "download-table-id")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("attachment", response["Content-Disposition"])
+        self.assertIn("download-test-table.csv", response["Content-Disposition"].lower())
+
+    def test_download_table_raises_404_for_missing_table(self):
+        """Test download_table raises Http404 when table not found."""
+        self.page.content = []
+        request = self.factory.get("/fake-path/")
+
+        with self.assertRaises(Http404):
+            self.page.download_table(request, "nonexistent-table-id")
+
+    def test_get_table_data_for_csv_raises_for_empty_data(self):
+        """Test get_table_data_for_csv raises ValueError when table has no data."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Empty Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": {
+                                "title": "Empty Data Table",
+                                "data": {
+                                    "headers": [],
+                                    "rows": [],
+                                },
+                            },
+                            "id": "empty-data-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+
+        with self.assertRaises(ValueError) as context:
+            self.page.get_table_data_for_csv("empty-data-table-id")
+
+        self.assertIn("no data", str(context.exception))
+
+    def test_download_table_uses_caption_as_fallback_title(self):
+        """Test download_table uses caption for filename when title is empty."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Caption Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="",
+                                caption="Caption Table",
+                                headers=[["A"]],
+                                rows=[["1"]],
+                            ),
+                            "id": "caption-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        request = self.factory.get("/fake-path/")
+        response = self.page.download_table(request, "caption-table-id")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("caption-table.csv", response["Content-Disposition"].lower())
+
+    def test_download_table_uses_default_title_when_no_title_or_caption(self):
+        """Test download_table uses 'table' as filename when no title or caption."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "No Title Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": {
+                                "title": "",
+                                "data": {
+                                    "headers": [[{"value": "H", "type": "th"}]],
+                                    "rows": [[{"value": "V", "type": "td"}]],
+                                },
+                            },
+                            "id": "no-title-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        request = self.factory.get("/fake-path/")
+        response = self.page.download_table(request, "no-title-table-id")
+
+        self.assertEqual(response.status_code, 200)
+        # Should default to "table.csv"
+        self.assertIn("table.csv", response["Content-Disposition"].lower())
+
+    def test_get_table_ignores_non_table_blocks(self):
+        """Test get_table only matches table block types."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Mixed Content Section",
+                    "content": [
+                        {
+                            "type": "rich_text",
+                            "value": "Some text",
+                            "id": "rich-text-id",
+                        },
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(title="Actual Table"),
+                            "id": "table-id",
+                        },
+                    ],
+                },
+            }
+        ]
+
+        # Should not find rich_text block even with matching ID pattern
+        self.assertEqual(self.page.get_table("rich-text-id"), {})
+        # Should find table block
+        self.assertEqual(self.page.get_table("table-id")["title"], "Actual Table")
+
+    def test_get_table_requires_block_id(self):
+        """Test get_table returns empty dict for blocks without an id."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "No ID Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(title="Table Without ID"),
+                            # No "id" key
+                        }
+                    ],
+                },
+            }
+        ]
+
+        # Should not find anything - blocks need IDs to be retrieved
+        self.assertEqual(self.page.get_table("any-id"), {})
+
+    def test_download_table_endpoint_via_url(self):
+        """Test download_table endpoint is accessible via URL."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "URL Test Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="URL Test Table",
+                                headers=[["X"]],
+                                rows=[["Y"]],
+                            ),
+                            "id": "url-test-table-id",
+                        }
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        response = self.client.get(f"{self.page.url}/download-table/url-test-table-id")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+
+    def test_download_table_endpoint_returns_404_for_nonexistent_table(self):
+        """Test download_table endpoint returns 404 when table not found."""
+        self.page.content = []
+        self.page.save_revision().publish()
+
+        response = self.client.get(f"{self.page.url}/download-table/nonexistent-id")
+
+        self.assertEqual(response.status_code, 404)

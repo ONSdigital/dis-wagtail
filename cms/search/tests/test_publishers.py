@@ -7,7 +7,8 @@ from wagtail.test.utils import WagtailTestUtils
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
-from cms.search.publishers import BasePublisher, IAMKafkaTokenProvider, KafkaPublisher, LogPublisher
+from cms.search.publishers import BasePublisher, LogPublisher
+from cms.search.publishers.kafka import IAMKafkaTokenProvider, KafkaPublisher
 from cms.search.tests.helpers import ResourceDictAssertions
 from cms.search.utils import build_page_uri
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
@@ -79,7 +80,7 @@ class KafkaPublisherTests(TestCase, ResourceDictAssertions):
     def setUpTestData(cls):
         cls.information_page = InformationPageFactory()
 
-    @patch("cms.search.publishers.KafkaProducer")
+    @patch("cms.search.publishers.kafka.KafkaProducer")
     def test_kafka_publisher_init(self, mock_producer_class):
         """Ensure KafkaPublisher picks up settings and constructs KafkaProducer correctly."""
         KafkaPublisher()
@@ -90,7 +91,7 @@ class KafkaPublisherTests(TestCase, ResourceDictAssertions):
             retries=5,
         )
 
-    @patch("cms.search.publishers.KafkaProducer")
+    @patch("cms.search.publishers.kafka.KafkaProducer")
     def test_publish_created_or_updated(self, mock_producer_class):
         """Check that publish_created_or_updated sends to Kafka with the correct channel & message."""
         mock_producer = MagicMock()
@@ -101,7 +102,7 @@ class KafkaPublisherTests(TestCase, ResourceDictAssertions):
         publisher = KafkaPublisher()
         page = self.information_page
 
-        result = publisher.publish_created_or_updated(page)
+        publisher.publish_created_or_updated(page)
 
         # Check calls to producer
         mock_producer.send.assert_called_once()
@@ -113,9 +114,8 @@ class KafkaPublisherTests(TestCase, ResourceDictAssertions):
         self.assert_base_fields(message_called, page)
 
         mock_future.get.assert_called_once_with(timeout=10)
-        self.assertEqual(result, mock_future.get.return_value)
 
-    @patch("cms.search.publishers.KafkaProducer")
+    @patch("cms.search.publishers.kafka.KafkaProducer")
     def test_publish_deleted(self, mock_producer_class):
         """Check that publish_deleted sends to Kafka with the correct channel & message."""
         mock_producer = MagicMock()
@@ -142,10 +142,10 @@ class KafkaPublisherTests(TestCase, ResourceDictAssertions):
     def test_token_provider_cache_key(self):
         token_provider = IAMKafkaTokenProvider()
         self.assertEqual(
-            token_provider.token.get_cache_key(token_provider), "cms.search.publishers.IAMKafkaTokenProvider"
+            token_provider.token.get_cache_key(token_provider), "cms.search.publishers.kafka.IAMKafkaTokenProvider"
         )
 
-    @patch("cms.search.publishers.MSKAuthTokenProvider.generate_auth_token")
+    @patch("cms.search.publishers.kafka.MSKAuthTokenProvider.generate_auth_token")
     def test_token_provider(self, mock_generate_auth_token):
         mock_generate_auth_token.return_value = ("msk-token", None)
         token_provider = IAMKafkaTokenProvider()

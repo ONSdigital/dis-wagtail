@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "cms.auth",
     "cms.bundles",
     "cms.core",
+    "cms.data_downloads",
     "cms.datasets",
     "cms.datavis",
     "cms.documents",
@@ -1023,6 +1024,9 @@ PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
 PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
 VIEWERS_GROUP_NAME = "Viewers"
 ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
+
+# Flag to enable direct publishing of pages without going through the workflow process.
+ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT = env.get("ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT", "false").lower() == "true"
 
 # Cookie Names
 ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
