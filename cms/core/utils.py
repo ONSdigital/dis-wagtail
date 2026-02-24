@@ -1,15 +1,10 @@
 import io
-import re
-from collections.abc import Mapping
 from threading import Lock
 from typing import TYPE_CHECKING, Any
 
-import matplotlib as mpl
-from bs4 import BeautifulSoup, Tag
 from django.conf import settings
 from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import redirect as _redirect
-from matplotlib.figure import Figure
 
 from cms.core.enums import RelatedContentType
 
@@ -22,15 +17,12 @@ matplotlib_lock = Lock()
 # A set of tuples containing the beginning and end indicators for LaTeX formulas
 FORMULA_INDICATORS: set[tuple[str, str]] = {("$$", "$$"), ("\\(", "\\)"), ("\\[", "\\]")}
 
-mpl.rcParams.update(
-    {
-        # Use LaTeX to render text in matplotlib
-        "text.usetex": True,
-        # Load the amsmath package for LaTeX
-        "text.latex.preamble": r"\usepackage{amsmath}",
-    }
-)
-
+MATPLOTLIB_CONTEXT = {
+    # Use LaTeX to render text in matplotlib
+    "text.usetex": True,
+    # Load the amsmath package for LaTeX
+    "text.latex.preamble": r"\usepackage{amsmath}",
+}
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -70,15 +62,17 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
     Returns:
         str: A string containing the SVG representation of the LaTeX expression.
     """
-    with matplotlib_lock:
+    # Only import matplotlib when needed, as the import is large and rarely used
+    import matplotlib as mpl  # pylint: disable=import-outside-toplevel
+    from matplotlib.figure import Figure  # pylint: disable=import-outside-toplevel
+
+    with matplotlib_lock, mpl.rc_context(MATPLOTLIB_CONTEXT):
         fig = Figure()
-        svg_buffer = io.StringIO()
-        try:
+
+        with io.StringIO() as svg_buffer:
             fig.text(0, 0, rf"${latex}$", fontsize=fontsize)
             fig.savefig(svg_buffer, format="svg", bbox_inches="tight", transparent=transparent)
             svg_string = svg_buffer.getvalue()
-        finally:
-            svg_buffer.close()
 
         # Remove first 3 lines of the SVG string
         svg_string = "\n".join(svg_string.split("\n")[3:])
@@ -110,91 +104,3 @@ def redirect_to_parent_listing(
     if callable(method) and (redirect_url := method()):
         return redirect(redirect_url)
     return redirect(parent.get_url(request=request))
-
-
-def clean_cell_value(value: str | int | float) -> str | int | float:
-    """Cleans a cell value for CSV export.
-
-    Args:
-        value: The cell value to clean.
-
-    Returns:
-        The cleaned cell value as a string, int, or float.
-    """
-    if not isinstance(value, str):
-        return value
-
-    value = value.strip()
-
-    # Replace <br> tags (all variations) with newlines
-    value = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
-
-    if "<" not in value:
-        # Return early if there are no HTML tags to process
-        return value
-
-    # Strip all HTML tags except <a> tags (preserve links)
-    soup = BeautifulSoup(value, "html.parser")
-    for tag in soup.find_all(True):
-        if isinstance(tag, Tag) and tag.name != "a":
-            tag.unwrap()
-    # Use formatter=None to avoid escaping < characters in text content
-    return soup.decode(formatter=None)  # type: ignore[arg-type]
-
-
-def flatten_table_data(data: Mapping) -> list[list[str | int | float]]:
-    """Flattens table data by extracting cell values from headers and rows.
-
-    This is primarily used for the table block. Merged cells (colspan/rowspan)
-    have their values repeated across all spanned cells.
-
-    Args:
-        data: Data containing 'headers' and 'rows' keys with cell objects.
-
-    Returns:
-        List of rows, where each row is a list of cell values (strings, ints, or floats).
-    """
-    all_rows = [*data.get("headers", []), *data.get("rows", [])]
-    result: list[list[str | int | float]] = []
-    # Track columns filled by rowspan: {col_index: (value, remaining_rows)}
-    rowspan_tracker: dict[int, tuple[str | int | float, int]] = {}
-
-    # Use closure to access rowspan_tracker
-    def fill_rowspan_columns(processed_row: list[str | int | float], col_index: int) -> int:
-        """Fill columns blocked by previous rowspans, returning the updated column index."""
-        while col_index in rowspan_tracker:
-            value, remaining = rowspan_tracker[col_index]
-            processed_row.append(value)
-            if remaining == 1:
-                del rowspan_tracker[col_index]
-            else:
-                rowspan_tracker[col_index] = (value, remaining - 1)
-            col_index += 1
-        return col_index
-
-    for row in all_rows:
-        processed_row: list[str | int | float] = []
-        col_index = 0
-
-        for cell in row:
-            # Fill columns blocked by previous rowspans
-            col_index = fill_rowspan_columns(processed_row, col_index)
-
-            value = clean_cell_value(cell.get("value", ""))
-            colspan = cell.get("colspan", 1)
-            rowspan = cell.get("rowspan", 1)
-
-            # Add the cell value repeated for colspan
-            for _ in range(colspan):
-                processed_row.append(value)
-                # Track rowspan for this column
-                if rowspan > 1:
-                    rowspan_tracker[col_index] = (value, rowspan - 1)
-                col_index += 1
-
-        # Handle any remaining rowspan columns at end of row
-        fill_rowspan_columns(processed_row, col_index)  # Return value not needed
-
-        result.append(processed_row)
-
-    return result

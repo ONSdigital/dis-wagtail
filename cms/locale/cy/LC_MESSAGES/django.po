@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-09 17:57+0000\n"
+"POT-Creation-Date: 2026-02-19 10:27+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,39 +19,39 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
 "11) ? 2 : 3;\n"
 
-#: cms/articles/models.py:217 cms/core/enums.py:8
+#: cms/articles/models.py:211 cms/core/enums.py:8
 #: cms/core/formatting_utils.py:44
 msgid "Article"
 msgstr "Erthygl"
 
-#: cms/articles/models.py:528
+#: cms/articles/models.py:443
 msgid "Cite this article"
 msgstr "Dyfynnwch yr erthygl hon"
 
-#: cms/articles/models.py:530
+#: cms/articles/models.py:445
 #: cms/jinja2/templates/components/contact_details/contact_details.html:6
-#: cms/methodology/models.py:190 cms/release_calendar/models.py:246
+#: cms/methodology/models.py:198 cms/release_calendar/models.py:246
 msgid "Contact details"
 msgstr "Manylion cyswllt"
 
-#: cms/articles/models.py:597
+#: cms/articles/models.py:512
 #, python-format
 msgid "All data related to %(article_title)s"
 msgstr "Yr holl ddata sy'n gysylltiedig â %(article_title)s"
 
-#: cms/articles/models.py:656
+#: cms/articles/models.py:571
 msgid "Release date"
 msgstr "Dyddiad y datganiad"
 
-#: cms/articles/utils.py:27
+#: cms/articles/utils.py:26
 msgid "Correction"
 msgstr "Cywiriad"
 
-#: cms/articles/utils.py:27
+#: cms/articles/utils.py:26
 msgid "Notice"
 msgstr "Hysbysiad"
 
-#: cms/articles/utils.py:37
+#: cms/articles/utils.py:36
 msgid "View superseded version"
 msgstr "Gweld fersiwn wedi’i disodli"
 
@@ -73,8 +73,12 @@ msgstr "Dangos popeth"
 msgid "Hide all"
 msgstr "Cuddio popeth"
 
+#: cms/core/blocks/markup.py:224
+msgid "Download this table"
+msgstr ""
+
 #: cms/core/blocks/markup.py:225
-msgid "Table"
+msgid "Download CSV"
 msgstr ""
 
 #: cms/core/blocks/related.py:60
@@ -85,16 +89,16 @@ msgstr "Dolenni cysylltiedig"
 msgid "Dataset"
 msgstr "Set ddata"
 
-#: cms/core/enums.py:10 cms/methodology/models.py:82
+#: cms/core/enums.py:10 cms/methodology/models.py:90
 msgid "Methodology"
 msgstr "Methodoleg"
 
-#: cms/core/enums.py:11 cms/topics/models.py:270
+#: cms/core/enums.py:11 cms/topics/models.py:249
 msgid "Time series"
 msgstr "Cyfres amser"
 
 #: cms/core/enums.py:12 cms/jinja2/templates/pages/topic_page.html:9
-#: cms/topics/models.py:146
+#: cms/topics/models.py:125
 msgid "Topic"
 msgstr "Pwnc"
 
@@ -119,7 +123,7 @@ msgstr "Tudalen"
 msgid "Released"
 msgstr "Rhyddhawyd"
 
-#: cms/core/models/base.py:164
+#: cms/core/models/base.py:156
 msgid "Home"
 msgstr "Cartref"
 
@@ -131,7 +135,7 @@ msgstr "Troednodiadau"
 #: cms/datavis/blocks/table.py:57
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:94
 #: cms/jinja2/templates/pages/topic_page.html:113
-#: cms/release_calendar/models.py:235 cms/topics/models.py:268
+#: cms/release_calendar/models.py:235 cms/topics/models.py:247
 msgid "Data"
 msgstr "Data"
 
@@ -477,7 +481,7 @@ msgid "Save or print this page"
 msgstr "Adrannau ar y dudalen hon"
 
 #: cms/jinja2/templates/pages/methodology_page.html:113
-#: cms/methodology/models.py:188
+#: cms/methodology/models.py:196
 msgid "Cite this methodology"
 msgstr "Dyfynnwch y fethodoleg hon"
 
@@ -549,9 +553,9 @@ msgid ""
 msgstr ""
 "Mae’r rhain yn ystadegau swyddogol achrededig. Adolygwyd yn annibynnolgan y "
 "Swyddfa Rheoleiddio Ystadegau (OSR) ac a ganfuwyd ei fod yn cydymffurfio "
-"gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://code."
-"statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</a>. "
-"Mae hyn yn golygu yn fras bod yr ystadegau:"
+"gyda safonau dibynadwyedd, ansawdd a gwerth yn y <a href='https://"
+"code.statisticsauthority.gov.uk/the-code/'>Cod Ymarfer ar gyfer Ystadegau</"
+"a>. Mae hyn yn golygu yn fras bod yr ystadegau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:138
 msgid "meet user needs"
@@ -693,11 +697,11 @@ msgstr ""
 msgid "Theme"
 msgstr "Thema"
 
-#: cms/jinja2/templates/pages/topic_page.html:67 cms/topics/models.py:260
+#: cms/jinja2/templates/pages/topic_page.html:67 cms/topics/models.py:239
 msgid "Featured"
 msgstr "Dan Sylw"
 
-#: cms/jinja2/templates/pages/topic_page.html:77 cms/topics/models.py:262
+#: cms/jinja2/templates/pages/topic_page.html:77 cms/topics/models.py:241
 msgid "Related articles"
 msgstr "Erthyglau cysylltiedig"
 
@@ -705,7 +709,7 @@ msgstr "Erthyglau cysylltiedig"
 msgid "View all related articles"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:95 cms/topics/models.py:264
+#: cms/jinja2/templates/pages/topic_page.html:95 cms/topics/models.py:243
 msgid "Methods and quality information"
 msgstr "Dulliau a gwybodaeth o ansawdd"
 
@@ -725,8 +729,8 @@ msgstr ""
 msgid "View all related time series"
 msgstr ""
 
-#: cms/jinja2/templates/pages/topic_page.html:149 cms/topics/models.py:266
-#: cms/topics/tests/test_models.py:544 cms/topics/tests/test_models.py:548
+#: cms/jinja2/templates/pages/topic_page.html:149 cms/topics/models.py:245
+#: cms/topics/tests/test_models.py:548 cms/topics/tests/test_models.py:552
 msgid "Explore more"
 msgstr "Archwilio mwy"
 
@@ -734,7 +738,7 @@ msgstr "Archwilio mwy"
 msgid "Continue"
 msgstr "Parhau"
 
-#: cms/methodology/models.py:176 cms/methodology/models.py:186
+#: cms/methodology/models.py:184 cms/methodology/models.py:194
 msgid "Related publications"
 msgstr "Cyhoeddiadau cysylltiedig"
 
@@ -742,14 +746,28 @@ msgstr "Cyhoeddiadau cysylltiedig"
 msgid "To be confirmed"
 msgstr "I’w gadarnhau"
 
-#: cms/settings/base.py:382
+#: cms/settings/base.py:383
 msgid "English"
 msgstr "Saesneg"
 
-#: cms/settings/base.py:383
+#: cms/settings/base.py:384
 msgid "Welsh"
 msgstr "Cymraeg"
+
+#: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:13
+msgid "Not started"
+msgstr ""
 
 #: cms/workflows/templates/workflows/confirm_unlock.html:12
 msgid "No, don't unlock"
 msgstr ""
+
+#, fuzzy
+#~| msgid "Changes to this release date"
+#~ msgid "Changes requested"
+#~ msgstr "Newidiadau i’r dyddiad rhyddhau hwn"
+
+#, fuzzy
+#~| msgid "Published:"
+#~ msgid "Published"
+#~ msgstr "Cyhoeddwyd"
