@@ -420,11 +420,11 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
             logger.exception("Page publish failed", extra={"bundle_id": bundle.pk, "page_id": page.pk})
             failed_page_publishes.append(page.pk)
 
-    if not failed_page_publishes:
-        # update the related release calendar and publish
-        if bundle.release_calendar_page_id:
-            update_bundle_linked_release_calendar_page(bundle)
+    # update and publish related release calendar
+    if bundle.release_calendar_page_id:
+        update_bundle_linked_release_calendar_page(bundle)
 
+    if not failed_page_publishes:
         if update_status:
             bundle.status = BundleStatus.PUBLISHED
             bundle.save(update_fields=["status"])
