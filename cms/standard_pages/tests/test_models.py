@@ -22,6 +22,8 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
 
         cls.page_url = cls.index_page.url
 
+        cls.request_factory = RequestFactory()
+
     def test_permission_tester_inherits_from_basepagepermissiontester(self):
         self.assertIsInstance(self.index_page.permissions_for_user(UserFactory()), BasePagePermissionTester)
 
