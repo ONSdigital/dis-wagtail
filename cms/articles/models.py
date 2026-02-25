@@ -17,7 +17,6 @@ from wagtail.coreutils import WAGTAIL_APPEND_SLASH, resolve_model_string
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
-from wagtailschemaorg.utils import extend
 
 from cms.articles.enums import SortingChoices
 from cms.articles.forms import StatisticalArticlePageAdminForm
@@ -589,12 +588,11 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         return data
 
-    def ld_entity(self) -> dict[str, object]:
+    def ld_entity(self, request: HttpRequest) -> dict[str, object]:
         """Add statistical article specific schema properties to JSON LD."""
-        # TODO pass through request to this, once wagtailschemaorg supports it
-        # https://github.com/neon-jungle/wagtail-schema.org/issues/29
-        properties = {
-            "url": self.get_full_url(),
+        return {
+            **super().ld_entity(request),
+            "url": self.get_full_url(request=request),
             "headline": self.seo_title or self.listing_title or self.get_full_display_title(),
             "description": self.search_description or self.listing_summary or strip_tags(self.summary),
             "datePublished": self.release_date.isoformat(),
@@ -610,10 +608,9 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             },
             "mainEntityOfPage": {
                 "@type": "WebPage",
-                "@id": self.get_full_url(),
+                "@id": self.get_full_url(request=request),
             },
         }
-        return cast(dict[str, object], extend(super().ld_entity(), properties))
 
     def get_canonical_url(self, request: HttpRequest) -> str:
         """Get the article page canonical URL for the given request.
