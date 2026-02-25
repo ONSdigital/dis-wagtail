@@ -106,7 +106,7 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
                 self.assertTrue(tester.can_publish_subpage())
 
     def test_can_unschedule(self):
-        go_live_at = timezone.now() + timedelta(minutes=1)
+        go_live_at = timezone.now().replace(second=0) + timedelta(minutes=1)
         self.english_index_page.go_live_at = go_live_at
         self.english_index_page.save_revision().publish()
 
