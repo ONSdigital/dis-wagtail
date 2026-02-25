@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.apps import apps
 from django.db.models.signals import post_delete
-from wagtail.signals import page_published, page_unpublished, published, unpublished
+from wagtail.signals import page_published, page_slug_changed, page_unpublished, published, unpublished
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -21,6 +21,14 @@ def page_unpublished_signal_handler(instance: Page, **kwargs: Any) -> None:
     from .cache import purge_page_from_frontend_cache  # pylint: disable=import-outside-toplevel
 
     purge_page_from_frontend_cache(instance)
+
+
+def page_slug_changed_signal_handler(instance: Page, instance_before: Page, **kwargs: Any) -> None:
+    from cms.frontend_cache.cache import (  # pylint: disable=import-outside-toplevel
+        purge_old_page_slugs_from_frontend_cache,
+    )
+
+    purge_old_page_slugs_from_frontend_cache(instance, instance_before)
 
 
 def snippet_published(instance: Model, **kwargs: Any) -> None:
@@ -69,6 +77,7 @@ def register_signal_handlers() -> None:
     for model in _get_indexed_page_models():
         page_published.connect(page_published_signal_handler, sender=model)
         page_unpublished.connect(page_unpublished_signal_handler, sender=model)
+        page_slug_changed.connect(page_slug_changed_signal_handler, sender=model)
 
     for model in _get_tracked_snippets():
         published.connect(snippet_unpublished, sender=model)

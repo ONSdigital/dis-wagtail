@@ -29,6 +29,7 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.home_page = HomePage.objects.first()
+        cls.welsh_locale = Locale.objects.get(language_code="cy")
 
         cls.topic_1 = TopicFactory()
         cls.topic_2 = TopicFactory()
@@ -50,7 +51,7 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
         GenericPageToTaxonomyTopic.objects.create(page=cls.methodology_page, topic=cls.topic_2)
 
         cls.methodology_page_translation = cls.methodology_page.copy_for_translation(
-            locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True
+            locale=cls.welsh_locale, copy_parents=True, alias=True
         )
 
         cls.index_page = IndexPageFactory(title="Index page")
@@ -264,6 +265,38 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
         self.index_page.delete()
 
         patched_purge_urls.assert_called_with({self.index_page_url, self.information_page_url})
+
+    def test_page_slug_changed__purges_old_descendant_urls(self, patched_purge_urls):
+        information_page_translation = self.information_page.copy_for_translation(
+            locale=self.welsh_locale, copy_parents=True, alias=True
+        )
+        information_page_translation_url = information_page_translation.get_full_url(self.request)
+
+        old_index_url = self.index_page_url
+        old_index_translation_url = self.index_page.aliases.first().get_full_url(self.request)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            self.index_page.slug = "new-index-slug"
+            self.index_page.save_revision().publish()
+
+        self.index_page.refresh_from_db()
+
+        patched_purge_urls.assert_has_calls(
+            [
+                # via the publish signal
+                call({self.index_page.get_full_url(self.request)}),
+                call({old_index_translation_url}),  # TODO: core doesn't update alias page slugs
+                # via the slug changed signal
+                call(
+                    {
+                        old_index_url,
+                        old_index_translation_url,
+                        self.information_page_url,  # old info page url
+                        information_page_translation_url,  # info page translation url
+                    }
+                ),
+            ]
+        )
 
 
 @patch("cms.frontend_cache.cache.purge_urls_from_cache")

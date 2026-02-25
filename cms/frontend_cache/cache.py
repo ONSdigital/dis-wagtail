@@ -4,6 +4,7 @@ from django.conf import settings
 from django.db.models import IntegerField, Q
 from django.db.models.functions import Cast
 from wagtail.contrib.frontend_cache.utils import purge_url_from_cache, purge_urls_from_cache
+from wagtail.coreutils import get_dummy_request
 from wagtail.models import Page, ReferenceIndex, Site
 
 from cms.articles.models import StatisticalArticlePage
@@ -125,6 +126,31 @@ def purge_page_from_frontend_cache(page: Page) -> None:
         urls.update(get_page_cached_urls(page.get_parent().specific_deferred))
 
     urls.update(get_urls_featuring_object(page))
+    purge_urls_from_cache(urls)
+
+
+def purge_old_page_slugs_from_frontend_cache(page: Page, page_old: Page) -> None:
+    if page.url_path == page_old.url_path:
+        return
+
+    url_path_length = len(page.url_path)
+
+    # include the old page URL
+    urls = set(get_page_cached_urls(page_old))
+    alias_parent_ids = {page_old.pk}
+
+    for descendant in page.get_descendants().live().defer_streamfields().specific().iterator():
+        alias_parent_ids.add(descendant.pk)
+        descendant.url_path = page_old.url_path + descendant.url_path[url_path_length:]
+
+        urls.update(get_page_cached_urls(descendant))
+
+    # Include Welsh aliases in this too.
+    # Also, since we don't have a request here, get a dummy one for the Welsh pages.
+    cache_object = get_dummy_request(site=Site.objects.filter(root_page__locale__language_code="cy").first())
+    for alias in Page.objects.filter(locale__language_code="cy", alias_of__in=alias_parent_ids).specific().iterator():
+        urls.update(get_page_cached_urls(alias, cache_object=cache_object))
+
     purge_urls_from_cache(urls)
 
 
