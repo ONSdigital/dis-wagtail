@@ -10,6 +10,7 @@ from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.models import ContactDetails, Definition
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.tests.factories import DatasetFactory
+from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
 from cms.frontend_cache.signal_handlers import _get_indexed_page_models
 from cms.home.models import HomePage
 from cms.methodology.models import MethodologyPage
@@ -251,6 +252,82 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
     def test_page_publish__no_special_case(self, patched_purge_urls):
         self.index_page.save_revision().publish()
         patched_purge_urls.assert_called_once_with({self.index_page_url})
+
+    def test_page_publish__includes_downloadable_block_urls_where_relevant(self, patched_purge_urls):
+        self.information_page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Content",
+                    "content": [
+                        {
+                            "id": "test-table-id",
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="Test Table 1",
+                                caption="Table caption 1",
+                                source="Test Source",
+                                headers=[["Header 1"]],
+                                rows=[["Row 1 Col 1"]],
+                            ),
+                        },
+                    ],
+                },
+            }
+        ]
+
+        self.information_page.save_revision().publish()
+
+        patched_purge_urls.assert_called_once_with(
+            {
+                self.information_page_url,
+                self.index_page_url,
+                f"{self.information_page_url}/download-table/test-table-id",
+            }
+        )
+
+    def test_page_publish__with_chart__includes_downloadable_block_urls_where_relevant(self, patched_purge_urls):
+        self.statistical_article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Content",
+                    "content": [
+                        {
+                            "id": "test-table-id",
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="Test Table 1",
+                                caption="Table caption 1",
+                                source="Test Source",
+                                headers=[["Header 1"]],
+                                rows=[["Row 1 Col 1"]],
+                            ),
+                        },
+                        {
+                            "id": "test-chart-id",
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Test Chart",
+                                "subtitle": "Chart subtitle",
+                                "theme": "primary",
+                                "tabletable": TableDataFactory(table_data=[["", "Series 0"], ["2004", "100"]]),
+                            },
+                        },
+                    ],
+                },
+            }
+        ]
+
+        self.statistical_article.save_revision().publish()
+
+        patched_purge_urls.assert_called_once_with(
+            self._get_base_expected_statistical_page_urls_to_purge()
+            | {
+                f"{self.article_url}/download-table/test-table-id",
+                f"{self.article_url}/download-chart/test-chart-id",
+            }
+        )
 
     @patch("cms.frontend_cache.cache.purge_page_from_frontend_cache")
     def test_page_unpublish__calls_purge_page_like_page_publish(self, patched_purge_page, _patched_purge_urls):

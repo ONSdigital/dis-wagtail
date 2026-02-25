@@ -843,3 +843,5 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         if self.datasets:
             for page_number in range(1, ceil(len(self.datasets) / settings.RELATED_DATASETS_PER_PAGE) + 1):
                 yield f"/related-data?page={page_number}"
+
+        yield from self.get_downloadable_block_paths()
