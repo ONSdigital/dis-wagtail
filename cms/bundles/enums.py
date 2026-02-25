@@ -10,6 +10,8 @@ class BundleStatus(models.TextChoices):
     IN_REVIEW = "IN_REVIEW", "In Preview"
     APPROVED = "APPROVED", "Ready to publish"
     PUBLISHED = "PUBLISHED", "Published"
+    PARTIALLY_PUBLISHED = "PARTIALLY_PUBLISHED", "Partially Published"
+    FAILED = "FAILED", "Failed"
 
 
 class BundleContentItemState(StrEnum):

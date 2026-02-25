@@ -156,6 +156,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     # note: it looks like etag is SHA-1, so 40 chars, but using 255 for safety
     # https://github.com/ONSdigital/dp-net/blob/a17216881f99417aefa7aa256a337e2ad635866d/handlers/response/etag.go#L13
     bundle_api_etag = models.CharField(max_length=255, blank=True, editable=False)
+    slack_notification_ts = models.CharField(max_length=32, blank=True, null=True, editable=False)
 
     objects = BundleManager()
 
@@ -238,7 +239,14 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
 
     @property
     def is_ready_to_be_published(self) -> bool:
-        return self.status == BundleStatus.APPROVED
+        """Check if bundle is ready to be published.
+
+        Returns True for statuses that allow (re)publishing:
+        - APPROVED: Initial approval, ready for first publish
+        - PARTIALLY_PUBLISHED: Some content published, can retry failed items
+        - FAILED: Publication failed, can retry
+        """
+        return self.status in (BundleStatus.APPROVED, BundleStatus.PARTIALLY_PUBLISHED, BundleStatus.FAILED)
 
     @property
     def can_be_manually_published(self) -> bool:

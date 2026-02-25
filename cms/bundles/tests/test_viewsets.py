@@ -1225,7 +1225,9 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
 
         self.assertContains(response, BundleStatus.DRAFT.label, 2)  # status + status filter
         self.assertContains(response, BundleStatus.APPROVED.label, 3)  # status + status filter + shortcut button
-        self.assertContains(response, BundleStatus.PUBLISHED.label, 1)  # status filter
+        # "\n " is to ensure we only match "Published" not "Partially Published"
+        self.assertContains(response, "\n " + BundleStatus.PUBLISHED.label, 1)  # status filter
+        self.assertContains(response, BundleStatus.PARTIALLY_PUBLISHED.label, 1)  # status filter
 
         self.assertContains(response, self.approved_bundle.name)
         self.assertContains(response, self.bundle.name)
