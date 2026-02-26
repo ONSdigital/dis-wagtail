@@ -316,7 +316,7 @@ class PublishScheduledWithoutBundlesCommandTestCase(TestCase):
         cls.statistical_article = StatisticalArticlePageFactory(title="The Statistical Article", live=False)
         cls.bundle = BundleFactory(name="Test Bundle", bundled_pages=[cls.statistical_article])
 
-        cls.publication_date = timezone.now() - timedelta(minutes=1)
+        cls.publication_date = timezone.now().replace(second=0) - timedelta(minutes=1)
         cls.statistical_article.save_revision(approved_go_live_at=cls.publication_date)
 
     def setUp(self):
@@ -340,6 +340,7 @@ class PublishScheduledWithoutBundlesCommandTestCase(TestCase):
         output = self.stdout.getvalue()
         self.assertIn("Will do a dry run.", output)
         self.assertIn("No objects to go live.", output)
+        self.assertIn("No expired objects to be deactivated found.", output)
 
     def test_dry_run__with_a_scheduled_page(self):
         """Test dry run doesn't include our bundled page."""
@@ -362,3 +363,40 @@ class PublishScheduledWithoutBundlesCommandTestCase(TestCase):
         self.call_command()
 
         self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
+
+    def test_include_future(self):
+        """Checks only a scheduled non-bundled page has been published."""
+        self.home.save_revision(approved_go_live_at=self.publication_date)
+
+        with time_machine.travel(self.publication_date - timedelta(seconds=2)):
+            self.call_command(include_future=1)
+
+            # 2 seconds before publish, there's nothing to do within 1 second, so nothing happens
+            self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 0)
+            self.assertLess(timezone.now(), self.publication_date)
+            self.assertIn("No objects to go live.", self.stdout.getvalue())
+
+            self.stdout.seek(0)
+
+            self.call_command(include_future=2)
+
+            # 2 seconds before publish, wait, then publish
+            self.assertGreater(timezone.now(), self.publication_date)
+            self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
+            self.assertIn(str(self.home), self.stdout.getvalue())
+
+    def test_publish_include_future_with_page_in_past(self):
+        self.home.save_revision(approved_go_live_at=self.publication_date)
+
+        with time_machine.travel(self.publication_date + timedelta(days=1)):
+            self.call_command(include_future=1)
+
+        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
+
+    def test_publish_with_future_pages(self):
+        self.home.save_revision(approved_go_live_at=self.publication_date)
+
+        with time_machine.travel(self.publication_date - timedelta(days=1)):
+            self.call_command(include_future=1)
+
+        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 0)

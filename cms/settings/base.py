@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "cms.auth",
     "cms.bundles",
     "cms.core",
+    "cms.data_downloads",
     "cms.datasets",
     "cms.datavis",
     "cms.documents",
@@ -172,6 +173,16 @@ context_processors = [
     "cms.core.context_processors.global_vars",
 ]
 
+jinja2_extensions = [
+    *DEFAULT_EXTENSIONS,
+    "wagtail.jinja2tags.core",
+    "wagtail.images.jinja2tags.images",
+    "wagtail.contrib.settings.jinja2tags.settings",
+    "cms.core.jinja2tags.CoreExtension",
+    "cms.navigation.jinja2tags.NavigationExtension",
+    "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
+]
+
 if not IS_EXTERNAL_ENV:
     context_processors.extend(
         [
@@ -179,6 +190,12 @@ if not IS_EXTERNAL_ENV:
             "django.contrib.auth.context_processors.auth",
         ]
     )
+    jinja2_extensions.extend(
+        [
+            "wagtail.admin.jinja2tags.userbar",
+        ]
+    )
+
 
 TEMPLATES = [
     {
@@ -192,16 +209,7 @@ TEMPLATES = [
             "app_dirname": "jinja2",
             "undefined": "jinja2.ChainableUndefined",
             "context_processors": context_processors,
-            "extensions": [
-                *DEFAULT_EXTENSIONS,
-                "wagtail.jinja2tags.core",
-                "wagtail.admin.jinja2tags.userbar",
-                "wagtail.images.jinja2tags.images",
-                "wagtail.contrib.settings.jinja2tags.settings",
-                "cms.core.jinja2tags.CoreExtension",
-                "cms.navigation.jinja2tags.NavigationExtension",
-                "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
-            ],
+            "extensions": jinja2_extensions,
             "policies": {
                 # https://jinja.palletsprojects.com/en/stable/api/#policies
                 "json.dumps_function": custom_json_dumps,
@@ -858,6 +866,9 @@ WAGTAILADMIN_RICH_TEXT_EDITORS = {
 # Custom document model
 # https://docs.wagtail.io/en/stable/advanced_topics/documents/custom_document_model.html
 WAGTAILDOCS_DOCUMENT_MODEL = "documents.CustomDocument"
+WAGTAILDOCS_DOCUMENT_FORM_BASE = "cms.documents.forms.ONSDocumentForm"
+DOCUMENTS_MAX_UPLOAD_SIZE = int(env.get("DOCUMENTS_MAX_UPLOAD_SIZE", 50 * 1024 * 1024))  # 50MB default
+WAGTAILDOCS_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "xml", "ppt", "pptx", "txt", "rtf", "csv"]
 
 
 # Document serve method - avoid serving files directly from the storage.
@@ -923,7 +934,6 @@ ONS_WEBSITE_SEARCH_PATH = env.get("ONS_WEBSITE_SEARCH_PATH", "/search")
 # Project information
 BUILD_TIME = datetime.datetime.fromtimestamp(int(env["BUILD_TIME"])) if env.get("BUILD_TIME") else None
 GIT_COMMIT = env.get("GIT_COMMIT") or None
-TAG = env.get("TAG") or None
 START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
@@ -963,7 +973,6 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = {
     "ReleaseCalendarIndex",
     "ThemeIndexPage",
     "ThemePage",
-    "TopicPage",
     "CookiesPage",
     "Page",
 }
@@ -1016,6 +1025,9 @@ PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
 VIEWERS_GROUP_NAME = "Viewers"
 ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
 
+# Flag to enable direct publishing of pages without going through the workflow process.
+ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT = env.get("ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT", "false").lower() == "true"
+
 # Cookie Names
 ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
 REFRESH_TOKEN_COOKIE_NAME = "refresh_token"  # noqa: S105
@@ -1046,3 +1058,6 @@ CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "true").lower()
 HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS = int(env.get("HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS", 10))
 
 DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "100"))
+
+
+WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_publish"

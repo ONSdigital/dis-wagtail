@@ -11,7 +11,6 @@ from wagtail import hooks
 from wagtail.admin import messages
 from wagtail.admin.action_menu import PageLockedMenuItem, WorkflowMenuItem
 
-from cms.bundles.mixins import BundledPageMixin
 from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 
 from . import admin_urls
@@ -64,14 +63,22 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
     final_menu_items = []
     for item in updated_menu_items:
         if item.name in ["approve", "locked-approve"]:
-            # skip adding this item when the current user was the last editor to prevent self-approval
-            if is_self_approver:
-                continue
-
             # tidy up the "approve" action label, both for when we're lock in ready to publish,
-            # and when the workflow was "unlocked". i.e. moved back a step.
+            # and when the workflow was "unlocked". i.e. moved back a step. Account for scheduled publishing
             if is_final_task:
-                label = "Publish" if "with comment" not in item.label else "Publish with comment"
+                if page.go_live_at and page.go_live_at > timezone.now():
+                    label = (
+                        "Schedule to publish"
+                        if "with comment" not in item.label
+                        else "Schedule to publish with comment"
+                    )
+                else:
+                    label = "Publish" if "with comment" not in item.label else "Publish with comment"
+
+            elif is_self_approver:
+                # anyone with the publish permission can do so once in "ready to be published".
+                # before that, hide the action item if the current user was the last editor to prevent self-approval
+                continue
             else:
                 label = "Approve" if "with comment" not in item.label else "Approve with comment"
             item.label = label
@@ -83,9 +90,6 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
 @hooks.register("construct_page_action_menu")
 def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: HttpRequest, context: Mapping) -> None:
     if not (context["view"] == "edit" and context.get("page")):
-        return
-
-    if not isinstance(context["page"], BundledPageMixin):
         return
 
     # do the bulk of tweaks
@@ -102,42 +106,66 @@ def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: Http
 
 
 @hooks.register("before_edit_page")
+def before_edit_page_post_workflow_action_without_workflow(request: HttpRequest, page: Page) -> HttpResponse | None:
+    # Prevent errors when the workflow is cancelled by someone else, just before a user submits a workflow action
+    # TODO: remove when https://github.com/wagtail/wagtail/issues/13856 is fixed
+    if (
+        request.method == "POST"
+        and request.POST.get("action-workflow-action") == "true"
+        and not page.current_workflow_task
+    ):
+        messages.error(request, "Could not perform the action as the page is no longer in a workflow.")
+        return redirect("wagtailadmin_pages:edit", page.pk)
+    return None
+
+
+@hooks.register("before_edit_page")
 def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
-    if request.method != "POST" or request.POST.get("action-workflow-action") != "true":
+    if request.method != "POST":
         return None
 
-    action_name = request.POST.get("workflow-action-name", "")
-
-    if action_name == "approve" and page.latest_revision.user_id == request.user.pk:
-        messages.error(request, "Cannot self-approve your changes. Please ask another Publishing team member to do so.")
+    if in_active_bundle(page) and (
+        (request.POST.get("go_live_at") and not page.go_live_at)
+        or (request.POST.get("expire_at") and not page.expire_at)
+    ):
+        messages.error(request, "Cannot set page-level schedule while the page is in a bundle.")
         return redirect("wagtailadmin_pages:edit", page.pk)
 
-    if action_name == "locked-approve" and is_page_ready_to_publish(page) and not in_active_bundle(page):
-        # The page is "Ready to publish" and the edit form was POSTed with the ReadyToPublishGroupTask "locked-approve"
-        # action. Perform the required workflow action without saving the form.
-        # Note: this follows the logic from the Wagtail core page edit view
-        # https://github.com/wagtail/wagtail/blob/40c9b1fdff19bad5b9997c0366ed5cb642edd557/wagtail/admin/views/pages/edit.py#L854
-        page.current_workflow_task.on_action(page.current_workflow_task_state, request.user, action_name)
+    if request.POST.get("action-workflow-action") == "true":
+        action_name = request.POST.get("workflow-action-name", "")
 
-        # run the after_edit_page hook
-        for fn in hooks.get_hooks("after_edit_page"):
-            result = fn(request, page)
-            if hasattr(result, "status_code"):
-                typed_result: HttpResponse = result  # placate mypy
-                return typed_result
+        if action_name == "approve" and page.latest_revision and page.latest_revision.user_id == request.user.pk:
+            messages.error(
+                request, "Cannot self-approve your changes. Please ask another Publishing team member to do so."
+            )
+            return redirect("wagtailadmin_pages:edit", page.pk)
 
-        if page.go_live_at and page.go_live_at > timezone.now():
-            message = f"Page '{page.get_admin_display_title()}' has been scheduled for publishing."
-        else:
-            message = f"Page '{page.get_admin_display_title()}' has been published."
+        if action_name == "locked-approve" and is_page_ready_to_publish(page) and not in_active_bundle(page):
+            # The page is "Ready to publish" and the edit form was POSTed with the ReadyToPublishGroupTask
+            # "locked-approve" action. Perform the required workflow action without saving the form.
+            # Note: this follows the logic from the Wagtail core page edit view
+            # https://github.com/wagtail/wagtail/blob/40c9b1fdff19bad5b9997c0366ed5cb642edd557/wagtail/admin/views/pages/edit.py#L854
+            page.current_workflow_task.on_action(page.current_workflow_task_state, request.user, action_name)
 
-        buttons = []
-        if (page_url := page.get_url(request=request)) is not None:
-            buttons.append(messages.button(page_url, "View live", new_window=False))
-        buttons.append(messages.button(reverse("wagtailadmin_pages:edit", args=(page.pk,)), "Edit"))
-        messages.success(request, message, buttons=buttons)
+            # run the after_edit_page hook
+            for fn in hooks.get_hooks("after_edit_page"):
+                result = fn(request, page)
+                if hasattr(result, "status_code"):
+                    typed_result: HttpResponse = result  # placate mypy
+                    return typed_result
 
-        return redirect("wagtailadmin_explore", page.get_parent().pk)
+            if page.go_live_at and page.go_live_at > timezone.now():
+                message = f"Page '{page.get_admin_display_title()}' has been scheduled for publishing."
+            else:
+                message = f"Page '{page.get_admin_display_title()}' has been published."
+
+            buttons = []
+            if (page_url := page.get_url(request=request)) is not None:
+                buttons.append(messages.button(page_url, "View live", new_window=False))
+            buttons.append(messages.button(reverse("wagtailadmin_pages:edit", args=(page.pk,)), "Edit"))
+            messages.success(request, message, buttons=buttons)
+
+            return redirect("wagtailadmin_explore", page.get_parent().pk)
 
     return None
 
