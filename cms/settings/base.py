@@ -644,7 +644,7 @@ WAGTAILADMIN_NOTIFICATION_INCLUDE_SUPERUSERS = False
 # restricted access.
 
 if "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env or "FRONTEND_CACHE_CLOUDFLARE_BEARER_TOKEN" in env:
-    INSTALLED_APPS.append("wagtail.contrib.frontend_cache")
+    INSTALLED_APPS.append("cms.frontend_cache")
     WAGTAILFRONTENDCACHE = {
         "default": {
             "BACKEND": "wagtail.contrib.frontend_cache.backends.CloudflareBackend",

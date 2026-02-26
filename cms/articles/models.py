@@ -1,4 +1,6 @@
 import logging
+from collections.abc import Generator
+from math import ceil
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from bs4 import BeautifulSoup
@@ -185,6 +187,13 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     def download_table_with_version(self, request: HttpRequest, slug: str, version: int, table_id: str) -> HttpResponse:
         response: HttpResponse = self.release(request, slug, version=version, table_id=table_id)
         return response
+
+    def get_cached_paths(self) -> Generator[str]:
+        yield "/"
+        yield "/editions"
+        num_editions = self.get_children().live().public().count()
+        for page_number in range(1, ceil(num_editions / settings.PREVIOUS_RELEASES_PER_PAGE) + 1):
+            yield f"/editions?page={page_number}"
 
 
 # pylint: disable=too-many-public-methods
@@ -827,3 +836,12 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         summary_word_count = len(strip_tags(self.summary).split())
 
         return title_word_count + summary_word_count + content_word_count
+
+    def get_cached_paths(self) -> Generator[str]:
+        yield "/"
+        yield "/related-data"  # always include, should a correction remove related datasets
+        if self.datasets:
+            for page_number in range(1, ceil(len(self.datasets) / settings.RELATED_DATASETS_PER_PAGE) + 1):
+                yield f"/related-data?page={page_number}"
+
+        yield from self.get_downloadable_block_paths()

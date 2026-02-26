@@ -527,6 +527,60 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         """Test that the GTM content type is 'articles'."""
         self.assertEqual(self.page.analytics_content_type, "articles")
 
+    def test_get_cached_paths(self):
+        self.assertEqual(list(self.page.get_cached_paths()), ["/", "/related-data"])
+
+    def test_get_cached_paths__with_related_data_pages(self):
+        dataset = DatasetFactory()
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[("dataset_lookup", dataset)] * 6,
+        )
+
+        expected = ["/", "/related-data", "/related-data?page=1"]
+        self.assertEqual(list(self.page.get_cached_paths()), expected)
+
+        with override_settings(RELATED_DATASETS_PER_PAGE=3):
+            self.assertEqual(list(self.page.get_cached_paths()), [*expected, "/related-data?page=2"])
+
+    def test_get_cached_paths__with_downloadable_blocks(self):
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Content",
+                    "content": [
+                        {
+                            "id": "test-table-id",
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="Test Table 1",
+                                caption="Table caption 1",
+                                source="Test Source",
+                                headers=[["Header 1"]],
+                                rows=[["Row 1 Col 1"]],
+                            ),
+                        },
+                        {
+                            "id": "test-chart-id",
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Test Chart",
+                                "subtitle": "Chart subtitle",
+                                "theme": "primary",
+                                "tabletable": TableDataFactory(table_data=[["", "Series 0"], ["2004", "100"]]),
+                            },
+                        },
+                    ],
+                },
+            }
+        ]
+
+        self.assertEqual(
+            list(self.page.get_cached_paths()),
+            ["/", "/related-data", "/download-table/test-table-id", "/download-chart/test-chart-id"],
+        )
+
 
 class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
     def setUp(self):

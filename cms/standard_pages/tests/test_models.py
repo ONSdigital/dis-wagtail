@@ -101,6 +101,31 @@ class InformationPageTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, self.page.title)
         self.assertContains(response, self.page.content)
 
+    def test_get_cached_paths(self):
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Content",
+                    "content": [
+                        {
+                            "id": "test-table-id",
+                            "type": "table",
+                            "value": make_table_block_value(
+                                title="Test Table 1",
+                                caption="Table caption 1",
+                                source="Test Source",
+                                headers=[["Header 1"]],
+                                rows=[["Row 1 Col 1"]],
+                            ),
+                        },
+                    ],
+                },
+            }
+        ]
+
+        self.assertEqual(self.page.get_cached_paths(), ["/", "/download-table/test-table-id"])
+
 
 class StandardPagesAddViewTests(WagtailTestUtils, TestCase):
     @classmethod
