@@ -71,9 +71,7 @@ def register_signal_handlers() -> None:
     for model in [ContactDetails, Definition]:
         published.connect(purge_pages_containing_the_unpublished_snippet_from_frontend_cache, sender=model)
         unpublished.connect(purge_pages_containing_the_unpublished_snippet_from_frontend_cache, sender=model)
-        post_delete.connect(  # type: ignore[arg-type]
-            purge_pages_containing_the_deleted_snippet_from_frontend_cache, sender=model
-        )
+        post_delete.connect(purge_pages_containing_the_deleted_snippet_from_frontend_cache, sender=model)
 
     # FIXME when allowing to edit navigation
     # - Main Menu on publish, if in nav
