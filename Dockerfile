@@ -36,7 +36,7 @@ WORKDIR /app
 
 # Install the correct version of the Postgres client
 # library (Debian's bundled version is normally too old)
-ARG POSTGRES_VERSION=16
+ARG POSTGRES_VERSION=17
 
 # Install common OS-level dependencies
 # TODO: when moving to ONS infrastructure, replace RUN with:
