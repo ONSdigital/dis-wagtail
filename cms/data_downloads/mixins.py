@@ -64,7 +64,6 @@ class DataDownloadMixin:
         blocks: list[tuple[str, str]] = []
 
         for content_block in self._iter_content_blocks():
-            print(content_block.block_type, content_block.id)
             if content_block.id is not None and (
                 content_block.block_type in TABLE_BLOCK_TYPES or content_block.block_type in CHART_BLOCK_TYPES
             ):

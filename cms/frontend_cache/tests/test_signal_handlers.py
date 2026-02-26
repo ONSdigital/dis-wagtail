@@ -11,7 +11,7 @@ from cms.core.models import ContactDetails, Definition
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.tests.factories import DatasetFactory
 from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
-from cms.frontend_cache.signal_handlers import _get_indexed_page_models
+from cms.frontend_cache.signal_handlers import _get_tracked_page_models
 from cms.home.models import HomePage
 from cms.methodology.models import MethodologyPage
 from cms.methodology.tests.factories import MethodologyPageFactory
@@ -76,7 +76,7 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
 
     def test_excluded_page_types(self, _patched_purge_urls):
         self.assertEqual(
-            _get_indexed_page_models(),
+            _get_tracked_page_models(),
             {
                 CookiesPage,
                 IndexPage,
@@ -91,7 +91,7 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
             },
         )
 
-    @patch("cms.frontend_cache.cache.purge_page_from_frontend_cache")
+    @patch("cms.frontend_cache.signal_handlers.purge_page_from_frontend_cache")
     def test_excluded_page_types__dont_react(self, patched_purge_page, patched_purge_urls):
         self.home_page.save_revision().publish()
 
@@ -329,7 +329,7 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
             }
         )
 
-    @patch("cms.frontend_cache.cache.purge_page_from_frontend_cache")
+    @patch("cms.frontend_cache.signal_handlers.purge_page_from_frontend_cache")
     def test_page_unpublish__calls_purge_page_like_page_publish(self, patched_purge_page, _patched_purge_urls):
         self.information_page.save_revision().publish()
         patched_purge_page.assert_called_once_with(self.information_page)

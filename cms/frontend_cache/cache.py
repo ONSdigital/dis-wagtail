@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING, Any
 from django.conf import settings
 from django.db.models import IntegerField, Q
 from django.db.models.functions import Cast
-from wagtail.contrib.frontend_cache.utils import purge_url_from_cache, purge_urls_from_cache
+from wagtail.contrib.frontend_cache.utils import purge_urls_from_cache
 from wagtail.coreutils import get_dummy_request
-from wagtail.models import Page, ReferenceIndex, Site
+from wagtail.models import Locale, Page, ReferenceIndex, Site
 
 from cms.articles.models import StatisticalArticlePage
 from cms.methodology.models import MethodologyPage
@@ -17,7 +17,10 @@ if TYPE_CHECKING:
 
 
 def get_page_cached_urls(page: Page, cache_object: Any | None = None) -> list[str]:
-    """This is a modified version of core's get_page_cached_urls taking into account our no-trailing slash setup."""
+    """This is a modified version of core's get_page_cached_urls taking into account our no-trailing slash setup.
+
+    See https://github.com/wagtail/wagtail/issues/13920
+    """
     if (page_url := page.get_full_url(request=cache_object)) is None:
         # nothing to be done if the page has no routable URL
         return []
@@ -32,8 +35,8 @@ def purge_cache_on_all_sites(path: str) -> None:
     if settings.DEBUG:
         return
 
-    for site in Site.objects.all():
-        purge_url_from_cache(site.root_url.rstrip("/") + path)
+    urls = [site.root_url.rstrip("/") + path for site in Site.objects.all()]
+    purge_urls_from_cache(urls)
 
 
 def get_urls_featuring_object(obj: Model) -> set[str]:
@@ -147,8 +150,9 @@ def purge_old_page_slugs_from_frontend_cache(page: Page, page_old: Page) -> None
 
     # Include Welsh aliases in this too.
     # Also, since we don't have a request here, get a dummy one for the Welsh pages.
-    cache_object = get_dummy_request(site=Site.objects.filter(root_page__locale__language_code="cy").first())
-    for alias in Page.objects.filter(locale__language_code="cy", alias_of__in=alias_parent_ids).specific().iterator():
+    welsh_locale_id = Locale.objects.filter(language_code="cy").values_list("pk", flat=True)[0]
+    cache_object = get_dummy_request(site=Site.objects.filter(root_page__locale=welsh_locale_id).first())
+    for alias in Page.objects.filter(locale=welsh_locale_id, alias_of__in=alias_parent_ids).specific().iterator():
         urls.update(get_page_cached_urls(alias, cache_object=cache_object))
 
     purge_urls_from_cache(urls)
