@@ -5,7 +5,6 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
 from django.utils import timezone
 
 from cms.bundles.enums import BundleStatus
@@ -50,8 +49,7 @@ class Command(BaseCommand):
                 logger.error("Bundle no longer approved", extra={"bundle_id": bundle.pk})
                 return
 
-            with transaction.atomic():
-                publish_bundle(bundle)
+            publish_bundle(bundle)
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("Publish failed", extra={"bundle_id": bundle.pk, "event": "publish_failed"})
 
