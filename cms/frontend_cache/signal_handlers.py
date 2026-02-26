@@ -44,7 +44,7 @@ def purge_pages_containing_the_unpublished_snippet_from_frontend_cache(instance:
 
 
 def purge_pages_containing_the_deleted_snippet_from_frontend_cache(
-    _sender: Model,
+    sender: Model,  # pylint: disable=unused-argument
     instance: Model,
     **kwargs: Any,
 ) -> None:
