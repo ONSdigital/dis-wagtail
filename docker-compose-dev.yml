@@ -1,7 +1,7 @@
 ---
 services:
   db:
-    image: pgautoupgrade/pgautoupgrade:18-debian
+    image: pgautoupgrade/pgautoupgrade:17-debian
     environment:
       # Defaults for createdb/dropdb/pg_restore etc.
       PGDATABASE: ons
