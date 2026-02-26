@@ -20,7 +20,7 @@ WAGTAIL_PERMISSION_TYPES = ["add", "change", "delete"]
 
 WAGTAIL_PAGE_PERMISSION_TYPES = {"add", "change", "bulk_delete", "lock", "publish", "unlock"}
 
-PUBLISHING_OFFICERS_PERMISSIONS = {"add", "change", "publish"}
+PUBLISHING_OFFICERS_PERMISSIONS = {"add", "change", "lock", "publish"}
 PUBLISHING_ADMINS_PERMISSIONS = WAGTAIL_PAGE_PERMISSION_TYPES
 
 
