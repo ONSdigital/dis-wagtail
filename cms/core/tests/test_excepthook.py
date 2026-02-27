@@ -1,6 +1,9 @@
 import json
 import subprocess
 import sys
+import threading
+from copy import deepcopy
+from io import StringIO
 
 from django.conf import settings
 from django.test import SimpleTestCase
@@ -48,3 +51,54 @@ class ExceptHookTestCase(SimpleTestCase):
         # The output should not be JSON
         with self.assertRaises(ValueError):
             json.loads(process.stderr)
+
+
+class ThreadingExceptHookTestCase(SimpleTestCase):
+    @staticmethod
+    def _raise_module_not_found_error():
+        import not_a_module  # noqa: F401 py  # pylint: disable=import-outside-toplevel,import-error,unused-import
+
+    @staticmethod
+    def _raise_import_error():
+        from cms import (  # pylint: disable=import-outside-toplevel,no-name-in-module,unused-import
+            not_a_module,  # noqa: F401
+        )
+
+    @classmethod
+    def _raise_recursion_error(cls):
+        cls._raise_recursion_error()
+
+    def setUp(self):
+        self.log_stream = StringIO()
+
+        # cms.settings.test sets the logging handler to null, so reset it to stream so we can capture it
+        custom_logging = deepcopy(settings.LOGGING)
+        custom_logging["handlers"]["console"]["class"] = "logging.StreamHandler"
+        custom_logging["handlers"]["console"]["stream"] = self.log_stream
+        self.enterContext(self.settings(LOGGING=custom_logging))
+
+    def test_is_configured(self):
+        self.assertIs(threading.excepthook, excepthook.threading_except_hook)
+
+    def test_unhandled_exceptions(self):
+        for func, exception_class in [
+            (lambda: 1 / 0, ZeroDivisionError),
+            (lambda: 10.0**1000, OverflowError),
+            (self._raise_module_not_found_error, ModuleNotFoundError),
+            (self._raise_import_error, ImportError),
+            (self._raise_recursion_error, RecursionError),
+        ]:
+            self.log_stream.seek(0)
+
+            with self.subTest(exception_class.__name__):
+                thread = threading.Thread(target=func)
+                thread.start()
+                thread.join()
+
+                # If it looks like JSON, it's probably the JSON formatter
+                log_message = json.loads(self.log_stream.getvalue())
+
+                self.assertEqual(log_message["namespace"], excepthook.logger.name)
+                self.assertEqual(log_message["event"], "Unhandled exception in thread")
+                self.assertEqual(log_message["data"], {"native_thread_id": thread.native_id, "thread_id": thread.ident})
+                self.assertIn(exception_class.__name__, log_message["errors"][0]["message"])

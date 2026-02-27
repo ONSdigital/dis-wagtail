@@ -31,6 +31,7 @@ def remove_approved_go_live_seconds(
     if (not update_fields or "approved_go_live_at" in update_fields) and instance.approved_go_live_at:
         instance.approved_go_live_at = instance.approved_go_live_at.replace(second=0)
 
+
 def reload_logging_config(*, setting: str, **kwargs: Any) -> None:
     """Reload logging config when the relevant settings change.
 
