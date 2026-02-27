@@ -173,6 +173,47 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
             }
         )
 
+    def test_page_publish__articles_series_changes_title(self, patched_purge_urls):
+        article_translation = self.statistical_article.copy_for_translation(
+            locale=self.welsh_locale, copy_parents=True, alias=True
+        )
+        article_translation_url = article_translation.get_full_url(self.request)
+        series_translation_url = article_translation.get_parent().specific.get_full_url(self.request)
+
+        # add a draft article to test that it is not included
+        StatisticalArticlePageFactory(parent=self.series_page, live=False)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            self.series_page.title = "New series"
+            self.series_page.save_revision().publish()
+
+        patched_purge_urls.assert_has_calls(
+            [
+                call(
+                    {
+                        self.series_url,
+                        self.series_edition_url,
+                        f"{self.series_edition_url}?page=1",
+                    }
+                ),
+                call(
+                    {
+                        series_translation_url,
+                        f"{series_translation_url}/editions",
+                        f"{series_translation_url}/editions?page=1",
+                    }
+                ),
+                call(
+                    {
+                        self.article_url,
+                        self.article_related_data_url,
+                        article_translation_url,
+                        f"{article_translation_url}/related-data",
+                    }
+                ),
+            ]
+        )
+
     def test_page_publish__methodology(self, patched_purge_urls):
         self.methodology_page.save_revision().publish()
 

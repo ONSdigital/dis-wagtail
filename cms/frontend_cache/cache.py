@@ -7,7 +7,7 @@ from wagtail.contrib.frontend_cache.utils import purge_urls_from_cache
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale, Page, ReferenceIndex, Site
 
-from cms.articles.models import StatisticalArticlePage
+from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.methodology.models import MethodologyPage
 from cms.standard_pages.models import InformationPage
 from cms.topics.models import TopicPage
@@ -132,6 +132,18 @@ def purge_page_from_frontend_cache(page: Page) -> None:
     purge_urls_from_cache(urls)
 
 
+def _get_welsh_alias_urls(source_page_ids: set) -> set[str]:
+    urls = set()
+    # Include Welsh aliases in this too.
+    # Also, since we don't have a request here, get a dummy one for the Welsh pages.
+    welsh_locale_id = Locale.objects.filter(language_code="cy").values_list("pk", flat=True)[0]
+    cache_object = get_dummy_request(site=Site.objects.filter(root_page__locale=welsh_locale_id).first())
+    for alias in Page.objects.filter(locale=welsh_locale_id, alias_of__in=source_page_ids).specific().iterator():
+        urls.update(get_page_cached_urls(alias, cache_object=cache_object))
+
+    return urls
+
+
 def purge_old_page_slugs_from_frontend_cache(page: Page, page_old: Page) -> None:
     if page.url_path == page_old.url_path:
         return
@@ -140,20 +152,29 @@ def purge_old_page_slugs_from_frontend_cache(page: Page, page_old: Page) -> None
 
     # include the old page URL
     urls = set(get_page_cached_urls(page_old))
-    alias_parent_ids = {page_old.pk}
+    source_page_ids = {page_old.pk}
 
     for descendant in page.get_descendants().live().defer_streamfields().specific().iterator():
-        alias_parent_ids.add(descendant.pk)
+        source_page_ids.add(descendant.pk)
         descendant.url_path = page_old.url_path + descendant.url_path[url_path_length:]
 
         urls.update(get_page_cached_urls(descendant))
 
-    # Include Welsh aliases in this too.
-    # Also, since we don't have a request here, get a dummy one for the Welsh pages.
-    welsh_locale_id = Locale.objects.filter(language_code="cy").values_list("pk", flat=True)[0]
-    cache_object = get_dummy_request(site=Site.objects.filter(root_page__locale=welsh_locale_id).first())
-    for alias in Page.objects.filter(locale=welsh_locale_id, alias_of__in=alias_parent_ids).specific().iterator():
-        urls.update(get_page_cached_urls(alias, cache_object=cache_object))
+    urls |= _get_welsh_alias_urls(source_page_ids)
+
+    purge_urls_from_cache(urls)
+
+
+def purge_series_children_from_cache(page: ArticleSeriesPage) -> None:
+    # when an article series title changes, we want to purge all child articles too
+    # so they get the updated title
+    urls = set()
+    source_page_ids = set()
+    for child in page.get_descendants().live().specific(defer=True).iterator():
+        source_page_ids.add(child.pk)
+        urls.update(get_page_cached_urls(child))
+
+    urls |= _get_welsh_alias_urls(source_page_ids)
 
     purge_urls_from_cache(urls)
 

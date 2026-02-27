@@ -4,7 +4,8 @@ from django.apps import apps
 from django.db.models.signals import post_delete
 from wagtail.signals import page_published, page_slug_changed, page_unpublished, published, unpublished
 
-from cms.articles.models import ArticlesIndexPage
+from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage
+from cms.articles.signals import series_title_changed
 from cms.core.models import BasePage, ContactDetails, Definition
 from cms.home.models import HomePage
 from cms.methodology.models import MethodologyIndexPage
@@ -14,6 +15,7 @@ from .cache import (
     purge_old_page_slugs_from_frontend_cache,
     purge_page_containing_snippet_from_cache,
     purge_page_from_frontend_cache,
+    purge_series_children_from_cache,
 )
 
 if TYPE_CHECKING:
@@ -33,6 +35,10 @@ def purge_unpublished_page_from_frontend_cache(instance: Page, **kwargs: Any) ->
 
 def purge_page_from_frontend_cache_after_slug_change(instance: Page, instance_before: Page, **kwargs: Any) -> None:
     purge_old_page_slugs_from_frontend_cache(instance, instance_before)
+
+
+def purges_series_children_from_frontend_cache(instance: ArticleSeriesPage, **kwargs: Any) -> None:
+    purge_series_children_from_cache(instance)
 
 
 def purge_pages_containing_the_published_snippet_from_frontend_cache(instance: Model, **kwargs: Any) -> None:
@@ -67,6 +73,8 @@ def register_signal_handlers() -> None:
         page_published.connect(purge_published_page_from_frontend_cache, sender=model)
         page_unpublished.connect(purge_unpublished_page_from_frontend_cache, sender=model)
         page_slug_changed.connect(purge_page_from_frontend_cache_after_slug_change, sender=model)
+
+    series_title_changed.connect(purges_series_children_from_frontend_cache, sender=ArticleSeriesPage)
 
     for model in [ContactDetails, Definition]:
         published.connect(purge_pages_containing_the_unpublished_snippet_from_frontend_cache, sender=model)
