@@ -67,7 +67,7 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
             return ""
 
 
-class GunicornJsonFormatter(JSONFormatter):
+class GunicornAccessJSONFormatter(JSONFormatter):
     """A log formatter which extracts the required details from gunicorn's access logger."""
 
     DATE_FORMAT = "[%d/%b/%Y:%H:%M:%S %z]"

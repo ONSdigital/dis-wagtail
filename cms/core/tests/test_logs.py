@@ -1,22 +1,25 @@
 import json
 import logging
 import os
+from copy import deepcopy
 from datetime import timedelta
+from io import StringIO
 from types import SimpleNamespace
 from unittest.mock import ANY
 
 import time_machine
-from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.conf import settings
+from django.test import RequestFactory, SimpleTestCase, override_settings
 from gunicorn.config import Config
 from gunicorn.glogging import Logger
 
-from cms.core.logs import GunicornJsonFormatter, JSONFormatter
+from cms.core.logs import GunicornAccessJSONFormatter, JSONFormatter
 
 logger = logging.getLogger(__name__)
 
 
 @time_machine.travel("2025-01-01", tick=False)
-class JSONFormatterTestCase(TestCase):
+class JSONFormatterTestCase(SimpleTestCase):
     databases = "__all__"
 
     def format_log(self, record: logging.LogRecord) -> dict:
@@ -121,7 +124,7 @@ class GunicornJSONFormatterTestCase(SimpleTestCase):
         self.gunicorn_logger = Logger(Config())
 
     def format_log(self, record: logging.LogRecord) -> dict:
-        return json.loads(GunicornJsonFormatter().format(record))
+        return json.loads(GunicornAccessJSONFormatter().format(record))
 
     def test_gunicorn_access_log_includes_ip_in_internal_env(self):
         """IP address is included when IS_EXTERNAL_ENV=False (internal environment)."""
@@ -177,3 +180,43 @@ class GunicornJSONFormatterTestCase(SimpleTestCase):
         self.assertEqual(formatted["severity"], 3)
         self.assertNotIn("ip_address", formatted["http"])
         self.assertNotIn("127.0.0.1", json.dumps(formatted))
+
+
+class LoggingConfigTestCase(SimpleTestCase):
+    def setUp(self):
+        self.log_stream = StringIO()
+
+        # cms.settings.test sets the logging handler to null, so reset it to stream so we can capture it
+        custom_logging = deepcopy(settings.LOGGING)
+        custom_logging["handlers"]["console"]["class"] = "logging.StreamHandler"
+        custom_logging["handlers"]["console"]["stream"] = self.log_stream
+        self.enterContext(self.settings(LOGGING=custom_logging))
+
+    def test_root_logger_uses_json(self):
+        root_logger = logging.getLogger()
+        self.assertIsNone(root_logger.parent)
+        self.assertIsInstance(root_logger.handlers[0].formatter, JSONFormatter)
+
+    def test_cms_logger_uses_json(self):
+        cms_logger = logging.getLogger("cms")
+        self.assertIsInstance(cms_logger.handlers[0].formatter, JSONFormatter)
+
+    def test_gunicorn_logger_uses_json(self):
+        gunicorn_logger = Logger(Config())
+        self.assertIsInstance(gunicorn_logger.error_log.handlers[0].formatter, JSONFormatter)
+        self.assertIsInstance(gunicorn_logger.access_log.handlers[0].formatter, GunicornAccessJSONFormatter)
+
+    def test_non_cms_logger_uses_json(self):
+        non_cms_logger = logging.getLogger("non_cms")
+
+        non_cms_logger.info("Doing stuff")
+
+        # If it looks like JSON, it's probably the JSON formatter
+        logged_data = json.loads(self.log_stream.getvalue())
+
+        self.assertEqual(logged_data["namespace"], "non_cms")
+
+    def test_all_configured_loggers_use_json(self):
+        for name in settings.LOGGING["loggers"]:
+            with self.subTest(name):
+                self.assertIsInstance(logging.getLogger(name).handlers[0].formatter, JSONFormatter)

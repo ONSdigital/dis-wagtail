@@ -504,6 +504,10 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
     # https://github.com/jschneier/django-storages/blob/10d1929de5e0318dbd63d715db4bebc9a42257b5/storages/backends/s3boto3.py#L217
     AWS_S3_URL_PROTOCOL = env.get("AWS_S3_URL_PROTOCOL", "https:")
 
+# Whether to log output as JSON or "verbose". By default, check whether we're running with a TTY
+# This can't be easily overridden in tests, so it's lowercase to stop it being incorrectly overwritten as a setting.
+log_as_json = env.get("LOG_AS_JSON", str(not sys.stdout.isatty())).lower().strip() == "true"
+
 PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get("PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5)
 
 # Logging
@@ -519,12 +523,12 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "json",
+            "formatter": "json" if log_as_json else "verbose",
         },
         "gunicorn_access": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "gunicorn_json",
+            "formatter": "gunicorn_json" if log_as_json else "verbose",
         },
     },
     "formatters": {
@@ -533,10 +537,15 @@ LOGGING = {
             "()": "cms.core.logs.JSONFormatter",
         },
         "gunicorn_json": {
-            "()": "cms.core.logs.GunicornJsonFormatter",
+            "()": "cms.core.logs.GunicornAccessJSONFormatter",
         },
     },
     "loggers": {
+        None: {  # Root logger
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
         "cms": {
             "handlers": ["console"],
             "level": "INFO",
