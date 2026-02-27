@@ -533,7 +533,7 @@ LOGGING = {
             "()": "cms.core.logs.JSONFormatter",
         },
         "gunicorn_json": {
-            "()": "cms.core.logs.GunicornJsonFormatter",
+            "()": "cms.core.logs.GunicornAccessJSONFormatter",
         },
     },
     "loggers": {

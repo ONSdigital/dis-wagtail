@@ -10,7 +10,7 @@ from django.test import RequestFactory, SimpleTestCase, TestCase, override_setti
 from gunicorn.config import Config
 from gunicorn.glogging import Logger
 
-from cms.core.logs import GunicornJsonFormatter, JSONFormatter
+from cms.core.logs import GunicornAccessJSONFormatter, JSONFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,7 @@ class GunicornJSONFormatterTestCase(SimpleTestCase):
         self.gunicorn_logger = Logger(Config())
 
     def format_log(self, record: logging.LogRecord) -> dict:
-        return json.loads(GunicornJsonFormatter().format(record))
+        return json.loads(GunicornAccessJSONFormatter().format(record))
 
     def test_gunicorn_access_log_includes_ip_in_internal_env(self):
         """IP address is included when IS_EXTERNAL_ENV=False (internal environment)."""
