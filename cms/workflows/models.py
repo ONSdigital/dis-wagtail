@@ -29,11 +29,14 @@ def get_final_approve_label(obj: WorkflowMixin, label: str) -> str:
     )
     if is_final_task:
         if (go_live_at := getattr(obj, "go_live_at", None)) and go_live_at > timezone.now():
-            label = "Schedule to publish with comment" if with_comment else "Schedule to publish"
+            label = "Schedule to publish"
         else:
-            label = "Publish with comment" if with_comment else "Publish"
+            label = "Publish"
     else:
-        label = "Approve with comment" if with_comment else "Approve"
+        label = "Approve"
+        
+    if with_comment:
+        label += " with comment"
 
     return label
 
