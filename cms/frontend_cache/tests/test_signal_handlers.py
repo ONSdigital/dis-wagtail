@@ -435,25 +435,22 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
             )
         )
 
-        patched_purge_urls.assert_has_calls(
-            [
-                call({self.article_url, self.article_related_data_url}),
-                call(
-                    {
-                        # the old series and topic
-                        self.series_url,
-                        self.series_edition_url,
-                        self.topic_page_url,
-                        self.topic_page_translation_url,
-                        # the new series and topic
-                        another_series_url,
-                        f"{another_series_url}/editions",
-                        f"{another_series_url}/editions?page=1",
-                        self.another_topic_page_url,
-                        self.another_topic_page_translation_url,
-                    }
-                ),
-            ]
+        patched_purge_urls.assert_called_once_with(
+            {
+                self.article_url,
+                self.article_related_data_url,
+                # the old series and topic
+                self.series_url,
+                self.series_edition_url,
+                self.topic_page_url,
+                self.topic_page_translation_url,
+                # the new series and topic
+                another_series_url,
+                f"{another_series_url}/editions",
+                f"{another_series_url}/editions?page=1",
+                self.another_topic_page_url,
+                self.another_topic_page_translation_url,
+            }
         )
 
     def test_page_move__series_page(self, patched_purge_urls):

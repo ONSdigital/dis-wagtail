@@ -101,7 +101,7 @@ def get_related_topic_page_urls(page: Page, topic_ids: list[str] | None = None) 
     parent_topic = TopicPage.objects.ancestor_of(page).first().specific_deferred
     urls = set(get_page_cached_urls(parent_topic))
 
-    topic_terms = topic_ids or page.topic_ids
+    topic_terms = topic_ids or getattr(page, "topic_ids", [])
     related_topic_pages = TopicPage.objects.filter(topic__in=topic_terms).exclude(pk=parent_topic.pk).live().defer()
 
     # include parent topic translation aliases

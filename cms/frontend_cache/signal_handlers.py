@@ -42,8 +42,8 @@ def purge_page_from_frontend_cache_after_move(
     instance: Page,
     parent_page_before: Page,
     parent_page_after: Page,
-    url_path_after: str,  # pylint: disable=unused-argument
     url_path_before: str,
+    url_path_after: str,  # pylint: disable=unused-argument
     **kwargs: Any,
 ) -> None:
     purge_old_page_paths_from_cache_after_move(
