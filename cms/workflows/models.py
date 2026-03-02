@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Self
 from django.db import transaction
 from django.utils import timezone
 from wagtail.admin.mail import GroupApprovalTaskStateSubmissionEmailNotifier
-from wagtail.models import AbstractGroupApprovalTask, TaskState
+from wagtail.models import AbstractGroupApprovalTask, TaskState, WorkflowMixin
 
 from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 
@@ -13,6 +13,29 @@ if TYPE_CHECKING:
     from django.db.models import Model
 
     from cms.users.models import User
+
+
+def get_final_approve_label(obj: WorkflowMixin, label: str) -> str:
+    """Tidies up the "approve" action label.
+
+    Accounts for when we're locked in ready to publish, when the workflow was "unlocked" (i.e. moved back a step)
+    as well as scheduled publishing
+    """
+    with_comment = "with comment" in label
+
+    is_final_task = (
+        obj.current_workflow_task
+        and obj.current_workflow_task.pk == obj.current_workflow_state.workflow.tasks.last().pk
+    )
+    if is_final_task:
+        if (go_live_at := getattr(obj, "go_live_at", None)) and go_live_at > timezone.now():
+            label = "Schedule to publish with comment" if with_comment else "Schedule to publish"
+        else:
+            label = "Publish with comment" if with_comment else "Publish"
+    else:
+        label = "Approve with comment" if with_comment else "Approve"
+
+    return label
 
 
 class GroupReviewTask(AbstractGroupApprovalTask):
@@ -28,6 +51,24 @@ class GroupReviewTask(AbstractGroupApprovalTask):
     def user_can_unlock(self, obj: Model, user: User) -> bool:
         """Used for manual locks."""
         return user.has_perm("wagtailadmin.unlock_workflow_tasks")
+
+    def get_actions(self, obj: Model, user: User) -> list[tuple[str, str, bool]]:
+        # The user must be in the selected groups, or a superuser
+        if not self.user_can_access_editor(obj, user):
+            return []
+
+        actions = [("reject", "Request changes", True)]
+
+        is_self_approver = obj.latest_revision and obj.latest_revision.user_id == user.pk  # type: ignore[attr-defined]
+        if not is_self_approver:
+            actions.extend(
+                [
+                    ("approve", "Approve", False),
+                    ("approve", "Approve with comment", True),
+                ]
+            )
+
+        return actions
 
     class Meta:
         verbose_name = "Group review task"
@@ -54,7 +95,7 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
         if not in_active_bundle(obj):
             actions = [("unlock", "Unlock editing", False)]
             if hasattr(obj, "permissions_for_user") and obj.permissions_for_user(user).can_publish():
-                actions.append(("locked-approve", "Approve", False))
+                actions.append(("locked-approve", get_final_approve_label(obj, "Approve"), False))
             return actions
         if not in_bundle_ready_to_be_published(obj):
             # we're in a bundle which is not yet ready to be published,
