@@ -16,6 +16,7 @@ from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 from . import admin_urls
 from .action_menu import UnlockWorkflowMenuItem
 from .admin_urls import path
+from .bulk_actions import PublishBulkAction
 from .models import get_final_approve_label
 from .utils import is_page_ready_to_publish
 
@@ -167,3 +168,8 @@ def register_admin_urls() -> list[URLPattern | URLResolver]:
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-urls.
     """
     return [path("workflows/", include(admin_urls))]
+
+
+# TODO: remove when https://github.com/wagtail/wagtail/issues/13976 is fixed
+# note: added a sufficiently high order value to ensure it runs last and it overrides the core PublishBulkAction
+hooks.register("register_bulk_action", PublishBulkAction, order=1000)
