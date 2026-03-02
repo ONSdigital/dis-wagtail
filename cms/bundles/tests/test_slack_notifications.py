@@ -134,7 +134,7 @@ class SendBundleNotificationTestCase(TestCase):
                 color="good",
                 fields=[],
             )
-            self.assertIn("SLACK_NOTIFICATION_CHANNEL not configured", logs.output[0])
+            self.assertIn("SLACK_NOTIFICATION_CHANNEL is not configured", logs.output[0])
             mock_get_client.assert_not_called()
 
     @override_settings(SLACK_BOT_TOKEN=None, SLACK_NOTIFICATION_CHANNEL="C024BE91L")
@@ -283,7 +283,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         scheduled_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
         with self.assertLogs("cms.core.slack", level="WARNING") as logs:
             notify_slack_of_bundle_pre_publish(self.bundle, scheduled_time)
-            self.assertIn("SLACK_NOTIFICATION_CHANNEL not configured", logs.output[0])
+            self.assertIn("SLACK_NOTIFICATION_CHANNEL is not configured", logs.output[0])
         mock_send.assert_not_called()
 
 
@@ -450,7 +450,7 @@ class BundleFailureNotificationTestCase(TestCase):
                 exception_message="Test error",
                 alert_type=BundleAlertType.CRITICAL,
             )
-            self.assertIn("SLACK_BOT_TOKEN not configured", logs.output[0])
+            self.assertIn("SLACK_BOT_TOKEN is not configured", logs.output[0])
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
@@ -573,7 +573,7 @@ class NotifyDatasetAPIFailureTestCase(TestCase):
                 exception_message="Test error",
                 alert_type=BundleAlertType.WARNING,
             )
-            self.assertIn("SLACK_BOT_TOKEN not configured", logs.output[0])
+            self.assertIn("SLACK_BOT_TOKEN is not configured", logs.output[0])
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")

@@ -1,11 +1,10 @@
 import logging
 from collections.abc import Callable
 from functools import wraps
-from http import HTTPStatus
 from typing import Any
 
 from django.conf import settings
-from slack_sdk import WebClient, WebhookClient
+from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 logger = logging.getLogger(__name__)
@@ -21,10 +20,10 @@ def require_slack_notification_config[T: Callable[..., Any]](func: T) -> T:
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         if not settings.SLACK_BOT_TOKEN:
-            logger.warning("SLACK_BOT_TOKEN not configured")
+            logger.warning("SLACK_BOT_TOKEN is not configured")
             return None
         if not settings.SLACK_NOTIFICATION_CHANNEL:
-            logger.warning("SLACK_NOTIFICATION_CHANNEL not configured")
+            logger.warning("SLACK_NOTIFICATION_CHANNEL is not configured")
             return None
 
         return func(*args, **kwargs)
@@ -115,30 +114,3 @@ def send_or_update_message(
             except SlackApiError:
                 logger.exception("Failed to create fallback Slack message")
     return None
-
-
-def send_message_via_webhook(
-    text: str,
-    color: str,
-    fields: list[dict],
-    webhook_url: str,
-) -> None:
-    """Send a Slack message using an incoming webhook.
-
-    Args:
-        text: Message text/title
-        color: Slack attachment color ("warning", "good", "danger")
-        fields: Slack attachment fields
-        webhook_url: URL of the Slack incoming webhook
-    """
-    client = WebhookClient(webhook_url)
-
-    response = client.send(
-        text=text,
-        attachments=[{"color": color, "fields": fields}],
-        unfurl_links=False,
-        unfurl_media=False,
-    )
-
-    if response.status_code != HTTPStatus.OK:
-        logger.error("Unable to send Slack message: %s", response.body)
