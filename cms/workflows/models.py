@@ -34,7 +34,7 @@ def get_final_approve_label(obj: WorkflowMixin, label: str) -> str:
             label = "Publish"
     else:
         label = "Approve"
-        
+
     if with_comment:
         label += " with comment"
 
