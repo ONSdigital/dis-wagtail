@@ -233,7 +233,7 @@ def notify_slack_of_publish_end(
     send_bundle_notification(
         bundle=bundle,
         text=text,
-        color="good",  # Green
+        color="good",
         fields=fields,
     )
 

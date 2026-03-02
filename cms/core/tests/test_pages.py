@@ -5,6 +5,7 @@ from django.conf import settings
 from django.template import TemplateDoesNotExist
 from django.template.loader import get_template as original_get_template
 from django.test.utils import override_settings
+from django.utils import timezone
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
 from wagtail.test.utils import WagtailPageTestCase
@@ -221,6 +222,19 @@ class PageSchemaOrgTests(WagtailPageTestCase):
                 actual_jsonld = extract_response_jsonld(response.content, self)
 
                 self.assertEqual(actual_jsonld["description"], description_case["expected_description"])
+
+    def test_publish_release_removes_seconds(self):
+        revision = self.page.save_revision(approved_go_live_at=timezone.now())
+        self.assertEqual(revision.approved_go_live_at.second, 0)
+        revision.refresh_from_db()
+        self.assertEqual(revision.approved_go_live_at.second, 0)
+
+    def test_strips_go_live_at_seconds(self):
+        self.page.go_live_at = timezone.now()
+        self.page.save()
+        self.assertEqual(self.page.go_live_at.second, 0)
+        self.page.refresh_from_db()
+        self.assertEqual(self.page.go_live_at.second, 0)
 
 
 class SocialMetaTests(WagtailPageTestCase):

@@ -299,7 +299,7 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
             return force_write_db_for(Dataset.objects).filter(existing_query)
 
         # Since no instances were created or updated, it's safe to use the default database handling.
-        return Dataset.objects.all()
+        return Dataset.objects.filter(existing_query)
 
 
 class DatasetChosenMultipleView(DatasetChosenMultipleViewMixin, ChosenResponseMixin, View): ...

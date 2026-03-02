@@ -9,7 +9,7 @@ from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
 
-from cms.core.utils import flatten_table_data
+from cms.data_downloads.utils import flatten_table_data
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 
 if TYPE_CHECKING:
@@ -188,9 +188,7 @@ class ONSTableBlock(TinyTableBlock):
         # Add download config if block_id and page context available
         block_id = context.get("block_id")
         if block_id and parent_context:
-            options["download"] = self._get_download_config(
-                value=value, parent_context=parent_context, block_id=block_id, data=data
-            )
+            options["download"] = self._get_download_config(parent_context=parent_context, block_id=block_id, data=data)
 
         table_context = {
             "title": value.get("title"),
@@ -202,7 +200,7 @@ class ONSTableBlock(TinyTableBlock):
 
         return table_context
 
-    def _get_download_config(self, *, value: dict, parent_context: dict, block_id: str, data: dict) -> dict[str, Any]:
+    def _get_download_config(self, *, parent_context: dict, block_id: str, data: dict) -> dict[str, Any]:
         """Build download config for ONS Downloads component."""
         page = parent_context.get("page")
         if not page:
@@ -222,9 +220,8 @@ class ONSTableBlock(TinyTableBlock):
             else self._build_table_download_url(page, block_id, parent_context.get("superseded_version"))
         )
 
-        title = value.get("title") or value.get("caption") or _("Table")
         return {
-            "title": f"{_('Download')}: {title}",
+            "title": _("Download this table"),
             "itemsList": [{"text": f"{_('Download CSV')}{size_suffix}", "url": csv_url}],
         }
 
@@ -247,7 +244,7 @@ class ONSTableBlock(TinyTableBlock):
             return "#"
 
         return reverse(
-            "articles:revision_table_download",
+            "data_downloads:revision_table_download",
             kwargs={"page_id": page.pk, "revision_id": revision_id, "table_id": block_id},
         )
 

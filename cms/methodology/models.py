@@ -18,9 +18,11 @@ from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
 from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
+from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
 from cms.core.query import order_by_pk_position
 from cms.core.utils import redirect_to_parent_listing
 from cms.core.widgets import date_widget
+from cms.data_downloads.mixins import DataDownloadMixin
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -74,7 +76,13 @@ class MethodologyRelatedPage(Orderable):
     panels: ClassVar[list[FieldPanel]] = [PageChooserPanel("page", page_type=["articles.StatisticalArticlePage"])]
 
 
-class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
+class MethodologyPage(  # type: ignore[django-manager-missing]
+    DataDownloadMixin,
+    BundledPageMixin,
+    NoTrailingSlashRoutablePageMixin,
+    GenericTaxonomyMixin,
+    BasePage,
+):
     base_form_class = PageWithEquationsAdminForm
     parent_page_types: ClassVar[list[str]] = ["MethodologyIndexPage"]
     search_index_content_type: ClassVar[str] = "static_methodology"
@@ -152,12 +160,9 @@ class MethodologyPage(BundledPageMixin, GenericTaxonomyMixin, BasePage):  # type
         The result is ordered to match that specified by editors using
         the 'page_related_pages' `InlinePanel`.
         """
-        # NOTE: avoiding values_list() here for compatibility with preview
-        # See: https://github.com/wagtail/django-modelcluster/issues/30
-        ordered_page_pks = tuple(item.page_id for item in self.related_pages.all().only("page"))
         return order_by_pk_position(
             Page.objects.live().public().specific(),
-            pks=ordered_page_pks,
+            pks=list(self.related_pages.values_list("page_id", flat=True)),
             exclude_non_matches=True,
         )
 

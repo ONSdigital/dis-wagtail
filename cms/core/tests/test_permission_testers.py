@@ -106,7 +106,7 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
                 self.assertTrue(tester.can_publish_subpage())
 
     def test_can_unschedule(self):
-        go_live_at = timezone.now() + timedelta(minutes=1)
+        go_live_at = timezone.now().replace(second=0) + timedelta(minutes=1)
         self.english_index_page.go_live_at = go_live_at
         self.english_index_page.save_revision().publish()
 
@@ -130,6 +130,31 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
             with self.subTest(f"{user=} cannot unschedule if page is in bundle"):
                 tester = BasePagePermissionTester(user=user, page=self.english_index_page)
                 self.assertFalse(tester.can_unschedule())
+
+    def test_can_lock(self):
+        # note: this only tests non-workflow logic. Workflow logic is tested in
+        # cms.workflows.tests.test_workflow_tweaks.WorkflowPermissionTweaks
+
+        tester = BasePagePermissionTester(user=self.user, page=self.english_index_page)
+        self.assertFalse(tester.can_unlock())
+
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer]:
+            with self.subTest(f"{user=} can lock page when page is not in workflow"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertTrue(tester.can_lock())
+
+    def test_can_unlock(self):
+        # note: this only tests non-workflow logic.
+
+        for user in [self.user, self.publishing_officer]:
+            with self.subTest(f"{user=} cannot unlock page when page is not in workflow"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertFalse(tester.can_unlock())
+
+        for user in [self.superuser, self.publishing_admin]:
+            with self.subTest(f"{user=} can unlock page when page is not in workflow"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertTrue(tester.can_unlock())
 
 
 class TestCustomPagePermissions(WagtailTestUtils, TestCase):
