@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
-from functools import wraps
-from http import HTTPStatus
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
-from slack_sdk.errors import SlackApiError
-from slack_sdk.web import WebClient
-from slack_sdk.webhook import WebhookClient
+
+from cms.core.slack import require_slack_notification_channel, send_or_update_message
 
 if TYPE_CHECKING:
     from django.utils.functional import _StrOrPromise
@@ -31,37 +27,8 @@ class BundleAlertType(str, Enum):
     WARNING = "Warning"
 
 
-def require_slack_config[T: Callable[..., Any]](func: T) -> T:
-    """Decorator to check Slack configuration before sending notifications.
-
-    Returns:
-        Decorated function that returns None if configuration checks fail.
-    """
-
-    @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if not settings.SLACK_NOTIFICATION_CHANNEL:
-            logger.warning("SLACK_NOTIFICATION_CHANNEL not configured")
-            return None
-
-        return func(*args, **kwargs)
-
-    return wrapper  # type: ignore[return-value]
-
-
-def get_slack_client() -> WebClient | None:
-    """Get Slack Bot API client if configured.
-
-    Returns:
-        WebClient instance if SLACK_BOT_TOKEN is configured, None otherwise.
-    """
-    if not (token := settings.SLACK_BOT_TOKEN):
-        return None
-    return WebClient(token=token)
-
-
-@require_slack_config
-def _send_and_update_message(
+@require_slack_notification_channel
+def send_bundle_notification(
     bundle: Bundle,
     text: str,
     color: str,
@@ -80,60 +47,19 @@ def _send_and_update_message(
         text: Message text/title
         color: Slack attachment color ("warning", "good", "danger")
         fields: Slack attachment fields
-        force_new: If True, always create a new message without updating timestamp
+        force_new: If True, always create a new message without updating the stored timestamp (default: False)
     """
-    client = get_slack_client()
-    if not client:
-        logger.warning("Slack Bot API client not configured")
-        return
-
-    channel = settings.SLACK_NOTIFICATION_CHANNEL
-    attachments = [{"color": color, "fields": fields}]
-
-    try:
-        if not force_new and bundle.slack_notification_ts:
-            # Try to update existing message
-            response = client.chat_update(
-                channel=channel,
-                ts=bundle.slack_notification_ts,
-                text=text,
-                attachments=attachments,
-            )
-            # Update timestamp if response is valid
-            if response and response.get("ok") and response.get("ts"):
-                bundle.slack_notification_ts = response["ts"]
-                bundle.save(update_fields=["slack_notification_ts"])
-        else:
-            # Create new message and store timestamp
-            response = client.chat_postMessage(
-                channel=channel,
-                text=text,
-                attachments=attachments,
-                unfurl_links=False,
-                unfurl_media=False,
-            )
-            # Store timestamp for future updates
-            if not force_new and response and response.get("ok") and response.get("ts"):
-                bundle.slack_notification_ts = response["ts"]
-                bundle.save(update_fields=["slack_notification_ts"])
-
-    except SlackApiError as e:
-        logger.exception("Failed to send/update Slack message: %s", e)
-        # If update fails (e.g., message not found), try creating a new message
-        if bundle.slack_notification_ts and not force_new:
-            try:
-                response = client.chat_postMessage(
-                    channel=channel,
-                    text=text,
-                    attachments=attachments,
-                    unfurl_links=False,
-                    unfurl_media=False,
-                )
-                if response and response.get("ok") and response.get("ts"):
-                    bundle.slack_notification_ts = response["ts"]
-                    bundle.save(update_fields=["slack_notification_ts"])
-            except SlackApiError:
-                logger.exception("Failed to create fallback Slack message")
+    message_ts = send_or_update_message(
+        text=text,
+        color=color,
+        fields=fields,
+        update_message_ts=bundle.slack_notification_ts if not force_new else None,
+        channel=settings.SLACK_NOTIFICATION_CHANNEL,
+    )
+    if message_ts and not force_new:
+        # Only update the bundle's message reference if we're not forcing a new message
+        bundle.slack_notification_ts = message_ts
+        bundle.save(update_fields=["slack_notification_ts"])
 
 
 def _get_publish_type(bundle: Bundle) -> str:
@@ -198,6 +124,7 @@ def _get_bundle_notification_context(bundle: Bundle) -> dict[str, str | int | No
     }
 
 
+@require_slack_notification_channel
 def notify_slack_of_status_change(
     bundle: Bundle,
     old_status: _StrOrPromise,
@@ -205,38 +132,8 @@ def notify_slack_of_status_change(
     url: str | None = None,
     context_message: str | None = None,
 ) -> None:
-    """Send a Slack notification for Bundle status changes.
-
-    Uses webhook for backward compatibility unless Bot API is fully configured.
-    """
-    # Use Bot API if fully configured, otherwise fall back to webhook
-    if settings.SLACK_BOT_TOKEN and settings.SLACK_NOTIFICATION_CHANNEL:
-        fields: list[dict[Any, Any]] = [
-            {"title": "Title", "value": bundle.name, "short": True},
-            {"title": "Changed by", "value": user.get_full_name() if user else "System", "short": True},
-            {"title": "Old status", "value": old_status, "short": True},
-            {"title": "New status", "value": bundle.get_status_display(), "short": True},
-        ]
-        if context_message:
-            fields.append({"title": "Context", "value": context_message})
-        if url:
-            fields.append({"title": "Link", "value": url, "short": False})
-
-        _send_and_update_message(
-            bundle=bundle,
-            text="Bundle status changed",
-            color="good",
-            fields=fields,
-        )
-        return
-
-    # Fallback to webhook for backward compatibility
-    if (webhook_url := settings.SLACK_NOTIFICATIONS_WEBHOOK_URL) is None:
-        return
-
-    client = WebhookClient(webhook_url)
-
-    fields = [
+    """Send a Slack notification for Bundle status changes."""
+    fields: list[dict[str, Any]] = [
         {"title": "Title", "value": bundle.name, "short": True},
         {"title": "Changed by", "value": user.get_full_name() if user else "System", "short": True},
         {"title": "Old status", "value": old_status, "short": True},
@@ -244,24 +141,18 @@ def notify_slack_of_status_change(
     ]
     if context_message:
         fields.append({"title": "Context", "value": context_message})
-
     if url:
-        fields.append(
-            {"title": "Link", "value": url, "short": False},
-        )
+        fields.append({"title": "Link", "value": url, "short": False})
 
-    response = client.send(
+    send_bundle_notification(
+        bundle=bundle,
         text="Bundle status changed",
-        attachments=[{"color": "good", "fields": fields}],
-        unfurl_links=False,
-        unfurl_media=False,
+        color="good",
+        fields=fields,
     )
 
-    if response.status_code != HTTPStatus.OK:
-        logger.error("Unable to notify Slack of bundle status change: %s", response.body)
 
-
-@require_slack_config
+@require_slack_notification_channel
 def notify_slack_of_publication_start(
     bundle: Bundle,
     start_time: datetime,
@@ -279,7 +170,7 @@ def notify_slack_of_publication_start(
     """
     context = _get_bundle_notification_context(bundle)
 
-    fields: list[dict[Any, Any]] = [
+    fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
         {"title": "Publish Type", "value": context["publish_type"], "short": True},
         {"title": "Scheduled Start", "value": _format_publish_datetime(start_time), "short": True},
@@ -291,7 +182,7 @@ def notify_slack_of_publication_start(
 
     text = "Publishing the bundle has started"
 
-    _send_and_update_message(
+    send_bundle_notification(
         bundle=bundle,
         text=text,
         color="warning",  # Amber
@@ -299,7 +190,7 @@ def notify_slack_of_publication_start(
     )
 
 
-@require_slack_config
+@require_slack_notification_channel
 def notify_slack_of_publish_end(
     bundle: Bundle,
     start_time: datetime,
@@ -324,7 +215,7 @@ def notify_slack_of_publish_end(
     # Calculate elapsed time in seconds
     elapsed_seconds = (end_time - start_time).total_seconds()
 
-    fields: list[dict[Any, Any]] = [
+    fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
         {"title": "Publish Type", "value": context["publish_type"], "short": True},
         {"title": "Publish Start", "value": _format_publish_datetime(start_time), "short": True},
@@ -339,7 +230,7 @@ def notify_slack_of_publish_end(
 
     text = "Publishing the bundle has ended"
 
-    _send_and_update_message(
+    send_bundle_notification(
         bundle=bundle,
         text=text,
         color="good",  # Green
@@ -347,7 +238,7 @@ def notify_slack_of_publish_end(
     )
 
 
-@require_slack_config
+@require_slack_notification_channel
 def notify_slack_of_bundle_pre_publish(
     bundle: Bundle,
     scheduled_time: datetime,
@@ -361,14 +252,14 @@ def notify_slack_of_bundle_pre_publish(
         bundle: The bundle scheduled for publication.
         scheduled_time: The scheduled publication datetime.
     """
-    fields: list[dict[Any, Any]] = [
+    fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{bundle.full_inspect_url}|{bundle.name}>", "short": False},
         {"title": "Publish Start", "value": _format_publish_datetime(scheduled_time), "short": True},
     ]
 
     text = "Preparing bundle for publication"
 
-    _send_and_update_message(
+    send_bundle_notification(
         bundle=bundle,
         text=text,
         color="warning",  # Amber
@@ -376,7 +267,7 @@ def notify_slack_of_bundle_pre_publish(
     )
 
 
-@require_slack_config
+@require_slack_notification_channel
 def notify_slack_of_bundle_failure(
     bundle: Bundle,
     exception_message: str,
@@ -394,14 +285,14 @@ def notify_slack_of_bundle_failure(
     """
     publish_type = _get_publish_type(bundle)
 
-    fields: list[dict[Any, Any]] = [
+    fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{bundle.full_inspect_url}|{bundle.name}>", "short": False},
         {"title": "Publish Type", "value": publish_type, "short": True},
         {"title": "Alert Type", "value": alert_type, "short": True},
         {"title": "Exception", "value": exception_message, "short": False},
     ]
 
-    _send_and_update_message(
+    send_bundle_notification(
         bundle=bundle,
         text="Bundle Publication Failure Detected",
         color="danger",
