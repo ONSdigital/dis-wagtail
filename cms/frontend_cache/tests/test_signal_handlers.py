@@ -1,19 +1,21 @@
 from unittest.mock import call, patch
 
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
+from wagtail.test.utils import WagtailTestUtils
 
-from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
-from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage, StatisticalArticlePage
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.models import ContactDetails, Definition
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.tests.factories import DatasetFactory
 from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
 from cms.frontend_cache.signal_handlers import _get_tracked_page_models
 from cms.home.models import HomePage
-from cms.methodology.models import MethodologyPage
+from cms.methodology.models import MethodologyIndexPage, MethodologyPage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.models import ReleaseCalendarPage
 from cms.standard_pages.models import CookiesPage, IndexPage, InformationPage
@@ -26,7 +28,7 @@ from cms.topics.tests.factories import TopicPageFactory
 
 
 @patch("cms.frontend_cache.cache.purge_urls_from_cache")
-class PageFrontEndCacheInvalidationTestCase(TestCase):
+class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.home_page = HomePage.objects.first()
@@ -73,6 +75,8 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
         cls.methodology_page_translation_url = cls.methodology_page_translation.get_full_url(cls.request)
         cls.index_page_url = cls.index_page.get_full_url(cls.request)
         cls.information_page_url = cls.information_page.get_full_url(cls.request)
+
+        cls.superuser = cls.create_superuser(username="admin")
 
     def test_excluded_page_types(self, _patched_purge_urls):
         self.assertEqual(
@@ -414,6 +418,115 @@ class PageFrontEndCacheInvalidationTestCase(TestCase):
                     }
                 ),
             ]
+        )
+
+    def test_page_move__statistical_article_page(self, patched_purge_urls):
+        self.client.force_login(self.superuser)
+
+        another_series = ArticleSeriesPageFactory(
+            parent=ArticlesIndexPage.objects.child_of(self.another_topic_page).first(), title="Another series"
+        )
+        another_series_url = another_series.get_full_url(self.request)
+
+        self.client.post(
+            reverse(
+                "wagtailadmin_pages:move_confirm",
+                args=(self.statistical_article.pk, another_series.pk),
+            )
+        )
+
+        patched_purge_urls.assert_has_calls(
+            [
+                call({self.article_url, self.article_related_data_url}),
+                call(
+                    {
+                        # the old series and topic
+                        self.series_url,
+                        self.series_edition_url,
+                        self.topic_page_url,
+                        self.topic_page_translation_url,
+                        # the new series and topic
+                        another_series_url,
+                        f"{another_series_url}/editions",
+                        f"{another_series_url}/editions?page=1",
+                        self.another_topic_page_url,
+                        self.another_topic_page_translation_url,
+                    }
+                ),
+            ]
+        )
+
+    def test_page_move__series_page(self, patched_purge_urls):
+        self.client.force_login(self.superuser)
+
+        self.client.post(
+            reverse(
+                "wagtailadmin_pages:move_confirm",
+                args=(self.series_page.pk, ArticlesIndexPage.objects.child_of(self.another_topic_page).first().pk),
+            )
+        )
+
+        patched_purge_urls.assert_called_once_with(
+            {
+                self.series_url,
+                self.series_edition_url,
+                f"{self.series_edition_url}?page=1",
+                self.article_url,
+                self.article_related_data_url,
+                # the old topic
+                self.topic_page_url,
+                self.topic_page_translation_url,
+                # the new topic
+                self.another_topic_page_url,
+                self.another_topic_page_translation_url,
+            }
+        )
+
+    def test_page_move__methodology_page(self, patched_purge_urls):
+        self.client.force_login(self.superuser)
+        other_methodology_index = MethodologyIndexPage.objects.child_of(self.another_topic_page).first()
+        self.client.post(
+            reverse(
+                "wagtailadmin_pages:move_confirm",
+                args=(self.methodology_page.pk, other_methodology_index.pk),
+            )
+        )
+
+        # note: there are two calls as the second call is for the old translation alias
+        patched_purge_urls.assert_has_calls(
+            [
+                call(
+                    {
+                        # old page
+                        self.methodology_page_url,
+                        # old and new parent topics
+                        self.topic_page_url,
+                        self.topic_page_translation_url,
+                        self.another_topic_page_url,
+                        self.another_topic_page_translation_url,
+                    }
+                ),
+                call({self.methodology_page_translation_url}),
+            ]
+        )
+
+    def test_page_move__information_page(self, patched_purge_urls):
+        self.client.force_login(self.superuser)
+        another_index = IndexPageFactory(title="Another index")
+
+        self.client.post(
+            reverse(
+                "wagtailadmin_pages:move_confirm",
+                args=(self.information_page.pk, another_index.pk),
+            )
+        )
+
+        patched_purge_urls.assert_called_once_with(
+            {
+                self.information_page_url,  # old page
+                self.index_page_url,
+                another_index.get_full_url(self.request),  # old and new indexes
+            }
         )
 
 

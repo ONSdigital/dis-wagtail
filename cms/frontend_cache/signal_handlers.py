@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.apps import apps
 from django.db.models.signals import post_delete
-from wagtail.signals import page_published, page_slug_changed, page_unpublished, published, unpublished
+from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move, published, unpublished
 
 from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage
 from cms.articles.signals import series_title_changed
@@ -12,6 +12,7 @@ from cms.methodology.models import MethodologyIndexPage
 from cms.release_calendar.models import ReleaseCalendarIndex
 
 from .cache import (
+    purge_old_page_paths_from_cache_after_move,
     purge_old_page_slugs_from_frontend_cache,
     purge_page_containing_snippet_from_cache,
     purge_page_from_frontend_cache,
@@ -35,6 +36,19 @@ def purge_unpublished_page_from_frontend_cache(instance: Page, **kwargs: Any) ->
 
 def purge_page_from_frontend_cache_after_slug_change(instance: Page, instance_before: Page, **kwargs: Any) -> None:
     purge_old_page_slugs_from_frontend_cache(instance, instance_before)
+
+
+def purge_page_from_frontend_cache_after_move(
+    instance: Page,
+    parent_page_before: Page,
+    parent_page_after: Page,
+    url_path_after: str,  # pylint: disable=unused-argument
+    url_path_before: str,
+    **kwargs: Any,
+) -> None:
+    purge_old_page_paths_from_cache_after_move(
+        instance.specific, parent_page_before.specific_deferred, parent_page_after.specific_deferred, url_path_before
+    )
 
 
 def purges_series_children_from_frontend_cache(instance: ArticleSeriesPage, **kwargs: Any) -> None:
@@ -75,6 +89,7 @@ def register_signal_handlers() -> None:
         page_slug_changed.connect(purge_page_from_frontend_cache_after_slug_change, sender=model)
 
     series_title_changed.connect(purges_series_children_from_frontend_cache, sender=ArticleSeriesPage)
+    post_page_move.connect(purge_page_from_frontend_cache_after_move)
 
     for model in [ContactDetails, Definition]:
         published.connect(purge_pages_containing_the_unpublished_snippet_from_frontend_cache, sender=model)
@@ -85,6 +100,3 @@ def register_signal_handlers() -> None:
     # - Main Menu on publish, if in nav
     # - Footer menu on publish, if in nav
     # - Nav save, if there are changes
-
-    # TODO
-    # - page move

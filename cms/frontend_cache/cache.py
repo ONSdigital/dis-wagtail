@@ -92,7 +92,7 @@ def get_urls_featuring_objects(objects: list[Model]) -> set[str]:
     return urls
 
 
-def get_related_topic_page_urls(page: Page) -> set[str]:
+def get_related_topic_page_urls(page: Page, topic_ids: list[str] | None = None) -> set[str]:
     if page.alias_of_id is not None:
         # skip if the given page is an alias. Aliases are not published directly, but
         # via their source page, which then accounts for related topics and their aliases.
@@ -101,7 +101,8 @@ def get_related_topic_page_urls(page: Page) -> set[str]:
     parent_topic = TopicPage.objects.ancestor_of(page).first().specific_deferred
     urls = set(get_page_cached_urls(parent_topic))
 
-    related_topic_pages = TopicPage.objects.filter(topic__in=page.topic_ids).exclude(pk=parent_topic.pk).live().defer()
+    topic_terms = topic_ids or page.topic_ids
+    related_topic_pages = TopicPage.objects.filter(topic__in=topic_terms).exclude(pk=parent_topic.pk).live().defer()
 
     # include parent topic translation aliases
     for parent_topic_alias in parent_topic.get_translations().filter(alias_of__isnull=False).specific(defer=True):
@@ -110,6 +111,41 @@ def get_related_topic_page_urls(page: Page) -> set[str]:
 
     for topic_page in related_topic_pages:
         urls.update(get_page_cached_urls(topic_page))
+
+    return urls
+
+
+def _get_welsh_alias_urls(source_page_ids: set) -> set[str]:
+    urls = set()
+    # Include Welsh aliases in this too.
+    # Also, since we don't have a request here, get a dummy one for the Welsh pages.
+    welsh_locale_id = Locale.objects.filter(language_code="cy").values_list("pk", flat=True)[0]
+    cache_object = get_dummy_request(site=Site.objects.filter(root_page__locale=welsh_locale_id).first())
+    for alias in Page.objects.filter(locale=welsh_locale_id, alias_of__in=source_page_ids).specific().iterator():
+        urls.update(get_page_cached_urls(alias, cache_object=cache_object))
+
+    return urls
+
+
+def get_old_page_slugs(page: Page, page_old: Page, include_welsh_aliases: bool = True) -> set[str]:
+    urls: set = set()
+    if page.url_path == page_old.url_path:
+        return urls
+
+    url_path_length = len(page.url_path)
+
+    # include the old page URL
+    urls = set(get_page_cached_urls(page_old))
+    source_page_ids = {page_old.pk}
+
+    for descendant in page.get_descendants().live().defer_streamfields().specific().iterator():
+        source_page_ids.add(descendant.pk)
+        descendant.url_path = page_old.url_path + descendant.url_path[url_path_length:]
+
+        urls.update(get_page_cached_urls(descendant))
+
+    if include_welsh_aliases:
+        urls |= _get_welsh_alias_urls(source_page_ids)
 
     return urls
 
@@ -132,37 +168,44 @@ def purge_page_from_frontend_cache(page: Page) -> None:
     purge_urls_from_cache(urls)
 
 
-def _get_welsh_alias_urls(source_page_ids: set) -> set[str]:
-    urls = set()
-    # Include Welsh aliases in this too.
-    # Also, since we don't have a request here, get a dummy one for the Welsh pages.
-    welsh_locale_id = Locale.objects.filter(language_code="cy").values_list("pk", flat=True)[0]
-    cache_object = get_dummy_request(site=Site.objects.filter(root_page__locale=welsh_locale_id).first())
-    for alias in Page.objects.filter(locale=welsh_locale_id, alias_of__in=source_page_ids).specific().iterator():
-        urls.update(get_page_cached_urls(alias, cache_object=cache_object))
-
-    return urls
+def purge_old_page_slugs_from_frontend_cache(page: Page, page_old: Page, include_welsh_aliases: bool = True) -> None:
+    if urls := get_old_page_slugs(page, page_old, include_welsh_aliases):
+        purge_urls_from_cache(urls)
 
 
-def purge_old_page_slugs_from_frontend_cache(page: Page, page_old: Page) -> None:
-    if page.url_path == page_old.url_path:
+def purge_old_page_paths_from_cache_after_move(
+    page: Page, parent_page_before: Page, parent_page_after: Page, url_path_before: str
+) -> None:
+    if page.url_path == url_path_before:
+        # This is a page 'reorder' within the same parent. No need for further processing
         return
 
-    url_path_length = len(page.url_path)
+    # Simulate an 'old_page' by copying the specific instance and resetting
+    # the in-memory `url_path` value to what it was before the move
+    old_page = type(page)()
+    old_page.__dict__.update(page.__dict__)
+    old_page.url_path = url_path_before
 
-    # include the old page URL
-    urls = set(get_page_cached_urls(page_old))
-    source_page_ids = {page_old.pk}
+    urls = get_old_page_slugs(page, old_page, include_welsh_aliases=False)
+    if isinstance(page, StatisticalArticlePage):
+        urls.update(get_page_cached_urls(parent_page_before))  # old series
+        urls.update(get_related_topic_page_urls(parent_page_before))  # old topic
 
-    for descendant in page.get_descendants().live().defer_streamfields().specific().iterator():
-        source_page_ids.add(descendant.pk)
-        descendant.url_path = page_old.url_path + descendant.url_path[url_path_length:]
+        urls.update(get_page_cached_urls(parent_page_after))  # new series
+        urls.update(get_related_topic_page_urls(parent_page_after))  # new topic
+    elif isinstance(page, ArticleSeriesPage):
+        urls.update(get_related_topic_page_urls(page))
+        # the parent is the article index so doesn't have any topic IDs.
+        urls.update(get_related_topic_page_urls(parent_page_before, topic_ids=page.topic_ids))
+    elif isinstance(page, MethodologyPage):
+        urls.update(get_related_topic_page_urls(page))
+        urls.update(get_related_topic_page_urls(parent_page_before, topic_ids=page.topic_ids))
+    elif isinstance(page, InformationPage):
+        urls.update(get_page_cached_urls(parent_page_before))
+        urls.update(get_page_cached_urls(parent_page_after))
 
-        urls.update(get_page_cached_urls(descendant))
-
-    urls |= _get_welsh_alias_urls(source_page_ids)
-
-    purge_urls_from_cache(urls)
+    if urls:
+        purge_urls_from_cache(urls)
 
 
 def purge_series_children_from_cache(page: ArticleSeriesPage) -> None:
@@ -176,9 +219,10 @@ def purge_series_children_from_cache(page: ArticleSeriesPage) -> None:
 
     urls |= _get_welsh_alias_urls(source_page_ids)
 
-    purge_urls_from_cache(urls)
+    if urls:
+        purge_urls_from_cache(urls)
 
 
 def purge_page_containing_snippet_from_cache(obj: Model) -> None:
-    urls = get_urls_featuring_object(obj)
-    purge_urls_from_cache(urls)
+    if urls := get_urls_featuring_object(obj):
+        purge_urls_from_cache(urls)
