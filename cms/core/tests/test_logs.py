@@ -9,7 +9,7 @@ from unittest.mock import ANY
 
 import time_machine
 from django.conf import settings
-from django.test import RequestFactory, SimpleTestCase, override_settings
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from gunicorn.config import Config
 from gunicorn.glogging import Logger
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 @time_machine.travel("2025-01-01", tick=False)
-class JSONFormatterTestCase(SimpleTestCase):
+class JSONFormatterTestCase(TestCase):
     databases = "__all__"
 
     def format_log(self, record: logging.LogRecord) -> dict:
