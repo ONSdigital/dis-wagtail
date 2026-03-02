@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from django.conf import settings
 
 from cms.bundles.notifications.slack import BundleAlertType
-from cms.core.slack import require_slack_notification_channel, send_or_update_message
+from cms.core.slack import require_slack_notification_config, send_or_update_message
 
 if TYPE_CHECKING:
     from wagtail.models import Page
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger("cms.bundles")
 
 
-@require_slack_notification_channel
+@require_slack_notification_config
 def notify_slack_of_dataset_api_failure(
     page: Page | None,
     exception_message: str,
@@ -49,7 +49,7 @@ def notify_slack_of_dataset_api_failure(
     )
 
 
-@require_slack_notification_channel
+@require_slack_notification_config
 def notify_slack_of_third_party_api_failure(
     service_name: str,
     exception_message: str,

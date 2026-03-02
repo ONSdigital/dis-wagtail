@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 
-from cms.core.slack import require_slack_notification_channel, send_or_update_message
+from cms.core.slack import require_slack_notification_config, send_or_update_message
 
 if TYPE_CHECKING:
     from django.utils.functional import _StrOrPromise
@@ -27,7 +27,7 @@ class BundleAlertType(str, Enum):
     WARNING = "Warning"
 
 
-@require_slack_notification_channel
+@require_slack_notification_config
 def send_bundle_notification(
     bundle: Bundle,
     text: str,
@@ -124,7 +124,7 @@ def _get_bundle_notification_context(bundle: Bundle) -> dict[str, str | int | No
     }
 
 
-@require_slack_notification_channel
+@require_slack_notification_config
 def notify_slack_of_status_change(
     bundle: Bundle,
     old_status: _StrOrPromise,
@@ -152,7 +152,7 @@ def notify_slack_of_status_change(
     )
 
 
-@require_slack_notification_channel
+@require_slack_notification_config
 def notify_slack_of_publication_start(
     bundle: Bundle,
     start_time: datetime,
@@ -190,7 +190,7 @@ def notify_slack_of_publication_start(
     )
 
 
-@require_slack_notification_channel
+@require_slack_notification_config
 def notify_slack_of_publish_end(
     bundle: Bundle,
     start_time: datetime,
@@ -238,7 +238,7 @@ def notify_slack_of_publish_end(
     )
 
 
-@require_slack_notification_channel
+@require_slack_notification_config
 def notify_slack_of_bundle_pre_publish(
     bundle: Bundle,
     scheduled_time: datetime,
@@ -267,7 +267,7 @@ def notify_slack_of_bundle_pre_publish(
     )
 
 
-@require_slack_notification_channel
+@require_slack_notification_config
 def notify_slack_of_bundle_failure(
     bundle: Bundle,
     exception_message: str,

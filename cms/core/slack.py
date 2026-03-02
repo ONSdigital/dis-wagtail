@@ -11,7 +11,7 @@ from slack_sdk.errors import SlackApiError
 logger = logging.getLogger(__name__)
 
 
-def require_slack_notification_channel[T: Callable[..., Any]](func: T) -> T:
+def require_slack_notification_config[T: Callable[..., Any]](func: T) -> T:
     """Decorator to check Slack configuration before sending notifications.
 
     Returns:
@@ -20,6 +20,9 @@ def require_slack_notification_channel[T: Callable[..., Any]](func: T) -> T:
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
+        if not settings.SLACK_BOT_TOKEN:
+            logger.warning("SLACK_BOT_TOKEN not configured")
+            return None
         if not settings.SLACK_NOTIFICATION_CHANNEL:
             logger.warning("SLACK_NOTIFICATION_CHANNEL not configured")
             return None
