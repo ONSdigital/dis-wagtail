@@ -83,7 +83,7 @@ jobs:
       - name: Compile static files
         run: npm run build:prod
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: static
           path: cms/static_compiled/
@@ -151,7 +151,7 @@ jobs:
           poetry install --no-root
           sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: static
           path: cms/static_compiled/
@@ -176,7 +176,7 @@ jobs:
           echo "## Coverage summary" >> "$GITHUB_STEP_SUMMARY"
           poetry run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
       - name: Upload coverage HTML report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: html-report
           path: htmlcov
@@ -243,7 +243,7 @@ jobs:
       - name: Playwright Install
         run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: static
           path: cms/static_compiled/
@@ -269,7 +269,7 @@ jobs:
 
       - name: Upload failure traces
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-traces-${{ matrix.browser }}-shard-${{ matrix.shard }}
           path: playwright_traces/
