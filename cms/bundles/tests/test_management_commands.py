@@ -82,17 +82,26 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertFalse(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
         self.assertFalse(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
 
+        unpublished_page = StatisticalArticlePageFactory(live=False)
+        unpublished_page.save_revision()
+
         # Add another page, but publish in the meantime.
         another_page = StatisticalArticlePageFactory(title="The Statistical Article", live=False)
         another_page.save_revision().publish()
+
         BundlePageFactory(parent=self.bundle, page=self.statistical_article)
         BundlePageFactory(parent=self.bundle, page=another_page)
+        BundlePageFactory(parent=self.bundle, page=unpublished_page)
+
+        self.assertEqual(self.bundle.get_bundled_pages().count(), 3)
+        self.assertEqual(self.bundle.get_bundled_pages().not_live().count(), 2)
 
         self.call_command()
 
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
 
+        self.assertEqual(self.bundle.get_bundled_pages().not_live().count(), 0)
         self.statistical_article.refresh_from_db()
         self.assertTrue(self.statistical_article.live)
 
@@ -238,18 +247,20 @@ class PublishBundlesCommandTestCase(TestCase):
     @override_settings(WAGTAILADMIN_BASE_URL="https://test.ons.gov.uk")
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    def test_publish_bundle_with_base_url(self, mock_notify):
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    def test_publish_bundle_with_base_url(self, mock_notify_end, mock_notify_start):
         """Test publishing with a configured base URL."""
         self.call_command()
 
-        # Verify notification was called with correct URL
-        mock_notify.assert_called_once()
-        call_kwargs = mock_notify.call_args[1]
+        # Verify notifications were called with correct URL
+        for notif in [mock_notify_start, mock_notify_end]:
+            notif.assert_called_once()
+            call_kwargs = notif.call_args[1]
 
-        self.assertEqual(
-            call_kwargs["url"], "https://test.ons.gov.uk" + reverse("bundle:inspect", args=(self.bundle.pk,))
-        )
-        self.assertIn(str(self.bundle.pk), call_kwargs["url"])
+            self.assertEqual(
+                call_kwargs["url"], "https://test.ons.gov.uk" + reverse("bundle:inspect", args=(self.bundle.pk,))
+            )
+            self.assertIn(str(self.bundle.pk), call_kwargs["url"])
 
     @patch("cms.bundles.management.commands.publish_bundles.publish_bundle")
     def test_publish_bundle_include_future(self, mock_publish_bundle):
