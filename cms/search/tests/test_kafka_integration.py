@@ -6,7 +6,7 @@ from django.conf import settings
 from django.test import TestCase
 from kafka import KafkaConsumer
 
-from cms.search.publishers import KafkaPublisher
+from cms.search.publishers.kafka import KafkaPublisher
 from cms.search.utils import build_page_uri
 from cms.standard_pages.tests.factories import InformationPageFactory
 
@@ -65,8 +65,7 @@ class KafkaIntegrationTests(TestCase):
         verifying that the message is indeed in the channel.
         """
         page = InformationPageFactory()
-        publish_result = self.publisher.publish_created_or_updated(page)
-        self.assertIsNotNone(publish_result)  # We get some metadata from Kafka
+        self.publisher.publish_created_or_updated(page)
 
         msg_found = self._poll_for_message(self.consumer_created, build_page_uri(page))
         self.assertTrue(msg_found, "No matching message found in 'search-content-updated' channel.")

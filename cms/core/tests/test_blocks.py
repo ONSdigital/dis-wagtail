@@ -227,7 +227,7 @@ class CoreBlocksTestCase(TestCase):
         block = RelatedContentBlock()
 
         value = block.to_python({})
-        self.assertIsNone(value.link)
+        self.assertIsNone(value.get_link())
 
         value = block.to_python(
             {
@@ -239,7 +239,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": "https://ons.gov.uk",
                 "text": "Example",
@@ -257,7 +257,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": self.home_page.url,
                 "text": "Example",
@@ -273,7 +273,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": self.home_page.url,
                 "text": self.home_page.title,
@@ -293,7 +293,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": statistical_article.url,
                 "text": statistical_article.display_title,
@@ -887,7 +887,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertIn("download", result["options"])
         self.assertIn("title", result["options"]["download"])
         self.assertIn("itemsList", result["options"]["download"])
-        self.assertEqual(result["options"]["download"]["title"], "Download: The table")
+        self.assertEqual(result["options"]["download"]["title"], "Download this table")
         self.assertEqual(len(result["options"]["download"]["itemsList"]), 1)
         self.assertIn("CSV", result["options"]["download"]["itemsList"][0]["text"])
         self.assertIn("url", result["options"]["download"]["itemsList"][0])
@@ -911,7 +911,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         result = self.block.get_context(self.full_data, parent_context=context)
 
         download_url = result["options"]["download"]["itemsList"][0]["url"]
-        self.assertIn("/admin/articles/pages/", download_url)
+        self.assertIn("/admin/data-downloads/pages/", download_url)
         self.assertIn("/revisions/456/", download_url)
         self.assertIn("/download-table/test-block-id/", download_url)
 

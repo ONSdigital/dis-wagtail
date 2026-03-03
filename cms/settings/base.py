@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "cms.auth",
     "cms.bundles",
     "cms.core",
+    "cms.data_downloads",
     "cms.datasets",
     "cms.datavis",
     "cms.documents",
@@ -172,6 +173,16 @@ context_processors = [
     "cms.core.context_processors.global_vars",
 ]
 
+jinja2_extensions = [
+    *DEFAULT_EXTENSIONS,
+    "wagtail.jinja2tags.core",
+    "wagtail.images.jinja2tags.images",
+    "wagtail.contrib.settings.jinja2tags.settings",
+    "cms.core.jinja2tags.CoreExtension",
+    "cms.navigation.jinja2tags.NavigationExtension",
+    "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
+]
+
 if not IS_EXTERNAL_ENV:
     context_processors.extend(
         [
@@ -179,6 +190,12 @@ if not IS_EXTERNAL_ENV:
             "django.contrib.auth.context_processors.auth",
         ]
     )
+    jinja2_extensions.extend(
+        [
+            "wagtail.admin.jinja2tags.userbar",
+        ]
+    )
+
 
 TEMPLATES = [
     {
@@ -192,16 +209,7 @@ TEMPLATES = [
             "app_dirname": "jinja2",
             "undefined": "jinja2.ChainableUndefined",
             "context_processors": context_processors,
-            "extensions": [
-                *DEFAULT_EXTENSIONS,
-                "wagtail.jinja2tags.core",
-                "wagtail.admin.jinja2tags.userbar",
-                "wagtail.images.jinja2tags.images",
-                "wagtail.contrib.settings.jinja2tags.settings",
-                "cms.core.jinja2tags.CoreExtension",
-                "cms.navigation.jinja2tags.NavigationExtension",
-                "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
-            ],
+            "extensions": jinja2_extensions,
             "policies": {
                 # https://jinja.palletsprojects.com/en/stable/api/#policies
                 "json.dumps_function": custom_json_dumps,
@@ -1016,6 +1024,9 @@ PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
 PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
 VIEWERS_GROUP_NAME = "Viewers"
 ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
+
+# Flag to enable direct publishing of pages without going through the workflow process.
+ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT = env.get("ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT", "false").lower() == "true"
 
 # Cookie Names
 ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105

@@ -1,5 +1,4 @@
 import logging
-from functools import cache
 from typing import Any
 
 from django.conf import settings
@@ -8,19 +7,10 @@ from django.dispatch import receiver
 from wagtail.models import Page
 from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move
 
-from cms.search.publishers import KafkaPublisher, LogPublisher
+from cms.search.publishers import get_publisher
 from cms.search.utils import get_model_by_name, is_indexable_page
 
 logger = logging.getLogger(__name__)
-
-
-@cache
-def get_publisher() -> KafkaPublisher | LogPublisher:
-    """Return the configured publisher backend."""
-    backend = settings.SEARCH_INDEX_PUBLISHER_BACKEND
-    if backend == "kafka":
-        return KafkaPublisher()
-    return LogPublisher()
 
 
 @receiver(page_published)

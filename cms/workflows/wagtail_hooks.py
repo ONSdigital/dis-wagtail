@@ -11,7 +11,6 @@ from wagtail import hooks
 from wagtail.admin import messages
 from wagtail.admin.action_menu import PageLockedMenuItem, WorkflowMenuItem
 
-from cms.bundles.mixins import BundledPageMixin
 from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 
 from . import admin_urls
@@ -91,9 +90,6 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
 @hooks.register("construct_page_action_menu")
 def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: HttpRequest, context: Mapping) -> None:
     if not (context["view"] == "edit" and context.get("page")):
-        return
-
-    if not isinstance(context["page"], BundledPageMixin):
         return
 
     # do the bulk of tweaks
