@@ -73,7 +73,7 @@ class BasicTableBlock(WagtailTableBlock):
         label = "Basic table"
 
     def value_from_form(self, value: str) -> dict:
-        return super().value_from_form(strip_unwanted_control_chars_from_json(value))
+        return super().value_from_form(strip_unwanted_control_chars_from_json(value))  # type: ignore[no-any-return]
 
     def _get_header(self, value: dict) -> list[dict[str, str]]:
         """Prepares the table header for the Design System."""
