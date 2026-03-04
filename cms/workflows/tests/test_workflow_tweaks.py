@@ -452,7 +452,10 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
             with self.subTest(f"Test dashboard has publish action for {user}"):
                 self.client.force_login(user)
                 response = self.client.get(self.dashboard_url)
-                self.assertContains(response, "Publish")
+                self.assertRegex(
+                    response.content.decode(encoding="utf-8"),
+                    r"<button data-workflow-action-url=.*>\s?Publish\s?<\/button>",
+                )
 
     def test_ready_to_publish_task__get_actions__user_can_publish__active_bundle_in_progress(self):
         mark_page_as_ready_to_publish(self.page)
