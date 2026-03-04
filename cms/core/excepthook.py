@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def except_hook(exception_type: type[BaseException], exception: BaseException, traceback: TracebackType | None) -> None:
-    """A custom exception hook which displays the exception as JSON."""
+    """A custom exception hook which logs unhandled exceptions."""
     if exception_type is SyntaxError:
         # Show syntax errors more easily
         sys.__excepthook__(exception_type, exception, traceback)
@@ -18,7 +18,7 @@ def except_hook(exception_type: type[BaseException], exception: BaseException, t
 
 
 def threading_except_hook(args: threading.ExceptHookArgs) -> None:
-    """A custom exception hook which displays the exception as JSON."""
+    """A custom exception hook which logs unhandled exceptions."""
     if args.exc_value is None:
         # If there's no exception, fall back to default hook
         threading.__excepthook__(args)
