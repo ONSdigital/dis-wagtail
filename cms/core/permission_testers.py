@@ -111,6 +111,20 @@ class BasePagePermissionTester(PagePermissionTester):
         can_publish: bool = super().can_publish()
         return can_publish
 
+    def can_delete(self, ignore_bulk: bool = False) -> bool:
+        """Overrides the core can_delete to extend with ONS publishing logic.
+
+        To delete, the page must not be in an active bundle, or ready to publish.
+        """
+        if in_active_bundle(self.page):
+            return False
+
+        if is_page_ready_to_publish(self.page):
+            return False
+
+        can_delete: bool = super().can_delete(ignore_bulk=ignore_bulk)
+        return can_delete
+
 
 class StaticPagePermissionTester(BasePagePermissionTester):
     """A permissions tester which lets users modify the page itself, but otherwise not change the page."""
