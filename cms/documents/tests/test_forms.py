@@ -22,7 +22,9 @@ class ONSDocumentFormTestCase(TestCase):
         self.assertEqual(CustomDocument.objects.count(), 0)
         test_file = SimpleUploadedFile("test.pdf", b"x", content_type="application/pdf")
         form = self.form_class({"title": "test", "file": test_file}, files={"file": test_file})
+
         self.assertTrue(form.is_valid())
+        form.save()
 
         self.assertEqual(CustomDocument.objects.count(), 1)
 
