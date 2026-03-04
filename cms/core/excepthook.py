@@ -38,7 +38,7 @@ def register_except_hook() -> None:
         raise ImproperlyConfigured(f"Except hook has already been configured: {sys.excepthook}")
 
     if threading.excepthook is not threading.__excepthook__:
-        raise ImproperlyConfigured(f"Threading except hook has already been configured: {sys.excepthook}")
+        raise ImproperlyConfigured(f"Threading except hook has already been configured: {threading.excepthook}")
 
     sys.excepthook = except_hook
     threading.excepthook = threading_except_hook
