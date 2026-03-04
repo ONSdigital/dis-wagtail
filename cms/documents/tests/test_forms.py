@@ -15,6 +15,17 @@ class ONSDocumentFormFileSizeValidationTestCase(TestCase):
         """Set up the document model and form class."""
         self.form_class = get_document_form(get_document_model())
 
+    def test_title_field_help_text(self):
+        form = self.form_class()
+        self.assertEqual(form.fields["title"].help_text, "Limited to 100 characters.")
+
+    # note: setting these to something predictable
+    @override_settings(WAGTAILDOCS_EXTENSIONS=["pdf", "doc"], DOCUMENTS_MAX_UPLOAD_SIZE=1024 * 1024)
+    def test_file_field_help_text(self):
+        form = self.form_class()
+
+        self.assertEqual(form.fields["file"].help_text, "Supported formats: PDF, DOC. Maximum filesize: 1.0\xa0MB.")
+
     def test_clean_file_accepts_file_under_size_limit(self):
         """clean_file should accept files smaller than DOCUMENTS_MAX_UPLOAD_SIZE."""
         # Create a small file (1KB)
