@@ -3,6 +3,7 @@ from unittest.mock import Mock
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.template.defaultfilters import filesizeformat
 from django.test import TestCase, override_settings
 from wagtail.documents import get_document_model
 from wagtail.documents.forms import get_document_form
@@ -63,8 +64,8 @@ class ONSDocumentFormFileSizeValidationTestCase(TestCase):
             form.clean_file()
 
         # Check the error message format
-        max_size_mb = settings.DOCUMENTS_MAX_UPLOAD_SIZE / (1024 * 1024)
-        expected_message = f"File size must be less than {max_size_mb:.2f} MB."
+        max_upload_size_text = filesizeformat(settings.DOCUMENTS_MAX_UPLOAD_SIZE)
+        expected_message = f"File size must be less than {max_upload_size_text}."
         self.assertEqual(str(context.exception.message), expected_message)
 
     @override_settings(DOCUMENTS_MAX_UPLOAD_SIZE=10 * 1024 * 1024)  # 10MB
@@ -80,7 +81,7 @@ class ONSDocumentFormFileSizeValidationTestCase(TestCase):
             form.clean_file()
 
         # Should show 10.00 MB in the message
-        self.assertIn("10.00 MB", str(context.exception.message))
+        self.assertIn("10.00\xa0MB", str(context.exception.message))
 
     def test_clean_file_returns_file_when_no_file_provided(self):
         """clean_file should return None when no file is provided."""

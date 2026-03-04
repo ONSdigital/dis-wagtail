@@ -31,6 +31,6 @@ class ONSDocumentForm(BaseDocumentForm):
     def clean_file(self) -> Any:
         file = self.cleaned_data.get("file")
         if file and file.size > settings.DOCUMENTS_MAX_UPLOAD_SIZE:
-            max_size_mb = settings.DOCUMENTS_MAX_UPLOAD_SIZE / (1024 * 1024)
-            raise ValidationError(f"File size must be less than {max_size_mb:.2f} MB.")
+            max_upload_size_text = filesizeformat(settings.DOCUMENTS_MAX_UPLOAD_SIZE)
+            raise ValidationError(f"File size must be less than {max_upload_size_text}.")
         return file
