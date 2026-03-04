@@ -90,3 +90,16 @@ class ONSDocumentFormFileSizeValidationTestCase(TestCase):
         result = form.clean_file()
 
         self.assertIsNone(result)
+
+    @override_settings(WAGTAILDOCS_EXTENSIONS=["pdf", "doc"])
+    def test_clean_file_validates_extension(self):
+        small_file = SimpleUploadedFile("test.png", b"x", content_type="image/png")
+
+        form = self.form_class(data={"title": "Test"}, files={"file": small_file})
+        # Call clean_file directly
+        form.cleaned_data = {"file": small_file}
+
+        with self.assertRaises(ValidationError) as info:
+            form.clean_file()
+
+        self.assertEqual(info.exception.message, "Not a supported document format. Supported formats: PDF, DOC.")
