@@ -4,7 +4,12 @@ from unittest.mock import Mock, patch
 from django.test import TestCase, override_settings
 from slack_sdk.errors import SlackApiError
 
-from cms.core.slack import get_slack_client, require_slack_publication_log_config, send_or_update_message
+from cms.core.slack import (
+    get_slack_client,
+    require_slack_alerts_config,
+    require_slack_publication_log_config,
+    send_or_update_message,
+)
 
 
 class TestSendOrUpdateMessage(TestCase):
@@ -143,21 +148,16 @@ class GetSlackClientTestCase(TestCase):
         client = get_slack_client()
         self.assertIsNone(client)
 
-
-class RequireSlackNotificationConfigTestCase(TestCase):
-    @override_settings(SLACK_BOT_TOKEN=None, SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN=None)
     def test_require_slack_notification_config__token_not_configured(self):
         """Should log and return none if Slack bot token is not configured."""
-
-        @require_slack_publication_log_config
-        def dummy_function():
-            return "This should not be returned"
-
         with self.assertLogs("cms.core.slack", level="WARNING") as logs:
-            self.assertIsNone(dummy_function())
+            self.assertIsNone(get_slack_client())
             self.assertIn("SLACK_BOT_TOKEN is not configured", logs.output[0])
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL=None)
+
+class RequireSlackPublicationLogConfigTestCase(TestCase):
+    @override_settings(SLACK_CHANNEL_PUBLICATION_LOG=None)
     def test_require_slack_notification_config__channel_not_configured(self):
         """Should log and return none if Slack notification channel is not configured."""
 
@@ -167,4 +167,18 @@ class RequireSlackNotificationConfigTestCase(TestCase):
 
         with self.assertLogs("cms.core.slack", level="WARNING") as logs:
             self.assertIsNone(dummy_function())
-            self.assertIn("SLACK_NOTIFICATION_CHANNEL is not configured", logs.output[0])
+            self.assertIn("SLACK_CHANNEL_PUBLICATION_LOG is not configured", logs.output[0])
+
+
+class RequireSlackAlertsConfigTestCase(TestCase):
+    @override_settings(SLACK_CHANNEL_ALERTS=None)
+    def test_require_slack_notification_config__channel_not_configured(self):
+        """Should log and return none if Slack notification channel is not configured."""
+
+        @require_slack_alerts_config
+        def dummy_function():
+            return "This should not be returned"
+
+        with self.assertLogs("cms.core.slack", level="WARNING") as logs:
+            self.assertIsNone(dummy_function())
+            self.assertIn("SLACK_CHANNEL_ALERTS is not configured", logs.output[0])
