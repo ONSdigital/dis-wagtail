@@ -540,12 +540,12 @@ LOGGING = {
             "()": "cms.core.logs.GunicornAccessJSONFormatter",
         },
     },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+        "propagate": False,
+    },
     "loggers": {
-        None: {  # Root logger
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
         "cms": {
             "handlers": ["console"],
             "level": "INFO",
