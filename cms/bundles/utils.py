@@ -436,6 +436,11 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                             "event": "publish_page_failed",
                         },
                     )
+                    notifications.alert_slack_of_bundle_content_failure(
+                        bundle=bundle,
+                        exception_message=f"<{page.full_edit_url}|Page (ID: {page.pk})> in the bundle did not "
+                        "publish because it is not in a workflow or has no revisions",
+                    )
         except Exception:  # pylint: disable=broad-exception-caught
             # Log exception, but don't raise it so publishing can continue
             failed_pages.append(page.pk)
@@ -447,6 +452,10 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                     "event": "publish_page_failed",
                 },
             )
+            notifications.alert_slack_of_bundle_content_failure(
+                bundle=bundle,
+                exception_message=f"<{page.full_edit_url}|Page (ID: {page.pk})> in the bundle failed to publish",
+            )
 
     # update and publish related release calendar
     if bundle.release_calendar_page_id:
@@ -454,25 +463,26 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
 
     # Handle failures
     if failed_pages:
-        if update_status:
-            # Determine severity and status
-            if pages_published == 0:
-                # Total failure - no pages published
-                bundle.status = BundleStatus.FAILED
-                alert_type = notifications.BundleAlertType.CRITICAL
-            else:
-                # Partial failure - some pages published
-                bundle.status = BundleStatus.PARTIALLY_PUBLISHED
-                alert_type = notifications.BundleAlertType.FAIL
+        # Determine severity and status
+        if pages_published == 0:
+            # Total failure - no pages published
+            failure_status = BundleStatus.FAILED
+            alert_type = notifications.BundleAlertType.CRITICAL
+        else:
+            # Partial failure - some pages published
+            failure_status = BundleStatus.PARTIALLY_PUBLISHED
+            alert_type = notifications.BundleAlertType.FAIL
 
+        if update_status:
+            bundle.status = failure_status
             bundle.save(update_fields=["status"])
 
-            # Send failure notification
-            notifications.notify_slack_of_bundle_failure(
-                bundle=bundle,
-                exception_message=f"{len(failed_pages)} of {total_pages} page(s) failed to publish",
-                alert_type=alert_type,
-            )
+        # Send failure notification
+        notifications.notify_slack_of_bundle_failure(
+            bundle=bundle,
+            exception_message=f"{len(failed_pages)} of {total_pages} page(s) failed to publish",
+            alert_type=alert_type,
+        )
 
         log(action="wagtail.publish.scheduled", instance=bundle)
 

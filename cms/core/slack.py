@@ -10,20 +10,35 @@ from slack_sdk.errors import SlackApiError
 logger = logging.getLogger(__name__)
 
 
-def require_slack_notification_config[T: Callable[..., Any]](func: T) -> T:
-    """Decorator to check Slack configuration before sending notifications.
+def require_slack_publication_log_config[T: Callable[..., Any]](func: T) -> T:
+    """Decorator to check Slack publication log channel config before attempting to send messages.
 
     Returns:
-        Decorated function that returns None if configuration checks fail.
+        Decorated function that returns None and logs a warning if configuration checks fail.
     """
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if not settings.SLACK_BOT_TOKEN:
-            logger.warning("SLACK_BOT_TOKEN is not configured")
+        if not settings.SLACK_CHANNEL_PUBLICATION_LOG:
+            logger.warning("SLACK_CHANNEL_PUBLICATION_LOG is not configured")
             return None
-        if not settings.SLACK_NOTIFICATION_CHANNEL:
-            logger.warning("SLACK_NOTIFICATION_CHANNEL is not configured")
+
+        return func(*args, **kwargs)
+
+    return wrapper  # type: ignore[return-value]
+
+
+def require_slack_alerts_config[T: Callable[..., Any]](func: T) -> T:
+    """Decorator to check Slack alerts channel config before attempting to send messages.
+
+    Returns:
+        Decorated function that returns None and logs a warning if configuration checks fail.
+    """
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        if not settings.SLACK_CHANNEL_ALERTS:
+            logger.warning("SLACK_CHANNEL_ALERTS is not configured")
             return None
 
         return func(*args, **kwargs)
@@ -38,6 +53,7 @@ def get_slack_client() -> WebClient | None:
         WebClient instance if SLACK_BOT_TOKEN is configured, None otherwise.
     """
     if not (token := settings.SLACK_BOT_TOKEN):
+        logger.warning("SLACK_BOT_TOKEN is not configured")
         return None
     return WebClient(token=token)
 
@@ -67,7 +83,6 @@ def send_or_update_message(
     """
     client = get_slack_client()
     if not client:
-        logger.warning("Slack Bot API client not configured")
         return None
 
     attachments = [{"color": color, "fields": fields}]

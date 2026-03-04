@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 from django.test import TestCase, override_settings
 from slack_sdk.errors import SlackApiError
 
-from cms.core.slack import get_slack_client, require_slack_notification_config, send_or_update_message
+from cms.core.slack import get_slack_client, require_slack_publication_log_config, send_or_update_message
 
 
 class TestSendOrUpdateMessage(TestCase):
@@ -149,7 +149,7 @@ class RequireSlackNotificationConfigTestCase(TestCase):
     def test_require_slack_notification_config__token_not_configured(self):
         """Should log and return none if Slack bot token is not configured."""
 
-        @require_slack_notification_config
+        @require_slack_publication_log_config
         def dummy_function():
             return "This should not be returned"
 
@@ -161,7 +161,7 @@ class RequireSlackNotificationConfigTestCase(TestCase):
     def test_require_slack_notification_config__channel_not_configured(self):
         """Should log and return none if Slack notification channel is not configured."""
 
-        @require_slack_notification_config
+        @require_slack_publication_log_config
         def dummy_function():
             return "This should not be returned"
 

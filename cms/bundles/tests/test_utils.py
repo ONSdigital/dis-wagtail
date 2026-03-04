@@ -2,7 +2,7 @@
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
 
 from cms.articles.models import StatisticalArticlePage
 from cms.articles.tests.factories import StatisticalArticlePageFactory
@@ -457,12 +457,12 @@ class SerializeBundleContentTranslationTests(TestCase):
 class PublishBundleFailureTests(TestCase):
     """Tests for publish_bundle failure handling."""
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
     @patch("cms.bundles.utils.logger")
     @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.notifications.slack.alert_slack_of_bundle_content_failure")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
     def test_publish_bundle__sets_failed_status_on_total_failure(
-        self, _mock_notify_start, mock_notify_failure, _mock_logger
+        self, _mock_notify_start, mock_alert_content_failure, mock_notify_failure, _mock_logger
     ):
         """Test publish_bundle sets FAILED status when all pages fail."""
         # Create pages with no revisions - will fail to publish
@@ -476,14 +476,62 @@ class PublishBundleFailureTests(TestCase):
         bundle.refresh_from_db()
         self.assertEqual(bundle.status, BundleStatus.FAILED)
 
-        # Verify failure notification was sent with Critical alert
+        # Verify content failure alerts were sent for both pages
+        self.assertEqual(mock_alert_content_failure.call_count, 2)
+        calls = mock_alert_content_failure.call_args_list
+        self.assertEqual(calls[0][1]["bundle"], bundle)
+        self.assertEqual(
+            calls[0][1]["exception_message"],
+            f"<{page1.full_edit_url}|Page (ID: {page1.pk})> in the bundle did not "
+            "publish because it is not in a workflow or has no revisions",
+        )
+        self.assertEqual(calls[1][1]["bundle"], bundle)
+        self.assertEqual(
+            calls[1][1]["exception_message"],
+            f"<{page2.full_edit_url}|Page (ID: {page2.pk})> in the bundle did not "
+            "publish because it is not in a workflow or has no revisions",
+        )
+
+        # Verify failure notification was sent with Critical
         mock_notify_failure.assert_called_once()
         call_kwargs = mock_notify_failure.call_args[1]
         self.assertEqual(call_kwargs["bundle"], bundle)
         self.assertEqual(call_kwargs["exception_message"], "2 of 2 page(s) failed to publish")
         self.assertEqual(call_kwargs["alert_type"], BundleAlertType.CRITICAL)
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
+    @patch("cms.bundles.utils.logger")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    @patch("cms.bundles.notifications.slack.alert_slack_of_bundle_content_failure")
+    def test_publish_bundle__alerts_on_each_failure(
+        self, mock_alert_content_failure, _mock_notify_start, _mock_notify_failure, _mock_logger
+    ):
+        """Test publish_bundle sets FAILED status when all pages fail."""
+        # Create pages with no revisions - will fail to publish
+        page1 = StatisticalArticlePageFactory(title="Article 1", live=False)
+        page2 = StatisticalArticlePageFactory(title="Article 2", live=False)
+        bundle = BundleFactory(approved=True, bundled_pages=[page1, page2])
+
+        result = publish_bundle(bundle, update_status=True)
+
+        self.assertFalse(result)
+
+        # Verify content failure alerts were sent for both pages
+        self.assertEqual(mock_alert_content_failure.call_count, 2)
+        calls = mock_alert_content_failure.call_args_list
+        self.assertEqual(calls[0][1]["bundle"], bundle)
+        self.assertEqual(
+            calls[0][1]["exception_message"],
+            f"<{page1.full_edit_url}|Page (ID: {page1.pk})> in the bundle did not "
+            "publish because it is not in a workflow or has no revisions",
+        )
+        self.assertEqual(calls[1][1]["bundle"], bundle)
+        self.assertEqual(
+            calls[1][1]["exception_message"],
+            f"<{page2.full_edit_url}|Page (ID: {page2.pk})> in the bundle did not "
+            "publish because it is not in a workflow or has no revisions",
+        )
+
     @patch("cms.bundles.utils.logger")
     @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
@@ -510,7 +558,6 @@ class PublishBundleFailureTests(TestCase):
         self.assertEqual(call_kwargs["exception_message"], "1 of 2 page(s) failed to publish")
         self.assertEqual(call_kwargs["alert_type"], BundleAlertType.FAIL)
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
     def test_publish_bundle__returns_true_on_success(self, _mock_notify_start, mock_notify_end):
@@ -530,7 +577,6 @@ class PublishBundleFailureTests(TestCase):
         # Verify success notification was sent
         mock_notify_end.assert_called_once()
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
     @patch("cms.bundles.utils.logger")
     @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
@@ -553,7 +599,6 @@ class PublishBundleFailureTests(TestCase):
         # Verify failure was logged
         mock_logger.error.assert_called()
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_NOTIFICATION_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
@@ -572,5 +617,5 @@ class PublishBundleFailureTests(TestCase):
         bundle.refresh_from_db()
         self.assertEqual(bundle.status, original_status)
 
-        # Failure notification should not be sent when update_status=False
-        mock_notify_failure.assert_not_called()
+        # Failure notification should still be sent when update_status=False
+        mock_notify_failure.assert_called_once()

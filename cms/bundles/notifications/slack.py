@@ -7,14 +7,13 @@ from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 
-from cms.core.slack import require_slack_notification_config, send_or_update_message
+from cms.core.slack import require_slack_alerts_config, require_slack_publication_log_config, send_or_update_message
 
 if TYPE_CHECKING:
     from django.utils.functional import _StrOrPromise
 
     from cms.bundles.models import Bundle
     from cms.users.models import User
-
 
 logger = logging.getLogger("cms.bundles")
 
@@ -27,14 +26,15 @@ class BundleAlertType(str, Enum):
     WARNING = "Warning"
 
 
-@require_slack_notification_config
-def send_bundle_notification(
+@require_slack_publication_log_config
+def send_bundle_notification(  # pylint: disable=too-many-arguments  # noqa: PLR0913
     bundle: Bundle,
     text: str,
     color: str,
     fields: list[dict],
     *,
     force_new: bool = False,
+    save_timestamp: bool = True,
 ) -> None:
     """Send or update a Slack message for bundle notifications.
 
@@ -47,17 +47,17 @@ def send_bundle_notification(
         text: Message text/title
         color: Slack attachment color ("warning", "good", "danger")
         fields: Slack attachment fields
-        force_new: If True, always create a new message without updating the stored timestamp (default: False)
+        force_new: If True, always create a new message (default: False)
+        save_timestamp: If True, save the message timestamp to the bundle to allow future updates (default: True)
     """
     message_ts = send_or_update_message(
         text=text,
         color=color,
         fields=fields,
         update_message_ts=bundle.slack_notification_ts if not force_new else None,
-        channel=settings.SLACK_NOTIFICATION_CHANNEL,
+        channel=settings.SLACK_CHANNEL_PUBLICATION_LOG,
     )
-    if message_ts and not force_new:
-        # Only update the bundle's message reference if we're not forcing a new message
+    if message_ts and save_timestamp:
         bundle.slack_notification_ts = message_ts
         bundle.save(update_fields=["slack_notification_ts"])
 
@@ -124,7 +124,7 @@ def _get_bundle_notification_context(bundle: Bundle) -> dict[str, str | int | No
     }
 
 
-@require_slack_notification_config
+@require_slack_publication_log_config
 def notify_slack_of_status_change(
     bundle: Bundle,
     old_status: _StrOrPromise,
@@ -133,6 +133,9 @@ def notify_slack_of_status_change(
     context_message: str | None = None,
 ) -> None:
     """Send a Slack notification for Bundle status changes."""
+    if not settings.SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE:
+        return
+
     fields: list[dict[str, Any]] = [
         {"title": "Title", "value": bundle.name, "short": True},
         {"title": "Changed by", "value": user.get_full_name() if user else "System", "short": True},
@@ -152,7 +155,7 @@ def notify_slack_of_status_change(
     )
 
 
-@require_slack_notification_config
+@require_slack_publication_log_config
 def notify_slack_of_publication_start(
     bundle: Bundle,
     start_time: datetime,
@@ -190,7 +193,7 @@ def notify_slack_of_publication_start(
     )
 
 
-@require_slack_notification_config
+@require_slack_publication_log_config
 def notify_slack_of_publish_end(
     bundle: Bundle,
     start_time: datetime,
@@ -238,7 +241,7 @@ def notify_slack_of_publish_end(
     )
 
 
-@require_slack_notification_config
+@require_slack_publication_log_config
 def notify_slack_of_bundle_pre_publish(
     bundle: Bundle,
     scheduled_time: datetime,
@@ -267,7 +270,7 @@ def notify_slack_of_bundle_pre_publish(
     )
 
 
-@require_slack_notification_config
+@require_slack_publication_log_config
 def notify_slack_of_bundle_failure(
     bundle: Bundle,
     exception_message: str,
@@ -287,6 +290,7 @@ def notify_slack_of_bundle_failure(
 
     fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{bundle.full_inspect_url}|{bundle.name}>", "short": False},
+        {"title": "Timestamp", "value": _format_publish_datetime(datetime.now()), "short": True},
         {"title": "Publish Type", "value": publish_type, "short": True},
         {"title": "Alert Type", "value": alert_type, "short": True},
         {"title": "Exception", "value": exception_message, "short": False},
@@ -297,5 +301,38 @@ def notify_slack_of_bundle_failure(
         text="Bundle Publication Failure Detected",
         color="danger",
         fields=fields,
-        force_new=True,
+    )
+
+
+@require_slack_alerts_config
+def alert_slack_of_bundle_content_failure(
+    bundle: Bundle,
+    exception_message: str,
+    alert_type: BundleAlertType = BundleAlertType.FAIL,
+) -> None:
+    """Send content failure alert for a bundle item.
+
+    Always creates a new Slack message (does not update existing messages).
+    Uses red color to indicate failure.
+
+    Args:
+        bundle: The bundle with content issues.
+        exception_message: Brief description of the content error.
+        alert_type: Alert severity (default=FAIL)
+    """
+    publish_type = _get_publish_type(bundle)
+
+    fields: list[dict[str, Any]] = [
+        {"title": "Bundle Name", "value": f"<{bundle.full_inspect_url}|{bundle.name}>", "short": False},
+        {"title": "Timestamp", "value": _format_publish_datetime(datetime.now()), "short": True},
+        {"title": "Publish Type", "value": publish_type, "short": True},
+        {"title": "Alert Type", "value": alert_type, "short": True},
+        {"title": "Exception", "value": exception_message, "short": False},
+    ]
+
+    send_or_update_message(
+        text="Bundle Publication Failure Detected",
+        color="danger",
+        fields=fields,
+        channel=settings.SLACK_CHANNEL_ALERTS,
     )
