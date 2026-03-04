@@ -12,5 +12,7 @@ class CoreConfig(AppConfig):
         from . import checks  # noqa pylint: disable=import-outside-toplevel,unused-import
 
         from .signal_handlers import register_signal_handlers  # pylint: disable=import-outside-toplevel
+        from .excepthook import register_except_hook  # pylint: disable=import-outside-toplevel
 
+        register_except_hook()
         register_signal_handlers()
