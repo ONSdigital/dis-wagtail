@@ -8,13 +8,23 @@ from django.test import TestCase, override_settings
 from wagtail.documents import get_document_model
 from wagtail.documents.forms import get_document_form
 
+from cms.documents.models import CustomDocument
 
-class ONSDocumentFormFileSizeValidationTestCase(TestCase):
+
+class ONSDocumentFormTestCase(TestCase):
     """Tests for file size validation in ONSDocumentForm."""
 
     def setUp(self):
         """Set up the document model and form class."""
         self.form_class = get_document_form(get_document_model())
+
+    def test_save(self):
+        self.assertEqual(CustomDocument.objects.count(), 0)
+        test_file = SimpleUploadedFile("test.pdf", b"x", content_type="application/pdf")
+        form = self.form_class({"title": "test", "file": test_file}, files={"file": test_file})
+        self.assertTrue(form.is_valid())
+
+        self.assertEqual(CustomDocument.objects.count(), 1)
 
     def test_title_field_help_text(self):
         form = self.form_class()
@@ -42,8 +52,10 @@ class ONSDocumentFormFileSizeValidationTestCase(TestCase):
     def test_clean_file_accepts_file_at_exact_size_limit(self):
         """clean_file should accept files exactly at DOCUMENTS_MAX_UPLOAD_SIZE."""
         # Create a mock file at exactly DOCUMENTS_MAX_UPLOAD_SIZE
-        exact_size_file = Mock()
-        exact_size_file.size = settings.DOCUMENTS_MAX_UPLOAD_SIZE
+
+        exact_size_file = SimpleUploadedFile(
+            "test.pdf", b"x" * settings.DOCUMENTS_MAX_UPLOAD_SIZE, content_type="application/pdf"
+        )
 
         form = self.form_class()
         form.cleaned_data = {"file": exact_size_file}
@@ -81,7 +93,7 @@ class ONSDocumentFormFileSizeValidationTestCase(TestCase):
             form.clean_file()
 
         # Should show 10.00 MB in the message
-        self.assertIn("10.00\xa0MB", str(context.exception.message))
+        self.assertEqual("File size must be less than 10.0\xa0MB.", str(context.exception.message))
 
     def test_clean_file_returns_file_when_no_file_provided(self):
         """clean_file should return None when no file is provided."""

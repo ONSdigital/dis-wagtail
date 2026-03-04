@@ -15,7 +15,7 @@ class ONSDocumentForm(BaseDocumentForm):
     title = forms.CharField(max_length=MAX_CHARACTER_LIMIT, help_text=f"Limited to {MAX_CHARACTER_LIMIT} characters.")
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         # TODO: revisit when https://github.com/wagtail/wagtail/issues/13973 and related are fixed
         if "file" in self.fields:
@@ -31,7 +31,10 @@ class ONSDocumentForm(BaseDocumentForm):
 
     def clean_file(self) -> Any:
         file = self.cleaned_data.get("file")
-        if file and file.size > settings.DOCUMENTS_MAX_UPLOAD_SIZE:
+        if not file:
+            return file
+
+        if file.size > settings.DOCUMENTS_MAX_UPLOAD_SIZE:
             max_upload_size_text = filesizeformat(settings.DOCUMENTS_MAX_UPLOAD_SIZE)
             raise ValidationError(f"File size must be less than {max_upload_size_text}.")
 
