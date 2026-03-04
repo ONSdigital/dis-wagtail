@@ -102,3 +102,18 @@ class ONSDocumentFormTestCase(TestCase):
         result = form.clean_file()
 
         self.assertIsNone(result)
+
+    @override_settings(WAGTAILDOCS_EXTENSIONS=["pdf", "doc"])
+    def test_clean_file_validates_extension(self):
+        # TODO: revisit/remove once https://github.com/wagtail/wagtail/issues/13989 is fixed
+
+        small_file = SimpleUploadedFile("test.png", b"x", content_type="image/png")
+
+        form = self.form_class(data={"title": "Test"}, files={"file": small_file})
+        self.assertFalse(form.is_valid())
+
+        allowed_extensions = ", ".join(settings.WAGTAILDOCS_EXTENSIONS)
+        self.assertEqual(
+            form.errors["file"],
+            [f"File extension \u201cpng\u201d is not allowed. Allowed extensions are: {allowed_extensions}."],
+        )
