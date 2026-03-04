@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from wagtail.admin.action_menu import PageLockedMenuItem
@@ -20,6 +20,7 @@ from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.factories import BasePageFactory
 from cms.home.models import HomePage
+from cms.standard_pages.tests.factories import IndexPageFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.locks import PageReadyToBePublishedLock
 from cms.workflows.models import GroupReviewTask, ReadyToPublishGroupTask
@@ -763,6 +764,12 @@ class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):
         cls.publishing_officer = UserFactory()
         cls.publishing_officer.groups.add(Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME))
 
+        cls.index_page = IndexPageFactory(live=False)
+        cls.bulk_publish_url = f"/admin/bulk/wagtailcore/page/publish/?id={cls.index_page.pk}"
+
+    def setUp(self):
+        self.client.force_login(self.publishing_admin)
+
     def test_can_lock__in_review(self):
         mark_page_as_ready_for_review(self.page)
 
@@ -781,3 +788,50 @@ class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):
             with self.subTest(msg=f"{user=} can lock"):
                 tester = BasePagePermissionTester(user=user, page=self.page)
                 self.assertFalse(tester.can_lock())
+
+    def test_bulk_publish_page_override__no_access__not_in_workflow(self):
+        response = self.client.get(self.bulk_publish_url)
+        self.assertContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, self.index_page.title)
+
+    def test_bulk_publish_page_override__in_workflow_but_not_ready_to_publish(self):
+        mark_page_as_ready_for_review(self.index_page)
+        response = self.client.get(self.bulk_publish_url)
+        self.assertContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, self.index_page.title)
+        self.assertContains(response, "Publish 0 pages")
+
+    def test_bulk_publish_page_override__in_bundle(self):
+        bundle = BundleFactory()
+        BundlePageFactory(parent=bundle, page=self.index_page)
+        bundle.status = BundleStatus.APPROVED
+        bundle.save(update_fields=["status"])
+
+        mark_page_as_ready_to_publish(self.index_page)
+
+        response = self.client.get(self.bulk_publish_url)
+        self.assertContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, self.index_page.title)
+        self.assertContains(response, "Publish 0 pages")
+
+    def test_bulk_publish_page_override__ready_to_publish(self):
+        mark_page_as_ready_to_publish(self.index_page)
+        response = self.client.get(self.bulk_publish_url)
+        self.assertNotContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, self.index_page.title)
+        self.assertContains(response, "Publish 1 page")
+
+    @override_settings(ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT=True)
+    def test_bulk_publish_page_override__with_direct_publishing_allowed(self):
+        response = self.client.get(self.bulk_publish_url)
+        self.assertNotContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, self.index_page.title)
+        self.assertContains(response, "Publish 1 page")
+
+        bundle = BundleFactory()
+        BundlePageFactory(parent=bundle, page=self.index_page)
+
+        response = self.client.get(self.bulk_publish_url)
+        self.assertContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, self.index_page.title)
+        self.assertContains(response, "Publish 0 pages")
