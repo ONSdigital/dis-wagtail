@@ -1,11 +1,42 @@
 from collections.abc import Callable
 from functools import partial
+from typing import Any
 
 from cache_memoize import cache_memoize
 from django.conf import settings
+from django.core.cache import InvalidCacheBackendError, caches
+from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.cache import cache_control
+from django_redis.cache import RedisCache
 from wagtail.contrib.frontend_cache.utils import purge_url_from_cache
 from wagtail.models import Site
+
+
+class InvalidateReplayRedisCache(RedisCache):
+    """A modified Redis cache backend which sends invalidations to another cache backend."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+        try:
+            self._replay_backend = caches["invalidate_replay"]
+        except InvalidCacheBackendError as e:
+            raise ImproperlyConfigured("Missing invalidate replay backend") from e
+
+    def delete(self, *args: Any, **kwargs: Any) -> Any:
+        result = super().delete(*args, **kwargs)
+        self._replay_backend.delete(*args, **kwargs)
+        return result
+
+    def delete_many(self, *args: Any, **kwargs: Any) -> Any:
+        result = super().delete_many(*args, **kwargs)
+        self._replay_backend.delete_many(*args, **kwargs)
+        return result
+
+    def clear(self, *args: Any, **kwargs: Any) -> Any:
+        result = super().clear(*args, **kwargs)
+        self._replay_backend.clear(*args, **kwargs)
+        return result
 
 
 def purge_cache_on_all_sites(path: str) -> None:
