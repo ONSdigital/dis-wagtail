@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Literal, TypedDict, cast
 
-import jinja2
 from django.http import HttpRequest
 
 if TYPE_CHECKING:
@@ -69,8 +68,7 @@ def _extract_item(
     return item
 
 
-@jinja2.pass_context
-def main_menu_highlights(context: jinja2.runtime.Context, main_menu: MainMenu | None = None) -> list[NavigationItem]:
+def main_menu_highlights(request: HttpRequest, main_menu: MainMenu | None = None) -> list[NavigationItem]:
     if not main_menu:
         return []
 
@@ -80,7 +78,7 @@ def main_menu_highlights(context: jinja2.runtime.Context, main_menu: MainMenu | 
             highlight.value,
             text_key="heading",
             navigation_type="top-navigation",
-            request=context.get("request"),
+            request=request,
             include_description=True,
         )
         if highlight_data:
@@ -89,39 +87,39 @@ def main_menu_highlights(context: jinja2.runtime.Context, main_menu: MainMenu | 
     return highlights
 
 
-@jinja2.pass_context
-def main_menu_columns(context: jinja2.runtime.Context, main_menu: MainMenu | None = None) -> list[ColumnData]:
+def extract_section_data(section: StructValue, request: HttpRequest | None = None) -> NavigationItem | None:
+    section_data = _extract_item(
+        section["section_link"],
+        text_key="heading",
+        navigation_type="top-navigation",
+        request=request,
+        include_description=False,
+    )
+    if not section_data:
+        return None
+
+    children = []
+    for link in section["links"]:
+        link_data = _extract_item(
+            link, text_key="text", navigation_type="top-navigation", request=request, include_description=False
+        )
+        if link_data:
+            children.append(link_data)
+
+    section_data["groupItems"] = children
+    return section_data
+
+
+def main_menu_columns(request: HttpRequest, main_menu: MainMenu | None = None) -> list[ColumnData]:
     if not main_menu:
         return []
-
-    def extract_section_data(section: StructValue, request: HttpRequest | None = None) -> NavigationItem | None:
-        section_data = _extract_item(
-            section["section_link"],
-            text_key="heading",
-            navigation_type="top-navigation",
-            request=request,
-            include_description=False,
-        )
-        if not section_data:
-            return None
-
-        children = []
-        for link in section["links"]:
-            link_data = _extract_item(
-                link, text_key="text", navigation_type="top-navigation", request=request, include_description=False
-            )
-            if link_data:
-                children.append(link_data)
-
-        section_data["groupItems"] = children
-        return section_data
 
     items: list[ColumnData] = []
     for column in main_menu.columns:
         groups: list[NavigationItem] = []
 
         for section in column.value["sections"]:
-            if section_data := extract_section_data(section, context.get("request")):
+            if section_data := extract_section_data(section, request):
                 groups.append(section_data)
 
         if groups:
@@ -130,10 +128,7 @@ def main_menu_columns(context: jinja2.runtime.Context, main_menu: MainMenu | Non
     return items
 
 
-@jinja2.pass_context
-def footer_menu_columns(
-    context: jinja2.runtime.Context, footer_menu: FooterMenu | None = None
-) -> list[FooterColumnData]:
+def footer_menu_columns(request: HttpRequest, footer_menu: FooterMenu | None = None) -> list[FooterColumnData]:
     if not footer_menu:
         return []
 
@@ -145,7 +140,7 @@ def footer_menu_columns(
         links_list = []
         for link_struct in column_value.get("links", []):
             link_data = _extract_item(
-                link_struct, text_key="text", navigation_type="footer-navigation", request=context.get("request")
+                link_struct, text_key="text", navigation_type="footer-navigation", request=request
             )
             if link_data:
                 links_list.append(link_data)
