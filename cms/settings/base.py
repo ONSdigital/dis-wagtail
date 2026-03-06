@@ -946,6 +946,13 @@ GIT_COMMIT = env.get("GIT_COMMIT") or None
 START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
+SLACK_BOT_TOKEN = env.get("SLACK_BOT_TOKEN")
+SLACK_CHANNEL_PUBLICATION_LOG = env.get("SLACK_CHANNEL_PUBLICATION_LOG", "")
+SLACK_CHANNEL_ALERTS = env.get("SLACK_CHANNEL_ALERTS", "")
+
+# Feature flag for sending slack messages on bundle status changes (before pre-publish, e.g. entering review)
+SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE = env.get("SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE", "true").lower() == "true"
+
 
 # API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")

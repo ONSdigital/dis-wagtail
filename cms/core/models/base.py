@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, ClassVar, Self, cast
 
 from django.conf import settings
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -271,6 +272,15 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         parent_theme = page_topic.get_base_parent()
         return cast(str, parent_theme.title)
+
+    @property
+    def full_edit_url(self) -> str | None:
+        """Returns the absolute URL for the page edit view, or an empty string if the page is not saved yet."""
+        if not self.pk:
+            return ""
+
+        base_url = settings.WAGTAILADMIN_BASE_URL
+        return f"{base_url}{reverse('wagtailadmin_pages:edit', args=[self.pk])}"
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

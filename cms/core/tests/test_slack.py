@@ -1,0 +1,184 @@
+# secretlint-disable
+from unittest.mock import Mock, patch
+
+from django.test import TestCase, override_settings
+from slack_sdk.errors import SlackApiError
+
+from cms.core.slack import (
+    get_slack_client,
+    require_slack_alerts_config,
+    require_slack_publication_log_config,
+    send_or_update_message,
+)
+
+
+class TestSendOrUpdateMessage(TestCase):
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token")
+    @patch("cms.core.slack.get_slack_client")
+    def test_send_new_message(self, mock_get_client):
+        """A new message should be posted when a timestamp is not provided."""
+        mock_client = Mock()
+        mock_response = {"ok": True, "ts": "1503435956.000247"}
+        mock_client.chat_postMessage.return_value = mock_response
+        mock_get_client.return_value = mock_client
+
+        message_ts = send_or_update_message(
+            text="This is a test message",
+            channel="C024BE91L",
+            color="good",
+            fields=[{"foo": "bar", "short": True}],
+        )
+
+        self.assertEqual(message_ts, mock_response["ts"])
+
+        mock_client.chat_postMessage.assert_called_once()
+        call_kwargs = mock_client.chat_postMessage.call_args[1]
+
+        self.assertEqual(call_kwargs["channel"], "C024BE91L")
+        self.assertEqual(call_kwargs["text"], "This is a test message")
+        self.assertEqual(call_kwargs["attachments"][0]["color"], "good")
+
+        fields = call_kwargs["attachments"][0]["fields"]
+        self.assertIn({"foo": "bar", "short": True}, fields)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token")
+    @patch("cms.core.slack.get_slack_client")
+    def test_update_existing_message(self, mock_get_client):
+        """Should update existing message when a valid timestamp is provided."""
+        mock_client = Mock()
+        mock_response = {"ok": True, "ts": "1234567890.111111"}
+        mock_client.chat_update.return_value = mock_response
+        mock_get_client.return_value = mock_client
+
+        message_ts = send_or_update_message(
+            text="This is a test message",
+            channel="C024BE91L",
+            color="good",
+            fields=[{"foo": "bar", "short": True}],
+            update_message_ts="1234567890.000000",
+        )
+
+        self.assertEqual(message_ts, mock_response["ts"])
+
+        mock_client.chat_update.assert_called_once()
+        call_kwargs = mock_client.chat_update.call_args[1]
+
+        self.assertEqual(call_kwargs["ts"], "1234567890.000000")
+        self.assertEqual(call_kwargs["channel"], "C024BE91L")
+        self.assertEqual(call_kwargs["text"], "This is a test message")
+        self.assertEqual(call_kwargs["attachments"][0]["color"], "good")
+
+        fields = call_kwargs["attachments"][0]["fields"]
+        self.assertIn({"foo": "bar", "short": True}, fields)
+
+    @patch("cms.core.slack.get_slack_client")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token")
+    def test_update_existing_message_fallback_to_posting_new(self, mock_get_client):
+        """Should update existing message when a valid timestamp is provided."""
+        mock_client = Mock()
+        mock_response = {"ok": True, "ts": "1234567890.111111"}
+
+        # Raise an error when trying to update, simulating a case where the message to update is not found
+        mock_client.chat_update.side_effect = SlackApiError("message_not_found", Mock())
+        mock_client.chat_postMessage.return_value = mock_response
+        mock_get_client.return_value = mock_client
+
+        with self.assertLogs("cms.core.slack", level="ERROR") as logs:
+            message_ts = send_or_update_message(
+                text="This is a test message",
+                channel="C024BE91L",
+                color="good",
+                fields=[{"foo": "bar", "short": True}],
+                update_message_ts="1234567890.000000",
+            )
+            self.assertIn("Failed to send/update Slack message: message_not_found", logs.output[0])
+
+        self.assertEqual(message_ts, mock_response["ts"])
+
+        mock_client.chat_update.assert_called_once()  # Assert that an update was attempted
+        mock_client.chat_postMessage.assert_called_once()  # Check that it fell back to posting a new message
+        call_kwargs = mock_client.chat_postMessage.call_args[1]
+
+        self.assertEqual(call_kwargs["channel"], "C024BE91L")
+        self.assertEqual(call_kwargs["text"], "This is a test message")
+        self.assertEqual(call_kwargs["attachments"][0]["color"], "good")
+
+        fields = call_kwargs["attachments"][0]["fields"]
+        self.assertIn({"foo": "bar", "short": True}, fields)
+
+    @patch("cms.core.slack.get_slack_client")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token")
+    def test_update_existing_message_fallback_failure(self, mock_get_client):
+        """Should update existing message when a valid timestamp is provided."""
+        mock_client = Mock()
+        # Raise an error when trying to update, simulating a case where the message to update is not found
+        mock_client.chat_update.side_effect = SlackApiError("message_not_found", Mock())
+        mock_client.chat_postMessage.side_effect = SlackApiError("post_failed", Mock())
+        mock_get_client.return_value = mock_client
+
+        with self.assertLogs("cms.core.slack", level="ERROR") as logs:
+            message_ts = send_or_update_message(
+                text="This is a test message",
+                channel="C024BE91L",
+                color="good",
+                fields=[{"foo": "bar", "short": True}],
+                update_message_ts="1234567890.000000",
+            )
+            self.assertIn("Failed to send/update Slack message: message_not_found", logs.output[0])
+            self.assertIn("Failed to create fallback Slack message", logs.output[1])
+
+        self.assertIsNone(message_ts)
+
+        mock_client.chat_update.assert_called_once()  # Assert that an update was attempted
+        mock_client.chat_postMessage.assert_called_once()  # Check that it fell back to posting a new message
+
+
+class GetSlackClientTestCase(TestCase):
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token")
+    @patch("cms.core.slack.WebClient")
+    def test_get_slack_client__with_token(self, mock_client):
+        """Should return WebClient instance when token is configured."""
+        client = get_slack_client()
+        self.assertIsNotNone(client)
+        mock_client.assert_called_once_with(token="xoxb-test-token")
+
+    @override_settings(SLACK_BOT_TOKEN=None)
+    def test_get_slack_client__without_token(self):
+        """Should return None when token is not configured."""
+        client = get_slack_client()
+        self.assertIsNone(client)
+
+    @override_settings(SLACK_BOT_TOKEN=None)
+    def test_require_slack_notification_config__token_not_configured(self):
+        """Should log and return none if Slack bot token is not configured."""
+        with self.assertLogs("cms.core.slack", level="WARNING") as logs:
+            self.assertIsNone(get_slack_client())
+            self.assertIn("SLACK_BOT_TOKEN is not configured", logs.output[0])
+
+
+class RequireSlackPublicationLogConfigTestCase(TestCase):
+    @override_settings(SLACK_CHANNEL_PUBLICATION_LOG=None)
+    def test_require_slack_notification_config__channel_not_configured(self):
+        """Should log and return none if Slack notification channel is not configured."""
+
+        @require_slack_publication_log_config
+        def dummy_function():
+            return "This should not be returned"
+
+        with self.assertLogs("cms.core.slack", level="WARNING") as logs:
+            self.assertIsNone(dummy_function())
+            self.assertIn("SLACK_CHANNEL_PUBLICATION_LOG is not configured", logs.output[0])
+
+
+class RequireSlackAlertsConfigTestCase(TestCase):
+    @override_settings(SLACK_CHANNEL_ALERTS=None)
+    def test_require_slack_notification_config__channel_not_configured(self):
+        """Should log and return none if Slack notification channel is not configured."""
+
+        @require_slack_alerts_config
+        def dummy_function():
+            return "This should not be returned"
+
+        with self.assertLogs("cms.core.slack", level="WARNING") as logs:
+            self.assertIsNone(dummy_function())
+            self.assertIn("SLACK_CHANNEL_ALERTS is not configured", logs.output[0])
