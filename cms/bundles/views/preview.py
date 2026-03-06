@@ -8,6 +8,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
+from django.utils import timezone
 from django.views.generic import TemplateView
 from wagtail.log_actions import log
 from wagtail.models import Page
@@ -96,6 +97,14 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
             instance=bundle,
             data={"type": "page", "id": page_id, "title": getattr(page, "display_title", page.title)},
         )
+
+        # store the bundle id + page id in the session for private media checks
+        # TODO: should this be short-lived cache instead?
+        request.session["bundle-preview"] = {
+            "bundle": bundle.pk,
+            "page": page_id,
+            "timestamp": timezone.now().timestamp(),
+        }
 
         return TemplateResponse(request, page.get_template(request), context)
 
