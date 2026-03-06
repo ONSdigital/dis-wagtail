@@ -1,11 +1,13 @@
 import logging
+from collections.abc import Generator
+from math import ceil
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db import models
+from django.db import models, transaction
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
@@ -21,6 +23,7 @@ from wagtail.search import index
 from cms.articles.enums import SortingChoices
 from cms.articles.forms import StatisticalArticlePageAdminForm
 from cms.articles.panels import HeadlineFiguresFieldPanel
+from cms.articles.signals import series_title_changed
 from cms.articles.utils import serialize_correction_or_notice
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, bool_to_yes_no, format_date_for_gtm
@@ -43,6 +46,8 @@ from cms.taxonomy.mixins import GenericTaxonomyMixin
 if TYPE_CHECKING:
     from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
+
+    from cms.users.models import User
 
 
 logger = logging.getLogger(__name__)
@@ -103,6 +108,29 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
             )
         ),
     ]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._original_title = self.title
+        self._original_slug = self.slug
+
+    @transaction.atomic
+    def save(  # type: ignore[override]
+        self, clean: bool = True, user: User | None = None, log_action: bool = False, **kwargs: Any
+    ) -> ArticleSeriesPage | None:
+        instance: ArticleSeriesPage | None = super().save(  # type: ignore[call-arg]
+            clean=True, user=None, log_action=False, **kwargs
+        )
+
+        if self.pk and self.title != self._original_title and self.slug == self._original_slug:
+            transaction.on_commit(
+                lambda: series_title_changed.send(
+                    sender=self.__class__,
+                    instance=self,
+                )
+            )
+
+        return instance
 
     def get_latest(self) -> StatisticalArticlePage | None:
         latest: StatisticalArticlePage | None = (
@@ -185,6 +213,13 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     def download_table_with_version(self, request: HttpRequest, slug: str, version: int, table_id: str) -> HttpResponse:
         response: HttpResponse = self.release(request, slug, version=version, table_id=table_id)
         return response
+
+    def get_cached_paths(self) -> Generator[str]:
+        yield "/"
+        yield "/editions"
+        num_editions = self.get_children().live().public().count()
+        for page_number in range(1, ceil(num_editions / settings.PREVIOUS_RELEASES_PER_PAGE) + 1):
+            yield f"/editions?page={page_number}"
 
 
 # pylint: disable=too-many-public-methods
@@ -827,3 +862,12 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         summary_word_count = len(strip_tags(self.summary).split())
 
         return title_word_count + summary_word_count + content_word_count
+
+    def get_cached_paths(self) -> Generator[str]:
+        yield "/"
+        yield "/related-data"  # always include, should a correction remove related datasets
+        if self.datasets:
+            for page_number in range(1, ceil(len(self.datasets) / settings.RELATED_DATASETS_PER_PAGE) + 1):
+                yield f"/related-data?page={page_number}"
+
+        yield from self.get_downloadable_block_paths()
