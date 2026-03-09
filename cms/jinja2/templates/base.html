@@ -1,10 +1,8 @@
 {% extends "layout/_template.njk" %}
 {% from "components/cookies-banner/_macro.njk" import onsCookiesBanner %}
 {% from "components/header/_macro.njk" import onsHeader %}
-{% from "components/footer/_macro.njk" import onsFooter %}
 
 {#- We set variables for text so that it gets picked up by makemessages -#}
-{%- set menu_toggle_aria_label = _("Toggle main menu") -%}
 {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
 
 {% set pageConfig = get_page_config() %}

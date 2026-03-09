@@ -1,10 +1,12 @@
 from typing import TypedDict
 
 import jinja2
+from deepmerge import always_merger
 from django.conf import settings
+from django.core.cache import cache
 from django.http import HttpRequest
 from django.utils.translation import gettext_lazy as _
-from wagtail.models import Locale, Site
+from wagtail.models import Locale, Page, Site
 
 from cms.core.models import BasePage
 from cms.navigation.models import FooterMenu, MainMenu, NavigationSettings
@@ -28,15 +30,12 @@ class HreflangDict(TypedDict):
     lang: str
 
 
-def _build_locale_urls(request: HttpRequest, page: BasePage | None) -> list[LocaleURLsDict]:
+def _build_locale_urls(request: HttpRequest, page: BasePage) -> list[LocaleURLsDict]:
     """Internal helper to build a list of dicts that map each locale to:
     - its variant (or fallback to default_page if missing)
     - the final URL to use
     - the locale object itself.
     """
-    if not page:
-        return []
-
     if prebuilt_locale_urls := getattr(page, "_locale_urls", None):
         return prebuilt_locale_urls  # type: ignore[no-any-return]
 
@@ -71,17 +70,16 @@ def _build_locale_urls(request: HttpRequest, page: BasePage | None) -> list[Loca
     return results
 
 
-def get_hreflangs(request: HttpRequest, page: BasePage | None) -> list[HreflangDict]:
+def get_hreflangs(request: HttpRequest, page: BasePage) -> list[HreflangDict]:
     """Returns a list of dictionaries containing URL and the full locale code.
     Typically used for HTML 'hreflang' tags.
     """
     # TODO make aware of subpage routing!
     base_urls = _build_locale_urls(request, page)
-    hreflangs: list[HreflangDict] = [{"url": item["url"], "lang": item["locale"].language_code} for item in base_urls]
-    return hreflangs
+    return [{"url": item["url"], "lang": item["locale"].language_code} for item in base_urls]
 
 
-def get_translation_urls(request: HttpRequest, page: BasePage | None) -> list[TranslationURLDict]:
+def get_translation_urls(request: HttpRequest, page: BasePage) -> list[TranslationURLDict]:
     """Returns a list of dictionaries containing URL, ISO code, language name,
     and whether it is the current locale.
     """
@@ -100,35 +98,29 @@ def get_translation_urls(request: HttpRequest, page: BasePage | None) -> list[Tr
     return urls
 
 
-@jinja2.pass_context
-def get_page_config(context: jinja2.runtime.Context) -> dict:
-    page: BasePage | None = context.get("page")
-    request = context["request"]
-    site: Site | None = Site.find_for_request(request)
+def get_base_page_config_cache_key(site: Site) -> str:
+    return f"_cms_base_page_config_cache_key_{site.pk}"
+
+
+def _get_base_page_config(context: jinja2.runtime.Context, site: Site, request: HttpRequest) -> dict:
+    is_preview = getattr(request, "is_preview", False)
+
+    cache_key = get_base_page_config_cache_key(site)
+
+    # Don't cache previews
+    if not is_preview and (base_page_config := cache.get(cache_key)):
+        return base_page_config  # type: ignore[no-any-return]
 
     navigation_settings = NavigationSettings.for_request(request)
+
+    # NB: These variables from context are only used in preview, so this is safe to cache
     main_menu: MainMenu | None = context.get("main_menu") or navigation_settings.main_menu.localized
     footer_menu: FooterMenu | None = context.get("footer_menu") or navigation_settings.footer_menu.localized
 
-    if (page_title := context.get("page_title")) is None:
-        page_title = ""
-
-        if page:
-            if site and page.pk == site.root_page_id and site.site_name:
-                page_title = f"{site.site_name} - "
-
-            if page.seo_title:
-                page_title += page.seo_title
-            else:
-                page_title += getattr(page, "display_title", page.title)
-
-    return {
-        "bodyClasses": "template-" + page._meta.verbose_name.lower().replace(" ", "-") if page else "",
-        "title": page_title,
+    base_page_config = {
         "header": {
             "variants": "basic",
             "phase": {"badge": _("Beta"), "html": _("This is a new service.")},
-            "language": {"languages": get_translation_urls(request, page)},
             "mastheadLogoUrl": "/",
             "menuLinks": {
                 "id": "nav-links-external",
@@ -139,18 +131,85 @@ def get_page_config(context: jinja2.runtime.Context) -> dict:
                 "columns": main_menu_columns(request, main_menu),
             },
             "search": {"id": "search", "form": {"action": settings.ONS_WEBSITE_SEARCH_PATH, "inputName": "q"}},
-            "footer": {
-                "cols": footer_menu_columns(request, footer_menu),
-                "oglLink": {
-                    "pre": _("All content is available under the"),
-                    "text": "Open Government Licence v3.0",
-                    "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
-                    "post": _(", except where otherwise stated"),
-                },
-            },
-            "meta": {
-                "hrefLangs": get_hreflangs(request, page),
-                "canonicalUrl": page.get_canonical_url(request) if page else None,
+        },
+        "footer": {
+            "cols": footer_menu_columns(request, footer_menu),
+            "oglLink": {
+                "pre": _("All content is available under the"),
+                "text": "Open Government Licence v3.0",
+                "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+                "post": _(", except where otherwise stated"),
             },
         },
     }
+
+    if not is_preview:
+        # Don't cache preview renders
+        cache.set(cache_key, base_page_config)
+
+    return base_page_config
+
+
+def get_page_config_cache_key(site: Site, page: Page) -> str:
+    return f"_cms_page_config_cache_key_{page.pk}_{site.pk}"
+
+
+def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, site: Site, request: HttpRequest) -> dict:
+    # If there's no page, use sensible defaults
+    if page is None:
+        return {
+            "bodyClasses": "",
+            "title": context.get("page_title", ""),
+            "header": {"language": {"languages": []}},
+            "meta": {"hrefLangs": [], "canonicalUrl": None},
+        }
+
+    is_preview = getattr(request, "is_preview", False)
+    cache_key = get_page_config_cache_key(site, page)
+
+    # Don't cache previews
+    page_config = cache.get(cache_key) if not is_preview else None
+
+    if page_config is None:
+        page_title = ""
+
+        if page:
+            if page.pk == site.root_page_id and site.site_name:
+                page_title = f"{site.site_name} - "
+
+            if page.seo_title:
+                page_title += page.seo_title
+            else:
+                page_title += getattr(page, "display_title", page.title)  # type: ignore[operator]
+
+        page_config = {
+            "bodyClasses": "template-" + page._meta.verbose_name.lower().replace(" ", "-"),  # type: ignore[union-attr]
+            "title": page_title,
+            "header": {"language": {"languages": get_translation_urls(request, page)}},
+            "meta": {
+                "hrefLangs": get_hreflangs(request, page),
+                "canonicalUrl": page.get_canonical_url(request),
+            },
+        }
+
+        if not is_preview:
+            cache.set(cache_key, page_config)
+
+    # Let page context override the page title.
+    # This is intentionally not cached.
+    if page_title_from_context := context.get("page_title"):
+        page_config["title"] = page_title_from_context
+
+    return page_config
+
+
+@jinja2.pass_context
+def get_page_config(context: jinja2.runtime.Context) -> dict:
+    page: BasePage | None = context.get("page")
+    request = context["request"]
+    site: Site = Site.find_for_request(request)
+
+    # Merge the base and page-specific config, so they can be cached (and invalidated) independently
+    return always_merger.merge(
+        _get_base_page_config(context, site, request), _get_page_config(context, page, site, request)
+    )

@@ -2,10 +2,13 @@ from django.test import TestCase, override_settings
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
 
+from cms.core.templatetags.page_config_tags import (
+    get_hreflangs,
+    get_page_config,
+    get_translation_urls,
+)
 from cms.core.templatetags.util_tags import (
     extend,
-    get_hreflangs,
-    get_translation_urls,
 )
 from cms.home.models import HomePage
 
@@ -18,7 +21,7 @@ class LangageTemplateTagTests(TestCase):
         page = HomePage.objects.first()
 
         # Call the function
-        urls = get_translation_urls({"request": request, "page": page})
+        urls = get_translation_urls(request, page)
 
         # Check the output format
         self.assertIsInstance(urls, list)
@@ -41,7 +44,7 @@ class LangageTemplateTagTests(TestCase):
         page = HomePage.objects.first()
 
         # Call the function
-        hreflangs = get_hreflangs({"request": request, "page": page})
+        hreflangs = get_hreflangs(request, page)
 
         # Check the output format
         self.assertIsInstance(hreflangs, list)
@@ -71,7 +74,7 @@ class LangageTemplateTagTests(TestCase):
         page = HomePage.objects.first()
 
         # Call the function
-        hreflangs = get_hreflangs({"request": request, "page": page})
+        hreflangs = get_hreflangs(request, page)
 
         # Check the output format
         self.assertIsInstance(hreflangs, list)
@@ -119,3 +122,54 @@ class ExtendFunctionTest(TestCase):
         """
         with self.assertRaises(TypeError):
             extend("not a list", {"name": "Series 3"})  # type: ignore
+
+
+class PageConfigTestCase(TestCase):
+    def setUp(self):
+        self.request = get_dummy_request()
+
+    def test_page_config(self):
+        page = HomePage.objects.first()
+
+        with self.assertNumQueries(9):
+            config = get_page_config({"page": page, "request": self.request})
+
+        self.assertEqual(config["bodyClasses"], "template-home-page")
+        self.assertEqual(config["title"], page.title)
+        self.assertEqual(config["meta"]["canonicalUrl"], "http://localhost/")
+
+        self.assertEqual(
+            config["header"]["search"],
+            {"id": "search", "form": {"action": "/search", "inputName": "q"}},
+        )
+
+    def test_page_title_from_context_overrides_model(self):
+        config = get_page_config(
+            {"page": HomePage.objects.first(), "request": self.request, "page_title": "custom title"}
+        )
+        self.assertEqual(config["title"], "custom title")
+
+    def test_config_no_page(self):
+        with self.assertNumQueries(4):
+            config = get_page_config({"request": self.request, "page_title": "not found"})
+
+        self.assertEqual(config["bodyClasses"], "")
+        self.assertEqual(config["title"], "not found")
+        self.assertEqual(config["header"]["language"], {"languages": []})
+        self.assertEqual(config["meta"], {"hrefLangs": [], "canonicalUrl": None})
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_served_from_cache(self):
+        page = HomePage.objects.first()
+
+        get_page_config({"page": page, "request": self.request})
+
+        with self.assertNumQueries(0):
+            get_page_config({"page": page, "request": self.request})
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_no_page_served_from_cache(self):
+        get_page_config({"page_title": "not found", "request": self.request})
+
+        with self.assertNumQueries(0):
+            get_page_config({"page_title": "not found", "request": self.request})
