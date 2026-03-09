@@ -1,7 +1,10 @@
 from typing import Any
 
 from django.apps import apps
+from django.conf import settings
+from django.core.signals import setting_changed
 from django.db.models.signals import pre_save
+from django.utils.log import configure_logging
 from wagtail.models import DraftStateMixin, Page, Revision
 
 
@@ -29,9 +32,20 @@ def remove_approved_go_live_seconds(
         instance.approved_go_live_at = instance.approved_go_live_at.replace(second=0)
 
 
+def reload_logging_config(*, setting: str, **kwargs: Any) -> None:
+    """Reload logging config when the relevant settings change.
+
+    @see https://code.djangoproject.com/ticket/36958#ticket
+    """
+    if setting in {"LOGGING", "LOGGING_CONFIG"}:
+        configure_logging(settings.LOGGING_CONFIG, settings.LOGGING)
+
+
 def register_signal_handlers() -> None:
     for model in apps.get_models():
         if issubclass(model, DraftStateMixin):
             pre_save.connect(remove_go_live_seconds, sender=model)
 
     pre_save.connect(remove_approved_go_live_seconds, sender=Revision)
+
+    setting_changed.connect(reload_logging_config)

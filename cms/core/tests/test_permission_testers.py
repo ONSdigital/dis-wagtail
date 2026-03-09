@@ -131,6 +131,54 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
                 tester = BasePagePermissionTester(user=user, page=self.english_index_page)
                 self.assertFalse(tester.can_unschedule())
 
+    def test_can_lock(self):
+        # note: this only tests non-workflow logic. Workflow logic is tested in
+        # cms.workflows.tests.test_workflow_tweaks.WorkflowPermissionTweaks
+
+        tester = BasePagePermissionTester(user=self.user, page=self.english_index_page)
+        self.assertFalse(tester.can_unlock())
+
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer]:
+            with self.subTest(f"{user=} can lock page when page is not in workflow"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertTrue(tester.can_lock())
+
+    def test_can_unlock(self):
+        # note: this only tests non-workflow logic.
+
+        for user in [self.user, self.publishing_officer]:
+            with self.subTest(f"{user=} cannot unlock page when page is not in workflow"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertFalse(tester.can_unlock())
+
+        for user in [self.superuser, self.publishing_admin]:
+            with self.subTest(f"{user=} can unlock page when page is not in workflow"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertTrue(tester.can_unlock())
+
+    def test_can_delete(self):
+        tester = BasePagePermissionTester(user=self.user, page=self.english_index_page)
+        self.assertFalse(tester.can_delete())
+
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer]:
+            with self.subTest(f"{user=} cannot delete when page in active bundle"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertTrue(tester.can_delete())
+
+    def test_cannot_delete_when_in_active_bundle(self):
+        BundlePageFactory(parent=self.bundle, page=self.english_index_page)
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer, self.user]:
+            with self.subTest(f"{user=} cannot delete when page in active bundle"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertFalse(tester.can_delete())
+
+    def test_cannot_delete_when_ready_to_publish(self):
+        mark_page_as_ready_to_publish(self.english_index_page)
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer, self.user]:
+            with self.subTest(f"{user=} cannot delete when page is ready to publish"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertFalse(tester.can_delete())
+
 
 class TestCustomPagePermissions(WagtailTestUtils, TestCase):
     @classmethod
