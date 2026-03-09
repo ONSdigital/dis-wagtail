@@ -2,6 +2,15 @@ from typing import TYPE_CHECKING, Any
 
 from django.apps import apps
 from django.db.models.signals import post_delete
+from wagtail.contrib.frontend_cache.signal_handlers import (
+    page_published_signal_handler,
+    page_unpublished_signal_handler,
+)
+from wagtail.contrib.redirects.signal_handlers import (
+    autocreate_redirects_on_page_move,
+    autocreate_redirects_on_slug_change,
+)
+from wagtail.models import Page
 from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move, published, unpublished
 
 from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage
@@ -21,7 +30,6 @@ from .cache import (
 
 if TYPE_CHECKING:
     from django.db.models import Model
-    from wagtail.models import Page
 
 
 def purge_published_page_from_frontend_cache(instance: Page, **kwargs: Any) -> None:
@@ -80,6 +88,15 @@ def _get_tracked_page_models() -> set[Page]:
     """
     excluded_types = {ArticlesIndexPage, HomePage, MethodologyIndexPage, ReleaseCalendarIndex}
     return {model for model in apps.get_models() if issubclass(model, BasePage) and model not in excluded_types}
+
+
+def disconnect_signal_handlers() -> None:
+    page_models = [model for model in apps.get_models() if issubclass(model, Page)]
+    for model in page_models:
+        page_published.disconnect(page_published_signal_handler, sender=model)
+        page_unpublished.disconnect(page_unpublished_signal_handler, sender=model)
+        post_page_move.disconnect(autocreate_redirects_on_page_move, sender=model)
+        page_slug_changed.disconnect(autocreate_redirects_on_slug_change, sender=model)
 
 
 def register_signal_handlers() -> None:

@@ -93,6 +93,6 @@ USE_I18N_ROOT_NO_TRAILING_SLASH = True
 
 # Ensure cms.frontend_cache is installed
 if "cms.frontend_cache" not in INSTALLED_APPS:  # noqa: F405
-    INSTALLED_APPS.append("cms.frontend_cache")  # noqa: F405
+    INSTALLED_APPS += ["wagtail.contrib.frontend_cache", "cms.frontend_cache"]  # noqa: F405
 
     WAGTAILFRONTENDCACHE = {"default": {"BACKEND": "cms.frontend_cache.tests.backends.DummyFrontEndCacheBackend"}}
