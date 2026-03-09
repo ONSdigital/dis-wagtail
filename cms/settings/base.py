@@ -652,6 +652,7 @@ WAGTAILADMIN_NOTIFICATION_INCLUDE_SUPERUSERS = False
 # The backend can be configured to use an account-wide API key, or an API token with
 # restricted access.
 
+WAGTAILFRONTENDCACHE_LANGUAGES = []  # handled by cms.frontend_cache
 if "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env or "FRONTEND_CACHE_CLOUDFLARE_BEARER_TOKEN" in env:
     INSTALLED_APPS += ["wagtail.contrib.frontend_cache", "cms.frontend_cache"]
     WAGTAILFRONTENDCACHE = {
