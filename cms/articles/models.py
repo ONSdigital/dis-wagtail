@@ -109,11 +109,6 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         ),
     ]
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self._original_title = self.title
-        self._original_slug = self.slug
-
     @transaction.atomic
     def save(  # type: ignore[override]
         self, clean: bool = True, user: User | None = None, log_action: bool = False, **kwargs: Any
@@ -122,13 +117,19 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
             clean=True, user=None, log_action=False, **kwargs
         )
 
-        if self.pk and self.title != self._original_title and self.slug == self._original_slug:
-            transaction.on_commit(
-                lambda: series_title_changed.send(
-                    sender=self.__class__,
-                    instance=self,
-                )
+        if self.pk:
+            origin_title, original_slug = (
+                ArticleSeriesPage.objects.values_list("title", "slug").filter(pk=self.pk).first()  # type: ignore[misc]
             )
+            if self.title != origin_title and self.slug == original_slug:
+                # The title has changed, but not the slug.
+                # The slug change is already handled by the `page_slug_changed` signal.
+                transaction.on_commit(
+                    lambda: series_title_changed.send(
+                        sender=self.__class__,
+                        instance=self,
+                    )
+                )
 
         return instance
 
