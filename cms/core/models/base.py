@@ -16,6 +16,7 @@ from cms.core.cache import get_default_cache_control_decorator
 from cms.core.forms import DeduplicateTopicsAdminForm, ONSCopyForm
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.query import order_by_pk_position
+from cms.locale.utils import get_mapped_site_root_paths
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
@@ -293,8 +294,6 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         """
         if not settings.CMS_USE_SUBDOMAIN_LOCALES:
             return cast(list["SiteRootPath"], super()._get_site_root_paths(request=request))
-
-        from cms.locale.utils import get_mapped_site_root_paths  # pylint: disable=import-outside-toplevel
 
         cache_object = request if request is not None else self
         try:
