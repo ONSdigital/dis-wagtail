@@ -98,14 +98,17 @@ def get_related_topic_page_urls(page: Page, topic_ids: list[str] | None = None) 
         # via their source page, which then accounts for related topics and their aliases.
         return set()
 
-    parent_topic = TopicPage.objects.ancestor_of(page).first().specific_deferred
+    parent_topic = TopicPage.objects.ancestor_of(page).only("pk", "url_path").first()
     urls = set(get_page_cached_urls(parent_topic))
 
     topic_terms = topic_ids or getattr(page, "topic_ids", [])
-    related_topic_pages = TopicPage.objects.filter(topic__in=topic_terms).exclude(pk=parent_topic.pk).live().defer()
+    related_topic_pages = (
+        TopicPage.objects.filter(topic__in=topic_terms).exclude(pk=parent_topic.pk).live().only("pk", "url_path")
+    )
 
     # include parent topic translation aliases
-    for parent_topic_alias in parent_topic.get_translations().filter(alias_of__isnull=False).specific(defer=True):
+    aliases = parent_topic.get_translations().filter(alias_of__isnull=False).specific().only("pk", "url_path")
+    for parent_topic_alias in aliases:
         urls.update(get_page_cached_urls(parent_topic_alias))
         related_topic_pages = related_topic_pages.exclude(pk=parent_topic_alias.pk)
 
@@ -128,7 +131,7 @@ def get_topic_pages_featuring_series(
     # Get the series topic path and exclude it as we handle the parent topic separately.
     # url_path is in the form: /home/topic/articles/series/ so this becomes /home/topic/
     parent_topic_path = "/".join(article_series.url_path.rstrip("/").split("/")[:-2]) + "/"
-    for topic_page in article_series.featured_on_topic.live().exclude(path=parent_topic_path).only("pk", "url_path"):
+    for topic_page in article_series.featured_on_topic.exclude(path=parent_topic_path).live().only("pk", "url_path"):
         urls.update(get_page_cached_urls(topic_page))
         topic_page_ids.append(topic_page.pk)
 
