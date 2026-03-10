@@ -1,3 +1,4 @@
+from datetime import timedelta
 from unittest.mock import call, patch
 
 from django.test import TestCase, override_settings
@@ -161,6 +162,56 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
 
             expected_urls |= {f"{self.article_related_data_url}?page=2", f"{self.article_related_data_url}?page=3"}
             patched_purge_urls.assert_called_with(expected_urls)
+
+    def test_page_publish__statistical_article_featured_in_different_topic(self, patched_purge_urls):
+        # set up:
+        # the second topic page features the main series page, and they do not share common topics
+        self.series_page.topics.all().delete()
+        self.another_topic_page.featured_series = self.series_page
+        self.another_topic_page.save_revision().publish()
+        patched_purge_urls.reset_mock()
+
+        self.statistical_article.save_revision().publish()
+
+        patched_purge_urls.assert_called_with(
+            # the usual urls
+            self._get_base_expected_statistical_page_urls_to_purge()
+            |
+            # the topic page that features the statistical article's series
+            {self.another_topic_page_url, self.another_topic_page_translation_url}
+        )
+
+        # now with a new article in the series
+        patched_purge_urls.reset_mock()
+        new_article = StatisticalArticlePageFactory(
+            parent=self.series_page,
+            title="New article",
+            release_date=self.statistical_article.release_date + timedelta(days=1),
+        )
+        new_article_url = new_article.get_full_url(request=self.request)
+        new_article.save_revision().publish()
+
+        patched_purge_urls.assert_called_with(
+            {
+                # the usual urls
+                new_article_url,
+                f"{new_article_url}/related-data",
+                self.series_url,
+                self.series_edition_url,
+                f"{self.series_edition_url}?page=1",
+                self.topic_page_url,
+                self.topic_page_translation_url,
+                # the topic page that features the statistical article's series
+                self.another_topic_page_url,
+                self.another_topic_page_translation_url,
+            }
+        )
+
+        # finally, republish the old statistical article - it should not touch the topic that features the series
+        patched_purge_urls.reset_mock()
+        self.statistical_article.save_revision().publish()
+
+        patched_purge_urls.assert_called_with(self._get_base_expected_statistical_page_urls_to_purge())
 
     @override_settings(PREVIOUS_RELEASES_PER_PAGE=1)
     def test_page_publish__article_series_with_multiple_editions(self, patched_purge_urls):

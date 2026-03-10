@@ -115,6 +115,29 @@ def get_related_topic_page_urls(page: Page, topic_ids: list[str] | None = None) 
     return urls
 
 
+def get_topic_pages_featuring_series(
+    statistical_article: StatisticalArticlePage, article_series: ArticleSeriesPage
+) -> set[str]:
+    """Returns the list of topic page URLs that feature the given statistical article series."""
+    urls = set()
+
+    if not statistical_article.is_latest:
+        return urls
+
+    topic_page_ids = []
+    # Get the series topic path and exclude it as we handle the parent topic separately.
+    # url_path is in the form: /home/topic/articles/series/ so this becomes /home/topic/
+    parent_topic_path = "/".join(article_series.url_path.rstrip("/").split("/")[:-2]) + "/"
+    for topic_page in article_series.featured_on_topic.live().exclude(path=parent_topic_path).only("pk", "url_path"):
+        urls.update(get_page_cached_urls(topic_page))
+        topic_page_ids.append(topic_page.pk)
+
+    for topic_page_alias in TopicPage.objects.filter(alias_of__in=topic_page_ids).only("pk", "url_path"):
+        urls.update(get_page_cached_urls(topic_page_alias))
+
+    return urls
+
+
 def _get_welsh_alias_urls(source_page_ids: set) -> set[str]:
     urls = set()
     # Include Welsh aliases in this too.
@@ -159,6 +182,7 @@ def purge_page_from_frontend_cache(page: Page) -> None:
         series_page = page.get_parent().specific_deferred
         urls.update(get_page_cached_urls(series_page))
         urls.update(get_related_topic_page_urls(series_page))
+        urls.update(get_topic_pages_featuring_series(page, series_page))
     elif isinstance(page, MethodologyPage):
         urls.update(get_related_topic_page_urls(page))
     elif isinstance(page, InformationPage):
