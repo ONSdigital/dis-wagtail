@@ -218,8 +218,11 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     def get_cached_paths(self) -> Generator[str]:
         yield "/"
         yield "/editions"
-        num_editions = self.get_children().live().public().count()
-        for page_number in range(1, ceil(num_editions / settings.PREVIOUS_RELEASES_PER_PAGE) + 1):
+        pages = ceil(self.get_children().live().public().count() / settings.PREVIOUS_RELEASES_PER_PAGE)
+        if pages == 0:
+            # ensure we always account for ?page=1
+            pages = 1
+        for page_number in range(1, pages + 1):
             yield f"/editions?page={page_number}"
 
 

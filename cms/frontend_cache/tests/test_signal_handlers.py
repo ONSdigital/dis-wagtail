@@ -79,6 +79,20 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
 
         cls.superuser = cls.create_superuser(username="admin")
 
+    def _get_base_expected_statistical_page_urls_to_purge(self, with_translation_alias=True):
+        urls = {
+            self.article_url,
+            self.article_related_data_url,
+            self.series_url,
+            self.series_edition_url,
+            f"{self.series_edition_url}?page=1",
+            self.topic_page_url,
+        }
+        if with_translation_alias:
+            urls.add(self.topic_page_translation_url)
+
+        return urls
+
     def test_excluded_page_types(self, _patched_purge_urls):
         self.assertEqual(
             _get_tracked_page_models(),
@@ -103,35 +117,35 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
         patched_purge_page.assert_not_called()
         patched_purge_urls.assert_not_called()
 
-    def _get_base_expected_statistical_page_urls_to_purge(self, with_translation=True):
-        urls = {
-            self.article_url,
-            self.article_related_data_url,
-            self.series_url,
-            self.series_edition_url,
-            f"{self.series_edition_url}?page=1",
-            self.topic_page_url,
-        }
-        if with_translation:
-            urls.add(self.topic_page_translation_url)
-
-        return urls
-
     def test_page_publish__statistical_article(self, patched_purge_urls):
         self.statistical_article.save_revision().publish()
 
         patched_purge_urls.assert_called_once_with(self._get_base_expected_statistical_page_urls_to_purge())
 
-    def test_page_publish__statistical_article__with_related_terms(self, patched_purge_urls):
-        # now publish the second topic, then our page.
+    def test_page_publish__statistical_article__with_linked_topics(self, patched_purge_urls):
+        # Add more topics (in addition to the original two):
+        # 1. a draft topic page with a topic term that the series has -> not counted
+        # 2. a published topic with a topic term that the series has -> counted
+        topic_term_for_draft = TopicFactory()
+        TopicPageFactory(title="Draft topic page", topic=topic_term_for_draft, live=False)
+        GenericPageToTaxonomyTopic.objects.create(page=self.series_page, topic=topic_term_for_draft)
+
+        another_related_topic = TopicFactory()
+        related_topic_page = TopicPageFactory(title="Related topic page", topic=another_related_topic)
+        GenericPageToTaxonomyTopic.objects.create(page=self.series_page, topic=another_related_topic)
+
+        # now publish the two relevant topic, then our page.
         self.another_topic_page.save_revision().publish()
+        related_topic_page.save_revision().publish()
         patched_purge_urls.reset_mock()
 
         self.statistical_article.save_revision().publish()
 
         expected_urls = self._get_base_expected_statistical_page_urls_to_purge() | {
-            self.another_topic_page.get_full_url(self.request),
-            self.another_topic_page_translation.get_full_url(self.request),
+            self.another_topic_page_url,
+            self.another_topic_page_translation_url,
+            related_topic_page.get_full_url(request=self.request),
+            related_topic_page.get_translations().first().get_full_url(request=self.request),
         }
         patched_purge_urls.assert_called_once_with(expected_urls)
 
@@ -142,7 +156,7 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
         self.statistical_article.save_revision().publish()
 
         patched_purge_urls.assert_called_with(
-            self._get_base_expected_statistical_page_urls_to_purge(with_translation=False)
+            self._get_base_expected_statistical_page_urls_to_purge(with_translation_alias=False)
         )
 
     def test_page_publish__statistical_article_with_related_data(self, patched_purge_urls):
@@ -290,7 +304,18 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
             ]
         )
 
-    def test_page_publish__methodology_with_related_terms(self, patched_purge_urls):
+    def test_page_publish__methodology_and_all_linked_topics(self, patched_purge_urls):
+        # Add more topics (in addition to the original two):
+        # 1. a draft topic page with a topic term that the methodology page has -> not counted
+        # 2. a published topic with a topic term that the methodology page has -> counted
+        topic_term_for_draft = TopicFactory()
+        TopicPageFactory(title="Draft topic page", topic=topic_term_for_draft, live=False)
+        GenericPageToTaxonomyTopic.objects.create(page=self.methodology_page, topic=topic_term_for_draft)
+
+        another_related_topic = TopicFactory()
+        related_topic_page = TopicPageFactory(title="Related topic page", topic=another_related_topic)
+        GenericPageToTaxonomyTopic.objects.create(page=self.methodology_page, topic=another_related_topic)
+
         # now publish the second topic, then our page.
         self.another_topic_page.save_revision().publish()
         patched_purge_urls.reset_mock()
@@ -306,6 +331,8 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                         self.topic_page_translation_url,
                         self.another_topic_page_url,
                         self.another_topic_page_translation_url,
+                        related_topic_page.get_full_url(request=self.request),
+                        related_topic_page.get_translations().first().get_full_url(request=self.request),
                     }
                 ),
                 # the alias page
@@ -434,6 +461,17 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
         self.information_page.unpublish()
         patched_purge_page.assert_called_once_with(self.information_page)
 
+    def test_page_unpublish__statistical_article(self, patched_purge_urls):
+        self.statistical_article.save_revision().publish()
+        patched_purge_urls.reset_mock()
+
+        self.statistical_article.unpublish()
+        patched_purge_urls.assert_called_once_with(self._get_base_expected_statistical_page_urls_to_purge())
+
+    def test_page_unpublish__no_special_case(self, patched_purge_urls):
+        self.index_page.unpublish()
+        patched_purge_urls.assert_called_once_with({self.index_page_url})
+
     def test_page_delete(self, patched_purge_urls):
         self.index_page.delete()
 
@@ -493,6 +531,7 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                 # the old series and topic
                 self.series_url,
                 self.series_edition_url,
+                f"{self.series_edition_url}?page=1",
                 self.topic_page_url,
                 self.topic_page_translation_url,
                 # the new series and topic
