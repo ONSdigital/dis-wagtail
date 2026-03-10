@@ -1,0 +1,30 @@
+---
+name: Lychee
+
+# Trigger at every push. Action will also be visible from
+# Pull Requests to main
+on: # yamllint disable-line rule:truthy
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: '${{ github.head_ref || github.ref }}-${{ github.workflow }}'
+  cancel-in-progress: true
+
+jobs:
+  lychee:
+    name: Lychee
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          format: "detailed"
+          args: "."
