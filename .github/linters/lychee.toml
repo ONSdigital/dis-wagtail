@@ -13,5 +13,5 @@ exclude = ["^https?://jwt\\.io",
 exclude_all_private = true
 
 [hosts."github.com"]
-host_concurrency = 1
-host_request_interval = "500ms"
+concurrency = 1
+request_interval = "500ms"
