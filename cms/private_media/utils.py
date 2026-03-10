@@ -6,7 +6,7 @@ from django.apps import apps
 from django.conf import settings
 from django.db.models import IntegerField
 from django.db.models.functions import Cast
-from wagtail.models import ReferenceIndex
+from wagtail.models import Page, ReferenceIndex
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser
@@ -62,4 +62,12 @@ def user_can_access_private_asset(
         .exists()
     )
 
-    return in_referencing_pages and user_can_preview_bundle_by_id(user, preview_data["bundle"])
+    page_is_live = Page.objects.filter(pk=preview_data["page"], live=True, has_unpublished_changes=True).exists()
+
+    # the user can access the given asset if:
+    # - they can preview the bundle the page is in
+    # - and the given page
+    #   - references the asset, or
+    #   - the page is live, but also has unpublished changes. Once a page is live,
+    #     the reference index is only updated on publication, so any unpublished draft would not be tracked.
+    return (in_referencing_pages or page_is_live) and user_can_preview_bundle_by_id(user, preview_data["bundle"])

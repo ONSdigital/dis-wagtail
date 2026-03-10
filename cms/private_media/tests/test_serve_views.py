@@ -206,29 +206,28 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
         cls.private_image_rendition = cls.private_image.create_rendition(Filter("width-1024"))
         cls.private_document = DocumentFactory(collection=cls.root_collection)
 
-        cls.page = InformationPageFactory(
-            content=[
-                {
-                    "type": "section",
-                    "value": {
-                        "title": "Content",
-                        "content": [
-                            {"type": "image", "value": {"image": cls.private_image.id}, "id": str(uuid.uuid4())},
-                            {
-                                "type": "documents",
-                                "value": [
-                                    {
-                                        "type": "document",
-                                        "value": {"document": cls.private_document.id},
-                                        "id": str(uuid.uuid4()),
-                                    },
-                                ],
-                            },
-                        ],
-                    },
-                }
-            ]
-        )
+        cls.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Content",
+                    "content": [
+                        {"type": "image", "value": {"image": cls.private_image.id}, "id": str(uuid.uuid4())},
+                        {
+                            "type": "documents",
+                            "value": [
+                                {
+                                    "type": "document",
+                                    "value": {"document": cls.private_document.id},
+                                    "id": str(uuid.uuid4()),
+                                },
+                            ],
+                        },
+                    ],
+                },
+            }
+        ]
+        cls.page = InformationPageFactory(content=cls.content)
         mark_page_as_ready_for_review(cls.page)
 
         cls.preview_team = TeamFactory(name="Preview Team")
@@ -317,3 +316,34 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
             with self.subTest(msg=f"Testing {asset}"):
                 response = self.client.get(asset.serve_url)
                 self.assertEqual(response.status_code, 403)
+
+    def test_access_via_bundle_preview__when_added_to_draft_of_published_page(self):
+        # create a new page, and publish
+        new_page = InformationPageFactory(
+            content=[
+                {"type": "section", "value": {"title": "Content", "content": [{"type": "rich_text", "value": "text"}]}}
+            ]
+        )
+        new_page.save_revision().publish()
+
+        # now update its content to reference still private assets
+        new_page.content = self.content
+        new_page.save_revision()
+
+        # mark as ready for review, and add it to our bundle
+        mark_page_as_ready_for_review(new_page)
+        BundlePageFactory(parent=self.bundle, page=new_page)
+
+        # now check
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(reverse("bundles:preview", args=[self.bundle.pk, new_page.pk]))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertIn("bundle-preview", self.client.cookies)
+        self.assertContains(response, self.private_image_rendition.serve_url)
+        self.assertContains(response, self.private_document.serve_url)
+
+        for asset in [self.private_image_rendition, self.private_document]:
+            with self.subTest(msg=f"Testing {asset}"):
+                response = self.client.get(asset.serve_url)
+                self.assertEqual(response.status_code, 200)
