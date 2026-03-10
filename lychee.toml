@@ -8,10 +8,14 @@ retry_wait_time = 5
 exclude = [
     "^https?://jwt\\.io",
     "^https?://www\\.contributor-covenant\\.org(/.*)?$",
-    "^file://",  # Don't check any local files. This causes issues with template variables
+    "\\%7B"  # Ignore anything which looks like a template variable ({)
 ]
 
-root_dir = "/"
+exclude_path = [
+    "cms/jinja2"
+]
+
+root_dir = "."
 
 # Exclude all private IPs from checking.
 exclude_all_private = true
