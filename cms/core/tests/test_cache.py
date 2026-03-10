@@ -45,7 +45,7 @@ class InvalidateReplayRedisCacheTestCase(SimpleTestCase):
         self.assertIsNone(caches["invalidate_replay"].get("key"))
 
     def test_replays_clear(self) -> None:
-        caches["default"].delete_many(["key"])
+        caches["default"].clear()
 
         self.assertIsNone(caches["default"].get("key"))
         self.assertIsNone(caches["invalidate_replay"].get("key"))
