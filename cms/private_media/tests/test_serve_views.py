@@ -270,10 +270,7 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
             response = self.client.get(self.url_preview_ready)
 
             self.assertEqual(response.status_code, HTTPStatus.OK)
-            self.assertEqual(
-                self.client.session["bundle-preview"],
-                {"bundle": self.bundle.pk, "page": self.page.pk, "timestamp": FROZEN_TIME.timestamp()},
-            )
+            self.assertIn("bundle-preview", self.client.cookies)
             self.assertContains(response, self.private_image_rendition.serve_url)
             self.assertContains(response, self.private_document.serve_url)
 
@@ -306,5 +303,17 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
                 self.subTest(msg=f"Testing {asset} before cooldown"),
                 time_machine.travel(FROZEN_TIME + timedelta(seconds=5), tick=False),
             ):
+                response = self.client.get(asset.serve_url)
+                self.assertEqual(response.status_code, 403)
+
+    def test_access_via_bundle_preview__with_tampered_cookie(self):
+        self.client.force_login(self.viewer)
+
+        self.client.get(self.url_preview_ready)
+        altered_value = self.client.cookies["bundle-preview"].value[:-2] + "$$"
+        self.client.cookies["bundle-preview"].set("bundle_preview", altered_value, altered_value)
+
+        for asset in [self.private_image_rendition, self.private_document]:
+            with self.subTest(msg=f"Testing {asset}"):
                 response = self.client.get(asset.serve_url)
                 self.assertEqual(response.status_code, 403)

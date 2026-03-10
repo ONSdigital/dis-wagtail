@@ -1,3 +1,4 @@
+import json
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, cast
 
@@ -8,7 +9,6 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
-from django.utils import timezone
 from django.views.generic import TemplateView
 from wagtail.log_actions import log
 from wagtail.models import Page
@@ -99,14 +99,26 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
         )
 
         # store the bundle id + page id in the session for private media checks
-        # TODO: should this be short-lived cache instead?
-        request.session["bundle-preview"] = {
-            "bundle": bundle.pk,
-            "page": page_id,
-            "timestamp": timezone.now().timestamp(),
-        }
 
-        return TemplateResponse(request, page.get_template(request), context)
+        response = TemplateResponse(request, page.get_template(request), context)
+
+        # Set a short-lived, signed cookie with the bundle and page information to be used by the
+        # private media serve view.
+        # note: 30 is a fairly arbitrary value. Long enough to allow for a slow preview generation,
+        # but short enough that we don't have stale session data.
+        response.set_signed_cookie(
+            "bundle-preview",
+            json.dumps(
+                {
+                    "bundle": bundle.pk,
+                    "page": page_id,
+                }
+            ),
+            max_age=30,  # 30 seconds
+            salt=f"previewer-{request.user.pk}",
+        )
+
+        return response
 
 
 class PreviewBundleReleaseCalendarView(BundleContentsMixin, TemplateView):

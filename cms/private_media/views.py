@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from django.core.exceptions import SuspiciousOperation
+from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.cache import add_never_cache_headers, patch_cache_control
@@ -15,7 +15,7 @@ from wagtail.images.models import SourceImageIOError
 from wagtail.images.permissions import permission_policy as image_permission_policy
 from wagtail.images.utils import verify_signature
 
-from cms.private_media.utils import check_user_access_for_private_media
+from cms.private_media.utils import user_can_access_private_asset
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponseBase, HttpResponseRedirect
@@ -49,7 +49,8 @@ class ImageServeView(View):
         image = self.get_image(image_id)
 
         # Block access to private image if the user has insufficient permissions
-        check_user_access_for_private_media(self.request, self.request.user, image, image_permission_policy)
+        if not user_can_access_private_asset(self.request, self.request.user, image, image_permission_policy):
+            raise PermissionDenied
 
         # Get/generate the rendition
         try:
@@ -153,7 +154,8 @@ class DocumentServeView(View):
         document = self.get_document(document_id, document_filename)
 
         # Block access to private documents if the user has insufficient permissions
-        check_user_access_for_private_media(self.request, self.request.user, document, document_permission_policy)
+        if not user_can_access_private_asset(self.request, self.request.user, document, document_permission_policy):
+            raise PermissionDenied
 
         # Send document_served signal
         document_served.send(sender=type(document), instance=document, request=request)

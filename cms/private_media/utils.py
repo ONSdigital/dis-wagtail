@@ -1,12 +1,11 @@
+import json
 from functools import cache
 from typing import TYPE_CHECKING, Any
 
 from django.apps import apps
 from django.conf import settings
-from django.core.exceptions import PermissionDenied
 from django.db.models import IntegerField
 from django.db.models.functions import Cast
-from django.utils import timezone
 from wagtail.models import ReferenceIndex
 
 if TYPE_CHECKING:
@@ -31,24 +30,26 @@ def get_frontend_cache_configuration() -> dict[str, Any]:
     return getattr(settings, "WAGTAILFRONTENDCACHE", {})
 
 
-def check_user_access_for_private_media(
+def user_can_access_private_asset(
     request: HttpRequest,
     user: User | AnonymousUser,
     asset: type[PrivateMediaMixin],
     permission_policy: CollectionOwnershipPermissionPolicy,
-) -> None:
+) -> bool:
     if not asset.is_private:  # type: ignore[truthy-function]
-        return
+        return True
     if permission_policy.user_has_any_permission_for_instance(user, ["choose", "add", "change"], asset):
-        return
+        return True
 
-    if not (bundle_preview_data := request.session.get("bundle-preview")):
-        raise PermissionDenied
+    preview_data = request.get_signed_cookie("bundle-preview", False, salt=f"previewer-{request.user.pk}", max_age=30)
+    if not preview_data:
+        return False
 
-    if bundle_preview_data["timestamp"] < timezone.now().timestamp() - 30:
-        raise PermissionDenied
+    from cms.bundles.permissions import user_can_preview_bundle_by_id  # pylint: disable=import-outside-toplevel
 
-    referencing_pages = (
+    preview_data = json.loads(preview_data)
+
+    in_referencing_pages = (
         ReferenceIndex.objects.filter(
             base_content_type__model="page",
             base_content_type__app_label="wagtailcore",
@@ -57,13 +58,8 @@ def check_user_access_for_private_media(
             to_object_id=asset.pk,
         )
         .annotate(page_id=Cast("object_id", output_field=IntegerField()))
-        .values_list("page_id", flat=True)
+        .filter(page_id=preview_data["page"])
+        .exists()
     )
 
-    from cms.bundles.permissions import user_can_preview_bundle_by_id  # pylint: disable=import-outside-toplevel
-
-    if not (
-        bundle_preview_data["page"] in referencing_pages
-        and user_can_preview_bundle_by_id(user, bundle_preview_data["bundle"])
-    ):
-        raise PermissionDenied
+    return in_referencing_pages and user_can_preview_bundle_by_id(user, preview_data["bundle"])
