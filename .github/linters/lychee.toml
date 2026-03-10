@@ -14,4 +14,4 @@ exclude_all_private = true
 
 [hosts."github.com"]
 concurrency = 1
-request_interval = "500ms"
+request_interval = "5s"
