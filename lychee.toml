@@ -5,9 +5,17 @@ max_retries = 3
 retry_wait_time = 5
 
 # Exclude URLs and mail addresses from checking (supports regex).
-exclude = ["^https?://jwt\\.io",
-          "^https?://www\\.contributor-covenant\\.org(/.*)?$"
+exclude = [
+    "^https?://jwt\\.io",
+    "^https?://www\\.contributor-covenant\\.org(/.*)?$",
+    "\\%7B"  # Ignore anything which looks like a template variable ({)
 ]
+
+exclude_path = [
+    "cms/jinja2"
+]
+
+root_dir = "."
 
 # Exclude all private IPs from checking.
 exclude_all_private = true
