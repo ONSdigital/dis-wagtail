@@ -34,11 +34,12 @@ def get_mapped_site_root_paths(host: str | None = None) -> list[SiteRootPath]:
 
     if result is None:
         result = []
-        site = None
-
-        for site in Site.objects.select_related("root_page", "root_page__locale").order_by(
-            "-root_page__url_path", "-is_default_site", "hostname"
-        ):
+        sites = list(
+            Site.objects.select_related("root_page", "root_page__locale").order_by(
+                "-root_page__url_path", "-is_default_site", "hostname"
+            )
+        )
+        for site in sites:
             result.append(
                 SiteRootPath(
                     site.id,
@@ -47,9 +48,9 @@ def get_mapped_site_root_paths(host: str | None = None) -> list[SiteRootPath]:
                     site.root_page.locale.language_code,
                 )
             )
-        if len(result) == 1 and site:
+        if len(sites) == 1:
             # If we have only one site, expand to include the translated root pages as alternatives
-            # note: `and site` is not necessary per se, but added to silence mypy and avoid type ignores.
+            site = sites[0]
             for root_page in site.root_page.get_translations(inclusive=False).select_related("locale"):
                 result.append(
                     SiteRootPath(
