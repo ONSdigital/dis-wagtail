@@ -26,5 +26,5 @@ jobs:
         id: lychee
         uses: lycheeverse/lychee-action@v2
         with:
-          format: "detailed"
-          args: "."
+          format: 'detailed'
+          args: '.'
