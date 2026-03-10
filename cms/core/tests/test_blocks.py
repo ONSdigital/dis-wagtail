@@ -30,6 +30,7 @@ from cms.core.blocks import (
 from cms.core.blocks.definitions import DefinitionsBlock
 from cms.core.tests.factories import DefinitionFactory
 from cms.core.tests.utils import get_test_document
+from cms.core.utils import UNWANTED_CONTROL_CHARACTERS
 from cms.home.models import HomePage
 from cms.standard_pages.models import InformationPage
 
@@ -226,7 +227,7 @@ class CoreBlocksTestCase(TestCase):
         block = RelatedContentBlock()
 
         value = block.to_python({})
-        self.assertIsNone(value.link)
+        self.assertIsNone(value.get_link())
 
         value = block.to_python(
             {
@@ -238,7 +239,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": "https://ons.gov.uk",
                 "text": "Example",
@@ -256,7 +257,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": "/",
                 "text": "Example",
@@ -272,7 +273,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": "/",
                 "text": self.home_page.title,
@@ -292,7 +293,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": statistical_article.get_relative_path(),
                 "text": statistical_article.display_title,
@@ -585,6 +586,18 @@ class CoreBlocksTestCase(TestCase):
                 "trs": [{"tds": [{"value": "one"}, {"value": "two"}]}],
             },
         )
+
+    def test_basictableblock__strip_control_characters(self):
+        block = BasicTableBlock()
+        value = {
+            "first_row_is_table_header": False,
+            "first_col_is_header": False,
+            "table_caption": "Caption",
+            "table_header_choice": "Choice",
+            "data": [["unwanted", char] for char in UNWANTED_CONTROL_CHARACTERS],
+        }
+
+        self.assertEqual(block.clean(value)["data"], [["unwanted", ""]] * len(UNWANTED_CONTROL_CHARACTERS))
 
 
 class DefinitionsBlockTestCase(TestCase):

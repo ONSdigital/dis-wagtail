@@ -1,6 +1,9 @@
 import os
 
-from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
+# Force logs to JSON in tests, to match production behaviour
+os.environ.setdefault("LOG_AS_JSON", "true")
+
+from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
 env = os.environ.copy()
 
