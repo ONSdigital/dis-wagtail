@@ -124,9 +124,9 @@ def _get_base_page_config(context: jinja2.runtime.Context, site: Site, request: 
             "mastheadLogoUrl": "/",
             "menuLinks": {
                 "id": "nav-links-external",
-                "ariaLabel": _("Menu"),
+                "ariaLabel": _("Main menu"),
                 "ariaListLabel": _("Main menu"),
-                "toggleNavButton": {"text": _("Menu"), "ariaLabel": _("Toggle main menu")},
+                "toggleNavButton": {"text": _("Main menu"), "ariaLabel": _("Toggle main menu")},
                 "keyLinks": main_menu_highlights(request, main_menu),
                 "columns": main_menu_columns(request, main_menu),
             },
