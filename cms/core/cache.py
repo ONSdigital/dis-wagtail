@@ -33,11 +33,6 @@ class InvalidateReplayRedisCache(RedisCache):
         self._replay_backend.delete_many(*args, **kwargs)
         return result
 
-    def clear(self, *args: Any, **kwargs: Any) -> Any:
-        result = super().clear(*args, **kwargs)
-        self._replay_backend.clear(*args, **kwargs)
-        return result
-
 
 def purge_cache_on_all_sites(path: str) -> None:
     """Purge the given path on all defined sites."""
