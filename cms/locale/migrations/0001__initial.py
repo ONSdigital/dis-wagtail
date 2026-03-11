@@ -3,7 +3,11 @@ from django.db import migrations
 
 
 def _get_default_hostnames_by_country_code() -> dict[str, str]:
-    return {settings.CMS_HOSTNAME_LOCALE_MAP[host]: host for host in settings.CMS_HOSTNAME_ALTERNATIVES}
+    return {
+        locale: host
+        for host, locale in settings.CMS_HOSTNAME_LOCALE_MAP.items()
+        if host not in settings.CMS_HOSTNAME_ALTERNATIVES.values()
+    }
 
 
 def update_english_site_entry(apps, schema_editor):

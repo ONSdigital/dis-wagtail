@@ -58,7 +58,11 @@ class Command(BaseCommand):
         if self.dry_run:
             self.stdout.write("Will do a dry run.")
 
-        hostnames = {settings.CMS_HOSTNAME_LOCALE_MAP[host]: host for host in settings.CMS_HOSTNAME_ALTERNATIVES}
+        hostnames = {
+            locale: host
+            for host, locale in settings.CMS_HOSTNAME_LOCALE_MAP.items()
+            if host not in settings.CMS_HOSTNAME_ALTERNATIVES.values()
+        }
         mapping = [
             (settings.LANGUAGE_CODE, "ons.gov.uk"),
             ("cy", "cy.ons.gov.uk"),

@@ -143,3 +143,20 @@ class UpdateSiteEntriesCommandTestCase(TestCase):
         self.assertEqual(self.english_site.port, 443)
 
         self.assertIn(f"Updating {self.english_site} with port=443", self.stdout.getvalue())
+
+    @override_settings(
+        CMS_HOSTNAME_LOCALE_MAP={
+            "ons.localhost": "en-gb",
+            "pub.ons.localhost": "en-gb",
+            "cy.ons.localhost": "cy",
+        },
+        CMS_HOSTNAME_ALTERNATIVES={
+            "ons.localhost": "pub.ons.localhost",
+        },
+    )
+    def test_mapping__without_alternative(self):
+        self.call_command()
+
+        self.welsh_site.refresh_from_db()
+
+        self.assertEqual(self.welsh_site.hostname, "cy.ons.localhost")
