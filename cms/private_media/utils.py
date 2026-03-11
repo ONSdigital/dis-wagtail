@@ -36,23 +36,28 @@ def user_can_access_private_asset(
     asset: type[PrivateMediaMixin],
     permission_policy: CollectionOwnershipPermissionPolicy,
 ) -> bool:
+    from cms.bundles.permissions import user_can_preview_bundle_by_id  # pylint: disable=import-outside-toplevel
+
     if not asset.is_private:  # type: ignore[truthy-function]
         return True
     if permission_policy.user_has_any_permission_for_instance(user, ["choose", "add", "change"], asset):
         return True
 
-    preview_data = request.get_signed_cookie("bundle-preview", False, salt=f"previewer-{request.user.pk}", max_age=30)
-    if not preview_data:
+    preview_data = request.get_signed_cookie(
+        "bundle-preview",
+        default=None,
+        salt=f"previewer-{request.user.pk}",
+        max_age=settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
+    )
+    if preview_data is None:
         return False
-
-    from cms.bundles.permissions import user_can_preview_bundle_by_id  # pylint: disable=import-outside-toplevel
 
     preview_data = json.loads(preview_data)
 
     in_referencing_pages = (
         ReferenceIndex.objects.filter(
-            base_content_type__model="page",
-            base_content_type__app_label="wagtailcore",
+            base_content_type__model=Page._meta.model_name.lower(),
+            base_content_type__app_label=Page._meta.app_label.lower(),
             to_content_type__model=asset._meta.model_name.lower(),  # type: ignore[union-attr]
             to_content_type__app_label=asset._meta.app_label.lower(),
             to_object_id=asset.pk,
@@ -62,12 +67,13 @@ def user_can_access_private_asset(
         .exists()
     )
 
-    page_is_live = Page.objects.filter(pk=preview_data["page"], live=True, has_unpublished_changes=True).exists()
-
     # the user can access the given asset if:
     # - they can preview the bundle the page is in
     # - and the given page
     #   - references the asset, or
     #   - the page is live, but also has unpublished changes. Once a page is live,
     #     the reference index is only updated on publication, so any unpublished draft would not be tracked.
-    return (in_referencing_pages or page_is_live) and user_can_preview_bundle_by_id(user, preview_data["bundle"])
+    return (
+        in_referencing_pages
+        or Page.objects.filter(pk=preview_data["page"], live=True, has_unpublished_changes=True).exists()
+    ) and user_can_preview_bundle_by_id(user, preview_data["bundle"])

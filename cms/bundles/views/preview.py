@@ -114,7 +114,7 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
                     "page": page_id,
                 }
             ),
-            max_age=30,  # 30 seconds
+            max_age=settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
             salt=f"previewer-{request.user.pk}",
         )
 
