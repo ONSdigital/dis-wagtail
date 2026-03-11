@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.test import RequestFactory, override_settings
 from django.utils import translation
 from wagtail.coreutils import get_dummy_request
@@ -73,3 +74,11 @@ class SubdomainLocalisationTests(WagtailPageTestCase):
         )
         self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
         self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
+
+    def test_language_cookie(self):
+        self.assertNotIn(settings.LANGUAGE_COOKIE_NAME, self.client.cookies)
+        request = RequestFactory(SERVER_NAME="cy.ons.localhost").get("/", SERVER_PORT=80)
+        response = self.client.get(self.welsh_page.get_full_url(request=request), headers={"host": "cy.ons.localhost"})
+
+        self.assertIn(settings.LANGUAGE_COOKIE_NAME, response.cookies)
+        self.assertEqual(response.cookies[settings.LANGUAGE_COOKIE_NAME].value, "cy")

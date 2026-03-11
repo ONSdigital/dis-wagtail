@@ -31,7 +31,10 @@ class SubdomainLocaleMiddleware(LocaleMiddleware):
         if self.use_locale_subdomain and (lang_code := self._get_language_from_host(request)):
             translation.activate(lang_code)
             request.LANGUAGE_CODE = translation.get_language()
-            request.COOKIES[settings.LANGUAGE_COOKIE_NAME] = lang_code
+            # set the cookie name in the request, so any logic that depends on the cookie activates properly
+            if settings.LANGUAGE_COOKIE_NAME not in request.COOKIES:
+                request.COOKIES[settings.LANGUAGE_COOKIE_NAME] = lang_code
+                request.SHOULD_SET_LANGUAGE_COOKIE = True
 
         super().process_request(request)
 
@@ -39,7 +42,10 @@ class SubdomainLocaleMiddleware(LocaleMiddleware):
         if (
             self.use_locale_subdomain
             and (lang_code := self._get_language_from_host(request))
-            and request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME, "") != lang_code
+            and (
+                request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME, "") != lang_code
+                or getattr(request, "SHOULD_SET_LANGUAGE_COOKIE", False)
+            )
         ):
             response.set_cookie(
                 settings.LANGUAGE_COOKIE_NAME,
