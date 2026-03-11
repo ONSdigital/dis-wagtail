@@ -34,7 +34,7 @@
 {%- set badge_label = _("Beta") -%}
 {%- set badge_html = _("This is a new service.") -%}
 {%- set menu_label = _("Menu") -%}
-{%- set menu_label = _("Main menu") -%}
+{%- set menu_aria_label = _("Main menu") -%}
 {%- set menu_toggle_aria_label = _("Toggle main menu") -%}
 {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
 
@@ -58,9 +58,9 @@
         "mastheadLogoUrl": "/",
         "menuLinks": {
             "id": "nav-links-external",
-            "ariaLabel": menu_label,
+            "ariaLabel": menu_aria_label,
             "ariaListLabel": menu_label,
-            "toggleNavButton": {
+            "toggleMenuButton": {
                 "text":menu_label,
                 "ariaLabel": menu_toggle_aria_label
             },
