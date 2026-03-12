@@ -1,7 +1,6 @@
 application:
   repo_name: dis-wagtail
-  branch:
-    main: main
+  branch: main
 helm:
   repo_name: dis-helm-cms-service-chart
   values_files:
