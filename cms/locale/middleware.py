@@ -34,7 +34,7 @@ class SubdomainLocaleMiddleware(LocaleMiddleware):
             # set the cookie name in the request, so any logic that depends on the cookie activates properly
             if settings.LANGUAGE_COOKIE_NAME not in request.COOKIES:
                 request.COOKIES[settings.LANGUAGE_COOKIE_NAME] = lang_code
-                request.SHOULD_SET_LANGUAGE_COOKIE = True
+                request.SHOULD_SET_LANGUAGE_COOKIE = True  # type: ignore[attr-defined]
 
         super().process_request(request)
 
