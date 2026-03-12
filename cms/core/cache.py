@@ -1,4 +1,5 @@
-from collections.abc import Callable
+import logging
+from collections.abc import Callable, Iterable
 from functools import partial
 from typing import Any
 
@@ -10,6 +11,8 @@ from django.views.decorators.cache import cache_control
 from django_redis.cache import RedisCache
 from wagtail.contrib.frontend_cache.utils import purge_url_from_cache
 from wagtail.models import Site
+
+logger = logging.getLogger(__name__)
 
 
 class InvalidateReplayRedisCache(RedisCache):
@@ -23,15 +26,22 @@ class InvalidateReplayRedisCache(RedisCache):
         except InvalidCacheBackendError as e:
             raise ImproperlyConfigured("Missing invalidate replay backend") from e
 
-    def delete(self, *args: Any, **kwargs: Any) -> Any:
-        result = super().delete(*args, **kwargs)
-        self._replay_backend.delete(*args, **kwargs)
-        return result
+    def delete(self, key: Any, version: int | None = None) -> bool:  # pylint: disable=arguments-differ
+        try:
+            replay_result = self._replay_backend.delete(key, version)
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Unable to replay delete", extra={"key": key, "version": version})
+            replay_result = False
 
-    def delete_many(self, *args: Any, **kwargs: Any) -> Any:
-        result = super().delete_many(*args, **kwargs)
-        self._replay_backend.delete_many(*args, **kwargs)
-        return result
+        return bool(super().delete(key, version) and replay_result)
+
+    def delete_many(self, keys: Iterable[Any], version: int | None = None) -> None:  # pylint: disable=arguments-differ
+        try:
+            self._replay_backend.delete_many(keys, version)
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Unable to replay delete_many", extra={"keys": keys, "version": version})
+
+        super().delete_many(keys, version)
 
 
 def purge_cache_on_all_sites(path: str) -> None:
