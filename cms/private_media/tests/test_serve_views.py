@@ -4,6 +4,7 @@ from http import HTTPStatus
 from unittest import mock
 
 import time_machine
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -246,7 +247,7 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
     def setUp(self):
         rebuild_references_index()
 
-    def test_direct_request__gives_no_access__for_viewer_in_bundle_team(self):
+    def test_direct_request__gives_no_access__for_viewer_in_bundle_team_because_of_missing_cookie(self):
         self.client.force_login(self.viewer)
 
         for asset in [self.private_image_rendition, self.private_document]:
@@ -309,8 +310,10 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
         self.client.force_login(self.viewer)
 
         self.client.get(self.url_preview_ready)
-        altered_value = self.client.cookies["bundle-preview"].value[:-2] + "$$"
-        self.client.cookies["bundle-preview"].set("bundle_preview", altered_value, altered_value)
+        altered_value = self.client.cookies[settings.BUNDLE_PREVIEW_COOKIE_NAME].value[:-2] + "$$"
+        self.client.cookies[settings.BUNDLE_PREVIEW_COOKIE_NAME].set(
+            settings.BUNDLE_PREVIEW_COOKIE_NAME, altered_value, altered_value
+        )
 
         for asset in [self.private_image_rendition, self.private_document]:
             with self.subTest(msg=f"Testing {asset}"):

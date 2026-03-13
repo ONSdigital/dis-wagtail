@@ -98,16 +98,12 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
             data={"type": "page", "id": page_id, "title": getattr(page, "display_title", page.title)},
         )
 
-        # store the bundle id + page id in the session for private media checks
-
         response = TemplateResponse(request, page.get_template(request), context)
 
         # Set a short-lived, signed cookie with the bundle and page information to be used by the
         # private media serve view.
-        # note: 30 is a fairly arbitrary value. Long enough to allow for a slow preview generation,
-        # but short enough that we don't have stale session data.
         response.set_signed_cookie(
-            "bundle-preview",
+            settings.BUNDLE_PREVIEW_COOKIE_NAME,
             json.dumps(
                 {
                     "bundle": bundle.pk,
@@ -116,6 +112,9 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
             ),
             max_age=settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
             salt=f"previewer-{request.user.pk}",
+            secure=True,
+            httponly=True,
+            samesite="Lax",
         )
 
         return response

@@ -15,7 +15,7 @@ from wagtail.images.models import SourceImageIOError
 from wagtail.images.permissions import permission_policy as image_permission_policy
 from wagtail.images.utils import verify_signature
 
-from cms.private_media.utils import user_can_access_private_asset
+from cms.private_media.utils import user_can_access_asset
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponseBase, HttpResponseRedirect
@@ -49,7 +49,9 @@ class ImageServeView(View):
         image = self.get_image(image_id)
 
         # Block access to private image if the user has insufficient permissions
-        if not user_can_access_private_asset(self.request, self.request.user, image, image_permission_policy):
+        if not user_can_access_asset(
+            request=self.request, user=self.request.user, asset=image, permission_policy=image_permission_policy
+        ):
             raise PermissionDenied
 
         # Get/generate the rendition
@@ -154,7 +156,9 @@ class DocumentServeView(View):
         document = self.get_document(document_id, document_filename)
 
         # Block access to private documents if the user has insufficient permissions
-        if not user_can_access_private_asset(self.request, self.request.user, document, document_permission_policy):
+        if not user_can_access_asset(
+            request=self.request, user=self.request.user, asset=document, permission_policy=document_permission_policy
+        ):
             raise PermissionDenied
 
         # Send document_served signal

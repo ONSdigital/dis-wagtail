@@ -30,21 +30,27 @@ def get_frontend_cache_configuration() -> dict[str, Any]:
     return getattr(settings, "WAGTAILFRONTENDCACHE", {})
 
 
-def user_can_access_private_asset(
+def user_can_access_asset(
+    *,
     request: HttpRequest,
     user: User | AnonymousUser,
-    asset: type[PrivateMediaMixin],
+    asset: PrivateMediaMixin,
     permission_policy: CollectionOwnershipPermissionPolicy,
 ) -> bool:
     from cms.bundles.permissions import user_can_preview_bundle_by_id  # pylint: disable=import-outside-toplevel
 
-    if not asset.is_private:  # type: ignore[truthy-function]
+    if asset.is_public:
         return True
+
+    if user.is_anonymous:
+        # we have a private asset, anonymous users should not have access
+        return False
+
     if permission_policy.user_has_any_permission_for_instance(user, ["choose", "add", "change"], asset):
         return True
 
     preview_data = request.get_signed_cookie(
-        "bundle-preview",
+        settings.BUNDLE_PREVIEW_COOKIE_NAME,
         default=None,
         salt=f"previewer-{request.user.pk}",
         max_age=settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
@@ -53,6 +59,10 @@ def user_can_access_private_asset(
         return False
 
     preview_data = json.loads(preview_data)
+
+    if not user_can_preview_bundle_by_id(user, preview_data["bundle"]):
+        # we have preview data, but the user cannot preview the given bundle, so no access
+        return False
 
     in_referencing_pages = (
         ReferenceIndex.objects.filter(
@@ -73,7 +83,9 @@ def user_can_access_private_asset(
     #   - references the asset, or
     #   - the page is live, but also has unpublished changes. Once a page is live,
     #     the reference index is only updated on publication, so any unpublished draft would not be tracked.
-    return (
+    can_access: bool = (
         in_referencing_pages
         or Page.objects.filter(pk=preview_data["page"], live=True, has_unpublished_changes=True).exists()
-    ) and user_can_preview_bundle_by_id(user, preview_data["bundle"])
+    )
+
+    return can_access

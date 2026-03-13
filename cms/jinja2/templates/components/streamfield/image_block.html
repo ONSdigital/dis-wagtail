@@ -4,11 +4,11 @@
 <div>
 {%- if value.figure_title or value.figure_subtitle -%}
     <hgroup>
-        {%- if value.figure_title %}{# Figure Title #}
+        {%- if value.figure_title %}
             <h3 class="ons-chart__title">{{ value.figure_title }}</h3>
         {% endif -%}
 
-        {%- if value.figure_subtitle %}{# Figure Subtitle #}
+        {%- if value.figure_subtitle %}
             <p>{{ value.figure_subtitle }}</p>
         {% endif %}
     </hgroup>
@@ -30,7 +30,6 @@
         })
     -}}
 
-    {# Notes #}
     {%- if value.notes_section %}
         <div class="ons-u-mt-s">
             <h4 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Notes") }}</h4>
@@ -44,7 +43,6 @@
         {% set download_aria_label = _("Download image") %}
     {% endif -%}
 
-    {# Download #}
     {%- if value.download and large_src %}
         <div class="ons-u-mt-s">
             <h4 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Download this image") }}</h4>
