@@ -42,11 +42,9 @@ def user_can_access_asset(
     if asset.is_public:
         return True
 
-    if user.is_anonymous:
-        # we have a private asset, anonymous users should not have access
-        return False
-
-    if permission_policy.user_has_any_permission_for_instance(user, ["choose", "add", "change"], asset):
+    if user.is_authenticated and permission_policy.user_has_any_permission_for_instance(
+        user, ["choose", "add", "change"], asset
+    ):
         return True
 
     preview_data = request.get_signed_cookie(
@@ -60,11 +58,17 @@ def user_can_access_asset(
 
     preview_data = json.loads(preview_data)
 
+    # the user can access the given asset if:
+    # - they can preview the bundle the page is in
+    # - and the given page
+    #   - references the asset via the reference index, or
+    #   - the given asset is used by the page, the page is live, but also has unpublished changes.
+    #     Once a page is live, the reference index is only updated on publication,
+    #     so any unpublished draft would not be tracked.
     if not user_can_preview_bundle_by_id(user, preview_data["bundle"]):
-        # we have preview data, but the user cannot preview the given bundle, so no access
         return False
 
-    in_referencing_pages = (
+    in_referencing_page = (
         ReferenceIndex.objects.filter(
             base_content_type__model=Page._meta.model_name.lower(),
             base_content_type__app_label=Page._meta.app_label.lower(),
@@ -76,16 +80,13 @@ def user_can_access_asset(
         .filter(page_id=preview_data["page"])
         .exists()
     )
+    if in_referencing_page:
+        return True
 
-    # the user can access the given asset if:
-    # - they can preview the bundle the page is in
-    # - and the given page
-    #   - references the asset, or
-    #   - the page is live, but also has unpublished changes. Once a page is live,
-    #     the reference index is only updated on publication, so any unpublished draft would not be tracked.
-    can_access: bool = (
-        in_referencing_pages
-        or Page.objects.filter(pk=preview_data["page"], live=True, has_unpublished_changes=True).exists()
-    )
+    can_access = False
+    if page := Page.objects.filter(pk=preview_data["page"]).first():
+        # We want to check the latest revision. This will return the specific instance too
+        page = page.get_latest_revision_as_object()
+        can_access = str(asset.pk) in page.get_referenced_asset_ids(asset.__class__)
 
     return can_access

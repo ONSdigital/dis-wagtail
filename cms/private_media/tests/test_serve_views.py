@@ -350,3 +350,14 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
             with self.subTest(msg=f"Testing {asset}"):
                 response = self.client.get(asset.serve_url)
                 self.assertEqual(response.status_code, 200)
+
+        # create another set of private assets which should not be accessible with a still valid preview cookie
+        # becuase they are not part of the page in question
+        another_private_image = ImageFactory(collection=self.root_collection)
+        another_private_image_rendition = another_private_image.create_rendition(Filter("width-1024"))
+        another_private_document = DocumentFactory(collection=self.root_collection)
+
+        for asset in [another_private_image_rendition, another_private_document]:
+            with self.subTest(msg=f"Testing private {asset} not in the bundle"):
+                response = self.client.get(asset.serve_url)
+                self.assertEqual(response.status_code, 403)

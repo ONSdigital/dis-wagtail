@@ -272,6 +272,17 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         parent_theme = page_topic.get_base_parent()
         return cast(str, parent_theme.title)
 
+    def get_referenced_asset_ids(self, asset_model: models.Model) -> set[str]:
+        ids = set()
+        stream_value = getattr(self, self.content_field_name)
+        # note: extract_references() is also used to populate the ReferenceIndex
+        references = stream_value.stream_block.extract_references(stream_value)
+        for model, object_id, _model_path, _content_path in references:
+            if model is asset_model:
+                ids.add(object_id)
+
+        return ids
+
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
     """A customized site setting.
