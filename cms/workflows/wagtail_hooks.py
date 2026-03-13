@@ -10,6 +10,7 @@ from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.admin import messages
 from wagtail.admin.action_menu import PageLockedMenuItem, WorkflowMenuItem
+from wagtail.admin.views.home import WorkflowObjectsToModeratePanel
 
 from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 
@@ -17,6 +18,7 @@ from . import admin_urls
 from .action_menu import SubmitForModerationMenuItem, UnlockWorkflowMenuItem
 from .admin_urls import path
 from .models import get_final_approve_label
+from .panels import ONSWorkflowObjectsToModeratePanel, PagesReadyToBePublishedManuallyPanel
 from .utils import is_page_ready_to_publish
 
 if TYPE_CHECKING:
@@ -25,6 +27,7 @@ if TYPE_CHECKING:
     from django.urls import URLPattern
     from django.urls.resolvers import URLResolver
     from wagtail.admin.action_menu import ActionMenuItem
+    from wagtail.admin.ui.components import Component
     from wagtail.models import Page
 
 
@@ -173,3 +176,11 @@ def register_admin_urls() -> list[URLPattern | URLResolver]:
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-urls.
     """
     return [path("workflows/", include(admin_urls))]
+
+
+@hooks.register("construct_homepage_panels", order=100)
+def alter_objects_to_moderate_panel(request: HttpRequest, panels: list[Component]) -> None:
+    panels[:] = [panel for panel in panels if not isinstance(panel, WorkflowObjectsToModeratePanel)]
+
+    panels.append(ONSWorkflowObjectsToModeratePanel())
+    panels.append(PagesReadyToBePublishedManuallyPanel())

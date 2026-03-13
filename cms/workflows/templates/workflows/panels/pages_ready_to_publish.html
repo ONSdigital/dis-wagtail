@@ -1,0 +1,87 @@
+{% load i18n wagtailadmin_tags %}
+{% if items %}
+    {% panel id="awaiting-review" heading="Pages ready to publish" classname="w-panel--dashboard" %}
+        <table class="listing listing--dashboard">
+            <col />
+            <col width="10%"/>
+            <col width="7%"/>
+            <col width="10%"/>
+            <col width="15%"/>
+            <col width="10%"/>
+            <col width="10%"/>
+            <thead class="w-sr-only">
+                <tr>
+                    <th class="title">Title</th>
+                    <th>Language</th>
+                    <th>Privacy and access</th>
+                    <th>Approved by</th>
+                    <th>Approved at</th>
+                    <th aria-hidden="true">{% comment %} added for visual alignment only {% endcomment %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% i18n_enabled as show_locale_labels %}
+                {% for item in items %}
+                    {% with revision=item.task_state.revision page=item.page task_state=item.task_state actions=item.actions %}
+                        {% page_permissions page as page_perms %}
+                        <tr>
+                            <td class="title">
+                                <div class="title-wrapper">
+                                    {% admin_edit_url page as edit_url %}
+                                    {% if page_perms.can_edit or not is_page and edit_url %}
+                                        <a href="{{ edit_url }}" title="Edit">{% latest_str page %}</a>
+                                    {% else %}
+                                        {% latest_str page %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if show_locale_labels and page.locale_id %}
+                                    {% locale_label_from_id page.locale_id as locale_label %}
+                                    {% status locale_label classname="w-status--label" %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if is_page %}
+                                    {% include "wagtailadmin/pages/listing/_privacy_indicator.html" with page=obj %}
+                                {% endif %}
+                                {% include "wagtailadmin/pages/listing/_locked_indicator.html" with page=obj %}
+                            </td>
+                            <td>
+                                {% if page.active_bundle %}
+                                    {% status "In a bundle" %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if revision.user %}{{ revision.user|user_display_name }}{% endif %}
+                            </td>
+                            <td>{% human_readable_date task_state.started_at %}</td>
+                            <td class="actions-container">
+                                {% if actions %}
+                                    <ul class="actions">
+                                        <li>
+                                            {% dropdown toggle_icon="dots-horizontal" toggle_aria_label=_("Actions") hide_on_click=True keep_mounted=True %}
+                                                {% for action_name, action_label, modal in actions %}
+                                                    {% if action_name == "unlock" %}
+                                                        <button data-workflow-action-url="{% url "workflows:unlock" page.pk|admin_urlquote %}">{{ action_label }}</button>
+                                                    {% else %}
+                                                        <button data-workflow-action-url="{% url "wagtailadmin_pages:workflow_action" page.pk|admin_urlquote action_name task_state.id %}" {% if modal %}data-launch-modal{% endif %}>{{ action_label }}</button>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                {% if page_perms.can_edit or not is_page and edit_url %}
+                                                    <a href="{{ edit_url }}">Edit</a>
+                                                {% endif %}
+                                            {% enddropdown %}
+                                        </li>
+                                    </ul>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endpanel %}
+
+    <script src="{% versioned_static 'wagtailadmin/js/workflow-action.js' %}" data-activate="dashboard"></script>
+{% endif %}
