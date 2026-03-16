@@ -237,6 +237,7 @@ class BundleStatusNotificationsTestCase(TestCase):
 
         self.assertEqual(call_kwargs["text"], "Preparing bundle for publication")
         self.assertEqual(call_kwargs["color"], "warning")  # Amber
+        self.assertIsNone(call_kwargs["update_message_ts"])  # Pre publish messages should always force new
 
         fields = call_kwargs["fields"]
         self.assertEqual(fields[0]["title"], "Bundle Name")

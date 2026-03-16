@@ -951,7 +951,7 @@ SLACK_PUBLICATION_LOG_CHANNEL = env.get("SLACK_PUBLICATION_LOG_CHANNEL", "")
 SLACK_ALARM_CHANNEL = env.get("SLACK_ALARM_CHANNEL", "")
 
 # Feature flag for sending slack messages on bundle status changes (before pre-publish, e.g. entering review)
-SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE = env.get("SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE", "true").lower() == "true"
+SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE = env.get("SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE", "false").lower() == "true"
 
 
 # API bases

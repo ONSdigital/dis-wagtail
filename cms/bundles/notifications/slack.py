@@ -262,6 +262,7 @@ def notify_slack_of_bundle_pre_publish(
         text=text,
         color="warning",  # Amber
         fields=fields,
+        force_new=True,  # Always create a new message to ensure publication notifications are visible.
     )
 
 
