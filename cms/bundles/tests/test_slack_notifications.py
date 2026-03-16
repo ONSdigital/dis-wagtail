@@ -135,10 +135,14 @@ class BundleStatusNotificationsTestCase(TestCase):
         request = RequestFactory().get("/")
         cls.inspect_url = request.build_absolute_uri(reverse("bundle:inspect", args=(cls.bundle.pk,)))
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
+    @override_settings(
+        SLACK_BOT_TOKEN="xoxb-test-token",
+        SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L",
+        SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE=True,
+    )
     @patch("cms.bundles.notifications.slack.send_or_update_message")
     def test_notify_slack_of_status_change(self, mock_send):
-        """Should use Bot API when fully configured."""
+        """Should send status updates when bundle status changes and the feature flag is enabled."""
         self.bundle.status = BundleStatus.IN_REVIEW
         message_timestamp = "1503435956.000247"
         mock_send.return_value = message_timestamp
