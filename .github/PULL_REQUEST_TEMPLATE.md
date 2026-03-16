@@ -15,8 +15,10 @@ Please select one:
 - [ ] Safe to auto-deploy
 - [ ] Not safe to auto-deploy
 
-If this PR is **not safe to auto-deploy**, explain what is required before merge
+<!--
+If this PR is not safe to auto-deploy, explain what is required before merge
 (for example, Helm/config changes, another PR, migration sequencing, or coordinated release steps).
+-->
 
 ### Follow-up Actions
 
