@@ -23,11 +23,6 @@ from fakeredis import FakeConnection
 )
 class InvalidateReplayRedisCacheTestCase(SimpleTestCase):
     def setUp(self) -> None:
-        from django_redis.pool import ConnectionFactory  # pylint: disable=import-outside-toplevel
-
-        # Clear connection pools between tests so configuration changes can be picked up
-        ConnectionFactory._pools.clear()  # pylint: disable=protected-access
-
         caches["default"].set("key", "value")
         caches["invalidate_replay"].set("key", "value")
 
@@ -55,14 +50,14 @@ class InvalidateReplayRedisCacheTestCase(SimpleTestCase):
         CACHES={
             "default": {
                 "BACKEND": "cms.core.cache.InvalidateReplayRedisCache",
-                "LOCATION": "redis://default",
+                "LOCATION": "redis://default/0",
                 "OPTIONS": {
                     "CONNECTION_POOL_KWARGS": {"connection_class": FakeConnection},
                 },
             },
             "invalidate_replay": {
                 "BACKEND": "django_redis.cache.RedisCache",
-                "LOCATION": "redis://invalidate_replay",
+                "LOCATION": "redis://invalidate_replay/0",
             },
         },
     )
