@@ -443,6 +443,13 @@ To start the linter and automatically rectify fixable issues, run:
 make megalint
 ```
 
+In order to run only a specific linter, you can set the `LINTER` variable:
+
+```bash
+make megalint LINTER=REPOSITORY_GRYPE
+```
+
+
 ### Mailpit (Email Testing)
 
 Mailpit is a lightweight, local SMTP server and web interface that captures all outgoing email from our application without actually delivering it.
