@@ -39,7 +39,7 @@ class SendBundleNotificationTestCase(TestCase):
     def setUp(self):
         self.mock_response = {"ok": True, "ts": "1503435956.000247", "channel": "C024BE91L"}
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_send_bundle_notification__create_new_message(self, mock_get_client):
         """Should create a new message when bundle has no stored timestamp."""
@@ -68,7 +68,7 @@ class SendBundleNotificationTestCase(TestCase):
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.slack_notification_ts, "1503435956.000247")
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_send_bundle_notification__update_existing_message(self, mock_get_client):
         """Should update existing message when bundle has stored timestamp."""
@@ -94,7 +94,7 @@ class SendBundleNotificationTestCase(TestCase):
         self.assertEqual(call_kwargs["text"], "Updated message")
         self.assertEqual(call_kwargs["attachments"][0]["color"], "warning")
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_send_bundle_notification__fallback_on_update_failure(self, mock_get_client):
         """Should create new message if update fails."""
@@ -124,18 +124,6 @@ class SendBundleNotificationTestCase(TestCase):
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.slack_notification_ts, "1503435957.000248")
 
-    @override_settings(SLACK_BOT_TOKEN=None, SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
-    def test_send_bundle_notification__no_bot_token(self):
-        """Should return early with warning if client is not configured."""
-        with self.assertLogs("cms.core.slack", level="WARNING") as logs:
-            send_bundle_notification(
-                bundle=self.bundle,
-                text="Test message",
-                color="good",
-                fields=[],
-            )
-            self.assertIn("SLACK_BOT_TOKEN is not configured", logs.output[0])
-
 
 class BundleStatusNotificationsTestCase(TestCase):
     """Tests for bundle status slack notifications."""
@@ -147,7 +135,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         request = RequestFactory().get("/")
         cls.inspect_url = request.build_absolute_uri(reverse("bundle:inspect", args=(cls.bundle.pk,)))
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.send_or_update_message")
     def test_notify_slack_of_status_change(self, mock_send):
         """Should use Bot API when fully configured."""
@@ -173,7 +161,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.bundle.refresh_from_db()
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.send_or_update_message")
     def test_notify_slack_of_publication_start(self, mock_send):
         """Should use Bot API with required fields."""
@@ -201,7 +189,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.bundle.refresh_from_db()
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.send_or_update_message")
     def test_notify_slack_of_publish_end(self, mock_send):
         """Should use Bot API with required fields."""
@@ -234,7 +222,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.bundle.refresh_from_db()
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.send_or_update_message")
     def test_notify_slack_of_bundle_pre_publish(self, mock_send):
         """Should send pre-publish notification with required fields."""
@@ -260,17 +248,15 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.bundle.refresh_from_db()
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="")
-    @patch("cms.bundles.notifications.slack.send_or_update_message")
-    def test_notify_slack_of_bundle_pre_publish__no_channel_configured(self, mock_send):
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="")
+    def test_notify_slack_of_bundle_pre_publish__no_channel_configured(self):
         """Should return early and log warning if no channel is configured."""
         scheduled_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
-        with self.assertLogs("cms.core.slack", level="WARNING") as logs:
+        with self.assertLogs("cms.core.slack", level="INFO") as logs:
             notify_slack_of_bundle_pre_publish(self.bundle, scheduled_time)
-            self.assertIn("SLACK_CHANNEL_PUBLICATION_LOG is not configured", logs.output[0])
-        mock_send.assert_not_called()
+            self.assertIn("Skipping sending Slack message (token or channel not configured)", logs.output[0])
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_notify_bundle_failure__publication_failed_critical(self, mock_get_client):
         """Should send critical alert when all pages fail to publish."""
@@ -294,7 +280,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Alert Type", "value": "Critical", "short": True}, fields)
         self.assertIn({"title": "Exception", "value": "3 of 3 page(s) failed to publish", "short": False}, fields)
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_notify_bundle_failure__publication_failed_partial(self, mock_get_client):
         """Should send fail alert when some pages fail to publish."""
@@ -315,7 +301,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Alert Type", "value": "Fail", "short": True}, fields)
         self.assertIn({"title": "Exception", "value": "1 of 3 page(s) failed to publish", "short": False}, fields)
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_notify_bundle_failure__with_scheduled_bundle(self, mock_get_client):
         """Should show correct publish type for scheduled bundles."""
@@ -340,29 +326,29 @@ class BundleStatusNotificationsTestCase(TestCase):
         fields = call_kwargs["attachments"][0]["fields"]
         self.assertIn({"title": "Publish Type", "value": "Scheduled", "short": True}, fields)
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="")
-    @patch("cms.core.slack.get_slack_client")
-    def test_notify_bundle_failure__no_channel_configured(self, mock_get_client):
-        """Should return early if no channel is configured."""
-        notify_slack_of_bundle_failure(
-            bundle=self.bundle,
-            exception_message="Test error",
-            alert_type=BundleAlertType.CRITICAL,
-        )
-        mock_get_client.assert_not_called()
-
-    @override_settings(SLACK_BOT_TOKEN=None, SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
-    def test_notify_bundle_failure__no_bot_token(self):
-        """Should return early with warning if client is not configured."""
-        with self.assertLogs("cms.core.slack", level="WARNING") as logs:
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="")
+    def test_notify_bundle_failure__no_channel_configured(self):
+        """Should log if no channel is configured."""
+        with self.assertLogs("cms.core.slack", level="INFO") as logs:
             notify_slack_of_bundle_failure(
                 bundle=self.bundle,
                 exception_message="Test error",
                 alert_type=BundleAlertType.CRITICAL,
             )
-            self.assertIn("SLACK_BOT_TOKEN is not configured", logs.output[0])
+            self.assertIn("Skipping sending Slack message (token or channel not configured)", logs.output[0])
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN=None, SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
+    def test_notify_bundle_failure__no_bot_token(self):
+        """Should return early with warning if client is not configured."""
+        with self.assertLogs("cms.core.slack", level="INFO") as logs:
+            notify_slack_of_bundle_failure(
+                bundle=self.bundle,
+                exception_message="Test error",
+                alert_type=BundleAlertType.CRITICAL,
+            )
+            self.assertIn("Skipping sending Slack message (token or channel not configured)", logs.output[0])
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_notify_bundle_failure__slack_api_error(self, mock_get_client):
         """Should log exception if Slack API call fails."""
@@ -386,7 +372,7 @@ class BundleFailureAlertsTestCase(TestCase):
     def setUpTestData(cls):
         cls.bundle = BundleFactory(name="Failed Bundle", bundled_pages=[StatisticalArticlePageFactory()])
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_ALERTS="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_ALARM_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.send_or_update_message")
     def test_alert_slack_of_bundle_content_failure(self, mock_send):
         """Should send a separate alert for content failures without updating the original message."""
@@ -408,7 +394,7 @@ class BundleFailureAlertsTestCase(TestCase):
         self.assertIn({"title": "Alert Type", "value": BundleAlertType.FAIL, "short": True}, fields)
         self.assertIn({"title": "Exception", "value": "Test publish failed", "short": False}, fields)
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_ALERTS="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_ALARM_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_alert_slack_of_bundle_content_failure__does_not_update_slack_notification_ts(self, mock_get_client):
         """Should not store message timestamp for failure notifications."""
@@ -427,28 +413,27 @@ class BundleFailureAlertsTestCase(TestCase):
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.slack_notification_ts, original_ts)
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_ALERTS="")
-    @patch("cms.core.slack.get_slack_client")
-    def test_alert_slack_of_bundle_content_failure__no_channel_configured(self, mock_get_client):
-        """Should return early if no channel is configured."""
-        alert_slack_of_bundle_content_failure(
-            bundle=self.bundle,
-            exception_message="Test error",
-            alert_type=BundleAlertType.CRITICAL,
-        )
-        mock_get_client.assert_not_called()
-
-    @override_settings(SLACK_BOT_TOKEN=None, SLACK_CHANNEL_ALERTS="C024BE91L")
-    def test_alert_slack_of_bundle_content_failure__no_client(self):
-        """Should return early with warning if client is not configured."""
-        with self.assertLogs("cms.core.slack", level="WARNING") as logs:
-            message_ts = alert_slack_of_bundle_content_failure(
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_ALARM_CHANNEL="")
+    def test_alert_slack_of_bundle_content_failure__no_channel_configured(self):
+        """Should log if no channel is configured."""
+        with self.assertLogs("cms.core.slack", level="INFO") as logs:
+            alert_slack_of_bundle_content_failure(
                 bundle=self.bundle,
                 exception_message="Test error",
                 alert_type=BundleAlertType.CRITICAL,
             )
-            self.assertIn("SLACK_BOT_TOKEN is not configured", logs.output[0])
-        self.assertIsNone(message_ts)
+            self.assertIn("Skipping sending Slack message (token or channel not configured)", logs.output[0])
+
+    @override_settings(SLACK_BOT_TOKEN=None, SLACK_ALARM_CHANNEL="C024BE91L")
+    def test_alert_slack_of_bundle_content_failure__no_client(self):
+        """Should return early with warning if client is not configured."""
+        with self.assertLogs("cms.core.slack", level="INFO") as logs:
+            alert_slack_of_bundle_content_failure(
+                bundle=self.bundle,
+                exception_message="Test error",
+                alert_type=BundleAlertType.CRITICAL,
+            )
+            self.assertIn("Skipping sending Slack message (token or channel not configured)", logs.output[0])
 
 
 class NotifyDatasetAPIFailureTestCase(TestCase):
@@ -456,7 +441,7 @@ class NotifyDatasetAPIFailureTestCase(TestCase):
     def setUpTestData(cls):
         cls.page = StatisticalArticlePageFactory(title="Test Page")
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_notify_dataset_api_failure__with_page(self, mock_get_client):
         """Should send notification with page context."""
@@ -488,7 +473,7 @@ class NotifyDatasetAPIFailureTestCase(TestCase):
         self.assertEqual(fields[2]["title"], "Exception")
         self.assertEqual(fields[2]["value"], "Timeout when fetching dataset")
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_notify_dataset_api_failure__without_page(self, mock_get_client):
         """Should send notification without page context."""
@@ -513,28 +498,29 @@ class NotifyDatasetAPIFailureTestCase(TestCase):
         self.assertEqual(fields[1]["title"], "Exception")
         self.assertEqual(fields[1]["value"], "Server error: HTTP 500")
 
-    @override_settings(SLACK_CHANNEL_PUBLICATION_LOG="")
+    @override_settings(SLACK_PUBLICATION_LOG_CHANNEL="")
     def test_notify_dataset_api_failure__no_channel_configured(self):
         """Should not send notification when channel is not configured."""
-        result = notify_slack_of_dataset_api_failure(
-            page=None,
-            exception_message="Test error",
-            alert_type=BundleAlertType.WARNING,
-        )
-        self.assertIsNone(result)
-
-    @override_settings(SLACK_BOT_TOKEN=None, SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
-    def test_notify_dataset_api_failure__no_bot_token(self):
-        """Should not send notification when bot token is not configured."""
-        with self.assertLogs("cms.core.slack", level="WARNING") as logs:
+        with self.assertLogs("cms.core.slack", level="INFO") as logs:
             notify_slack_of_dataset_api_failure(
                 page=None,
                 exception_message="Test error",
                 alert_type=BundleAlertType.WARNING,
             )
-            self.assertIn("SLACK_BOT_TOKEN is not configured", logs.output[0])
+            self.assertIn("Skipping sending Slack message (token or channel not configured)", logs.output[0])
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN=None, SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
+    def test_notify_dataset_api_failure__no_bot_token(self):
+        """Should not send notification when bot token is not configured."""
+        with self.assertLogs("cms.core.slack", level="INFO") as logs:
+            notify_slack_of_dataset_api_failure(
+                page=None,
+                exception_message="Test error",
+                alert_type=BundleAlertType.WARNING,
+            )
+            self.assertIn("Skipping sending Slack message (token or channel not configured)", logs.output[0])
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_notify_dataset_api_failure__slack_api_error(self, mock_get_client):
         """Should log error when Slack API call fails."""
@@ -557,7 +543,7 @@ class NotifyThirdPartyAPIFailureTestCase(TestCase):
         cls.bundle = BundleFactory(name="Test Bundle")
         cls.page = StatisticalArticlePageFactory(title="Test Page")
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_notify_third_party_api_failure__with_bundle(self, mock_get_client):
         """Should send notification with bundle context."""
@@ -590,7 +576,7 @@ class NotifyThirdPartyAPIFailureTestCase(TestCase):
         self.assertEqual(fields[2]["title"], "Exception")
         self.assertEqual(fields[2]["value"], "HTTP 500 error: Internal Server Error")
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_notify_third_party_api_failure__with_page(self, mock_get_client):
         """Should send notification with page context."""
@@ -614,7 +600,7 @@ class NotifyThirdPartyAPIFailureTestCase(TestCase):
         self.assertEqual(fields[0]["title"], "Page Name")
         self.assertIn("Test Page", fields[0]["value"])
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_notify_third_party_api_failure__without_context(self, mock_get_client):
         """Should send notification without bundle or page context."""
@@ -637,17 +623,18 @@ class NotifyThirdPartyAPIFailureTestCase(TestCase):
         self.assertEqual(fields[0]["title"], "Alert Type")
         self.assertEqual(fields[1]["title"], "Exception")
 
-    @override_settings(SLACK_CHANNEL_PUBLICATION_LOG="")
+    @override_settings(SLACK_PUBLICATION_LOG_CHANNEL="")
     def test_notify_third_party_api_failure__no_channel_configured(self):
-        """Should not send notification when channel is not configured."""
-        result = notify_slack_of_third_party_api_failure(
-            service_name="Test API",
-            exception_message="Test error",
-            alert_type=BundleAlertType.WARNING,
-        )
-        self.assertIsNone(result)
+        """Should log when channel is not configured."""
+        with self.assertLogs("cms.core.slack", level="INFO") as logs:
+            notify_slack_of_third_party_api_failure(
+                service_name="Test API",
+                exception_message="Test error",
+                alert_type=BundleAlertType.WARNING,
+            )
+            self.assertIn("Skipping sending Slack message (token or channel not configured)", logs.output[0])
 
-    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_CHANNEL_PUBLICATION_LOG="C024BE91L")
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_notify_third_party_api_failure__slack_api_error(self, mock_get_client):
         """Should log error when Slack API call fails."""

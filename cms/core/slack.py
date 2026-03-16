@@ -1,49 +1,10 @@
 import logging
-from collections.abc import Callable
-from functools import wraps
-from typing import Any
 
 from django.conf import settings
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 logger = logging.getLogger(__name__)
-
-
-def require_slack_publication_log_config[T: Callable[..., Any]](func: T) -> T:
-    """Decorator to check Slack publication log channel config before attempting to send messages.
-
-    Returns:
-        Decorated function that returns None and logs a warning if configuration checks fail.
-    """
-
-    @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if not settings.SLACK_CHANNEL_PUBLICATION_LOG:
-            logger.warning("SLACK_CHANNEL_PUBLICATION_LOG is not configured")
-            return None
-
-        return func(*args, **kwargs)
-
-    return wrapper  # type: ignore[return-value]
-
-
-def require_slack_alerts_config[T: Callable[..., Any]](func: T) -> T:
-    """Decorator to check Slack alerts channel config before attempting to send messages.
-
-    Returns:
-        Decorated function that returns None and logs a warning if configuration checks fail.
-    """
-
-    @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if not settings.SLACK_CHANNEL_ALERTS:
-            logger.warning("SLACK_CHANNEL_ALERTS is not configured")
-            return None
-
-        return func(*args, **kwargs)
-
-    return wrapper  # type: ignore[return-value]
 
 
 def get_slack_client() -> WebClient | None:
@@ -53,7 +14,6 @@ def get_slack_client() -> WebClient | None:
         WebClient instance if SLACK_BOT_TOKEN is configured, None otherwise.
     """
     if not (token := settings.SLACK_BOT_TOKEN):
-        logger.warning("SLACK_BOT_TOKEN is not configured")
         return None
     return WebClient(token=token)
 
@@ -62,7 +22,7 @@ def send_or_update_message(
     text: str,
     color: str,
     fields: list[dict],
-    channel: str,
+    channel: str | None,
     *,
     update_message_ts: str | None = None,
 ) -> str | None:
@@ -81,11 +41,15 @@ def send_or_update_message(
 
     Returns: Timestamp of the sent or updated message, or None if sending/updating failed
     """
-    client = get_slack_client()
-    if not client:
-        return None
-
     attachments = [{"color": color, "fields": fields}]
+
+    client = get_slack_client()
+    if not client or not channel:
+        logger.info(
+            "Skipping sending Slack message (token or channel not configured)",
+            extra={"slack_message": text, "channel": channel, "attachments": attachments},
+        )
+        return None
 
     try:
         if update_message_ts:

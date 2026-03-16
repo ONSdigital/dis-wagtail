@@ -6,13 +6,11 @@ from slack_sdk.errors import SlackApiError
 
 from cms.core.slack import (
     get_slack_client,
-    require_slack_alerts_config,
-    require_slack_publication_log_config,
     send_or_update_message,
 )
 
 
-class TestSendOrUpdateMessage(TestCase):
+class SendOrUpdateMessageTestCase(TestCase):
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token")
     @patch("cms.core.slack.get_slack_client")
     def test_send_new_message(self, mock_get_client):
@@ -26,7 +24,7 @@ class TestSendOrUpdateMessage(TestCase):
             text="This is a test message",
             channel="C024BE91L",
             color="good",
-            fields=[{"foo": "bar", "short": True}],
+            fields=[{"title": "foo", "value": "bar", "short": True}],
         )
 
         self.assertEqual(message_ts, mock_response["ts"])
@@ -39,7 +37,7 @@ class TestSendOrUpdateMessage(TestCase):
         self.assertEqual(call_kwargs["attachments"][0]["color"], "good")
 
         fields = call_kwargs["attachments"][0]["fields"]
-        self.assertIn({"foo": "bar", "short": True}, fields)
+        self.assertIn({"title": "foo", "value": "bar", "short": True}, fields)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token")
     @patch("cms.core.slack.get_slack_client")
@@ -54,7 +52,7 @@ class TestSendOrUpdateMessage(TestCase):
             text="This is a test message",
             channel="C024BE91L",
             color="good",
-            fields=[{"foo": "bar", "short": True}],
+            fields=[{"title": "foo", "value": "bar", "short": True}],
             update_message_ts="1234567890.000000",
         )
 
@@ -69,7 +67,7 @@ class TestSendOrUpdateMessage(TestCase):
         self.assertEqual(call_kwargs["attachments"][0]["color"], "good")
 
         fields = call_kwargs["attachments"][0]["fields"]
-        self.assertIn({"foo": "bar", "short": True}, fields)
+        self.assertIn({"title": "foo", "value": "bar", "short": True}, fields)
 
     @patch("cms.core.slack.get_slack_client")
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token")
@@ -88,7 +86,7 @@ class TestSendOrUpdateMessage(TestCase):
                 text="This is a test message",
                 channel="C024BE91L",
                 color="good",
-                fields=[{"foo": "bar", "short": True}],
+                fields=[{"title": "foo", "value": "bar", "short": True}],
                 update_message_ts="1234567890.000000",
             )
             self.assertIn("Failed to send/update Slack message: message_not_found", logs.output[0])
@@ -104,7 +102,7 @@ class TestSendOrUpdateMessage(TestCase):
         self.assertEqual(call_kwargs["attachments"][0]["color"], "good")
 
         fields = call_kwargs["attachments"][0]["fields"]
-        self.assertIn({"foo": "bar", "short": True}, fields)
+        self.assertIn({"title": "foo", "value": "bar", "short": True}, fields)
 
     @patch("cms.core.slack.get_slack_client")
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token")
@@ -121,7 +119,7 @@ class TestSendOrUpdateMessage(TestCase):
                 text="This is a test message",
                 channel="C024BE91L",
                 color="good",
-                fields=[{"foo": "bar", "short": True}],
+                fields=[{"title": "foo", "value": "bar", "short": True}],
                 update_message_ts="1234567890.000000",
             )
             self.assertIn("Failed to send/update Slack message: message_not_found", logs.output[0])
@@ -131,6 +129,46 @@ class TestSendOrUpdateMessage(TestCase):
 
         mock_client.chat_update.assert_called_once()  # Assert that an update was attempted
         mock_client.chat_postMessage.assert_called_once()  # Check that it fell back to posting a new message
+
+    @override_settings(SLACK_BOT_TOKEN=None)
+    def test_log_message_if_token_is_not_configured(self):
+        """Should log a message and skip sending if token is not configured, even if channel is provided."""
+        with self.assertLogs("cms.core.slack", level="INFO") as logs:
+            message_ts = send_or_update_message(
+                text="This is a test message",
+                channel="C024BE91L",
+                color="good",
+                fields=[{"title": "foo", "value": "bar", "short": True}],
+                update_message_ts="1234567890.000000",
+            )
+            self.assertIn("Skipping sending Slack message (token or channel not configured)", logs.output[0])
+            self.assertEqual("This is a test message", logs.records[0].slack_message)
+            self.assertEqual(
+                [{"color": "good", "fields": [{"title": "foo", "value": "bar", "short": True}]}],
+                logs.records[0].attachments,
+            )
+
+        self.assertIsNone(message_ts)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token")
+    def test_log_message_if_channel_is_not_given(self):
+        """Should log a message and skip sending if the message channel is None."""
+        with self.assertLogs("cms.core.slack", level="INFO") as logs:
+            message_ts = send_or_update_message(
+                text="This is a test message",
+                channel=None,
+                color="good",
+                fields=[{"title": "foo", "value": "bar", "short": True}],
+                update_message_ts="1234567890.000000",
+            )
+            self.assertIn("Skipping sending Slack message (token or channel not configured)", logs.output[0])
+            self.assertEqual("This is a test message", logs.records[0].slack_message)
+            self.assertEqual(
+                [{"color": "good", "fields": [{"title": "foo", "value": "bar", "short": True}]}],
+                logs.records[0].attachments,
+            )
+
+        self.assertIsNone(message_ts)
 
 
 class GetSlackClientTestCase(TestCase):
@@ -151,34 +189,4 @@ class GetSlackClientTestCase(TestCase):
     @override_settings(SLACK_BOT_TOKEN=None)
     def test_require_slack_notification_config__token_not_configured(self):
         """Should log and return none if Slack bot token is not configured."""
-        with self.assertLogs("cms.core.slack", level="WARNING") as logs:
-            self.assertIsNone(get_slack_client())
-            self.assertIn("SLACK_BOT_TOKEN is not configured", logs.output[0])
-
-
-class RequireSlackPublicationLogConfigTestCase(TestCase):
-    @override_settings(SLACK_CHANNEL_PUBLICATION_LOG=None)
-    def test_require_slack_notification_config__channel_not_configured(self):
-        """Should log and return none if Slack notification channel is not configured."""
-
-        @require_slack_publication_log_config
-        def dummy_function():
-            return "This should not be returned"
-
-        with self.assertLogs("cms.core.slack", level="WARNING") as logs:
-            self.assertIsNone(dummy_function())
-            self.assertIn("SLACK_CHANNEL_PUBLICATION_LOG is not configured", logs.output[0])
-
-
-class RequireSlackAlertsConfigTestCase(TestCase):
-    @override_settings(SLACK_CHANNEL_ALERTS=None)
-    def test_require_slack_notification_config__channel_not_configured(self):
-        """Should log and return none if Slack notification channel is not configured."""
-
-        @require_slack_alerts_config
-        def dummy_function():
-            return "This should not be returned"
-
-        with self.assertLogs("cms.core.slack", level="WARNING") as logs:
-            self.assertIsNone(dummy_function())
-            self.assertIn("SLACK_CHANNEL_ALERTS is not configured", logs.output[0])
+        self.assertIsNone(get_slack_client())

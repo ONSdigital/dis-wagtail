@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 
-from cms.core.slack import require_slack_alerts_config, require_slack_publication_log_config, send_or_update_message
+from cms.core.slack import send_or_update_message
 
 if TYPE_CHECKING:
     from django.utils.functional import _StrOrPromise
@@ -26,7 +26,6 @@ class BundleAlertType(str, Enum):
     WARNING = "Warning"
 
 
-@require_slack_publication_log_config
 def send_bundle_notification(  # pylint: disable=too-many-arguments  # noqa: PLR0913
     bundle: Bundle,
     text: str,
@@ -55,7 +54,7 @@ def send_bundle_notification(  # pylint: disable=too-many-arguments  # noqa: PLR
         color=color,
         fields=fields,
         update_message_ts=bundle.slack_notification_ts if not force_new else None,
-        channel=settings.SLACK_CHANNEL_PUBLICATION_LOG,
+        channel=settings.SLACK_PUBLICATION_LOG_CHANNEL,
     )
     if message_ts and save_timestamp:
         bundle.slack_notification_ts = message_ts
@@ -124,7 +123,6 @@ def _get_bundle_notification_context(bundle: Bundle) -> dict[str, str | int | No
     }
 
 
-@require_slack_publication_log_config
 def notify_slack_of_status_change(
     bundle: Bundle,
     old_status: _StrOrPromise,
@@ -155,7 +153,6 @@ def notify_slack_of_status_change(
     )
 
 
-@require_slack_publication_log_config
 def notify_slack_of_publication_start(
     bundle: Bundle,
     start_time: datetime,
@@ -193,7 +190,6 @@ def notify_slack_of_publication_start(
     )
 
 
-@require_slack_publication_log_config
 def notify_slack_of_publish_end(
     bundle: Bundle,
     start_time: datetime,
@@ -241,7 +237,6 @@ def notify_slack_of_publish_end(
     )
 
 
-@require_slack_publication_log_config
 def notify_slack_of_bundle_pre_publish(
     bundle: Bundle,
     scheduled_time: datetime,
@@ -270,7 +265,6 @@ def notify_slack_of_bundle_pre_publish(
     )
 
 
-@require_slack_publication_log_config
 def notify_slack_of_bundle_failure(
     bundle: Bundle,
     exception_message: str,
@@ -304,7 +298,6 @@ def notify_slack_of_bundle_failure(
     )
 
 
-@require_slack_alerts_config
 def alert_slack_of_bundle_content_failure(
     bundle: Bundle,
     exception_message: str,
@@ -334,5 +327,5 @@ def alert_slack_of_bundle_content_failure(
         text="Bundle Publication Failure Detected",
         color="danger",
         fields=fields,
-        channel=settings.SLACK_CHANNEL_ALERTS,
+        channel=settings.SLACK_ALARM_CHANNEL,
     )
