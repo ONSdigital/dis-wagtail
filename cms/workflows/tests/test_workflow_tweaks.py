@@ -627,8 +627,9 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
 
         self.assertItemWithPropertyNotIn("name", "action-restart-workflow", menu_items)
         self.assertItemWithPropertyNotIn("label", "Restart workflow", menu_items)
-        self.assertItemWithPropertyNotIn("label", "Resubmit for In review", menu_items)
-        self.assertNotContains(response, "Resubmit for In review")
+        # the core dynamic label is "Resubmit to %(task_name)s" and our task is "In Preview"
+        self.assertItemWithPropertyNotIn("label", "Resubmit to In Preview", menu_items)
+        self.assertNotContains(response, "Resubmit to In Preview")
 
         self.assertItemWithPropertyIn("name", "action-submit", menu_items)
         # alas, the SubmitForModerationMenuItem default label is "Submit for moderation", but
