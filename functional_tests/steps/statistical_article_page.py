@@ -797,7 +797,7 @@ def the_statistical_article_page_is_selected_as_the_featured_article_on_its_cont
 
 @step("the user visits the containing topic page")
 def user_visits_the_containing_topic_page(context: Context) -> None:
-    context.page.goto(f"{context.base_url}{context.topic_page.get_url()}")
+    context.page.goto(context.topic_page.full_url)
 
 
 @step("the user sees the published topic page")

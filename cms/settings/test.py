@@ -1,6 +1,9 @@
 import os
 
-from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
+# Force logs to JSON in tests, to match production behaviour
+os.environ.setdefault("LOG_AS_JSON", "true")
+
+from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
 env = os.environ.copy()
 
@@ -86,3 +89,11 @@ AWS_SESSION_TOKEN = "testing"  # noqa: S105
 AWS_EC2_METADATA_DISABLED = True
 
 USE_I18N_ROOT_NO_TRAILING_SLASH = True
+
+CMS_HOSTNAME_LOCALE_MAP = {
+    "ons.localhost": "en-gb",
+    "pub.ons.localhost": "en-gb",
+    "cy.ons.localhost": "cy",
+    "cy.pub.ons.localhost": "cy",
+}
+CMS_HOSTNAME_ALTERNATIVES = {"ons.localhost": "pub.ons.localhost", "cy.ons.localhost": "cy.pub.ons.localhost"}

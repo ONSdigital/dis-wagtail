@@ -1,22 +1,22 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
+from typing import TYPE_CHECKING, ClassVar, Self, cast
 
 from django.conf import settings
+from django.http import HttpRequest
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import ObjectList, TabbedInterface
-from wagtail.coreutils import WAGTAIL_APPEND_SLASH
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
 from wagtail.utils.decorators import cached_classmethod
 from wagtailschemaorg.models import PageLDMixin
-from wagtailschemaorg.utils import extend
 
 from cms.core.analytics_utils import format_date_for_gtm
 from cms.core.cache import get_default_cache_control_decorator
 from cms.core.forms import DeduplicateTopicsAdminForm, ONSCopyForm
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.query import order_by_pk_position
+from cms.locale.utils import get_mapped_site_root_paths
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
@@ -25,11 +25,10 @@ if TYPE_CHECKING:
     from datetime import date, datetime
 
     from django.db import models
-    from django.http import HttpRequest
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import BaseGenericSetting as _WagtailBaseGenericSetting
     from wagtail.contrib.settings.models import BaseSiteSetting as _WagtailBaseSiteSetting
-    from wagtail.models import Site
+    from wagtail.models.sites import Site, SiteRootPath
 
     class WagtailBaseSiteSetting(_WagtailBaseSiteSetting, models.Model):
         """Explicit class definition for type checking. Indicates we're inheriting from Django's model."""
@@ -115,12 +114,9 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         The result is ordered to match that specified by editors using
         the 'page_related_pages' `InlinePanel`.
         """
-        # NOTE: avoiding values_list() here for compatibility with preview
-        # See: https://github.com/wagtail/django-modelcluster/issues/30
-        ordered_page_pks = tuple(item.page_id for item in self.page_related_pages.all())
         return order_by_pk_position(
             Page.objects.live().public().specific(),
-            pks=ordered_page_pks,
+            pks=list(self.page_related_pages.values_list("page_id", flat=True)),
             exclude_non_matches=True,
         )
 
@@ -141,32 +137,33 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         # Use the release_date field if available, otherwise return last_published_at.
         return getattr(self, "release_date", self.last_published_at)
 
-    def get_breadcrumbs(self, request: HttpRequest | None = None) -> list[dict[str, object]]:
+    def get_breadcrumbs(self, request: HttpRequest) -> list[dict[str, object]]:
         """Returns the breadcrumbs for the page as a list of dictionaries compatible with the ONS design system
         breadcrumbs component.
         """
-        # TODO make request non-optional once wagtailschemaorg supports passing through the request.
-        # https://github.com/neon-jungle/wagtail-schema.org/issues/29
+        if prebuilt_breadcrumbs := getattr(self, "_breadcrumbs", None):
+            return prebuilt_breadcrumbs  # type: ignore[no-any-return]
+
         breadcrumbs = []
         homepage_depth = 2
-        for ancestor_page in self.get_ancestors().specific().defer_streamfields():
+        for ancestor_page in self.get_ancestors().specific(defer=True):
             if ancestor_page.is_root():
                 continue
             if ancestor_page.depth <= homepage_depth:
                 breadcrumbs.append({"url": self.get_site().root_url, "text": _("Home")})
             elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
                 breadcrumbs.append({"url": ancestor_page.get_full_url(request=request), "text": ancestor_page.title})
-        if request and getattr(request, "is_for_subpage", False):
+        if getattr(request, "is_for_subpage", False):
             breadcrumbs.append({"url": self.get_full_url(request=request), "text": self.title})
+        self._breadcrumbs = breadcrumbs  # pylint: disable=attribute-defined-outside-init
         return breadcrumbs
 
-    @cached_property
-    def breadcrumbs_as_jsonld(self) -> dict[str, object]:
+    def breadcrumbs_as_jsonld(self, request: HttpRequest) -> dict[str, object]:
         """Returns the breadcrumbs as a dictionary in the format required for a JSON LD entity."""
         breadcrumbs_jsonld: dict[str, object] = {}
         item_list = []
 
-        for position, breadcrumb in enumerate(self.get_breadcrumbs(), 1):
+        for position, breadcrumb in enumerate(self.get_breadcrumbs(request), 1):
             item_list.append(
                 {
                     "@type": "ListItem",
@@ -184,15 +181,15 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         return breadcrumbs_jsonld
 
-    def ld_entity(self) -> dict[str, object]:
+    def ld_entity(self, request: HttpRequest) -> dict[str, object]:
         """Add page breadcrumbs to the JSON LD properties."""
-        page_ld_entity: dict[str, object] = {"@type": self.schema_org_type}
-        page_ld_entity.update(self.breadcrumbs_as_jsonld)
+        page_ld_entity: dict[str, object] = {**super().ld_entity(request), "@type": self.schema_org_type}
+        page_ld_entity.update(self.breadcrumbs_as_jsonld(request))
 
         if not page_ld_entity.get("description", ""):
             page_ld_entity["description"] = self.search_description or self.listing_summary
 
-        return cast(dict[str, Any], extend(super().ld_entity(), page_ld_entity))
+        return page_ld_entity
 
     def get_canonical_url(self, request: HttpRequest) -> str:
         """Get the default canonical URL for the page for the given request.
@@ -206,13 +203,28 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return request.build_absolute_uri(request.get_full_path())
         return cast(str, canonical_page.get_full_url(request=request))
 
-    def get_url(self, request: HttpRequest | None = None, current_site: Site | None = None) -> str | None:
-        """Override get_url to return URLs without trailing slashes."""
-        url: str = super().get_url(request, current_site)
+    def get_url_parts(self, request: HttpRequest | None = None) -> tuple[int, str | None, str | None] | None:
+        """Override get_url_parts to generate URLs without trailing slashes."""
+        parts = super().get_url_parts(request)
 
-        if not WAGTAIL_APPEND_SLASH and url and url != "/":
-            return url.rstrip("/")
-        return url
+        if parts is None:
+            return None
+
+        site_id, root_url, page_path = parts
+
+        if not settings.WAGTAIL_APPEND_SLASH and page_path and page_path != "/":
+            page_path = page_path.rstrip("/")
+
+        return site_id, root_url, page_path
+
+    def get_relative_path(self, request: HttpRequest | None = None) -> str:
+        """Get the relative path for this page, without the domain or any locale prefix.
+        This will be the path portion of the URL returned by `get_url_parts()`.
+        """
+        parts = self.get_url_parts(request=request)  # returns site_id, root_url, page_path | None
+        if parts is None or parts[-1] is None:
+            return ""
+        return parts[-1]
 
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
@@ -274,6 +286,28 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         parent_theme = page_topic.get_base_parent()
         return cast(str, parent_theme.title)
+
+    def _get_site_root_paths(self, request: HttpRequest | models.Model | None = None) -> list[SiteRootPath]:
+        """Extends the core Page._get_site_root_paths to account for alternative domains.
+
+        Note: while the method signature implies we get a request object, in reality it can be a model too.
+        """
+        if not settings.CMS_USE_SUBDOMAIN_LOCALES:
+            return cast(list["SiteRootPath"], super()._get_site_root_paths(request=request))
+
+        cache_object = request if request is not None else self
+        try:
+            # pylint: disable=protected-access
+            cached_paths: list[SiteRootPath] = cache_object._wagtail_cached_site_root_paths  # type: ignore[union-attr]
+            # pylint: enable=protected-access
+            return cached_paths
+        except AttributeError:
+            host = request.get_host() if isinstance(request, HttpRequest) else None
+            paths = get_mapped_site_root_paths(host)
+            # pylint: disable=protected-access,attribute-defined-outside-init
+            cache_object._wagtail_cached_site_root_paths = paths  # type: ignore[union-attr]
+            # pylint: enable=protected-access,attribute-defined-outside-init
+            return paths
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

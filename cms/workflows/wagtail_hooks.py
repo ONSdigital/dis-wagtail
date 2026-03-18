@@ -16,6 +16,7 @@ from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 from . import admin_urls
 from .action_menu import UnlockWorkflowMenuItem
 from .admin_urls import path
+from .models import get_final_approve_label
 from .utils import is_page_ready_to_publish
 
 if TYPE_CHECKING:
@@ -54,34 +55,12 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
                 icon_name = "success" if name in ["approve", "locked-approve"] else "edit"
                 updated_menu_items.append(WorkflowMenuItem(name, item_label, launch_modal, icon_name=icon_name))
 
-    is_final_task = (
-        page.current_workflow_task
-        and page.current_workflow_task.pk == page.current_workflow_state.workflow.tasks.last().pk
-    )
-
-    is_self_approver = page.latest_revision and page.latest_revision.user_id == request.user.pk
+    # Do a final relabel for the "approve" actions to prevent any inconsistencies.
     final_menu_items = []
     for item in updated_menu_items:
         if item.name in ["approve", "locked-approve"]:
-            # tidy up the "approve" action label, both for when we're lock in ready to publish,
-            # and when the workflow was "unlocked". i.e. moved back a step. Account for scheduled publishing
-            if is_final_task:
-                if page.go_live_at and page.go_live_at > timezone.now():
-                    label = (
-                        "Schedule to publish"
-                        if "with comment" not in item.label
-                        else "Schedule to publish with comment"
-                    )
-                else:
-                    label = "Publish" if "with comment" not in item.label else "Publish with comment"
+            item.label = get_final_approve_label(page, item.label)
 
-            elif is_self_approver:
-                # anyone with the publish permission can do so once in "ready to be published".
-                # before that, hide the action item if the current user was the last editor to prevent self-approval
-                continue
-            else:
-                label = "Approve" if "with comment" not in item.label else "Approve with comment"
-            item.label = label
         final_menu_items.append(item)
 
     return final_menu_items
