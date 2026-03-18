@@ -449,7 +449,6 @@ In order to run only a specific linter, you can set the `LINTER` variable:
 make megalint LINTER=REPOSITORY_GRYPE
 ```
 
-
 ### Mailpit (Email Testing)
 
 Mailpit is a lightweight, local SMTP server and web interface that captures all outgoing email from our application without actually delivering it.
