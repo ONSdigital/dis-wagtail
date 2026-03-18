@@ -453,6 +453,8 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
             with self.subTest(f"Test dashboard has publish action for {user}"):
                 self.client.force_login(user)
                 response = self.client.get(self.dashboard_url)
+                self.assertNotContains(response, "Awaiting your review")
+                self.assertContains(response, "Pages ready to publish")
                 self.assertRegex(
                     response.content.decode(encoding="utf-8"),
                     r"<button data-workflow-action-url=.*>\s?Publish\s?<\/button>",
@@ -472,6 +474,15 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
 
         actions = self.page.current_workflow_task.get_actions(self.page, self.publishing_admin)
         self.assertEqual(actions, [])
+
+    def test_ready_to_publish_task__not_in_awaiting_your_review_dashboard_panel(self):
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_to_publish(self.page)
+
+        response = self.client.get(self.dashboard_url)
+        self.assertNotContains(response, "Awaiting your review")
+        self.assertNotContains(response, "Publish")
+        self.assertNotContains(response, "locked-approve")
 
     @patch("cms.workflows.wagtail_hooks.update_action_menu")
     def test_workflow_page_action_hook_not_actioned_in_irrelevant_contexts(self, mocked_update):
@@ -615,6 +626,26 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.post(self.edit_url, data, follow=True)
 
         self.assertContains(response, "Could not perform the action as the page is no longer in a workflow.")
+
+    def test_restart_action_removed_and_resubmit_for_review_label_updated(self):
+        self.client.force_login(self.publishing_admin)
+        workflow_state = mark_page_as_ready_for_review(self.page, self.publishing_officer)
+        workflow_state.status = workflow_state.STATUS_NEEDS_CHANGES
+        workflow_state.save()
+
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertItemWithPropertyNotIn("name", "action-restart-workflow", menu_items)
+        self.assertItemWithPropertyNotIn("label", "Restart workflow", menu_items)
+        self.assertItemWithPropertyNotIn("label", "Resubmit for In review", menu_items)
+        self.assertNotContains(response, "Resubmit for In review")
+
+        self.assertItemWithPropertyIn("name", "action-submit", menu_items)
+        # alas, the SubmitForModerationMenuItem default label is "Submit for moderation", but
+        # that gets updated dynamically when the template is rendered, so we need to
+        self.assertItemWithPropertyIn("label", "Submit for moderation", menu_items)
+        self.assertContains(response, "Resubmit for review")
 
 
 class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
