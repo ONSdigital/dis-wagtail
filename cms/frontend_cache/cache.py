@@ -14,6 +14,7 @@ from cms.topics.models import TopicPage
 
 if TYPE_CHECKING:
     from django.db.models import Model
+    from wagtail.query import PageQuerySet
 
 
 def get_page_cached_urls(page: Page, cache_object: Any | None = None) -> list[str]:
@@ -122,7 +123,7 @@ def get_topic_pages_featuring_series(
     statistical_article: StatisticalArticlePage, article_series: ArticleSeriesPage
 ) -> set[str]:
     """Returns the list of topic page URLs that feature the given statistical article series."""
-    urls = set()
+    urls: set[str] = set()
 
     if not statistical_article.is_latest:
         return urls
@@ -131,7 +132,8 @@ def get_topic_pages_featuring_series(
     # Get the series topic path and exclude it as we handle the parent topic separately.
     # url_path is in the form: /home/topic/articles/series/ so this becomes /home/topic/
     parent_topic_path = "/".join(article_series.url_path.rstrip("/").split("/")[:-2]) + "/"
-    for topic_page in article_series.featured_on_topic.exclude(path=parent_topic_path).live().only("pk", "url_path"):
+    featured_on_topics_qs: PageQuerySet = article_series.featured_on_topic.exclude(path=parent_topic_path)
+    for topic_page in featured_on_topics_qs.live().only("pk", "url_path"):
         urls.update(get_page_cached_urls(topic_page))
         topic_page_ids.append(topic_page.pk)
 

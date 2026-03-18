@@ -74,24 +74,18 @@ class DataDownloadMixin:
         return blocks
 
     def get_downloadable_block_paths(self) -> list[str]:
-        urls: list[str] = []
+        paths: list[str] = []
 
-        path_prefix_len = len(self.url)  # type: ignore[attr-defined]
         for block_type, block_id in self._get_downloadable_blocks():
-            url = ""
+            block_path = ""
             if block_type in TABLE_BLOCK_TYPES:
-                url = ONSTableBlock._build_table_download_url(self, block_id)  # pylint: disable=protected-access
+                block_path = ONSTableBlock._build_download_path_fragment(block_id)  # pylint: disable=protected-access
             elif block_type in CHART_BLOCK_TYPES:
-                url = BaseChartBlock._build_chart_download_url(  # pylint: disable=protected-access
-                    self,  # type: ignore[arg-type]
-                    block_id,
-                )
-            if url:
-                if url.startswith("/"):
-                    url = url[path_prefix_len:]
-                urls.append(url)
+                block_path = BaseChartBlock._build_download_path_fragment(block_id)  # pylint: disable=protected-access
+            if block_path:
+                paths.append(block_path)
 
-        return urls
+        return paths
 
     def get_table(self, table_id: str) -> dict[str, Any]:
         """Finds a table block by its unique block ID in content.
