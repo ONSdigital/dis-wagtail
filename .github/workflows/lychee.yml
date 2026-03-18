@@ -24,7 +24,7 @@ jobs:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
       - name: Link Checker
         id: lychee
-        uses: lycheeverse/lychee-action@v2
+        uses: lycheeverse/lychee-action@v2.8.0
         with:
           format: 'detailed'
           args: '.'

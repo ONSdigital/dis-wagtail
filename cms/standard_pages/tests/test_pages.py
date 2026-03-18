@@ -1,22 +1,34 @@
 from django.conf import settings
 from django.test import override_settings
+from django.utils import translation
+from wagtail.models import Site
 from wagtail.test.utils import WagtailPageTestCase
 
-from cms.core.tests.utils import TranslationResetMixin
+from cms.core.tests.utils import TranslationResetMixin, reset_url_caches
 from cms.standard_pages.models import CookiesPage
 from cms.standard_pages.utils import SUPPORTED_LANGUAGE_CODES
 
 
 class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cookies_page = CookiesPage.objects.get(locale__language_code="en-gb")
+        cls.welsh_cookies_page = CookiesPage.objects.get(locale__language_code="cy")
+        cls.home = cls.cookies_page.get_parent().specific
+        cls.welsh_home = cls.welsh_cookies_page.get_parent().specific
+
+    def tearDown(self):
+        # Clear translation caches
+        translation.deactivate()
+
     def test_get_cookies_page(self):
-        response = self.client.get("/cookies")
+        response = self.client.get(self.cookies_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Cookies on ONS.GOV.UK")
         self.assertContains(response, "Cookie settings")
 
-    @override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
     def test_get_welsh_cookies_page(self):
-        response = self.client.get("/cy/cookies")
+        response = self.client.get(self.welsh_cookies_page.url, headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Cwcis ar ONS.GOV.UK")
         self.assertContains(response, "Gosodiadau cwcis")
@@ -33,14 +45,18 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
                 self.assertEqual(cookies_page.translation_key, english_cookies_page.translation_key)
 
     def test_view_cookies_link_is_present(self):
-        response = self.client.get("/")
+        response = self.client.get(self.home.url)
         self.assertContains(response, 'href="/cookies"')
 
     def test_view_cookies_link_is_present_welsh(self):
-        response = self.client.get("/cy")
+        response = self.client.get(self.welsh_home.url)
         self.assertContains(response, 'href="/cookies"')
 
     @override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
     def test_view_cookies_link_is_localised_subdomain_routing_off(self):
+        # remove all but the default site
+        Site.objects.filter(is_default_site=False).delete()
+        reset_url_caches()
+
         response = self.client.get("/cy")
         self.assertContains(response, 'href="/cy/cookies"')
