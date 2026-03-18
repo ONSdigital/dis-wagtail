@@ -95,7 +95,7 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
 
         self.assertContains(
             response,
-            f'<a href="{self.article_series_page.url}/related-data" class="ons-list__link">'
+            f'<a href="{self.article_series_page.get_relative_path()}/related-data" class="ons-list__link">'
             + "View data used in this article</a>",
             html=True,
         )
@@ -157,11 +157,10 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
         request_factory = RequestFactory()
         request_factory_server_name = request_factory._base_environ()["SERVER_NAME"]  # pylint: disable=protected-access
 
+        relative_path = self.article_with_datasets.get_relative_path()
         self.assertContains(
             response,
-            f'<link rel="canonical" href="http://{request_factory_server_name}{
-                self.article_with_datasets.url
-            }/related-data">',
+            f'<link rel="canonical" href="http://{request_factory_server_name}{relative_path}/related-data">',
             html=True,
         )
         self.assertNotContains(
@@ -205,7 +204,7 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
             locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_article.save_revision().publish()
-        response = self.client.get(f"{welsh_article.url}/related-data")
+        response = self.client.get(f"{welsh_article.url}/related-data", headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
         welsh_series_url = welsh_article.get_parent().get_full_url()
         self.assertContains(response, f'<link rel="canonical" href="{welsh_series_url}/related-data">', html=True)
@@ -219,7 +218,7 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
             locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_article.save_revision().publish()
-        response = self.client.get(f"{self.article_series_page.url}/related-data")
+        response = self.client.get(f"{self.article_series_page.url}/related-data", headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
         # TODO: Change to {self.article_series_page.url}/related-data once CMS-765 is resolved.
         self.assertContains(
@@ -986,7 +985,8 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
         # Download chart from Welsh article
         welsh_series = welsh_article.get_parent().specific
         welsh_response = self.client.get(
-            f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id-2"
+            f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id-2",
+            headers={"host": "cy.ons.localhost"},
         )
         welsh_content = welsh_response.content.decode("utf-8")
 
@@ -1030,7 +1030,10 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
 
         # Attempt to download chart that doesn't exist in Welsh translation
         welsh_series = welsh_article.get_parent().specific
-        response = self.client.get(f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id")
+        response = self.client.get(
+            f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id",
+            headers={"host": "cy.ons.localhost"},
+        )
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_download_chart_welsh_translation_with_version(self):
@@ -1113,7 +1116,8 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
 
         # Download the original version (version 1)
         response = self.client.get(
-            f"{welsh_series.url}/editions/{welsh_article.slug}/versions/1/download-chart/test-chart-id"
+            f"{welsh_series.url}/editions/{welsh_article.slug}/versions/1/download-chart/test-chart-id",
+            headers={"host": "cy.ons.localhost"},
         )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
