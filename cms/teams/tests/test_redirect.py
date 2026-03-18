@@ -48,6 +48,15 @@ class TeamsRedirectTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @override_settings(
+        ALLOW_TEAM_MANAGEMENT=True,
+        AWS_COGNITO_TEAM_SYNC_ENABLED=False,
+    )
+    def test_no_redirect_when_team_management_enabled_but_no_sync(self):
+        reset_url_caches()
+        response = self.client.get(reverse("teams:index"))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @override_settings(
         ALLOW_TEAM_MANAGEMENT=False,
         AWS_COGNITO_TEAM_SYNC_ENABLED=False,
     )
