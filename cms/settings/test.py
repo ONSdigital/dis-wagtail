@@ -90,6 +90,13 @@ AWS_EC2_METADATA_DISABLED = True
 
 USE_I18N_ROOT_NO_TRAILING_SLASH = True
 
+CMS_HOSTNAME_LOCALE_MAP = {
+    "ons.localhost": "en-gb",
+    "pub.ons.localhost": "en-gb",
+    "cy.ons.localhost": "cy",
+    "cy.pub.ons.localhost": "cy",
+}
+CMS_HOSTNAME_ALTERNATIVES = {"ons.localhost": "pub.ons.localhost", "cy.ons.localhost": "cy.pub.ons.localhost"}
 
 # Ensure cms.frontend_cache is installed
 if "cms.frontend_cache" not in INSTALLED_APPS:  # noqa: F405
