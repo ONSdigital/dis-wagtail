@@ -68,7 +68,7 @@ if not settings.IS_EXTERNAL_ENV:
         wagtail_admin_patterns += [
             re_path(
                 r"^teams/",
-                RedirectView.as_view(url=settings.FLORENCE_GROUPS_URL, permanent=False),
+                RedirectView.as_view(url=settings.FLORENCE_GROUPS_PATH, permanent=False),
             ),
         ]
 

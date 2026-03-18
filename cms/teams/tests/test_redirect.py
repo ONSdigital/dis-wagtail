@@ -21,7 +21,7 @@ class TeamsRedirectTestCase(WagtailTestUtils, TestCase):
     @override_settings(
         ALLOW_TEAM_MANAGEMENT=False,
         AWS_COGNITO_TEAM_SYNC_ENABLED=True,
-        FLORENCE_GROUPS_URL="/florence/groups",
+        FLORENCE_GROUPS_PATH="/florence/groups",
     )
     def test_teams_index_redirects_to_florence_when_sync_enabled(self):
         reset_url_caches()
@@ -31,7 +31,7 @@ class TeamsRedirectTestCase(WagtailTestUtils, TestCase):
     @override_settings(
         ALLOW_TEAM_MANAGEMENT=False,
         AWS_COGNITO_TEAM_SYNC_ENABLED=True,
-        FLORENCE_GROUPS_URL="/florence/groups",
+        FLORENCE_GROUPS_PATH="/florence/groups",
     )
     def test_teams_subpath_redirects_to_florence_when_sync_enabled(self):
         reset_url_caches()
@@ -55,13 +55,3 @@ class TeamsRedirectTestCase(WagtailTestUtils, TestCase):
         reset_url_caches()
         response = self.client.get(reverse("teams:index"))
         self.assertEqual(response.status_code, HTTPStatus.OK)
-
-    @override_settings(
-        ALLOW_TEAM_MANAGEMENT=False,
-        AWS_COGNITO_TEAM_SYNC_ENABLED=True,
-        FLORENCE_GROUPS_URL="https://florence.example.com/groups",
-    )
-    def test_redirect_uses_configured_florence_groups_url(self):
-        reset_url_caches()
-        response = self.client.get(reverse("teams:index"))
-        self.assertRedirects(response, "https://florence.example.com/groups", fetch_redirect_response=False)
