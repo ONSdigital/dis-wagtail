@@ -281,7 +281,10 @@ def index_page_has_information_pages(context: Context) -> None:
 
 @when("the user visits the live index page")
 def user_visits_index_page(context: Context) -> None:
-    context.page.goto(f"{context.base_url}{context.index_page.url}")
+    page_url = context.index_page.url
+    if page_url.startswith("/"):
+        page_url = f"{context.base_url}{page_url}"
+    context.page.goto(page_url)
 
 
 @when("the user visits the index page preview")
