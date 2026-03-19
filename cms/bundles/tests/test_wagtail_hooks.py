@@ -187,13 +187,13 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
         self.client.force_login(self.bundle_viewer)
         response = self.client.get(self.dashboard_url)
         self.assertContains(
-            response, f'<a href="{self.bundle_index_url}" title="Total active bundles">0 bundles</a>', html=True
+            response, f'<a href="{self.bundle_index_url}" title="Total active bundles">0 Bundles</a>', html=True
         )
 
         self.bundle_viewer.teams.add(self.preview_team)
         response = self.client.get(self.dashboard_url)
         self.assertContains(
-            response, f'<a href="{self.bundle_index_url}" title="Total active bundles">1 bundle</a>', html=True
+            response, f'<a href="{self.bundle_index_url}" title="Total active bundles">1 Bundle</a>', html=True
         )
 
     def test_summary_item__user_who_can_manage(self):
@@ -202,5 +202,5 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
                 self.client.force_login(user)
                 response = self.client.get(self.dashboard_url)
                 self.assertContains(
-                    response, f'<a href="{self.bundle_index_url}" title="Total active bundles">3 bundles</a>', html=True
+                    response, f'<a href="{self.bundle_index_url}" title="Total active bundles">3 Bundles</a>', html=True
                 )
