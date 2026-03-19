@@ -1359,7 +1359,12 @@ class BundleDeleteTestCase(WagtailTestUtils, TestCase):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
 
+        # try both GET and POST for the delete view
         response = self.client.get(self.delete_url, follow=True)
+        self.assertRedirects(response, "/admin/")
+        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+        response = self.client.post(self.delete_url, data={"action-delete": "delete"}, follow=True)
         self.assertRedirects(response, "/admin/")
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
