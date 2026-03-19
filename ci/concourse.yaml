@@ -25,8 +25,7 @@ helm:
     # to be applied in lockstep. If the Helm chart auto-updates before configuration
     # is in place, the deployment may break and cause service disruption.
     sandbox:
-      # Do not auto merge the PR for sandbox. Triggered by application merge to the main branch
-      is_auto_merge: false
+      is_auto_merge: true
     staging:
       # Do not auto merge the PR for staging. Triggered by application release candidate tag (e.g. v1.0.0-rc.1)
       is_auto_merge: false

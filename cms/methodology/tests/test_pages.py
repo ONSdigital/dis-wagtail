@@ -58,7 +58,7 @@ class MethodologyPageTest(WagtailPageTestCase):
         response = self.client.get(self.page.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Related publications")
-        self.assertContains(response, related.page.url)
+        self.assertContains(response, related.page.get_url(request=self.dummy_request))
         self.assertContains(response, related.page.display_title)
 
     def test_date_placeholder(self):
