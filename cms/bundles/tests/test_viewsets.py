@@ -14,6 +14,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from wagtail.admin.panels import get_edit_handler
+from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale, Page
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
@@ -815,7 +816,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
 
         self.assertContains(response, "Foobar Release Calendar Page")
-        self.assertContains(response, release_calendar_page.url)
+        self.assertContains(response, release_calendar_page.get_url(request=get_dummy_request()))
         self.assertNotContains(response, reverse("bundles:preview_release_calendar", args=[self.bundle.id]))
 
     @time_machine.travel(datetime(2025, 7, 1, 12, 37), tick=False)
