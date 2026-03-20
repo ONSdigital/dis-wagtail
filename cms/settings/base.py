@@ -923,6 +923,15 @@ WAGTAIL_ENABLE_WHATS_NEW_BANNER = False
 # from third-party applications like PayPal or Zoom as needed
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 
+
+# Explicitly set the ImmediateBackend for tasks (even though it is the default at the time of writing)
+# We do this to ensure certain tasks, such as updating the reference index, happen sequentially.
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
+    }
+}
+
 #
 # ONS CMS specific-settings
 #
