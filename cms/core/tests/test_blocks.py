@@ -789,7 +789,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertIn("ons-table-scrollable", rendered)  # DS always adds scrollable wrapper
         self.assertIn("ons-table__body", rendered)
         self.assertIn("ons-table__row", rendered)
-        self.assertInHTML('<td class="ons-table__cell">row cell</td>', rendered)
+        self.assertInHTML('<td class="ons-table__cell ons-table__cell--top">row cell</td>', rendered)
 
         # Test table with header only
         table = {
@@ -800,7 +800,8 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         self.assertIn("ons-table__head", rendered)
         self.assertInHTML(
-            '<th scope="col" class="ons-table__header"><span class="ons-table__header-text">header cell</span></th>',
+            '<th scope="col" class="ons-table__header ons-table__header--top">'
+            '<span class="ons-table__header-text">header cell</span></th>',
             rendered,
         )
 
@@ -843,9 +844,9 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertIn('colspan="2"', rendered)
         self.assertIn('rowspan="2"', rendered)
         # Check row headers in body are rendered with heading attribute (th with scope=row)
-        self.assertInHTML('<th class="ons-table__cell" scope="row">Col header 1</th>', rendered)
-        self.assertInHTML('<th class="ons-table__cell" scope="row">Col header 2</th>', rendered)
-        self.assertInHTML('<th class="ons-table__cell" scope="row">Col header 3</th>', rendered)
+        self.assertInHTML('<th class="ons-table__cell ons-table__cell--top" scope="row">Col header 1</th>', rendered)
+        self.assertInHTML('<th class="ons-table__cell ons-table__cell--top" scope="row">Col header 2</th>', rendered)
+        self.assertInHTML('<th class="ons-table__cell ons-table__cell--top" scope="row">Col header 3</th>', rendered)
 
     def test__align_to_ons_classname(self):
         scenarios = {"right": "ons-u-ta-right", "left": "ons-u-ta-left", "center": "ons-u-ta-center", "foo": ""}
