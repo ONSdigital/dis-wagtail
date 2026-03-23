@@ -748,20 +748,33 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
                 for field in not_present:
                     self.assertNotIn(data[field], rendered)
 
-    def test_render_block__alignment_and_width(self):
+    def test_render_block__alignment(self):
         table_data = {
-            "headers": [[{"value": "header cell", "type": "th", "width": "20px", "align": "center"}]],
-            "rows": [[{"value": "row cell", "type": "td", "width": "50%", "align": "right"}]],
+            "headers": [[{"value": "header cell", "type": "th", "align": "center", "valign": "bottom"}]],
+            "rows": [[{"value": "row cell", "type": "td", "align": "right", "valign": "middle"}]],
         }
 
         rendered = self.block.render({"data": table_data})
+        soup = BeautifulSoup(rendered, "html.parser")
 
-        # Check header cell has alignment class
-        self.assertIn("ons-u-ta-center", rendered)
-        self.assertIn("header cell", rendered)
-        # Check body cell has alignment class
-        self.assertIn("ons-u-ta-right", rendered)
-        self.assertIn("row cell", rendered)
+        header = soup.find("th")
+        assert header.get_text(strip=True) == "header cell"
+
+        cell = soup.find("td")
+        assert cell.get_text(strip=True) == "row cell"
+
+        header_classes = header.get("class", [])
+        cell_classes = cell.get("class", [])
+
+        # Check header cell horizontal alignment
+        assert "ons-u-ta-center" in header_classes
+        # Check header cell vertical alignment
+        assert "ons-table__header--bottom" in header_classes
+
+        # Check body cell horizontal alignment
+        assert "ons-u-ta-right" in cell_classes
+        # Check body cell vertical alignment
+        assert "ons-table__cell--middle" in cell_classes
 
     def test_render_block__ds_component_markup(self):
         """Test that table renders with correct DS component structure."""
