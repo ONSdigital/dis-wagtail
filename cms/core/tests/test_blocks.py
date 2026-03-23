@@ -758,23 +758,23 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         soup = BeautifulSoup(rendered, "html.parser")
 
         header = soup.find("th")
-        assert header.get_text(strip=True) == "header cell"
+        self.assertEqual(header.get_text(strip=True), "header cell")
 
         cell = soup.find("td")
-        assert cell.get_text(strip=True) == "row cell"
+        self.assertEqual(cell.get_text(strip=True), "row cell")
 
         header_classes = header.get("class", [])
         cell_classes = cell.get("class", [])
 
         # Check header cell horizontal alignment
-        assert "ons-u-ta-center" in header_classes
+        self.assertIn("ons-u-ta-center", header_classes)
         # Check header cell vertical alignment
-        assert "ons-table__header--bottom" in header_classes
+        self.assertIn("ons-table__header--bottom", header_classes)
 
         # Check body cell horizontal alignment
-        assert "ons-u-ta-right" in cell_classes
+        self.assertIn("ons-u-ta-right", cell_classes)
         # Check body cell vertical alignment
-        assert "ons-table__cell--middle" in cell_classes
+        self.assertIn("ons-table__cell--middle", cell_classes)
 
     def test_render_block__ds_component_markup(self):
         """Test that table renders with correct DS component structure."""
