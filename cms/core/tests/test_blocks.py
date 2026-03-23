@@ -750,31 +750,49 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
     def test_render_block__alignment(self):
         table_data = {
-            "headers": [[{"value": "header cell", "type": "th", "align": "center", "valign": "bottom"}]],
-            "rows": [[{"value": "row cell", "type": "td", "align": "right", "valign": "middle"}]],
+            "headers": [
+                [
+                    {"value": "header cell", "type": "th", "align": "center", "valign": "bottom"},
+                    {"value": "header cell 2", "type": "th"},  # Default valign is top when not specified
+                ]
+            ],
+            "rows": [
+                [
+                    {"value": "row cell", "type": "td", "align": "right", "valign": "middle"},
+                    {"value": "row cell 2", "type": "td"},  # Default valign is top when not specified
+                ]
+            ],
         }
 
         rendered = self.block.render({"data": table_data})
         soup = BeautifulSoup(rendered, "html.parser")
 
-        header = soup.find("th")
-        self.assertEqual(header.get_text(strip=True), "header cell")
+        header_1, header_2 = soup.findAll("th")
+        self.assertEqual(header_1.get_text(strip=True), "header cell")
+        self.assertEqual(header_2.get_text(strip=True), "header cell 2")
 
-        cell = soup.find("td")
-        self.assertEqual(cell.get_text(strip=True), "row cell")
+        cell_1, cell_2 = soup.findAll("td")
+        self.assertEqual(cell_1.get_text(strip=True), "row cell")
+        self.assertEqual(cell_2.get_text(strip=True), "row cell 2")
 
-        header_classes = header.get("class", [])
-        cell_classes = cell.get("class", [])
+        header_1_classes = header_1.get("class", [])
+        cell_1_classes = cell_1.get("class", [])
+        header_2_classes = header_2.get("class", [])
+        cell_2_classes = cell_2.get("class", [])
 
-        # Check header cell horizontal alignment
-        self.assertIn("ons-u-ta-center", header_classes)
-        # Check header cell vertical alignment
-        self.assertIn("ons-table__header--bottom", header_classes)
+        # Check header cell 1 horizontal alignment
+        self.assertIn("ons-u-ta-center", header_1_classes)
+        # Check header cell 1 vertical alignment
+        self.assertIn("ons-table__header--bottom", header_1_classes)
+        # Check header cell 2 vertical alignment uses default top alignment when not specified
+        self.assertIn("ons-table__header--top", header_2_classes)
 
-        # Check body cell horizontal alignment
-        self.assertIn("ons-u-ta-right", cell_classes)
-        # Check body cell vertical alignment
-        self.assertIn("ons-table__cell--middle", cell_classes)
+        # Check body cell 1 horizontal alignment
+        self.assertIn("ons-u-ta-right", cell_1_classes)
+        # Check body cell 1 vertical alignment
+        self.assertIn("ons-table__cell--middle", cell_1_classes)
+        # Check body cell 2 vertical alignment uses default top alignment when not specified
+        self.assertIn("ons-table__cell--top", cell_2_classes)
 
     def test_render_block__ds_component_markup(self):
         """Test that table renders with correct DS component structure."""
