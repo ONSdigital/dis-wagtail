@@ -1023,7 +1023,7 @@ SESSION_COOKIE_AGE = int(env.get("SESSION_COOKIE_AGE", 60 * 15))  # 15 minutes t
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_ENGINE = (
     "django.contrib.sessions.backends.cached_db"
-    if (env.get("SESSION_DB_CACHE", "false").lower() == "true")
+    if (env.get("SESSION_DB_CACHE_ENABLED", "true").lower() == "true")
     else "django.contrib.sessions.backends.db"
 )
 IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL")
