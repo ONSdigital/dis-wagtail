@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from django.http import Http404
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
@@ -28,6 +30,12 @@ class IndexPageTestCase(WagtailTestUtils, TestCase):
 
     def test_permission_tester_inherits_from_basepagepermissiontester(self):
         self.assertIsInstance(self.index_page.permissions_for_user(UserFactory()), BasePagePermissionTester)
+
+    def test_page_content(self):
+        response = self.client.get(self.page_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.index_page.title)
+        self.assertContains(response, self.index_page.summary)
 
     def test_no_featured_items_displayed_when_no_children_and_no_custom_featured_items_selected(self):
         """Test that the Featured Items block isn't displayed when the Index Page has no child pages
@@ -96,11 +104,11 @@ class InformationPageTestCase(WagtailTestUtils, TestCase):
     def test_permission_tester_inherits_from_basepagepermissiontester(self):
         self.assertIsInstance(self.page.permissions_for_user(UserFactory()), BasePagePermissionTester)
 
-    def test_page_loads(self):
-        """Test that the Information Page loads correctly."""
+    def test_page_content(self):
         response = self.client.get(self.page_url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, self.page.title)
+        self.assertContains(response, self.page.summary)
         self.assertContains(response, self.page.content)
 
 

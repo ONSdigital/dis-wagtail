@@ -1,4 +1,5 @@
 from datetime import datetime
+from http import HTTPStatus
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
@@ -64,6 +65,12 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
 
     def test_permission_tester_inherits_from_basepagepermissiontester(self):
         self.assertIsInstance(self.topic_page.permissions_for_user(self.superuser), BasePagePermissionTester)
+
+    def test_page_content(self):
+        response = self.client.get(self.topic_page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.topic_page.title)
+        self.assertContains(response, self.topic_page.summary)
 
     def test_topic_label(self):
         self.assertEqual(self.topic_page.label, "Topic")
