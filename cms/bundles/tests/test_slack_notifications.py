@@ -168,7 +168,7 @@ class BundleStatusNotificationsTestCase(TestCase):
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.send_or_update_message")
     def test_notify_slack_of_publication_start(self, mock_send):
-        """Should use Bot API with required fields."""
+        """Test publication start message includes required fields."""
         start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
         message_timestamp = "1503435956.000247"
         mock_send.return_value = message_timestamp
@@ -196,7 +196,7 @@ class BundleStatusNotificationsTestCase(TestCase):
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.send_or_update_message")
     def test_notify_slack_of_publish_end(self, mock_send):
-        """Should use Bot API with required fields."""
+        """Test publication end message includes required fields."""
         start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
         end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
         pages_published = 1
@@ -268,10 +268,16 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_client = Mock()
         mock_client.chat_postMessage.return_value = {"ok": True, "ts": "1503435956.000247"}
         mock_get_client.return_value = mock_client
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
+        pages_published = 0
 
         notify_slack_of_bundle_failure(
             bundle=self.bundle,
-            exception_message="3 of 3 page(s) failed to publish",
+            start_time=start_time,
+            end_time=end_time,
+            pages_published=pages_published,
+            exception_message="1 of 1 page(s) failed to publish",
             alert_type=BundleAlertType.CRITICAL,
         )
 
@@ -283,7 +289,13 @@ class BundleStatusNotificationsTestCase(TestCase):
 
         fields = call_kwargs["attachments"][0]["fields"]
         self.assertIn({"title": "Alert Type", "value": "Critical", "short": True}, fields)
-        self.assertIn({"title": "Exception", "value": "3 of 3 page(s) failed to publish", "short": False}, fields)
+        self.assertIn({"title": "Exception", "value": "1 of 1 page(s) failed to publish", "short": False}, fields)
+        self.assertIn({"title": "Publish Type", "value": "Manual", "short": True}, fields)
+        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00", "short": True}, fields)
+        self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01", "short": True}, fields)
+        self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": True}, fields)
+        self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
+        self.assertIn({"title": "Pages Published", "value": "0", "short": True}, fields)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
@@ -292,10 +304,20 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_client = Mock()
         mock_client.chat_postMessage.return_value = {"ok": True, "ts": "1503435956.000247"}
         mock_get_client.return_value = mock_client
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
+        pages_published = 1
+        partially_failed_bundle = BundleFactory(
+            name="Partially Failed Bundle",
+            bundled_pages=[StatisticalArticlePageFactory(), StatisticalArticlePageFactory()],
+        )
 
         notify_slack_of_bundle_failure(
-            bundle=self.bundle,
-            exception_message="1 of 3 page(s) failed to publish",
+            bundle=partially_failed_bundle,
+            start_time=start_time,
+            end_time=end_time,
+            pages_published=pages_published,
+            exception_message="1 of 2 page(s) failed to publish",
             alert_type=BundleAlertType.FAIL,
         )
 
@@ -304,7 +326,13 @@ class BundleStatusNotificationsTestCase(TestCase):
 
         fields = call_kwargs["attachments"][0]["fields"]
         self.assertIn({"title": "Alert Type", "value": "Fail", "short": True}, fields)
-        self.assertIn({"title": "Exception", "value": "1 of 3 page(s) failed to publish", "short": False}, fields)
+        self.assertIn({"title": "Exception", "value": "1 of 2 page(s) failed to publish", "short": False}, fields)
+        self.assertIn({"title": "Publish Type", "value": "Manual", "short": True}, fields)
+        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00", "short": True}, fields)
+        self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01", "short": True}, fields)
+        self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": True}, fields)
+        self.assertIn({"title": "Page Count", "value": "2", "short": True}, fields)
+        self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLICATION_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
@@ -318,9 +346,15 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_client = Mock()
         mock_client.chat_postMessage.return_value = {"ok": True, "ts": "1503435956.000247"}
         mock_get_client.return_value = mock_client
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
+        pages_published = 0
 
         notify_slack_of_bundle_failure(
             bundle=bundle,
+            start_time=start_time,
+            end_time=end_time,
+            pages_published=pages_published,
             exception_message="Test error",
             alert_type=BundleAlertType.CRITICAL,
         )
@@ -337,6 +371,9 @@ class BundleStatusNotificationsTestCase(TestCase):
         with self.assertLogs("cms.core.slack", level="INFO") as logs:
             notify_slack_of_bundle_failure(
                 bundle=self.bundle,
+                start_time=datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC),
+                end_time=datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC),
+                pages_published=0,
                 exception_message="Test error",
                 alert_type=BundleAlertType.CRITICAL,
             )
@@ -348,6 +385,9 @@ class BundleStatusNotificationsTestCase(TestCase):
         with self.assertLogs("cms.core.slack", level="INFO") as logs:
             notify_slack_of_bundle_failure(
                 bundle=self.bundle,
+                start_time=datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC),
+                end_time=datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC),
+                pages_published=0,
                 exception_message="Test error",
                 alert_type=BundleAlertType.CRITICAL,
             )
@@ -364,6 +404,9 @@ class BundleStatusNotificationsTestCase(TestCase):
         with self.assertLogs("cms.core.slack", level="ERROR") as logs:
             notify_slack_of_bundle_failure(
                 bundle=self.bundle,
+                start_time=datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC),
+                end_time=datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC),
+                pages_published=0,
                 exception_message="Test error",
                 alert_type=BundleAlertType.CRITICAL,
             )

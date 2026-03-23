@@ -478,15 +478,19 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
             bundle.save(update_fields=["status"])
 
         # Send failure notification
+        end_time = timezone.now()
         notifications.notify_slack_of_bundle_failure(
             bundle=bundle,
+            start_time=start_time,
+            end_time=end_time,
+            pages_published=pages_published,
             exception_message=f"{len(failed_pages)} of {total_pages} page(s) failed to publish",
             alert_type=alert_type,
         )
 
         log(action="wagtail.publish.scheduled", instance=bundle)
 
-        publish_duration = (timezone.now() - start_time).total_seconds()
+        publish_duration = (end_time - start_time).total_seconds()
         logger.error(
             "Bundle publish failed",
             extra={
