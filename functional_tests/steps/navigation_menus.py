@@ -4,11 +4,12 @@ from behave.runner import Context
 from playwright.sync_api import expect
 from wagtail.models import Locale
 
-from cms.navigation.models import MainMenu
+from cms.navigation.models import FooterMenu, MainMenu
 from cms.navigation.tests.factories import FooterMenuFactory
 from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.topics.tests.factories import TopicPageFactory
 from functional_tests.step_helpers.navigation_menus_helpers import (
+    FooterMenuStreamValueBuilder,
     MainMenuStreamValueBuilder,
     choose_page_link,
     fill_column_link,
@@ -293,6 +294,7 @@ def main_menu_displays_configured_content(context: Context) -> None:
 def create_populated_welsh_main_menu(context: Context) -> None:
     welsh_locale = Locale.objects.get(language_code="cy")
     menu = MainMenu.objects.get(locale=welsh_locale)
+    assert menu is not None, "Expected Welsh MainMenu snippet to exist (migration should create it)."
 
     menu_builder = MainMenuStreamValueBuilder()
 
@@ -357,7 +359,7 @@ def create_populated_welsh_main_menu(context: Context) -> None:
 @then("the Welsh main menu displays the configured columns, sections, and topic links")
 def welsh_main_menu_displays_configured_content(context: Context) -> None:
     context.page.get_by_role("button", name="Toggle menu").click()
-    nav = context.page.locator('nav[aria-label="Main menu"]')
+    nav = context.page.locator('nav[aria-label="Prif ddewislen"]')  # Welsh for "Main menu"
     expect(nav).to_be_visible()
 
     for highlight in context.welsh_main_menu_highlights:
@@ -372,6 +374,43 @@ def welsh_main_menu_displays_configured_content(context: Context) -> None:
             expect(nav).to_contain_text(f"Topic page {col_idx}.{sec_idx} (Welsh)")
             expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.1 (Welsh)")
             expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.2 (Welsh)")
+
+
+@given("the footer menu is populated with columns and links for the Welsh locale")
+def create_populated_welsh_footer_menu(context: Context) -> None:
+    welsh_locale = Locale.objects.get(language_code="cy")
+    footer_menu = FooterMenu.objects.get(locale=welsh_locale)
+    assert footer_menu is not None, "Expected Welsh FooterMenu snippet to exist (migration should create it)."
+
+    builder = FooterMenuStreamValueBuilder()
+
+    columns = []
+    for i in range(1, 4):
+        columns.append(
+            builder.column(
+                title=f"Welsh Link Column {i}",
+                links=[
+                    builder.link_value(
+                        external_url=f"https://www.welsh-link-column-{i}.com/",
+                        title=f"Welsh Link Title {i}",
+                    )
+                ],
+            )
+        )
+
+    footer_menu.columns = columns
+    footer_menu.save()
+
+    context.welsh_footer_menu = footer_menu
+    context.welsh_footer_menu_columns = columns
+
+
+@then("the Welsh footer menu displays the configured columns and links")
+def welsh_footer_menu_displays_configured_content(context: Context) -> None:
+    contentinfo = context.page.get_by_role("contentinfo")
+    for i in range(1, 4):
+        expect(context.page.get_by_role("heading", name=f"Welsh Link Column {i}")).to_be_visible()
+        expect(contentinfo).to_contain_text(f"Welsh Link Title {i}")
 
 
 @then("the footer menu appears on the home page")

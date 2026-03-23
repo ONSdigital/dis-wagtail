@@ -22,18 +22,18 @@ Feature: CMS users can manage navigation menus via the Wagtail admin interface
         Given the main menu is populated with columns, sections, and topic links
         When the publishing admin visits the home page
         Then the main menu displays the configured columns, sections, and topic links
-
+    
     # Switching to Welsh locale and verifying main menu and footer menu rendering
     Scenario: An external user sees the Welsh main menu on the home page
         Given the main menu is populated with columns, sections, and topic links for the Welsh locale
-        When an external user visits the home page
-        And the user clicks the "Cymraeg" button
+        When An external user navigates to the homepage
+        And the user switches the page language to Welsh
         Then the Welsh main menu displays the configured columns, sections, and topic links
 
     Scenario: An external user sees the Welsh footer menu on the home page
         Given the footer menu is populated with columns and links for the Welsh locale
-        When an external user visits the home page
-        And the user clicks the "Cymraeg" button
+        When An external user navigates to the homepage
+        And the user switches the page language to Welsh
         Then the Welsh footer menu displays the configured columns and links
 
     # Field Validation and Error Handling

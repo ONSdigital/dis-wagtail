@@ -171,3 +171,50 @@ class MainMenuStreamValueBuilder:
                 "sections": sections,
             },
         }
+
+
+class FooterMenuStreamValueBuilder:
+    """Builds StreamField values for footer menu creation tests.
+
+    This class provides methods to construct the nested data structures required
+    for the columns and links of a footer menu's StreamField.
+    """
+
+    def link_value(
+        self,
+        *,
+        page: Page | None = None,
+        external_url: str | None = None,
+        title: str = "",
+    ) -> dict[str, Any]:
+        if (page is None) == (external_url is None):
+            raise ValueError("Link must have exactly one of 'page' or 'external_url'.")
+
+        if external_url and not title.strip():
+            raise ValueError("Link with external_url must include a non-empty title.")
+
+        return {
+            "page": page.pk if page else None,
+            "external_url": external_url,
+            "title": title,
+        }
+
+    def column(
+        self,
+        *,
+        title: str,
+        links: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        if not title.strip():
+            raise ValueError("Column must include a non-empty title.")
+
+        if not links:
+            raise ValueError("Column must contain at least one link.")
+
+        return {
+            "type": "column",
+            "value": {
+                "title": title,
+                "links": links,
+            },
+        }
