@@ -1023,13 +1023,11 @@ SESSION_COOKIE_AGE = int(env.get("SESSION_COOKIE_AGE", 60 * 15))  # 15 minutes t
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 session_db_cache_enabled = env.get("SESSION_DB_CACHE_ENABLED", "true").lower() == "true"
-if "DatabaseCache" in CACHES["default"]["backend"]:
+if "DatabaseCache" in CACHES["default"]["BACKEND"]:
     # The session cache is unnecessary if the cache backend is the database
     session_db_cache_enabled = False
 SESSION_ENGINE = (
-    "django.contrib.sessions.backends.cached_db"
-    if session_db_cache_enabled
-    else "django.contrib.sessions.backends.db"
+    "django.contrib.sessions.backends.cached_db" if session_db_cache_enabled else "django.contrib.sessions.backends.db"
 )
 IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL")
 AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "false").lower() == "true"
