@@ -1,3 +1,4 @@
+import itertools
 from typing import Any
 
 from django.apps import apps
@@ -46,7 +47,12 @@ def reload_logging_config(*, setting: str, **kwargs: Any) -> None:
 
 
 def invalidate_page_config_cache(sender: Any, instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
-    cache.delete_many([get_page_config_cache_key(site, instance) for site in Site.objects.all()])
+    cache.delete_many(
+        [
+            get_page_config_cache_key(site, instance, language_code)
+            for site, language_code in itertools.product(Site.objects.all(), dict(settings.LANGUAGES).keys())
+        ]
+    )
 
 
 def register_signal_handlers() -> None:

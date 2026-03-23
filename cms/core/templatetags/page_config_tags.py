@@ -98,14 +98,14 @@ def get_translation_urls(request: HttpRequest, page: BasePage) -> list[Translati
     return urls
 
 
-def get_base_page_config_cache_key(site: Site) -> str:
-    return f"_cms_base_page_config_cache_key_{site.pk}"
+def get_base_page_config_cache_key(site: Site, language_code: str) -> str:
+    return f"_cms_base_page_config_cache_key_{site.pk}_{language_code}"
 
 
 def _get_base_page_config(context: jinja2.runtime.Context, site: Site, request: HttpRequest) -> dict:
     is_preview = getattr(request, "is_preview", False)
 
-    cache_key = get_base_page_config_cache_key(site)
+    cache_key = get_base_page_config_cache_key(site, request.LANGUAGE_CODE)
 
     # Don't cache previews
     if not is_preview and (base_page_config := cache.get(cache_key)):
@@ -150,8 +150,8 @@ def _get_base_page_config(context: jinja2.runtime.Context, site: Site, request: 
     return base_page_config
 
 
-def get_page_config_cache_key(site: Site, page: Page) -> str:
-    return f"_cms_page_config_cache_key_{page.pk}_{site.pk}"
+def get_page_config_cache_key(site: Site, page: Page, language_code: str) -> str:
+    return f"_cms_page_config_cache_key_{page.pk}_{site.pk}_{language_code}"
 
 
 def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, site: Site, request: HttpRequest) -> dict:
@@ -165,7 +165,7 @@ def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, sit
         }
 
     is_preview = getattr(request, "is_preview", False)
-    cache_key = get_page_config_cache_key(site, page)
+    cache_key = get_page_config_cache_key(site, page, request.LANGUAGE_CODE)
 
     # Don't cache previews
     page_config = cache.get(cache_key) if not is_preview else None
