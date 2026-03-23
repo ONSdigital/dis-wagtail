@@ -1304,6 +1304,79 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
                 )
 
 
+class BundleDeleteTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.bundle = BundleFactory()
+
+        cls.edit_url = reverse("bundle:edit", args=[cls.bundle.id])
+        cls.delete_url = reverse("bundle:delete", args=[cls.bundle.id])
+        cls.inspect_url = reverse("bundle:inspect", args=[cls.bundle.id])
+
+    def setUp(self):
+        self.client.force_login(self.superuser)
+
+    def test_bundle_deletable_in_draft(self):
+        response = self.client.get(self.delete_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # the edit view has the delete link
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, self.delete_url)
+
+        # the inspect view has the delete link
+        response = self.client.get(self.inspect_url)
+        self.assertContains(response, self.delete_url)
+
+    def test_bundle_deletable_in_review(self):
+        self.bundle.status = BundleStatus.IN_REVIEW
+        self.bundle.save(update_fields=["status"])
+
+        response = self.client.get(self.delete_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # the edit view has the delete link
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, self.delete_url)
+
+        # the inspect view has the delete link
+        response = self.client.get(self.inspect_url)
+        self.assertContains(response, self.delete_url)
+
+    def test_bundle_deletable_once_published(self):
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status"])
+
+        response = self.client.get(self.delete_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # the inspect view has the delete link
+        response = self.client.get(self.inspect_url)
+        self.assertContains(response, self.delete_url)
+
+    def test_bundle_not_deletable_if_ready_to_be_published(self):
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+
+        # try both GET and POST for the delete view
+        response = self.client.get(self.delete_url, follow=True)
+        self.assertRedirects(response, "/admin/")
+        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+        response = self.client.post(self.delete_url, data={"action-delete": "delete"}, follow=True)
+        self.assertRedirects(response, "/admin/")
+        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+        # the edit view doesn't have the delete URL
+        response = self.client.get(self.edit_url)
+        self.assertNotContains(response, self.delete_url)
+
+        # the inspect view doesn't have the delete link
+        response = self.client.get(self.inspect_url)
+        self.assertNotContains(response, self.delete_url)
+
+
 class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):
     def test_chooser_viewset(self):
         draft_bundle = BundleFactory(name="Draft")
