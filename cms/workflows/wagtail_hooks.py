@@ -14,7 +14,7 @@ from wagtail.admin.action_menu import PageLockedMenuItem, WorkflowMenuItem
 from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 
 from . import admin_urls
-from .action_menu import UnlockWorkflowMenuItem
+from .action_menu import SubmitForModerationMenuItem, UnlockWorkflowMenuItem
 from .admin_urls import path
 from .models import get_final_approve_label
 from .utils import is_page_ready_to_publish
@@ -58,10 +58,20 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
     # Do a final relabel for the "approve" actions to prevent any inconsistencies.
     final_menu_items = []
     for item in updated_menu_items:
-        if item.name in ["approve", "locked-approve"]:
-            item.label = get_final_approve_label(page, item.label)
+        match item.name:
+            case "action-restart-workflow":
+                continue
 
-        final_menu_items.append(item)
+            case "action-submit":
+                # the submit/resubmit action menu item does the re-label in get_context_data, so we use our class
+                final_menu_items.append(SubmitForModerationMenuItem())
+
+            case "approve" | "locked-approve":
+                item.label = get_final_approve_label(page, item.label)
+                final_menu_items.append(item)
+
+            case _:
+                final_menu_items.append(item)
 
     return final_menu_items
 
