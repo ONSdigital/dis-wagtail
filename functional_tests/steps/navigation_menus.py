@@ -313,7 +313,7 @@ def content_is_pushed_down(context: Context) -> None:
     assert after["y"] >= menu_bottom, f"Content overlaps menu. Content y: {after['y']}, Menu bottom: {menu_bottom}"
 
     # Main content section is visible
-    assert main_content.is_visible(), "Main content section is not visible"
+    expect(main_content).to_be_visible()
 
 
 @then("the footer menu appears on the home page")
