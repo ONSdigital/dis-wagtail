@@ -19,8 +19,8 @@ class MainMenuViewSetTestCase(WagtailTestUtils, TestCase):
         self.client.force_login(self.superuser)
 
     def test_main_menu_exists_from_migrations(self):
-        """MainMenu should exist because migrations create the default instance."""
-        self.assertEqual(MainMenu.objects.count(), 1, "MainMenu should exist from migrations.")
+        """MainMenu should exist because migrations create the default instance and its translation."""
+        self.assertEqual(MainMenu.objects.count(), 2, "MainMenu should exist from migrations.")
 
     def test_main_menu_add_view_can_be_accessed_when_none_exists(self):
         """If no MainMenu exists, the user should be able to access the add view."""
@@ -33,7 +33,7 @@ class MainMenuViewSetTestCase(WagtailTestUtils, TestCase):
 
     def test_main_menu_add_redirects_to_dashboard_when_it_already_exists(self):
         """If a MainMenu already exists, the user should be redirected to the Wagtail dashboard."""
-        self.assertEqual(MainMenu.objects.count(), 1)
+        self.assertEqual(MainMenu.objects.count(), 2, "MainMenu should exist from migrations.")
 
         response = self.client.get(self.add_url)
 
@@ -56,8 +56,8 @@ class FooterMenuViewSetTestCase(WagtailTestUtils, TestCase):
         self.client.force_login(self.superuser)
 
     def test_footer_menu_exists_from_migrations(self):
-        """FooterMenu should exist because migrations create the default instance."""
-        self.assertEqual(FooterMenu.objects.count(), 1, "FooterMenu should exist from migrations.")
+        """FooterMenu should exist because migrations create the default instance and its translation."""
+        self.assertEqual(FooterMenu.objects.count(), 2, "FooterMenu should exist from migrations.")
 
     def test_footer_menu_add_view_can_be_accessed_when_none_exist(self):
         """If FooterMenu does not exist, the user should be able to access the add view."""
@@ -70,7 +70,7 @@ class FooterMenuViewSetTestCase(WagtailTestUtils, TestCase):
 
     def test_footer_menu_add_redirects_to_dashboard_when_it_already_exists(self):
         """If a FooterMenu already exists, the user should be redirected to the Wagtail dashboard."""
-        self.assertEqual(FooterMenu.objects.count(), 1)
+        self.assertEqual(FooterMenu.objects.count(), 2, "FooterMenu should exist from migrations.")
 
         response = self.client.get(self.add_url)
 
