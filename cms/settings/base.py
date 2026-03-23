@@ -1021,9 +1021,14 @@ LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", WAGTAILADMIN_LOGIN_URL)
 AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL")
 SESSION_COOKIE_AGE = int(env.get("SESSION_COOKIE_AGE", 60 * 15))  # 15 minutes to match Auth Service
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+session_db_cache_enabled = env.get("SESSION_DB_CACHE_ENABLED", "true").lower() == "true"
+if "DatabaseCache" in CACHES["default"]["backend"]:
+    # The session cache is unnecessary if the cache backend is the database
+    session_db_cache_enabled = False
 SESSION_ENGINE = (
     "django.contrib.sessions.backends.cached_db"
-    if (env.get("SESSION_DB_CACHE_ENABLED", "true").lower() == "true")
+    if session_db_cache_enabled
     else "django.contrib.sessions.backends.db"
 )
 IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL")
