@@ -25,12 +25,18 @@ class LanguageTemplateTagTests(TestCase):
     def tearDown(self):
         reset_url_caches()
 
+    def _get_url_by_iso(self, urls, iso_code):
+        """Look up a translation URL entry by ISO code."""
+        return next(u for u in urls if u["isoCode"] == iso_code)
+
+    def _get_hreflang_by_lang(self, hreflangs, lang):
+        """Look up a hreflang entry by language code."""
+        return next(h for h in hreflangs if h["lang"] == lang)
+
     def test_get_translation_urls(self):
         """Test that get_translation_urls returns the correct URLs."""
-        # Call the function
         urls = get_translation_urls({"request": self.dummy_request, "page": self.page})
 
-        # Check the output format
         self.assertIsInstance(urls, list)
         for url in urls:
             self.assertIn("url", url)
@@ -38,18 +44,17 @@ class LanguageTemplateTagTests(TestCase):
             self.assertIn("text", url)
             self.assertIn("current", url)
 
-        self.assertEqual(urls[0]["url"], "/")
-        self.assertEqual(urls[0]["isoCode"], "en")
-        self.assertEqual(urls[0]["text"], "English")
-        self.assertEqual(urls[0]["current"], True)
-        self.assertEqual(urls[1]["current"], False)
+        en = self._get_url_by_iso(urls, "en")
+        cy = self._get_url_by_iso(urls, "cy")
+        self.assertEqual(en["url"], "/")
+        self.assertEqual(en["text"], "English")
+        self.assertEqual(en["current"], True)
+        self.assertEqual(cy["current"], False)
 
     def test_get_hreflangs(self):
         """Test that get_hreflangs returns the correct hreflang URLs."""
-        # Call the function
         hreflangs = get_hreflangs({"request": self.dummy_request, "page": self.page})
 
-        # Check the output format
         self.assertIsInstance(hreflangs, list)
         self.assertEqual(len(hreflangs), 2)
 
@@ -57,10 +62,10 @@ class LanguageTemplateTagTests(TestCase):
             self.assertIn("url", hreflang)
             self.assertIn("lang", hreflang)
 
-        self.assertEqual(hreflangs[0]["url"], "/")
-        self.assertEqual(hreflangs[0]["lang"], "en-gb")
-        self.assertEqual(hreflangs[1]["lang"], "cy")
-        self.assertEqual(hreflangs[1]["url"], "/cy")
+        en = self._get_hreflang_by_lang(hreflangs, "en-gb")
+        cy = self._get_hreflang_by_lang(hreflangs, "cy")
+        self.assertEqual(en["url"], "/")
+        self.assertEqual(cy["url"], "/cy")
 
     @override_settings(
         LANGUAGE_CODE="pl",
@@ -69,15 +74,12 @@ class LanguageTemplateTagTests(TestCase):
     )
     def test_get_hreflangs_with_different_base_locale(self):
         """Test that get_hreflangs returns the correct hreflang URLs with a different base locale."""
-        # Replace the default locale with Polish
         main_locale = Locale.objects.get(language_code="en-gb")
         main_locale.language_code = "pl"
         main_locale.save()
 
-        # Call the function
         hreflangs = get_hreflangs({"request": self.dummy_request, "page": self.page})
 
-        # Check the output format
         self.assertIsInstance(hreflangs, list)
         self.assertEqual(len(hreflangs), 2)
 
@@ -85,50 +87,60 @@ class LanguageTemplateTagTests(TestCase):
             self.assertIn("url", hreflang)
             self.assertIn("lang", hreflang)
 
-        self.assertEqual(hreflangs[0]["url"], "/")
-        self.assertEqual(hreflangs[0]["lang"], "pl")
-        self.assertEqual(hreflangs[1]["lang"], "cy")
-        self.assertEqual(hreflangs[1]["url"], "/cy")
+        pl = self._get_hreflang_by_lang(hreflangs, "pl")
+        cy = self._get_hreflang_by_lang(hreflangs, "cy")
+        self.assertEqual(pl["url"], "/")
+        self.assertEqual(cy["url"], "/cy")
 
     def test_translation_urls_preserve_sub_path(self):
         """Test that the language switcher preserves routable sub-paths."""
         request = get_dummy_request(path="/topic/articles/series/editions")
         urls = get_translation_urls({"request": request, "page": self.page})
 
-        self.assertEqual(urls[0]["url"], "/topic/articles/series/editions")
-        self.assertEqual(urls[1]["url"], "/cy/topic/articles/series/editions")
+        en = self._get_url_by_iso(urls, "en")
+        cy = self._get_url_by_iso(urls, "cy")
+        self.assertEqual(en["url"], "/topic/articles/series/editions")
+        self.assertEqual(cy["url"], "/cy/topic/articles/series/editions")
 
     def test_translation_urls_preserve_sub_path_with_slug(self):
         """Test that the language switcher preserves edition slug sub-paths."""
         request = get_dummy_request(path="/topic/articles/series/editions/jan-2025")
         urls = get_translation_urls({"request": request, "page": self.page})
 
-        self.assertEqual(urls[0]["url"], "/topic/articles/series/editions/jan-2025")
-        self.assertEqual(urls[1]["url"], "/cy/topic/articles/series/editions/jan-2025")
+        en = self._get_url_by_iso(urls, "en")
+        cy = self._get_url_by_iso(urls, "cy")
+        self.assertEqual(en["url"], "/topic/articles/series/editions/jan-2025")
+        self.assertEqual(cy["url"], "/cy/topic/articles/series/editions/jan-2025")
 
     def test_translation_urls_strip_welsh_prefix(self):
         """Test that Welsh prefix is correctly stripped and swapped."""
         request = get_dummy_request(path="/cy/topic/articles/series/editions")
         urls = get_translation_urls({"request": request, "page": self.page})
 
-        self.assertEqual(urls[0]["url"], "/topic/articles/series/editions")
-        self.assertEqual(urls[1]["url"], "/cy/topic/articles/series/editions")
+        en = self._get_url_by_iso(urls, "en")
+        cy = self._get_url_by_iso(urls, "cy")
+        self.assertEqual(en["url"], "/topic/articles/series/editions")
+        self.assertEqual(cy["url"], "/cy/topic/articles/series/editions")
 
     def test_translation_urls_preserve_related_data_sub_path(self):
         """Test that the language switcher preserves related-data sub-paths."""
         request = get_dummy_request(path="/topic/articles/series/related-data")
         urls = get_translation_urls({"request": request, "page": self.page})
 
-        self.assertEqual(urls[0]["url"], "/topic/articles/series/related-data")
-        self.assertEqual(urls[1]["url"], "/cy/topic/articles/series/related-data")
+        en = self._get_url_by_iso(urls, "en")
+        cy = self._get_url_by_iso(urls, "cy")
+        self.assertEqual(en["url"], "/topic/articles/series/related-data")
+        self.assertEqual(cy["url"], "/cy/topic/articles/series/related-data")
 
     def test_hreflangs_preserve_sub_path(self):
         """Test that hreflangs also preserve routable sub-paths."""
         request = get_dummy_request(path="/topic/articles/series/editions")
         hreflangs = get_hreflangs({"request": request, "page": self.page})
 
-        self.assertEqual(hreflangs[0]["url"], "/topic/articles/series/editions")
-        self.assertEqual(hreflangs[1]["url"], "/cy/topic/articles/series/editions")
+        en = self._get_hreflang_by_lang(hreflangs, "en-gb")
+        cy = self._get_hreflang_by_lang(hreflangs, "cy")
+        self.assertEqual(en["url"], "/topic/articles/series/editions")
+        self.assertEqual(cy["url"], "/cy/topic/articles/series/editions")
 
 
 @override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
