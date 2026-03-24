@@ -7,16 +7,38 @@ from wagtail.models import Locale
 from cms.navigation.models import FooterMenu, MainMenu
 from cms.navigation.tests.factories import FooterMenuFactory
 from cms.standard_pages.tests.factories import InformationPageFactory
-from cms.topics.tests.factories import TopicPageFactory
 from functional_tests.step_helpers.navigation_menus_helpers import (
     FooterMenuStreamValueBuilder,
-    MainMenuStreamValueBuilder,
+    MainMenuFixtureBuilder,
     choose_page_link,
     fill_column_link,
     fill_column_title,
     generate_columns,
     insert_block,
 )
+
+
+def _assert_main_menu_content(
+    page,
+    highlights: list,
+    aria_label: str,
+    locale_suffix: str = "",
+) -> None:
+    page.get_by_role("button", name="Toggle menu").click()
+    nav = page.locator(f'nav[aria-label="{aria_label}"]')
+    expect(nav).to_be_visible()
+
+    for highlight in highlights:
+        expect(nav).to_contain_text(highlight["value"]["title"])
+        expect(nav).to_contain_text(highlight["value"]["description"])
+
+    suffix = f" ({locale_suffix})" if locale_suffix else ""
+    for col_idx in range(1, 4):
+        for sec_idx in range(1, 4):
+            expect(nav).to_contain_text(f"Section {col_idx}.{sec_idx}{suffix}")
+            expect(nav).to_contain_text(f"Topic page {col_idx}.{sec_idx}{suffix}")
+            expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.1{suffix}")
+            expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.2{suffix}")
 
 
 @given("a footer menu exists")
@@ -197,70 +219,13 @@ def create_populated_main_menu(context: Context) -> None:
     menu = MainMenu.objects.first()
     assert menu is not None, "Expected MainMenu snippet to exist (migration should create it)."
 
-    menu_builder = MainMenuStreamValueBuilder()
+    main_menu_fixture_builder = MainMenuFixtureBuilder()
 
-    # --------------------
-    # Highlights (3 total)
-    # --------------------
     info_page = InformationPageFactory()
 
-    highlights = [
-        menu_builder.highlight(
-            page=info_page,
-            title="Information page highlight",
-            description="Internal highlight pointing to an information page.",
-        ),
-        menu_builder.highlight(
-            external_url="https://example.com/highlight-1",
-            title="External highlight 1",
-            description="External highlight #1.",
-        ),
-        menu_builder.highlight(
-            external_url="https://example.com/highlight-2",
-            title="External highlight 2",
-            description="External highlight #2.",
-        ),
-    ]
-
-    # --------------------
-    # Columns (3) -> Sections (3 each) -> Topic links (3 each)
-    # Each section: 1 internal topic page + 2 external links
-    # NOTE: sections + links are ListBlocks, so they need VALUE dicts (not streamfield-style dicts)
-    # --------------------
-    columns = []
-    for col_idx in range(1, 4):
-        sections = []
-        for sec_idx in range(1, 4):
-            topic_page = TopicPageFactory()
-
-            links = [
-                menu_builder.topic_link_value(
-                    page=topic_page,
-                    title=f"Topic page {col_idx}.{sec_idx}",
-                ),
-                menu_builder.topic_link_value(
-                    external_url=f"https://example.com/col-{col_idx}/sec-{sec_idx}/topic-external-1",
-                    title=f"External topic {col_idx}.{sec_idx}.1",
-                ),
-                menu_builder.topic_link_value(
-                    external_url=f"https://example.com/col-{col_idx}/sec-{sec_idx}/topic-external-2",
-                    title=f"External topic {col_idx}.{sec_idx}.2",
-                ),
-            ]
-
-            sections.append(
-                menu_builder.section_value(
-                    external_url=f"https://example.com/col-{col_idx}/section-{sec_idx}",
-                    title=f"Section {col_idx}.{sec_idx}",
-                    links=links,
-                )
-            )
-
-        columns.append(menu_builder.column(sections=sections))
-
-    menu.highlights = highlights
-    menu.columns = columns
-    menu.save()
+    highlights, columns = main_menu_fixture_builder.populate_main_menu_stream_value(
+        menu=menu, page=info_page, locale_suffix="(English)"
+    )
 
     context.main_menu = menu
     context.info_page = info_page
@@ -270,24 +235,7 @@ def create_populated_main_menu(context: Context) -> None:
 
 @then("the main menu displays the configured columns, sections, and topic links")
 def main_menu_displays_configured_content(context: Context) -> None:
-    context.page.get_by_role("button", name="Toggle menu").click()
-    nav = context.page.locator('nav[aria-label="Main menu"]')
-    expect(nav).to_be_visible()
-
-    # Highlights (titles + descriptions)
-    for highlight in context.main_menu_highlights:
-        title = highlight["value"]["title"]
-        description = highlight["value"]["description"]
-        expect(nav).to_contain_text(title)
-        expect(nav).to_contain_text(description)
-
-    # Sections + topic links
-    for col_idx in range(1, 4):
-        for sec_idx in range(1, 4):
-            expect(nav).to_contain_text(f"Section {col_idx}.{sec_idx}")
-            expect(nav).to_contain_text(f"Topic page {col_idx}.{sec_idx}")
-            expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.1")
-            expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.2")
+    _assert_main_menu_content(context.page, context.main_menu_highlights, "Main menu", "English")
 
 
 @given("the main menu is populated with columns, sections, and topic links for the Welsh locale")
@@ -296,59 +244,13 @@ def create_populated_welsh_main_menu(context: Context) -> None:
     menu = MainMenu.objects.get(locale=welsh_locale)
     assert menu is not None, "Expected Welsh MainMenu snippet to exist (migration should create it)."
 
-    menu_builder = MainMenuStreamValueBuilder()
+    main_menu_fixture_builder = MainMenuFixtureBuilder()
 
     info_page = InformationPageFactory()
 
-    highlights = [
-        menu_builder.highlight(
-            page=info_page,
-            title="Information page highlight (Welsh)",
-            description="Internal highlight pointing to an information page (Welsh).",
-        ),
-        menu_builder.highlight(
-            external_url="https://example.com/highlight-1",
-            title="External highlight 1 (Welsh)",
-            description="External highlight #1 (Welsh).",
-        ),
-        menu_builder.highlight(
-            external_url="https://example.com/highlight-2",
-            title="External highlight 2 (Welsh)",
-            description="External highlight #2 (Welsh).",
-        ),
-    ]
-
-    columns = []
-    for col_idx in range(1, 4):
-        sections = []
-        for sec_idx in range(1, 4):
-            topic_page = TopicPageFactory()
-            links = [
-                menu_builder.topic_link_value(
-                    page=topic_page,
-                    title=f"Topic page {col_idx}.{sec_idx} (Welsh)",
-                ),
-                menu_builder.topic_link_value(
-                    external_url=f"https://example.com/col-{col_idx}/sec-{sec_idx}/topic-external-1",
-                    title=f"External topic {col_idx}.{sec_idx}.1 (Welsh)",
-                ),
-                menu_builder.topic_link_value(
-                    external_url=f"https://example.com/col-{col_idx}/sec-{sec_idx}/topic-external-2",
-                    title=f"External topic {col_idx}.{sec_idx}.2 (Welsh)",
-                ),
-            ]
-            sections.append(
-                menu_builder.section_value(
-                    external_url=f"https://example.com/col-{col_idx}/section-{sec_idx}",
-                    title=f"Section {col_idx}.{sec_idx} (Welsh)",
-                    links=links,
-                )
-            )
-        columns.append(menu_builder.column(sections=sections))
-
-    menu.highlights = highlights
-    menu.columns = columns
-    menu.save()
+    highlights, columns = main_menu_fixture_builder.populate_main_menu_stream_value(
+        menu=menu, page=info_page, locale_suffix="(Welsh)"
+    )
 
     context.welsh_main_menu = menu
     context.info_page = info_page
@@ -358,22 +260,7 @@ def create_populated_welsh_main_menu(context: Context) -> None:
 
 @then("the Welsh main menu displays the configured columns, sections, and topic links")
 def welsh_main_menu_displays_configured_content(context: Context) -> None:
-    context.page.get_by_role("button", name="Toggle menu").click()
-    nav = context.page.locator('nav[aria-label="Prif ddewislen"]')  # Welsh for "Main menu"
-    expect(nav).to_be_visible()
-
-    for highlight in context.welsh_main_menu_highlights:
-        title = highlight["value"]["title"]
-        description = highlight["value"]["description"]
-        expect(nav).to_contain_text(title)
-        expect(nav).to_contain_text(description)
-
-    for col_idx in range(1, 4):
-        for sec_idx in range(1, 4):
-            expect(nav).to_contain_text(f"Section {col_idx}.{sec_idx} (Welsh)")
-            expect(nav).to_contain_text(f"Topic page {col_idx}.{sec_idx} (Welsh)")
-            expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.1 (Welsh)")
-            expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.2 (Welsh)")
+    _assert_main_menu_content(context.page, context.welsh_main_menu_highlights, "Prif ddewislen", "Welsh")
 
 
 @given("the footer menu is populated with columns and links for the Welsh locale")

@@ -6,7 +6,9 @@ from typing import Any
 from behave.runner import Context
 from playwright.sync_api import Page
 
+from cms.navigation.models import MainMenu
 from cms.topics.models import TopicPage
+from cms.topics.tests.factories import TopicPageFactory
 
 
 # Footer menu creation helper functions
@@ -218,3 +220,75 @@ class FooterMenuStreamValueBuilder:
                 "links": links,
             },
         }
+
+
+class MainMenuFixtureBuilder:
+    """Helper class to build and save MainMenu fixtures with populated StreamField values for testing purposes."""
+
+    def __init__(self) -> None:
+        self._builder = MainMenuStreamValueBuilder()
+
+    def create_highlights(self, page: Page, locale_suffix: str = "") -> list[dict[str, Any]]:
+        return [
+            self._builder.highlight(
+                page=page,
+                title=f"Information page highlight {locale_suffix}",
+                description=f"Internal highlight pointing to an information page. {locale_suffix}",
+            ),
+            self._builder.highlight(
+                external_url=f"https://example.com/highlight-1{locale_suffix}",
+                title=f"External highlight 1 {locale_suffix}",
+                description=f"External highlight #1. {locale_suffix}",
+            ),
+            self._builder.highlight(
+                external_url=f"https://example.com/highlight-2{locale_suffix}",
+                title=f"External highlight 2 {locale_suffix}",
+                description=f"External highlight #2. {locale_suffix}",
+            ),
+        ]
+
+    def create_columns(self, locale_suffix: str = "") -> list[dict[str, Any]]:
+        columns = []
+        for col_idx in range(1, 4):
+            sections = []
+            for sec_idx in range(1, 4):
+                topic_page = TopicPageFactory()
+
+                links = [
+                    self._builder.topic_link_value(
+                        page=topic_page,
+                        title=f"Topic page {col_idx}.{sec_idx} {locale_suffix}",
+                    ),
+                    self._builder.topic_link_value(
+                        external_url=f"https://example.com/col-{col_idx}/sec-{sec_idx}/topic-external-1{locale_suffix}",
+                        title=f"External topic {col_idx}.{sec_idx}.1 {locale_suffix}",
+                    ),
+                    self._builder.topic_link_value(
+                        external_url=f"https://example.com/col-{col_idx}/sec-{sec_idx}/topic-external-2{locale_suffix}",
+                        title=f"External topic {col_idx}.{sec_idx}.2 {locale_suffix}",
+                    ),
+                ]
+
+                sections.append(
+                    self._builder.section_value(
+                        external_url=f"https://example.com/col-{col_idx}/section-{sec_idx}{locale_suffix}",
+                        title=f"Section {col_idx}.{sec_idx} {locale_suffix}",
+                        links=links,
+                    )
+                )
+
+            columns.append(self._builder.column(sections=sections))
+
+        return columns
+
+    def populate_main_menu_stream_value(
+        self, menu: MainMenu, page: Page, locale_suffix: str = ""
+    ) -> tuple[list[dict], list[dict]]:
+        highlights = self.create_highlights(page, locale_suffix)
+        columns = self.create_columns(locale_suffix)
+
+        menu.highlights = highlights
+        menu.columns = columns
+        menu.save()
+
+        return highlights, columns
