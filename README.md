@@ -521,19 +521,10 @@ This will compile the .po files into .mo files, which are used by Django to disp
 
 ### Lighthouse Audits
 
-In order to run Lighthouse audits against the application, you first need to ensure that you have the
-[Lighthouse CLI](https://github.com/GoogleChrome/lighthouse) installed globally on your machine:
+You can then run [Lighthouse](https://github.com/GoogleChrome/lighthouse) audits against the application with the following command:
 
 ```bash
-npm install -g lighthouse
-```
-
-Please note that Lighthouse requires Node 22 (LTS) or later.
-
-You can then run Lighthouse audits against the application with the following command:
-
-```bash
-lighthouse http://localhost:8000
+npx lighthouse http://localhost:8000
 ```
 
 This will run a Lighthouse audit against the application running at `http://localhost:8000` and output the
@@ -542,7 +533,7 @@ results in a file in the current directory.
 In order to view the report straight away, you can add the `--view` flag to the command:
 
 ```bash
-lighthouse http://localhost:8000 --view
+npx lighthouse http://localhost:8000 --view
 ```
 
 The audits will contain four scores for the following categories: Performance, Accessibility, Best Practices and SEO.
