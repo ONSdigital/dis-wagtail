@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
 from django.urls import reverse
+from wagtail.rich_text import RichText
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.home.models import HomePage
@@ -26,7 +27,7 @@ class MethodologyPageTest(WagtailPageTestCase):
         response = self.client.get(self.page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, self.page.title)
-        self.assertContains(response, self.page.summary)
+        self.assertInHTML(str(RichText(self.page.summary)), response.content.decode(encoding="utf-8"))
         self.assertContains(response, self.page.content)
 
         self.assertContains(response, "Save or print this page")

@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
+from wagtail.rich_text import RichText
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data, rich_text, streamfield
 
@@ -70,7 +71,7 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, self.topic_page.title)
-        self.assertContains(response, self.topic_page.summary)
+        self.assertInHTML(str(RichText(self.topic_page.summary)), response.content.decode(encoding="utf-8"))
 
     def test_topic_label(self):
         self.assertEqual(self.topic_page.label, "Topic")
