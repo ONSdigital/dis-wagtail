@@ -1,5 +1,3 @@
-import uuid
-
 from django.db import migrations
 
 
@@ -16,11 +14,18 @@ def create_welsh_menus(apps, schema_editor):
     # Get Welsh locale
     welsh_locale = Locale.objects.get(language_code="cy")
 
+    # Get Welsh locale
+    english_locale = Locale.objects.get(language_code="en-gb")
+
+    # Reuse the English menu's translation_key so Wagtail links them as translations
+    english_main_menu = MainMenu.objects.get(locale=english_locale)
+    english_footer_menu = FooterMenu.objects.get(locale=english_locale)
+
     # Create MainMenu if it doesn't exist for Welsh locale
     main_menu, _ = MainMenu.objects.get_or_create(
         locale=welsh_locale,
         defaults={
-            "translation_key": uuid.uuid4(),
+            "translation_key": english_main_menu.translation_key,
             "highlights": "[]",
             "columns": "[]",
         },
@@ -30,7 +35,7 @@ def create_welsh_menus(apps, schema_editor):
     footer_menu, _ = FooterMenu.objects.get_or_create(
         locale=welsh_locale,
         defaults={
-            "translation_key": uuid.uuid4(),
+            "translation_key": english_footer_menu.translation_key,
             "columns": "[]",
         },
     )
