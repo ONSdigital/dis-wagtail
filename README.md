@@ -520,6 +520,7 @@ make compilemessages
 This will compile the .po files into .mo files, which are used by Django to display the translated text.
 
 ### Lighthouse Audits
+
 In order to run Lighthouse audits against the application, you first need to ensure that you have the
 [Lighthouse CLI](https://github.com/GoogleChrome/lighthouse) installed globally on your machine:
 
