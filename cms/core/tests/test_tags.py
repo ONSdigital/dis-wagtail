@@ -3,6 +3,7 @@ from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
 
 from cms.core.templatetags.util_tags import (
+    _strip_locale_prefix,
     extend,
     get_hreflangs,
     get_translation_urls,
@@ -88,6 +89,65 @@ class LanguageTemplateTagTests(TestCase):
         self.assertEqual(hreflangs[0]["lang"], "pl")
         self.assertEqual(hreflangs[1]["lang"], "cy")
         self.assertEqual(hreflangs[1]["url"], "/cy")
+
+    def test_translation_urls_preserve_sub_path(self):
+        """Test that the language switcher preserves routable sub-paths."""
+        request = get_dummy_request(path="/topic/articles/series/editions")
+        urls = get_translation_urls({"request": request, "page": self.page})
+
+        self.assertEqual(urls[0]["url"], "/topic/articles/series/editions")
+        self.assertEqual(urls[1]["url"], "/cy/topic/articles/series/editions")
+
+    def test_translation_urls_preserve_sub_path_with_slug(self):
+        """Test that the language switcher preserves edition slug sub-paths."""
+        request = get_dummy_request(path="/topic/articles/series/editions/jan-2025")
+        urls = get_translation_urls({"request": request, "page": self.page})
+
+        self.assertEqual(urls[0]["url"], "/topic/articles/series/editions/jan-2025")
+        self.assertEqual(urls[1]["url"], "/cy/topic/articles/series/editions/jan-2025")
+
+    def test_translation_urls_strip_welsh_prefix(self):
+        """Test that Welsh prefix is correctly stripped and swapped."""
+        request = get_dummy_request(path="/cy/topic/articles/series/editions")
+        urls = get_translation_urls({"request": request, "page": self.page})
+
+        self.assertEqual(urls[0]["url"], "/topic/articles/series/editions")
+        self.assertEqual(urls[1]["url"], "/cy/topic/articles/series/editions")
+
+    def test_translation_urls_preserve_related_data_sub_path(self):
+        """Test that the language switcher preserves related-data sub-paths."""
+        request = get_dummy_request(path="/topic/articles/series/related-data")
+        urls = get_translation_urls({"request": request, "page": self.page})
+
+        self.assertEqual(urls[0]["url"], "/topic/articles/series/related-data")
+        self.assertEqual(urls[1]["url"], "/cy/topic/articles/series/related-data")
+
+    def test_hreflangs_preserve_sub_path(self):
+        """Test that hreflangs also preserve routable sub-paths."""
+        request = get_dummy_request(path="/topic/articles/series/editions")
+        hreflangs = get_hreflangs({"request": request, "page": self.page})
+
+        self.assertEqual(hreflangs[0]["url"], "/topic/articles/series/editions")
+        self.assertEqual(hreflangs[1]["url"], "/cy/topic/articles/series/editions")
+
+
+@override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
+class StripLocalePrefixTests(TestCase):
+    def test_strips_welsh_prefix(self):
+        self.assertEqual(_strip_locale_prefix("/cy/topic/articles"), "/topic/articles")
+
+    def test_strips_welsh_prefix_root(self):
+        self.assertEqual(_strip_locale_prefix("/cy"), "/")
+
+    def test_no_prefix_unchanged(self):
+        self.assertEqual(_strip_locale_prefix("/topic/articles"), "/topic/articles")
+
+    def test_root_path_unchanged(self):
+        self.assertEqual(_strip_locale_prefix("/"), "/")
+
+    def test_does_not_strip_partial_match(self):
+        """Ensure /cyber/path is not confused with /cy/ber/path."""
+        self.assertEqual(_strip_locale_prefix("/cyber/path"), "/cyber/path")
 
 
 class ExtendFunctionTest(TestCase):
