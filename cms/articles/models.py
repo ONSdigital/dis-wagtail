@@ -105,6 +105,12 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         ),
     ]
 
+    @cached_property
+    def summary(self) -> str:
+        """Returns the summary of the latest article in the series."""
+        # TODO: update to include drafts when looking at previews holistically.
+        return latest.summary if (latest := self.get_latest()) else ""
+
     def get_latest(self) -> StatisticalArticlePage | None:
         latest: StatisticalArticlePage | None = (
             StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date").first()

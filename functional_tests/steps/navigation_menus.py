@@ -266,10 +266,15 @@ def create_populated_main_menu(context: Context) -> None:
     context.main_menu_columns = columns
 
 
+@when("the user toggles the main menu")
+def user_toggles_main_menu(context: Context) -> None:
+    context.main_content_bounding_box_before_toggle = context.page.locator("#main-content").bounding_box()
+    context.page.get_by_role("button", name="Toggle menu").click()
+
+
 @then("the main menu displays the configured columns, sections, and topic links")
 def main_menu_displays_configured_content(context: Context) -> None:
-    context.page.get_by_role("button", name="Toggle menu").click()
-    nav = context.page.locator('nav[aria-label="Main menu"]')
+    nav = context.page.get_by_role("navigation", name="Main menu")
     expect(nav).to_be_visible()
 
     # Highlights (titles + descriptions)
@@ -286,6 +291,29 @@ def main_menu_displays_configured_content(context: Context) -> None:
             expect(nav).to_contain_text(f"Topic page {col_idx}.{sec_idx}")
             expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.1")
             expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.2")
+
+
+@then("the expanded menu pushes the content down and does not overlay it")
+def content_is_pushed_down(context: Context) -> None:
+    main_content = context.page.locator("#main-content")
+    menu = context.page.get_by_role("navigation", name="Main menu")
+
+    before = context.main_content_bounding_box_before_toggle
+    after = main_content.bounding_box()
+    menu_box = menu.bounding_box()
+
+    assert after is not None, "Main content bounding box after toggle not found"
+    assert menu_box is not None, "Menu bounding box not found"
+
+    # Main content section moved down
+    assert after["y"] > before["y"], f"Expected content to move down. Before: {before['y']}, After: {after['y']}"
+
+    # No overlap: content starts below menu bottom
+    menu_bottom = menu_box["y"] + menu_box["height"]
+    assert after["y"] >= menu_bottom, f"Content overlaps menu. Content y: {after['y']}, Menu bottom: {menu_bottom}"
+
+    # Main content section is visible
+    expect(main_content).to_be_visible()
 
 
 @then("the footer menu appears on the home page")
