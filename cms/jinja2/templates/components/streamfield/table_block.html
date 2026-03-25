@@ -11,7 +11,7 @@
         {%- if footnotes -%}
             {% from "components/details/_macro.njk" import onsDetails %}
             {% call onsDetails({"id": block_id, "title": _("Footnotes")}) %}
-                {{ footnotes|richtext }}
+                {{ footnotes }}
             {% endcall %}
         {%- endif -%}
 
