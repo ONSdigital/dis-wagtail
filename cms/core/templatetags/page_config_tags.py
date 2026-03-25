@@ -44,6 +44,7 @@ def _build_locale_urls(request: HttpRequest, page: BasePage) -> list[LocaleURLsD
     variants = {variant.locale_id: variant for variant in page.get_translations(inclusive=True).defer_streamfields()}
     default_page = variants.get(default_locale.pk)
 
+    use_subdomain_locale = settings.CMS_USE_SUBDOMAIN_LOCALES
     results: list[LocaleURLsDict] = []
     for locale in Locale.objects.all().order_by("pk"):
         variant = variants.get(locale.pk, default_page)
@@ -51,12 +52,17 @@ def _build_locale_urls(request: HttpRequest, page: BasePage) -> list[LocaleURLsD
             # In case a preview of a non-existent page is requested
             continue
 
-        url = variant.get_url(request=request)
         # If there's no real translation in this locale, prepend
         # the locale code to the default page's URL so that strings in
         # templates can be localized:
-        if variant == default_page and locale.pk != variant.locale_id:
-            url = f"/{locale.language_code}{url}"
+        if use_subdomain_locale:
+            # Use the full URL to handle locale subdomains
+            url = variant.get_full_url(request=request)
+        elif variant == default_page and locale.pk != variant.locale_id:
+            # Handle the specific case for the default page with a different locale
+            url = f"/{locale.language_code}{variant.get_url(request=request)}"
+        else:
+            url = variant.get_url(request=request)
 
         results.append(
             {
@@ -114,8 +120,12 @@ def _get_base_page_config(context: jinja2.runtime.Context, site: Site, request: 
     navigation_settings = NavigationSettings.for_request(request)
 
     # NB: These variables from context are only used in preview, so this is safe to cache
-    main_menu: MainMenu | None = context.get("main_menu") or navigation_settings.main_menu.localized
-    footer_menu: FooterMenu | None = context.get("footer_menu") or navigation_settings.footer_menu.localized
+    main_menu: MainMenu | None = context.get("main_menu") or (
+        navigation_settings.main_menu.localized if navigation_settings.main_menu else None
+    )
+    footer_menu: FooterMenu | None = context.get("footer_menu") or (
+        navigation_settings.footer_menu.localized if navigation_settings.footer_menu else None
+    )
 
     base_page_config = {
         "header": {

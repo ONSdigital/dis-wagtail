@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.test import TestCase, override_settings
 from wagtail.coreutils import get_dummy_request
-from wagtail.models import Locale
+from wagtail.models import Locale, Site
 
 from cms.core.templatetags.page_config_tags import (
     get_hreflangs,
@@ -11,18 +11,27 @@ from cms.core.templatetags.page_config_tags import (
 from cms.core.templatetags.util_tags import (
     extend,
 )
+from cms.core.tests.utils import reset_url_caches
 from cms.home.models import HomePage
 
 
-class LangageTemplateTagTests(TestCase):
+@override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
+class LanguageTemplateTagTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = HomePage.objects.first()
+
+    def setUp(self):
+        self.dummy_request = get_dummy_request()
+        reset_url_caches()
+
+    def tearDown(self):
+        reset_url_caches()
+
     def test_get_translation_urls(self):
         """Test that get_translation_urls returns the correct URLs."""
-        # Mock request and page
-        request = get_dummy_request()
-        page = HomePage.objects.first()
-
         # Call the function
-        urls = get_translation_urls(request, page)
+        urls = get_translation_urls(self.dummy_request, self.page)
 
         # Check the output format
         self.assertIsInstance(urls, list)
@@ -40,12 +49,8 @@ class LangageTemplateTagTests(TestCase):
 
     def test_get_hreflangs(self):
         """Test that get_hreflangs returns the correct hreflang URLs."""
-        # Mock request and page
-        request = get_dummy_request()
-        page = HomePage.objects.first()
-
         # Call the function
-        hreflangs = get_hreflangs(request, page)
+        hreflangs = get_hreflangs(self.dummy_request, self.page)
 
         # Check the output format
         self.assertIsInstance(hreflangs, list)
@@ -60,9 +65,11 @@ class LangageTemplateTagTests(TestCase):
         self.assertEqual(hreflangs[1]["lang"], "cy")
         self.assertEqual(hreflangs[1]["url"], "/cy")
 
-    @override_settings(LANGUAGE_CODE="pl")
-    @override_settings(LANGUAGES=[("pl", "Polish"), ("cy", "Welsh")])
-    @override_settings(WAGTAIL_CONTENT_LANGUAGES=[("pl", "Polish"), ("cy", "Welsh")])
+    @override_settings(
+        LANGUAGE_CODE="pl",
+        LANGUAGES=[("pl", "Polish"), ("cy", "Welsh")],
+        WAGTAIL_CONTENT_LANGUAGES=[("pl", "Polish"), ("cy", "Welsh")],
+    )
     def test_get_hreflangs_with_different_base_locale(self):
         """Test that get_hreflangs returns the correct hreflang URLs with a different base locale."""
         # Replace the default locale with Polish
@@ -70,12 +77,8 @@ class LangageTemplateTagTests(TestCase):
         main_locale.language_code = "pl"
         main_locale.save()
 
-        # Mock request and page
-        request = get_dummy_request()
-        page = HomePage.objects.first()
-
         # Call the function
-        hreflangs = get_hreflangs(request, page)
+        hreflangs = get_hreflangs(self.dummy_request, self.page)
 
         # Check the output format
         self.assertIsInstance(hreflangs, list)
@@ -125,6 +128,7 @@ class ExtendFunctionTest(TestCase):
             extend("not a list", {"name": "Series 3"})  # type: ignore
 
 
+@override_settings(CMS_USE_SUBDOMAIN_LOCALES=True)
 class PageConfigTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -135,22 +139,32 @@ class PageConfigTestCase(TestCase):
         self.request = get_dummy_request()
         self.request.LANGUAGE_CODE = settings.LANGUAGE_CODE
 
+        self.welsh_request = get_dummy_request(site=Site.objects.get(hostname="cy.ons.localhost"))
+        self.welsh_request.LANGUAGE_CODE = "cy"
+
     def test_page_config(self):
-        for language_code in dict(settings.LANGUAGES):
-            self.request.LANGUAGE_CODE = language_code
+        config = get_page_config({"page": self.page, "request": self.request})
 
-            for page in [self.page, self.welsh_home_page]:
-                with self.subTest(page=page, language_code=language_code):
-                    config = get_page_config({"page": page, "request": self.request})
+        self.assertEqual(config["bodyClasses"], "template-home-page")
+        self.assertEqual(config["title"], f"Office for National Statistics - {self.page.title}")
+        self.assertEqual(config["meta"]["canonicalUrl"], "https://ons.localhost/")
 
-                    self.assertEqual(config["bodyClasses"], "template-home-page")
-                    self.assertEqual(config["title"], page.title)
-                    self.assertEqual(config["meta"]["canonicalUrl"], "http://localhost/")
+        self.assertEqual(
+            config["header"]["search"],
+            {"id": "search", "form": {"action": "/search", "inputName": "q"}},
+        )
 
-                    self.assertEqual(
-                        config["header"]["search"],
-                        {"id": "search", "form": {"action": "/search", "inputName": "q"}},
-                    )
+    def test_welsh_page_config(self):
+        config = get_page_config({"page": self.welsh_home_page, "request": self.welsh_request})
+
+        self.assertEqual(config["bodyClasses"], "template-home-page")
+        self.assertEqual(config["title"], f"Swyddfa Ystadegau Gwladol - {self.welsh_home_page.title}")
+        self.assertEqual(config["meta"]["canonicalUrl"], "https://ons.localhost/")
+
+        self.assertEqual(
+            config["header"]["search"],
+            {"id": "search", "form": {"action": "/search", "inputName": "q"}},
+        )
 
     def test_page_title_from_context_overrides_model(self):
         config = get_page_config({"page": self.page, "request": self.request, "page_title": "custom title"})
@@ -167,7 +181,7 @@ class PageConfigTestCase(TestCase):
 
     @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
     def test_served_from_cache(self):
-        with self.assertNumQueries(6):
+        with self.assertNumQueries(5):
             get_page_config({"page": self.page, "request": self.request})
 
         with self.assertNumQueries(0):
