@@ -25,3 +25,11 @@ def user_has_no_option_to_create_child_page(context: Context) -> None:
 def user_can_create_child_page_under_homepage(context: Context, page_title: str) -> None:
     context.page.get_by_role("link", name="Add child page").click()
     expect(context.page.get_by_role("heading", name=f"Create a page in {page_title}")).to_be_visible()
+
+
+@step("the user cannot create a new homepage")
+def user_clicks_add_child_page(context: Context) -> None:
+    # TODO: this check will need to change to assert that no "Add child page" button is present once this change
+    #       is released: https://github.com/wagtail/wagtail/pull/13297
+    context.page.get_by_role("link", name="Add child page").click()
+    expect(context.page.get_by_text("Sorry, you cannot create a page at this location.")).to_be_visible()
