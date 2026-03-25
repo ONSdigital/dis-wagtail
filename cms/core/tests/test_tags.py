@@ -179,15 +179,29 @@ class PageConfigTestCase(TestCase):
         self.assertEqual(config["header"]["language"], {"languages": []})
         self.assertEqual(config["meta"], {"hrefLangs": [], "canonicalUrl": None})
 
-    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    @override_settings(
+        CACHES={
+            "default": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+                "LOCATION": "test_served_from_cache",
+            }
+        }
+    )
     def test_served_from_cache(self):
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(8):
             get_page_config({"page": self.page, "request": self.request})
 
         with self.assertNumQueries(0):
             get_page_config({"page": self.page, "request": self.request})
 
-    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    @override_settings(
+        CACHES={
+            "default": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+                "LOCATION": "test_no_page_served_from_cache",
+            }
+        }
+    )
     def test_no_page_served_from_cache(self):
         with self.assertNumQueries(4):
             get_page_config({"page_title": "not found", "request": self.request})
