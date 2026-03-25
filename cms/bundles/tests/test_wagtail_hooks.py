@@ -177,3 +177,30 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
             with self.subTest(msg=f"Non-bundleable page - {context}"):
                 response = self.client.get(url)
                 self.assertNotContains(response, add_to_bundle_url)
+
+    def test_summary_item__generic_user(self):
+        self.client.force_login(self.generic_user)
+        response = self.client.get(self.dashboard_url)
+        self.assertNotContains(response, 'title="Total active bundles"')
+
+    def test_summary_item__previewer(self):
+        self.client.force_login(self.bundle_viewer)
+        response = self.client.get(self.dashboard_url)
+        self.assertContains(
+            response, f'<a href="{self.bundle_index_url}" title="Total active bundles">0 Bundles</a>', html=True
+        )
+
+        self.bundle_viewer.teams.add(self.preview_team)
+        response = self.client.get(self.dashboard_url)
+        self.assertContains(
+            response, f'<a href="{self.bundle_index_url}" title="Total active bundles">1 Bundle</a>', html=True
+        )
+
+    def test_summary_item__user_who_can_manage(self):
+        for user in [self.publishing_officer, self.superuser]:
+            with self.subTest(f"summary item should be shown for user={user.username}"):
+                self.client.force_login(user)
+                response = self.client.get(self.dashboard_url)
+                self.assertContains(
+                    response, f'<a href="{self.bundle_index_url}" title="Total active bundles">3 Bundles</a>', html=True
+                )

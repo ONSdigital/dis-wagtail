@@ -301,6 +301,10 @@ class BundleEditView(EditView):
 
         return context
 
+    @cached_property
+    def can_delete(self) -> bool:
+        return not self.object.is_ready_to_be_published and self.user_has_permission_for_instance("delete", self.object)
+
 
 class BundleInspectView(InspectView):
     """The Bundle inspect view class."""
@@ -315,6 +319,12 @@ class BundleInspectView(InspectView):
     @cached_property
     def can_manage(self) -> bool:
         return user_can_manage_bundles(self.request.user)
+
+    def get_delete_url(self) -> str | None:
+        if not self.object.is_ready_to_be_published:
+            delete_url: str | None = super().get_delete_url()
+            return delete_url
+        return ""
 
     def get_fields(self) -> list[str]:
         """Returns the list of fields to include in the inspect view.
@@ -661,6 +671,12 @@ class BundleInspectView(InspectView):
 
 class BundleDeleteView(DeleteView):
     has_errors = False
+
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
+        if self.object.is_ready_to_be_published:
+            raise PermissionDenied
+        response: HttpResponseBase = super().dispatch(request, *args, **kwargs)
+        return response
 
     @datasets_bundle_api_enabled
     def sync_bundle_deletion_with_bundle_api(self, instance: Bundle) -> None:
