@@ -23,7 +23,7 @@ Feature: CMS users can manage navigation menus via the Wagtail admin interface
         When the publishing admin visits the home page
         And the user toggles the main menu
         Then the main menu displays the configured columns, sections, and topic links
-        And the expanded menu pushes the content down instead of overlaying it
+        And the expanded menu pushes the content down and does not overlay it
 
     # Field Validation and Error Handling
     Scenario: Validation error when footer menu is left empty

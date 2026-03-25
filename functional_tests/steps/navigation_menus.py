@@ -293,7 +293,7 @@ def main_menu_displays_configured_content(context: Context) -> None:
             expect(nav).to_contain_text(f"External topic {col_idx}.{sec_idx}.2")
 
 
-@then("the expanded menu pushes the content down instead of overlaying it")
+@then("the expanded menu pushes the content down and does not overlay it")
 def content_is_pushed_down(context: Context) -> None:
     main_content = context.page.locator("#main-content")
     menu = context.page.get_by_role("navigation", name="Main menu")
