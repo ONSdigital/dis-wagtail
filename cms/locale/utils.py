@@ -34,7 +34,7 @@ def get_mapped_site_root_paths(host: str | None = None, *, default_site_only: bo
     hostnames stored in the database Site records.
     """
     swap_domains: bool = host is not None and host in settings.CMS_HOSTNAME_ALTERNATIVES.values()
-    cache_key = f"cms-{swap_domains}-{SITE_ROOT_PATHS_CACHE_KEY}"
+    cache_key = f"cms-{swap_domains}-{default_site_only}-{SITE_ROOT_PATHS_CACHE_KEY}"
     result = cache.get(cache_key, version=SITE_ROOT_PATHS_CACHE_VERSION)
 
     if result is None:
