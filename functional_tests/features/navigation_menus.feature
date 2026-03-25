@@ -23,7 +23,20 @@ Feature: CMS users can manage navigation menus via the Wagtail admin interface
         When the publishing admin visits the home page
         And the user toggles the main menu
         Then the main menu displays the configured columns, sections, and topic links
-        And the expanded menu pushes the content down and does not overlay it
+            And the expanded menu pushes the content down and does not overlay it
+
+    # Switching to Welsh locale and verifying main menu and footer menu rendering
+    Scenario: An external user sees the Welsh main menu on the home page
+        Given the main menu is populated with columns, sections, and topic links for the Welsh locale
+        When An external user navigates to the homepage
+        And the user switches the page language to Welsh
+        Then the Welsh main menu displays the configured columns, sections, and topic links
+
+    Scenario: An external user sees the Welsh footer menu on the home page
+        Given the footer menu is populated with columns and links for the Welsh locale
+        When An external user navigates to the homepage
+        And the user switches the page language to Welsh
+        Then the Welsh footer menu displays the configured columns and links
 
     # Field Validation and Error Handling
     Scenario: Validation error when footer menu is left empty
