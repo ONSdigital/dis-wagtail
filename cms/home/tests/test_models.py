@@ -1,5 +1,8 @@
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from wagtail.coreutils import get_dummy_request
+from wagtail.models import Page
+from wagtail.test.utils import WagtailTestUtils
 
 from cms.core.permission_testers import BasePagePermissionTester, StaticPagePermissionTester
 from cms.core.tests.utils import TranslationResetMixin
@@ -7,7 +10,7 @@ from cms.home.models import HomePage
 from cms.users.tests.factories import UserFactory
 
 
-class HomePageTestCase(TranslationResetMixin, TestCase):
+class HomePageTestCase(WagtailTestUtils, TranslationResetMixin, TestCase):
     def setUp(self):
         self.home_page = HomePage.objects.first()
         self.url = self.home_page.get_url()
@@ -47,3 +50,17 @@ class HomePageTestCase(TranslationResetMixin, TestCase):
         analytics_values = self.home_page.get_analytics_values(get_dummy_request())
         self.assertEqual(analytics_values["pageTitle"], self.home_page.title)
         self.assertEqual(analytics_values["contentType"], self.home_page.analytics_content_type)
+
+    def test_user_cannot_create_home_page(self):
+        """Test that a user cannot create a home page."""
+        root_page = Page.objects.get(depth=1)
+        self.login()
+        response = self.client.get(
+            reverse("wagtailadmin_pages:add", args=("home", "homepage", root_page.pk)),
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        # Creating a home page should be forbidden
+        self.assertContains(response, "Sorry, you do not have permission to access this area.")

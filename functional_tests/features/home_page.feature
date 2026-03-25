@@ -16,8 +16,3 @@ Feature: There is a default home page
         And they enter "articles" in the search field
         And they submit the search form
         Then they should be redirected to the search page with query "articles"
-
-    Scenario: A CMS user cannot create homepages
-        Given a superuser logs into the admin site
-        When the user navigates to the admin page navigator
-        Then the user cannot create a new homepage
