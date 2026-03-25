@@ -72,3 +72,12 @@ class InvalidateReplayRedisCacheTestCase(SimpleTestCase):
         self.assertEqual(delete_many_logs.records[0].message, "Unable to replay delete_many")
 
         self.assertIsNone(caches["default"].get("key"))
+
+    def test_delete_many_generator(self):
+        def key_generator():
+            yield "key"
+
+        caches["default"].delete_many(key_generator())
+
+        self.assertIsNone(caches["default"].get("key"))
+        self.assertIsNone(caches["invalidate_replay"].get("key"))

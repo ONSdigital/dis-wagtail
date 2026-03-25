@@ -36,6 +36,8 @@ class InvalidateReplayRedisCache(RedisCache):
         return bool(super().delete(key, version) and replay_result)
 
     def delete_many(self, keys: Iterable[Any], version: int | None = None) -> None:  # pylint: disable=arguments-differ
+        # Collect the keys immediately to ensure both backends receive the same keys.
+        keys = list(keys)
         try:
             self._replay_backend.delete_many(keys, version)
         except Exception:  # pylint: disable=broad-exception-caught
