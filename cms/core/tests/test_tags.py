@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.test import TestCase, override_settings
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
@@ -125,28 +126,34 @@ class ExtendFunctionTest(TestCase):
 
 
 class PageConfigTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
+        cls.welsh_home_page = HomePage.objects.get(locale__language_code="cy")
+
     def setUp(self):
         self.request = get_dummy_request()
+        self.request.LANGUAGE_CODE = settings.LANGUAGE_CODE
 
     def test_page_config(self):
-        page = HomePage.objects.first()
+        for language_code in dict(settings.LANGUAGES):
+            self.request.LANGUAGE_CODE = language_code
 
-        with self.assertNumQueries(9):
-            config = get_page_config({"page": page, "request": self.request})
+            for page in [self.page, self.welsh_home_page]:
+                with self.subTest(page=page, language_code=language_code):
+                    config = get_page_config({"page": page, "request": self.request})
 
-        self.assertEqual(config["bodyClasses"], "template-home-page")
-        self.assertEqual(config["title"], page.title)
-        self.assertEqual(config["meta"]["canonicalUrl"], "http://localhost/")
+                    self.assertEqual(config["bodyClasses"], "template-home-page")
+                    self.assertEqual(config["title"], page.title)
+                    self.assertEqual(config["meta"]["canonicalUrl"], "http://localhost/")
 
-        self.assertEqual(
-            config["header"]["search"],
-            {"id": "search", "form": {"action": "/search", "inputName": "q"}},
-        )
+                    self.assertEqual(
+                        config["header"]["search"],
+                        {"id": "search", "form": {"action": "/search", "inputName": "q"}},
+                    )
 
     def test_page_title_from_context_overrides_model(self):
-        config = get_page_config(
-            {"page": HomePage.objects.first(), "request": self.request, "page_title": "custom title"}
-        )
+        config = get_page_config({"page": self.page, "request": self.request, "page_title": "custom title"})
         self.assertEqual(config["title"], "custom title")
 
     def test_config_no_page(self):
@@ -160,16 +167,16 @@ class PageConfigTestCase(TestCase):
 
     @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
     def test_served_from_cache(self):
-        page = HomePage.objects.first()
-
-        get_page_config({"page": page, "request": self.request})
+        with self.assertNumQueries(6):
+            get_page_config({"page": self.page, "request": self.request})
 
         with self.assertNumQueries(0):
-            get_page_config({"page": page, "request": self.request})
+            get_page_config({"page": self.page, "request": self.request})
 
     @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
     def test_no_page_served_from_cache(self):
-        get_page_config({"page_title": "not found", "request": self.request})
+        with self.assertNumQueries(4):
+            get_page_config({"page_title": "not found", "request": self.request})
 
         with self.assertNumQueries(0):
             get_page_config({"page_title": "not found", "request": self.request})
