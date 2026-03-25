@@ -230,15 +230,21 @@ class ONSTableBlock(TinyTableBlock):
         }
 
     @staticmethod
-    def _build_table_download_url(page: Any, block_id: str, superseded_version: int | None = None) -> str:
-        """Build table download URL for published pages."""
-        base_url = page.url.rstrip("/")
+    def _build_download_path_fragment(block_id: str, superseded_version: int | None = None) -> str:
+        """Build the table download URL path portion for published pages."""
         version_part = f"/versions/{superseded_version}" if superseded_version is not None else ""
-        return f"{base_url}{version_part}/download-table/{block_id}"
+        return f"{version_part}/download-table/{block_id}"
+
+    @staticmethod
+    def _build_table_download_url(page: Any, block_id: str, superseded_version: int | None = None) -> str:
+        """Build the table download URL for published pages."""
+        base_url = page.url.rstrip("/")
+        download_fragment = ONSTableBlock._build_download_path_fragment(block_id, superseded_version)
+        return f"{base_url}{download_fragment}"
 
     @staticmethod
     def _build_preview_table_download_url(page: Any, block_id: str, request: Any = None) -> str:
-        """Build table download URL for preview mode."""
+        """Build the table download URL for preview mode."""
         revision_id = None
         if request and hasattr(request, "resolver_match") and request.resolver_match:
             revision_id = request.resolver_match.kwargs.get("revision_id")
