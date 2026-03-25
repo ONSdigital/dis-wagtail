@@ -20,13 +20,18 @@ def replace_hostname(url: str) -> str:
     return parsed_url.geturl()
 
 
-def get_mapped_site_root_paths(host: str | None = None) -> list[SiteRootPath]:
+def get_mapped_site_root_paths(host: str | None = None, *, default_site_only: bool = False) -> list[SiteRootPath]:
     """An expansion to Site.get_site_root_paths().
 
     Our version:
     - handles Sites mapped to localized root pages, rather than offer language alternatives for each Site.
     - expands to handle one Site with localized roots, like Site.get_site_root_paths
     - checks and replaces the base URL if the request is from one of the alternatives.
+
+    When default_site_only is True, only the default site is used and its root_url
+    is replaced with WAGTAILADMIN_BASE_URL. This is intended for use when subdomain
+    locales are disabled, ensuring URLs point to the correct host regardless of the
+    hostnames stored in the database Site records.
     """
     swap_domains: bool = host is not None and host in settings.CMS_HOSTNAME_ALTERNATIVES.values()
     cache_key = f"cms-{swap_domains}-{SITE_ROOT_PATHS_CACHE_KEY}"
@@ -34,32 +39,25 @@ def get_mapped_site_root_paths(host: str | None = None) -> list[SiteRootPath]:
 
     if result is None:
         result = []
-        sites = list(
-            Site.objects.select_related("root_page", "root_page__locale").order_by(
-                "-root_page__url_path", "-is_default_site", "hostname"
-            )
-        )
+        queryset = Site.objects.select_related("root_page", "root_page__locale")
+        if default_site_only:
+            queryset = queryset.filter(is_default_site=True)
+        sites = list(queryset.order_by("-root_page__url_path", "-is_default_site", "hostname"))
+
         for site in sites:
-            result.append(
-                SiteRootPath(
-                    site.id,
-                    site.root_page.url_path,
-                    replace_hostname(site.root_url) if swap_domains else site.root_url,
-                    site.root_page.locale.language_code,
-                )
-            )
+            if default_site_only:
+                root_url = getattr(settings, "WAGTAILADMIN_BASE_URL", site.root_url)
+            elif swap_domains:
+                root_url = replace_hostname(site.root_url)
+            else:
+                root_url = site.root_url
+            result.append(SiteRootPath(site.id, site.root_page.url_path, root_url, site.root_page.locale.language_code))
         if len(sites) == 1:
             # If we have only one site, expand to include the translated root pages as alternatives
             site = sites[0]
+            root_url = result[0].root_url
             for root_page in site.root_page.get_translations(inclusive=False).select_related("locale"):
-                result.append(
-                    SiteRootPath(
-                        site.id,
-                        root_page.url_path,
-                        replace_hostname(site.root_url) if swap_domains else site.root_url,
-                        root_page.locale.language_code,
-                    )
-                )
+                result.append(SiteRootPath(site.id, root_page.url_path, root_url, root_page.locale.language_code))
 
         cache.set(
             cache_key,
