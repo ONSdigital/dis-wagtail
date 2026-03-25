@@ -14,7 +14,7 @@ def create_welsh_menus(apps, schema_editor):
     # Get Welsh locale
     welsh_locale = Locale.objects.get(language_code="cy")
 
-    # Get Welsh locale
+    # Get English locale
     english_locale = Locale.objects.get(language_code="en-gb")
 
     # Reuse the English menu's translation_key so Wagtail links them as translations

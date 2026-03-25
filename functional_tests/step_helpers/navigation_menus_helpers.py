@@ -83,6 +83,9 @@ class MainMenuStreamValueBuilder:
         title: str = "",
         description: str,
     ) -> dict[str, Any]:
+        # This condition is True if both page and external_url are None, or both are not None.
+        # It enforces that exactly one of page or external_url must be provided (not both, not neither).
+        # (Inverse XOR: True when both are the same, False when exactly one is set.)
         if (page is None) == (external_url is None):
             raise ValueError("Highlight must have exactly one of 'page' or 'external_url'.")
 
@@ -116,6 +119,9 @@ class MainMenuStreamValueBuilder:
         external_url: str | None = None,
         title: str = "",
     ) -> dict[str, Any]:
+        # This condition is True if both page and external_url are None, or both are not None.
+        # It enforces that exactly one of page or external_url must be provided (not both, not neither).
+        # (Inverse XOR: True when both are the same, False when exactly one is set.)
         if (page is None) == (external_url is None):
             raise ValueError("Topic item must have exactly one of 'page' or 'external_url'.")
 
@@ -189,6 +195,9 @@ class FooterMenuStreamValueBuilder:
         external_url: str | None = None,
         title: str = "",
     ) -> dict[str, Any]:
+        # This condition is True if both page and external_url are None, or both are not None.
+        # It enforces that exactly one of page or external_url must be provided (not both, not neither).
+        # (Inverse XOR: True when both are the same, False when exactly one is set.)
         if (page is None) == (external_url is None):
             raise ValueError("Link must have exactly one of 'page' or 'external_url'.")
 
