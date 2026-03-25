@@ -80,6 +80,13 @@ class UnlockWorkflowViewTestCase(WagtailTestUtils, TestCase):
 
         self._assert_happy_path()
 
+    def test_page_title(self):
+        mark_page_as_ready_to_publish(self.page)
+
+        response = self.client.get(self.unlock_url)
+        expected_title = f"Unlock: {self.page.get_admin_display_title()}"
+        self.assertContains(response, f"<title>{expected_title} - Wagtail</title>", html=True)
+
     def test_cancel_link_points_to_edit_page(self):
         mark_page_as_ready_to_publish(self.page)
 

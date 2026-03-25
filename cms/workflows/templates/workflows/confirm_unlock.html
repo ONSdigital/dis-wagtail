@@ -1,5 +1,7 @@
 {% extends "wagtailadmin/generic/base.html" %}
 
+{% block titletag %}{{ page_title }}: {{ page_subtitle }}{% endblock %}
+
 {% block main_content %}
     <p>This page is currently ready to be published. Are you sure you want to unlock editing for this page?</p>
 
