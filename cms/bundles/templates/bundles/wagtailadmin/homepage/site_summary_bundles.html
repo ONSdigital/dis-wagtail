@@ -1,0 +1,8 @@
+{% load wagtailadmin_tags %}
+
+<li>
+    {% icon name="boxes-stacked" %}
+    <a href="{% url 'bundle:index' %}" title="Total active bundles">
+        {{ total|intcomma }} Bundle{{ total|pluralize }}
+    </a>
+</li>
