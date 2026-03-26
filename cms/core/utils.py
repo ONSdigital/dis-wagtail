@@ -124,3 +124,18 @@ def redirect_to_parent_listing(
 def strip_unwanted_control_chars_from_json(data: str) -> str:
     """Remove control characters (C0 and C1) from JSON string (without decoding)."""
     return JSON_ENCODED_UNWANTED_CONTROL_CHARS_RE.sub("", data)
+
+
+def deep_merge_dicts(dict1: dict, dict2: dict) -> dict:
+    """Deep merge dictionaries.
+    If there are conflicting keys, dict1 takes precedence.
+    """
+    result = dict1.copy()
+
+    for key, value in dict2.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = deep_merge_dicts(result[key], value)
+        else:
+            result[key] = value
+
+    return result
