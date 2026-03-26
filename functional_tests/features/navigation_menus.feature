@@ -27,7 +27,6 @@ Feature: CMS users can manage navigation menus via the Wagtail admin interface
         And the expanded menu pushes the content down and does not overlay it
 
     # Switching to Welsh locale and verifying main menu and footer menu rendering
-    @smoke
     Scenario: An external user sees the Welsh main menu on the home page
         Given the main menu is populated with columns, sections, and topic links for the Welsh locale
         When An external user navigates to the homepage
