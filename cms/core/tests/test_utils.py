@@ -8,6 +8,7 @@ from django.test import RequestFactory, SimpleTestCase, TestCase, override_setti
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.utils import (
     UNWANTED_CONTROL_CHARACTERS,
+    deep_merge_dicts,
     get_client_ip,
     get_content_type_for_page,
     latex_formula_to_svg,
@@ -206,3 +207,18 @@ class ControlCharactersTestCase(SimpleTestCase):
                     json.loads(strip_unwanted_control_chars_from_json(json.dumps(f"The character is {char}"))),
                     "The character is ",
                 )
+
+
+class DeepMergeDictsTestCase(SimpleTestCase):
+    def test_deep_merge(self):
+        for in_1, in_2, result in [
+            ({}, {}, {}),
+            ({"a": 1}, {"b": 2}, {"a": 1, "b": 2}),
+            (
+                {"a": 1, "b": {"x": 10, "y": 20}},
+                {"b": {"y": 30, "z": 40}, "c": 3},
+                {"a": 1, "b": {"x": 10, "y": 30, "z": 40}, "c": 3},
+            ),
+        ]:
+            with self.subTest(in_1=in_1, in_2=in_2):
+                self.assertEqual(deep_merge_dicts(in_1, in_2), result)
