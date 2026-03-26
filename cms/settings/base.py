@@ -350,6 +350,23 @@ elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
             },
         },
     }
+
+    if elasticache_invalidate_replay_addr := env.get("ELASTICACHE_INVALIDATE_REPLAY_ADDR"):
+        CACHES["default"]["BACKEND"] = "cms.core.cache.InvalidateReplayRedisCache"
+        CACHES["invalidate_replay"] = {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": f"rediss://{elasticache_invalidate_replay_addr}:{port}",
+            "OPTIONS": {
+                **redis_options,
+                "CONNECTION_POOL_KWARGS": {
+                    "credential_provider": ElastiCacheIAMCredentialProvider(
+                        user=env["ELASTICACHE_INVALIDATE_REPLAY_USER_NAME"],
+                        cluster_name=env["ELASTICACHE_INVALIDATE_REPLAY_CLUSTER_NAME"],
+                        region=AWS_REGION,
+                    )
+                },
+            },
+        }
 else:
     CACHES["default"] = {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",

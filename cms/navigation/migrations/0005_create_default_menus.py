@@ -4,7 +4,9 @@ from django.db import migrations
 
 
 def create_default_menus(apps, schema_editor):
-    """Create default MainMenu and FooterMenu (as drafts), and configure NavigationSettings."""
+    """Create default MainMenu and FooterMenu (as drafts), and configure NavigationSettings.
+    This is for the English locale, a separate migration will handle creating menus for the Welsh locale.
+    """
     MainMenu = apps.get_model("navigation", "MainMenu")
     FooterMenu = apps.get_model("navigation", "FooterMenu")
     NavigationSettings = apps.get_model("navigation", "NavigationSettings")
