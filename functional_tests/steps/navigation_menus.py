@@ -24,7 +24,6 @@ def _assert_main_menu_content(
     aria_label: str,
     locale_suffix: str = "",
 ) -> None:
-    page.get_by_role("button", name="Toggle menu").click()
     nav = page.locator(f'nav[aria-label="{aria_label}"]')
     expect(nav).to_be_visible()
 
@@ -241,7 +240,7 @@ def user_toggles_main_menu(context: Context) -> None:
 
 @then("the main menu displays the configured columns, sections, and topic links")
 def main_menu_displays_configured_content(context: Context) -> None:
-    _assert_main_menu_content(context.page, context.main_menu_highlights, "Main menu", "English")
+    _assert_main_menu_content(context.page, context.main_menu_highlights, "Menu links navigation", "English")
 
 
 @given("the main menu is populated with columns, sections, and topic links for the Welsh locale")
@@ -266,7 +265,7 @@ def create_populated_welsh_main_menu(context: Context) -> None:
 
 @then("the Welsh main menu displays the configured columns, sections, and topic links")
 def welsh_main_menu_displays_configured_content(context: Context) -> None:
-    _assert_main_menu_content(context.page, context.welsh_main_menu_highlights, "Prif ddewislen", "Welsh")
+    _assert_main_menu_content(context.page, context.welsh_main_menu_highlights, "Menu links navigation", "Welsh")
 
 
 @given("the footer menu is populated with columns and links for the Welsh locale")
@@ -306,10 +305,17 @@ def welsh_footer_menu_displays_configured_content(context: Context) -> None:
         expect(contentinfo).to_contain_text(f"Welsh Link Title {i}")
 
 
+@when('the menu button has the correct button text "{button_text}"')
+def menu_button_has_correct_text(context: Context, button_text: str) -> None:
+    button = context.page.locator('button[aria-label="Toggle menu"]')
+    expect(button).to_be_visible()
+    expect(button.locator(".ons-btn__text")).to_have_text(button_text)
+
+
 @then("the expanded menu pushes the content down and does not overlay it")
 def content_is_pushed_down(context: Context) -> None:
     main_content = context.page.locator("#main-content")
-    menu = context.page.get_by_role("navigation", name="Main menu")
+    menu = context.page.get_by_role("navigation", name="Menu")
 
     before = context.main_content_bounding_box_before_toggle
     after = main_content.bounding_box()
