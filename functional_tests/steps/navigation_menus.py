@@ -236,6 +236,7 @@ def create_populated_main_menu(context: Context) -> None:
 def user_toggles_main_menu(context: Context) -> None:
     context.main_content_bounding_box_before_toggle = context.page.locator("#main-content").bounding_box()
     context.page.get_by_role("button", name="Toggle menu").click()
+    context.page.locator('nav[aria-label="Main menu"]').wait_for(state="visible")
 
 
 @then("the main menu displays the configured columns, sections, and topic links")
