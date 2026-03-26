@@ -305,7 +305,7 @@ def welsh_footer_menu_displays_configured_content(context: Context) -> None:
         expect(contentinfo).to_contain_text(f"Welsh Link Title {i}")
 
 
-@when('the menu button has the correct button text "{button_text}"')
+@then('the menu button has the button text "{button_text}"')
 def menu_button_has_correct_text(context: Context, button_text: str) -> None:
     button = context.page.locator('button[aria-label="Toggle menu"]')
     expect(button).to_be_visible()
