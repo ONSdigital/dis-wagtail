@@ -92,7 +92,7 @@ class UnlockWorkflowViewTestCase(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.unlock_url)
         edit_url = reverse("wagtailadmin_pages:edit", args=(self.page.pk,))
-        self.assertContains(response, f'<a href="{edit_url}" class="button button-secondary">No, don\'t unlock</a>')
+        self.assertContains(response, f'<a href="{edit_url}" class="button button-secondary">No, don’t unlock</a>')
 
     def test_post(self):
         mark_page_as_ready_to_publish(self.page)
