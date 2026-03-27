@@ -378,41 +378,53 @@ def a_user_exists_by_role(context: Context, user_role: str) -> None:
     context.users[user_role] = create_user(user_role)
 
 
-@given("there is a statistical analysis page approved by {user_role}")
-def statistical_analysis(context: Context, user_role: str) -> None:
-    user = context.users[user_role]["user"]
-    now = datetime.now()
-    now -= timedelta(days=31)
-    title = now.strftime("%B %Y")
-    context.article_series_page = ArticleSeriesPageFactory(title="PSF", slug="PSF")
-    article = StatisticalArticlePageFactory(parent=context.article_series_page, title=title, live=True, slug="edition")
-    mark_page_as_ready_to_publish(article, user)
-    article.save()
-    context.statistical_article_page = article
+@step("the {user_role} logs in")
+def log_in_user_by_role(context: Context, user_role: str) -> None:
+    context.page.goto(f"{context.base_url}/admin/login/")
+    context.page.get_by_placeholder("Enter your username").fill(context.users[user_role]["username"])
+    context.page.get_by_placeholder("Enter password").fill(context.users[user_role]["password"])
+    context.page.get_by_role("button", name="Sign in").click()
 
 
-@given("there is a release calendar page approved by {creator_role}")
-def release_calendar(context: Context, creator_role: str) -> None:
-    nowish = timezone.now() + timedelta(minutes=20)
-    user = context.users[creator_role]["user"]
-
-    release_calendar_page = ReleaseCalendarPageFactory(
-        release_date=nowish, title="Release Calendar Page bundles UI", status=ReleaseStatus.CONFIRMED
-    )
-    mark_page_as_ready_to_publish(release_calendar_page, user)
-    release_calendar_page.save_revision().publish()
-    context.release_calendar_page = release_calendar_page
+@step("the logged in user goes to the bundle page")
+def go_to_bundle_page(context: Context) -> None:
+    context.page.get_by_role("link", name="Bundles", exact=True).click()
 
 
-@given("there is a preview team")
-def preview_teams_create(context: Context) -> None:
-    context.team = Team.objects.create(identifier="preview-team", name="Bundles UI Preview team", is_active=True)
+@step("the logged in user can see the search_term")
+def see_bundle_search_term(context: Context) -> None:
+    expect(context.page.get_by_role("textbox", name="Search term")).to_be_visible()
 
 
-@given("the {user_role} is a member of the preview team")
-def add_user_to_preview_teams(context: Context, user_role: str) -> None:
-    user = context.users[user_role]["user"]
-    user.teams.add(context.team)
+@step("the {user_role} can see no_bundles")
+def see_no_bundles_response(context: Context, user_role: str) -> None:
+    response = "There are no bundles to display. Why not add one?"
+    if user_role == "Viewer":
+        response = "There are no bundles to display."
+
+    expect(context.page.get_by_role("paragraph")).to_contain_text(response)
+
+
+@step("the logged in user searches for the bundle name {search_name}")
+def search_for_bundle(context: Context, search_name: str) -> None:
+    bundle_name = "December 2025"
+    if search_name != "not known":
+        bundle_name = context.bundles[-1].name
+    context.page.get_by_role("textbox", name="Search term").fill(bundle_name)
+
+
+@then("the logged in user can see no bundles response")
+def no_bundles_response(context: Context) -> None:
+    context.page.get_by_text("No bundles match your query.").click()
+
+
+@step("the logged in user gets match response in bundles search for user {role}")
+def get_search_match(context: Context, role: str) -> None:
+    table_text = f"{context.bundles[-1].name} Edit Inspect"
+    if role == "Viewer":
+        table_text = f"{context.bundles[-1].name} Inspect"
+
+    expect(context.page.get_by_role("table")).to_contain_text(table_text)
 
 
 @given("there are {number_of_bundles} bundles with {bundle_details}")
@@ -451,9 +463,9 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
 
         if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_page"):
             bundle.release_calendar_page = context.release_calendar_page
-        else:
-            now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
-            bundle.publication_date = now
+        # else:
+        #     now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
+        #     bundle.publication_date = now
         bundle.save()
 
         if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_page"):
@@ -464,24 +476,15 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
         sorted(context.bundles, key=lambda x: x.name)
 
 
-# Bundles UI Triggers
-@step("the {user_role} logs in")
-def log_in_user_by_role(context: Context, user_role: str) -> None:
-    context.page.goto(f"{context.base_url}/admin/login/")
-    context.page.get_by_placeholder("Enter your username").fill(context.users[user_role]["username"])
-    context.page.get_by_placeholder("Enter password").fill(context.users[user_role]["password"])
-    context.page.get_by_role("button", name="Sign in").click()
+@given("there is a preview team")
+def preview_teams_create(context: Context) -> None:
+    context.team = Team.objects.create(identifier="preview-team", name="Bundles UI Preview team", is_active=True)
 
 
-# Bundles UI Consequences
-@step("the logged in user can see the create button")
-def see_create_button(context: Context) -> None:
-    expect(context.page.get_by_role("link", name="Add bundle")).to_be_visible()
-
-
-@step("the logged in user can create a bundle")
-def create_bundle(context: Context) -> None:
-    context.page.get_by_role("link", name="Add bundle").click()
+@given("the {user_role} is a member of the preview team")
+def add_user_to_preview_teams(context: Context, user_role: str) -> None:
+    user = context.users[user_role]["user"]
+    user.teams.add(context.team)
 
 
 @step("the logged in user cannot see the create button")
@@ -489,42 +492,169 @@ def cannot_create_bundle(context: Context) -> None:
     expect(context.page.get_by_role("link", name="Add bundle")).not_to_be_visible()
 
 
-@step("the {user_role} can find the bundle")
-def find_the_bundle(context: Context, user_role: str) -> None:
-    bundles_search_button = f"{context.bundles[-1].name} Edit Inspect"
-    if user_role == "Viewer":
-        bundles_search_button = f"{context.bundles[-1].name} Inspect"
+@step("the logged in user can see the create button")
+def see_create_button(context: Context) -> None:
+    expect(context.page.get_by_role("link", name="Add bundle")).to_be_visible()
 
-    context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
+
+@step("the logged in user creates a bundle")
+def create_bundle(context: Context) -> None:
+    context.page.get_by_role("link", name="Add bundle").click()
+
+
+@step("the logged in user gets a failure message due to field validation")
+def fail_to_save_bundle_name(context: Context) -> None:
+    expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
+    expect(context.page.locator("#panel-child-name-errors")).to_contain_text("This field is required.")
+
+
+@step("the logged in user adds a Name to the bundle")
+def add_name_to_bundle(context: Context) -> None:
+    bundle_name = "Bundle UI Test Bundle"
+    if "bundles" in context:
+        bundle_name = context.bundles[-1].name
+    context.page.get_by_role("textbox", name="Name*").fill(bundle_name)
+
+
+@step("the logged in user gets a failure message due to duplicate name")
+def existing_failure_message(context: Context) -> None:
+    expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
+    expect(context.page.locator("#panel-child-name-errors")).to_contain_text("Bundle with this Name already exists.")
+
+
+@step("the logged in user gets a successful create message")
+def success_create_message(context: Context) -> None:
+    expect(context.page.get_by_role("status")).to_contain_text("Bundle successfully created.")
+    expect(context.page.get_by_text("Bundle successfully created.")).to_be_visible()
+
+
+@given("there is a release calendar page approved by {creator_role}")
+def release_calendar(context: Context, creator_role: str) -> None:
+    nowish = timezone.now() + timedelta(minutes=20)
+    user = context.users[creator_role]["user"]
+
+    release_calendar_page = ReleaseCalendarPageFactory(
+        release_date=nowish, title="Release Calendar Page bundles UI", status=ReleaseStatus.CONFIRMED
+    )
+    mark_page_as_ready_to_publish(release_calendar_page, user)
+    release_calendar_page.save_revision().publish()
+    context.release_calendar_page = release_calendar_page
+
+
+@step("the logged in user searches for an existing release calendar page")
+def find_release_calendar_existing(context: Context) -> None:
+    release_calendar_name = context.release_calendar_page.title
+    context.page.get_by_role("button", name="Choose Release Calendar page").click()
+    context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
+
+
+@step("the logged in user gets match for release calendar search")
+def get_release_calendar_search_match(context: Context) -> None:
+    release_calendar_name = context.release_calendar_page.title
+    expect(context.page.get_by_role("cell", name=release_calendar_name)).to_be_visible()
+
+
+@step("the logged in user searches for a non existing release calendar page")
+def find_release_calendar_non_existing(context: Context) -> None:
+    release_calendar_name = "PFM December 2025"
+    context.page.get_by_role("button", name="Choose Release Calendar page").click()
+    context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
+
+
+@step("the logged in user gets no match for release calendar search")
+def get_release_calendar_search_no_match(context: Context) -> None:
+    release_calendar_name = "PFM December 2025"
+    release_calendar_alert = f'Sorry, there are no matches for "{release_calendar_name}"'
+    expect(context.page.get_by_role("alert")).to_contain_text(release_calendar_alert)
+
+
+@step("the logged in user adds a Release Calendar page to the bundle")
+def add_release_calendar_to_bundle(context: Context) -> None:
+    context.page.get_by_role("row", name=context.release_calendar_page.title).get_by_role("link").click()
+
+
+@step("the logged in user confirm the release calendar has been added to the bundle")
+def confirm_release_calendar_added_to_bundle(context: Context) -> None:
+    print()
+    context.page.get_by_role("textbox", name="or Publication date").fill("")
+    expect(context.page.get_by_text(context.release_calendar_page.title)).to_be_visible()
+
+
+@step("the logged in user adds a schedule date to the bundle")
+def add_schedule_date(context: Context) -> None:
+    now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
+    context.page.get_by_role("textbox", name="or Publication date").fill(now)
+
+
+@step("the logged in user gets a failure message due to duplicate schedule")
+def schedule_failure_message(context: Context) -> None:
+    expect(context.page.locator("#panel-child-scheduling-child-release_calendar_page-errors")).to_contain_text(
+        "You must choose either a Release Calendar page or a Publication date, not both."
+    )
+    expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
+    expect(context.page.locator("#panel-child-scheduling-child-publication_date-errors")).to_contain_text(
+        "You must choose either a Release Calendar page or a Publication date, not both."
+    )
+
+
+@given("there is a statistical analysis page approved by {user_role}")
+def statistical_analysis(context: Context, user_role: str) -> None:
+    user = context.users[user_role]["user"]
+    now = datetime.now()
+    now -= timedelta(days=31)
+    title = now.strftime("%B %Y")
+    context.article_series_page = ArticleSeriesPageFactory(title="PSF", slug="PSF")
+    article = StatisticalArticlePageFactory(parent=context.article_series_page, title=title, live=False, slug="edition")
+    mark_page_as_ready_to_publish(article, user)
+    article.save()
+    context.statistical_article_page = article
+
+
+@step("the logged in user searches for a non existing bundled_page")
+def find_non_existing_bundled_page(context: Context) -> None:
+    bundled_page_name = "PFM December 2025"
+    context.page.get_by_role("button", name="Choose Release Calendar page").click()
+    context.page.get_by_role("textbox", name="Search term").fill(bundled_page_name)
+
+
+@step("the logged in user gets no match for bundled_page search")
+def get_bundled_page_search_no_match(context: Context) -> None:
+    bundled_page_name = "PFM December 2025"
+    bundled_page_alert = f'Sorry, there are no matches for "{bundled_page_name}"'
+    expect(context.page.get_by_role("alert")).to_contain_text(bundled_page_alert)
+
+
+@step("the logged in user searches for an existing bundled_page")
+def find_existing_bundled_page(context: Context) -> None:
+    context.page.get_by_role("button", name="Add page").click()
+    context.page.get_by_label("Locale").select_option("en-gb")
+    context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
+    context.page.get_by_role("textbox", name="Search term").fill(context.statistical_article_page.title)
+
+
+@step("the logged in user adds a bundled page to the bundle")
+def add_article_page_in_edit(context: Context) -> None:
+    context.page.wait_for_timeout(100)
+    context.page.get_by_role("button", name="Confirm selection").click()
+    context.page.get_by_role("button", name="Save").click()
+
+
+@step("the logged in user confirm the bundled page has been added to the bundle")
+def confirm_bundled_page_added_to_bundle(context: Context) -> None:
+    search_result = f"{context.article_series_page.title}: {context.statistical_article_page.title}"
+    expect(context.page.get_by_text(search_result)).to_be_visible()
+
+
+@step("the logged in user gets match for bundled_page search")
+def get_bundled_page_search_match(context: Context) -> None:
+    search_result = f"{context.article_series_page.title}: {context.statistical_article_page.title}"
     expect(context.page.get_by_text("There is 1 match")).to_be_visible()
-    expect(context.page.get_by_role("table")).to_contain_text(bundles_search_button)
-
-
-@step("the logged in user cannot find the bundle")
-def not_find_the_bundle(context: Context) -> None:
-    context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
-    expect(context.page.get_by_text("No bundles match your query.")).to_be_visible()
+    context.page.get_by_role("checkbox", name=search_result).check()
 
 
 @step("the logged in user goes to edit bundle")
 def edit_bundle(context: Context) -> None:
     context.page.get_by_role("link", name=context.bundles[-1].name, exact=True).click()
-
-
-@step("the logged in user can add a release schedule")
-def add_release_calendar_in_edit(context: Context) -> None:
-    # add Release Calendar
-    bundle_status = f"Bundle '{context.bundles[-1].name}' updated."
-    if hasattr(context, "release_calendar_pages"):
-        context.page.get_by_role("button", name="Choose Release Calendar page").click()
-        context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_page.title)
-        context.page.get_by_role("row", name=context.release_calendar_page.title).get_by_role("link").click()
-    else:
-        now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
-        context.page.get_by_role("textbox", name="or Publication date").fill(now)
-
-    context.page.get_by_role("button", name="Save").click()
-    expect(context.page.get_by_role("status")).to_contain_text(bundle_status)
 
 
 @step("the logged in user can add preview team")
@@ -537,20 +667,16 @@ def add_preview_team_in_edit(context: Context) -> None:
     context.page.get_by_role("button", name="Save").click()
 
 
-@step("the logged in user can add pages")
-def add_article_page_in_edit(context: Context) -> None:
-    # add Article
+@step("the logged in user gets a successful update message")
+def success_update_message(context: Context) -> None:
     bundle_status = f"Bundle '{context.bundles[-1].name}' updated."
-    context.page.get_by_role("button", name="Add page").click()
-    context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
-    context.page.wait_for_timeout(200)
-    context.page.get_by_role(
-        "checkbox", name=f"{context.article_series_page.title}: {context.statistical_article_page.title}"
-    ).check()
-    context.page.wait_for_timeout(100)
-    context.page.get_by_role("button", name="Confirm selection").click()
-    context.page.get_by_role("button", name="Save").click()
     expect(context.page.get_by_role("status")).to_contain_text(bundle_status)
+
+
+@step("the logged in user sends the bundle to preview")
+def send_bundle_to_moderation(context: Context) -> None:
+    context.page.get_by_role("button", name="More actions").click()
+    context.page.get_by_role("button", name="Save to preview").click()
 
 
 @step("the {user_role} can preview bundle")
@@ -576,194 +702,38 @@ def goes_to_preview_bundle(context: Context, user_role: str) -> None:
     expect(context.page.get_by_text("Datasets", exact=True)).to_be_visible()
 
 
-@step("the logged in user cannot approve a bundle")
-def cannot_preview_bundle(context: Context) -> None:
-    context.page.get_by_role("link", name="Edit").click()
-    context.page.get_by_role("button", name="More actions").click()
-    context.page.get_by_role("button", name="Approve").click()
-    expect(context.page.get_by_role("status")).to_contain_text(
-        "The bundle could not be saved due to errors. Cannot approve the bundle without any pages or datasets"
-    )
+@step("the logged in user cannot find the bundle")
+def not_find_the_bundle(context: Context) -> None:
+    context.page.get_by_role("textbox", name="Search term").fill(context.bundles[-1].name)
+    expect(context.page.get_by_text("No bundles match your query.")).to_be_visible()
 
 
-@step("the logged in user can approve a bundle")
+@step("the logged in user approves bundle")
 def can_approve_bundle(context: Context) -> None:
     bundle_button = f"Edit '{context.bundles[-1].name}'"
     context.page.get_by_role("link", name=bundle_button).click()
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name="Approve").click()
+
+
+@step("the logged in user see ready for publish")
+def approved_bundle(context: Context) -> None:
     expect(context.page.get_by_text("Ready to publish").first).to_be_visible()
 
 
-@step("the logged in user cannot approve a bundle due to lack of pages")
-def cannot_approve_bundle_edge_case(context: Context) -> None:
-    bundle_button = f"Edit '{context.bundles[-1].name}'"
-    context.page.get_by_role("link", name=bundle_button).click()
-    context.page.get_by_role("button", name="More actions").click()
-    context.page.get_by_role("button", name="Approve").click()
+@step("the logged in user does not see Cannot approve the bundle without any pages error")
+def approved_bundle_status_failure(context: Context) -> None:
+    expect(context.page.get_by_text("Ready to publish").first).not_to_be_visible()
+    (
+        expect(context.page.get_by_role("status")).to_contain_text(
+            "The bundle could not be saved due to errors. "
+            "Cannot approve the bundle without any pages or datasets Go to the first error"
+        )
+    )
+
+
+@step("the logged in user see error for bundle")
+def error_for_bundle(context: Context) -> None:
     expect(context.page.get_by_role("status")).to_contain_text(
         "The bundle could not be saved due to errors. Cannot approve the bundle without any pages or datasets"
     )
-
-
-@step("the logged in user gets a success message")
-def success_message(context: Context) -> None:
-    expect(context.page.get_by_role("status")).to_contain_text("Bundle successfully created.")
-    expect(context.page.get_by_text("Bundle successfully created.")).to_be_visible()
-
-
-@step("the logged in user gets a failure message due to field validation")
-def fail_to_save_bundle_name(context: Context) -> None:
-    expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
-    expect(context.page.locator("#panel-child-name-errors")).to_contain_text("This field is required.")
-
-
-@step("the logged in user gets a failure message due to duplicate name")
-def existing_failure_message(context: Context) -> None:
-    expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
-    expect(context.page.locator("#panel-child-name-errors")).to_contain_text("Bundle with this Name already exists.")
-
-
-@step("the logged in user gets a failure message due to duplicate schedule")
-def schedule_failure_message(context: Context) -> None:
-    expect(context.page.locator("#panel-child-scheduling-child-release_calendar_page-errors")).to_contain_text(
-        "You must choose either a Release Calendar page or a Publication date, not both."
-    )
-    expect(context.page.get_by_role("status")).to_contain_text("The bundle could not be created due to errors.")
-    expect(context.page.locator("#panel-child-scheduling-child-publication_date-errors")).to_contain_text(
-        "You must choose either a Release Calendar page or a Publication date, not both."
-    )
-
-
-@step("the logged in user sends the bundle to preview")
-def send_bundle_to_moderation(context: Context) -> None:
-    context.page.get_by_role("button", name="More actions").click()
-    context.page.get_by_role("button", name="Save to preview").click()
-
-
-@step("the logged in user gets a bundle update message")
-def update_message(context: Context) -> None:
-    bundle_status = f"Bundle '{context.bundles[-1].name}'"
-    expect(context.page.get_by_text(bundle_status)).to_be_visible()
-
-
-@step("the logged in user adds a Name to the bundle")
-def add_name_to_bundle(context: Context) -> None:
-    bundle_name = "Bundle UI Test Bundle"
-    if "bundles" in context:
-        bundle_name = context.bundles[-1].name
-    context.page.get_by_role("textbox", name="Name*").fill(bundle_name)
-
-
-@step("the logged in user adds a Release Calendar page to the bundle")
-def add_release_calendar_to_bundle(context: Context) -> None:
-    context.page.get_by_role("button", name="Choose Release Calendar page").click()
-    context.page.get_by_role("textbox", name="Search term").fill(context.release_calendar_page.title)
-    context.page.get_by_role("row", name=context.release_calendar_page.title).get_by_role("link").click()
-
-
-@step("the logged in user adds a schedule date to the bundle")
-def add_schedule_date(context: Context) -> None:
-    now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
-    context.page.get_by_role("textbox", name="or Publication date").fill(now)
-
-
-@step("the logged in user goes to the bundle page")
-def go_to_bundle_page(context: Context) -> None:
-    context.page.get_by_role("link", name="Bundles", exact=True).click()
-
-
-@step("the logged in user tries to find a non existing release calendar page")
-def find_release_calendar_non_existing(context: Context) -> None:
-    release_calendar_name = "PFM December 2025"
-    context.page.get_by_role("button", name="Choose Release Calendar page").click()
-    context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
-
-
-@step("the logged in user tries to find an existing release calendar page")
-def find_release_calendar_existing(context: Context) -> None:
-    release_calendar_name = context.release_calendar_page.title
-    context.page.get_by_role("button", name="Choose Release Calendar page").click()
-    context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
-
-
-@step("the logged in user gets the following message for {search_type}")
-def search_alert(context: Context, search_type: str) -> None:
-    search_name = "December 2025"
-    if search_type == "release_calendar":
-        search_name = "PFM December 2025"
-    alert_text = f'Sorry, there are no matches for "{search_name}"'
-    expect(context.page.get_by_role("alert")).to_contain_text(alert_text)
-
-
-@step("the logged in user searches for the expected bundle name")
-def search_for_bundle_expected_name(context: Context) -> None:
-    bundle_name = "December 2025"
-    context.page.get_by_role("textbox", name="Search term").fill(bundle_name)
-
-
-@step("the logged in user searches for the bundle name")
-def search_for_bundle(context: Context) -> None:
-    bundle_name = context.bundles[-1].name
-    context.page.get_by_role("textbox", name="Search term").fill(bundle_name)
-
-
-@step("the logged in user gets no match response in bundles search")
-def get_search_no_match(context: Context) -> None:
-    unfound_response = "No bundles match your query."
-    expect(context.page.get_by_text(unfound_response)).to_be_visible()
-
-
-@step("the logged in user gets match response in bundles search for user {role}")
-def get_search_match(context: Context, role: str) -> None:
-    table_text = f"{context.bundles[-1].name} Edit Inspect"
-    if role == "Viewer":
-        table_text = f"{context.bundles[-1].name} Inspect"
-
-    expect(context.page.get_by_role("table")).to_contain_text(table_text)
-
-
-@step("the logged in user gets match for release calendar search")
-def get_release_calendar_search_match(context: Context) -> None:
-    release_calendar_name = context.release_calendar_page.title
-    context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
-    expect(context.page.get_by_role("cell", name=release_calendar_name)).to_be_visible()
-
-
-@step("the logged in user gets no match for release calendar search")
-def get_release_calendar_search_no_match(context: Context) -> None:
-    release_calendar_name = "PFM December 2025"
-    release_calendar_alert = f'Sorry, there are no matches for "{release_calendar_name}"'
-    expect(context.page.get_by_role("alert")).to_contain_text(release_calendar_alert)
-
-
-@step("the logged in user tries to find a non existing bundled_page")
-def find_non_existing_bundled_page(context: Context) -> None:
-    bundled_page_name = "PFM December 2025"
-    context.page.get_by_role("button", name="Choose Release Calendar page").click()
-    context.page.get_by_role("textbox", name="Search term").fill(bundled_page_name)
-
-
-@step("the logged in user tries to find an existing bundled_page")
-def find_existing_bundled_page(context: Context) -> None:
-    bundled_page_name = context.statistical_article_page.title
-
-    context.page.get_by_role("button", name="Add page").click()
-    context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
-    context.page.wait_for_timeout(200)
-    context.page.get_by_role("textbox", name="Search term").fill(bundled_page_name)
-
-
-@step("the logged in user gets match for bundled_page search")
-def get_bundled_page_search_match(context: Context) -> None:
-    article_series_page_name = context.article_series_page.title
-    bundled_page_name = context.statistical_article_page.title
-    search_result = f"{article_series_page_name}: {bundled_page_name}"
-    expect(context.page.locator("td").filter(has_text=search_result)).to_be_visible()
-
-
-@step("the logged in user gets no match for bundled_page search")
-def get_bundled_page_search_no_match(context: Context) -> None:
-    bundled_page_name = "PFM December 2025"
-    bundled_page_alert = f'Sorry, there are no matches for "{bundled_page_name}"'
-    expect(context.page.get_by_role("alert")).to_contain_text(bundled_page_alert)

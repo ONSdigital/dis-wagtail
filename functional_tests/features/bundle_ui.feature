@@ -1,18 +1,99 @@
 Feature: UI Bundle Happy Paths
-    """
 
-                                 | Search  | Search    | Create | Create | Edit | Preview | Approve |
-                                 |  Found  | Not Found |        | Error  |
-        Publishing Admin         | Can     | Can       | Can    | Can  | Can     | Can     !
-        Publishing Officer       | Can     | Can       | Can    | Can  | Can     | Can     |
-        Viewer                   | N/A     | Can       | Cannot | N/A  | N/A     | N/A     |
-            not in preview team  | Cannot  | N/A       | N/A    | N/A  | Cannot  | N/A     |
-            in preview team      | Can     | N/A       | N/A    | N/A  | Can     | N/A     |
-    """
+#---- Bundles Page Search UI Tests -----
 
-#---- Bundle Create UI Tests -----
+Scenario Outline: A user can see the bundles page search
+    Given there is a <role> user
+    And the <role> logs in
+    When the logged in user goes to the bundle page
+    Then the logged in user can see the search_term
+    And the <role> can see no_bundles
+    Examples:
+        | role               |
+        | Publishing Admin   |
+        | Publishing Officer |
+        | Viewer             |
 
-Scenario Outline: A User cannot create a bundle due to authorisation
+Scenario Outline: A user can populate the bundles page search
+    Given there is a <role> user
+    And the <role> logs in
+    And the logged in user goes to the bundle page
+    When the logged in user searches for the bundle name not known
+    Then the logged in user can see no bundles response
+    Examples:
+        | role               |
+        | Publishing Admin   |
+        | Publishing Officer |
+        | Viewer             |
+
+
+Scenario Outline: A user can populate the bundles page search (no existing bundles)
+    Given there is a <role> user
+    And the <role> logs in
+    And the logged in user goes to the bundle page
+    When the logged in user searches for the bundle name not known
+    Then the logged in user can see no bundles response
+    Examples:
+        | role               |
+        | Publishing Admin   |
+        | Publishing Officer |
+        | Viewer             |
+
+Scenario Outline: A user can populate the bundles page search
+    Given there is a <role> user
+    And there is a <creator_role> user
+    And there are <number_of_bundles> bundles with <bundle_details>
+    And the <role> logs in
+    And the logged in user goes to the bundle page
+    When the logged in user searches for the bundle name not known
+    Then the logged in user can see no bundles response
+
+    Examples: bundles
+       | number_of_bundles | role                | creator_role        |  bundle_details                                                                                                                                                |
+       | 21                 | Publishing Admin   | Publishing Officer  | {"role": "Publishing Admin",   "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+       | 21                 | Publishing Officer | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+       | 21                 | Viewer             | Publishing Officer  | {"role": "Publishing Admin",   "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+
+
+Scenario Outline: A User cannot find expected bundle from the bundles page search
+    Given there is a <role> user
+    And there is a <creator_role> user
+    And there is a preview team
+    And the <role> is a member of the preview team
+    And there are <number_of_bundles> bundles with <bundle_details>
+    And the <role> logs in
+    And the logged in user goes to the bundle page
+    When the logged in user searches for the bundle name not known
+    Then the logged in user can see no bundles response
+
+
+    Examples: bundles
+       | number_of_bundles | role                       | creator_role        |  bundle_details                                                                                                                                                |
+       | 0                 | Publishing Admin           | Publishing Officer  | {"role": "Publishing Officer", "creator_role": "Publishing Admin",   "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+       | 0                 | Publishing Officer         | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+       | 0                 | Viewer                     | Publishing Officer  | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": false, "add_stat_page": false} |
+
+
+Scenario Outline: A User can find expected bundle from the bundles page search
+    Given there is a <role> user
+    And there is a <creator_role> user
+    And there is a preview team
+    And the <role> is a member of the preview team
+    And there are <number_of_bundles> bundles with <bundle_details>
+    And the <role> logs in
+    And the logged in user goes to the bundle page
+    When the logged in user searches for the bundle name known
+    Then the logged in user gets match response in bundles search for user <role>
+
+   Examples: bundles
+       | number_of_bundles | role                       | creator_role        |  bundle_details                                                                                                                                                |
+       | 10                | Publishing Admin           | Publishing Officer  | {"role": "Publishing Admin",   "creator_role": "Publishing Admin",   "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+       | 10                | Publishing Officer         | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+       | 10                | Viewer                     | Publishing Officer  | {"role": "Viewer",             "creator_role": "Publishing Officer",  "status": "In_Review", "preview_teams": true, "add_rel_cal": false, "add_stat_page": false} |
+
+#---- Bundles Page Create UI Tests -----
+
+Scenario Outline: A User cannot see create button
     Given there is a <role> user
     And the <role> logs in
     When the logged in user goes to the bundle page
@@ -22,29 +103,23 @@ Scenario Outline: A User cannot create a bundle due to authorisation
        | role     |
        | Viewer   |
 
-
-Scenario Outline: A User can create a bundle
+Scenario Outline: A User can see create button
     Given there is a <role> user
     And the <role> logs in
     When the logged in user goes to the bundle page
     Then the logged in user can see the create button
-    When the logged in user can create a bundle
-    And the logged in user adds a Name to the bundle
-    And the user clicks "Save as draft"
-    Then the logged in user gets a success message
 
     Examples: bundles
-       | role               |
-       | Publishing Admin   |
-       | Publishing Officer |
+        | role               |
+        | Publishing Admin   |
+        | Publishing Officer |
 
-#---- Bundle create failure scenario-----
 
-Scenario Outline: A User cannot create a bundle due to field validation
+Scenario Outline: A User cannot create and save as draft a bundle due to a field validation error
     Given there is a <role> user
     And the <role> logs in
     And the logged in user goes to the bundle page
-    When the logged in user can create a bundle
+    When the logged in user creates a bundle
     And the user clicks "Save as draft"
     Then the logged in user gets a failure message due to field validation
 
@@ -53,14 +128,13 @@ Scenario Outline: A User cannot create a bundle due to field validation
        | Publishing Admin   |
        | Publishing Officer |
 
-
-Scenario Outline: A User cannot create a bundle due to already existing
+Scenario Outline: A User cannot create and save a bundle due to already existing
     Given there is a <role> user
     And there is a <creator_role> user
     And there are <number_of_bundles> bundles with <bundle_details>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    And the logged in user can create a bundle
+    And the logged in user creates a bundle
     And the logged in user adds a Name to the bundle
     When the user clicks "Save as draft"
     Then the logged in user gets a failure message due to duplicate name
@@ -70,14 +144,31 @@ Scenario Outline: A User cannot create a bundle due to already existing
        | 1                 | Publishing Admin   | Publishing Officer  | {"role": "Publishing Admin",   "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
        | 1                 | Publishing Officer | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
 
+
+Scenario Outline: A User sucsessfully creates and saves a bundle as draft
+    Given there is a <role> user
+    And the <role> logs in
+    And the logged in user goes to the bundle page
+    When the logged in user creates a bundle
+    And the logged in user adds a Name to the bundle
+    And the user clicks "Save as draft"
+    Then the logged in user gets a successful create message
+
+    Examples: bundles
+       | role               |
+       | Publishing Admin   |
+       | Publishing Officer |
+
+
 Scenario Outline: A User cannot save a bundle due to duplicate schedule
     Given there is a <role> user
     And there is a <creator_role> user
     And there is a release calendar page approved by <creator_role>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    And the logged in user can create a bundle
+    And the logged in user creates a bundle
     And the logged in user adds a Name to the bundle
+    And the logged in user searches for an existing release calendar page
     And the logged in user adds a Release Calendar page to the bundle
     And the logged in user adds a schedule date to the bundle
     When the user clicks "Save as draft"
@@ -88,44 +179,21 @@ Scenario Outline: A User cannot save a bundle due to duplicate schedule
        | Publishing Officer |Publishing Admin   |
        | Publishing Admin   |Publishing Officer |
 
-
-#---- Bundle Search UI Tests -----
-
-Scenario Outline: A User cannot find expected bundle search
+Scenario Outline: A User can add a publication date to a bundle
     Given there is a <role> user
     And there is a <creator_role> user
-    And there is a preview team
-    And the <role> is a member of the preview team
-    And there are <number_of_bundles> bundles with <bundle_details>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    When the logged in user searches for the expected bundle name
-    Then the logged in user gets no match response in bundles search
+    And the logged in user creates a bundle
+    And the logged in user adds a Name to the bundle
+    When the logged in user adds a schedule date to the bundle
+    Then the user clicks "Save as draft"
+    And  the logged in user gets a successful create message
 
     Examples: bundles
-       | number_of_bundles | role                       | creator_role        |  bundle_details                                                                                                                                                |
-       | 0                 | Publishing Admin           | Publishing Officer  | {"role": "Publishing Officer", "creator_role": "Publishing Admin",   "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
-       | 0                 | Publishing Officer         | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
-       | 0                 | Viewer                     | Publishing Officer  | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "In_Review", "preview_teams": true, "add_rel_cal": false, "add_stat_page": false} |
-
-
-Scenario Outline: A User can find expected bundle search
-    Given there is a <role> user
-    And there is a <creator_role> user
-    And there is a preview team
-    And the <role> is a member of the preview team
-    And there are <number_of_bundles> bundles with <bundle_details>
-    And the <role> logs in
-    And the logged in user goes to the bundle page
-    When the logged in user searches for the bundle name
-    Then the logged in user gets match response in bundles search for user <role>
-
-    Examples: bundles
-       | number_of_bundles | role                       | creator_role        |  bundle_details                                                                                                                                                |
-       | 10                | Publishing Admin           | Publishing Officer  | {"role": "Publishing Admin",   "creator_role": "Publishing Admin",   "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
-       | 10                | Publishing Officer         | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
-       | 10                | Viewer                     | Publishing Officer  | {"role": "Viewer",             "creator_role": "Publishing Officer",  "status": "In_Review", "preview_teams": true, "add_rel_cal": false, "add_stat_page": false} |
-
+       | role               | creator_role      |
+       | Publishing Officer |Publishing Admin   |
+       | Publishing Admin   |Publishing Officer |
 
 Scenario Outline: A User can find release schedule page
     Given there is a <role> user
@@ -133,10 +201,14 @@ Scenario Outline: A User can find release schedule page
     And there is a release calendar page approved by <creator_role>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    And the logged in user can create a bundle
+    And the logged in user creates a bundle
     And the logged in user adds a Name to the bundle
-    When the logged in user tries to find an existing release calendar page
+    When the logged in user searches for an existing release calendar page
     Then the logged in user gets match for release calendar search
+    When the logged in user adds a Release Calendar page to the bundle
+    Then the logged in user confirm the release calendar has been added to the bundle
+    When the user clicks "Save as draft"
+    Then  the logged in user gets a successful create message
 
     Examples: bundles
        | role               | creator_role      |
@@ -150,9 +222,9 @@ Scenario Outline: A User cannot find release schedule page
     And there is a release calendar page approved by <creator_role>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    And the logged in user can create a bundle
+    And the logged in user creates a bundle
     And the logged in user adds a Name to the bundle
-    When the logged in user tries to find a non existing release calendar page
+    When the logged in user searches for a non existing release calendar page
     Then the logged in user gets no match for release calendar search
 
     Examples: bundles
@@ -166,9 +238,9 @@ Scenario Outline: A User cannot find expected bundled_page
     And there is a statistical analysis page approved by <creator_role>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    And the logged in user can create a bundle
+    And the logged in user creates a bundle
     And the logged in user adds a Name to the bundle
-    When the logged in user tries to find a non existing bundled_page
+    When the logged in user searches for a non existing bundled_page
     Then the logged in user gets no match for bundled_page search
 
     Examples: bundles
@@ -180,17 +252,21 @@ Scenario Outline: A User can find expected bundled_page
     Given there is a <role> user
     And there is a <creator_role> user
     And there is a statistical analysis page approved by <creator_role>
+    And there are <number_of_bundles> bundles with <bundle_details>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    And the logged in user can create a bundle
-    And the logged in user adds a Name to the bundle
-    When the logged in user tries to find an existing bundled_page
-    Then the logged in user gets match for bundled_page search
+    And the logged in user searches for the bundle name known
+    And the logged in user goes to edit bundle
+    When the logged in user searches for an existing bundled_page
+    And the logged in user gets match for bundled_page search
+    And the logged in user adds a bundled page to the bundle
+    Then the logged in user confirm the bundled page has been added to the bundle
 
-    Examples: bundles
-       | role               | creator_role      |
-       | Publishing Officer |Publishing Admin   |
-       | Publishing Admin   |Publishing Officer |
+Examples: bundles
+       | number_of_bundles | role                       | creator_role        |  bundle_details                                                                                                                                                |
+       | 1                 | Publishing Admin           | Publishing Officer  | {"role": "Publishing Admin",   "creator_role": "Publishing Admin",   "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+       | 1                 | Publishing Officer         | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
+
 
 #---- Bundle UI Edit-----
 Scenario Outline: A User can edit a bundle
@@ -203,15 +279,18 @@ Scenario Outline: A User can edit a bundle
     And there are <number_of_bundles> bundles with <bundle_details>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    And the <role> can find the bundle
-    And the logged in user searches for the bundle name
-    When the logged in user goes to edit bundle
-    And the logged in user can add a release schedule
-    And the logged in user can add pages
+    And the logged in user searches for the bundle name known
+    And the logged in user goes to edit bundle
+    And the logged in user searches for an existing release calendar page
+    And the logged in user adds a Release Calendar page to the bundle
+    And the logged in user searches for an existing bundled_page
+    And the logged in user gets match for bundled_page search
+    And the logged in user adds a bundled page to the bundle
     And the logged in user can add preview team
-    Then the user clicks "Save as draft"
-    And the logged in user sends the bundle to preview
-    And the logged in user gets a bundle update message
+    When the user clicks "Save as draft"
+    Then the logged in user gets a successful update message
+    When the logged in user sends the bundle to preview
+    Then the logged in user gets a successful update message
 
     Examples: bundles
        | number_of_bundles | role                       | creator_role        |  bundle_details                                                                                                                                                |
@@ -232,8 +311,8 @@ Scenario Outline: A User can preview a bundle
     And there are <number_of_bundles> bundles with <bundle_details>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    When the <role> can find the bundle
-    Then  the <role> can preview bundle
+    And the logged in user searches for the bundle name known
+    When the <role> can preview bundle
 
   Examples: bundles
        | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                              |
@@ -274,8 +353,9 @@ Scenario Outline: A user can approve a bundle
     And there are <number_of_bundles> bundles with <bundle_details>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    When the <role> can find the bundle
-    Then the logged in user can approve a bundle
+    And the logged in user searches for the bundle name known
+    When the logged in user approves bundle
+    Then the logged in user see ready for publish
 
     Examples: bundles
        | number_of_bundles | role                       | creator_role        |  bundle_details                                                                                                                                                |
@@ -286,7 +366,7 @@ Scenario Outline: A user can approve a bundle
 
 
 #---- Bundle Cannot Approve UI Tests  -----
-Scenario Outline: A user cannot approve a bundle due no bundle pages in bundle
+Scenario Outline: A user cannot approve a bundle due no bundled pages in bundle
     Given there is a <role> user
     And there is a <creator_role> user
     And there is a preview team
@@ -294,8 +374,9 @@ Scenario Outline: A user cannot approve a bundle due no bundle pages in bundle
     And there are <number_of_bundles> bundles with <bundle_details>
     And the <role> logs in
     And the logged in user goes to the bundle page
-    When the <role> can find the bundle
-    Then the logged in user cannot approve a bundle due to lack of pages
+    And the logged in user searches for the bundle name known
+    When the logged in user approves bundle
+    Then the logged in user does not see Cannot approve the bundle without any pages error
 
     Examples: bundles
         | number_of_bundles | role                       | creator_role        | bundle_details                                                                                                                                                 |
