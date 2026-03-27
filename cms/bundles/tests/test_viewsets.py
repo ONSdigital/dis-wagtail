@@ -26,6 +26,7 @@ from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
+from cms.bundles.viewsets.bundle import BundleEditView
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
 from cms.core.tests.utils import rebuild_internal_search_index
@@ -257,6 +258,27 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.assertEqual(response.status_code, 302)
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.name, "Updated Bundle")
+
+    def test_bundle_edit_view__logs_schedule_change_on_publication_date_update(self):
+        """Test that changing the publication date via form submission creates a schedule_changed log entry."""
+        original_date = timezone.now() + timedelta(days=1)
+        self.bundle.publication_date = original_date
+        self.bundle.save(update_fields=["publication_date"])
+
+        new_date = timezone.now() + timedelta(days=5)
+        data = self.get_base_form_data()
+        data["publication_date"] = new_date.strftime("%Y-%m-%d %H:%M")
+        data["action-edit"] = "action-edit"
+
+        response = self.client.post(self.edit_url, data)
+        self.assertEqual(response.status_code, 302)
+
+        log_entry = ModelLogEntry.objects.filter(
+            object_id=str(self.bundle.pk), action="bundles.schedule_changed"
+        ).first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.data["old"], original_date.strftime("%Y-%m-%d %H:%M"))
+        self.assertEqual(log_entry.data["new"], new_date.strftime("%Y-%m-%d %H:%M"))
 
     def test_bundle_edit_view__redirects_to_index_for_published_bundles(self):
         """Released bundles should no longer be editable."""
@@ -608,6 +630,79 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
         bundle_ids = set(log_entries.values_list("object_id", flat=True))
         self.assertEqual(bundle_ids, {str(self.bundle.pk), str(another_bundle.pk)})
+
+
+class LogScheduleChangesTestCase(TestCase):
+    """Tests for BundleEditView._log_schedule_changes."""
+
+    def setUp(self):
+        self.bundle = BundleFactory(name="Schedule test bundle")
+        self.view = BundleEditView()
+
+    def test_logs_when_publication_date_changes(self):
+        """Test that a log entry is created when the publication date changes."""
+        original_date = datetime(2026, 1, 1, 10, 0, tzinfo=UTC)
+        self.bundle.publication_date = datetime(2026, 2, 1, 12, 0, tzinfo=UTC)
+        self.bundle.save()
+
+        self.view._log_schedule_changes(self.bundle, original_date)
+
+        log_entry = ModelLogEntry.objects.filter(
+            object_id=str(self.bundle.pk), action="bundles.schedule_changed"
+        ).first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.data["old"], "2026-01-01 10:00")
+        self.assertEqual(log_entry.data["new"], "2026-02-01 12:00")
+
+    def test_logs_when_date_set_from_none(self):
+        """Test that a log entry is created when a date is set for the first time."""
+        self.bundle.publication_date = datetime(2026, 3, 15, 9, 30, tzinfo=UTC)
+        self.bundle.save()
+
+        self.view._log_schedule_changes(self.bundle, None)
+
+        log_entry = ModelLogEntry.objects.filter(
+            object_id=str(self.bundle.pk), action="bundles.schedule_changed"
+        ).first()
+        self.assertIsNotNone(log_entry)
+        self.assertIsNone(log_entry.data["old"])
+        self.assertEqual(log_entry.data["new"], "2026-03-15 09:30")
+
+    def test_logs_when_date_cleared(self):
+        """Test that a log entry is created when the date is cleared."""
+        original_date = datetime(2026, 1, 1, 10, 0, tzinfo=UTC)
+        self.bundle.publication_date = None
+        self.bundle.save()
+
+        self.view._log_schedule_changes(self.bundle, original_date)
+
+        log_entry = ModelLogEntry.objects.filter(
+            object_id=str(self.bundle.pk), action="bundles.schedule_changed"
+        ).first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.data["old"], "2026-01-01 10:00")
+        self.assertIsNone(log_entry.data["new"])
+
+    def test_no_log_when_date_unchanged(self):
+        """Test that no log entry is created when the date hasn't changed."""
+        the_date = datetime(2026, 1, 1, 10, 0, tzinfo=UTC)
+        self.bundle.publication_date = the_date
+        self.bundle.save()
+
+        self.view._log_schedule_changes(self.bundle, the_date)
+
+        log_entries = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.schedule_changed")
+        self.assertEqual(log_entries.count(), 0)
+
+    def test_no_log_when_both_none(self):
+        """Test that no log entry is created when both old and new are None."""
+        self.bundle.publication_date = None
+        self.bundle.save()
+
+        self.view._log_schedule_changes(self.bundle, None)
+
+        log_entries = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.schedule_changed")
+        self.assertEqual(log_entries.count(), 0)
 
 
 class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseBase):

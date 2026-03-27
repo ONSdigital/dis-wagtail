@@ -196,12 +196,15 @@ class BundleEditView(EditView):
         return response
 
     def save_instance(self) -> Bundle:
-        # Capture before state for comparison
+        # Capture before state for comparison.
+        # Note: publication_date is fetched from the DB because Django's ModelForm._post_clean()
+        # updates instance fields from cleaned_data during is_valid(), before save_instance() runs.
+        # M2M fields (teams, pages, datasets) are unaffected as inline formsets save later.
         original_state = {
             "teams": set(self.object.teams.values_list("team_id", flat=True)),
             "pages": set(self.object.bundled_pages.values_list("page_id", flat=True)),
             "datasets": set(self.object.bundled_datasets.values_list("dataset_id", flat=True)),
-            "pub_date": self.object.publication_date,
+            "pub_date": Bundle.objects.values_list("publication_date", flat=True).get(pk=self.object.pk),
         }
 
         instance: Bundle = self.form.save()
