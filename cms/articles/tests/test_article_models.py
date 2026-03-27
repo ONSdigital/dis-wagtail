@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines
 import math
 from datetime import datetime, timedelta
+from http import HTTPStatus
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -11,19 +12,20 @@ from django.utils import timezone
 from django.utils.formats import date_format
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
+from wagtail.rich_text import RichText
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 
 from cms.articles.enums import SortingChoices
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.analytics_utils import format_date_for_gtm
+from cms.core.blocks.constants import CHART_BLOCK_TYPES
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.factories import ContactDetailsFactory
 from cms.core.tests.utils import extract_datalayer_pushed_values
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.datasets.tests.factories import DatasetFactory
-from cms.datavis.constants import CHART_BLOCK_TYPES
 from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
 from cms.topics.models import TopicPage
 from cms.users.tests.factories import UserFactory
@@ -34,6 +36,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.page = StatisticalArticlePageFactory(
             parent__title="PSF",
             title="November 2024",
+            summary="Summary of the article",
             news_headline="",
             contact_details=None,
             show_cite_this_page=False,
@@ -52,6 +55,12 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         """Test display_title returns news_headline when set."""
         self.page.news_headline = "Breaking News"
         self.assertEqual(self.page.display_title, "Breaking News")
+
+    def test_page_content(self):
+        response = self.client.get(self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.page.title)
+        self.assertInHTML(str(RichText(self.page.summary)), response.content.decode(encoding="utf-8"))
 
     def test_table_of_contents_with_content(self):
         """Test table_of_contents with content blocks."""
@@ -198,11 +207,28 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         request_factory = RequestFactory()
         request_factory_server_name = request_factory._base_environ()["SERVER_NAME"]  # pylint: disable=protected-access
 
+        page_path = self.page.get_relative_path()
+
         self.assertContains(
             response,
-            f'<link rel="canonical" href="http://{request_factory_server_name}{self.page.url}/related-data">',
+            f'<link rel="canonical" href="http://{request_factory_server_name}{page_path}/related-data">',
             html=True,
         )
+
+    def test_related_data_page_content(self):
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[("dataset_lookup", DatasetFactory())],
+        )
+        self.page.save_revision().publish()
+
+        parent_article_series = self.page.get_parent()
+
+        response = self.client.get(f"{parent_article_series.url}/related-data")
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.page.title)
+        self.assertInHTML(str(RichText(self.page.summary)), response.content.decode(encoding="utf-8"))
 
     def test_has_equations(self):
         """Test has_equations property."""
@@ -1135,7 +1161,7 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
         self.assertIn("url", data["title"])
         parsed = urlparse(data["title"]["url"])
         self.assertEqual(parsed.netloc, "", "URL should be relative")
-        self.assertEqual(parsed.path, self.page.url)
+        self.assertEqual(parsed.path, self.page.get_url(request=get_dummy_request()))
 
         self.assertEqual(data["metadata"]["text"], "Article")
         self.assertEqual(data["metadata"]["date"]["prefix"], "Release date")
@@ -1199,9 +1225,15 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(9, parent=cls.article_series)
-        cls.previous_releases_url = (
-            f"{cls.article_series.url}/{cls.article_series.reverse_subpage('previous_releases')}"
+        cls.previous_releases_url = "/".join(
+            [
+                cls.article_series.get_url(get_dummy_request()),
+                cls.article_series.reverse_subpage("previous_releases"),
+            ]
         )
+
+    def setUp(self):
+        self.dummy_request = get_dummy_request()
 
     def test_breadcrumb_does_contains_series_url(self):
         response = self.client.get(self.previous_releases_url)
@@ -1221,9 +1253,12 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
         for article in self.articles:
             with self.subTest(article=article):
                 self.assertContains(response, article.get_admin_display_title())
-                self.assertContains(response, article.url)
+                self.assertContains(response, article.get_url(request=self.dummy_request))
+
+        self.assertInHTML(str(RichText(self.articles[0].summary)), response.content.decode(encoding="utf-8"))
         self.assertContains(response, 'class="ons-document-list__item"', count=self.total_batch)
         self.assertContains(response, "Latest release", count=1)
+        self.assertContains(response, "Previous releases", count=1)
 
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.previous_releases_url)

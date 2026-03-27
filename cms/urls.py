@@ -63,6 +63,15 @@ if not settings.IS_EXTERNAL_ENV:
             ),
         ]
 
+    if not settings.ALLOW_TEAM_MANAGEMENT and settings.AWS_COGNITO_TEAM_SYNC_ENABLED:
+        # Redirect all preview teams pages to Florence groups when team sync is enabled
+        wagtail_admin_patterns += [
+            re_path(
+                r"^teams/",
+                RedirectView.as_view(url=settings.FLORENCE_GROUPS_PATH, permanent=False),
+            ),
+        ]
+
     wagtail_admin_patterns += wagtailadmin_urls.urlpatterns
     private_urlpatterns.append(path(settings.WAGTAILADMIN_HOME_PATH, include(wagtail_admin_patterns)))
 
@@ -170,11 +179,15 @@ urlpatterns = (
             name="wagtailimages_serve",
         ),
     ]
-    + i18n_patterns(
+)
+
+if settings.CMS_USE_SUBDOMAIN_LOCALES:
+    urlpatterns += [path("", include(wagtail_urls))]
+else:
+    urlpatterns += i18n_patterns(
         path("", include(wagtail_urls)),
         prefix_default_language=False,
     )
-)
 
 # Error handlers
 handler404 = "cms.core.views.page_not_found"

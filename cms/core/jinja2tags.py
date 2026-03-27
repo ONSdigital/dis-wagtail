@@ -15,8 +15,6 @@ from cms.core.templatetags.util_tags import (
     ons_date_format_filter,
     routablepageurl_no_trailing_slash,
     set_attributes_filter,
-    social_image,
-    social_text,
 )
 
 if TYPE_CHECKING:
@@ -46,8 +44,6 @@ class CoreExtension(Extension):  # pylint: disable=abstract-method
 
         self.environment.filters.update(
             {
-                "social_text": social_text,
-                "social_image": social_image,
                 "setAttributes": set_attributes_filter,
                 "ons_date": ons_date_format_filter,
                 "json_script": json_script,

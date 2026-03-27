@@ -3,27 +3,23 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 import jinja2
 from django import template
+from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import json_script as _json_script
 from django_jinja import library
 from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
-from wagtail.models import Locale
+from wagtail.models import Locale, Page
 
 from cms.core.custom_date_format import ons_date_format
-from cms.core.models import SocialMediaSettings
 
 register = template.Library()
 
 if TYPE_CHECKING:
     from django.utils.safestring import SafeString
-    from wagtail.models import Page, Site
-
-    from cms.images.models import CustomImage
 
 
 class LocaleURLsDict(TypedDict):
     locale: Locale
-    variant: Page
     url: str
 
 
@@ -37,22 +33,6 @@ class TranslationURLDict(TypedDict):
 class HreflangDict(TypedDict):
     url: str
     lang: str
-
-
-# Social text
-@register.filter(name="social_text")
-def social_text(page: Page, site: Site) -> str:
-    """Returns the given page social text, or the default sharing image as defined in the social media settings."""
-    social_text_str: str = getattr(page, "social_text", "")
-    return social_text_str or SocialMediaSettings.for_site(site).default_sharing_text
-
-
-# Social image
-@register.filter(name="social_image")
-def social_image(page: Page, site: Site) -> CustomImage | None:
-    """Returns the given page social image, or the default sharing image as defined in the social media settings."""
-    the_social_image: CustomImage | None = getattr(page, "social_image", None)
-    return the_social_image or SocialMediaSettings.for_site(site).default_sharing_image
 
 
 @library.global_function
@@ -83,11 +63,16 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
     if not page:
         return []
 
+    # TODO: if request.is_preview -> use view_draft URLs
+    if prebuilt_locale_urls := getattr(page, "_locale_urls", None):
+        return prebuilt_locale_urls  # type: ignore[no-any-return]
+
     default_locale = Locale.get_default()
 
     variants = {variant.locale_id: variant for variant in page.get_translations(inclusive=True).defer_streamfields()}
     default_page = variants.get(default_locale.pk)
 
+    use_subdomain_locale = settings.CMS_USE_SUBDOMAIN_LOCALES
     results: list[LocaleURLsDict] = []
     for locale in Locale.objects.all().order_by("pk"):
         variant = variants.get(locale.pk, default_page)
@@ -95,20 +80,26 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
             # In case a preview of a non-existent page is requested
             continue
 
-        url = variant.get_url(request=context["request"])
         # If there's no real translation in this locale, prepend
         # the locale code to the default page's URL so that strings in
         # templates can be localized:
-        if variant == default_page and locale.pk != variant.locale_id:
-            url = f"/{locale.language_code}{url}"
+        if use_subdomain_locale:
+            # Use the full URL to handle locale subdomains
+            url = variant.get_full_url(request=context["request"])
+        elif variant == default_page and locale.pk != variant.locale_id:
+            # Handle the specific case for the default page with a different locale
+            url = f"/{locale.language_code}{variant.get_url(request=context['request'])}"
+        else:
+            url = variant.get_url(request=context["request"])
 
         results.append(
             {
                 "locale": locale,
-                "variant": variant,
                 "url": url,
             }
         )
+
+    page._locale_urls = results  # pylint: disable=protected-access
 
     return results
 

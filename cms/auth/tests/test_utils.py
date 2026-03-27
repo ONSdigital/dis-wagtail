@@ -160,7 +160,7 @@ class ValidateJWTTests(SimpleTestCase):
         AWS_COGNITO_APP_CLIENT_ID="expected",
     )
     def test_header_missing_kid_returns_none(self):
-        bad_token = jwt.encode({"token_use": "access"}, "secret", algorithm="HS256")
+        bad_token = jwt.encode({"token_use": "access"}, "s" * 32, algorithm="HS256")
         with self._patch_jwks():
             self.assertIsNone(utils.validate_jwt(bad_token, token_type="access"))
 
@@ -219,7 +219,7 @@ class ValidateJWTTests(SimpleTestCase):
                 "client_id": "expected",
                 "sub": "u1",
             },
-            "secret",
+            "s" * 32,
             algorithm="HS256",
             headers={"kid": self.good_pair.kid},
         )

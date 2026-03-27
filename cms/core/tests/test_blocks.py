@@ -30,6 +30,7 @@ from cms.core.blocks import (
 from cms.core.blocks.definitions import DefinitionsBlock
 from cms.core.tests.factories import DefinitionFactory
 from cms.core.tests.utils import get_test_document
+from cms.core.utils import UNWANTED_CONTROL_CHARACTERS
 from cms.home.models import HomePage
 from cms.standard_pages.models import InformationPage
 
@@ -226,7 +227,7 @@ class CoreBlocksTestCase(TestCase):
         block = RelatedContentBlock()
 
         value = block.to_python({})
-        self.assertIsNone(value.link)
+        self.assertIsNone(value.get_link())
 
         value = block.to_python(
             {
@@ -238,7 +239,7 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
                 "url": "https://ons.gov.uk",
                 "text": "Example",
@@ -256,9 +257,9 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
-                "url": self.home_page.url,
+                "url": "/",
                 "text": "Example",
                 "description": "A link",
                 "metadata": {"object": {"text": "Page"}},
@@ -272,9 +273,9 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
-                "url": self.home_page.url,
+                "url": "/",
                 "text": self.home_page.title,
                 "description": "",
                 "metadata": {"object": {"text": "Page"}},
@@ -292,9 +293,9 @@ class CoreBlocksTestCase(TestCase):
         )
 
         self.assertDictEqual(
-            value.link,
+            value.get_link(),
             {
-                "url": statistical_article.url,
+                "url": statistical_article.get_relative_path(),
                 "text": statistical_article.display_title,
                 "description": "Our test description",
                 "metadata": {
@@ -351,7 +352,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.get_related_link(),
             {
-                "title": {"url": self.home_page.url, "text": "Example 2"},
+                "title": {"url": "/", "text": "Example 2"},
                 "description": "A link",
                 "metadata": {"object": {"text": "Time series"}},
                 "attributes": {
@@ -374,7 +375,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertDictEqual(
             value.get_related_link(),
             {
-                "title": {"url": self.home_page.url, "text": self.home_page.title},
+                "title": {"url": "/", "text": self.home_page.title},
                 "metadata": {"object": {"text": "Dataset"}},
                 "attributes": {
                     "data-ga-event": "navigation-click",
@@ -462,7 +463,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertEqual(related_link["attributes"]["data-ga-click-position"], 1)
 
         # Attributes specific to internal links
-        self.assertEqual(related_link["attributes"]["data-ga-click-path"], article_page.get_url())
+        self.assertEqual(related_link["attributes"]["data-ga-click-path"], article_page.get_relative_path())
         self.assertEqual(related_link["attributes"]["data-ga-click-content-type"], article_page.analytics_content_type)
         self.assertEqual(
             related_link["attributes"]["data-ga-click-content-group"], article_page.analytics_content_group
@@ -509,7 +510,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertEqual(related_link["attributes"]["data-ga-click-position"], 1)
 
         # Attributes specific to internal links
-        self.assertEqual(related_link["attributes"]["data-ga-click-path"], self.home_page.get_url())
+        self.assertEqual(related_link["attributes"]["data-ga-click-path"], self.home_page.get_relative_path())
         self.assertEqual(
             related_link["attributes"]["data-ga-click-content-type"], self.home_page.analytics_content_type
         )
@@ -585,6 +586,18 @@ class CoreBlocksTestCase(TestCase):
                 "trs": [{"tds": [{"value": "one"}, {"value": "two"}]}],
             },
         )
+
+    def test_basictableblock__strip_control_characters(self):
+        block = BasicTableBlock()
+        value = {
+            "first_row_is_table_header": False,
+            "first_col_is_header": False,
+            "table_caption": "Caption",
+            "table_header_choice": "Choice",
+            "data": [["unwanted", char] for char in UNWANTED_CONTROL_CHARACTERS],
+        }
+
+        self.assertEqual(block.clean(value)["data"], [["unwanted", ""]] * len(UNWANTED_CONTROL_CHARACTERS))
 
 
 class DefinitionsBlockTestCase(TestCase):
@@ -735,20 +748,51 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
                 for field in not_present:
                     self.assertNotIn(data[field], rendered)
 
-    def test_render_block__alignment_and_width(self):
+    def test_render_block__alignment(self):
         table_data = {
-            "headers": [[{"value": "header cell", "type": "th", "width": "20px", "align": "center"}]],
-            "rows": [[{"value": "row cell", "type": "td", "width": "50%", "align": "right"}]],
+            "headers": [
+                [
+                    {"value": "header cell", "type": "th", "align": "center", "valign": "bottom"},
+                    {"value": "header cell 2", "type": "th"},  # Default valign is top when not specified
+                ]
+            ],
+            "rows": [
+                [
+                    {"value": "row cell", "type": "td", "align": "right", "valign": "middle"},
+                    {"value": "row cell 2", "type": "td"},  # Default valign is top when not specified
+                ]
+            ],
         }
 
         rendered = self.block.render({"data": table_data})
+        soup = BeautifulSoup(rendered, "html.parser")
 
-        # Check header cell has alignment class
-        self.assertIn("ons-u-ta-center", rendered)
-        self.assertIn("header cell", rendered)
-        # Check body cell has alignment class
-        self.assertIn("ons-u-ta-right", rendered)
-        self.assertIn("row cell", rendered)
+        header_1, header_2 = soup.findAll("th")
+        self.assertEqual(header_1.get_text(strip=True), "header cell")
+        self.assertEqual(header_2.get_text(strip=True), "header cell 2")
+
+        cell_1, cell_2 = soup.findAll("td")
+        self.assertEqual(cell_1.get_text(strip=True), "row cell")
+        self.assertEqual(cell_2.get_text(strip=True), "row cell 2")
+
+        header_1_classes = header_1.get("class", [])
+        cell_1_classes = cell_1.get("class", [])
+        header_2_classes = header_2.get("class", [])
+        cell_2_classes = cell_2.get("class", [])
+
+        # Check header cell 1 horizontal alignment
+        self.assertIn("ons-u-ta-center", header_1_classes)
+        # Check header cell 1 vertical alignment
+        self.assertIn("ons-table__header--bottom", header_1_classes)
+        # Check header cell 2 vertical alignment uses default top alignment when not specified
+        self.assertIn("ons-table__header--top", header_2_classes)
+
+        # Check body cell 1 horizontal alignment
+        self.assertIn("ons-u-ta-right", cell_1_classes)
+        # Check body cell 1 vertical alignment
+        self.assertIn("ons-table__cell--middle", cell_1_classes)
+        # Check body cell 2 vertical alignment uses default top alignment when not specified
+        self.assertIn("ons-table__cell--top", cell_2_classes)
 
     def test_render_block__ds_component_markup(self):
         """Test that table renders with correct DS component structure."""
@@ -763,7 +807,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertIn("ons-table-scrollable", rendered)  # DS always adds scrollable wrapper
         self.assertIn("ons-table__body", rendered)
         self.assertIn("ons-table__row", rendered)
-        self.assertInHTML('<td class="ons-table__cell">row cell</td>', rendered)
+        self.assertInHTML('<td class="ons-table__cell ons-table__cell--top">row cell</td>', rendered)
 
         # Test table with header only
         table = {
@@ -774,7 +818,8 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         self.assertIn("ons-table__head", rendered)
         self.assertInHTML(
-            '<th scope="col" class="ons-table__header"><span class="ons-table__header-text">header cell</span></th>',
+            '<th scope="col" class="ons-table__header ons-table__header--top">'
+            '<span class="ons-table__header-text">header cell</span></th>',
             rendered,
         )
 
@@ -817,9 +862,9 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertIn('colspan="2"', rendered)
         self.assertIn('rowspan="2"', rendered)
         # Check row headers in body are rendered with heading attribute (th with scope=row)
-        self.assertInHTML('<th class="ons-table__cell" scope="row">Col header 1</th>', rendered)
-        self.assertInHTML('<th class="ons-table__cell" scope="row">Col header 2</th>', rendered)
-        self.assertInHTML('<th class="ons-table__cell" scope="row">Col header 3</th>', rendered)
+        self.assertInHTML('<th class="ons-table__cell ons-table__cell--top" scope="row">Col header 1</th>', rendered)
+        self.assertInHTML('<th class="ons-table__cell ons-table__cell--top" scope="row">Col header 2</th>', rendered)
+        self.assertInHTML('<th class="ons-table__cell ons-table__cell--top" scope="row">Col header 3</th>', rendered)
 
     def test__align_to_ons_classname(self):
         scenarios = {"right": "ons-u-ta-right", "left": "ons-u-ta-left", "center": "ons-u-ta-center", "foo": ""}
@@ -874,7 +919,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertIn("download", result["options"])
         self.assertIn("title", result["options"]["download"])
         self.assertIn("itemsList", result["options"]["download"])
-        self.assertEqual(result["options"]["download"]["title"], "Download: The table")
+        self.assertEqual(result["options"]["download"]["title"], "Download this table")
         self.assertEqual(len(result["options"]["download"]["itemsList"]), 1)
         self.assertIn("CSV", result["options"]["download"]["itemsList"][0]["text"])
         self.assertIn("url", result["options"]["download"]["itemsList"][0])
@@ -898,7 +943,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         result = self.block.get_context(self.full_data, parent_context=context)
 
         download_url = result["options"]["download"]["itemsList"][0]["url"]
-        self.assertIn("/admin/articles/pages/", download_url)
+        self.assertIn("/admin/data-downloads/pages/", download_url)
         self.assertIn("/revisions/456/", download_url)
         self.assertIn("/download-table/test-block-id/", download_url)
 

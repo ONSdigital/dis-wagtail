@@ -11,12 +11,12 @@ from wagtail import hooks
 from wagtail.admin import messages
 from wagtail.admin.action_menu import PageLockedMenuItem, WorkflowMenuItem
 
-from cms.bundles.mixins import BundledPageMixin
 from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 
 from . import admin_urls
-from .action_menu import UnlockWorkflowMenuItem
+from .action_menu import SubmitForModerationMenuItem, UnlockWorkflowMenuItem
 from .admin_urls import path
+from .models import get_final_approve_label
 from .utils import is_page_ready_to_publish
 
 if TYPE_CHECKING:
@@ -55,35 +55,23 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
                 icon_name = "success" if name in ["approve", "locked-approve"] else "edit"
                 updated_menu_items.append(WorkflowMenuItem(name, item_label, launch_modal, icon_name=icon_name))
 
-    is_final_task = (
-        page.current_workflow_task
-        and page.current_workflow_task.pk == page.current_workflow_state.workflow.tasks.last().pk
-    )
-
-    is_self_approver = page.latest_revision and page.latest_revision.user_id == request.user.pk
+    # Do a final relabel for the "approve" actions to prevent any inconsistencies.
     final_menu_items = []
     for item in updated_menu_items:
-        if item.name in ["approve", "locked-approve"]:
-            # tidy up the "approve" action label, both for when we're lock in ready to publish,
-            # and when the workflow was "unlocked". i.e. moved back a step. Account for scheduled publishing
-            if is_final_task:
-                if page.go_live_at and page.go_live_at > timezone.now():
-                    label = (
-                        "Schedule to publish"
-                        if "with comment" not in item.label
-                        else "Schedule to publish with comment"
-                    )
-                else:
-                    label = "Publish" if "with comment" not in item.label else "Publish with comment"
-
-            elif is_self_approver:
-                # anyone with the publish permission can do so once in "ready to be published".
-                # before that, hide the action item if the current user was the last editor to prevent self-approval
+        match item.name:
+            case "action-restart-workflow":
                 continue
-            else:
-                label = "Approve" if "with comment" not in item.label else "Approve with comment"
-            item.label = label
-        final_menu_items.append(item)
+
+            case "action-submit":
+                # the submit/resubmit action menu item does the re-label in get_context_data, so we use our class
+                final_menu_items.append(SubmitForModerationMenuItem())
+
+            case "approve" | "locked-approve":
+                item.label = get_final_approve_label(page, item.label)
+                final_menu_items.append(item)
+
+            case _:
+                final_menu_items.append(item)
 
     return final_menu_items
 
@@ -91,9 +79,6 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
 @hooks.register("construct_page_action_menu")
 def amend_page_action_menu_items(menu_items: list[ActionMenuItem], request: HttpRequest, context: Mapping) -> None:
     if not (context["view"] == "edit" and context.get("page")):
-        return
-
-    if not isinstance(context["page"], BundledPageMixin):
         return
 
     # do the bulk of tweaks

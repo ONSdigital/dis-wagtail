@@ -1,4 +1,7 @@
+from http import HTTPStatus
+
 from django.urls import reverse
+from wagtail.rich_text import RichText
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.home.models import HomePage
@@ -20,6 +23,16 @@ class MethodologyPageTest(WagtailPageTestCase):
         cls.topic_page = TopicPageFactory()
         cls.methodology_index_page = MethodologyIndexPageFactory(parent=cls.topic_page)
 
+    def test_page_content(self):
+        response = self.client.get(self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.page.title)
+        self.assertInHTML(str(RichText(self.page.summary)), response.content.decode(encoding="utf-8"))
+        self.assertContains(response, self.page.content)
+
+        self.assertContains(response, "Save or print this page")
+        self.assertContains(response, "Cite this methodology")
+
     def test_methodology_index_page_redirects_to_topic_listing(self):
         response = self.client.get(self.methodology_index_page.url)
         self.assertRedirects(
@@ -31,15 +44,6 @@ class MethodologyPageTest(WagtailPageTestCase):
 
     def test_default_route_rendering(self):
         self.assertPageIsRenderable(self.page)
-
-    def test_methodology_page_template(self):
-        """Test that the methodology page template is correct."""
-        response = self.client.get(self.page.url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, self.page.title)
-        self.assertContains(response, "Save or print this page")
-        self.assertContains(response, "Cite this methodology")
 
     def test_methodology_page_uses_correct_toc_class(self):
         """Test that the methodology page uses the correct table of contents class."""
@@ -58,7 +62,7 @@ class MethodologyPageTest(WagtailPageTestCase):
         response = self.client.get(self.page.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Related publications")
-        self.assertContains(response, related.page.url)
+        self.assertContains(response, related.page.get_url(request=self.dummy_request))
         self.assertContains(response, related.page.display_title)
 
     def test_date_placeholder(self):

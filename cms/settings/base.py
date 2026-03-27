@@ -75,9 +75,11 @@ INSTALLED_APPS = [
     "cms.auth",
     "cms.bundles",
     "cms.core",
+    "cms.data_downloads",
     "cms.datasets",
     "cms.datavis",
     "cms.documents",
+    "cms.locale",
     "cms.home",
     "cms.images",
     "cms.private_media",
@@ -142,7 +144,7 @@ MIDDLEWARE = [
     # SecurityMiddleware.
     # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
     "cms.core.whitenoise.CMSWhiteNoiseMiddleware",
-    "django.middleware.locale.LocaleMiddleware",
+    "cms.locale.middleware.SubdomainLocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -152,7 +154,7 @@ MIDDLEWARE = [
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 ]
 
-# Some middleware isn't needed for a external environment.
+# Some middleware isn't needed for an external environment.
 # Disable them to improve performance
 if not IS_EXTERNAL_ENV:
     common_middleware_index = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")
@@ -172,6 +174,16 @@ context_processors = [
     "cms.core.context_processors.global_vars",
 ]
 
+jinja2_extensions = [
+    *DEFAULT_EXTENSIONS,
+    "wagtail.jinja2tags.core",
+    "wagtail.images.jinja2tags.images",
+    "wagtail.contrib.settings.jinja2tags.settings",
+    "cms.core.jinja2tags.CoreExtension",
+    "cms.navigation.jinja2tags.NavigationExtension",
+    "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
+]
+
 if not IS_EXTERNAL_ENV:
     context_processors.extend(
         [
@@ -179,6 +191,12 @@ if not IS_EXTERNAL_ENV:
             "django.contrib.auth.context_processors.auth",
         ]
     )
+    jinja2_extensions.extend(
+        [
+            "wagtail.admin.jinja2tags.userbar",
+        ]
+    )
+
 
 TEMPLATES = [
     {
@@ -192,16 +210,7 @@ TEMPLATES = [
             "app_dirname": "jinja2",
             "undefined": "jinja2.ChainableUndefined",
             "context_processors": context_processors,
-            "extensions": [
-                *DEFAULT_EXTENSIONS,
-                "wagtail.jinja2tags.core",
-                "wagtail.admin.jinja2tags.userbar",
-                "wagtail.images.jinja2tags.images",
-                "wagtail.contrib.settings.jinja2tags.settings",
-                "cms.core.jinja2tags.CoreExtension",
-                "cms.navigation.jinja2tags.NavigationExtension",
-                "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
-            ],
+            "extensions": jinja2_extensions,
             "policies": {
                 # https://jinja.palletsprojects.com/en/stable/api/#policies
                 "json.dumps_function": custom_json_dumps,
@@ -342,6 +351,23 @@ elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
             },
         },
     }
+
+    if elasticache_invalidate_replay_addr := env.get("ELASTICACHE_INVALIDATE_REPLAY_ADDR"):
+        CACHES["default"]["BACKEND"] = "cms.core.cache.InvalidateReplayRedisCache"
+        CACHES["invalidate_replay"] = {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": f"rediss://{elasticache_invalidate_replay_addr}:{port}",
+            "OPTIONS": {
+                **redis_options,
+                "CONNECTION_POOL_KWARGS": {
+                    "credential_provider": ElastiCacheIAMCredentialProvider(
+                        user=env["ELASTICACHE_INVALIDATE_REPLAY_USER_NAME"],
+                        cluster_name=env["ELASTICACHE_INVALIDATE_REPLAY_CLUSTER_NAME"],
+                        region=AWS_REGION,
+                    )
+                },
+            },
+        }
 else:
     CACHES["default"] = {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
@@ -387,6 +413,7 @@ _valid_language_codes = {code for code, _ in LANGUAGES}
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
 
+LANGUAGE_COOKIE_NAME = "ons_language"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/stable/howto/static-files/
@@ -496,6 +523,10 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
     # https://github.com/jschneier/django-storages/blob/10d1929de5e0318dbd63d715db4bebc9a42257b5/storages/backends/s3boto3.py#L217
     AWS_S3_URL_PROTOCOL = env.get("AWS_S3_URL_PROTOCOL", "https:")
 
+# Whether to log output as JSON or "verbose". By default, check whether we're running with a TTY
+# This can't be easily overridden in tests, so it's lowercase to stop it being incorrectly overwritten as a setting.
+log_as_json = env.get("LOG_AS_JSON", str(not sys.stdout.isatty())).lower().strip() == "true"
+
 PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get("PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5)
 
 # Logging
@@ -511,12 +542,12 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "json",
+            "formatter": "json" if log_as_json else "verbose",
         },
         "gunicorn_access": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "gunicorn_json",
+            "formatter": "gunicorn_json" if log_as_json else "verbose",
         },
     },
     "formatters": {
@@ -525,8 +556,13 @@ LOGGING = {
             "()": "cms.core.logs.JSONFormatter",
         },
         "gunicorn_json": {
-            "()": "cms.core.logs.GunicornJsonFormatter",
+            "()": "cms.core.logs.GunicornAccessJSONFormatter",
         },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+        "propagate": False,
     },
     "loggers": {
         "cms": {
@@ -996,6 +1032,7 @@ IFRAME_VISUALISATION_PATH_PREFIXES = env.get(
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
+FLORENCE_GROUPS_PATH = env.get("FLORENCE_GROUPS_PATH", "/florence/groups")
 
 SEARCH_API_DEFAULT_PAGE_SIZE = int(os.getenv("SEARCH_API_DEFAULT_PAGE_SIZE", "20"))
 SEARCH_API_MAX_PAGE_SIZE = int(os.getenv("SEARCH_API_MAX_PAGE_SIZE", "500"))
@@ -1007,6 +1044,14 @@ LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", WAGTAILADMIN_LOGIN_URL)
 AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL")
 SESSION_COOKIE_AGE = int(env.get("SESSION_COOKIE_AGE", 60 * 15))  # 15 minutes to match Auth Service
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+session_db_cache_enabled = env.get("SESSION_DB_CACHE_ENABLED", "true").lower() == "true"
+if "DatabaseCache" in CACHES["default"]["BACKEND"]:
+    # The session cache is unnecessary if the cache backend is the database
+    session_db_cache_enabled = False
+SESSION_ENGINE = (
+    "django.contrib.sessions.backends.cached_db" if session_db_cache_enabled else "django.contrib.sessions.backends.db"
+)
 IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL")
 AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "false").lower() == "true"
 AWS_COGNITO_USER_POOL_ID = env.get("AWS_COGNITO_USER_POOL_ID")
@@ -1021,6 +1066,9 @@ PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
 PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
 VIEWERS_GROUP_NAME = "Viewers"
 ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
+
+# Flag to enable direct publishing of pages without going through the workflow process.
+ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT = env.get("ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT", "false").lower() == "true"
 
 # Cookie Names
 ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
@@ -1046,6 +1094,32 @@ CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH = env.get("CMS_SEARCH_NOTIFY_ON_DELETE_
 
 # Domain-based locale configuration
 CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "true").lower() == "true"
+CMS_HOSTNAME_LOCALE_MAP = {}  # helps determine the locale for a hostname when using subdomain locales.
+
+# Used to generate full URLs for language alternatives when using one of the alternative domains.
+# Wagtail's Sites are configured with the main domains, but we need to handle the internal ones too.
+CMS_HOSTNAME_ALTERNATIVES = {}
+if CMS_USE_SUBDOMAIN_LOCALES and (config_string := env.get("CMS_HOSTNAME_LOCALE_MAP", "")):
+    # The env var is expected to have the following format:
+    # en:default_domain,alternative_domain|cy:default_domain,alternative_domain
+    # Which then gets converted to dict in the form of {domain: lang_code}
+    for locale_config in config_string.strip().split("|"):
+        if not locale_config.strip():
+            continue
+
+        # Split lang_code from domains
+        lang_code, domains_str = locale_config.strip().split(":", 1)
+        domains = [d.strip() for d in domains_str.split(",") if d.strip()]
+
+        if domains:
+            default_domain = domains[0]
+            for domain in domains:
+                CMS_HOSTNAME_LOCALE_MAP[domain] = lang_code
+
+            # there should be only one domain, but guard for cases where there is no alternate, or there multiple
+            alternative_domains = domains[1:]
+            if len(alternative_domains) == 1:
+                CMS_HOSTNAME_ALTERNATIVES[default_domain] = alternative_domains[0]
 
 # This must remain lower than the Gunicorn worker timeout.
 # Note, the Gunicorn timeout may itself be overridden in deployment config (e.g. gunicorn.conf.py, Helm chart values).

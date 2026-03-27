@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from wagtail.admin.action_menu import PageLockedMenuItem
@@ -15,9 +15,12 @@ from wagtail.utils.timestamps import render_timestamp
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
+from cms.bundles.mixins import BundledPageMixin
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.core.permission_testers import BasePagePermissionTester
+from cms.core.tests.factories import BasePageFactory
 from cms.home.models import HomePage
+from cms.standard_pages.tests.factories import IndexPageFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.locks import PageReadyToBePublishedLock
 from cms.workflows.models import GroupReviewTask, ReadyToPublishGroupTask
@@ -29,32 +32,43 @@ from cms.workflows.tests.utils import (
 from cms.workflows.utils import is_page_ready_to_publish
 
 
-class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
+class WorkflowTweaksBaseTestCase(WagtailTestUtils, TestCase):
+    """Shared helpers for workflow tweak tests."""
+
     @classmethod
     def setUpTestData(cls):
-        cls.publishing_admin = UserFactory()
+        cls.publishing_admin = UserFactory(username="publishing_admin")
         cls.publishing_admin.groups.add(Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME))
-        cls.publishing_officer = UserFactory()
+        cls.publishing_officer = UserFactory(username="publishing_officer")
         cls.publishing_officer.groups.add(Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME))
 
+    def assertItemWithPropertyIn(self, attr_name, expected_value, items):  # pylint: disable=invalid-name
+        values = {getattr(item, attr_name) for item in items}
+        msg = f"Value '{expected_value}' not found in {attr_name}s. Found: {values}"
+        self.assertIn(expected_value, values, msg=msg)
+
+    def assertItemWithPropertyNotIn(self, attr_name, expected_value, items):  # pylint: disable=invalid-name
+        values = {getattr(item, attr_name) for item in items}
+        msg = f"Value '{expected_value}' unexpectedly found in {attr_name}s. Found: {values}"
+        self.assertNotIn(expected_value, values, msg=msg)
+
+
+class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
         cls.page = StatisticalArticlePageFactory()
         cls.edit_url = reverse("wagtailadmin_pages:edit", args=[cls.page.id])
 
         cls.bundle = BundleFactory()
         cls.bundle_page = BundlePageFactory(parent=cls.bundle, page=cls.page)
 
+        cls.dashboard_url = reverse("wagtailadmin_home")
+
     def mark_bundle_as_ready_to_publish(self):
         # mark the bundle as ready to publish
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
-
-    def assertActionIn(self, action, menu_items):  # pylint: disable=invalid-name
-        actions = {item.name for item in menu_items}
-        self.assertIn(action, actions)
-
-    def assertActionNotIn(self, action, menu_items):  # pylint: disable=invalid-name
-        actions = {item.name for item in menu_items}
-        self.assertNotIn(action, actions)
 
     def get_simple_post_data(self, page):
         return nested_form_data(
@@ -365,14 +379,84 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, "Manage bundle")
         self.assertNotContains(response, reverse("bundle:edit", args=[self.bundle.pk]))
 
+    def test_group_review_task_actions(self):
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_for_review(self.page, self.publishing_officer)
+
+        # check task actions
+        self.assertEqual(
+            self.page.current_workflow_task.get_actions(self.page, self.publishing_admin),
+            [
+                ("reject", "Request changes", True),
+                ("approve", "Approve", False),
+                ("approve", "Approve with comment", True),
+            ],
+        )
+
+        # check the dashboard
+        response = self.client.get(self.dashboard_url)
+        self.assertContains(response, "Request changes")
+        self.assertContains(response, "Approve")
+        self.assertContains(response, "Approve with comment")
+
+        # now check the edit page
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertEqual(len(menu_items), 4)
+
+        self.assertItemWithPropertyIn("name", "action-unpublish", menu_items)
+        # TODO: uncomment when https://github.com/wagtail/wagtail/pull/13948 is fixed
+        # self.assertItemWithPropertyIn("name", "action-cancel-workflow", menu_items)
+        self.assertItemWithPropertyIn("name", "reject", menu_items)
+        self.assertItemWithPropertyIn("name", "approve", menu_items)
+        self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
+
+    def test_group_review_task_actions__for_self_approver(self):
+        self.client.force_login(self.publishing_officer)
+        mark_page_as_ready_for_review(self.page, self.publishing_officer)
+
+        # check task actions
+        self.assertEqual(
+            self.page.current_workflow_task.get_actions(self.page, self.publishing_officer),
+            [("reject", "Request changes", True)],
+        )
+
+        # check the dashboard
+        response = self.client.get(self.dashboard_url)
+        self.assertContains(response, "Request changes")
+        self.assertNotContains(response, "Approve")
+        self.assertNotContains(response, "Approve with comment")
+
+        # now check the edit page
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertEqual(len(menu_items), 3)
+
+        self.assertItemWithPropertyIn("name", "action-unpublish", menu_items)
+        self.assertItemWithPropertyIn("name", "action-cancel-workflow", menu_items)
+        self.assertItemWithPropertyIn("name", "reject", menu_items)
+        self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
+        self.assertItemWithPropertyNotIn("name", "approve", menu_items)
+
     def test_ready_to_publish_task__get_actions__user_can_publish__non_bundle_page(self):
         non_bundle_page = StatisticalArticlePageFactory()
         mark_page_as_ready_to_publish(non_bundle_page)
 
         self.assertEqual(
             non_bundle_page.current_workflow_task.get_actions(non_bundle_page, self.publishing_admin),
-            [("unlock", "Unlock editing", False), ("locked-approve", "Approve", False)],
+            [("unlock", "Unlock editing", False), ("locked-approve", "Publish", False)],
         )
+
+        for user in [self.publishing_officer, self.publishing_admin]:
+            with self.subTest(f"Test dashboard has publish action for {user}"):
+                self.client.force_login(user)
+                response = self.client.get(self.dashboard_url)
+                self.assertRegex(
+                    response.content.decode(encoding="utf-8"),
+                    r"<button data-workflow-action-url=.*>\s?Publish\s?<\/button>",
+                )
 
     def test_ready_to_publish_task__get_actions__user_can_publish__active_bundle_in_progress(self):
         mark_page_as_ready_to_publish(self.page)
@@ -402,20 +486,6 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         self.client.get(reverse("wagtailadmin_pages:edit", args=[home_page.id]))
         mocked_update.assert_not_called()
 
-    def test_action_menu_for_self_approval(self):
-        self.client.force_login(self.publishing_admin)
-        mark_page_as_ready_for_review(self.page, self.publishing_admin)
-
-        response = self.client.get(self.edit_url)
-        menu_items = response.context["action_menu"].menu_items
-
-        self.assertEqual(len(menu_items), 3)
-        self.assertActionIn("action-unpublish", menu_items)
-        self.assertActionIn("action-cancel-workflow", menu_items)
-        self.assertActionIn("reject", menu_items)
-        self.assertActionNotIn("action-publish", menu_items)
-        self.assertActionNotIn("approve", menu_items)
-
     def test_action_menu_locked_item_first_in_list(self):
         self.client.force_login(self.publishing_admin)
         mark_page_as_ready_to_publish(self.page, self.publishing_admin)
@@ -443,16 +513,15 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         # unpublish, approve, approve with comment, reject
         self.assertEqual(len(menu_items), 4)
 
-        self.assertActionIn("approve", menu_items)
-        self.assertActionIn("reject", menu_items)
-        self.assertActionIn("action-unpublish", menu_items)
-        self.assertActionNotIn("action-publish", menu_items)
-        self.assertActionNotIn("locked-approve", menu_items)
-        self.assertActionNotIn("unlock", menu_items)
+        self.assertItemWithPropertyIn("name", "approve", menu_items)
+        self.assertItemWithPropertyIn("name", "reject", menu_items)
+        self.assertItemWithPropertyIn("name", "action-unpublish", menu_items)
+        self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
+        self.assertItemWithPropertyNotIn("name", "locked-approve", menu_items)
+        self.assertItemWithPropertyNotIn("name", "unlock", menu_items)
 
-        labels = {item.label for item in menu_items}
-        self.assertIn("Approve", labels)
-        self.assertIn("Approve with comment", labels)
+        self.assertItemWithPropertyIn("label", "Approve", menu_items)
+        self.assertItemWithPropertyIn("label", "Approve with comment", menu_items)
 
     def test_action_menu_labels__in_ready_to_publish__in_bundle(self):
         self.client.force_login(self.publishing_admin)
@@ -463,13 +532,12 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(len(menu_items), 1)  # unlock
 
-        self.assertActionIn("unlock", menu_items)
-        self.assertActionNotIn("locked-approve", menu_items)
+        self.assertItemWithPropertyIn("name", "unlock", menu_items)
+        self.assertItemWithPropertyNotIn("name", "locked-approve", menu_items)
 
-        labels = {item.label for item in menu_items}
-        self.assertIn("Unlock editing", labels)
-        self.assertNotIn("Publish", labels)
-        self.assertNotIn("Approve and Publish", labels)
+        self.assertItemWithPropertyIn("label", "Unlock editing", menu_items)
+        self.assertItemWithPropertyNotIn("label", "Publish", menu_items)
+        self.assertItemWithPropertyNotIn("label", "Approve and Publish", menu_items)
 
     def test_action_menu_labels__in_ready_to_publish__no_bundle(self):
         self.client.force_login(self.publishing_admin)
@@ -480,13 +548,12 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
         menu_items = response.context["action_menu"].menu_items
 
         self.assertEqual(len(menu_items), 2)  # unlock, publish
-        self.assertActionIn("unlock", menu_items)
-        self.assertActionIn("locked-approve", menu_items)
+        self.assertItemWithPropertyIn("name", "unlock", menu_items)
+        self.assertItemWithPropertyIn("name", "locked-approve", menu_items)
 
-        labels = {item.label for item in menu_items}
-        self.assertIn("Publish", labels)
-        self.assertIn("Unlock editing", labels)
-        self.assertNotIn("Approve and Publish", labels)
+        self.assertItemWithPropertyIn("label", "Publish", menu_items)
+        self.assertItemWithPropertyIn("label", "Unlock editing", menu_items)
+        self.assertItemWithPropertyNotIn("label", "Approve and Publish", menu_items)
 
     def test_locked_approve_action__publishes_page(self):
         self.client.force_login(self.publishing_admin)
@@ -549,6 +616,161 @@ class WorkflowTweaksTestCase(WagtailTestUtils, TestCase):
 
         self.assertContains(response, "Could not perform the action as the page is no longer in a workflow.")
 
+    def test_restart_action_removed_and_resubmit_for_review_label_updated(self):
+        self.client.force_login(self.publishing_admin)
+        workflow_state = mark_page_as_ready_for_review(self.page, self.publishing_officer)
+        workflow_state.status = workflow_state.STATUS_NEEDS_CHANGES
+        workflow_state.save()
+
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertItemWithPropertyNotIn("name", "action-restart-workflow", menu_items)
+        self.assertItemWithPropertyNotIn("label", "Restart workflow", menu_items)
+        # the core dynamic label is "Resubmit to %(task_name)s" and our task is "In Preview"
+        self.assertItemWithPropertyNotIn("label", "Resubmit to In Preview", menu_items)
+        self.assertNotContains(response, "Resubmit to In Preview")
+
+        self.assertItemWithPropertyIn("name", "action-submit", menu_items)
+        # alas, the SubmitForModerationMenuItem default label is "Submit for moderation", but
+        # that gets updated dynamically when the template is rendered, so we need to
+        self.assertItemWithPropertyIn("label", "Submit for moderation", menu_items)
+        self.assertContains(response, "Resubmit for review")
+
+
+class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
+    """Tests for workflow hook behaviour on pages without BundledPageMixin.
+
+    Ensures that after removing the BundledPageMixin guard from
+    amend_page_action_menu_items, pages like ArticleSeriesPage (pre-mixin)
+    still enforce self-approval prevention, correct menu items, and allow
+    page-level scheduling.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.page = BasePageFactory()
+        cls.edit_url = reverse("wagtailadmin_pages:edit", args=[cls.page.id])
+
+    def get_simple_post_data(self, page):
+        return nested_form_data(
+            {
+                "title": page.title,
+                "slug": page.slug,
+                "action-workflow-action": "true",
+                "workflow-action-name": "approve",
+            }
+        )
+
+    def test_page_is_not_bundleable(self):
+        """Confirm BasePageFactory produces a page without BundledPageMixin,
+        so the rest of this test class is actually testing non-bundled behaviour.
+        """
+        self.assertNotIsInstance(self.page, BundledPageMixin)
+
+    def test_submitter_cannot_self_approve__action_menu(self):
+        """The submitter should not see the approve action in the menu."""
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_for_review(self.page, self.publishing_admin)
+
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertItemWithPropertyNotIn("name", "approve", menu_items)
+        self.assertItemWithPropertyNotIn("name", "locked-approve", menu_items)
+
+    def test_submitter_cannot_self_approve__post(self):
+        """POST with approve action by the submitter is blocked with an error message."""
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_for_review(self.page, self.publishing_admin)
+        latest_revision = self.page.latest_revision
+
+        data = self.get_simple_post_data(self.page)
+        response = self.client.post(self.edit_url, data, follow=True)
+
+        self.assertContains(
+            response, "Cannot self-approve your changes. Please ask another Publishing team member to do so."
+        )
+        self.page.refresh_from_db()
+        self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)
+
+    def test_non_submitter_sees_approve_action(self):
+        """A different publishing team member can see and use the approve action."""
+        mark_page_as_ready_for_review(self.page, self.publishing_admin)
+
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertItemWithPropertyIn("name", "approve", menu_items)
+
+        self.assertItemWithPropertyIn("label", "Approve", menu_items)
+        self.assertItemWithPropertyIn("label", "Approve with comment", menu_items)
+
+    def test_cancel_workflow_available_in_review(self):
+        """Cancel workflow action is present during the review stage."""
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_for_review(self.page, self.publishing_admin)
+
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, 'name="action-cancel-workflow"')
+
+    def test_ready_to_publish__publish_and_unlock_actions_present(self):
+        """When ready to publish with no bundle, both Publish and Unlock editing are shown."""
+        self.client.force_login(self.publishing_admin)
+        mark_page_as_ready_to_publish(self.page, self.publishing_officer)
+
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertEqual(len(menu_items), 2)  # unlock + locked-approve
+        self.assertItemWithPropertyIn("name", "locked-approve", menu_items)
+        self.assertItemWithPropertyIn("name", "unlock", menu_items)
+
+        self.assertItemWithPropertyIn("label", "Publish", menu_items)
+        self.assertItemWithPropertyIn("label", "Unlock editing", menu_items)
+
+    def test_page_level_go_live_scheduling_allowed(self):
+        """Page-level go_live_at scheduling is not blocked for non-bundled pages."""
+        self.client.force_login(self.publishing_admin)
+
+        go_live_at = timezone.now() + datetime.timedelta(weeks=3)
+        data = self.get_simple_post_data(self.page)
+        data["go_live_at"] = submittable_timestamp(go_live_at)
+        del data["action-workflow-action"]
+        del data["workflow-action-name"]
+
+        response = self.client.post(self.edit_url, data, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Cannot set page-level schedule while the page is in a bundle.")
+        self.assertTrue(
+            Revision.objects.for_instance(self.page)
+            .filter(content__go_live_at__startswith=str(go_live_at.date()))
+            .exists()
+        )
+
+    def test_page_level_expire_at_scheduling_allowed(self):
+        """Page-level expire_at scheduling is not blocked for non-bundled pages."""
+        self.client.force_login(self.publishing_admin)
+
+        expire_at = timezone.now() + datetime.timedelta(weeks=3)
+        data = self.get_simple_post_data(self.page)
+        data["expire_at"] = submittable_timestamp(expire_at)
+        del data["action-workflow-action"]
+        del data["workflow-action-name"]
+
+        response = self.client.post(self.edit_url, data, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Cannot set page-level schedule while the page is in a bundle.")
+        self.assertTrue(
+            Revision.objects.for_instance(self.page)
+            .filter(content__expire_at__startswith=str(expire_at.date()))
+            .exists()
+        )
+
 
 class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):
     @classmethod
@@ -562,6 +784,12 @@ class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):
         cls.publishing_admin.groups.add(Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME))
         cls.publishing_officer = UserFactory()
         cls.publishing_officer.groups.add(Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME))
+
+        cls.index_page = IndexPageFactory(live=False)
+        cls.bulk_publish_url = f"/admin/bulk/wagtailcore/page/publish/?id={cls.index_page.pk}"
+
+    def setUp(self):
+        self.client.force_login(self.publishing_admin)
 
     def test_can_lock__in_review(self):
         mark_page_as_ready_for_review(self.page)
@@ -581,3 +809,50 @@ class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):
             with self.subTest(msg=f"{user=} can lock"):
                 tester = BasePagePermissionTester(user=user, page=self.page)
                 self.assertFalse(tester.can_lock())
+
+    def test_bulk_publish_page_override__no_access__not_in_workflow(self):
+        response = self.client.get(self.bulk_publish_url)
+        self.assertContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, self.index_page.title)
+
+    def test_bulk_publish_page_override__in_workflow_but_not_ready_to_publish(self):
+        mark_page_as_ready_for_review(self.index_page)
+        response = self.client.get(self.bulk_publish_url)
+        self.assertContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, self.index_page.title)
+        self.assertContains(response, "Publish 0 pages")
+
+    def test_bulk_publish_page_override__in_bundle(self):
+        bundle = BundleFactory()
+        BundlePageFactory(parent=bundle, page=self.index_page)
+        bundle.status = BundleStatus.APPROVED
+        bundle.save(update_fields=["status"])
+
+        mark_page_as_ready_to_publish(self.index_page)
+
+        response = self.client.get(self.bulk_publish_url)
+        self.assertContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, self.index_page.title)
+        self.assertContains(response, "Publish 0 pages")
+
+    def test_bulk_publish_page_override__ready_to_publish(self):
+        mark_page_as_ready_to_publish(self.index_page)
+        response = self.client.get(self.bulk_publish_url)
+        self.assertNotContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, self.index_page.title)
+        self.assertContains(response, "Publish 1 page")
+
+    @override_settings(ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT=True)
+    def test_bulk_publish_page_override__with_direct_publishing_allowed(self):
+        response = self.client.get(self.bulk_publish_url)
+        self.assertNotContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, self.index_page.title)
+        self.assertContains(response, "Publish 1 page")
+
+        bundle = BundleFactory()
+        BundlePageFactory(parent=bundle, page=self.index_page)
+
+        response = self.client.get(self.bulk_publish_url)
+        self.assertContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, self.index_page.title)
+        self.assertContains(response, "Publish 0 pages")
