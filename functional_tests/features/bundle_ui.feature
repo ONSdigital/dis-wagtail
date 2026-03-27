@@ -115,7 +115,7 @@ Scenario Outline: A User can see create button
         | Publishing Officer |
 
 
-Scenario Outline: A User cannot create and save as draft a bundle due to a field validation error
+Scenario Outline: A User cannot save as draft a bundle that already exists (duplicate name)
     Given there is a <role> user
     And the <role> logs in
     And the logged in user goes to the bundle page
@@ -128,7 +128,7 @@ Scenario Outline: A User cannot create and save as draft a bundle due to a field
        | Publishing Admin   |
        | Publishing Officer |
 
-Scenario Outline: A User cannot create and save a bundle due to already existing
+Scenario Outline: A User is unsuccessful to save a save bundle with existing name
     Given there is a <role> user
     And there is a <creator_role> user
     And there are <number_of_bundles> bundles with <bundle_details>
@@ -145,7 +145,7 @@ Scenario Outline: A User cannot create and save a bundle due to already existing
        | 1                 | Publishing Officer | Publishing Admin    | {"role": "Publishing Officer", "creator_role": "Publishing Officer", "status": "Draft", "preview_teams": false, "add_rel_cal": false, "add_stat_page": false} |
 
 
-Scenario Outline: A User sucsessfully creates and saves a bundle as draft
+Scenario Outline: A User successfully creates and saves a bundle as draft
     Given there is a <role> user
     And the <role> logs in
     And the logged in user goes to the bundle page
@@ -269,7 +269,7 @@ Examples: bundles
 
 
 #---- Bundle UI Edit-----
-Scenario Outline: A User can edit a bundle
+Scenario Outline: A User sucessfully saves and previews a bundle with all features
     Given there is a <role> user
     And there is a <creator_role> user
     And there is a statistical analysis page approved by <creator_role>
