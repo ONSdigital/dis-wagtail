@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-25 16:55+0000\n"
+"POT-Creation-Date: 2026-03-27 11:32+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -148,26 +148,34 @@ msgid "This is a new service."
 msgstr "Mae hwn yn wasanaeth newydd."
 
 #: cms/jinja2/templates/base.html:36
+msgid "Menu links navigation"
+msgstr ""
+
+#: cms/jinja2/templates/base.html:37
+#, fuzzy
+#| msgid "Related links"
+msgid "Menu links"
+msgstr "Dolenni cysylltiedig"
+
+#: cms/jinja2/templates/base.html:38
 msgid "Menu"
 msgstr "Dewislen"
 
-#: cms/jinja2/templates/base.html:37
-msgid "Main menu"
-msgstr "Prif ddewislen"
-
-#: cms/jinja2/templates/base.html:38
-msgid "Toggle main menu"
+#: cms/jinja2/templates/base.html:39
+#, fuzzy
+#| msgid "Toggle main menu"
+msgid "Toggle menu"
 msgstr "Togl y brif ddewislen"
 
-#: cms/jinja2/templates/base.html:39
+#: cms/jinja2/templates/base.html:40
 msgid "Breadcrumbs"
 msgstr "Briwsion bara"
 
-#: cms/jinja2/templates/base.html:41
+#: cms/jinja2/templates/base.html:42
 msgid "All content is available under the"
 msgstr "Mae’r holl gynnwys ar gael o dan y"
 
-#: cms/jinja2/templates/base.html:44
+#: cms/jinja2/templates/base.html:45
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
@@ -757,6 +765,9 @@ msgstr "Cymraeg"
 #: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:13
 msgid "Not started"
 msgstr ""
+
+#~ msgid "Main menu"
+#~ msgstr "Prif ddewislen"
 
 #, fuzzy
 #~| msgid "Changes to this release date"
