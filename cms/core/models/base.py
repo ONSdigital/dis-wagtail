@@ -1,11 +1,13 @@
 from typing import TYPE_CHECKING, ClassVar, Self, cast
 
 from django.conf import settings
+from django.core.cache import cache
 from django.http import HttpRequest
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import ObjectList, TabbedInterface
+from wagtail.log_actions import log
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
 from wagtail.utils.decorators import cached_classmethod
@@ -25,6 +27,7 @@ if TYPE_CHECKING:
     from datetime import date, datetime
 
     from django.db import models
+    from django.template.response import TemplateResponse
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import BaseGenericSetting as _WagtailBaseGenericSetting
     from wagtail.contrib.settings.models import BaseSiteSetting as _WagtailBaseSiteSetting
@@ -62,6 +65,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
     # The default schema.org type for pages
     schema_org_type = "WebPage"
+
+    audit_log_cooldown_seconds = 30
 
     class Meta:
         abstract = True
@@ -308,6 +313,28 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             cache_object._wagtail_cached_site_root_paths = paths  # type: ignore[union-attr]
             # pylint: enable=protected-access,attribute-defined-outside-init
             return paths
+
+    def _log_preview(self, request: HttpRequest, mode_name: str) -> None:
+        """Log when a user previews a page in a specific preview mode."""
+        if not self.pk:
+            # Don't log if the page hasn't been saved yet (i.e. doesn't have a primary key)
+            return
+        cache_key = f"preview_page_log:{self.pk}:{request.user.pk}:{mode_name}"
+
+        if cache.get(cache_key):
+            return
+
+        log(
+            action="pages.preview_mode_used",
+            instance=self,
+            data={"preview_mode": mode_name},
+            user=request.user if request.user.is_authenticated else None,
+        )
+        cache.set(cache_key, True, timeout=self.audit_log_cooldown_seconds)
+
+    def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        self._log_preview(request, mode_name)
+        return cast("TemplateResponse", super().serve_preview(request, mode_name))
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
