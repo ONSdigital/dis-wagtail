@@ -10,6 +10,9 @@ class HomePage(BasePage):  # type: ignore[django-manager-missing]
 
     template = "templates/pages/home_page.html"
 
+    # Limit to one English and one Welsh home page, both created through migrations
+    max_count = 2
+
     # Only allow creating HomePages at the root level
     parent_page_types: ClassVar[list[str]] = ["wagtailcore.Page"]
 
