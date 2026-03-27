@@ -107,7 +107,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         response = self.client.get(welsh_page.get_url())
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_page.get_full_url())
+        self.assertIn("/cy/", welsh_page.get_full_url())
         self.assertContains(response, f'<link rel="canonical" href="{welsh_page.get_full_url()}" />')
 
     def test_aliased_welsh_statistical_article_page_canonical_url(self):
@@ -129,7 +129,7 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
         response = self.client.get(welsh_page.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)
         welsh_series_url = welsh_page.get_parent().get_full_url(request=self.dummy_request)
-        self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_series_url)
+        self.assertIn("/cy/", welsh_series_url)
         self.assertContains(response, f'<link rel="canonical" href="{welsh_series_url}" />')
 
     @patch("cms.home.models.HomePage.serve")
