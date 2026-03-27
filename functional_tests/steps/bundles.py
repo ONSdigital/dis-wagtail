@@ -463,9 +463,6 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
 
         if bool(bundle_dets["add_rel_cal"]) and hasattr(context, "release_calendar_page"):
             bundle.release_calendar_page = context.release_calendar_page
-        # else:
-        #     now = (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M")
-        #     bundle.publication_date = now
         bundle.save()
 
         if bool(bundle_dets["add_stat_page"]) and hasattr(context, "statistical_article_page"):
@@ -473,7 +470,6 @@ def multiple_bundles_create(context: Context, number_of_bundles: str, bundle_det
             BundlePage.objects.create(parent=bundle, page=page)
         bundle.save()
         context.bundles.append(bundle)
-        sorted(context.bundles, key=lambda x: x.name)
 
 
 @given("there is a preview team")
@@ -575,7 +571,6 @@ def add_release_calendar_to_bundle(context: Context) -> None:
 
 @step("the logged in user confirm the release calendar has been added to the bundle")
 def confirm_release_calendar_added_to_bundle(context: Context) -> None:
-    print()
     context.page.get_by_role("textbox", name="or Publication date").fill("")
     expect(context.page.get_by_text(context.release_calendar_page.title)).to_be_visible()
 
