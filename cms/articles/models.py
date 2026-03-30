@@ -110,6 +110,12 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         ),
     ]
 
+    @cached_property
+    def summary(self) -> str:
+        """Returns the summary of the latest article in the series."""
+        # TODO: update to include drafts when looking at previews holistically.
+        return latest.summary if (latest := self.get_latest()) else ""
+
     @transaction.atomic
     def save(  # type: ignore[override]
         self, clean: bool = True, user: User | None = None, log_action: bool = False, **kwargs: Any

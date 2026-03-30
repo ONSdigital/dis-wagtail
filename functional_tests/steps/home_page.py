@@ -6,7 +6,7 @@ from behave.runner import Context
 from playwright.sync_api import expect
 
 
-@when("An external user navigates to the ONS beta site homepage")
+@when("An external user navigates to the homepage")
 @when("the publishing admin visits the home page")
 def external_user_navigates_to_beta_homepage(context: Context) -> None:
     context.page.goto(context.base_url)

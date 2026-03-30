@@ -616,6 +616,27 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
 
         self.assertContains(response, "Could not perform the action as the page is no longer in a workflow.")
 
+    def test_restart_action_removed_and_resubmit_for_review_label_updated(self):
+        self.client.force_login(self.publishing_admin)
+        workflow_state = mark_page_as_ready_for_review(self.page, self.publishing_officer)
+        workflow_state.status = workflow_state.STATUS_NEEDS_CHANGES
+        workflow_state.save()
+
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+
+        self.assertItemWithPropertyNotIn("name", "action-restart-workflow", menu_items)
+        self.assertItemWithPropertyNotIn("label", "Restart workflow", menu_items)
+        # the core dynamic label is "Resubmit to %(task_name)s" and our task is "In Preview"
+        self.assertItemWithPropertyNotIn("label", "Resubmit to In Preview", menu_items)
+        self.assertNotContains(response, "Resubmit to In Preview")
+
+        self.assertItemWithPropertyIn("name", "action-submit", menu_items)
+        # alas, the SubmitForModerationMenuItem default label is "Submit for moderation", but
+        # that gets updated dynamically when the template is rendered, so we need to
+        self.assertItemWithPropertyIn("label", "Submit for moderation", menu_items)
+        self.assertContains(response, "Resubmit for review")
+
 
 class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
     """Tests for workflow hook behaviour on pages without BundledPageMixin.

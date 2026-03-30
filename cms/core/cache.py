@@ -1,11 +1,49 @@
-from collections.abc import Callable
+import logging
+from collections.abc import Callable, Iterable
 from functools import partial
+from typing import Any
 
 from cache_memoize import cache_memoize
 from django.conf import settings
+from django.core.cache import InvalidCacheBackendError, caches
+from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.cache import cache_control
+from django_redis.cache import RedisCache
+
+logger = logging.getLogger(__name__)
 
 memory_cache = partial(cache_memoize, cache_alias="memory")
+
+
+class InvalidateReplayRedisCache(RedisCache):
+    """A modified Redis cache backend which sends invalidations to another cache backend."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+        try:
+            self._replay_backend = caches["invalidate_replay"]
+        except InvalidCacheBackendError as e:
+            raise ImproperlyConfigured("Missing invalidate replay backend") from e
+
+    def delete(self, key: Any, version: int | None = None) -> bool:  # pylint: disable=arguments-differ
+        try:
+            replay_result = self._replay_backend.delete(key, version)
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Unable to replay delete", extra={"key": key, "version": version})
+            replay_result = False
+
+        return bool(super().delete(key, version) and replay_result)
+
+    def delete_many(self, keys: Iterable[Any], version: int | None = None) -> None:  # pylint: disable=arguments-differ
+        # Collect the keys immediately to ensure both backends receive the same keys.
+        keys = list(keys)
+        try:
+            self._replay_backend.delete_many(keys, version)
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Unable to replay delete_many", extra={"keys": keys, "version": version})
+
+        super().delete_many(keys, version)
 
 
 def get_default_cache_control_kwargs() -> dict[str, int | bool]:
