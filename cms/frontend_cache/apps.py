@@ -10,7 +10,7 @@ class FrontendCacheAppConfig(AppConfig):
             register_signal_handlers,
         )
 
-        # we disconnect the core front-end cache signal handles as we handle them
-        # with specific logic
+        # Disconnect the core front-end cache signal handlers as we handle them with specific logic
         disconnect_signal_handlers()
+        # And connect our handlers
         register_signal_handlers()

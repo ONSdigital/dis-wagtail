@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Any
 
-from django.apps import apps
 from django.db.models.signals import post_delete
 from wagtail.contrib.frontend_cache.signal_handlers import (
     page_published_signal_handler,
@@ -10,7 +9,7 @@ from wagtail.contrib.redirects.signal_handlers import (
     autocreate_redirects_on_page_move,
     autocreate_redirects_on_slug_change,
 )
-from wagtail.models import Page
+from wagtail.models import Page, get_page_models
 from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move, published, unpublished
 
 from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage
@@ -30,6 +29,9 @@ from .cache import (
 
 if TYPE_CHECKING:
     from django.db.models import Model
+
+
+EXCLUDED_PAGE_TYPES = frozenset({ArticlesIndexPage, HomePage, MethodologyIndexPage, ReleaseCalendarIndex})
 
 
 def purge_published_page_from_frontend_cache(instance: Page, **kwargs: Any) -> None:
@@ -84,15 +86,15 @@ def _get_tracked_page_models() -> set[Page]:
 
     We're excluding the following page types:
     - HomePage as it is not served by from Wagtail. TODO: remove when switching to do that
-    - The Release Calendar, articles and methodology indexes are served by the Search service and has a short TTL
+    - the Release Calendar, articles and methodology indexes are served by the Search service and has a short TTL
+    - the generic Page model to ensure we fully account for our exclusions.
     """
-    excluded_types = {ArticlesIndexPage, HomePage, MethodologyIndexPage, ReleaseCalendarIndex}
-    return {model for model in apps.get_models() if issubclass(model, BasePage) and model not in excluded_types}
+    return {model for model in get_page_models() if issubclass(model, BasePage) and model not in EXCLUDED_PAGE_TYPES}
 
 
 def disconnect_signal_handlers() -> None:
-    page_models = [model for model in apps.get_models() if issubclass(model, Page)]
-    for model in page_models:
+    """Disconnect the core front-end cache signal handlers as we handle them with specific logic."""
+    for model in get_page_models():
         page_published.disconnect(page_published_signal_handler, sender=model)
         page_unpublished.disconnect(page_unpublished_signal_handler, sender=model)
         post_page_move.disconnect(autocreate_redirects_on_page_move, sender=model)

@@ -125,10 +125,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         )
 
         if self.pk:
-            origin_title, original_slug = (
-                ArticleSeriesPage.objects.values_list("title", "slug").filter(pk=self.pk).first()  # type: ignore[misc]
-            )
-            if self.title != origin_title and self.slug == original_slug:
+            original_values = ArticleSeriesPage.objects.values("title", "slug").filter(pk=self.pk).first()
+            if original_values and self.title != original_values["title"] and self.slug == original_values["slug"]:
                 # The title has changed, but not the slug.
                 # The slug change is already handled by the `page_slug_changed` signal.
                 transaction.on_commit(
@@ -228,10 +226,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     def get_cached_paths(self) -> Generator[str]:
         yield "/"
         yield "/editions"
-        pages = ceil(self.get_children().live().public().count() / settings.PREVIOUS_RELEASES_PER_PAGE)
-        if pages == 0:
-            # ensure we always account for ?page=1
-            pages = 1
+        # ensure we always account for ?page=1
+        pages = max(1, ceil(self.get_children().live().public().count() / settings.PREVIOUS_RELEASES_PER_PAGE))
         for page_number in range(1, pages + 1):
             yield f"/editions?page={page_number}"
 
