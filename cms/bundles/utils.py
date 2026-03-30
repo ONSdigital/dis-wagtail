@@ -473,9 +473,9 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
             failure_status = BundleStatus.PARTIALLY_PUBLISHED
             alert_type = notifications.BundleAlertType.FAIL
 
-        if update_status:
-            bundle.status = failure_status
-            bundle.save(update_fields=["status"])
+        # Always update status on failures
+        bundle.status = failure_status
+        bundle.save(update_fields=["status"])
 
         # Send failure notification
         end_time = timezone.now()

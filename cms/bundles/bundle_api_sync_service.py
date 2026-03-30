@@ -87,7 +87,12 @@ class BundleAPISyncService:
             etag_stale = self._refresh_local_etag_if_stale()
 
             # 3. State-only path for immutable bundles
-            if self.bundle.status in {BundleStatus.APPROVED, BundleStatus.PUBLISHED}:
+            if self.bundle.status in {
+                BundleStatus.APPROVED,
+                BundleStatus.PUBLISHED,
+                BundleStatus.PARTIALLY_PUBLISHED,
+                BundleStatus.FAILED,
+            }:
                 # Approved and Published bundles are locked - CMS disallows edits to their
                 # contents or metadata (beyond the status field itself). The Bundle API also
                 # rejects such updates, so only the bundle’s status is synced here.
