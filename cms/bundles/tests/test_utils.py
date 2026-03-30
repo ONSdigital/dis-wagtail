@@ -602,20 +602,44 @@ class PublishBundleFailureTests(TestCase):
     @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
     @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    def test_publish_bundle__does_not_change_status_when_update_status_false(
+    def test_publish_bundle__always_updates_status_on_failures(
         self, _mock_notify_start, _mock_notify_end, mock_notify_failure
     ):
-        """Test publish_bundle does not update status when update_status=False."""
+        """Test publish_bundle updates status on failure even when update_status=False."""
         page1 = StatisticalArticlePageFactory(title="Article 1", live=False)
         bundle = BundleFactory(approved=True, bundled_pages=[page1])
-        original_status = bundle.status
 
         # Page without revision will fail
+        # update_status=False should be ignored for failures, where the status must be saved
         result = publish_bundle(bundle, update_status=False)
 
         self.assertFalse(result)
         bundle.refresh_from_db()
-        self.assertEqual(bundle.status, original_status)
+        self.assertEqual(bundle.status, BundleStatus.FAILED)
+
+        # Failure notification should still be sent when update_status=False
+        mock_notify_failure.assert_called_once()
+
+    @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    def test_publish_bundle__always_updates_status_on_partial_failures(
+        self, _mock_notify_start, _mock_notify_end, mock_notify_failure
+    ):
+        """Test publish_bundle updates status on partial failure even when update_status=False."""
+        page_will_fail = StatisticalArticlePageFactory(title="Article 1", live=False)
+        page_will_publish = StatisticalArticlePageFactory(title="Article 2", live=False)
+        page_will_publish.save_revision()
+
+        bundle = BundleFactory(approved=True, bundled_pages=[page_will_fail, page_will_publish])
+
+        # Page without revision will fail
+        # update_status=False should be ignored for failures, where the status must be saved
+        result = publish_bundle(bundle, update_status=False)
+
+        self.assertFalse(result)
+        bundle.refresh_from_db()
+        self.assertEqual(bundle.status, BundleStatus.PARTIALLY_PUBLISHED)
 
         # Failure notification should still be sent when update_status=False
         mock_notify_failure.assert_called_once()
