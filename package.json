@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.6",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
     "@wagtail/eslint-config-wagtail": "^0.4.0",
     "@wagtail/stylelint-config-wagtail": "^0.8.0",
     "autoprefixer": "^10.4.20",
@@ -52,6 +52,7 @@
     "file-loader": "^5.0.2",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^30.3.0",
+    "lighthouse": "^12.8.2",
     "mini-css-extract-plugin": "^2.7.6",
     "postcss": "^8.4.31",
     "postcss-custom-properties": "^13.3.2",

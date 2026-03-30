@@ -33,9 +33,10 @@
 {#- We set variables for text so that it gets picked up by makemessages -#}
 {%- set badge_label = _("Beta") -%}
 {%- set badge_html = _("This is a new service.") -%}
+{%- set menu_aria_label = _("Menu links navigation") -%}
+{%- set menu_list_aria_label = _("Menu links") -%}
 {%- set menu_label = _("Menu") -%}
-{%- set menu_label = _("Main menu") -%}
-{%- set menu_toggle_aria_label = _("Toggle main menu") -%}
+{%- set menu_toggle_aria_label = _("Toggle menu") -%}
 {%- set breadcrumbs_aria_label = _("Breadcrumbs") -%}
 
 {%- set ogl_pre = _('All content is available under the') -%}
@@ -58,9 +59,9 @@
         "mastheadLogoUrl": "/",
         "menuLinks": {
             "id": "nav-links-external",
-            "ariaLabel": menu_label,
-            "ariaListLabel": menu_label,
-            "toggleNavButton": {
+            "ariaLabel": menu_aria_label,
+            "ariaListLabel": menu_list_aria_label,
+            "toggleMenuButton": {
                 "text":menu_label,
                 "ariaLabel": menu_toggle_aria_label
             },

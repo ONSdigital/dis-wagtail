@@ -443,6 +443,12 @@ To start the linter and automatically rectify fixable issues, run:
 make megalint
 ```
 
+In order to run only a specific linter, you can set the `LINTER` variable:
+
+```bash
+make megalint LINTER=REPOSITORY_GRYPE
+```
+
 ### Mailpit (Email Testing)
 
 Mailpit is a lightweight, local SMTP server and web interface that captures all outgoing email from our application without actually delivering it.
@@ -518,6 +524,26 @@ make compilemessages
 ```
 
 This will compile the .po files into .mo files, which are used by Django to display the translated text.
+
+### Lighthouse Audits
+
+You can then run [Lighthouse](https://github.com/GoogleChrome/lighthouse) audits against the application with the following command:
+
+```bash
+npx lighthouse http://localhost:8000
+```
+
+This will run a Lighthouse audit against the application running at `http://localhost:8000` and output the
+results in a file in the current directory.
+
+In order to view the report straight away, you can add the `--view` flag to the command:
+
+```bash
+npx lighthouse http://localhost:8000 --view
+```
+
+The audits will contain four scores for the following categories: Performance, Accessibility, Best Practices and SEO.
+Each category will also contain a list of opportunities for improvement, which can be used to guide development work.
 
 ## Contributing
 
