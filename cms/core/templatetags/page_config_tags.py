@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from wagtail.models import Locale, Page, Site
 
 from cms.core.models import BasePage
-from cms.core.utils import deep_merge_dicts
+from cms.core.utils import deep_merge_mapping
 from cms.navigation.models import FooterMenu, MainMenu, NavigationSettings
 from cms.navigation.utils import footer_menu_columns, main_menu_columns, main_menu_highlights
 
@@ -221,7 +221,7 @@ def get_page_config(context: jinja2.runtime.Context) -> dict:
 
     # Merge the base and page-specific config, so they can be cached (and invalidated) independently.
     # Page config is passed first so it can take precedence.
-    return deep_merge_dicts(
+    return deep_merge_mapping(
         _get_page_config(context, page, site, request),
         _get_base_page_config(context, site, request),
     )
