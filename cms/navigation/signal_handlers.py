@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db.models.signals import post_save
 from wagtail.models import Site
-from wagtail.signals import published
+from wagtail.signals import published, unpublished
 
 from cms.core.templatetags.page_config_tags import get_base_page_config_cache_key
 
@@ -24,4 +24,7 @@ def invalidate_base_page_config(**kwargs: Any) -> None:
 def register_signal_handlers() -> None:
     published.connect(invalidate_base_page_config, sender=MainMenu)
     published.connect(invalidate_base_page_config, sender=FooterMenu)
+    unpublished.connect(invalidate_base_page_config, sender=MainMenu)
+    unpublished.connect(invalidate_base_page_config, sender=FooterMenu)
+
     post_save.connect(invalidate_base_page_config, sender=NavigationSettings)

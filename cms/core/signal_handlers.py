@@ -8,7 +8,7 @@ from django.core.signals import setting_changed
 from django.db.models.signals import pre_save
 from django.utils.log import configure_logging
 from wagtail.models import DraftStateMixin, Page, Revision, Site
-from wagtail.signals import page_published
+from wagtail.signals import page_published, page_unpublished
 
 from cms.core.templatetags.page_config_tags import get_page_config_cache_key
 
@@ -65,3 +65,4 @@ def register_signal_handlers() -> None:
     setting_changed.connect(reload_logging_config)
 
     page_published.connect(invalidate_page_config_cache)
+    page_unpublished.connect(invalidate_page_config_cache)
