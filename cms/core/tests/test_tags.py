@@ -168,14 +168,14 @@ class PageConfigTestCase(TestCase):
 
     def test_page_title_from_context_overrides_model(self):
         config = get_page_config({"page": self.page, "request": self.request, "page_title": "custom title"})
-        self.assertEqual(config["title"], "custom title")
+        self.assertEqual(config["title"], "Office for National Statistics - custom title")
 
     def test_config_no_page(self):
         with self.assertNumQueries(4):
             config = get_page_config({"request": self.request, "page_title": "not found"})
 
         self.assertEqual(config["bodyClasses"], "")
-        self.assertEqual(config["title"], "not found")
+        self.assertEqual(config["title"], "not found - Office for National Statistics")
         self.assertEqual(config["header"]["language"], {"languages": []})
         self.assertEqual(config["meta"], {"hrefLangs": [], "canonicalUrl": None})
 
