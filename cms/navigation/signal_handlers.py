@@ -28,3 +28,4 @@ def register_signal_handlers() -> None:
     unpublished.connect(invalidate_base_page_config, sender=FooterMenu)
 
     post_save.connect(invalidate_base_page_config, sender=NavigationSettings)
+    post_save.connect(invalidate_base_page_config, sender=Site)
