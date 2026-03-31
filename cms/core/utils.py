@@ -128,7 +128,7 @@ def strip_unwanted_control_chars_from_json(data: str) -> str:
 
 def deep_merge_dicts(dict1: dict, dict2: dict) -> dict:
     """Deep merge dictionaries.
-    If there are conflicting keys, dict1 takes precedence.
+    If there are conflicting keys, dict2 takes precedence.
     """
     result = dict1.copy()
 
