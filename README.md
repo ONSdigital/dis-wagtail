@@ -13,35 +13,6 @@ The Wagtail CMS for managing and publishing content for the Office for National 
 
 ---
 
-## Table of Contents
-
-- [Getting Started](#getting-started)
-    - [Pre-requisites](#pre-requisites)
-    - [Setup](#setup)
-        - [Using Docker](#using-docker)
-        - [Running locally with supporting services in Docker](#running-locally-with-supporting-services-in-docker)
-        - [Environment Configuration](#environment-configuration)
-    - [External Services](#external-services)
-- [Development](#development)
-    - [Front-end tooling](#front-end-tooling)
-    - [Adding Python packages](#adding-python-packages)
-    - [Run Tests with Coverage](#run-tests-with-coverage)
-    - [Functional Tests](#functional-tests)
-    - [Linting and Formatting](#linting-and-formatting)
-        - [Python](#python)
-        - [Front-end](#front-end)
-        - [pre-commit](#pre-commit)
-        - [Megalinter](#megalinter-lintformat-non-python-files)
-    - [Mailpit (Email Testing)](#mailpit-email-testing)
-    - [Installing the Required LaTeX Packages for Local Development](#installing-the-required-latex-packages-for-local-development)
-    - [Django Migrations](#django-migrations)
-    - [Translations](#translations)
-    - [Lighthouse Audits](#lighthouse-audits)
-- [Contributing](#contributing)
-- [License](#license)
-
-For further developer documentation see [docs](docs/README.md)
-
 ## Getting Started
 
 To get a local copy up and running, follow the steps below.
@@ -548,6 +519,10 @@ npx lighthouse http://localhost:8000 --view
 
 The audits will contain four scores for the following categories: Performance, Accessibility, Best Practices and SEO.
 Each category will also contain a list of opportunities for improvement, which can be used to guide development work.
+
+## Further documentation
+
+For further developer documentation see [docs](docs/README.md).
 
 ## Contributing
 
