@@ -61,7 +61,7 @@ def send_or_update_message(
                 attachments=attachments,
             )
             # Return timestamp if response is valid
-            if response and response.get("ok") and response.get("ts"):
+            if response and response.get("ts"):
                 return str(response["ts"])
         else:
             # Create new message
@@ -72,8 +72,8 @@ def send_or_update_message(
                 unfurl_links=False,
                 unfurl_media=False,
             )
-            # Return the
-            if response and response.get("ok") and response.get("ts"):
+            # Return timestamp if response is valid
+            if response and response.get("ts"):
                 return str(response["ts"])
 
     except SlackApiError as e:
@@ -88,7 +88,7 @@ def send_or_update_message(
                     unfurl_links=False,
                     unfurl_media=False,
                 )
-                if response and response.get("ok") and response.get("ts"):
+                if response and response.get("ts"):
                     return str(response["ts"])
             except SlackApiError:
                 logger.exception("Failed to create fallback Slack message")

@@ -316,8 +316,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         if not self.pk:
             return ""
 
-        base_url = settings.WAGTAILADMIN_BASE_URL
-        return f"{base_url}{reverse('wagtailadmin_pages:edit', args=[self.pk])}"
+        return f"{settings.WAGTAILADMIN_BASE_URL}{reverse('wagtailadmin_pages:edit', args=[self.pk])}"
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

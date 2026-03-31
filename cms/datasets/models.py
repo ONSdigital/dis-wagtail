@@ -78,7 +78,7 @@ class ONSDatasetApiQuerySet(APIQuerySet):
                 logger.warning("Rate limit exceeded when fetching datasets", extra={"url": url})
                 notify_slack_of_dataset_api_failure(
                     page=None,
-                    exception_message=f"Rate limit exceeded: HTTP {e.response.status_code}",
+                    exception_message="Rate limit exceeded",
                     alert_type=BundleAlertType.WARNING,
                 )
                 raise

@@ -14,6 +14,13 @@ from wagtail.coreutils import resolve_model_string
 from wagtail.log_actions import log
 from wagtail.models import Page, get_page_models
 
+from cms.bundles.notifications.slack import (
+    BundleAlertType,
+    alert_slack_of_bundle_content_failure,
+    notify_slack_of_bundle_failure,
+    notify_slack_of_publication_start,
+    notify_slack_of_publish_end,
+)
 from cms.core.fields import StreamField
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.utils import get_translated_string
@@ -382,17 +389,6 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     Returns:
         True if all pages published successfully, False if any pages failed.
     """
-    # using this rather than inline import to placate pyright complaining about cyclic imports
-    notifications = __import__(
-        "cms.bundles.notifications.slack",
-        fromlist=[
-            "BundleAlertType",
-            "notify_slack_of_publication_start",
-            "notify_slack_of_publish_end",
-            "notify_slack_of_bundle_failure",
-        ],
-    )
-
     logger.info(
         "Publishing Bundle",
         extra={
@@ -403,7 +399,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     start_time = timezone.now()
 
     # Send publishing started notification
-    notifications.notify_slack_of_publication_start(
+    notify_slack_of_publication_start(
         bundle=bundle,
         start_time=bundle.scheduled_publication_date or start_time,
         url=bundle.full_inspect_url,
@@ -411,10 +407,9 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     # Track successful and failed page publications
     pages_published = 0
     failed_pages: list[int] = []
-    total_pages = 0
+    total_pages = bundle.get_bundled_pages().count()
 
     for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision").not_live():
-        total_pages += 1
         try:
             # Durable ensures no other savepoint will roll back the publish
             with transaction.atomic(durable=True):
@@ -436,7 +431,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                             "event": "publish_page_failed",
                         },
                     )
-                    notifications.alert_slack_of_bundle_content_failure(
+                    alert_slack_of_bundle_content_failure(
                         bundle=bundle,
                         exception_message=f"<{page.full_edit_url}|Page (ID: {page.pk})> in the bundle did not "
                         "publish because it is not in a workflow or has no revisions",
@@ -452,7 +447,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                     "event": "publish_page_failed",
                 },
             )
-            notifications.alert_slack_of_bundle_content_failure(
+            alert_slack_of_bundle_content_failure(
                 bundle=bundle,
                 exception_message=f"<{page.full_edit_url}|Page (ID: {page.pk})> in the bundle failed to publish",
             )
@@ -467,11 +462,11 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
         if pages_published == 0:
             # Total failure - no pages published
             failure_status = BundleStatus.FAILED
-            alert_type = notifications.BundleAlertType.CRITICAL
+            alert_type = BundleAlertType.CRITICAL
         else:
             # Partial failure - some pages published
             failure_status = BundleStatus.PARTIALLY_PUBLISHED
-            alert_type = notifications.BundleAlertType.FAIL
+            alert_type = BundleAlertType.FAIL
 
         # Always update status on failures
         bundle.status = failure_status
@@ -479,7 +474,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
 
         # Send failure notification
         end_time = timezone.now()
-        notifications.notify_slack_of_bundle_failure(
+        notify_slack_of_bundle_failure(
             bundle=bundle,
             start_time=start_time,
             end_time=end_time,
@@ -507,7 +502,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
         bundle.save(update_fields=["status"])
 
     # Send publishing ended notification
-    notifications.notify_slack_of_publish_end(
+    notify_slack_of_publish_end(
         bundle=bundle,
         start_time=start_time,
         end_time=timezone.now(),

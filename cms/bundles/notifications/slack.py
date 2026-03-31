@@ -103,7 +103,7 @@ def _get_example_page_url(bundle: Bundle) -> str | None:
     if release_page := bundle.release_calendar_page:
         return str(release_page.full_url)
 
-    first_page = bundle.get_bundled_pages().filter(alias_of__isnull=True).first()
+    first_page = bundle.get_bundled_pages().filter().first()
     return str(first_page.full_url) if first_page else None
 
 
@@ -171,11 +171,9 @@ def notify_slack_of_bundle_pre_publish(
         {"title": "Publish Start", "value": _format_publish_datetime(scheduled_time), "short": True},
     ]
 
-    text = "Preparing bundle for publication"
-
     send_bundle_notification(
         bundle=bundle,
-        text=text,
+        text="Preparing bundle for publication",
         color="warning",  # Amber
         fields=fields,
         force_new=True,  # Always create a new message to ensure publication notifications are visible.
@@ -197,23 +195,19 @@ def notify_slack_of_publication_start(
         start_time: The scheduled start time (publication_date or current time).
         url: The URL to link to the bundle (optional).
     """
-    context = _get_bundle_notification_context(bundle)
-
     fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
-        {"title": "Publish Type", "value": context["publish_type"], "short": True},
+        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": True},
         {"title": "Scheduled Start", "value": _format_publish_datetime(start_time), "short": True},
-        {"title": "Page Count", "value": str(context["page_count"]), "short": True},
+        {"title": "Page Count", "value": str(bundle.get_bundled_pages().count()), "short": True},
     ]
 
-    if context["example_page_url"]:
-        fields.append({"title": "Example Page", "value": context["example_page_url"], "short": False})
-
-    text = "Publishing the bundle has started"
+    if example_page_url := _get_example_page_url(bundle):
+        fields.append({"title": "Example Page", "value": example_page_url, "short": False})
 
     send_bundle_notification(
         bundle=bundle,
-        text=text,
+        text="Publishing the bundle has started",
         color="warning",  # Amber
         fields=fields,
     )
@@ -238,29 +232,22 @@ def notify_slack_of_publish_end(
         pages_published: Number of pages successfully published.
         url: The URL to link to the bundle (optional).
     """
-    context = _get_bundle_notification_context(bundle)
-
-    # Calculate elapsed time in seconds
-    elapsed_seconds = (end_time - start_time).total_seconds()
-
     fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
-        {"title": "Publish Type", "value": context["publish_type"], "short": True},
+        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": True},
         {"title": "Publish Start", "value": _format_publish_datetime(start_time), "short": True},
         {"title": "Publish End", "value": _format_publish_datetime(end_time), "short": True},
-        {"title": "Duration", "value": f"{elapsed_seconds:.3f} seconds", "short": True},
-        {"title": "Page Count", "value": str(context["page_count"]), "short": True},
+        {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": True},
+        {"title": "Page Count", "value": str(bundle.get_bundled_pages().count()), "short": True},
         {"title": "Pages Published", "value": str(pages_published), "short": True},
     ]
 
-    if context["example_page_url"]:
-        fields.append({"title": "Example Page", "value": context["example_page_url"], "short": False})
-
-    text = "Publishing the bundle has ended"
+    if example_page_url := _get_example_page_url(bundle):
+        fields.append({"title": "Example Page", "value": example_page_url, "short": False})
 
     send_bundle_notification(
         bundle=bundle,
-        text=text,
+        text="Publishing the bundle has ended",
         color="good",
         fields=fields,
     )
@@ -290,18 +277,13 @@ def notify_slack_of_bundle_failure(  # pylint: disable=too-many-arguments  # noq
         alert_type: Alert severity.
         url: The URL to link to the bundle (optional).
     """
-    context = _get_bundle_notification_context(bundle)
-
-    # Calculate elapsed time in seconds
-    elapsed_seconds = (end_time - start_time).total_seconds()
-
     fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
-        {"title": "Publish Type", "value": context["publish_type"], "short": True},
+        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": True},
         {"title": "Publish Start", "value": _format_publish_datetime(start_time), "short": True},
         {"title": "Publish End", "value": _format_publish_datetime(end_time), "short": True},
-        {"title": "Duration", "value": f"{elapsed_seconds:.3f} seconds", "short": True},
-        {"title": "Page Count", "value": str(context["page_count"]), "short": True},
+        {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": True},
+        {"title": "Page Count", "value": str(bundle.get_bundled_pages().count()), "short": True},
         {"title": "Pages Published", "value": str(pages_published), "short": True},
         {"title": "Alert Type", "value": alert_type, "short": True},
         {"title": "Exception", "value": exception_message, "short": False},
@@ -330,12 +312,10 @@ def alert_slack_of_bundle_content_failure(
         exception_message: Brief description of the content error.
         alert_type: Alert severity (default=FAIL)
     """
-    publish_type = _get_publish_type(bundle)
-
     fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{bundle.full_inspect_url}|{bundle.name}>", "short": False},
         {"title": "Timestamp", "value": _format_publish_datetime(datetime.now()), "short": True},
-        {"title": "Publish Type", "value": publish_type, "short": True},
+        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": True},
         {"title": "Alert Type", "value": alert_type, "short": True},
         {"title": "Exception", "value": exception_message, "short": False},
     ]

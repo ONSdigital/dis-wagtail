@@ -15,7 +15,6 @@ from cms.bundles.notifications.api_failures import (
 from cms.bundles.notifications.slack import (
     BundleAlertType,
     _format_publish_datetime,
-    _get_bundle_notification_context,
     _get_example_page_url,
     _get_publish_type,
     alert_slack_of_bundle_content_failure,
@@ -744,19 +743,3 @@ class HelperFunctionsTestCase(TestCase):
         bundle = BundleFactory(bundled_pages=[], release_calendar_page=None)
         url = _get_example_page_url(bundle)
         self.assertIsNone(url)
-
-    def test_get_bundle_notification_context(self):
-        """Should return dict with publish_type, page_count, and example_page_url."""
-        page1 = StatisticalArticlePageFactory()
-        page2 = StatisticalArticlePageFactory()
-        bundle = BundleFactory(
-            bundled_pages=[page1, page2],
-            publication_date=datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC),
-        )
-
-        context = _get_bundle_notification_context(bundle)
-
-        self.assertEqual(context["publish_type"], "Scheduled")
-        self.assertEqual(context["page_count"], 2)
-        self.assertIsNotNone(context["example_page_url"])
-        self.assertIn(page1.slug, context["example_page_url"])
