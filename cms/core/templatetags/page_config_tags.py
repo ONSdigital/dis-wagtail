@@ -175,13 +175,16 @@ def _add_site_name_to_page_title(page_title: str, site: Site, is_homepage: bool)
 
 
 def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, site: Site, request: HttpRequest) -> dict:
+    absolute_url = request.build_absolute_uri()
+
     # If there's no page, use sensible defaults
     if page is None:
         return {
             "bodyClasses": "",
             "title": _add_site_name_to_page_title(context.get("page_title", ""), site, False),
             "header": {"language": {"languages": []}},
-            "meta": {"hrefLangs": [], "canonicalUrl": None},
+            "meta": {"hrefLangs": [], "canonicalUrl": absolute_url},
+            "absoluteUrl": absolute_url,
         }
 
     is_preview = getattr(request, "is_preview", False)
@@ -214,6 +217,9 @@ def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, sit
     # This is intentionally not cached as it varies by context.
     if page_title_from_context := context.get("page_title"):
         page_config["title"] = _add_site_name_to_page_title(page_title_from_context, site, is_homepage)
+
+    # Set absolute URL outside the cache to support routable pages
+    page_config["absoluteUrl"] = absolute_url
 
     return page_config
 
