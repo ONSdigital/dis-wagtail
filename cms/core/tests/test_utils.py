@@ -222,3 +222,6 @@ class DeepMergeDictsTestCase(SimpleTestCase):
         ]:
             with self.subTest(in_1=in_1, in_2=in_2):
                 self.assertEqual(deep_merge_dicts(in_1, in_2), result)
+
+    def test_precedence(self):
+        self.assertEqual(deep_merge_dicts({"a": 1}, {"a": 2}), {"a": 2})
