@@ -2,6 +2,7 @@ import io
 import json
 import re
 import string
+from collections.abc import Mapping
 from itertools import chain
 from threading import Lock
 from typing import TYPE_CHECKING, Any
@@ -126,15 +127,16 @@ def strip_unwanted_control_chars_from_json(data: str) -> str:
     return JSON_ENCODED_UNWANTED_CONTROL_CHARS_RE.sub("", data)
 
 
-def deep_merge_dicts(dict1: dict, dict2: dict) -> dict:
-    """Deep merge dictionaries.
+def deep_merge_mapping(dict1: Mapping, dict2: Mapping) -> dict:
+    """Deep merge mapping.
     If there are conflicting keys, dict2 takes precedence.
     """
-    result = dict1.copy()
+    # Must be a dict to allow internal mutation
+    result = dict(dict1)
 
     for key, value in dict2.items():
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = deep_merge_dicts(result[key], value)
+        if key in result and isinstance(result[key], Mapping) and isinstance(value, Mapping):
+            result[key] = deep_merge_mapping(result[key], value)
         else:
             result[key] = value
 

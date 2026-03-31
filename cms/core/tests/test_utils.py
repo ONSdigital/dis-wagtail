@@ -4,11 +4,12 @@ from unittest.mock import Mock
 
 from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.utils.datastructures import CaseInsensitiveMapping
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.utils import (
     UNWANTED_CONTROL_CHARACTERS,
-    deep_merge_dicts,
+    deep_merge_mapping,
     get_client_ip,
     get_content_type_for_page,
     latex_formula_to_svg,
@@ -209,7 +210,7 @@ class ControlCharactersTestCase(SimpleTestCase):
                 )
 
 
-class DeepMergeDictsTestCase(SimpleTestCase):
+class DeepMergeMappingTestCase(SimpleTestCase):
     def test_deep_merge(self):
         for in_1, in_2, result in [
             ({}, {}, {}),
@@ -221,7 +222,13 @@ class DeepMergeDictsTestCase(SimpleTestCase):
             ),
         ]:
             with self.subTest(in_1=in_1, in_2=in_2):
-                self.assertEqual(deep_merge_dicts(in_1, in_2), result)
+                self.assertEqual(deep_merge_mapping(in_1, in_2), result)
 
     def test_precedence(self):
-        self.assertEqual(deep_merge_dicts({"a": 1}, {"a": 2}), {"a": 2})
+        self.assertEqual(deep_merge_mapping({"a": 1}, {"a": 2}), {"a": 2})
+
+    def test_mappings(self):
+        self.assertEqual(
+            deep_merge_mapping(CaseInsensitiveMapping({"a": 1}), CaseInsensitiveMapping({"a": 2})),
+            CaseInsensitiveMapping({"a": 2}),
+        )
