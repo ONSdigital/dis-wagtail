@@ -458,9 +458,9 @@ class PublishBundleFailureTests(TestCase):
     """Tests for publish_bundle failure handling."""
 
     @patch("cms.bundles.utils.logger")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
-    @patch("cms.bundles.notifications.slack.alert_slack_of_bundle_content_failure")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.utils.alert_slack_of_bundle_content_failure")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
     def test_publish_bundle__sets_failed_status_on_total_failure(
         self, _mock_notify_start, mock_alert_content_failure, mock_notify_failure, _mock_logger
     ):
