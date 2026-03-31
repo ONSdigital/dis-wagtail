@@ -8,6 +8,7 @@ from django.template.loader import render_to_string
 from django.utils.html import json_script as _json_script
 from django_jinja import library
 from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
+from wagtail.coreutils import WAGTAIL_APPEND_SLASH
 from wagtail.models import Locale, Page
 
 from cms.core.custom_date_format import ons_date_format
@@ -110,7 +111,7 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
             if locale.pk == default_locale.pk:
                 url = bare_path
             elif bare_path == "/":
-                url = f"/{locale.language_code}"
+                url = f"/{locale.language_code}/" if WAGTAIL_APPEND_SLASH else f"/{locale.language_code}"
             else:
                 url = f"/{locale.language_code}{bare_path}"
             results.append({"locale": locale, "url": url})
