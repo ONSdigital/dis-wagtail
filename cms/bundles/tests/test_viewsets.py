@@ -347,8 +347,8 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_bundle_edit_view__manual_publish__happy_path__when_linked_with_past_release_calendar_entry(
         self, mock_notify_end, mock_notify_start
     ):

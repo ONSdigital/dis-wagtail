@@ -500,9 +500,9 @@ class PublishBundleFailureTests(TestCase):
         self.assertEqual(call_kwargs["alert_type"], BundleAlertType.CRITICAL)
 
     @patch("cms.bundles.utils.logger")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.alert_slack_of_bundle_content_failure")
+    @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.alert_slack_of_bundle_content_failure")
     def test_publish_bundle__alerts_on_each_failure(
         self, mock_alert_content_failure, _mock_notify_start, _mock_notify_failure, _mock_logger
     ):
@@ -533,8 +533,8 @@ class PublishBundleFailureTests(TestCase):
         )
 
     @patch("cms.bundles.utils.logger")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
     def test_publish_bundle__sets_partially_published_on_partial_failure(
         self, _mock_notify_start, mock_notify_failure, _mock_logger
     ):
@@ -558,8 +558,8 @@ class PublishBundleFailureTests(TestCase):
         self.assertEqual(call_kwargs["exception_message"], "1 of 2 page(s) failed to publish")
         self.assertEqual(call_kwargs["alert_type"], BundleAlertType.FAIL)
 
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
     def test_publish_bundle__returns_true_on_success(self, _mock_notify_start, mock_notify_end):
         """Test publish_bundle returns True when all pages publish successfully."""
         page1 = StatisticalArticlePageFactory(title="Article 1", live=False)
@@ -578,8 +578,8 @@ class PublishBundleFailureTests(TestCase):
         mock_notify_end.assert_called_once()
 
     @patch("cms.bundles.utils.logger")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
     def test_publish_bundle__logs_error_for_pages_without_revisions(
         self, _mock_notify_start, _mock_notify_failure, mock_logger
     ):
@@ -599,9 +599,9 @@ class PublishBundleFailureTests(TestCase):
         # Verify failure was logged
         mock_logger.error.assert_called()
 
-    @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
     def test_publish_bundle__always_updates_status_on_failures(
         self, _mock_notify_start, _mock_notify_end, mock_notify_failure
     ):
@@ -620,9 +620,9 @@ class PublishBundleFailureTests(TestCase):
         # Failure notification should still be sent when update_status=False
         mock_notify_failure.assert_called_once()
 
-    @patch("cms.bundles.notifications.slack.notify_slack_of_bundle_failure")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
     def test_publish_bundle__always_updates_status_on_partial_failures(
         self, _mock_notify_start, _mock_notify_end, mock_notify_failure
     ):
