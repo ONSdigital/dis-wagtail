@@ -13,31 +13,6 @@ The Wagtail CMS for managing and publishing content for the Office for National 
 
 ---
 
-## Table of Contents
-
-- [Getting Started](#getting-started)
-    - [Pre-requisites](#pre-requisites)
-    - [Setup](#setup)
-        - [Using Docker](#using-docker)
-        - [Running locally with supporting services in Docker](#running-locally-with-supporting-services-in-docker)
-- [Development](#development)
-    - [Front-end tooling](#front-end-tooling)
-    - [Adding Python packages](#adding-python-packages)
-    - [Run Tests with Coverage](#run-tests-with-coverage)
-    - [Functional Tests](#functional-tests)
-    - [Linting and Formatting](#linting-and-formatting)
-        - [Python](#python)
-        - [Front-end](#front-end)
-        - [pre-commit](#pre-commit)
-        - [Megalinter](#megalinter-lintformat-non-python-files)
-    - [Mailpit (Email Testing)](#mailpit-email-testing)
-    - [Installing the Required LaTeX Packages for Local Development](#installing-the-required-latex-packages-for-local-development)
-    - [Django Migrations](#django-migrations)
-- [Contributing](#contributing)
-- [License](#license)
-
-For further developer documentation see [docs](docs/README.md)
-
 ## Getting Started
 
 To get a local copy up and running, follow the steps below.
@@ -58,7 +33,7 @@ Ensure you have the following installed:
    tooling.
 6. **[JQ](https://jqlang.github.io/jq/)** for the step in the build that installs the design system templates.
 7. `texlive-latex-extra` and `texlive-fonts-recommended`: Required by `matplotlib` to render LaTeX equations. See [below](#installing-the-required-latex-packages-for-local-development) for instructions on how to install on macOS.
-8. **Operation System**: Ubuntu/ MacOS.
+8. **Operating System**: Ubuntu/MacOS.
 
 ### Setup
 
@@ -123,7 +98,7 @@ Follow these steps to set up and run the project using Docker.
 
 3. **Compile translations**
 
-In order to see pages in different languages, you'll need to compile the translations. This is done by running:
+    In order to see pages in different languages, you'll need to compile the translations. This is done by running:
 
     ```bash
     make compilemessages
@@ -149,7 +124,7 @@ In order to see pages in different languages, you'll need to compile the transla
     make runserver
     ```
 
-You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localhost:8000/admin/`.
+    You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localhost:8000/admin/`.
 
 #### Running locally with supporting services in Docker
 
@@ -544,6 +519,10 @@ npx lighthouse http://localhost:8000 --view
 
 The audits will contain four scores for the following categories: Performance, Accessibility, Best Practices and SEO.
 Each category will also contain a list of opportunities for improvement, which can be used to guide development work.
+
+## Further documentation
+
+For further developer documentation see [docs](docs/README.md).
 
 ## Contributing
 
