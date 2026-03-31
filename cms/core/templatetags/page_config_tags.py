@@ -164,12 +164,22 @@ def get_page_config_cache_key(site: Site, page: Page, language_code: str) -> str
     return f"_cms_page_config_cache_key_{page.pk}_{site.pk}_{language_code}"
 
 
+def _add_site_name_to_page_title(page_title: str, site: Site, is_homepage: bool) -> str:
+    if not site.site_name:
+        return page_title
+
+    if is_homepage:
+        return f"{site.site_name} - {page_title}"
+
+    return f"{page_title} - {site.site_name}"
+
+
 def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, site: Site, request: HttpRequest) -> dict:
     # If there's no page, use sensible defaults
     if page is None:
         return {
             "bodyClasses": "",
-            "title": context.get("page_title", ""),
+            "title": _add_site_name_to_page_title(context.get("page_title", ""), site, False),
             "header": {"language": {"languages": []}},
             "meta": {"hrefLangs": [], "canonicalUrl": None},
         }
@@ -180,17 +190,12 @@ def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, sit
     # Don't cache previews
     page_config = cache.get(cache_key) if not is_preview else None
 
+    is_homepage = page.pk == site.root_page_id
+
     if page_config is None:
-        page_title = ""
+        page_title: str = page.seo_title or getattr(page, "display_title", page.title)  # type: ignore[assignment]
 
-        if page:
-            if page.pk == site.root_page_id and site.site_name:
-                page_title = f"{site.site_name} - "
-
-            if page.seo_title:
-                page_title += page.seo_title
-            else:
-                page_title += getattr(page, "display_title", page.title)  # type: ignore[operator]
+        page_title = _add_site_name_to_page_title(page_title, site, is_homepage)
 
         page_config = {
             "bodyClasses": "template-" + page._meta.verbose_name.lower().replace(" ", "-"),  # type: ignore[union-attr]
@@ -206,9 +211,9 @@ def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, sit
             cache.set(cache_key, page_config)
 
     # Let page context override the page title.
-    # This is intentionally not cached.
+    # This is intentionally not cached as it varies by context.
     if page_title_from_context := context.get("page_title"):
-        page_config["title"] = page_title_from_context
+        page_config["title"] = _add_site_name_to_page_title(page_title_from_context, site, is_homepage)
 
     return page_config
 
