@@ -154,14 +154,30 @@ class LanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
     def test_caches_locale_urls_on_page(self):
         """Test that results are cached on the page object."""
         context = {"request": self.dummy_request, "page": self.page}
-        first = get_translation_urls(context)
 
-        # Clear the cache so the second call would produce different results
-        # if it weren't using the cached value.
+        with self.assertNumQueries(2):  # Locale.get_default() and Locale.objects.all()
+            get_translation_urls(context)
         self.assertIsNotNone(getattr(self.page, "_locale_urls", None))
 
-        second = get_translation_urls(context)
-        self.assertEqual(first, second)
+        # Second call should use the cache and issue no DB queries.
+        with self.assertNumQueries(0):
+            get_translation_urls(context)
+
+    @override_settings(
+        CMS_USE_SUBDOMAIN_LOCALES=True,
+    )
+    def test_caches_locale_urls_on_page_in_subdomain_mode(self):
+        """Test that locale URLs are cached on the page object in subdomain mode."""
+        context = {"request": self.dummy_request, "page": self.page}
+
+        # This test will behave the same way but for different reasons.
+        with self.assertNumQueries(2):  # Locale.objects.all() and get_mapped_site_root_paths()
+            get_translation_urls(context)
+        self.assertIsNotNone(getattr(self.page, "_locale_urls", None))
+
+        # Second call should still use the cache and issue no DB queries.
+        with self.assertNumQueries(0):
+            get_translation_urls(context)
 
     def test_hreflangs_preserve_sub_path(self):
         """Test that hreflangs also preserve routable sub-paths."""
