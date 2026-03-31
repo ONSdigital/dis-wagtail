@@ -136,7 +136,7 @@ class PageConfigTestCase(TestCase):
         cls.welsh_home_page = HomePage.objects.get(locale__language_code="cy")
 
     def setUp(self):
-        self.request = get_dummy_request()
+        self.request = get_dummy_request(site=Site.objects.get(hostname="ons.localhost"))
         self.request.LANGUAGE_CODE = settings.LANGUAGE_CODE
 
         self.welsh_request = get_dummy_request(site=Site.objects.get(hostname="cy.ons.localhost"))
@@ -148,6 +148,7 @@ class PageConfigTestCase(TestCase):
         self.assertEqual(config["bodyClasses"], "template-home-page")
         self.assertEqual(config["title"], f"Office for National Statistics - {self.page.title}")
         self.assertEqual(config["meta"]["canonicalUrl"], "https://ons.localhost/")
+        self.assertEqual(config["absoluteUrl"], "http://ons.localhost:443/")
 
         self.assertEqual(
             config["header"]["search"],
@@ -160,6 +161,7 @@ class PageConfigTestCase(TestCase):
         self.assertEqual(config["bodyClasses"], "template-home-page")
         self.assertEqual(config["title"], f"Swyddfa Ystadegau Gwladol - {self.welsh_home_page.title}")
         self.assertEqual(config["meta"]["canonicalUrl"], "https://ons.localhost/")
+        self.assertEqual(config["absoluteUrl"], "http://cy.ons.localhost:443/")
 
         self.assertEqual(
             config["header"]["search"],
@@ -177,7 +179,8 @@ class PageConfigTestCase(TestCase):
         self.assertEqual(config["bodyClasses"], "")
         self.assertEqual(config["title"], "not found - Office for National Statistics")
         self.assertEqual(config["header"]["language"], {"languages": []})
-        self.assertEqual(config["meta"], {"hrefLangs": [], "canonicalUrl": None})
+        self.assertEqual(config["meta"], {"hrefLangs": [], "canonicalUrl": "http://ons.localhost:443/"})
+        self.assertEqual(config["absoluteUrl"], "http://ons.localhost:443/")
 
     @override_settings(
         CACHES={
