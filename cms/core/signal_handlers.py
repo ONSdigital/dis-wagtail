@@ -43,7 +43,11 @@ def reload_logging_config(*, setting: str, **kwargs: Any) -> None:
 
 
 def sync_alias_translation_slugs(sender: Any, instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
-    if instance.locale.language_code != settings.LANGUAGE_CODE:
+    if not instance.locale_id or instance.locale.language_code != settings.LANGUAGE_CODE:
+        return
+
+    # Don't attempt to sync slugs for children of the root page
+    if instance.get_parent().is_root():
         return
 
     updatable_aliased_translations = (

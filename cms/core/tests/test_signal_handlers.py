@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.conf import settings
 from django.test import TestCase
 from wagtail.models import Locale, Page
 
@@ -80,3 +81,14 @@ class SyncAliasTranslationSlugsOnPublishTestCase(TestCase):
         self.cy_alias.refresh_from_db()
         self.assertNotEqual(self.cy_alias.slug, "different-slug")
         self.assertEqual(self.cy_alias.slug, self.en_page.slug)
+
+    def test_root_level_page_slug_not_synced_on_publish(self):
+        en_home = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
+        cy_home = HomePage.objects.get(locale=self.cy_locale)
+        original_cy_slug = cy_home.slug
+
+        en_home.slug = "new-home-slug"
+        en_home.save_revision().publish()
+
+        cy_home.refresh_from_db()
+        self.assertEqual(cy_home.slug, original_cy_slug)
