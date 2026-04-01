@@ -14,13 +14,17 @@ from wagtail.admin.views.account import (
 from wagtail.users.models import UserProfile
 
 
-class ReadOnlyNameEmailSettingsPanel(NameEmailSettingsPanel):
+class ReadOnlyFieldsMixin:
     def get_form(self) -> forms.BaseForm:
-        form = cast(forms.BaseForm, super().get_form())
+        form = cast(forms.BaseForm, super().get_form())  # type: ignore[misc]
         for field in form.fields.values():
             field.disabled = True
             field.required = False
         return form
+
+
+class ReadOnlyNameEmailSettingsPanel(ReadOnlyFieldsMixin, NameEmailSettingsPanel):
+    pass
 
 
 class ReadOnlyAvatarSettingsPanel(AvatarSettingsPanel):
@@ -30,13 +34,8 @@ class ReadOnlyAvatarSettingsPanel(AvatarSettingsPanel):
         return cast(forms.BaseForm, self.form_class(instance=self.profile, prefix=self.name))
 
 
-class ReadOnlyLocaleSettingsPanel(LocaleSettingsPanel):
-    def get_form(self) -> forms.BaseForm:
-        form = cast(forms.BaseForm, super().get_form())
-        for field in form.fields.values():
-            field.disabled = True
-            field.required = False
-        return form
+class ReadOnlyLocaleSettingsPanel(ReadOnlyFieldsMixin, LocaleSettingsPanel):
+    pass
 
 
 class ONSAccountView(AccountView):
