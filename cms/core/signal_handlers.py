@@ -8,6 +8,8 @@ from django.utils.log import configure_logging
 from wagtail.models import DraftStateMixin, Page, Revision
 from wagtail.signals import page_published
 
+HOME_PAGE_DEPTH = 2
+
 
 def remove_go_live_seconds(
     sender: Any,  # pylint: disable=unused-argument
@@ -47,7 +49,7 @@ def sync_alias_translation_slugs(sender: Any, instance: Page, **kwargs: Any) -> 
         return
 
     # Don't attempt to sync slugs for children of the root page
-    if instance.get_parent().is_root():
+    if instance.depth == HOME_PAGE_DEPTH:
         return
 
     updatable_aliased_translations = (
@@ -55,6 +57,7 @@ def sync_alias_translation_slugs(sender: Any, instance: Page, **kwargs: Any) -> 
     )
     for translation in updatable_aliased_translations:
         translation.slug = instance.slug
+        # Use save() to trigger any related functionality
         translation.save()
 
 

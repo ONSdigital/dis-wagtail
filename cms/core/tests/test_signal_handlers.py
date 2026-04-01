@@ -92,3 +92,18 @@ class SyncAliasTranslationSlugsOnPublishTestCase(TestCase):
 
         cy_home.refresh_from_db()
         self.assertEqual(cy_home.slug, original_cy_slug)
+
+    def test_alias_url_path_gets_updated_on_publish(self):
+        self.cy_alias.slug = "different-slug"
+        # Save to ensure url_path is updated to match the slug before publish
+        # so we can confirm it gets changed after publish.
+        self.cy_alias.save()
+        self.cy_alias.refresh_from_db()
+        original_url_path = self.cy_alias.url_path
+
+        # Publish english version
+        self.en_page.save_revision().publish()
+
+        # URL path should be updated to match the new slug
+        self.cy_alias.refresh_from_db()
+        self.assertNotEqual(self.cy_alias.url_path, original_url_path)
