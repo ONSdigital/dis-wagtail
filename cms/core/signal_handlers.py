@@ -6,6 +6,7 @@ from django.core.signals import setting_changed
 from django.db.models.signals import pre_save
 from django.utils.log import configure_logging
 from wagtail.models import DraftStateMixin, Page, Revision
+from wagtail.signals import page_published
 
 
 def remove_go_live_seconds(
@@ -41,11 +42,25 @@ def reload_logging_config(*, setting: str, **kwargs: Any) -> None:
         configure_logging(settings.LOGGING_CONFIG, settings.LOGGING)
 
 
+def sync_alias_translation_slugs(sender: Any, instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
+    if instance.locale.language_code != settings.LANGUAGE_CODE:
+        return
+
+    updatable_aliased_translations = (
+        instance.get_translations().filter(alias_of__isnull=False).exclude(slug=instance.slug)
+    )
+    for translation in updatable_aliased_translations:
+        translation.slug = instance.slug
+        translation.save()
+
+
 def register_signal_handlers() -> None:
     for model in apps.get_models():
         if issubclass(model, DraftStateMixin):
             pre_save.connect(remove_go_live_seconds, sender=model)
 
     pre_save.connect(remove_approved_go_live_seconds, sender=Revision)
+
+    page_published.connect(sync_alias_translation_slugs)
 
     setting_changed.connect(reload_logging_config)
