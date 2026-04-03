@@ -9,10 +9,10 @@ from django.core.cache import InvalidCacheBackendError, caches
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.cache import cache_control
 from django_redis.cache import RedisCache
-from wagtail.contrib.frontend_cache.utils import purge_url_from_cache
-from wagtail.models import Site
 
 logger = logging.getLogger(__name__)
+
+memory_cache = partial(cache_memoize, cache_alias="memory")
 
 
 class InvalidateReplayRedisCache(RedisCache):
@@ -46,15 +46,6 @@ class InvalidateReplayRedisCache(RedisCache):
         super().delete_many(keys, version)
 
 
-def purge_cache_on_all_sites(path: str) -> None:
-    """Purge the given path on all defined sites."""
-    if settings.DEBUG:
-        return
-
-    for site in Site.objects.all():
-        purge_url_from_cache(site.root_url.rstrip("/") + path)
-
-
 def get_default_cache_control_kwargs() -> dict[str, int | bool]:
     """Get cache control parameters used by the cache control decorators
     used by default on most pages. These parameters are meant to be
@@ -76,6 +67,3 @@ def get_default_cache_control_decorator() -> Callable:
     """
     cache_control_kwargs = get_default_cache_control_kwargs()
     return cache_control(**cache_control_kwargs)
-
-
-memory_cache = partial(cache_memoize, cache_alias="memory")

@@ -97,3 +97,9 @@ CMS_HOSTNAME_LOCALE_MAP = {
     "cy.pub.ons.localhost": "cy",
 }
 CMS_HOSTNAME_ALTERNATIVES = {"ons.localhost": "pub.ons.localhost", "cy.ons.localhost": "cy.pub.ons.localhost"}
+
+# Ensure cms.frontend_cache is installed
+if "cms.frontend_cache" not in INSTALLED_APPS:  # noqa: F405
+    INSTALLED_APPS += ["wagtail.contrib.frontend_cache", "cms.frontend_cache"]  # noqa: F405
+
+    WAGTAILFRONTENDCACHE = {"default": {"BACKEND": "cms.frontend_cache.tests.backends.DummyFrontEndCacheBackend"}}

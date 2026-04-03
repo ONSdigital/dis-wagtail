@@ -1,0 +1,121 @@
+from typing import TYPE_CHECKING, Any
+
+from django.db.models.signals import post_delete
+from wagtail.contrib.frontend_cache.signal_handlers import (
+    page_published_signal_handler,
+    page_unpublished_signal_handler,
+)
+from wagtail.contrib.redirects.signal_handlers import (
+    autocreate_redirects_on_page_move,
+    autocreate_redirects_on_slug_change,
+)
+from wagtail.models import Page, get_page_models
+from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move, published, unpublished
+
+from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage
+from cms.articles.signals import series_title_changed
+from cms.core.models import BasePage, ContactDetails, Definition
+from cms.home.models import HomePage
+from cms.methodology.models import MethodologyIndexPage
+from cms.release_calendar.models import ReleaseCalendarIndex
+
+from .cache import (
+    purge_old_page_paths_from_cache_after_move,
+    purge_old_page_slugs_from_frontend_cache,
+    purge_page_containing_snippet_from_cache,
+    purge_page_from_frontend_cache,
+    purge_series_children_from_cache,
+)
+
+if TYPE_CHECKING:
+    from django.db.models import Model
+
+
+EXCLUDED_PAGE_TYPES = frozenset({ArticlesIndexPage, HomePage, MethodologyIndexPage, ReleaseCalendarIndex})
+
+
+def purge_published_page_from_frontend_cache(instance: Page, **kwargs: Any) -> None:
+    purge_page_from_frontend_cache(instance)
+
+
+def purge_unpublished_page_from_frontend_cache(instance: Page, **kwargs: Any) -> None:
+    # note: this also covers page deletion
+    # https://github.com/wagtail/wagtail/blob/228058b56775b126a91ecc4e4338366869513ea8/wagtail/signal_handlers.py#L31
+    purge_page_from_frontend_cache(instance)
+
+
+def purge_page_from_frontend_cache_after_slug_change(instance: Page, instance_before: Page, **kwargs: Any) -> None:
+    purge_old_page_slugs_from_frontend_cache(instance, instance_before)
+
+
+def purge_page_from_frontend_cache_after_move(
+    instance: Page,
+    parent_page_before: Page,
+    parent_page_after: Page,
+    url_path_before: str,
+    url_path_after: str,  # pylint: disable=unused-argument
+    **kwargs: Any,
+) -> None:
+    purge_old_page_paths_from_cache_after_move(
+        instance.specific, parent_page_before.specific_deferred, parent_page_after.specific_deferred, url_path_before
+    )
+
+
+def purges_series_children_from_frontend_cache(instance: ArticleSeriesPage, **kwargs: Any) -> None:
+    purge_series_children_from_cache(instance)
+
+
+def purge_pages_containing_the_published_snippet_from_frontend_cache(instance: Model, **kwargs: Any) -> None:
+    purge_page_containing_snippet_from_cache(instance)
+
+
+def purge_pages_containing_the_unpublished_snippet_from_frontend_cache(instance: Model, **kwargs: Any) -> None:
+    purge_page_containing_snippet_from_cache(instance)
+
+
+def purge_pages_containing_the_deleted_snippet_from_frontend_cache(
+    sender: Model,  # pylint: disable=unused-argument
+    instance: Model,
+    **kwargs: Any,
+) -> None:
+    purge_page_containing_snippet_from_cache(instance)
+
+
+def _get_tracked_page_models() -> set[Page]:
+    """Returns a list of page models that are included in the front-end cache purging.
+
+    We're excluding the following page types:
+    - HomePage as it is not served by from Wagtail. TODO: remove when switching to do that
+    - the Release Calendar, articles and methodology indexes are served by the Search service and has a short TTL
+    - the generic Page model to ensure we fully account for our exclusions.
+    """
+    return {model for model in get_page_models() if issubclass(model, BasePage) and model not in EXCLUDED_PAGE_TYPES}
+
+
+def disconnect_signal_handlers() -> None:
+    """Disconnect the core front-end cache signal handlers as we handle them with specific logic."""
+    for model in get_page_models():
+        page_published.disconnect(page_published_signal_handler, sender=model)
+        page_unpublished.disconnect(page_unpublished_signal_handler, sender=model)
+        post_page_move.disconnect(autocreate_redirects_on_page_move, sender=model)
+        page_slug_changed.disconnect(autocreate_redirects_on_slug_change, sender=model)
+
+
+def register_signal_handlers() -> None:
+    for model in _get_tracked_page_models():
+        page_published.connect(purge_published_page_from_frontend_cache, sender=model)
+        page_unpublished.connect(purge_unpublished_page_from_frontend_cache, sender=model)
+        page_slug_changed.connect(purge_page_from_frontend_cache_after_slug_change, sender=model)
+
+    series_title_changed.connect(purges_series_children_from_frontend_cache, sender=ArticleSeriesPage)
+    post_page_move.connect(purge_page_from_frontend_cache_after_move)
+
+    for model in [ContactDetails, Definition]:
+        published.connect(purge_pages_containing_the_unpublished_snippet_from_frontend_cache, sender=model)
+        unpublished.connect(purge_pages_containing_the_unpublished_snippet_from_frontend_cache, sender=model)
+        post_delete.connect(purge_pages_containing_the_deleted_snippet_from_frontend_cache, sender=model)
+
+    # FIXME when allowing to edit navigation
+    # - Main Menu on publish, if in nav
+    # - Footer menu on publish, if in nav
+    # - Nav save, if there are changes
