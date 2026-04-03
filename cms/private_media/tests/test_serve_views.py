@@ -1,14 +1,29 @@
+import uuid
+from datetime import datetime, timedelta
+from http import HTTPStatus
 from unittest import mock
 
+import time_machine
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from wagtail.documents import get_document_model
 from wagtail.images import get_image_model
 from wagtail.images.models import Filter
 from wagtail.models import Collection
 from wagtail_factories import DocumentFactory, ImageFactory
 
+from cms.bundles.models import BundleTeam
+from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
+from cms.bundles.tests.utils import create_bundle_viewer
+from cms.core.tests.utils import rebuild_references_index
 from cms.private_media.constants import Privacy
+from cms.standard_pages.tests.factories import InformationPageFactory
+from cms.teams.tests.factories import TeamFactory
+from cms.workflows.tests.utils import mark_page_as_ready_for_review
+
+FROZEN_TIME = datetime(2026, 1, 1, hour=13, minute=37)
 
 
 class TestImageServeView(TestCase):
@@ -182,3 +197,167 @@ class TestDocumentServeView(TestCase):
 
         response = self.client.get(serve_url)
         self.assertEqual(response.status_code, 404)
+
+
+class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.root_collection = Collection.objects.get(depth=1)
+        cls.private_image = ImageFactory(collection=cls.root_collection)
+        cls.private_image_rendition = cls.private_image.create_rendition(Filter("width-1024"))
+        cls.private_document = DocumentFactory(collection=cls.root_collection)
+
+        cls.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Content",
+                    "content": [
+                        {"type": "image", "value": {"image": cls.private_image.id}, "id": str(uuid.uuid4())},
+                        {
+                            "type": "documents",
+                            "value": [
+                                {
+                                    "type": "document",
+                                    "value": {"document": cls.private_document.id},
+                                    "id": str(uuid.uuid4()),
+                                },
+                            ],
+                        },
+                    ],
+                },
+            }
+        ]
+        cls.page = InformationPageFactory(content=cls.content)
+        mark_page_as_ready_for_review(cls.page)
+
+        cls.preview_team = TeamFactory(name="Preview Team")
+        cls.bundle = BundleFactory(in_review=True)
+        BundlePageFactory(parent=cls.bundle, page=cls.page)
+        BundleTeam.objects.create(parent=cls.bundle, team=cls.preview_team)
+
+        cls.viewer = create_bundle_viewer()
+        cls.viewer.teams.add(cls.preview_team)
+
+        cls.no_access_viewer = create_bundle_viewer("nobundle.viewer")
+        cls.no_access_viewer.teams.add(TeamFactory(name="No-access preview team"))
+
+        cls.url_preview_ready = reverse("bundles:preview", args=[cls.bundle.pk, cls.page.pk])
+
+    def setUp(self):
+        rebuild_references_index()
+
+    def test_direct_request__gives_no_access__for_viewer_in_bundle_team_because_of_missing_cookie(self):
+        self.client.force_login(self.viewer)
+
+        for asset in [self.private_image_rendition, self.private_document]:
+            with self.subTest(msg=f"Testing {asset}"):
+                response = self.client.get(asset.serve_url)
+                self.assertEqual(response.status_code, 403)
+
+    def test_direct_request__gives_no_access__for_viewer_not_in_bundle_team(self):
+        self.client.force_login(self.no_access_viewer)
+
+        for asset in [self.private_image_rendition, self.private_document]:
+            with self.subTest(msg=f"Testing {asset}"):
+                response = self.client.get(asset.serve_url)
+                self.assertEqual(response.status_code, 403)
+
+    def test_access_via_bundle_preview__for_viewer_in_bundle_team(self):
+        self.client.force_login(self.viewer)
+
+        with time_machine.travel(FROZEN_TIME, tick=False):
+            response = self.client.get(self.url_preview_ready)
+
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+            self.assertIn("bundle-preview", self.client.cookies)
+            self.assertContains(response, self.private_image_rendition.serve_url)
+            self.assertContains(response, self.private_document.serve_url)
+
+        for asset in [self.private_image_rendition, self.private_document]:
+            with (
+                self.subTest(msg=f"Testing {asset} before cooldown"),
+                time_machine.travel(FROZEN_TIME + timedelta(seconds=5), tick=False),
+            ):
+                response = self.client.get(asset.serve_url)
+                self.assertEqual(response.status_code, 200)
+
+            with (
+                self.subTest(msg=f"Testing {asset} after cooldown"),
+                time_machine.travel(FROZEN_TIME + timedelta(seconds=35), tick=False),
+            ):
+                response = self.client.get(asset.serve_url)
+                self.assertEqual(response.status_code, 403)
+
+    def test_access_via_bundle_preview__for_viewer_not_in_bundle_team(self):
+        self.client.force_login(self.no_access_viewer)
+
+        with time_machine.travel(FROZEN_TIME, tick=False):
+            response = self.client.get(self.url_preview_ready)
+
+            self.assertEqual(response.status_code, HTTPStatus.FOUND)  # redirects to the admin with an access denied
+            self.assertNotIn("bundle-preview", self.client.session)
+
+        for asset in [self.private_image_rendition, self.private_document]:
+            with (
+                self.subTest(msg=f"Testing {asset} before cooldown"),
+                time_machine.travel(FROZEN_TIME + timedelta(seconds=5), tick=False),
+            ):
+                response = self.client.get(asset.serve_url)
+                self.assertEqual(response.status_code, 403)
+
+    def test_access_via_bundle_preview__with_tampered_cookie(self):
+        self.client.force_login(self.viewer)
+
+        self.client.get(self.url_preview_ready)
+        altered_value = self.client.cookies[settings.BUNDLE_PREVIEW_COOKIE_NAME].value[:-2] + "$$"
+        self.client.cookies[settings.BUNDLE_PREVIEW_COOKIE_NAME].set(
+            settings.BUNDLE_PREVIEW_COOKIE_NAME, altered_value, altered_value
+        )
+
+        for asset in [self.private_image_rendition, self.private_document]:
+            with self.subTest(msg=f"Testing {asset}"):
+                response = self.client.get(asset.serve_url)
+                self.assertEqual(response.status_code, 403)
+
+    def test_access_via_bundle_preview__when_added_to_draft_of_published_page(self):
+        # create a new page, and publish
+        new_page = InformationPageFactory(
+            content=[
+                {"type": "section", "value": {"title": "Content", "content": [{"type": "rich_text", "value": "text"}]}}
+            ]
+        )
+        new_page.save_revision().publish()
+
+        # now update its content to reference still private assets
+        new_page.content = self.content
+        new_page.save_revision()
+
+        # mark as ready for review, and add it to our bundle
+        mark_page_as_ready_for_review(new_page)
+        BundlePageFactory(parent=self.bundle, page=new_page)
+
+        # now check
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(reverse("bundles:preview", args=[self.bundle.pk, new_page.pk]))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertIn("bundle-preview", self.client.cookies)
+        self.assertContains(response, self.private_image_rendition.serve_url)
+        self.assertContains(response, self.private_document.serve_url)
+
+        for asset in [self.private_image_rendition, self.private_document]:
+            with self.subTest(msg=f"Testing {asset}"):
+                response = self.client.get(asset.serve_url)
+                self.assertEqual(response.status_code, 200)
+
+        # create another set of private assets which should not be accessible with a still valid preview cookie
+        # becuase they are not part of the page in question
+        another_private_image = ImageFactory(collection=self.root_collection)
+        another_private_image_rendition = another_private_image.create_rendition(Filter("width-1024"))
+        another_private_document = DocumentFactory(collection=self.root_collection)
+
+        for asset in [another_private_image_rendition, another_private_document]:
+            with self.subTest(msg=f"Testing private {asset} not in the bundle"):
+                response = self.client.get(asset.serve_url)
+                self.assertEqual(response.status_code, 403)
