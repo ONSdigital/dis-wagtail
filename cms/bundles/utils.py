@@ -384,13 +384,6 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
         "cms.bundles.notifications.slack", fromlist=["notify_slack_of_publication_start", "notify_slack_of_publish_end"]
     )
 
-    logger.info(
-        "Publishing Bundle",
-        extra={
-            "bundle_id": bundle.pk,
-            "event": "publishing_bundle",
-        },
-    )
     start_time = time.time()
     notifications.notify_slack_of_publication_start(bundle, url=bundle.full_inspect_url)
 
@@ -432,14 +425,6 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
         log(action="wagtail.publish.scheduled", instance=bundle)
 
         publish_duration = time.time() - start_time
-        logger.info(
-            "Published bundle",
-            extra={
-                "bundle_id": bundle.pk,
-                "duration": round(publish_duration * 1000, 3),
-                "event": "published_bundle",
-            },
-        )
     else:
         publish_duration = time.time() - start_time
         logger.error(
