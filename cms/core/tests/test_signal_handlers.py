@@ -58,7 +58,7 @@ class SyncAliasTranslationSlugsTestCase(TestCase):
         mock_save.assert_not_called()
 
 
-class SyncAliasTranslationSlugsOnPublishTestCase(TestCase):
+class SyncAliasTranslationSlugsOnSlugChangeTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.cy_locale = Locale.objects.get(language_code="cy")
@@ -72,28 +72,32 @@ class SyncAliasTranslationSlugsOnPublishTestCase(TestCase):
             reset_translation_key=False,
         )
 
-    def test_slug_synced_on_publish(self):
+    def test_slug_synced_on_slug_change(self):
         self.cy_alias.slug = "different-slug"
         self.cy_alias.save(update_fields=["slug"])
 
-        self.en_page.save_revision().publish()
+        new_slug = "new-en-slug"
+        self.en_page.slug = new_slug
+        with self.captureOnCommitCallbacks(execute=True):
+            self.en_page.save_revision().publish()
 
         self.cy_alias.refresh_from_db()
         self.assertNotEqual(self.cy_alias.slug, "different-slug")
-        self.assertEqual(self.cy_alias.slug, self.en_page.slug)
+        self.assertEqual(self.cy_alias.slug, new_slug)
 
-    def test_root_level_page_slug_not_synced_on_publish(self):
+    def test_root_level_page_slug_not_synced_on_slug_change(self):
         en_home = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
         cy_home = HomePage.objects.get(locale=self.cy_locale)
         original_cy_slug = cy_home.slug
 
         en_home.slug = "new-home-slug"
-        en_home.save_revision().publish()
+        with self.captureOnCommitCallbacks(execute=True):
+            en_home.save_revision().publish()
 
         cy_home.refresh_from_db()
         self.assertEqual(cy_home.slug, original_cy_slug)
 
-    def test_alias_url_path_gets_updated_on_publish(self):
+    def test_alias_url_path_gets_updated_on_slug_change(self):
         self.cy_alias.slug = "different-slug"
         # Save to ensure url_path is updated to match the slug before publish
         # so we can confirm it gets changed after publish.
@@ -101,8 +105,10 @@ class SyncAliasTranslationSlugsOnPublishTestCase(TestCase):
         self.cy_alias.refresh_from_db()
         original_url_path = self.cy_alias.url_path
 
-        # Publish english version
-        self.en_page.save_revision().publish()
+        # Change en_page's slug and publish
+        self.en_page.slug = "new-en-slug"
+        with self.captureOnCommitCallbacks(execute=True):
+            self.en_page.save_revision().publish()
 
         # URL path should be updated to match the new slug
         self.cy_alias.refresh_from_db()

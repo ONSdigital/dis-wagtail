@@ -6,7 +6,7 @@ from django.core.signals import setting_changed
 from django.db.models.signals import pre_save
 from django.utils.log import configure_logging
 from wagtail.models import DraftStateMixin, Page, Revision
-from wagtail.signals import page_published
+from wagtail.signals import page_slug_changed
 
 HOME_PAGE_DEPTH = 2
 
@@ -68,6 +68,6 @@ def register_signal_handlers() -> None:
 
     pre_save.connect(remove_approved_go_live_seconds, sender=Revision)
 
-    page_published.connect(sync_alias_translation_slugs)
+    page_slug_changed.connect(sync_alias_translation_slugs)
 
     setting_changed.connect(reload_logging_config)
