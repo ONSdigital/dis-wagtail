@@ -44,7 +44,7 @@ def notify_slack_of_dataset_api_failure(
         )
 
     send_or_update_message(
-        text="Dataset API Call Failure", color="danger", fields=fields, channel=settings.SLACK_PUBLICATION_LOG_CHANNEL
+        text="Dataset API Call Failure", color="danger", fields=fields, channel=settings.SLACK_PUBLISH_LOG_CHANNEL
     )
 
 
@@ -89,4 +89,4 @@ def notify_slack_of_third_party_api_failure(
             {"title": "Page Name", "value": f"<{page.full_url}|{admin_url}>", "short": False},
         )
 
-    send_or_update_message(text=title, color="danger", fields=fields, channel=settings.SLACK_PUBLICATION_LOG_CHANNEL)
+    send_or_update_message(text=title, color="danger", fields=fields, channel=settings.SLACK_PUBLISH_LOG_CHANNEL)

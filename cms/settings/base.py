@@ -966,7 +966,7 @@ START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
 SLACK_BOT_TOKEN = env.get("SLACK_BOT_TOKEN")
-SLACK_PUBLICATION_LOG_CHANNEL = env.get("SLACK_PUBLICATION_LOG_CHANNEL", "")
+SLACK_PUBLISH_LOG_CHANNEL = env.get("SLACK_PUBLISH_LOG_CHANNEL", "")
 SLACK_ALARM_CHANNEL = env.get("SLACK_ALARM_CHANNEL", "")
 
 # Feature flag for sending slack messages on bundle status changes (before pre-publish, e.g. entering review)

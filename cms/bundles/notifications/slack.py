@@ -54,7 +54,7 @@ def send_bundle_notification(  # pylint: disable=too-many-arguments  # noqa: PLR
         color=color,
         fields=fields,
         update_message_ts=bundle.slack_notification_ts if not force_new else None,
-        channel=settings.SLACK_PUBLICATION_LOG_CHANNEL,
+        channel=settings.SLACK_PUBLISH_LOG_CHANNEL,
     )
     if message_ts and save_timestamp:
         bundle.slack_notification_ts = message_ts
