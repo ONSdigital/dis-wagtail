@@ -104,23 +104,7 @@ def _get_example_page_url(bundle: Bundle) -> str | None:
         return str(release_page.full_url)
 
     first_page = bundle.get_bundled_pages().filter().first()
-    return str(first_page.full_url) if first_page else None
-
-
-def _get_bundle_notification_context(bundle: Bundle) -> dict[str, str | int | None]:
-    """Extract common notification context for a bundle.
-
-    Args:
-        bundle: The bundle to extract context from.
-
-    Returns:
-        Dictionary containing publish_type, page_count, and example_page_url.
-    """
-    return {
-        "publish_type": _get_publish_type(bundle),
-        "page_count": bundle.get_bundled_pages().count(),
-        "example_page_url": _get_example_page_url(bundle),
-    }
+    return str(first_page.specific_deferred.full_url) if first_page else None
 
 
 def notify_slack_of_status_change(

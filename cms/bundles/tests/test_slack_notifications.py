@@ -221,6 +221,14 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": True}, fields)
         self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
         self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
+        self.assertIn(
+            {
+                "title": "Example Page",
+                "value": self.bundle.get_bundled_pages()[0].specific_deferred.full_url,
+                "short": False,
+            },
+            fields,
+        )
 
         self.bundle.refresh_from_db()
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
