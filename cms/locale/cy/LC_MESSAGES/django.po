@@ -80,7 +80,7 @@ msgstr "Lawrlwythwch y tabl hwn"
 #: cms/core/blocks/markup.py:229
 #, python-format
 msgid "Download CSV %(size)s"
-msgstr "Lawrlwythwch CSV"
+msgstr "Lawrlwythwch CSV %(size)s"
 
 #: cms/core/blocks/related.py:60
 msgid "Related links"
