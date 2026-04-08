@@ -27,9 +27,9 @@ class Command(MakeMessagesCommand):
 
     @override
     def handle(self, *args: Any, **options: Any) -> None:
-        self._check_mode = options.get("check", False) #pylint: disable=W0201
-        self._modified_po_files: set[str] = set() #pylint: disable=W0201
-        self.verbosity = options["verbosity"] #pylint: disable=W0201
+        self._check_mode = options.get("check", False)  # pylint: disable=W0201
+        self._modified_po_files: set[str] = set()  # pylint: disable=W0201
+        self.verbosity = options["verbosity"]  # pylint: disable=W0201
 
         super().handle(*args, **options)
 
