@@ -56,7 +56,7 @@ class Command(MakeMessagesCommand):
             return
 
         # Get all options to msgmerge except --update so no files on disk are touched
-        check_options = [opt for opt in self.msgmerge_options if opt != "--update"]
+        check_options = [opt for opt in self.msgmerge_options if opt not in ("--update", "--backup=none")]
         args = ["msgmerge"] + check_options + [pofile, potfile]
         msgs, errors, status = popen_wrapper(args)
         if errors:
