@@ -167,6 +167,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         args = mock_popen.call_args[0][0]
         self.assertEqual(args[0], "msgmerge")
         self.assertNotIn("--update", args)
+        self.assertNotIn("--backup=none", args)
 
     @patch('cms.locale.management.commands.makemessages.popen_wrapper')
     def test_additional_options_preserved(self, mock_popen):
@@ -184,9 +185,9 @@ class WritePOFileCheckModeTests(SimpleTestCase):
 
         args = mock_popen.call_args[0][0]
         self.assertIn("-q", args)
-        self.assertIn("--backup=none", args)
         self.assertIn("--previous", args)
         self.assertIn("--no-wrap", args)
+        self.assertNotIn("--backup=none", args)
         self.assertNotIn("--update", args)
 
     @patch('cms.locale.management.commands.makemessages.popen_wrapper')
