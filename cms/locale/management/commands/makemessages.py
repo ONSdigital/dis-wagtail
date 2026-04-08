@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, override
 
 from django.core.management.base import CommandError
-from django.core.management.commands.makemessages import Command as MakeMessagesCommand, normalize_eols
+from django.core.management.commands.makemessages import Command as MakeMessagesCommand
+from django.core.management.commands.makemessages import normalize_eols
 from django.core.management.utils import popen_wrapper
 
 if TYPE_CHECKING:
@@ -55,15 +56,16 @@ class Command(MakeMessagesCommand):
             self._modified_po_files.add(pofile)
             return
 
-        # Get all options to msgmerge except --update so no files on disk are touched
+        # Get all options to msgmerge except --update (and --backup) so no files on disk
+        # are touched and we get the updated contents as the first return value
         check_options = [opt for opt in self.msgmerge_options if opt not in ("--update", "--backup=none")]
-        args = ["msgmerge"] + check_options + [pofile, potfile]
+        args = ["msgmerge", *check_options, pofile, potfile]
         msgs, errors, status = popen_wrapper(args)
         if errors:
             if status != STATUS_OK:
                 raise CommandError(f"errors happened wile running msgmerge\n{errors}")
             elif self.verbosity > 0:
-                self.stdout.write(errors)
+                self.stderr.write(errors)
 
         # Apply same formatting that makemessages usually does
         msgs = normalize_eols(msgs)
@@ -76,5 +78,5 @@ class Command(MakeMessagesCommand):
 
     @staticmethod
     def _normalize(content) -> str:
-        """Strip out POT-Creation-Date from gettext output"""
+        """Strip out POT-Creation-Date from gettext output."""
         return _POT_CREATION_DATE_RE.sub("", content)

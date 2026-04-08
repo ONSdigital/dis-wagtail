@@ -1,11 +1,9 @@
-from tabnanny import verbose
-import tempfile
 import os
+import tempfile
 from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
-from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.core.management.commands.makemessages import Command as MakeMessagesCommand
 from django.test import SimpleTestCase
@@ -55,16 +53,12 @@ msgid "Goodbye"
 msgid "Hwyl fawr"
 """
 
+
 class NormalizeTests(SimpleTestCase):
     """Tests for Command._normalize, which strips POT-Creation-Date headers."""
 
     def test_strips_pot_creation_date(self):
-        content = (
-            'msgid ""\n'
-            'msgstr ""\n'
-            '"POT-Creation-Date: 2026-04-07 12:00+0000\\n"\n'
-            '"Language: cy\\n"\n'
-        )
+        content = 'msgid ""\nmsgstr ""\n"POT-Creation-Date: 2026-04-07 12:00+0000\\n"\n"Language: cy\\n"\n'
         result = Command._normalize(content)
         self.assertNotIn("POT-Creation-Date", result)
 
@@ -85,6 +79,7 @@ class NormalizeTests(SimpleTestCase):
     def test_content_with_no_date_header_is_unchanged(self):
         content = 'msgid "Hello"\nmsgstr "Helo"\n'
         self.assertEqual(Command._normalize(content), content)
+
 
 class WritePOFileCheckModeTests(SimpleTestCase):
     """Tests for write_po_file when _check_mode is True."""
@@ -112,7 +107,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         os.makedirs(self.pofile_dir, exist_ok=True)
         Path(self.pofile).write_text(content, encoding="utf-8")
 
-    @patch('cms.locale.management.commands.makemessages.popen_wrapper')
+    @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_missing_po_file_detected_as_change(self, mock_popen):
         # .po file does not exist
         self.command.write_po_file(self.potfile, "cy")
@@ -121,7 +116,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         # we don't attempt to call msgmerge if the file didn't already exist
         mock_popen.assert_not_called()
 
-    @patch('cms.locale.management.commands.makemessages.popen_wrapper')
+    @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_unchanged_content_not_flagged(self, mock_popen):
         self._create_po_file(SAMPLE_PO_CONTENT)
         # returns stdout, stderr and status code
@@ -132,7 +127,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         # assert modified files is an empty set
         self.assertEqual(self.command._modified_po_files, set())
 
-    @patch('cms.locale.management.commands.makemessages.popen_wrapper')
+    @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_changed_content_flagged(self, mock_popen):
         self._create_po_file(SAMPLE_PO_CONTENT)
 
@@ -144,7 +139,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         # new file should be in modififed set
         self.assertIn(self.pofile, self.command._modified_po_files)
 
-    @patch('cms.locale.management.commands.makemessages.popen_wrapper')
+    @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_if_only_diff_is_creation_date_not_flagged(self, mock_popen):
         self._create_po_file(SAMPLE_PO_CONTENT)
 
@@ -156,8 +151,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         # assert modified files is an empty set
         self.assertEqual(self.command._modified_po_files, set())
 
-
-    @patch('cms.locale.management.commands.makemessages.popen_wrapper')
+    @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_msgmerge_called_without_update_arg(self, mock_popen):
         self._create_po_file(SAMPLE_PO_CONTENT)
         mock_popen.return_value = (SAMPLE_PO_CONTENT, "", 0)
@@ -169,17 +163,11 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         self.assertNotIn("--update", args)
         self.assertNotIn("--backup=none", args)
 
-    @patch('cms.locale.management.commands.makemessages.popen_wrapper')
+    @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_additional_options_preserved(self, mock_popen):
         self._create_po_file(SAMPLE_PO_CONTENT)
         mock_popen.return_value = (SAMPLE_PO_CONTENT, "", 0)
-        self.command.msgmerge_options = [
-            "-q",
-            "--backup=none",
-            "--previous",
-            "--update",
-            "--no-wrap"
-        ]
+        self.command.msgmerge_options = ["-q", "--backup=none", "--previous", "--update", "--no-wrap"]
 
         self.command.write_po_file(self.potfile, "cy")
 
@@ -190,7 +178,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         self.assertNotIn("--backup=none", args)
         self.assertNotIn("--update", args)
 
-    @patch('cms.locale.management.commands.makemessages.popen_wrapper')
+    @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_existing_po_files_not_modified(self, mock_popen):
         self._create_po_file(SAMPLE_PO_CONTENT)
         mock_popen.return_value = (SAMPLE_PO_CONTENT_NEW_ENTRY, "", 0)
@@ -201,7 +189,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
 
         self.assertEqual(content_before, content_after)
 
-    @patch('cms.locale.management.commands.makemessages.popen_wrapper')
+    @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_raises_command_error_if_popen_returns_non_zero_code(self, mock_popen):
         self._create_po_file(SAMPLE_PO_CONTENT)
         mock_popen.return_value = ("", "fatal error in msgmerge", 2)
@@ -211,17 +199,21 @@ class WritePOFileCheckModeTests(SimpleTestCase):
 
         self.assertIn("msgmerge", str(ctx.exception))
 
-class WritePOFileNormalModeTests(SimpleTestCase):
-    """Tests for write_po_file when _check_mode is False"""
 
-    @patch.object(MakeMessagesCommand, 'write_po_file')
+class WritePOFileNormalModeTests(SimpleTestCase):
+    """Tests for write_po_file when _check_mode is False."""
+
+    @patch.object(MakeMessagesCommand, "write_po_file")
     def test_delegates_to_parent(self, mock_write_parent):
         command = Command()
         command._check_mode = False
 
-        command.write_po_file("/tmp/django.pot", "cy")
+        # disable qa as using mocked version of function
+        command.write_po_file("/tmp/django.pot", "cy")  # noqa: S108
 
-        mock_write_parent.assert_called_once_with("/tmp/django.pot", "cy")
+        # disable qa as using mocked version of function
+        mock_write_parent.assert_called_once_with("/tmp/django.pot", "cy")  # noqa: S108
+
 
 class HandleCheckModeTests(SimpleTestCase):
     """Tests for handle() with --check flag.
@@ -280,7 +272,7 @@ class HandleCheckModeTests(SimpleTestCase):
         self.assertIn("The following .po files are not up to date:", stderr_output)
         self.assertIn("Run `makemessages` to update them.", stderr_output)
 
-    @patch.object(MakeMessagesCommand, 'handle')
+    @patch.object(MakeMessagesCommand, "handle")
     def test_without_check_delegates_to_default_makemessages(self, mock_parent_handle):
         command = self._make_command()
         command.handle(check=False, verbosity=1)
@@ -290,7 +282,7 @@ class HandleCheckModeTests(SimpleTestCase):
         self.assertNotIn("up to date", self.stdout.getvalue())
         self.assertEqual(self.stderr.getvalue(), "")
 
-    @patch.object(MakeMessagesCommand, 'handle')
+    @patch.object(MakeMessagesCommand, "handle")
     def test_quiet_mode_suppresses_success_message(self, mock_parent_handle):
         command = self._make_command()
         command.handle(check=False, verbosity=0)
