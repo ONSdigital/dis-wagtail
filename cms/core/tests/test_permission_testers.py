@@ -179,6 +179,12 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
                 tester = BasePagePermissionTester(user=user, page=self.english_index_page)
                 self.assertFalse(tester.can_delete())
 
+    def test_cannot_set_page_view_restrictions(self):
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer, self.user]:
+            with self.subTest(f"{user=} cannot set view restrictions"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertFalse(tester.can_set_view_restrictions())
+
 
 class TestCustomPagePermissions(WagtailTestUtils, TestCase):
     @classmethod
