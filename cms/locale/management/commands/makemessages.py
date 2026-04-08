@@ -28,7 +28,7 @@ class Command(MakeMessagesCommand):
     @override
     def handle(self, *args: Any, **options: Any) -> None:
         self._check_mode = options.get("check", False)
-        self._modified_po_files = set()
+        self._modified_po_files: set[str] = set()
         self.verbosity = options["verbosity"]
 
         super().handle(*args, **options)
@@ -77,6 +77,6 @@ class Command(MakeMessagesCommand):
             self._modified_po_files.add(pofile)
 
     @staticmethod
-    def _normalize(content) -> str:
+    def _normalize(content: str) -> str:
         """Strip out POT-Creation-Date from gettext output."""
         return _POT_CREATION_DATE_RE.sub("", content)
