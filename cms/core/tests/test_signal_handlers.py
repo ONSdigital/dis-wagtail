@@ -113,3 +113,37 @@ class SyncAliasTranslationSlugsOnSlugChangeTestCase(TestCase):
         # URL path should be updated to match the new slug
         self.cy_alias.refresh_from_db()
         self.assertNotEqual(self.cy_alias.url_path, original_url_path)
+
+    def test_alias_slug_sync_does_not_cause_further_saves(self):
+        """page_slug_changed fires for the alias too (its slug changed), but the handler
+        must not save any further pages when re-invoked for the alias.
+        """
+        self.cy_alias.slug = "different-slug"
+        self.cy_alias.save(update_fields=["slug"])
+
+        self.en_page.slug = "new-en-slug"
+        save_calls = []
+        original_save = Page.save
+
+        def tracking_save(instance, *args, **kwargs):
+            save_calls.append(instance.pk)
+            return original_save(instance, *args, **kwargs)
+
+        with patch.object(Page, "save", tracking_save), self.captureOnCommitCallbacks(execute=True):
+            self.en_page.save_revision().publish()
+
+        # Exactly 2 saves are expected for the alias:
+        # 1. Wagtail's update_aliases (content sync during publish)
+        # 2. Our handler's translation.save() (slug sync)
+        alias_save_count = save_calls.count(self.cy_alias.pk)
+        self.assertEqual(alias_save_count, 2)
+
+        save_calls = []
+
+        with patch.object(Page, "save", tracking_save), self.captureOnCommitCallbacks(execute=True):
+            self.en_page.save_revision().publish()
+
+        # No further saves should occur for the alias on subsequent publish since the slug is already in sync
+        # (just the update_aliases save, no handler-triggered saves)
+        alias_save_count = save_calls.count(self.cy_alias.pk)
+        self.assertEqual(alias_save_count, 1)
