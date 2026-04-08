@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from django.core.management.base import CommandParser
 
 STATUS_OK = 0
-_POT_CREATION_DATE_RE = re.compile(r'^"POT-Creation-Date: .*?\\n"\n', re.MULTILINE)
+_POT_CREATION_DATE_RE = re.compile(r'^"POT-Creation-Date: [^"]+\\n"', re.MULTILINE)
 
 
 class Command(MakeMessagesCommand):
