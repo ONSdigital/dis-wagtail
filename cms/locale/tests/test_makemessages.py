@@ -59,7 +59,7 @@ class NormalizeTests(SimpleTestCase):
 
     def test_strips_pot_creation_date(self):
         content = 'msgid ""\nmsgstr ""\n"POT-Creation-Date: 2026-04-07 12:00+0000\\n"\n"Language: cy\\n"\n'
-        result = Command._normalize(content)
+        result = Command._normalize(content) #pylint: disable=W0212
         self.assertNotIn("POT-Creation-Date", result)
 
     def test_preserves_other_metadata(self):
@@ -71,14 +71,15 @@ class NormalizeTests(SimpleTestCase):
             '"Last-Translator: someone\\n"\n'
             '"Language: cy\\n"\n'
         )
-        result = Command._normalize(content)
+        result = Command._normalize(content) #pylint: disable=W0212
         self.assertIn("PO-Revision-Date", result)
         self.assertIn("Last-Translator", result)
         self.assertIn("Language", result)
 
     def test_content_with_no_date_header_is_unchanged(self):
         content = 'msgid "Hello"\nmsgstr "Helo"\n'
-        self.assertEqual(Command._normalize(content), content)
+        self.assertEqual(Command._normalize(content), content) # pylint: disable=W0212
+
 
 
 class WritePOFileCheckModeTests(SimpleTestCase):
@@ -94,8 +95,8 @@ class WritePOFileCheckModeTests(SimpleTestCase):
 
         self.command = Command()
         # enable _check_mode
-        self.command._check_mode = True
-        self.command._modified_po_files = set()
+        self.command._check_mode = True #pylint: disable=W0212
+        self.command._modified_po_files = set() #pylint: disable=W0212
         self.command.domain = "django"
         self.command.msgmerge_options = ["-q", "--backup=none", "--previous", "--update"]
         self.command.verbosity = 0
@@ -112,7 +113,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         # .po file does not exist
         self.command.write_po_file(self.potfile, "cy")
 
-        self.assertIn(self.pofile, self.command._modified_po_files)
+        self.assertIn(self.pofile, self.command._modified_po_files) # pylint: disable=W0212
         # we don't attempt to call msgmerge if the file didn't already exist
         mock_popen.assert_not_called()
 
@@ -125,7 +126,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         self.command.write_po_file(self.potfile, "cy")
 
         # assert modified files is an empty set
-        self.assertEqual(self.command._modified_po_files, set())
+        self.assertEqual(self.command._modified_po_files, set()) #pylint: disable=W0212
 
     @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_changed_content_flagged(self, mock_popen):
@@ -137,7 +138,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         self.command.write_po_file(self.potfile, "cy")
 
         # new file should be in modififed set
-        self.assertIn(self.pofile, self.command._modified_po_files)
+        self.assertIn(self.pofile, self.command._modified_po_files) #pylint: disable=W0212
 
     @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_if_only_diff_is_creation_date_not_flagged(self, mock_popen):
@@ -149,7 +150,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         self.command.write_po_file(self.potfile, "cy")
 
         # assert modified files is an empty set
-        self.assertEqual(self.command._modified_po_files, set())
+        self.assertEqual(self.command._modified_po_files, set()) #pylint: disable=W0212
 
     @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_msgmerge_called_without_update_arg(self, mock_popen):
@@ -206,7 +207,7 @@ class WritePOFileNormalModeTests(SimpleTestCase):
     @patch.object(MakeMessagesCommand, "write_po_file")
     def test_delegates_to_parent(self, mock_write_parent):
         command = Command()
-        command._check_mode = False
+        command._check_mode = False # pylint: disable=W0212
 
         # disable qa as using mocked version of function
         command.write_po_file("/tmp/django.pot", "cy")  # noqa: S108
@@ -244,8 +245,8 @@ class HandleCheckModeTests(SimpleTestCase):
     def test_changes_detected_exits_non_zero(self, mock_parent_handle):
         command = self._make_command()
 
-        def simulate_changes(*args, **options):
-            command._modified_po_files.add("/some/locale/cy/LC_MESSAGES/django.po")
+        def simulate_changes(*args, **_):
+            command._modified_po_files.add("/some/locale/cy/LC_MESSAGES/django.po") # pylint: disable=W0212
 
         mock_parent_handle.side_effect = simulate_changes
 
@@ -259,8 +260,8 @@ class HandleCheckModeTests(SimpleTestCase):
         command = self._make_command()
         changed_path = "/some/locale/cy/LC_MESSAGES/django.po"
 
-        def simulate_changes(*args, **options):
-            command._modified_po_files.add("/some/locale/cy/LC_MESSAGES/django.po")
+        def simulate_changes(*args, **_):
+            command._modified_po_files.add("/some/locale/cy/LC_MESSAGES/django.po") # pylint: disable=W0212
 
         mock_parent_handle.side_effect = simulate_changes
 
@@ -283,7 +284,7 @@ class HandleCheckModeTests(SimpleTestCase):
         self.assertEqual(self.stderr.getvalue(), "")
 
     @patch.object(MakeMessagesCommand, "handle")
-    def test_quiet_mode_suppresses_success_message(self, mock_parent_handle):
+    def test_quiet_mode_suppresses_success_message(self, _):
         command = self._make_command()
         command.handle(check=False, verbosity=0)
 
