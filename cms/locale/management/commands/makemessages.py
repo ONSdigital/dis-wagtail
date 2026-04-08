@@ -27,9 +27,9 @@ class Command(MakeMessagesCommand):
 
     @override
     def handle(self, *args: Any, **options: Any) -> None:
-        self._check_mode = options.get("check", False)
-        self._modified_po_files: set[str] = set()
-        self.verbosity = options["verbosity"]
+        self._check_mode = options.get("check", False) #pylint: disable=W0201
+        self._modified_po_files: set[str] = set() #pylint: disable=W0201
+        self.verbosity = options["verbosity"] #pylint: disable=W0201
 
         super().handle(*args, **options)
 
@@ -40,13 +40,14 @@ class Command(MakeMessagesCommand):
                     self.stderr.write(f"  {path}\n")
                 self.stderr.write("\nRun `makemessages` to update them.\n")
                 raise SystemExit(1)
-            elif self.verbosity > 0:
+            if self.verbosity > 0:
                 self.stdout.write("All .po files are up to date.\n")
 
     @override
     def write_po_file(self, potfile: str, locale: str) -> None:
         if not self._check_mode:
-            return super().write_po_file(potfile, locale)
+            super().write_po_file(potfile, locale)
+            return
 
         basedir = os.path.join(os.path.dirname(potfile), locale, "LC_MESSAGES")
         pofile = os.path.join(basedir, f"{self.domain}.po")
@@ -64,7 +65,7 @@ class Command(MakeMessagesCommand):
         if errors:
             if status != STATUS_OK:
                 raise CommandError(f"errors happened wile running msgmerge\n{errors}")
-            elif self.verbosity > 0:
+            if self.verbosity > 0:
                 self.stderr.write(errors)
 
         # Apply same formatting that makemessages usually does
