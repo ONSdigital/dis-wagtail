@@ -15,8 +15,6 @@ _POT_CREATION_DATE_RE = re.compile(r'^"POT-Creation-Date: .*?\\n"\n', re.MULTILI
 
 
 class Command(MakeMessagesCommand):
-    _check_mode = False
-
     @override
     def add_arguments(self, parser: CommandParser) -> None:
         super().add_arguments(parser)
