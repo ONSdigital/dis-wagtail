@@ -1124,3 +1124,6 @@ DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "
 
 
 WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_publish"
+
+# Disable Wagtail's auto-saving feature
+WAGTAIL_AUTOSAVE_INTERVAL = 0
