@@ -26,6 +26,42 @@ msgid "Goodbye"
 msgstr "Hwyl fawr"
 """
 
+SAMPLE_PO_CONTENT_WITH_MULTILINE = """msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-01-01 00:00+0000\\n"
+"PO-Revision-Date: 2026-01-01 00:00+0000\\n"
+"Language: cy\\n"
+"MIME-Version: 1.0\\n
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+
+msgid "Hello"
+msgstr "Helo"
+
+msgid "Goodbye"
+msgstr "Hwyl fawr"
+
+msgid ""
+"second line"
+"third line\\n\\""
+msgstr ""
+"""
+
+SAMPLE_PO_CONTENT_MULTILINE = """msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-01-01 00:00+0000\\n"
+"PO-Revision-Date: 2026-01-01 00:00+0000\\n"
+"Language: cy\\n"
+"MIME-Version: 1.0\\n
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+
+msgid ""
+"second line"
+"third line\\n\\""
+msgstr ""
+"""
+
 SAMPLE_PO_CONTENT_DIFFERENT_ORDER = """msgid ""
 msgstr ""
 "POT-Creation-Date: 2026-01-01 00:00+0000\\n"
@@ -105,6 +141,26 @@ class NormalizeTests(SimpleTestCase):
         content = 'msgid "Hello"\nmsgstr "Helo"\n'
         self.assertEqual(Command._normalize(content), content)  # pylint: disable=W0212
 
+class ExtractMsgidTests(SimpleTestCase):
+    """Tests for Command._extract_msgids, which pulls only clean, non-empty msgids from .po contents."""
+
+    def test_gets_clean_ids(self):
+        inputs = (
+            (SAMPLE_PO_CONTENT, 2),
+            (SAMPLE_PO_CONTENT_WITH_MULTILINE, 3)
+        )
+        for input in inputs:
+            result = Command._extract_msgids(input[0])
+
+            self.assertEqual(len(result), input[1])
+
+    def test_multiline_strings_cleaned_and_joined(self):
+        result = Command._extract_msgids(SAMPLE_PO_CONTENT_MULTILINE)
+
+        cleaned = result.pop()
+
+        self.assertEqual(cleaned, '"\n"second line"\n"third line\n\"')
+
 
 class WritePOFileCheckModeTests(SimpleTestCase):
     """Tests for write_po_file when _check_mode is True."""
@@ -120,7 +176,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         self.command = Command()
         # enable _check_mode
         self.command._check_mode = True  # pylint: disable=W0212
-        self.command._modified_po_files = set()  # pylint: disable=W0212
+        self.command._modified_po_files = {}  # pylint: disable=W0212
         self.command.domain = "django"
         self.command.msgmerge_options = ["-q", "--backup=none", "--previous", "--update"]
         self.command.verbosity = 0
@@ -149,8 +205,8 @@ class WritePOFileCheckModeTests(SimpleTestCase):
 
         self.command.write_po_file(self.potfile, "cy")
 
-        # assert modified files is an empty set
-        self.assertEqual(self.command._modified_po_files, set())  # pylint: disable=W0212
+        # assert modified files is an empty dict
+        self.assertEqual(self.command._modified_po_files, {})  # pylint: disable=W0212
 
     @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_changed_content_flagged(self, mock_popen):
@@ -161,8 +217,8 @@ class WritePOFileCheckModeTests(SimpleTestCase):
 
         self.command.write_po_file(self.potfile, "cy")
 
-        # new file should be in modififed set
-        self.assertIn(self.pofile, self.command._modified_po_files)  # pylint: disable=W0212
+        # new file should be in modififed dict
+        self.assertIn("Good Morning", self.command._modified_po_files[self.potfile])
 
     @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_if_only_diff_is_creation_date_not_flagged(self, mock_popen):
@@ -173,8 +229,20 @@ class WritePOFileCheckModeTests(SimpleTestCase):
 
         self.command.write_po_file(self.potfile, "cy")
 
-        # assert modified files is an empty set
-        self.assertEqual(self.command._modified_po_files, set())  # pylint: disable=W0212
+        # assert modified files is an empty dict
+        self.assertEqual(self.command._modified_po_files, {})
+
+    @patch("cms.locale.management.commands.makemessages.popen_wrapper")
+    def test_does_not_flag_if_only_order_is_different(self, mock_popen):
+        self._create_po_file(SAMPLE_PO_CONTENT)
+
+        # only date is different from initial content
+        mock_popen.return_value = (SAMPLE_PO_CONTENT_DIFFERENT_ORDER, "", 0)
+
+        self.command.write_po_file(self.potfile, "cy")
+
+        # assert modified files is an empty dict
+        self.assertEqual(self.command._modified_po_files, {})  # pylint: disable=W0212
 
     @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_msgmerge_called_without_update_arg(self, mock_popen):
@@ -270,7 +338,7 @@ class HandleCheckModeTests(SimpleTestCase):
         command = self._make_command()
 
         def simulate_changes(*args, **_):
-            command._modified_po_files.add("/some/locale/cy/LC_MESSAGES/django.po")  # pylint: disable=W0212
+            command._modified_po_files["/some/locale/cy/LC_MESSAGES/django.po"] = set()
 
         mock_parent_handle.side_effect = simulate_changes
 
@@ -285,7 +353,7 @@ class HandleCheckModeTests(SimpleTestCase):
         changed_path = "/some/locale/cy/LC_MESSAGES/django.po"
 
         def simulate_changes(*args, **_):
-            command._modified_po_files.add("/some/locale/cy/LC_MESSAGES/django.po")  # pylint: disable=W0212
+            command._modified_po_files["/some/locale/cy/LC_MESSAGES/django.po"] = set()
 
         mock_parent_handle.side_effect = simulate_changes
 

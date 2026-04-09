@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 STATUS_OK = 0
 _POT_CREATION_DATE_RE = re.compile(r'^"POT-Creation-Date: [^"]+\\n"', re.MULTILINE)
+_MSGID_RE = re.compile(r'^msgid\s+((?:"[^"\\]*(?:\\.[^"\\]*)*"\s*)+)', re.MULTILINE)
+_MSGID_CONTENTS_RE = re.compile(r'"([^\\]*(?:\\.[^"\\]*)*)"')
 
 
 class Command(MakeMessagesCommand):
@@ -28,7 +30,7 @@ class Command(MakeMessagesCommand):
     @override
     def handle(self, *args: Any, **options: Any) -> None:
         self._check_mode = options.get("check", False)  # pylint: disable=W0201
-        self._modified_po_files: set[str] = set()  # pylint: disable=W0201
+        self._modified_po_files: dict[str, set[str]] = {}  # pylint: disable=W0201
         self.verbosity = options["verbosity"]  # pylint: disable=W0201
 
         super().handle(*args, **options)
@@ -36,8 +38,14 @@ class Command(MakeMessagesCommand):
         if self._check_mode:
             if self._modified_po_files:
                 self.stderr.write("The following .po files are not up to date:\n")
-                for path in self._modified_po_files:
+                for path in self._modified_po_files.keys():
                     self.stderr.write(f"  {path}\n")
+                    if len(self._modified_po_files[path]) > 0:
+                        self.stderr.write(f"    The following msgids have changed\n")
+                        for item in self._modified_po_files[path]:
+                            self.stderr.write(f"    {item}\n")
+                    else:
+                        self.stderr.write(f"    new file\n")
                 self.stderr.write("\nRun `makemessages` to update them.\n")
                 raise SystemExit(1)
             if self.verbosity > 0:
@@ -54,7 +62,7 @@ class Command(MakeMessagesCommand):
 
         # if the path doesn't already exist this must be a modification
         if not os.path.exists(pofile):
-            self._modified_po_files.add(pofile)
+            self._modified_po_files[pofile] = set()
             return
 
         # Get all options to msgmerge except --update (and --backup) so no files on disk
@@ -74,10 +82,32 @@ class Command(MakeMessagesCommand):
 
         existing = Path(pofile).read_text(encoding="utf-8")
 
-        if self._normalize(existing) != self._normalize(msgs):
-            self._modified_po_files.add(pofile)
+        previous_msgids = self._extract_msgids(existing)
+        new_msgids = self._extract_msgids(msgs)
+
+        if previous_msgids != new_msgids:
+            self._modified_po_files[potfile] = set(previous_msgids ^ new_msgids)
 
     @staticmethod
     def _normalize(content: str) -> str:
         """Strip out POT-Creation-Date from gettext output."""
         return _POT_CREATION_DATE_RE.sub("", content)
+
+    @staticmethod
+    def _extract_msgids(content: str) -> set[str]:
+        id_set = set()
+        matches = _MSGID_RE.findall(content)
+
+        for match in matches:
+            # joins multiline strings and removes surrounding quotes
+            clean_id = "".join(_MSGID_CONTENTS_RE.findall(match))
+
+            # Sometimes multiline msgids can start a line with "" so we need to check
+            # for empties after we've joined and cleaned
+            if clean_id == "":
+                continue
+            clean_id = clean_id.replace('\\"', '"').replace('\\n', '\n')
+            id_set.add(clean_id)
+
+        return id_set
+
