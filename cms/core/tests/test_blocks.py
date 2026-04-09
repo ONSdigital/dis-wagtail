@@ -1130,8 +1130,8 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
 
         # onsImage macro outputs src/srcset with both specific rendition URLs
         # Use the underlying file URLs to be agnostic of serve method
-        self.assertContains(response, self.small.url)
-        self.assertContains(response, self.large.url)
+        self.assertContains(response, self.small.file.url)
+        self.assertContains(response, self.large.file.url)
 
     def test_renders_download_link_with_file_type_and_size_when_enabled(self):
         page = self._make_information_page(download=True)
@@ -1147,8 +1147,8 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
 
         # Large rendition used for download (assert exact URL appears twice in the response)
         # Assert exact downloadable rendition file URL appears twice: once in href, once in onsImage srcset
-        self.assertContains(response, self.large.url, count=2)
-        self.assertContains(response, self.small.url, count=2)
+        self.assertContains(response, self.large.file.url, count=2)
+        self.assertContains(response, self.small.file.url, count=2)
 
         # Assert the actual download anchor exists and targets the large rendition URL
         html = response.content.decode(response.charset or "utf-8", errors="replace")
@@ -1156,7 +1156,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         download_link = soup.select_one("a[download]")
 
         self.assertIsNotNone(download_link)
-        self.assertEqual(download_link.get("href"), self.large.url)
+        self.assertEqual(download_link.get("href"), self.large.file.url)
 
         expected = filesizeformat(self.large.file.size)
         self.assertIn(f"({expected})", download_link.get_text(strip=True))
