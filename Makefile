@@ -220,7 +220,7 @@ makemessages:  ## We currently just require Welsh (cy), change to -a for all lan
 	poetry run python ./manage.py makemessages --locale cy --ignore "node_modules/*" --ignore ".venv"
 
 .PHONY: makemessages-check
-makemessages:  ## We currently just require Welsh (cy), change to -a for all languages
+makemessages-check:  ## We currently just require Welsh (cy), change to -a for all languages
 	poetry run python ./manage.py makemessages --locale cy --ignore "node_modules/*" --ignore ".venv" --check
 
 .PHONY: compilemessages
