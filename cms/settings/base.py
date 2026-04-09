@@ -1048,7 +1048,7 @@ SESSION_ENGINE = (
     "django.contrib.sessions.backends.cached_db" if session_db_cache_enabled else "django.contrib.sessions.backends.db"
 )
 IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL")
-AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "true").lower() == "true"
+AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "false").lower() == "true"
 AWS_COGNITO_USER_POOL_ID = env.get("AWS_COGNITO_USER_POOL_ID")
 AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
 
