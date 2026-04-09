@@ -61,17 +61,23 @@ def extend_session(request: HttpRequest) -> JsonResponse:
 
 def frontend_login_redirect(request: HttpRequest) -> HttpResponse:
     """Redirect Wagtail frontend private-page login requests to SSO."""
-    next_url = request.GET.get("next", "/")
+    next_url = request.GET.get("next", "")
+    safe_next = "/"
 
-    if not url_has_allowed_host_and_scheme(
-        next_url,
-        allowed_hosts={request.get_host()},
-        require_https=request.is_secure(),
+    # Only allow local relative paths for post-login redirect targets.
+    # Reject absolute/protocol-relative URLs.
+    if (
+        isinstance(next_url, str)
+        and next_url.startswith("/")
+        and url_has_allowed_host_and_scheme(
+            next_url,
+            allowed_hosts=None,
+            require_https=False,
+        )
     ):
-        next_url = "/"
+        safe_next = next_url
 
-    absolute_next = request.build_absolute_uri(next_url)
+    absolute_next = request.build_absolute_uri(safe_next)
     query = urlencode({"redirect": absolute_next})
     separator = "&" if "?" in settings.WAGTAILADMIN_LOGIN_URL else "?"
-
     return redirect(f"{settings.WAGTAILADMIN_LOGIN_URL}{separator}{query}")
