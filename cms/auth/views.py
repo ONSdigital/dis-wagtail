@@ -1,12 +1,13 @@
 import logging
 from typing import Any, Protocol, cast
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from wagtail.admin.views.account import LogoutView
@@ -62,14 +63,12 @@ def frontend_login_redirect(request: HttpRequest) -> HttpResponse:
     """Redirect Wagtail frontend private-page login requests to SSO."""
     next_url = request.GET.get("next", "/")
 
-    # Only allow internal relative paths to be forwarded as redirect targets.
-    # This prevents user-controlled absolute/protocol-relative URLs from reaching the redirect sink.
-    if not isinstance(next_url, str) or not next_url.startswith("/") or next_url.startswith("//"):
+    if not url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
         next_url = "/"
-    else:
-        parsed_next = urlsplit(next_url)
-        if parsed_next.scheme or parsed_next.netloc:
-            next_url = "/"
 
     absolute_next = request.build_absolute_uri(next_url)
     query = urlencode({"redirect": absolute_next})
