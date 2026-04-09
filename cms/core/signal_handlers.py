@@ -5,9 +5,10 @@ from django.conf import settings
 from django.core.signals import setting_changed
 from django.db.models.signals import pre_save
 from django.utils.log import configure_logging
-from wagtail.models import DraftStateMixin, Page, Revision
+from wagtail.models import DraftStateMixin, Locale, Page, Revision
 from wagtail.signals import page_slug_changed
 
+# Tree depth of the home page
 HOME_PAGE_DEPTH = 2
 
 
@@ -45,11 +46,13 @@ def reload_logging_config(*, setting: str, **kwargs: Any) -> None:
 
 
 def sync_alias_translation_slugs(sender: Any, instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
-    if not instance.locale_id or instance.locale.language_code != settings.LANGUAGE_CODE:
-        return
-
     # Don't attempt to sync slugs for children of the root page
     if instance.depth == HOME_PAGE_DEPTH:
+        return
+
+    # Only process the signal for instances with a locale matching the default language,
+    # to avoid potential issues with circular updates between translations
+    if not instance.locale_id or instance.locale_id != Locale.get_default().pk:
         return
 
     updatable_aliased_translations = (
