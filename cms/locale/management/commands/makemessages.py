@@ -38,14 +38,14 @@ class Command(MakeMessagesCommand):
         if self._check_mode:
             if self._modified_po_files:
                 self.stderr.write("The following .po files are not up to date:\n")
-                for path in self._modified_po_files.keys():
+                for path in self._modified_po_files:
                     self.stderr.write(f"  {path}\n")
                     if len(self._modified_po_files[path]) > 0:
-                        self.stderr.write(f"    The following msgids have changed\n")
+                        self.stderr.write("    The following msgids have changed\n")
                         for item in self._modified_po_files[path]:
                             self.stderr.write(f"    {item}\n")
                     else:
-                        self.stderr.write(f"    new file\n")
+                        self.stderr.write("    new file\n")
                 self.stderr.write("\nRun `makemessages` to update them.\n")
                 raise SystemExit(1)
             if self.verbosity > 0:
@@ -106,8 +106,7 @@ class Command(MakeMessagesCommand):
             # for empties after we've joined and cleaned
             if clean_id == "":
                 continue
-            clean_id = clean_id.replace('\\"', '"').replace('\\n', '\n')
+            clean_id = clean_id.replace('\\"', '"').replace("\\n", "\n")
             id_set.add(clean_id)
 
         return id_set
-
