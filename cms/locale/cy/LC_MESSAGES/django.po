@@ -2,8 +2,7 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
+
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
@@ -162,7 +161,7 @@ msgstr "Dewislen"
 
 #: cms/jinja2/templates/base.html:39
 msgid "Toggle menu"
-msgstr "Togl y brif ddewislen"
+msgstr ""
 
 #: cms/jinja2/templates/base.html:40
 msgid "Breadcrumbs"
@@ -285,7 +284,7 @@ msgid ""
 "website."
 msgstr ""
 "Mae cwcis yn ffeiliau sy’n cael eu cadw are eich ffôn, llechen neu "
-"gyfrifiadur pan fyddwch yn ymweld â gwefan"
+"gyfrifiadur pan fyddwch yn ymweld â gwefan."
 
 #: cms/jinja2/templates/pages/cookies.html:29
 msgid ""
@@ -293,7 +292,7 @@ msgid ""
 "as the pages you visit."
 msgstr ""
 "Rydym yn defnyddio cwcis i storio gwybodaeth am sut rydych yn defnyddio "
-"gwefan y SYG, megis y tudalennau yr ydych yn ymweld â nhw"
+"gwefan y SYG, megis y tudalennau yr ydych yn ymweld â nhw."
 
 #: cms/jinja2/templates/pages/cookies.html:31
 msgid "Cookie settings"
@@ -301,7 +300,7 @@ msgstr "Gosodiadau cwcis"
 
 #: cms/jinja2/templates/pages/cookies.html:38
 msgid "You can try:"
-msgstr "Gallwch geisio"
+msgstr "Gallwch geisio:"
 
 #: cms/jinja2/templates/pages/cookies.html:40
 msgid "turning on JavaScript in your browser"
@@ -354,7 +353,7 @@ msgstr "I ffwrdd"
 #: cms/jinja2/templates/pages/cookies.html:130
 #: cms/jinja2/templates/pages/cookies.html:169
 msgid "Your preference selection will expire after one year."
-msgstr "Bydd eich dewisiadau’n dod i ben ar ôl blwyddyn"
+msgstr "Bydd eich dewisiadau’n dod i ben ar ôl blwyddyn."
 
 #: cms/jinja2/templates/pages/cookies.html:96
 msgid "Cookies that help with our communications"
@@ -455,7 +454,7 @@ msgid ""
 "href=\"%(backup_url)s\">backup site</a>."
 msgstr ""
 "Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a "
-"href=\"%(backup_url)s\">gwefan wrth gefn"
+"href=\"%(backup_url)s\">gwefan wrth gefn</a>."
 
 #: cms/jinja2/templates/pages/information_page.html:15
 msgid "Last updated:"
@@ -482,17 +481,17 @@ msgstr "Mewngofnodwch"
 
 #: cms/jinja2/templates/pages/methodology_page.html:9
 msgid "Last revised:"
-msgstr "Diwygiwyd ddiwethaf"
+msgstr "Diwygiwyd ddiwethaf:"
 
 #: cms/jinja2/templates/pages/methodology_page.html:10
 msgid "Published:"
-msgstr "Cyhoeddwyd"
+msgstr "Cyhoeddwyd:"
 
 #: cms/jinja2/templates/pages/methodology_page.html:11
 #: cms/jinja2/templates/pages/statistical_article_page.html:11
 #: cms/jinja2/templates/pages/statistical_article_page.html:15
 msgid "Contact:"
-msgstr "Cyswllt"
+msgstr "Cyswllt:"
 
 #: cms/jinja2/templates/pages/methodology_page.html:12
 #: cms/jinja2/templates/pages/statistical_article_page.html:16
@@ -526,7 +525,7 @@ msgstr "Rhyddhau"
 #: cms/jinja2/templates/pages/statistical_article_page.html:13
 #: cms/jinja2/templates/pages/statistical_article_page.html:20
 msgid "Release date:"
-msgstr "Dyddiad rhyddhau"
+msgstr "Dyddiad rhyddhau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:8
 msgid "Cancelled"
@@ -550,7 +549,7 @@ msgstr "Dyddiad rhyddhau dros dro:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:13
 msgid "Next release date:"
-msgstr "Rhyddhad nesaf"
+msgstr "Rhyddhad nesaf:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:85
 #: cms/release_calendar/models.py:228
@@ -636,7 +635,7 @@ msgstr "Erthygl ystadegol"
 #: cms/jinja2/templates/pages/statistical_article_page.html:14
 #: cms/jinja2/templates/pages/statistical_article_page.html:21
 msgid "Next release:"
-msgstr "Cyhoeddiad nesaf"
+msgstr "Cyhoeddiad nesaf:"
 
 #: cms/jinja2/templates/pages/statistical_article_page.html:25
 msgid "This version has been amended since publication"
@@ -734,7 +733,7 @@ msgstr "Dulliau a gwybodaeth o ansawdd"
 
 #: cms/jinja2/templates/pages/topic_page.html:105
 msgid "View all related methodology"
-msgstr "Gweld yr holl fethodolegau cysylltiedig "
+msgstr "Gweld yr holl fethodolegau cysylltiedig"
 
 #: cms/jinja2/templates/pages/topic_page.html:123
 msgid "View all related data"
