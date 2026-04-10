@@ -15,5 +15,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(delete_existing_page_view_restrictions),
+        migrations.RunPython(delete_existing_page_view_restrictions), reverse_code=migrations.RunPython.noop,
     ]
