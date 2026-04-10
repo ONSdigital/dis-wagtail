@@ -115,7 +115,6 @@ msgstr "Bore da"
 """
 
 
-
 class ExtractMsgidTests(SimpleTestCase):
     """Tests for Command._extract_msgids, which pulls only clean, non-empty msgids from .po contents."""
 
