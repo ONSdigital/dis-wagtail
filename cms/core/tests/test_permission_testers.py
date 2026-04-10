@@ -186,15 +186,15 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
                 tester = BasePagePermissionTester(user=user, page=self.english_index_page)
                 self.assertFalse(tester.can_set_view_restrictions())
 
-    @override_settings(CMS_DISABLE_USER_PAGE_PRIVACY_ACCESS=False)
-    def test_publishing_users_can_set_page_view_restrictions_when_access_is_not_disabled(self):
+    @override_settings(CMS_PAGE_PRIVACY_CONTROLS_ENABLED=True)
+    def test_publishing_users_can_set_page_view_restrictions_when_enabled(self):
         mark_page_as_ready_to_publish(self.english_index_page)
         for user in [self.superuser, self.publishing_admin, self.publishing_officer]:
-            with self.subTest(f"{user=} can set view restrictions when access is not disabled"):
+            with self.subTest(f"{user=} can set view restrictions when controls are enabled"):
                 tester = BasePagePermissionTester(user=user, page=self.english_index_page)
                 self.assertTrue(tester.can_set_view_restrictions())
 
-        with self.subTest("Non editor cannot set view restrictions even when access is not disabled"):
+        with self.subTest("Non editor cannot set view restrictions even when access is enabled"):
             tester = BasePagePermissionTester(user=self.user, page=self.english_index_page)
             self.assertFalse(tester.can_set_view_restrictions())
 

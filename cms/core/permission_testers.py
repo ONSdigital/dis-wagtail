@@ -126,13 +126,14 @@ class BasePagePermissionTester(PagePermissionTester):
         return can_delete
 
     def can_set_view_restrictions(self) -> bool:
-        """Overrides the core can_set_view_restrictions to always return False if the
-        CMS_DISABLE_USER_PAGE_PRIVACY_ACCESS setting is True, functionally disabling access to page privacy features
+        """Overrides the core can_set_view_restrictions to always return False unless the
+        CMS_PAGE_PRIVACY_CONTROLS_ENABLED setting is True, functionally disabling access to page privacy features
         for all CMS users, regardless of permissions.
         """
-        if settings.CMS_DISABLE_USER_PAGE_PRIVACY_ACCESS:
-            return False
-        return super().can_set_view_restrictions()
+        if settings.CMS_PAGE_PRIVACY_CONTROLS_ENABLED:
+            default_can_set_view_restrictions: bool = super().can_set_view_restrictions()
+            return default_can_set_view_restrictions
+        return False
 
 
 class StaticPagePermissionTester(BasePagePermissionTester):

@@ -1124,4 +1124,4 @@ DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "
 
 WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_publish"
 
-CMS_DISABLE_USER_PAGE_PRIVACY_ACCESS = env.get("CMS_DISABLE_USER_PAGE_PRIVACY_ACCESS", "true").lower() == "true"
+CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
