@@ -143,19 +143,23 @@ def get_topic_pages_featuring_series(
     return urls
 
 
-def _get_welsh_alias_urls(source_page_ids: set) -> set[str]:
+def _get_other_language_alias_urls(source_page_ids: set) -> set[str]:
     urls = set()
-    # Include Welsh aliases in this too.
-    # Also, since we don't have a request here, get a dummy one for the Welsh pages.
-    welsh_locale_id = Locale.objects.filter(language_code="cy").values_list("pk", flat=True)[0]
-    cache_object = get_dummy_request(site=Site.objects.filter(root_page__locale=welsh_locale_id).first())
-    for alias in Page.objects.filter(locale=welsh_locale_id, alias_of__in=source_page_ids).specific().iterator():
-        urls.update(get_page_cached_urls(alias, cache_object=cache_object))
+    # Include other language aliases in this too.
+    # Also, since we don't have a request here, get a dummy one for the other language pages.
+    other_locale_ids = Locale.objects.exclude(pk=Locale.get_default().pk).values_list("pk", flat=True)
+    for locale_id in other_locale_ids:
+        cache_object = get_dummy_request(site=Site.objects.filter(root_page__locale=locale_id).first())
+        if cache_object is None:
+            # If no site exists for this locale, skip it
+            continue
+        for alias in Page.objects.filter(locale=locale_id, alias_of__in=source_page_ids).specific().iterator():
+            urls.update(get_page_cached_urls(alias, cache_object=cache_object))
 
     return urls
 
 
-def get_old_page_slugs(page: Page, page_old: Page, include_welsh_aliases: bool = True) -> set[str]:
+def get_old_page_slugs(page: Page, page_old: Page) -> set[str]:
     urls: set = set()
     if page.url_path == page_old.url_path:
         return urls
@@ -171,9 +175,6 @@ def get_old_page_slugs(page: Page, page_old: Page, include_welsh_aliases: bool =
         descendant.url_path = page_old.url_path + descendant.url_path[url_path_length:]
 
         urls.update(get_page_cached_urls(descendant))
-
-    if include_welsh_aliases:
-        urls |= _get_welsh_alias_urls(source_page_ids)
 
     return urls
 
@@ -197,8 +198,8 @@ def purge_page_from_frontend_cache(page: Page) -> None:
     purge_urls_from_cache(urls)
 
 
-def purge_old_page_slugs_from_frontend_cache(page: Page, page_old: Page, include_welsh_aliases: bool = True) -> None:
-    if urls := get_old_page_slugs(page, page_old, include_welsh_aliases):
+def purge_old_page_slugs_from_frontend_cache(page: Page, page_old: Page) -> None:
+    if urls := get_old_page_slugs(page, page_old):
         purge_urls_from_cache(urls)
 
 
@@ -215,7 +216,7 @@ def purge_old_page_paths_from_cache_after_move(
     old_page.__dict__.update(page.__dict__)
     old_page.url_path = url_path_before
 
-    urls = get_old_page_slugs(page, old_page, include_welsh_aliases=False)
+    urls = get_old_page_slugs(page, old_page)
     if isinstance(page, StatisticalArticlePage):
         urls.update(get_page_cached_urls(parent_page_before))  # old series
         urls.update(get_related_topic_page_urls(parent_page_before))  # old topic
@@ -246,7 +247,7 @@ def purge_series_children_from_cache(page: ArticleSeriesPage) -> None:
         source_page_ids.add(child.pk)
         urls.update(get_page_cached_urls(child))
 
-    urls |= _get_welsh_alias_urls(source_page_ids)
+    urls |= _get_other_language_alias_urls(source_page_ids)
 
     if urls:
         purge_urls_from_cache(urls)

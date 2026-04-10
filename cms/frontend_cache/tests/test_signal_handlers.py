@@ -496,16 +496,10 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
             [
                 # via the publish signal
                 call({self.index_page.get_full_url(self.request)}),
-                call({old_index_translation_url}),  # TODO: core doesn't update alias page slugs
-                # via the slug changed signal
-                call(
-                    {
-                        old_index_url,
-                        old_index_translation_url,
-                        self.information_page_url,  # old info page url
-                        information_page_translation_url,  # info page translation url
-                    }
-                ),
+                call({old_index_translation_url}),
+                # via the slug changed signal - English page and its alias handled separately
+                call({old_index_url, self.information_page_url}),
+                call({old_index_translation_url, information_page_translation_url}),
             ]
         )
 
@@ -679,8 +673,15 @@ class PageViaSnippetFrontEndCacheInvalidationTestCase(TestCase):
             {self.statistical_article_url, self.statistical_article_related_data_url}
         )
 
-    def test_delete(self, mocked_purge_urls):
+    def test_delete__contact(self, mocked_purge_urls):
         self.contact.delete()
+
+        mocked_purge_urls.assert_called_once_with(
+            {self.statistical_article_url, self.statistical_article_related_data_url}
+        )
+
+    def test_delete__definition(self, mocked_purge_urls):
+        self.definition.delete()
 
         mocked_purge_urls.assert_called_once_with(
             {self.statistical_article_url, self.statistical_article_related_data_url}
