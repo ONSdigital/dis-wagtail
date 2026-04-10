@@ -26,6 +26,48 @@ msgid "Goodbye"
 msgstr "Hwyl fawr"
 """
 
+SAMPLE_PO_CONTENT_WITH_MSGCTXT = """msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-01-01 00:00+0000\\n"
+"PO-Revision-Date: 2026-01-01 00:00+0000\\n"
+"Language: cy\\n"
+"MIME-Version: 1.0\\n
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+
+msgctxt "Button"
+msgid "Hello"
+msgstr "Helo"
+
+msgctxt "Body"
+msgid "Hello"
+msgstr "Helo"
+
+msgid "Goodbye"
+msgstr "Hwyl fawr"
+"""
+
+SAMPLE_PO_CONTENT_WITH_PLURAL = """msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-01-01 00:00+0000\\n"
+"PO-Revision-Date: 2026-01-01 00:00+0000\\n"
+"Language: cy\\n"
+"MIME-Version: 1.0\\n
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+
+msgid "Hello"
+msgstr "Helo"
+
+msgid "Goodbye"
+msgstr "Hwyl fawr"
+
+msgid "You have %d file"
+msgid_plural "You have %d files"
+msgstr[0] ""
+msgstr[1] ""
+"""
+
 SAMPLE_PO_CONTENT_WITH_MULTILINE = """msgid ""
 msgstr ""
 "POT-Creation-Date: 2026-01-01 00:00+0000\\n"
@@ -115,22 +157,33 @@ msgstr "Bore da"
 """
 
 
-class ExtractMsgidTests(SimpleTestCase):
+class ExtractTranslationsTests(SimpleTestCase):
     """Tests for Command._extract_msgids, which pulls only clean, non-empty msgids from .po contents."""
 
     def test_gets_clean_ids(self):
         inputs = ((SAMPLE_PO_CONTENT, 2), (SAMPLE_PO_CONTENT_WITH_MULTILINE, 3))
         for item in inputs:
-            result = Command._extract_msgids(item[0])  # pylint: disable=W0212
+            result = Command._extract_translations(item[0])  # pylint: disable=W0212
 
             self.assertEqual(len(result), item[1])
 
     def test_multiline_strings_cleaned_and_joined(self):
-        result = Command._extract_msgids(SAMPLE_PO_CONTENT_MULTILINE)  # pylint: disable=W0212
+        result = Command._extract_translations(SAMPLE_PO_CONTENT_MULTILINE)  # pylint: disable=W0212
 
         cleaned = result.pop()
 
-        self.assertEqual(cleaned, '"\n"second line"\n"third line\n"')
+        self.assertEqual(cleaned, ('"\n"second line"\n"third line\n"', "", ""))
+
+    def test_plurals_are_extracted(self):
+        result = Command._extract_translations(  # pylint: disable=W0212
+            """msgid "You have %d file"
+msgid_plural "You have %d files"
+msgstr[0] ""
+msgstr[1] ""
+"""
+        )
+        cleaned = result.pop()
+        self.assertEqual(cleaned, ("You have %d file", "", "You have %d files"))
 
 
 class WritePOFileCheckModeTests(SimpleTestCase):
@@ -189,7 +242,19 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         self.command.write_po_file(self.potfile, "cy")
 
         # new file should be in modififed dict
-        self.assertIn("Good Morning", self.command._modified_po_files[self.pofile])  # pylint: disable=W0212
+        self.assertIn(("Good Morning", "", ""), self.command._modified_po_files[self.pofile])  # pylint: disable=W0212
+
+    @patch("cms.locale.management.commands.makemessages.popen_wrapper")
+    def test_adding_msgctxt_is_considered_modified(self, mock_popen):
+        self._create_po_file(SAMPLE_PO_CONTENT)
+
+        # stdout from msgmerge is different
+        mock_popen.return_value = (SAMPLE_PO_CONTENT_WITH_MSGCTXT, "", 0)
+
+        self.command.write_po_file(self.potfile, "cy")
+
+        # should be entries in modified dict
+        self.assertNotEqual(len(self.command._modified_po_files[self.pofile]), 0)  # pylint: disable=W0212
 
     @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_if_only_diff_is_creation_date_not_flagged(self, mock_popen):

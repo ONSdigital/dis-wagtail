@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, override
+from typing import TYPE_CHECKING, Any, NamedTuple, override
 
 from django.core.management.base import CommandError
 from django.core.management.commands.makemessages import Command as MakeMessagesCommand
@@ -12,9 +12,31 @@ if TYPE_CHECKING:
     from django.core.management.base import CommandParser
 
 STATUS_OK = 0
+
+_QUOTED_STR_RE = r'(?:"[^"\\]*(?:\\.[^"\\]*)*")'
+_MULTILINE_QUOTED_RE = rf"(?:{_QUOTED_STR_RE}(?:\s+{_QUOTED_STR_RE})*)"
+
 _POT_CREATION_DATE_RE = re.compile(r'^"POT-Creation-Date: [^"]+\\n"', re.MULTILINE)
-_MSGID_RE = re.compile(r'^msgid\s+((?:"[^"\\]*(?:\\.[^"\\]*)*"\s*)+)', re.MULTILINE)
-_MSGID_CONTENTS_RE = re.compile(r'"([^\\]*(?:\\.[^"\\]*)*)"')
+_TRANSLATION_GROUP_RE = re.compile(
+    rf"(?:^msgctxt\s+(?P<msgctxt>{_MULTILINE_QUOTED_RE})\s+)?"
+    rf"^msgid\s+(?P<msgid>{_MULTILINE_QUOTED_RE})"
+    rf"(?:\s+msgid_plural\s+(?P<msgid_plural>{_MULTILINE_QUOTED_RE}))?",
+    re.MULTILINE,
+)
+_MATCH_CONTENTS_RE = re.compile(r'"([^\\]*(?:\\.[^"\\]*)*)"')
+
+
+class TranslationItem(NamedTuple):
+    msgid: str
+    msgctxt: str = ""
+    msgid_plural: str = ""
+
+    def __str__(self) -> str:
+        return (
+            f"{'msgctxt: {self.msgctxt}\n' if self.msgctxt != '' else ''}"
+            f"msgid: {self.msgid}"
+            f"{'\nmsgid_plural: {self.msgid_plural}' if self.msgid_plural != '' else ''}"
+        )
 
 
 class Command(MakeMessagesCommand):
@@ -30,7 +52,7 @@ class Command(MakeMessagesCommand):
     @override
     def handle(self, *args: Any, **options: Any) -> None:
         self._check_mode = options.get("check", False)  # pylint: disable=W0201
-        self._modified_po_files: dict[str, set[str]] = {}  # pylint: disable=W0201
+        self._modified_po_files: dict[str, set[TranslationItem]] = {}  # pylint: disable=W0201
         self.verbosity = options["verbosity"]  # pylint: disable=W0201
 
         super().handle(*args, **options)
@@ -39,11 +61,11 @@ class Command(MakeMessagesCommand):
             if self._modified_po_files:
                 self.stderr.write("The following .po files are not up to date:\n")
                 for path in self._modified_po_files:
-                    self.stderr.write(f"  {path}\n")
+                    self.stderr.write(f"  {path}\n\n")
                     if len(self._modified_po_files[path]) > 0:
-                        self.stderr.write("    The following msgids have changed\n")
+                        self.stderr.write("    The following msgids have changed\n\n")
                         for item in self._modified_po_files[path]:
-                            self.stderr.write(f"    {item}\n")
+                            self.stderr.write(f"    {item}\n\n")
                     else:
                         self.stderr.write("    new file\n")
                 self.stderr.write("\nRun `makemessages` to update them.\n")
@@ -82,26 +104,48 @@ class Command(MakeMessagesCommand):
 
         existing = Path(pofile).read_text(encoding="utf-8")
 
-        previous_msgids = self._extract_msgids(existing)
-        new_msgids = self._extract_msgids(msgs)
+        previous_msgids = self._extract_translations(existing)
+        new_msgids = self._extract_translations(msgs)
 
         if previous_msgids != new_msgids:
             self._modified_po_files[pofile] = set(previous_msgids ^ new_msgids)
 
     @staticmethod
-    def _extract_msgids(content: str) -> set[str]:
-        id_set = set()
-        matches = _MSGID_RE.findall(content)
+    def _extract_translations(content: str) -> set[TranslationItem]:
+        """Extracts groups of msgid, msgctxt and msgid_plural from pofile contents and returns
+        a set of unique groups keyed with a tuple of those values in the order (msgid, msgctxt and msgid_plural).
+
+        msgctxt and msgid_plural will default to an empty string if not present.
+        """
+        id_set = set[TranslationItem]()
+        matches = _TRANSLATION_GROUP_RE.finditer(content)
 
         for match in matches:
+            msgid = match.group("msgid")
+
             # joins multiline strings and removes surrounding quotes
-            clean_id = "".join(_MSGID_CONTENTS_RE.findall(match))
+            msgid = "".join(_MATCH_CONTENTS_RE.findall(msgid))
 
             # Sometimes multiline msgids can start a line with "" so we need to check
             # for empties after we've joined and cleaned
-            if clean_id == "":
+            if msgid == "":
                 continue
-            clean_id = clean_id.replace('\\"', '"').replace("\\n", "\n")
-            id_set.add(clean_id)
+            msgid = msgid.replace('\\"', '"').replace("\\n", "\n")
+
+            msgctxt = match.group("msgctxt")
+            if msgctxt:
+                msgctxt = "".join(_MATCH_CONTENTS_RE.findall(msgctxt))
+                msgctxt = msgctxt.replace('\\"', '"').replace("\\n", "\n")
+            else:
+                msgctxt = ""
+
+            msgid_plural = match.group("msgid_plural")
+            if msgid_plural:
+                msgid_plural = "".join(_MATCH_CONTENTS_RE.findall(msgid_plural))
+                msgid_plural = msgid_plural.replace('\\"', '"').replace("\\n", "\n")
+            else:
+                msgid_plural = ""
+
+            id_set.add(TranslationItem(msgid, msgctxt, msgid_plural))
 
         return id_set
