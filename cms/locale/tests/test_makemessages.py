@@ -216,7 +216,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         self.command.write_po_file(self.potfile, "cy")
 
         # new file should be in modififed dict
-        self.assertIn("Good Morning", self.command._modified_po_files[self.potfile])  # pylint: disable=W0212
+        self.assertIn("Good Morning", self.command._modified_po_files[self.pofile])  # pylint: disable=W0212
 
     @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_if_only_diff_is_creation_date_not_flagged(self, mock_popen):

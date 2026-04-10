@@ -86,7 +86,7 @@ class Command(MakeMessagesCommand):
         new_msgids = self._extract_msgids(msgs)
 
         if previous_msgids != new_msgids:
-            self._modified_po_files[potfile] = set(previous_msgids ^ new_msgids)
+            self._modified_po_files[pofile] = set(previous_msgids ^ new_msgids)
 
     @staticmethod
     def _normalize(content: str) -> str:
