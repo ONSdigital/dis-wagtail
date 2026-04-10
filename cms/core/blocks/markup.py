@@ -226,7 +226,7 @@ class ONSTableBlock(TinyTableBlock):
 
         return {
             "title": _("Download this table"),
-            "itemsList": [{"text": f"{_('Download CSV')}{size_suffix}", "url": csv_url}],
+            "itemsList": [{"text": _("Download CSV %(size)s") % {"size": size_suffix}, "url": csv_url}],
         }
 
     @staticmethod
