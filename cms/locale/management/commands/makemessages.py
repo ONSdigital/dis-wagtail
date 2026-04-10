@@ -89,11 +89,6 @@ class Command(MakeMessagesCommand):
             self._modified_po_files[pofile] = set(previous_msgids ^ new_msgids)
 
     @staticmethod
-    def _normalize(content: str) -> str:
-        """Strip out POT-Creation-Date from gettext output."""
-        return _POT_CREATION_DATE_RE.sub("", content)
-
-    @staticmethod
     def _extract_msgids(content: str) -> set[str]:
         id_set = set()
         matches = _MSGID_RE.findall(content)

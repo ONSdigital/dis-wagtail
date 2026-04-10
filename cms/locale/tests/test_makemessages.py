@@ -115,32 +115,6 @@ msgstr "Bore da"
 """
 
 
-class NormalizeTests(SimpleTestCase):
-    """Tests for Command._normalize, which strips POT-Creation-Date headers."""
-
-    def test_strips_pot_creation_date(self):
-        content = 'msgid ""\nmsgstr ""\n"POT-Creation-Date: 2026-04-07 12:00+0000\\n"\n"Language: cy\\n"\n'
-        result = Command._normalize(content)  # pylint: disable=W0212
-        self.assertNotIn("POT-Creation-Date", result)
-
-    def test_preserves_other_metadata(self):
-        content = (
-            'msgid ""\n'
-            'msgstr ""\n'
-            '"POT-Creation-Date: 2026-04-07 12:00+0000\\n"\n'
-            '"PO-Revision-Date: 2026-01-01 00:00+0000\\n"\n'
-            '"Last-Translator: someone\\n"\n'
-            '"Language: cy\\n"\n'
-        )
-        result = Command._normalize(content)  # pylint: disable=W0212
-        self.assertIn("PO-Revision-Date", result)
-        self.assertIn("Last-Translator", result)
-        self.assertIn("Language", result)
-
-    def test_content_with_no_date_header_is_unchanged(self):
-        content = 'msgid "Hello"\nmsgstr "Helo"\n'
-        self.assertEqual(Command._normalize(content), content)  # pylint: disable=W0212
-
 
 class ExtractMsgidTests(SimpleTestCase):
     """Tests for Command._extract_msgids, which pulls only clean, non-empty msgids from .po contents."""
