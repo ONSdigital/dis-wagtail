@@ -73,7 +73,7 @@ if not settings.IS_EXTERNAL_ENV:
         ]
 
     wagtail_admin_patterns += wagtailadmin_urls.urlpatterns
-    private_urlpatterns.append(path(settings.WAGTAILADMIN_HOME_PATH, include(wagtail_admin_patterns)))
+    private_urlpatterns.append(path(settings.WAGTAILADMIN_HOME_PATH.lstrip("/"), include(wagtail_admin_patterns)))
 
 if apps.is_installed("django.contrib.admin") and settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
     from django.contrib import admin  # pylint: disable=ungrouped-imports

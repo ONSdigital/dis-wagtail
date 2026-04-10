@@ -145,13 +145,13 @@ class CognitoTokenTestCase(TestCase):
         self.set_jwt_cookies(access, id_token)
 
     def assertLoggedOut(self, redirect="/admin/login/") -> None:  # pylint: disable=invalid-name
-        response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        response = self.client.get(f"/{settings.WAGTAILADMIN_HOME_PATH.lstrip('/')}")
         self.assertEqual(response.status_code, 302)
         self.assertIn(redirect, response["Location"])
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
     def assertLoggedIn(self) -> None:  # pylint: disable=invalid-name
-        response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        response = self.client.get(f"/{settings.WAGTAILADMIN_HOME_PATH.lstrip('/')}")
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.wsgi_request.user.is_authenticated)
         # User should now exist after login
