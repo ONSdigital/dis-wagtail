@@ -482,7 +482,14 @@ Translations are managed using .po files, which are compiled into .mo files for 
 The .po files are located in the `cms/locale` directory.
 
 If you add new text to the application, you will need to update the .po files to include the new text.
-You can do this by running the following command:
+
+```bash
+make makemessages-check
+```
+
+Will warn if .po files will change without applying changes to disk.
+
+You can update the files by running the following command:
 
 ```bash
 make makemessages
@@ -490,7 +497,7 @@ make makemessages
 
 This will scan the codebase for new text and update the .po files accordingly.
 
-Once you have updated the .po files, you will need to compile them into .mo files for use in the application.
+Once you have updated the .po files with translations, you will need to compile them into .mo files for use in the application.
 
 You can do this by running the following command:
 
