@@ -68,10 +68,9 @@ def user_can_access_asset(
     if asset.is_public:
         return True
 
-    if settings.IS_EXTERNAL_ENV or not request.user.is_authenticated:
-        return False
-
-    if permission_policy.user_has_any_permission_for_instance(user, ["choose", "add", "change"], asset):
+    if user.is_authenticated and permission_policy.user_has_any_permission_for_instance(
+        user, ["choose", "add", "change"], asset
+    ):
         return True
 
     cookie_data = request.get_signed_cookie(
