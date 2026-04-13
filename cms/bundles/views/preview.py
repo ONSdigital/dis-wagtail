@@ -100,16 +100,26 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
 
         response = TemplateResponse(request, page.get_template(request), context)
 
-        # Set a short-lived, signed cookie with the bundle and page information to be used by the
-        # private media serve view.
+        # Build a list of preview entries so that multiple tabs can be open simultaneously
+        # without clobbering each other's cookie data.
+        preview_entries: list[dict[str, int]] = []
+        existing_data = request.get_signed_cookie(
+            settings.BUNDLE_PREVIEW_COOKIE_NAME,
+            default=None,
+            salt=f"previewer-{request.user.pk}",
+            max_age=settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
+        )
+        if existing_data is not None:
+            parsed = json.loads(existing_data)
+            preview_entries = parsed if isinstance(parsed, list) else [parsed]
+
+        # Replace any existing entry for this page, then append the new one
+        preview_entries = [e for e in preview_entries if e.get("page") != page_id]
+        preview_entries.append({"bundle": bundle.pk, "page": page_id})
+
         response.set_signed_cookie(
             settings.BUNDLE_PREVIEW_COOKIE_NAME,
-            json.dumps(
-                {
-                    "bundle": bundle.pk,
-                    "page": page_id,
-                }
-            ),
+            json.dumps(preview_entries),
             max_age=settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
             salt=f"previewer-{request.user.pk}",
             secure=True,

@@ -361,3 +361,58 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
             with self.subTest(msg=f"Testing private {asset} not in the bundle"):
                 response = self.client.get(asset.serve_url)
                 self.assertEqual(response.status_code, 403)
+
+    def test_access_via_bundle_preview__multiple_pages_do_not_clobber(self):
+        """Previewing a second page should not revoke access to the first page's assets."""
+        # Create a second page with different private assets
+        other_image = ImageFactory(collection=self.root_collection)
+        other_image_rendition = other_image.create_rendition(Filter("width-1024"))
+        other_document = DocumentFactory(collection=self.root_collection)
+
+        other_page = InformationPageFactory(
+            content=[
+                {
+                    "type": "section",
+                    "value": {
+                        "title": "Content",
+                        "content": [
+                            {"type": "image", "value": {"image": other_image.id}, "id": str(uuid.uuid4())},
+                            {
+                                "type": "documents",
+                                "value": [
+                                    {
+                                        "type": "document",
+                                        "value": {"document": other_document.id},
+                                        "id": str(uuid.uuid4()),
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                }
+            ]
+        )
+        mark_page_as_ready_for_review(other_page)
+        BundlePageFactory(parent=self.bundle, page=other_page)
+        rebuild_references_index()
+
+        self.client.force_login(self.viewer)
+
+        with time_machine.travel(FROZEN_TIME, tick=False):
+            # Preview the first page
+            self.client.get(self.url_preview_ready)
+            # Preview the second page (should accumulate, not replace)
+            self.client.get(reverse("bundles:preview", args=[self.bundle.pk, other_page.pk]))
+
+        with time_machine.travel(FROZEN_TIME + timedelta(seconds=5), tick=False):
+            # Assets from the first page should still be accessible
+            for asset in [self.private_image_rendition, self.private_document]:
+                with self.subTest(msg=f"First page asset {asset}"):
+                    response = self.client.get(asset.serve_url)
+                    self.assertEqual(response.status_code, 200)
+
+            # Assets from the second page should also be accessible
+            for asset in [other_image_rendition, other_document]:
+                with self.subTest(msg=f"Second page asset {asset}"):
+                    response = self.client.get(asset.serve_url)
+                    self.assertEqual(response.status_code, 200)

@@ -30,6 +30,32 @@ def get_frontend_cache_configuration() -> dict[str, Any]:
     return getattr(settings, "WAGTAILFRONTENDCACHE", {})
 
 
+def _asset_in_authorized_pages(asset: PrivateMediaMixin, page_ids: list[int]) -> bool:
+    """Check if the asset is referenced by any of the given pages."""
+    in_referencing_page = (
+        ReferenceIndex.objects.filter(
+            base_content_type__model=Page._meta.model_name.lower(),
+            base_content_type__app_label=Page._meta.app_label.lower(),
+            to_content_type__model=asset._meta.model_name.lower(),  # type: ignore[union-attr]
+            to_content_type__app_label=asset._meta.app_label.lower(),
+            to_object_id=asset.pk,
+        )
+        .annotate(page_id=Cast("object_id", output_field=IntegerField()))
+        .filter(page_id__in=page_ids)
+        .exists()
+    )
+    if in_referencing_page:
+        return True
+
+    # Fall back to checking latest revisions for draft content
+    for base_page in Page.objects.filter(pk__in=page_ids):
+        specific_page = base_page.get_latest_revision_as_object()
+        if str(asset.pk) in specific_page.get_referenced_asset_ids(asset.__class__):
+            return True
+
+    return False
+
+
 def user_can_access_asset(
     *,
     request: HttpRequest,
@@ -47,46 +73,29 @@ def user_can_access_asset(
     ):
         return True
 
-    preview_data = request.get_signed_cookie(
+    cookie_data = request.get_signed_cookie(
         settings.BUNDLE_PREVIEW_COOKIE_NAME,
         default=None,
         salt=f"previewer-{request.user.pk}",
         max_age=settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
     )
-    if preview_data is None:
+    if cookie_data is None:
         return False
 
-    preview_data = json.loads(preview_data)
+    parsed = json.loads(cookie_data)
+    # The cookie may contain multiple preview entries (one per tab/page) to avoid
+    # clobbering when multiple preview tabs are open simultaneously.
+    preview_entries: list[dict[str, int]] = parsed if isinstance(parsed, list) else [parsed]
 
-    # the user can access the given asset if:
-    # - they can preview the bundle the page is in
-    # - and the given page
+    # Filter to entries where the user can actually preview the bundle
+    authorized_page_ids = [
+        entry["page"] for entry in preview_entries if user_can_preview_bundle_by_id(user, entry["bundle"])
+    ]
+    if not authorized_page_ids:
+        return False
+
+    # The user can access the given asset if any authorized page:
     #   - references the asset via the reference index, or
-    #   - the given asset is used by the page, the page is live, but also has unpublished changes.
-    #     Once a page is live, the reference index is only updated on publication,
-    #     so any unpublished draft would not be tracked.
-    if not user_can_preview_bundle_by_id(user, preview_data["bundle"]):
-        return False
-
-    in_referencing_page = (
-        ReferenceIndex.objects.filter(
-            base_content_type__model=Page._meta.model_name.lower(),
-            base_content_type__app_label=Page._meta.app_label.lower(),
-            to_content_type__model=asset._meta.model_name.lower(),  # type: ignore[union-attr]
-            to_content_type__app_label=asset._meta.app_label.lower(),
-            to_object_id=asset.pk,
-        )
-        .annotate(page_id=Cast("object_id", output_field=IntegerField()))
-        .filter(page_id=preview_data["page"])
-        .exists()
-    )
-    if in_referencing_page:
-        return True
-
-    can_access = False
-    if page := Page.objects.filter(pk=preview_data["page"]).first():
-        # We want to check the latest revision. This will return the specific instance too
-        page = page.get_latest_revision_as_object()
-        can_access = str(asset.pk) in page.get_referenced_asset_ids(asset.__class__)
-
-    return can_access
+    #   - uses the asset in an unpublished draft (the reference index is only
+    #     updated on publication, so drafts wouldn't be tracked there).
+    return _asset_in_authorized_pages(asset, authorized_page_ids)
