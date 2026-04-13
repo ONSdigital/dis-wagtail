@@ -66,7 +66,7 @@ class TestImageServeView(TestCase):
                     IS_EXTERNAL_ENV=is_external_env
                 ):
                     response = self.client.get(rendition.serve_url)
-                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.status_code, 403 if is_external_env else 200)
 
     def test_serve_public_image(self):
         """Test the serve view behaviour for public image renditions."""
@@ -164,7 +164,7 @@ class TestDocumentServeView(TestCase):
         for is_external_env in [True, False]:
             with self.subTest(is_external_env=is_external_env) and override_settings(IS_EXTERNAL_ENV=is_external_env):
                 response = self.client.get(serve_url)
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, 403 if is_external_env else 200)
 
     def test_serve_public_document(self):
         """Test the serve view behaviour for public documents."""
