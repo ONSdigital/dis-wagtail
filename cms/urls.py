@@ -14,6 +14,7 @@ from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
 from cms.home.views import serve_localized_homepage
 from cms.private_media import views as private_media_views
+from cms.users.views import ONSAccountView
 
 # Internal URLs are not intended for public use.
 internal_urlpatterns = [
@@ -41,6 +42,7 @@ if not settings.IS_EXTERNAL_ENV:
 
     # Conditionally include Wagtail admin URLs
     wagtail_admin_patterns = [
+        path("account/", ONSAccountView.as_view(), name="wagtailadmin_account"),
         path(
             "logout/",
             ONSLogoutView.as_view(),
@@ -60,6 +62,15 @@ if not settings.IS_EXTERNAL_ENV:
                 "password_reset/",
                 RedirectView.as_view(url=settings.WAGTAILADMIN_LOGIN_URL, permanent=False),
                 name="wagtailadmin_password_reset",
+            ),
+        ]
+
+    if not settings.ALLOW_TEAM_MANAGEMENT and settings.AWS_COGNITO_TEAM_SYNC_ENABLED:
+        # Redirect all preview teams pages to Florence groups when team sync is enabled
+        wagtail_admin_patterns += [
+            re_path(
+                r"^teams/",
+                RedirectView.as_view(url=settings.FLORENCE_GROUPS_PATH, permanent=False),
             ),
         ]
 
