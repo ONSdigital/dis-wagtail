@@ -541,6 +541,7 @@ def release_calendar(context: Context, creator_role: str) -> None:
 def find_release_calendar_existing(context: Context) -> None:
     release_calendar_name = context.release_calendar_page.title
     context.page.get_by_role("button", name="Choose Release Calendar page").click()
+    context.page.wait_for_timeout(250)  # Wait for the modal to open
     context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
 
 
@@ -608,7 +609,9 @@ def statistical_analysis(context: Context, user_role: str) -> None:
 @step("the logged in user searches for a non existing bundled_page")
 def find_non_existing_bundled_page(context: Context) -> None:
     bundled_page_name = "PFM December 2025"
-    context.page.get_by_role("button", name="Choose Release Calendar page").click()
+    context.page.get_by_role("button", name="Add page").click()
+    context.page.get_by_label("Locale").select_option("en-gb")
+    context.page.get_by_label("Page type").select_option("StatisticalArticlePage")
     context.page.get_by_role("textbox", name="Search term").fill(bundled_page_name)
 
 
