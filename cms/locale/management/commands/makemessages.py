@@ -94,7 +94,7 @@ class Command(MakeMessagesCommand):
         msgs, errors, status = popen_wrapper(args)
         if errors:
             if status != STATUS_OK:
-                raise CommandError(f"errors occured while running msgmerge\n{errors}")
+                raise CommandError(f"errors occurred while running msgmerge\n{errors}")
             if self.verbosity > 0:
                 self.stderr.write(errors)
 
