@@ -114,6 +114,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "django.contrib.auth",  # Wagtail requires the auth app be installed, even if it's not used.
     "django.contrib.contenttypes",
+    "django.contrib.postgres",
     "whitenoise.runserver_nostatic",  # Must be before `django.contrib.staticfiles`
     "django.contrib.staticfiles",
     "django_jinja",
