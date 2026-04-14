@@ -1,8 +1,10 @@
 from collections.abc import Sequence
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
 from django.db import models
+from django.http import HttpRequest, HttpResponseRedirect
 from django.utils.functional import cached_property
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -32,11 +34,14 @@ from .locks import ReleasePageInBundleReadyToBePublishedLock
 from .panels import ChangesToReleaseDateFieldPanel, ReleaseCalendarBundleNotePanel
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
+    from django.http import HttpResponse
     from django.template.response import TemplateResponse
     from wagtail.locks import BaseLock
 
     from cms.bundles.models import Bundle
+
+
+RELEASE_CALENDAR_REDIRECT_PATH = "/releasecalendar"
 
 
 class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
@@ -47,6 +52,17 @@ class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
     subpage_types: ClassVar[list[str]] = ["ReleaseCalendarPage"]
     max_count_per_parent = 1
+
+    def serve(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if not settings.RELEASE_CALENDAR_INDEX_REDIRECT_ENABLED:
+            return super().serve(request, *args, **kwargs)  # type: ignore[no-any-return]
+
+        location = RELEASE_CALENDAR_REDIRECT_PATH
+        if settings.WAGTAIL_APPEND_SLASH:
+            location += "/"
+        response = HttpResponseRedirect(location)
+        response.status_code = HTTPStatus.TEMPORARY_REDIRECT
+        return response
 
 
 class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
