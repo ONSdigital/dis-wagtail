@@ -14,6 +14,26 @@ COOKIE_TYPE_RADIO_LOCATOR = {
 }
 
 
+COOKIE_BANNER_TEXT = {
+    "English": {
+        "region": "Cookies banner",
+        "heading": f"Cookies on {settings.ONS_COOKIE_BANNER_SERVICE_NAME}",
+        "accept": "Accept additional cookies",
+        "reject": "Reject additional cookies",
+        "additional": "additional cookies",
+        "view": "View cookies",
+    },
+    "Welsh": {
+        "region": "Cwcis",
+        "heading": f"Cwcis ar {settings.ONS_COOKIE_BANNER_SERVICE_NAME}",
+        "accept": "Derbyn cwcis ychwanegol",
+        "reject": "Gwrthod cwcis ychwanegol",
+        "additional": "cwcis ychwanegol",
+        "view": "Gweld cwcis",
+    },
+}
+
+
 @given("the browsers cookies are cleared")
 def clear_browser_cookies(context: Context) -> None:
     context.page.context.clear_cookies()
@@ -29,16 +49,17 @@ def user_rejects_additional_cookies_in_banner(context: Context) -> None:
     context.page.get_by_role("button", name="Reject additional cookies").click()
 
 
-@when("the cookies banner is displayed")
-def check_cookies_banner_is_displayed(context: Context) -> None:
-    expect(context.page.get_by_role("region", name="Cookies banner")).to_be_visible()
-    expect(
-        context.page.get_by_role("heading", name=f"Cookies on {settings.ONS_COOKIE_BANNER_SERVICE_NAME}")
-    ).to_be_visible()
-    expect(context.page.get_by_role("button", name="Accept additional cookies")).to_be_visible()
-    expect(context.page.get_by_role("button", name="Reject additional cookies")).to_be_visible()
-    expect(context.page.get_by_role("link", name="additional cookies")).to_be_visible()
-    expect(context.page.get_by_role("link", name="View cookies")).to_be_visible()
+@when("the cookies banner is displayed in {language}")
+@then("the cookies banner is displayed in {language}")
+def check_cookies_banner_is_displayed(context, language: str) -> None:
+    text = COOKIE_BANNER_TEXT[language]
+
+    expect(context.page.get_by_role("region", name=text["region"])).to_be_visible()
+    expect(context.page.get_by_role("heading", name=text["heading"], exact=True)).to_be_visible()
+    expect(context.page.get_by_role("button", name=text["accept"])).to_be_visible()
+    expect(context.page.get_by_role("button", name=text["reject"])).to_be_visible()
+    expect(context.page.get_by_role("link", name=text["additional"])).to_be_visible()
+    expect(context.page.get_by_role("link", name=text["view"])).to_be_visible()
 
 
 @when('the user clicks "View cookies" on the cookies banner')
