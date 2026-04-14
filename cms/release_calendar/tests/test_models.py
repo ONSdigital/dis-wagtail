@@ -780,7 +780,7 @@ class ReleaseCalendarIndexTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, HTTPStatus.TEMPORARY_REDIRECT)
         self.assertEqual(response["Location"], "/releasecalendar")
 
-    @override_settings(RELEASE_CALENDAR_INDEX_REDIRECT_ENABLED=False)
+    @override_settings(CMS_RELEASES_INDEX_REDIRECT_ENABLED=False)
     def test_render_without_redirect(self):
         """Test that the index page renders when redirect is disabled."""
         response = self.client.get(self.page.url)

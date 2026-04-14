@@ -54,7 +54,7 @@ class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
     max_count_per_parent = 1
 
     def serve(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        if not settings.RELEASE_CALENDAR_INDEX_REDIRECT_ENABLED:
+        if not settings.CMS_RELEASES_INDEX_REDIRECT_ENABLED:
             return super().serve(request, *args, **kwargs)  # type: ignore[no-any-return]
 
         location = RELEASE_CALENDAR_REDIRECT_PATH
