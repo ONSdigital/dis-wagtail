@@ -12,7 +12,7 @@ requires-poetry = ">=2.2"
 
 [tool.poetry.dependencies]
 python = "^3.14"
-django = "~6.0"
+django = "~6.0.4"
 wagtail = "~7.3.0"
 dj-database-url = "~3.1.0"
 django-csp = "~4.0"
