@@ -14,6 +14,7 @@ from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
 from cms.home.views import serve_localized_homepage
 from cms.private_media import views as private_media_views
+from cms.users.views import ONSAccountView
 
 # Internal URLs are not intended for public use.
 internal_urlpatterns = [
@@ -41,6 +42,7 @@ if not settings.IS_EXTERNAL_ENV:
 
     # Conditionally include Wagtail admin URLs
     wagtail_admin_patterns = [
+        path("account/", ONSAccountView.as_view(), name="wagtailadmin_account"),
         path(
             "logout/",
             ONSLogoutView.as_view(),

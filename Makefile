@@ -92,12 +92,15 @@ install:  ## Install the dependencies excluding dev.
 install-dev:  ## Install the dependencies including dev.
 	npm ci
 	poetry install --no-root
+	pip install pre-commit && pre-commit install
 
 .PHONY: megalint
-megalint:  ## Run the mega-linter.
+.PHONY: megalint
+megalint:  ## Run the mega-linter. Use LINTER=NAME to run only one.
 	docker run --platform linux/amd64 --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock:rw \
 		-v $(shell pwd):/tmp/lint:rw \
+		$(if $(LINTER),-e ENABLE_LINTERS=$(LINTER),) \
 		ghcr.io/oxsecurity/megalinter-cupcake:v9
 
 .PHONY: load-design-system-templates
