@@ -92,6 +92,7 @@ install:  ## Install the dependencies excluding dev.
 install-dev:  ## Install the dependencies including dev.
 	npm ci
 	poetry install --no-root
+	pip install pre-commit && pre-commit install
 
 .PHONY: megalint
 .PHONY: megalint
