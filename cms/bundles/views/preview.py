@@ -122,7 +122,8 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
             json.dumps(preview_entries),
             max_age=settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
             salt=f"previewer-{request.user.pk}",
-            secure=True,
+            # Set secure to true in production, but allow it to be false in development for ease of testing
+            secure=not settings.DEBUG,
             httponly=True,
             samesite="Lax",
         )
