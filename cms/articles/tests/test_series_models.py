@@ -9,7 +9,7 @@ from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.permission_testers import BasePagePermissionTester
-from cms.core.tests.utils import TranslationResetMixin
+from cms.core.tests.utils import TranslationResetMixin, reset_url_caches
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datavis.tests.factories import TableDataFactory
 from cms.users.tests.factories import UserFactory
@@ -87,6 +87,9 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
             ],
         )
         self.article_with_datasets.save_revision().publish()
+
+    def tearDown(self):
+        reset_url_caches()
 
     def test_evergreen_route_links_to_evergreen_related_data(self):
         """Test that the evergreen page links to the evergreen related data page."""
