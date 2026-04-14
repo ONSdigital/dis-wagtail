@@ -1123,8 +1123,9 @@ HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS = int(env.get("HTTP_REQUEST_DEFAULT_TIMEOUT
 
 DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "100"))
 
-
 WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_publish"
+
+CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
 
 # Disable Wagtail's auto-saving feature
 WAGTAIL_AUTOSAVE_INTERVAL = 0
