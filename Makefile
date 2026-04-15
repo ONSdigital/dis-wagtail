@@ -54,7 +54,7 @@ lint-py:  ## Run all Python linters (ruff/pylint/mypy).
 	poetry run ruff check .
 	poetry run ruff format --check .
 	find . -type f -name "*.py" | xargs poetry run pylint --reports=n --output-format=colorized --rcfile=.pylintrc --django-settings-module=cms.settings.production -j 0
-	make mypy
+	$(MAKE) mypy
 
 .PHONY: lint-html
 lint-html:  ## Run HTML Linters
@@ -185,6 +185,8 @@ runserver: ## Run the Django application locally
 dev-init: load-design-system-templates npm-build collectstatic compilemessages makemigrations migrate load-topics createsuperuser ## Run the pre-run setup scripts
 	## Set all Wagtail sites to our development port
 	poetry run python manage.py shell -c "from wagtail.models import Site; Site.objects.all().update(port=$(WEB_PORT))"
+	# Clear the cache to prevent any issues with stale data
+	$(MAKE) cache-clear
 
 .PHONY: functional-tests-up
 functional-tests-up:  ## Start the functional tests docker compose dependencies
@@ -223,6 +225,12 @@ makemessages:  ## We currently just require Welsh (cy), change to -a for all lan
 .PHONY: compilemessages
 compilemessages:
 	poetry run python ./manage.py compilemessages
+
+# Dev helper commands
+
+.PHONY: cache-clear
+cache-clear:  ## Clear the Django cache
+	poetry run python ./manage.py shell -c "from django.core.cache import cache; cache.clear()"
 
 # Aliases
 .PHONY: start
