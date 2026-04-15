@@ -90,26 +90,24 @@
         {% endif %}
 
         {# TODO: Move breadcrumbs out of `main-content` as navigation elements should not be here to avoid screen reader issues #}
-        {% set header_area_content %}
-            {# This block should be overridden on individual page templates and include the breadcrumbs and hero. This is default content while the build is in progress. #}
-            {% block header_area %}{% endblock %}
-        {% endset %}
-
-        {% if header_area_content|trim %}
-            {{ header_area_content }}
-        {% else %}
+        {# This block should be overridden on individual page templates and include the breadcrumbs and page heading. This is default content while the build is in progress. #}
+        {% block header_area %}
             <div class="ons-container">
                 {% include "templates/components/navigation/breadcrumbs.html" %}
+                {% if not render_heading_in_content %}
+                    <h1 class="ons-u-fs-3xl common-header__heading">
+                        {{ page.title }}
+                    </h1>
+                {% endif %}
             </div>
-        {% endif %}
+        {% endblock %}
 
         <div class="ons-page__container ons-container{{ containerClasses }}">
             <div class="ons-grid">
                 <div class="ons-grid__col ons-col-{{ pageColNumber }}@m {{ pageColClasses }}">
                     {# This is the main tag in the base template in the design system #}
                     <div class="ons-page__main ons-u-mb-5xl {{ mainColClasses }}">
-                        {# If the header area was not overridden then set the page title as the heading for the page #}
-                        {% if not header_area_content|trim %}
+                        {% if render_heading_in_content %}
                             <h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">
                                 {{ page_heading or page.title }}
                             </h1>
