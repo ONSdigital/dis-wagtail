@@ -77,11 +77,9 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
     when switching language, rather than resolving to the page's canonical URL.
     """
     page = context.get("page")
-    if not page:
-        return []
 
     # TODO: if request.is_preview -> use view_draft URLs
-    if prebuilt_locale_urls := getattr(page, "_locale_urls", None):
+    if page and (prebuilt_locale_urls := getattr(page, "_locale_urls", None)):
         return prebuilt_locale_urls  # type: ignore[no-any-return]
 
     request = context["request"]
@@ -116,7 +114,8 @@ def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
                 url = f"/{locale.language_code}{bare_path}"
             results.append({"locale": locale, "url": url})
 
-    page._locale_urls = results  # pylint: disable=protected-access
+    if page:
+        page._locale_urls = results  # pylint: disable=protected-access
 
     return results
 
