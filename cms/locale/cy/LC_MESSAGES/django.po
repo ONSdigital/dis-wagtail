@@ -258,7 +258,6 @@ msgid "Reason for change"
 msgstr "Rheswm dros newid"
 
 #: cms/jinja2/templates/pages/cookies.html:10
-#| msgid "Cookies on %(service_name)s"
 msgid "Cookies on %(service_name)s"
 msgstr "Cwcis ar %(service_name)s"
 
