@@ -9,6 +9,12 @@
     {% trans service_name=ONS_COOKIE_BANNER_SERVICE_NAME %}Cookies on {{ service_name }}{% endtrans %}
 {%- endset -%}
 
+{%- set page_title-%}
+    {%- with current_site=wagtail_site() -%}
+        {{ page_heading }} - {{ current_site.site_name }}
+    {%- endwith -%}
+{%- endset -%}
+
 {% block main %}
     <div class="ons-page__body">
         {# fmt:off #}
