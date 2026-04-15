@@ -6,6 +6,7 @@ from urllib.parse import ParseResult, urlparse
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import widgets
+from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 
 from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
@@ -820,6 +821,10 @@ class IframeBlock(BaseVisualisationBlock):
             "caption": value.get("caption"),
             "description": value.get("audio_description"),
             "iframeUrl": value.get("iframe_source_url"),
+            "footnotes": {
+                "title": _("Footnotes"),
+                "content": str(value.get("footnotes")),
+            },
         }
 
         return config
