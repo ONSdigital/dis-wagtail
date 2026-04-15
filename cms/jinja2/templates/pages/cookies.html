@@ -1,14 +1,14 @@
-{% extends "templates/base.html" %}
+{% extends "templates/base_page.html" %}
 {% from "components/radios/_macro.njk" import onsRadios %}
 {% from "components/button/_macro.njk" import onsButton %}
 {% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/details/_macro.njk" import onsDetails %}
 {% from "components/table/_macro.njk" import onsTable %}
+{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
+
 
 {% block main %}
     <div class="ons-page__body">
-        <h1 class="ons-u-fs-2xl">{% trans service_name=ONS_COOKIE_BANNER_SERVICE_NAME %}Cookies on {{ service_name }}{% endtrans %}</h1>
-
         {# fmt:off #}
         {% call onsPanel({
                 "classes": "ons-u-mb-l ons-u-d-no ons-cookies-confirmation-message",
@@ -171,12 +171,11 @@
                 {% set save_changes_button = _('Save changes') %}
                 {# fmt:off #}
                 {{ onsButton({
-                        "type": 'submit',
-                        "classes": "ons-u-mb-l",
-                        "text": save_changes_button
-                    }) }}
+                    "type": 'submit',
+                    "classes": "ons-u-mt-l",
+                    "text": save_changes_button
+                }) }}
                 {# fmt:on #}
-
             </form>
         </div>
     </div>
