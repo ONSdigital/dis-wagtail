@@ -4,8 +4,10 @@
 {% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/details/_macro.njk" import onsDetails %}
 {% from "components/table/_macro.njk" import onsTable %}
-{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 
+{%- set page_heading -%}
+    {% trans service_name=ONS_COOKIE_BANNER_SERVICE_NAME %}Cookies on {{ service_name }}{% endtrans %}
+{%- endset -%}
 
 {% block main %}
     <div class="ons-page__body">

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-14 19:08+0100\n"
+"POT-Creation-Date: 2026-04-15 12:20+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -258,15 +258,15 @@ msgid "Reason for change"
 msgstr "Rheswm dros newid"
 
 #: cms/jinja2/templates/pages/cookies.html:10
-#, python-format
+#| msgid "Cookies on %(service_name)s"
 msgid "Cookies on %(service_name)s"
 msgstr "Cwcis ar %(service_name)s"
 
-#: cms/jinja2/templates/pages/cookies.html:19
+#: cms/jinja2/templates/pages/cookies.html:22
 msgid "Your cookie settings have been saved"
 msgstr "Mae eich gosodiadau cwcis wedi’u cadw"
 
-#: cms/jinja2/templates/pages/cookies.html:21
+#: cms/jinja2/templates/pages/cookies.html:24
 msgid ""
 "Some parts of this website may use additional cookies and will have their "
 "own cookie policy and banner."
@@ -274,11 +274,11 @@ msgstr ""
 "Efallai y bydd rhai rhannau o’r wefan hon yn defnyddio cwcis ychwanegol ac "
 "yn cynnwyseu polisi cwcis a’u baner eu hunain."
 
-#: cms/jinja2/templates/pages/cookies.html:23
+#: cms/jinja2/templates/pages/cookies.html:26
 msgid "Return to previous page"
 msgstr "Dychwelyd i’r dudalen flaenorol"
 
-#: cms/jinja2/templates/pages/cookies.html:27
+#: cms/jinja2/templates/pages/cookies.html:30
 msgid ""
 "Cookies are files saved on your phone, tablet or computer when you visit a "
 "website."
@@ -286,13 +286,13 @@ msgstr ""
 "Mae cwcis yn ffeiliau sy’n cael eu cadw are eich ffôn, llechen neu "
 "gyfrifiadur pan fyddwch yn ymweld â gwefan."
 
-#: cms/jinja2/templates/pages/cookies.html:28
+#: cms/jinja2/templates/pages/cookies.html:31
 msgid ""
 "We use cookies to collect and store information about how you use the ONS "
 "website, such as the pages you visit."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:30
+#: cms/jinja2/templates/pages/cookies.html:33
 #, python-format
 msgid ""
 "This page has a brief explanation of each type of cookie we use. If you want "
@@ -300,144 +300,144 @@ msgid ""
 "information</a>."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:32
+#: cms/jinja2/templates/pages/cookies.html:35
 msgid "Cookie settings"
 msgstr "Gosodiadau cwcis"
 
-#: cms/jinja2/templates/pages/cookies.html:39
+#: cms/jinja2/templates/pages/cookies.html:42
 msgid "You can try:"
 msgstr "Gallwch geisio:"
 
-#: cms/jinja2/templates/pages/cookies.html:41
+#: cms/jinja2/templates/pages/cookies.html:44
 msgid "turning on JavaScript in your browser"
 msgstr "galluogi JavaScript yn eich porwr"
 
-#: cms/jinja2/templates/pages/cookies.html:42
+#: cms/jinja2/templates/pages/cookies.html:45
 msgid "reloading the page in case there was a temporary fault with JavaScript"
 msgstr ""
 "ail-lwytho’r dudalen rhag ofn bod gwall dros dro wedi digwydd gyda JavaScript"
 
-#: cms/jinja2/templates/pages/cookies.html:48
+#: cms/jinja2/templates/pages/cookies.html:51
 msgid ""
 "We use four types of cookie. You can choose which cookies you’re happy for "
 "us to use."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:52
+#: cms/jinja2/templates/pages/cookies.html:55
 msgid "Cookies that measure website use"
 msgstr "Cwcis sy’n mesur defnydd o’r wefan"
 
-#: cms/jinja2/templates/pages/cookies.html:54
+#: cms/jinja2/templates/pages/cookies.html:57
 msgid ""
 "We use Google Analytics and Hotjar cookies to measure how you use the "
 "website."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:56
+#: cms/jinja2/templates/pages/cookies.html:59
 msgid "These cookies collect information about:"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:58
+#: cms/jinja2/templates/pages/cookies.html:61
 msgid "how you got to the site"
 msgstr "sut y daethoch chi i’r wefan"
 
-#: cms/jinja2/templates/pages/cookies.html:59
+#: cms/jinja2/templates/pages/cookies.html:62
 msgid "the pages you visit and how long you spend on each page"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:60
+#: cms/jinja2/templates/pages/cookies.html:63
 msgid "what you click on while you are visiting the site"
 msgstr "yr hyn rydych yn clicio arno tra byddwch yn ymweld â’r wefan"
 
-#: cms/jinja2/templates/pages/cookies.html:61
+#: cms/jinja2/templates/pages/cookies.html:64
 msgid "the way in which you interact with a page"
 msgstr "y ffordd rydych yn rhyngweithio â thudalen"
 
-#: cms/jinja2/templates/pages/cookies.html:62
+#: cms/jinja2/templates/pages/cookies.html:65
 msgid "whether you have participated in a Hotjar survey"
 msgstr "p’un a ydych wedi cymryd rhan mewn arolwg Hotjar"
 
-#: cms/jinja2/templates/pages/cookies.html:64
+#: cms/jinja2/templates/pages/cookies.html:67
 msgid ""
 "We do not allow Google or Hotjar to use or share this data for their own "
 "purposes."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:66
+#: cms/jinja2/templates/pages/cookies.html:69
 msgid "Do you want to allow cookies that measure website use?"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:67
+#: cms/jinja2/templates/pages/cookies.html:70
 msgid "Yes"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:68
+#: cms/jinja2/templates/pages/cookies.html:71
 msgid "No"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:95
+#: cms/jinja2/templates/pages/cookies.html:98
 msgid "Cookies that help with our communications and marketing"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:97
+#: cms/jinja2/templates/pages/cookies.html:100
 msgid ""
 "These cookies may be set by third-party websites, like YouTube and Vimeo. "
 "They do things like measure how you view YouTube videos that are on the ONS "
 "website."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:100
+#: cms/jinja2/templates/pages/cookies.html:103
 msgid ""
 "Do you want to allow cookies that help with our communications and marketing?"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:127
+#: cms/jinja2/templates/pages/cookies.html:130
 msgid "Cookies that remember your settings"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:129
+#: cms/jinja2/templates/pages/cookies.html:132
 msgid ""
 "These cookies do things like remember your preferences and the choices you "
 "make, to personalise your experience of using the site."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:132
+#: cms/jinja2/templates/pages/cookies.html:135
 msgid ""
 "We currently do not use these cookies but do store your choice to accept or "
 "reject them as part of our strictly necessary cookies."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:135
+#: cms/jinja2/templates/pages/cookies.html:138
 msgid "Do you want to allow cookies that remember your settings?"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:162
+#: cms/jinja2/templates/pages/cookies.html:165
 msgid "Strictly necessary cookies"
 msgstr "Cwcis hollol angenrheidiol"
 
-#: cms/jinja2/templates/pages/cookies.html:163
+#: cms/jinja2/templates/pages/cookies.html:166
 msgid "These essential cookies do things like:"
 msgstr "Mae’r cwcis hollol angenrheidiol hyn yn gwneud pethau fel:"
 
-#: cms/jinja2/templates/pages/cookies.html:165
+#: cms/jinja2/templates/pages/cookies.html:168
 msgid ""
 "remember the notifications you’ve seen so we do not show them to you again"
 msgstr ""
 "cofio’r hysbysiadau rydych wedi’u gweld fel na fyddwn yn eu dangos i chi eto"
 
-#: cms/jinja2/templates/pages/cookies.html:166
+#: cms/jinja2/templates/pages/cookies.html:169
 msgid "remember your progress through a form (for example, an ONS study)"
 msgstr "cofio’ch cynnydd trwy ffurflen (er enghraifft, astudiaeth SYG)"
 
-#: cms/jinja2/templates/pages/cookies.html:167
+#: cms/jinja2/templates/pages/cookies.html:170
 msgid "improve performance and identify potential security threats"
 msgstr "gwella perfformiad ac adnabod bygythiadau diogelwch posibl"
 
-#: cms/jinja2/templates/pages/cookies.html:169
+#: cms/jinja2/templates/pages/cookies.html:172
 msgid "They always need to be on."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:171
+#: cms/jinja2/templates/pages/cookies.html:174
 msgid "Save changes"
 msgstr "Cadw newidiadau"
 
