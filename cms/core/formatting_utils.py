@@ -134,16 +134,11 @@ def to_rfc3339_datetime(value: date | datetime | None) -> str | None:
     if value is None:
         return None
 
-    # datetime is subclass of date so look at that first
-    if isinstance(value, datetime):
-        if is_aware(value):
-            value = localtime(value)
-    else:
+    if not isinstance(value, datetime):
         # set time to midnight for dates
         value = datetime.combine(value, datetime.min.time())
 
-    if not is_aware(value):
-        value = make_aware(value, timezone=UTC)
+    value = localtime(value) if is_aware(value) else make_aware(value, timezone=UTC)
 
     formatted = value.replace(microsecond=0).isoformat(sep="T")
 
