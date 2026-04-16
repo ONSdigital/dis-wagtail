@@ -633,7 +633,7 @@ class ScatterPlotBlock(BaseChartBlock):
         rows: list[list[str | int | float]] = value["table"].rows
         groups = defaultdict(list)
 
-        for x, y, group_name, *_ in rows:
+        for x, y, group_name, *_rest in rows:
             groups[group_name].append((x, y))
 
         series = [
@@ -823,7 +823,7 @@ class IframeBlock(BaseVisualisationBlock):
             "iframeUrl": value.get("iframe_source_url"),
             "footnotes": {
                 "title": _("Footnotes"),
-                "content": str(value.get("footnotes")),
+                "content": str(value.get("footnotes", "")),
             },
         }
 
