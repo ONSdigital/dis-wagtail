@@ -114,6 +114,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "django.contrib.auth",  # Wagtail requires the auth app be installed, even if it's not used.
     "django.contrib.contenttypes",
+    "django.contrib.postgres",
     "whitenoise.runserver_nostatic",  # Must be before `django.contrib.staticfiles`
     "django.contrib.staticfiles",
     "django_jinja",
@@ -1126,3 +1127,6 @@ DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "
 WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_publish"
 
 CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
+
+# Disable Wagtail's auto-saving feature
+WAGTAIL_AUTOSAVE_INTERVAL = 0
