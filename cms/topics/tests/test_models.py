@@ -4,7 +4,6 @@ from http import HTTPStatus
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.utils.translation import gettext_lazy as _
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
@@ -491,8 +490,13 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
 
     def test_table_of_contents_includes_all_sections(self):
         manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+        time_series_data = {"title": "Test TS", "url": "https://example.com/ts", "description": "TS description"}
 
         self.topic_page.datasets = StreamValue(DatasetStoryBlock(), stream_data=[("manual_link", manual_dataset)])
+        self.topic_page.time_series = StreamValue(
+            TimeSeriesPageStoryBlock(), stream_data=[("time_series_page_link", time_series_data)]
+        )
+        self.topic_page.explore_more = [("external_link", {"url": "https://example.com"})]
 
         self.assertListEqual(
             self.topic_page.table_of_contents,
@@ -516,6 +520,24 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                     },
                 },
                 {
+                    "url": "#data",
+                    "text": "Data",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Data",
+                    },
+                },
+                {
+                    "url": "#time-series",
+                    "text": "Time series",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Time series",
+                    },
+                },
+                {
                     "url": "#related-methods",
                     "text": "Methods and quality information",
                     "attributes": {
@@ -525,12 +547,12 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                     },
                 },
                 {
-                    "url": "#data",
-                    "text": "Data",
+                    "url": "#explore-more",
+                    "text": "Explore more",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
                         "data-ga-navigation-type": "table-of-contents",
-                        "data-ga-section-title": "Data",
+                        "data-ga-section-title": "Explore more",
                     },
                 },
             ],
@@ -538,30 +560,11 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
 
     def test_table_of_contents_without_features(self):
         self.topic_page.featured_series = None
-
         self.assertNotIn({"url": "#featured", "text": "Featured"}, self.topic_page.table_of_contents)
 
     def test_table_of_contents_without_datasets(self):
         self.topic_page.datasets = None
-
         self.assertNotIn({"url": "#data", "text": "Data"}, self.topic_page.table_of_contents)
-
-    def test_table_of_contents_includes_explore_more(self):
-        self.topic_page.explore_more = [("external_link", {"url": "https://example.com"})]
-
-        toc = self.topic_page.table_of_contents
-        self.assertIn(
-            {
-                "url": "#explore-more",
-                "text": _("Explore more"),
-                "attributes": {
-                    "data-ga-event": "navigation-onpage",
-                    "data-ga-navigation-type": "table-of-contents",
-                    "data-ga-section-title": _("Explore more"),
-                },
-            },
-            toc,
-        )
 
     def test_get_context(self):
         context = self.topic_page.get_context(get_dummy_request())
