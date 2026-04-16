@@ -773,15 +773,33 @@ class ReleaseCalendarIndexTestCase(WagtailTestUtils, TestCase):
         )
         self.assertRedirects(response, edit_url)
 
-    def test_render(self):
-        """Test that the index page renders."""
+    def test_render_redirects_to_releasecalendar(self):
+        """Test that the index page redirects to /releasecalendar by default."""
         response = self.client.get(self.page.url)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.TEMPORARY_REDIRECT)
+        self.assertEqual(response["Location"], "/releasecalendar")
 
-    @override_settings(IS_EXTERNAL_ENV=True)
-    def test_render_in_external_env(self):
-        """Test that the index page renders in external environment."""
+    @override_settings(CMS_RELEASES_INDEX_REDIRECT_ENABLED=False)
+    def test_render_without_redirect(self):
+        """Test that the index page renders when redirect is disabled."""
         response = self.client.get(self.page.url)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @override_settings(WAGTAIL_APPEND_SLASH=True)
+    def test_render_redirect_with_trailing_slash(self):
+        """Test that the redirect respects WAGTAIL_APPEND_SLASH."""
+        response = self.client.get(self.page.url)
+
+        self.assertEqual(response.status_code, HTTPStatus.TEMPORARY_REDIRECT)
+        self.assertEqual(response["Location"], "/releasecalendar/")
+
+    def test_child_page_serves_normally(self):
+        """Test that child pages are not affected by the redirect."""
+        child_page = ReleaseCalendarPageFactory(parent=self.page)
+        child_page.save_revision().publish()
+
+        response = self.client.get(child_page.url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
