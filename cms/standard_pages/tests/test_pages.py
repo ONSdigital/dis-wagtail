@@ -27,11 +27,14 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
         response = self.client.get(self.cookies_page.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(
-            response, "<title>Cookies on ons.gov.uk - Office for National Statistics</title>", html=True
+            response,
+            f"<title>Cookies on {settings.ONS_COOKIE_BANNER_SERVICE_NAME} - Office for National Statistics</title>",
+            html=True,
         )
         self.assertContains(
             response,
-            '<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Cookies on ons.gov.uk</h1>',
+            f'<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Cookies '
+            f"on {settings.ONS_COOKIE_BANNER_SERVICE_NAME}</h1>",
             html=True,
         )
         self.assertContains(response, "Cookie settings")
@@ -45,10 +48,15 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
     def test_get_welsh_cookies_page(self):
         response = self.client.get(self.welsh_cookies_page.url, headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "<title>Cwcis ar ons.gov.uk - Swyddfa Ystadegau Gwladol</title>", html=True)
         self.assertContains(
             response,
-            '<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Cwcis ar ons.gov.uk</h1>',
+            f"<title>Cwcis ar {settings.ONS_COOKIE_BANNER_SERVICE_NAME} - Swyddfa Ystadegau Gwladol</title>",
+            html=True,
+        )
+        self.assertContains(
+            response,
+            f'<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Cwcis ar'
+            f" {settings.ONS_COOKIE_BANNER_SERVICE_NAME}</h1>",
             html=True,
         )
         self.assertContains(response, "Gosodiadau cwcis")
