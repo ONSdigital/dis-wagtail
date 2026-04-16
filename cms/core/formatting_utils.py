@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from datetime import UTC, date, datetime
-from typing import TYPE_CHECKING, Any, TypedDict, Union
+from typing import TYPE_CHECKING, Any, TypedDict, Union, overload
 
 from django.utils.formats import date_format
 from django.utils.timezone import is_aware, localtime, make_aware
@@ -125,8 +125,12 @@ def get_document_metadata(
     return metadata
 
 
+@overload
+def to_rfc3339_datetime(value: None) -> None: ...
+@overload
+def to_rfc3339_datetime(value: date | datetime) -> str: ...
 def to_rfc3339_datetime(value: date | datetime | None) -> str | None:
-    """Converts a date, datetime or None to an RFC3339 compliant date string."""
+    """Converts a date or datetime to an RFC3339 date-time compliant string."""
     if value is None:
         return None
 
