@@ -1,9 +1,9 @@
 from collections.abc import Iterable
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING, Any, TypedDict, Union
 
 from django.utils.formats import date_format
-from django.utils.timezone import is_aware, localtime
+from django.utils.timezone import is_aware, localtime, make_aware
 from django.utils.translation import gettext_lazy as _
 from wagtail.models import Page
 
@@ -138,11 +138,9 @@ def to_rfc3339_datetime(value: date | datetime | None) -> str | None:
         # set time to midnight for dates
         value = datetime.combine(value, datetime.min.time())
 
-    formatted = value.replace(microsecond=0).isoformat(sep="T")
+    if not is_aware(value):
+        value = make_aware(value, timezone=UTC)
 
-    # we want the timezone offset, but using make_aware on the input date
-    # can add timezone conversions for daylight savings
-    if value.tzinfo is None:
-        formatted += "+00:00"
+    formatted = value.replace(microsecond=0).isoformat(sep="T")
 
     return formatted
