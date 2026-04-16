@@ -1,10 +1,9 @@
 from collections.abc import Sequence
-from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
 from django.db import models
-from django.http import HttpRequest, HttpResponseRedirect
+from django.http import HttpRequest
 from django.utils.functional import cached_property
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -18,6 +17,7 @@ from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, forma
 from cms.core.custom_date_format import ons_date_format, ons_default_datetime
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.utils import redirect
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
@@ -60,9 +60,7 @@ class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
         location = RELEASE_CALENDAR_REDIRECT_PATH
         if settings.WAGTAIL_APPEND_SLASH:
             location += "/"
-        response = HttpResponseRedirect(location)
-        response.status_code = HTTPStatus.TEMPORARY_REDIRECT
-        return response
+        return redirect(location)
 
 
 class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
