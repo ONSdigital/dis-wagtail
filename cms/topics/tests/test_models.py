@@ -520,15 +520,6 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                     },
                 },
                 {
-                    "url": "#related-methods",
-                    "text": "Methods and quality information",
-                    "attributes": {
-                        "data-ga-event": "navigation-onpage",
-                        "data-ga-navigation-type": "table-of-contents",
-                        "data-ga-section-title": "Methods and quality information",
-                    },
-                },
-                {
                     "url": "#data",
                     "text": "Data",
                     "attributes": {
@@ -544,6 +535,15 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                         "data-ga-event": "navigation-onpage",
                         "data-ga-navigation-type": "table-of-contents",
                         "data-ga-section-title": "Time series",
+                    },
+                },
+                {
+                    "url": "#related-methods",
+                    "text": "Methods and quality information",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Methods and quality information",
                     },
                 },
                 {
