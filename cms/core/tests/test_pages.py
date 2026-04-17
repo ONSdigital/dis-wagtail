@@ -239,14 +239,15 @@ class SocialMetaTests(WagtailPageTestCase):
     def setUpTestData(cls):
         cls.page = InformationPageFactory()
 
-    def test_social_meta_image_fallback(self):
-        """Test that the image meta tag falls back to the ONS logo from the CDN."""
+    def test_social_meta_image_url(self):
+        """Test that the image meta tag uses ONS logo from the design system CDN."""
         response = self.client.get(self.page.get_url(request=self.dummy_request))
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         self.assertContains(
             response,
-            f'<meta property="og:image" content="{settings.DEFAULT_OG_IMAGE_URL}" />',
+            '<meta property="og:image"'
+            'content="https://cdn.ons.gov.uk/sdc/design-system/73.4.1/favicons/opengraph.png" />',
         )
 
 
