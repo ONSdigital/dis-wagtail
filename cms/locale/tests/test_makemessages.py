@@ -8,7 +8,7 @@ from django.core.management.base import CommandError
 from django.core.management.commands.makemessages import Command as MakeMessagesCommand
 from django.test import SimpleTestCase
 
-from cms.locale.management.commands.makemessages import Command
+from cms.locale.management.commands.makemessages import Command, TranslationItem
 
 SAMPLE_PO_CONTENT = """msgid ""
 msgstr ""
@@ -85,7 +85,7 @@ msgstr "Hwyl fawr"
 
 msgid ""
 "second line"
-"third line\\n\\""
+"third line\\n\""
 msgstr ""
 """
 
@@ -100,7 +100,7 @@ msgstr ""
 
 msgid ""
 "second line"
-"third line\\n\\""
+"third line\\n\""
 msgstr ""
 """
 
@@ -172,7 +172,8 @@ class ExtractTranslationsTests(SimpleTestCase):
 
         cleaned = result.pop()
 
-        self.assertEqual(cleaned, ('"\n"second line"\n"third line\n"', "", ""))
+        print(repr(cleaned))
+        self.assertEqual(cleaned, TranslationItem("\nsecond line\nthird line\n", "", ""))
 
     def test_plurals_are_extracted(self):
         result = Command._extract_translations(  # pylint: disable=W0212
