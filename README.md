@@ -487,7 +487,7 @@ If you add new text to the application, you will need to update the .po files to
 make makemessages-check
 ```
 
-Will warn if .po files will change without applying changes to disk.
+Will error if `.po` files will change that affect translation behaviour. It ignores non-functional changes such as headers, comments, source references, entry ordering, and line wrapping.
 
 You can update the files by running the following command:
 

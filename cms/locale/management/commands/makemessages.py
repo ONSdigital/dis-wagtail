@@ -16,7 +16,6 @@ STATUS_OK = 0
 _QUOTED_STR_RE = r'(?:"[^"\\]*(?:\\.[^"\\]*)*")'
 _MULTILINE_QUOTED_RE = rf"(?:{_QUOTED_STR_RE}(?:\s+{_QUOTED_STR_RE})*)"
 
-_POT_CREATION_DATE_RE = re.compile(r'^"POT-Creation-Date: [^"]+\\n"', re.MULTILINE)
 _TRANSLATION_GROUP_RE = re.compile(
     rf"(?:^msgctxt\s+(?P<msgctxt>{_MULTILINE_QUOTED_RE})\s+)?"
     rf"^msgid\s+(?P<msgid>{_MULTILINE_QUOTED_RE})"
@@ -33,9 +32,9 @@ class TranslationItem(NamedTuple):
 
     def __str__(self) -> str:
         return (
-            f"{'msgctxt: {self.msgctxt}\n' if self.msgctxt != '' else ''}"
-            f"msgid: {self.msgid}"
-            f"{'\nmsgid_plural: {self.msgid_plural}' if self.msgid_plural != '' else ''}"
+            (f"- msgctxt: {self.msgctxt}\n" if self.msgctxt != "" else "")
+            + f"{'-' if self.msgctxt == '' else ' '} msgid: {self.msgid}"
+            + (f"\n  msgid_plural: {self.msgid_plural}" if self.msgid_plural != "" else "")
         )
 
 
@@ -61,13 +60,13 @@ class Command(MakeMessagesCommand):
             if self._modified_po_files:
                 self.stderr.write("The following .po files are not up to date:\n")
                 for path in self._modified_po_files:
-                    self.stderr.write(f"  {path}\n\n")
+                    self.stderr.write(f"{path}\n\n")
                     if len(self._modified_po_files[path]) > 0:
-                        self.stderr.write("    The following msgids have changed\n\n")
+                        self.stderr.write("The following translation items have changed:\n\n")
                         for item in self._modified_po_files[path]:
-                            self.stderr.write(f"    {item}\n\n")
+                            self.stderr.write(f"{item}\n\n")
                     else:
-                        self.stderr.write("    new file\n")
+                        self.stderr.write("new file\n")
                 self.stderr.write("\nRun `makemessages` to update them.\n")
                 raise SystemExit(1)
             if self.verbosity > 0:
@@ -116,6 +115,10 @@ class Command(MakeMessagesCommand):
         a set of unique groups keyed with a tuple of those values in the order (msgid, msgctxt and msgid_plural).
 
         msgctxt and msgid_plural will default to an empty string if not present.
+
+        Used by --check mode to detect changes that affect translation behaviour
+        only. This intentionally ignores header metadata, comments, source
+        references, ordering, wrapping, and other non-functional PO churn.
         """
         id_set = set[TranslationItem]()
         matches = _TRANSLATION_GROUP_RE.finditer(content)
@@ -130,7 +133,7 @@ class Command(MakeMessagesCommand):
             # for empties after we've joined and cleaned
             if msgid == "":
                 continue
-            msgid = msgid.replace('\\"', '"').replace("\\n", "\n")
+            msgid = msgid.replace('\\"', '"').replace("\\n", "\n").replace('"\n"', "\n")
 
             msgctxt = match.group("msgctxt")
             if msgctxt:

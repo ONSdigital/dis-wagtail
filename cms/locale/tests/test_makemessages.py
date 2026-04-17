@@ -312,9 +312,9 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         self._create_po_file(SAMPLE_PO_CONTENT)
         mock_popen.return_value = (SAMPLE_PO_CONTENT_NEW_ENTRY, "", 0)
 
-        content_before = Path(self.potfile).read_text(encoding="utf-8")
+        content_before = Path(self.pofile).read_text(encoding="utf-8")
         self.command.write_po_file(self.potfile, "cy")
-        content_after = Path(self.potfile).read_text(encoding="utf-8")
+        content_after = Path(self.pofile).read_text(encoding="utf-8")
 
         self.assertEqual(content_before, content_after)
 
