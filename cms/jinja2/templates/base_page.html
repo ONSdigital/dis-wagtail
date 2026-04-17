@@ -18,39 +18,6 @@
     {% endif %}
 {% endblock meta %}
 
-{% block social %}
-    {% with current_site=wagtail_site() %}
-        <meta name="twitter:card" content="summary" />
-        <meta name="twitter:site" content="@{{ settings.core.SocialMediaSettings.twitter_handle }}" />
-        <meta name="twitter:title" content="{{ page.seo_title or page.title }}" />
-        <meta name="twitter:description" content="{{ page.social_text|default or settings.core.SocialMediaSettings.default_sharing_text }}">
-        {% with social_image=page.social_image|default or settings.core.SocialMediaSettings.default_sharing_image %}
-            {% if social_image  %}
-                {% with twitter_img=image(social_image, "width-1000") %}
-                    <meta name="twitter:image" content="{{ twitter_img.url }}">
-                    {% if twitter_img.alt %}
-                        <meta name="twitter:image:alt" content="{{ twitter_img.alt }}">
-                    {% endif %}
-                {% endwith %}
-                {% with og_img=image(social_image, "fill-1200x630-c100") %}
-                    <meta property="og:image" content="{{ og_img.url }}" />
-                    <meta property="og:image:width" content="{{ og_img.width }}" />
-                    <meta property="og:image:height" content="{{ og_img.height }}" />
-                {% endwith %}
-            {% else %}
-                <meta property="og:image" content="{{ DEFAULT_OG_IMAGE_URL }}" />
-            {% endif %}
-        {% endwith %}
-        <meta property="og:type" content="website" />
-        {% if page %}
-            <meta property="og:url" content="{{ page.get_full_url(request) }}" />
-            <meta property="og:title" content="{{ page.seo_title or page.title }}" />
-        {% endif %}
-        <meta property="og:description" content="{{ page.social_text|default or settings.core.SocialMediaSettings.default_sharing_text }}" />
-        <meta property="og:site_name" content="{{ settings.core.SocialMediaSettings.site_name }}" />
-    {% endwith %}
-{% endblock social %}
-
 {%- block bodyStart -%}
     {%- if request.is_preview and request.preview_mode == "bundle-preview" -%}
         {% include "templates/components/preview-bar/preview-bar.html" %}

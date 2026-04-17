@@ -23,6 +23,10 @@
 {%- endset -%}
 {%- set page_title = page_title | default(page_title_default) -%}
 
+{%- set social_settings = settings.core.SocialMediaSettings -%}
+{%- set description = page.social_text | default(social_settings.default_sharing_text, True) -%}
+{%- set site_name = social_settings.site_name -%}
+
 {% set navigation_settings = settings.navigation.NavigationSettings %}
 {% set main_menu = main_menu | default(navigation_settings.main_menu.localized) %}
 
@@ -44,10 +48,14 @@
 {%- set ogl_url = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/' -%}
 {%- set ogl_post = _(', except where otherwise stated') -%}
 
+{%- set social_image = page.social_image | default(social_settings.default_sharing_image, True) -%}
+
 {% set pageConfig = {
     "bodyClasses": body_class,
     "title": page_title,
+    "description": description,
     "header": {
+        "title": site_name,
         "variants": "basic",
         "phase": {
             "badge": badge_label,
@@ -88,6 +96,10 @@
     "meta": {
         "hrefLangs": hreflangs,
         "canonicalUrl": canonical_url,
+    },
+    "social": {
+        "xImage": image(social_image, "width-1000").url if social_image else False,
+        "xSite:": "@"
     }
 }
 %}
