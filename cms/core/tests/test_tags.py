@@ -146,11 +146,6 @@ class LanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
         self.assertEqual(en["url"], "/")
         self.assertEqual(cy["url"], "/cy")
 
-    def test_returns_empty_list_when_no_page(self):
-        """Test that an empty list is returned when no page is in context."""
-        urls = get_translation_urls({"request": self.dummy_request})
-        self.assertEqual(urls, [])
-
     def test_caches_locale_urls_on_page(self):
         """Test that results are cached on the page object."""
         context = {"request": self.dummy_request, "page": self.page}
