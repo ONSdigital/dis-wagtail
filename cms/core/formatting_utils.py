@@ -139,7 +139,7 @@ def to_rfc3339_datetime(value: date | datetime | None) -> str | None:
         value = datetime.combine(value, datetime.min.time())
 
     if not is_aware(value):
-        make_aware(value, timezone=UTC)
+        value = make_aware(value, timezone=UTC)
 
     formatted = value.replace(microsecond=0).isoformat(sep="T")
 
