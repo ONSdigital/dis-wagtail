@@ -16,6 +16,8 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
         cls.welsh_cookies_page = CookiesPage.objects.get(locale__language_code="cy")
         cls.home = cls.cookies_page.get_parent().specific
         cls.welsh_home = cls.welsh_cookies_page.get_parent().specific
+        cls.english_site = Site.objects.get(is_default_site=True)
+        cls.welsh_site = Site.objects.get(root_page=cls.welsh_home)
 
     def tearDown(self):
         # Clear translation caches
@@ -24,14 +26,46 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
     def test_get_cookies_page(self):
         response = self.client.get(self.cookies_page.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Cookies on ONS.GOV.UK")
+        self.assertContains(
+            response,
+            f"<title>Cookies on {settings.ONS_COOKIE_BANNER_SERVICE_NAME} - Office for National Statistics</title>",
+            html=True,
+        )
+        self.assertContains(
+            response,
+            f'<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Cookies '
+            f"on {settings.ONS_COOKIE_BANNER_SERVICE_NAME}</h1>",
+            html=True,
+        )
         self.assertContains(response, "Cookie settings")
+        # Check the breadcrumbs include the home page link
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{self.english_site.root_url}">Home</a>',
+            html=True,
+        )
 
     def test_get_welsh_cookies_page(self):
         response = self.client.get(self.welsh_cookies_page.url, headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Cwcis ar ONS.GOV.UK")
+        self.assertContains(
+            response,
+            f"<title>Cwcis ar {settings.ONS_COOKIE_BANNER_SERVICE_NAME} - Swyddfa Ystadegau Gwladol</title>",
+            html=True,
+        )
+        self.assertContains(
+            response,
+            f'<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Cwcis ar'
+            f" {settings.ONS_COOKIE_BANNER_SERVICE_NAME}</h1>",
+            html=True,
+        )
         self.assertContains(response, "Gosodiadau cwcis")
+        # Check the breadcrumbs include the home page link
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{self.welsh_site.root_url}">Cartref</a>',
+            html=True,
+        )
 
     def test_cookies_page_exists_for_all_supported_language(self):
         # The english cookies page should be the original
