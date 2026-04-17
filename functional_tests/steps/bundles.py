@@ -541,14 +541,16 @@ def release_calendar(context: Context, creator_role: str) -> None:
 def find_release_calendar_existing(context: Context) -> None:
     release_calendar_name = context.release_calendar_page.title
     context.page.get_by_role("button", name="Choose Release Calendar page").click()
-    context.page.wait_for_timeout(250)  # Wait for the modal to open
     context.page.get_by_role("textbox", name="Search term").fill(release_calendar_name)
 
 
 @step("the logged in user gets match for release calendar search")
 def get_release_calendar_search_match(context: Context) -> None:
     release_calendar_name = context.release_calendar_page.title
-    expect(context.page.get_by_role("cell", name=release_calendar_name)).to_be_visible()
+    expect(context.page.get_by_role("table")).to_contain_text(release_calendar_name)
+
+    # expect(context.page.get_by_text(release_calendar_name, exact=True)).to_be_visible()
+    # expect(context.page.get_by_role("cell", name=release_calendar_name)).to_be_visible()
 
 
 @step("the logged in user searches for a non existing release calendar page")
@@ -647,6 +649,12 @@ def confirm_bundled_page_added_to_bundle(context: Context) -> None:
 def get_bundled_page_search_match(context: Context) -> None:
     search_result = f"{context.article_series_page.title}: {context.statistical_article_page.title}"
     expect(context.page.get_by_text("There is 1 match")).to_be_visible()
+    expect(context.page.get_by_role("table")).to_contain_text(search_result)
+
+
+@step("the logged in user selects match for bundled_page search")
+def select_bundled_page_search_match(context: Context) -> None:
+    search_result = f"{context.article_series_page.title}: {context.statistical_article_page.title}"
     context.page.get_by_role("checkbox", name=search_result).check()
 
 

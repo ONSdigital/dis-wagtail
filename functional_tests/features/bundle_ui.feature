@@ -259,6 +259,7 @@ Scenario Outline: A User can find expected bundled_page
     And the logged in user goes to edit bundle
     When the logged in user searches for an existing bundled_page
     And the logged in user gets match for bundled_page search
+    And the logged in user selects match for bundled_page search
     And the logged in user adds a bundled page to the bundle
     Then the logged in user confirm the bundled page has been added to the bundle
 
@@ -285,6 +286,7 @@ Scenario Outline: A User sucessfully saves and previews a bundle with all featur
     And the logged in user adds a Release Calendar page to the bundle
     And the logged in user searches for an existing bundled_page
     And the logged in user gets match for bundled_page search
+    And the logged in user selects match for bundled_page search
     And the logged in user adds a bundled page to the bundle
     And the logged in user can add preview team
     When the user clicks "Save as draft"
