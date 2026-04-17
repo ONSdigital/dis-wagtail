@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-17 09:10+0100\n"
+"POT-Creation-Date: 2026-04-17 10:30+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -182,15 +182,6 @@ msgstr "yn Saesneg"
 msgid "in Welsh"
 msgstr "yn y Gymraeg"
 
-#: cms/jinja2/templates/base_page.html:74
-#, python-format
-msgid ""
-"This page is currently not available %(in_language)s. It is displayed in its "
-"original language."
-msgstr ""
-"Nid yw’r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe’i "
-"harddangosir yn ei hiaith wreiddiol."
-
 #: cms/jinja2/templates/components/accredited/accredited-information.html:7
 msgid "Accredited Official Statistics"
 msgstr "Ystadegau Swyddogol Achrededig"
@@ -257,11 +248,6 @@ msgstr "Dyddiad blaenorol"
 msgid "Reason for change"
 msgstr "Rheswm dros newid"
 
-#: cms/jinja2/templates/pages/cookies.html:9
-#, python-format
-msgid "Cookies on %(service_name)s"
-msgstr "Cwcis ar %(service_name)s"
-
 #: cms/jinja2/templates/pages/cookies.html:30
 msgid "Your cookie settings have been saved"
 msgstr "Mae eich gosodiadau cwcis wedi’u cadw"
@@ -290,14 +276,6 @@ msgstr ""
 msgid ""
 "We use cookies to collect and store information about how you use the ONS "
 "website, such as the pages you visit."
-msgstr ""
-
-#: cms/jinja2/templates/pages/cookies.html:41
-#, python-format
-msgid ""
-"This page has a brief explanation of each type of cookie we use. If you want "
-"more details, <a href=\"%(help_cookies_url)s\">read our detailed cookie "
-"information</a>."
 msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:43
@@ -461,28 +439,9 @@ msgstr ""
 "Os gwnaethoch chi gludo’r cyfeiriad gwe, gwiriwch eich bod wedi copio’r "
 "cyfeiriad cyfan."
 
-#: cms/jinja2/templates/pages/errors/404.html:19
-#: cms/jinja2/templates/pages/errors/500.html:7
-#, python-format
-msgid ""
-"If the web address is correct, or you selected a link or button, <a "
-"href=\"%(contact_url)s\">contact us</a>."
-msgstr ""
-"Os yw’r cyfeiriad gwe yn gywir, neu os ydych wedi dewis dolen neu botwm,<a "
-"href=\"%(contact_url)s\">cysylltwch â ni</a>."
-
 #: cms/jinja2/templates/pages/errors/500.html:2
 msgid "Sorry, there’s a problem with the service"
 msgstr "Mae’n ddrwg gennym, mae problem gyda’r gwasanaeth"
-
-#: cms/jinja2/templates/pages/errors/500.html:6
-#, python-format
-msgid ""
-"Our scheduled publications can also be found on our <a "
-"href=\"%(backup_url)s\">backup site</a>."
-msgstr ""
-"Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a "
-"href=\"%(backup_url)s\">gwefan wrth gefn</a>."
 
 #: cms/jinja2/templates/pages/information_page.html:15
 msgid "Last updated:"
@@ -530,15 +489,6 @@ msgstr "Adrannau ar y dudalen hon"
 #: cms/methodology/models.py:193
 msgid "Cite this methodology"
 msgstr "Dyfynnwch y fethodoleg hon"
-
-#: cms/jinja2/templates/pages/methodology_page.html:119
-#, python-format
-msgid ""
-"Office for National Statistics (ONS), last revised "
-"%(latest_date_formatted)s, ONS website, methodology, %(cite_link)s"
-msgstr ""
-"Y Swyddfa Ystadegau Gwladol (SYG), diwygiwyd ddiwethaf "
-"%(latest_date_formatted)s, Gwefan SYG, %(cite_link)s"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:6
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:5
@@ -589,16 +539,6 @@ msgstr "Crynodeb"
 msgid "About the data"
 msgstr "Ynglyn â’r data"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:133
-#, python-format
-msgid ""
-"These are accredited official statistics. They have been independently "
-"reviewed by the Office for Statistics Regulation (OSR) and found to comply "
-"with the standards of trustworthiness, quality and value in the <a "
-"href=\"%(stats_authority_url)s\">Code of Practice for Statistics</a>. This "
-"broadly means that the statistics:"
-msgstr ""
-
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:138
 msgid "meet user needs"
 msgstr "diwallu anghenion defnyddwyr"
@@ -624,11 +564,6 @@ msgstr "Rhestr mynediad cyn rhyddhau"
 #: cms/release_calendar/models.py:273
 msgid "You might also be interested in"
 msgstr "Efallai y bydd gennych ddiddordeb yn"
-
-#: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:9
-#, python-format
-msgid "Previous releases for %(title)s"
-msgstr "Datganiadau blaenorol am %(title)s"
 
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:13
 msgid "Previous Releases"
@@ -722,15 +657,6 @@ msgstr "Gweld y data a ddefnyddir yn yr erthygl hon"
 msgid "Cite this analysis"
 msgstr "Dyfynnwch y dadansoddiad hwn"
 
-#: cms/jinja2/templates/pages/statistical_article_page.html:237
-#, python-format
-msgid ""
-"Office for National Statistics (ONS), released %(release_date)s, ONS "
-"website, statistical article, %(cite_link)s"
-msgstr ""
-"Y Swyddfa Ystadegau Gwladol (SYG), wedi’i ryddhau %(release_date)s, SYG  "
-"gwefan, erthygl ystadegol, %(cite_link)s"
-
 #: cms/jinja2/templates/pages/theme_index_page.html:8
 msgid "Browse"
 msgstr "Pori"
@@ -775,10 +701,6 @@ msgstr "Gweld yr holl fethodolegau cysylltiedig"
 msgid "Explore more"
 msgstr "Archwilio mwy"
 
-#: cms/jinja2/templates/pages/wagtail/password_required.html:40
-msgid "Continue"
-msgstr "Parhau"
-
 #: cms/methodology/models.py:181 cms/methodology/models.py:191
 msgid "Related publications"
 msgstr "Cyhoeddiadau cysylltiedig"
@@ -798,3 +720,54 @@ msgstr "Cymraeg"
 #: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:13
 msgid "Not started"
 msgstr "Heb ei ddechrau"
+
+#, python-format
+#~ msgid ""
+#~ "This page is currently not available %(in_language)s. It is displayed in "
+#~ "its original language."
+#~ msgstr ""
+#~ "Nid yw’r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe’i "
+#~ "harddangosir yn ei hiaith wreiddiol."
+
+#, python-format
+#~ msgid "Cookies on %(service_name)s"
+#~ msgstr "Cwcis ar %(service_name)s"
+
+#, python-format
+#~ msgid ""
+#~ "If the web address is correct, or you selected a link or button, <a "
+#~ "href=\"%(contact_url)s\">contact us</a>."
+#~ msgstr ""
+#~ "Os yw’r cyfeiriad gwe yn gywir, neu os ydych wedi dewis dolen neu botwm,"
+#~ "<a href=\"%(contact_url)s\">cysylltwch â ni</a>."
+
+#, python-format
+#~ msgid ""
+#~ "Our scheduled publications can also be found on our <a "
+#~ "href=\"%(backup_url)s\">backup site</a>."
+#~ msgstr ""
+#~ "Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a "
+#~ "href=\"%(backup_url)s\">gwefan wrth gefn</a>."
+
+#, python-format
+#~ msgid ""
+#~ "Office for National Statistics (ONS), last revised "
+#~ "%(latest_date_formatted)s, ONS website, methodology, %(cite_link)s"
+#~ msgstr ""
+#~ "Y Swyddfa Ystadegau Gwladol (SYG), diwygiwyd ddiwethaf "
+#~ "%(latest_date_formatted)s, Gwefan SYG, %(cite_link)s"
+
+#, python-format
+#~ msgid "Previous releases for %(title)s"
+#~ msgstr "Datganiadau blaenorol am %(title)s"
+
+#, python-format
+#~ msgid ""
+#~ "Office for National Statistics (ONS), released %(release_date)s, ONS "
+#~ "website, statistical article, %(cite_link)s"
+#~ msgstr ""
+#~ "Y Swyddfa Ystadegau Gwladol (SYG), wedi’i ryddhau %(release_date)s, SYG  "
+#~ "gwefan, erthygl ystadegol, %(cite_link)s"
+
+#~ msgid "Continue"
+#~ msgstr "Parhau"

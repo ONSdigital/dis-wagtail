@@ -32,6 +32,8 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-root
 
+      - name: Makemessages check
+        run: make makemessages-check
       - name: Lint Python
         run: make lint-py
       - name: Lint HTML

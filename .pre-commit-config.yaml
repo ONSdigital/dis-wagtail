@@ -13,6 +13,10 @@ repos: # Python linting and formatting
 
   - repo: local
     hooks:
+      - id: makemessages-check
+        name: makemessages-check
+        language: system
+        entry: make makemessages-check
       - id: pylint
         name: pylint
         entry: poetry run pylint
