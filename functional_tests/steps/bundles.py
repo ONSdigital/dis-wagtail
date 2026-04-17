@@ -642,7 +642,7 @@ def add_article_page_in_edit(context: Context) -> None:
 @step("the logged in user confirm the bundled page has been added to the bundle")
 def confirm_bundled_page_added_to_bundle(context: Context) -> None:
     search_result = f"{context.article_series_page.title}: {context.statistical_article_page.title}"
-    expect(context.page.get_by_text(search_result)).to_be_visible()
+    expect(context.page.get_by_text(search_result, exact=True)).to_be_visible()
 
 
 @step("the logged in user gets match for bundled_page search")
