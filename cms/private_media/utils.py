@@ -50,7 +50,7 @@ def _asset_in_authorized_pages(asset: PrivateMediaMixin, page_ids: list[int]) ->
     if in_referencing_page:
         return True
 
-    # Fall back to checking latest revisions for draft content
+    # Fall back to checking latest revisions for drafts of already published pages
     for base_page in Page.objects.filter(pk__in=page_ids):
         specific_page = base_page.get_latest_revision_as_object()
         if str(asset.pk) in specific_page.get_referenced_asset_ids(asset.__class__):
