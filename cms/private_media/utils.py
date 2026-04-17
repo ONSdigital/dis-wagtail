@@ -80,10 +80,12 @@ def user_can_access_asset(
         salt=f"previewer-{request.user.pk}",
         max_age=settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
     )
-    if cookie_data is None:
+
+    try:
+        parsed = json.loads(cookie_data)
+    except (json.JSONDecodeError, TypeError):
         return False
 
-    parsed = json.loads(cookie_data)
     # The cookie may contain multiple preview entries (one per tab/page) to avoid
     # clobbering when multiple preview tabs are open simultaneously.
     preview_entries: list[dict[str, int]] = parsed if isinstance(parsed, list) else [parsed]
