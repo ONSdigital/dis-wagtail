@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-root
 
+      - name: Install gettext
+        run: sudo apt-get install -y gettext
+
       - name: Makemessages check
         run: make makemessages-check
       - name: Lint Python
