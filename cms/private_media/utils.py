@@ -32,6 +32,9 @@ def get_frontend_cache_configuration() -> dict[str, Any]:
 
 def _asset_in_authorized_pages(asset: PrivateMediaMixin, page_ids: list[int]) -> bool:
     """Check if the asset is referenced by any of the given pages."""
+    if not page_ids:
+        return False
+
     in_referencing_page = (
         ReferenceIndex.objects.filter(
             base_content_type__model=Page._meta.model_name.lower(),
@@ -63,7 +66,7 @@ def user_can_access_asset(
     asset: PrivateMediaMixin,
     permission_policy: CollectionOwnershipPermissionPolicy,
 ) -> bool:
-    from cms.bundles.permissions import user_can_preview_bundle_by_id  # pylint: disable=import-outside-toplevel
+    from cms.bundles.permissions import user_can_preview_bundle_by_id  # pylint: disable=import-outside-toplevel,
 
     if asset.is_public:
         return True
@@ -81,9 +84,12 @@ def user_can_access_asset(
         max_age=settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
     )
 
+    if not cookie_data:
+        return False
+
     try:
         parsed = json.loads(cookie_data)
-    except (json.JSONDecodeError, TypeError):
+    except json.JSONDecodeError:
         return False
 
     # The cookie may contain multiple preview entries (one per tab/page) to avoid
@@ -94,8 +100,6 @@ def user_can_access_asset(
     authorized_page_ids = [
         entry["page"] for entry in preview_entries if user_can_preview_bundle_by_id(user, entry["bundle"])
     ]
-    if not authorized_page_ids:
-        return False
 
     # The user can access the given asset if any authorized page:
     #   - references the asset via the reference index, or
