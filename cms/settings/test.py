@@ -103,7 +103,7 @@ CMS_HOSTNAME_LOCALE_MAP = {
 }
 CMS_HOSTNAME_ALTERNATIVES = {"ons.localhost": "pub.ons.localhost", "cy.ons.localhost": "cy.pub.ons.localhost"}
 
-URL_CONFIG_SETTINGS = (
+URL_CONFIG_SETTINGS = {
     "IS_EXTERNAL_ENV",
     "CMS_USE_SUBDOMAIN_LOCALES",
     "LANGUAGE",
@@ -112,7 +112,7 @@ URL_CONFIG_SETTINGS = (
     "AWS_COGNITO_TEAM_SYNC_ENABLED",
     "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED",
     "WAGTAILADMIN_HOME_PATH",
-)
+}
 
 
 def _reset_url_caches_on_setting_changed_signal_handler(*, setting: str, **_: Any) -> None:
