@@ -136,7 +136,7 @@ def _reset_url_caches_on_setting_changed_signal_handler(*, setting: str, **_: An
         for mod in modules_to_delete:
             del sys.modules[mod]  # noqa: F405
 
-    is_language_prefix_patterns_used.cache_clear()
+    is_language_prefix_patterns_used.cache_clear()  # type: ignore
 
 
 setting_changed.connect(_reset_url_caches_on_setting_changed_signal_handler)
