@@ -125,9 +125,6 @@ def _reset_url_caches_on_setting_changed_signal_handler(*, setting: str, **_: An
 
     Extends django's own approach to settings being changed during test runs to CMS
     specific settings that affect url config.
-
-    This helps prevent issues with url config pollution between tests if reset_url_caches
-    isn't manually called.
     """
     if setting not in URL_CONFIG_SETTINGS:
         return
