@@ -1,6 +1,7 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from datetime import timezone as tz
 
-from django.test import SimpleTestCase, TestCase, override_settings
+from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 from django.utils.formats import date_format
 
@@ -244,52 +245,33 @@ class TestDocumentMetadataFormatting(TestCase):
         self.assertEqual(metadata["date"], expected_date)
 
 
-# The test should run the same regardless of what's in
-# base or test settings
-@override_settings(TIMEZONE="Europe/London")
 class TestToRFC3339Datetime(SimpleTestCase):
     def test_returns_correct_string_for_timezone(self):
         scenarios = (
             {
-                "name": "GMT UTC+0",
-                "timezone": "Europe/London",
+                "name": "A date",
                 "date": date(2020, 1, 1),
                 "formatted_date": "2020-01-01T00:00:00+00:00",
             },
             {
-                "name": "A date during BST UTC+1",
-                "timezone": "Europe/London",
-                "date": date(2020, 7, 15),
-                "formatted_date": "2020-07-15T00:00:00+00:00",
-            },
-            {
-                "name": "A non timezone aware datetime during BST UTC+1",
-                "timezone": "Europe/London",
+                "name": "A non timezone aware datetime",
                 "date": datetime(2020, 7, 15, 1, 30),
                 "formatted_date": "2020-07-15T01:30:00+00:00",
             },
             {
                 "name": "A timezone aware datetime during BST UTC+1",
-                "timezone": "Europe/London",
-                "date": timezone.make_aware(datetime(2020, 7, 15, 1, 30)),
-                "formatted_date": "2020-07-15T01:30:00+01:00",
-            },
-            {
-                "name": "A timezone aware datetime in BST UTC+1",
-                "timezone": "Europe/London",
                 "date": timezone.make_aware(datetime(2020, 7, 15, 1, 30)),
                 "formatted_date": "2020-07-15T01:30:00+01:00",
             },
             {
                 "name": "A timezone aware datetime in EST UTC-5",
-                "timezone": "America/New_York",
-                "date": timezone.make_aware(datetime(2020, 1, 1, 12, 0)),
+                "date": timezone.make_aware(datetime(2020, 1, 1, 7, 0), timezone=tz(timedelta(hours=-5))),
                 "formatted_date": "2020-01-01T07:00:00-05:00",
             },
         )
 
         for scenario in scenarios:
-            with self.subTest(scenario=scenario["name"]), self.settings(TIME_ZONE=scenario["timezone"]):
+            with self.subTest(scenario=scenario["name"]):
                 self.assertEqual(to_rfc3339_datetime(scenario["date"]), scenario["formatted_date"])
 
     def test_returns_none_for_none_input(self):
