@@ -1080,6 +1080,10 @@ SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 
 # but short enough that we don't have stale session data.
 BUNDLE_PREVIEW_COOKIE_NAME = "bundle-preview"
 BUNDLE_PREVIEW_COOKIE_MAX_AGE = 30  # seconds
+# Cap on the number of active preview grants held in the signed cookie. Prevents
+# a user from accumulating an unbounded list of simultaneous grants (and the
+# cookie growing past the ~4KB browser limit).
+CMS_BUNDLE_PREVIEW_MAX_COOKIE_ENTRIES = 20
 
 # Contact Us URL for error pages
 CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatisticalenquiries")

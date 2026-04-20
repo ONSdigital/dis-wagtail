@@ -80,6 +80,10 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
 
         now = int(time.time())
         preview_entries = [e for e in preview_entries if e.get("page") != page_id and e.get("expires_at", 0) > now]
+
+        if len(preview_entries) >= settings.CMS_BUNDLE_PREVIEW_MAX_COOKIE_ENTRIES:
+            raise PermissionDenied
+
         preview_entries.append(
             {
                 "bundle": bundle.pk,

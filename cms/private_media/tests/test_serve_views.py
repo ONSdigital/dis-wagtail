@@ -435,3 +435,31 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
                 with self.subTest(msg=f"Second page asset {asset} still within its entry's expiry"):
                     response = self.client.get(asset.serve_url)
                     self.assertEqual(response.status_code, 200)
+
+    @override_settings(CMS_BUNDLE_PREVIEW_MAX_COOKIE_ENTRIES=2)
+    def test_preview_rejected_when_cookie_entry_cap_reached(self):
+        """Previewing beyond the cookie entry cap should be rejected."""
+        extra_pages = []
+        for _ in range(2):
+            extra_image = ImageFactory(collection=self.root_collection)
+            extra_document = DocumentFactory(collection=self.root_collection)
+            extra_page = InformationPageFactory(content=_build_image_and_document_content(extra_image, extra_document))
+            mark_page_as_ready_for_review(extra_page)
+            BundlePageFactory(parent=self.bundle, page=extra_page)
+            extra_pages.append(extra_page)
+
+        self.client.force_login(self.viewer)
+
+        # First two previews fill the cookie up to the cap.
+        response = self.client.get(self.url_preview_ready)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        response = self.client.get(reverse("bundles:preview", args=[self.bundle.pk, extra_pages[0].pk]))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # The third preview would push the cookie past the cap and is rejected
+        response = self.client.get(reverse("bundles:preview", args=[self.bundle.pk, extra_pages[1].pk]))
+        # Permission denied redirects to the main admin view and displays an error message
+        # so we expect a redirect rather than a 403 response here.
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(response.url, reverse("wagtailadmin_home"))
