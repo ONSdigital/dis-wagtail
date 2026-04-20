@@ -1,10 +1,17 @@
-from datetime import datetime
+from datetime import date, datetime, timedelta
+from datetime import timezone as tz
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
+from django.utils import timezone
 from django.utils.formats import date_format
 
 from cms.core.custom_date_format import ons_date_format
-from cms.core.formatting_utils import format_as_document_list_item, get_document_metadata, get_formatted_pages_list
+from cms.core.formatting_utils import (
+    format_as_document_list_item,
+    get_document_metadata,
+    get_formatted_pages_list,
+    to_rfc3339_datetime,
+)
 from cms.core.models.base import BasePage
 
 
@@ -236,3 +243,36 @@ class TestDocumentMetadataFormatting(TestCase):
         }
 
         self.assertEqual(metadata["date"], expected_date)
+
+
+class TestToRFC3339Datetime(SimpleTestCase):
+    def test_returns_correct_string_for_timezone(self):
+        scenarios = (
+            {
+                "name": "A date",
+                "date": date(2020, 1, 1),
+                "formatted_date": "2020-01-01T00:00:00+00:00",
+            },
+            {
+                "name": "A non timezone aware datetime",
+                "date": datetime(2020, 7, 15, 1, 30),
+                "formatted_date": "2020-07-15T01:30:00+00:00",
+            },
+            {
+                "name": "A timezone aware datetime during BST UTC+1",
+                "date": timezone.make_aware(datetime(2020, 7, 15, 1, 30)),
+                "formatted_date": "2020-07-15T01:30:00+01:00",
+            },
+            {
+                "name": "A timezone aware datetime in EST UTC-5",
+                "date": timezone.make_aware(datetime(2020, 1, 1, 7, 0), timezone=tz(timedelta(hours=-5))),
+                "formatted_date": "2020-01-01T07:00:00-05:00",
+            },
+        )
+
+        for scenario in scenarios:
+            with self.subTest(scenario=scenario["name"]):
+                self.assertEqual(to_rfc3339_datetime(scenario["date"]), scenario["formatted_date"])
+
+    def test_returns_none_for_none_input(self):
+        self.assertIsNone(to_rfc3339_datetime(None))
