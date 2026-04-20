@@ -71,6 +71,11 @@ TASKS = {
     }
 }
 
+# Explicitly set some settings used for convenience in development, that some settings assume a default for
+ALLOW_TEAM_MANAGEMENT = False
+ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT = False
+
+
 # Silence Slack notifications by default
 SLACK_NOTIFICATIONS_WEBHOOK_URL = None
 
