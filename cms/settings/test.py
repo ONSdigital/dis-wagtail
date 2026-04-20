@@ -115,8 +115,6 @@ URL_CONFIG_SETTINGS = (
 )
 
 
-# we can't just import reset_url_caches from the utils file
-# as it relies on settings and apps already being set up
 def _reset_url_caches_on_setting_changed_signal_handler(*, setting: str, **_: Any) -> None:
     """Resets the url cache if `setting` is any of URL_CONFIG_SETTINGS.
 

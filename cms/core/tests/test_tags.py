@@ -8,7 +8,6 @@ from cms.core.templatetags.util_tags import (
     get_hreflangs,
     get_translation_urls,
 )
-from cms.core.tests.utils import reset_url_caches
 from cms.home.models import HomePage
 
 
@@ -32,10 +31,6 @@ class LanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
 
     def setUp(self):
         self.dummy_request = get_dummy_request()
-        reset_url_caches()
-
-    def tearDown(self):
-        reset_url_caches()
 
     def test_get_translation_urls(self):
         """Test that get_translation_urls returns the correct URLs."""
@@ -210,12 +205,6 @@ class SubdomainLanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
         cls.welsh_site.hostname = "cy.ons.localhost"
         cls.welsh_site.port = 80
         cls.welsh_site.save(update_fields=["hostname", "port"])
-
-    def setUp(self):
-        reset_url_caches()
-
-    def tearDown(self):
-        reset_url_caches()
 
     def _make_request(self, hostname, path="/"):
         return RequestFactory(SERVER_NAME=hostname).get(path, SERVER_PORT=80)
