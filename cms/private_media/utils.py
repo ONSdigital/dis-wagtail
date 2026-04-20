@@ -1,4 +1,5 @@
 import json
+import time
 from functools import cache
 from typing import TYPE_CHECKING, Any
 
@@ -96,9 +97,14 @@ def user_can_access_asset(
     # clobbering when multiple preview tabs are open simultaneously.
     preview_entries: list[dict[str, int]] = parsed if isinstance(parsed, list) else [parsed]
 
-    # Filter to entries where the user can actually preview the bundle
+    # Filter to entries that haven't passed their per-entry expiry and where the user
+    # can actually preview the bundle. The per-entry expiry prevents the cookie from
+    # being refreshed indefinitely — each grant is pinned to when it was issued.
+    now = int(time.time())
     authorized_page_ids = [
-        entry["page"] for entry in preview_entries if user_can_preview_bundle_by_id(user, entry["bundle"])
+        entry["page"]
+        for entry in preview_entries
+        if entry.get("expires_at", 0) > now and user_can_preview_bundle_by_id(user, entry["bundle"])
     ]
 
     # The user can access the given asset if any authorized page:

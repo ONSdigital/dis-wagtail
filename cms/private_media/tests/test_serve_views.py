@@ -26,6 +26,31 @@ from cms.workflows.tests.utils import mark_page_as_ready_for_review
 FROZEN_TIME = datetime(2026, 1, 1, hour=13, minute=37)
 
 
+def _build_image_and_document_content(image, document):
+    """Build a StreamField section containing the given image and document."""
+    return [
+        {
+            "type": "section",
+            "value": {
+                "title": "Content",
+                "content": [
+                    {"type": "image", "value": {"image": image.id}, "id": str(uuid.uuid4())},
+                    {
+                        "type": "documents",
+                        "value": [
+                            {
+                                "type": "document",
+                                "value": {"document": document.id},
+                                "id": str(uuid.uuid4()),
+                            },
+                        ],
+                    },
+                ],
+            },
+        }
+    ]
+
+
 class TestImageServeView(TestCase):
     model = get_image_model()
 
@@ -207,27 +232,7 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
         cls.private_image_rendition = cls.private_image.create_rendition(Filter("width-1024"))
         cls.private_document = DocumentFactory(collection=cls.root_collection)
 
-        cls.content = [
-            {
-                "type": "section",
-                "value": {
-                    "title": "Content",
-                    "content": [
-                        {"type": "image", "value": {"image": cls.private_image.id}, "id": str(uuid.uuid4())},
-                        {
-                            "type": "documents",
-                            "value": [
-                                {
-                                    "type": "document",
-                                    "value": {"document": cls.private_document.id},
-                                    "id": str(uuid.uuid4()),
-                                },
-                            ],
-                        },
-                    ],
-                },
-            }
-        ]
+        cls.content = _build_image_and_document_content(cls.private_image, cls.private_document)
         cls.page = InformationPageFactory(content=cls.content)
         mark_page_as_ready_for_review(cls.page)
 
@@ -369,29 +374,7 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
         other_image_rendition = other_image.create_rendition(Filter("width-1024"))
         other_document = DocumentFactory(collection=self.root_collection)
 
-        other_page = InformationPageFactory(
-            content=[
-                {
-                    "type": "section",
-                    "value": {
-                        "title": "Content",
-                        "content": [
-                            {"type": "image", "value": {"image": other_image.id}, "id": str(uuid.uuid4())},
-                            {
-                                "type": "documents",
-                                "value": [
-                                    {
-                                        "type": "document",
-                                        "value": {"document": other_document.id},
-                                        "id": str(uuid.uuid4()),
-                                    },
-                                ],
-                            },
-                        ],
-                    },
-                }
-            ]
-        )
+        other_page = InformationPageFactory(content=_build_image_and_document_content(other_image, other_document))
         mark_page_as_ready_for_review(other_page)
         BundlePageFactory(parent=self.bundle, page=other_page)
         rebuild_references_index()
@@ -414,5 +397,41 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
             # Assets from the second page should also be accessible
             for asset in [other_image_rendition, other_document]:
                 with self.subTest(msg=f"Second page asset {asset}"):
+                    response = self.client.get(asset.serve_url)
+                    self.assertEqual(response.status_code, 200)
+
+    def test_access_via_bundle_preview__per_entry_expiry_is_not_extended_by_refresh(self):
+        """A later preview refreshes the cookie but must not extend earlier entries' grants."""
+        other_image = ImageFactory(collection=self.root_collection)
+        other_image_rendition = other_image.create_rendition(Filter("width-1024"))
+        other_document = DocumentFactory(collection=self.root_collection)
+
+        other_page = InformationPageFactory(content=_build_image_and_document_content(other_image, other_document))
+        mark_page_as_ready_for_review(other_page)
+        BundlePageFactory(parent=self.bundle, page=other_page)
+        rebuild_references_index()
+
+        self.client.force_login(self.viewer)
+
+        max_age = settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE
+
+        # Preview the first page at T=0; its entry expires at T=max_age.
+        with time_machine.travel(FROZEN_TIME, tick=False):
+            self.client.get(self.url_preview_ready)
+
+        # Preview the second page close to (but before) the first entry's expiry.
+        # This refreshes the cookie, but the first entry's expires_at should be pinned.
+        with time_machine.travel(FROZEN_TIME + timedelta(seconds=max_age - 5), tick=False):
+            self.client.get(reverse("bundles:preview", args=[self.bundle.pk, other_page.pk]))
+
+        # Just past the first entry's expiry: first page's assets revoked, second page's still valid.
+        with time_machine.travel(FROZEN_TIME + timedelta(seconds=max_age + 5), tick=False):
+            for asset in [self.private_image_rendition, self.private_document]:
+                with self.subTest(msg=f"First page asset {asset} after its entry expired"):
+                    response = self.client.get(asset.serve_url)
+                    self.assertEqual(response.status_code, 403)
+
+            for asset in [other_image_rendition, other_document]:
+                with self.subTest(msg=f"Second page asset {asset} still within its entry's expiry"):
                     response = self.client.get(asset.serve_url)
                     self.assertEqual(response.status_code, 200)
