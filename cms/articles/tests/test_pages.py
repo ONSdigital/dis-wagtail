@@ -143,6 +143,13 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertPageIsRoutable(self.page, "versions/2")
         self.assertPageIsRoutable(self.page, "versions/3")
 
+    def test_nonexistent_correction_redirects_to_article(self):
+        """Requesting a correction version that doesn't exist redirects to the article."""
+        # No corrections exist on this page
+        response = self.client.get(f"{self.page.url}/versions/1")
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertTrue(self.page.url.endswith(response.url))
+
     def test_can_add_correction(self):  # pylint: disable=too-many-statements # noqa
         response = self.client.get(self.page.url)
         self.assertNotContains(response, "Corrections")
@@ -192,9 +199,9 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertNotContains(v1_response, "View superseded version")
         self.assertContains(v1_response, original_summary)
 
-        # V2 doesn't exist yet, should return 404
+        # V2 doesn't exist yet, should redirect to the main article
         v2_response = self.client.get(f"{self.page.url}/versions/2")
-        self.assertEqual(v2_response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(v2_response.status_code, HTTPStatus.FOUND)
 
         second_correction = {
             "version_id": 2,
@@ -236,9 +243,9 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertContains(v2_response, "First correction text")
         self.assertNotContains(v2_response, "Second correction text")
 
-        # V3 doesn't exist yet, should return 404
+        # V3 doesn't exist yet, should redirect to the main article
         v3_response = self.client.get(f"{self.page.url}/versions/3")
-        self.assertEqual(v3_response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(v3_response.status_code, HTTPStatus.FOUND)
 
         third_correction = {
             "version_id": 3,

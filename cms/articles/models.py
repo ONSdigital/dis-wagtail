@@ -670,23 +670,32 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
     @path("versions/<int:version>/")
     def previous_version(self, request: HttpRequest, version: int, **kwargs: Any) -> TemplateResponse | HttpResponse:
-        if version <= 0 or not self.corrections:
+        if version <= 0:
             raise Http404
 
+        chart_id = kwargs.pop("chart_id", None)
+        table_id = kwargs.pop("table_id", None)
+
+        is_requesting_download = bool(chart_id or table_id)
+
+        if not self.corrections:
+            if is_requesting_download:
+                raise Http404
+            return redirect(self.get_url(request))
+
         # Find correction by version
-        for correction in self.corrections:
+        for correction in self.corrections:  # pylint: disable=not-an-iterable
             if correction.value["version_id"] == version:
                 break
         else:
-            raise Http404
+            if is_requesting_download:
+                raise Http404
+            return redirect(self.get_url(request))
 
         # NB: Little validation is done on previous_version, as it's assumed handled on save
         revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])
 
         page = revision.as_object()
-
-        chart_id = kwargs.pop("chart_id", None)
-        table_id = kwargs.pop("table_id", None)
 
         if chart_id:
             download_response: HttpResponse = page.download_chart(request, chart_id)
