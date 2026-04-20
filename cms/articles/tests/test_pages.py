@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from datetime import timedelta
 from http import HTTPStatus
 
@@ -8,6 +9,7 @@ from django.urls import reverse
 from django.utils.html import strip_tags
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
+from wagtail.models import Locale
 from wagtail.rich_text import RichText
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -149,6 +151,36 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         response = self.client.get(f"{self.page.url}/versions/1")
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertTrue(self.page.url.endswith(response.url))
+
+    def test_correction_on_alias_redirects_to_alias(self):
+        """Corrections live on the canonical page's revisions, so alias pages cannot serve them
+        and should redirect to the alias URL instead of returning 404.
+        """
+        self.page.save_revision().publish()
+        original_revision_id = self.page.get_latest_revision().id
+
+        self.page.summary = "Corrected summary"
+        self.page.corrections = [
+            (
+                "correction",
+                {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "when": "2025-01-11",
+                    "frozen": True,
+                    "text": "First correction text",
+                },
+            )
+        ]
+        self.page.save_revision().publish()
+
+        welsh_alias = self.page.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True
+        )
+
+        response = self.client.get(f"{welsh_alias.url}/versions/1", headers={"host": "cy.ons.localhost"})
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertTrue(welsh_alias.url.endswith(response.url))
 
     def test_can_add_correction(self):  # pylint: disable=too-many-statements # noqa
         response = self.client.get(self.page.url)

@@ -678,7 +678,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         is_requesting_download = bool(chart_id or table_id)
 
-        if not self.corrections:
+        if not self.corrections or self.alias_of_id:
             if is_requesting_download:
                 raise Http404
             return redirect(self.get_url(request))
