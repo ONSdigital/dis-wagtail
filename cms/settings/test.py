@@ -71,7 +71,7 @@ TASKS = {
     }
 }
 
-# Explicitly set some settings used for convenience in development, that some settings assume a default for
+# Explicitly set some settings used for convenience in development, that some tests assume a default for
 ALLOW_TEAM_MANAGEMENT = False
 ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT = False
 
