@@ -1,6 +1,5 @@
-from unittest import TestCase
-
 from django.forms import Media
+from django.test import TestCase
 from wagtail.coreutils import get_dummy_request
 
 from cms.bundles.action_menu import (
@@ -20,6 +19,7 @@ from cms.bundles.tests.factories import BundleFactory
 class BundleActionMenuTests(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        super().setUpClass()
         cls.draft_bundle = BundleFactory()
         cls.in_review_bundle = BundleFactory(in_review=True)
         cls.approved_scheduled_bundle = BundleFactory(approved=True)
