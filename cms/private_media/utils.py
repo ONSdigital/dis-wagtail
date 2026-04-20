@@ -67,8 +67,6 @@ def user_can_access_asset(
     asset: PrivateMediaMixin,
     permission_policy: CollectionOwnershipPermissionPolicy,
 ) -> bool:
-    from cms.bundles.permissions import user_can_preview_bundle_by_id  # pylint: disable=import-outside-toplevel,
-
     if asset.is_public:
         return True
 
@@ -101,11 +99,7 @@ def user_can_access_asset(
     # can actually preview the bundle. The per-entry expiry prevents the cookie from
     # being refreshed indefinitely — each grant is pinned to when it was issued.
     now = int(time.time())
-    authorized_page_ids = [
-        entry["page"]
-        for entry in preview_entries
-        if entry.get("expires_at", 0) > now and user_can_preview_bundle_by_id(user, entry["bundle"])
-    ]
+    authorized_page_ids = [entry["page"] for entry in preview_entries if entry.get("expires_at", 0) > now]
 
     # The user can access the given asset if any authorized page:
     #   - references the asset via the reference index, or

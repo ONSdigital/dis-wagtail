@@ -47,15 +47,3 @@ def user_can_preview_bundle(user: User | AnonymousUser, bundle: Bundle) -> bool:
         and bundle.status in PREVIEWABLE_BUNDLE_STATUSES
         and bool(set(user.active_team_ids) & set(bundle.active_team_ids))
     )
-
-
-def user_can_preview_bundle_by_id(user: User | AnonymousUser, bundle_id: int) -> bool:
-    # imported inline to prevent partial initialization and circular import errors
-    from .models import Bundle  # pylint: disable=import-outside-toplevel
-
-    try:
-        bundle = Bundle.objects.get(pk=bundle_id)
-    except Bundle.DoesNotExist:
-        return False
-
-    return user_can_preview_bundle(user, bundle)
