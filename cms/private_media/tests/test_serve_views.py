@@ -462,4 +462,4 @@ class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):
         # Permission denied redirects to the main admin view and displays an error message
         # so we expect a redirect rather than a 403 response here.
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        self.assertEqual(response.url, reverse("wagtailadmin_home"))
+        self.assertEqual(response.url, "/admin/")
