@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-21 08:40+0100\n"
+"POT-Creation-Date: 2026-04-21 09:23+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -174,15 +174,15 @@ msgstr "Mae’r holl gynnwys ar gael o dan y"
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
-#: cms/jinja2/templates/base_page.html:66
+#: cms/jinja2/templates/base_page.html:61
 msgid "in English"
 msgstr "yn Saesneg"
 
-#: cms/jinja2/templates/base_page.html:67
+#: cms/jinja2/templates/base_page.html:62
 msgid "in Welsh"
 msgstr "yn y Gymraeg"
 
-#: cms/jinja2/templates/base_page.html:74
+#: cms/jinja2/templates/base_page.html:69
 #, python-format
 msgid ""
 "This page is currently not available %(in_language)s. It is displayed in its "
@@ -260,31 +260,27 @@ msgstr "Rheswm dros newid"
 #: cms/jinja2/templates/pages/cookies.html:9
 #, python-format
 msgid "Cookies on %(service_name)s"
-msgstr "Cwcis ar %(service_name)s"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:30
 msgid "Your cookie settings have been saved"
-msgstr "Mae eich gosodiadau cwcis wedi’u cadw"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:32
 msgid ""
 "Some parts of this website may use additional cookies and will have their "
 "own cookie policy and banner."
 msgstr ""
-"Efallai y bydd rhai rhannau o’r wefan hon yn defnyddio cwcis ychwanegol ac "
-"yn cynnwyseu polisi cwcis a’u baner eu hunain."
 
 #: cms/jinja2/templates/pages/cookies.html:34
 msgid "Return to previous page"
-msgstr "Dychwelyd i’r dudalen flaenorol"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:38
 msgid ""
 "Cookies are files saved on your phone, tablet or computer when you visit a "
 "website."
 msgstr ""
-"Mae cwcis yn ffeiliau sy’n cael eu cadw are eich ffôn, llechen neu "
-"gyfrifiadur pan fyddwch yn ymweld â gwefan."
 
 #: cms/jinja2/templates/pages/cookies.html:39
 msgid ""
@@ -302,20 +298,19 @@ msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:43
 msgid "Cookie settings"
-msgstr "Gosodiadau cwcis"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:50
 msgid "You can try:"
-msgstr "Gallwch geisio:"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:52
 msgid "turning on JavaScript in your browser"
-msgstr "galluogi JavaScript yn eich porwr"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:53
 msgid "reloading the page in case there was a temporary fault with JavaScript"
 msgstr ""
-"ail-lwytho’r dudalen rhag ofn bod gwall dros dro wedi digwydd gyda JavaScript"
 
 #: cms/jinja2/templates/pages/cookies.html:59
 msgid ""
@@ -325,7 +320,7 @@ msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:63
 msgid "Cookies that measure website use"
-msgstr "Cwcis sy’n mesur defnydd o’r wefan"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:65
 msgid ""
@@ -339,7 +334,7 @@ msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:69
 msgid "how you got to the site"
-msgstr "sut y daethoch chi i’r wefan"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:70
 msgid "the pages you visit and how long you spend on each page"
@@ -347,15 +342,15 @@ msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:71
 msgid "what you click on while you are visiting the site"
-msgstr "yr hyn rydych yn clicio arno tra byddwch yn ymweld â’r wefan"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:72
 msgid "the way in which you interact with a page"
-msgstr "y ffordd rydych yn rhyngweithio â thudalen"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:73
 msgid "whether you have participated in a Hotjar survey"
-msgstr "p’un a ydych wedi cymryd rhan mewn arolwg Hotjar"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:75
 msgid ""
@@ -413,25 +408,24 @@ msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:173
 msgid "Strictly necessary cookies"
-msgstr "Cwcis hollol angenrheidiol"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:174
 msgid "These essential cookies do things like:"
-msgstr "Mae’r cwcis hollol angenrheidiol hyn yn gwneud pethau fel:"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:176
 msgid ""
 "remember the notifications you’ve seen so we do not show them to you again"
 msgstr ""
-"cofio’r hysbysiadau rydych wedi’u gweld fel na fyddwn yn eu dangos i chi eto"
 
 #: cms/jinja2/templates/pages/cookies.html:177
 msgid "remember your progress through a form (for example, an ONS study)"
-msgstr "cofio’ch cynnydd trwy ffurflen (er enghraifft, astudiaeth SYG)"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:178
 msgid "improve performance and identify potential security threats"
-msgstr "gwella perfformiad ac adnabod bygythiadau diogelwch posibl"
+msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:180
 msgid "They always need to be on."
@@ -439,7 +433,7 @@ msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:182
 msgid "Save changes"
-msgstr "Cadw newidiadau"
+msgstr ""
 
 #: cms/jinja2/templates/pages/defender/lockout.html:6
 #: cms/jinja2/templates/pages/defender/lockout.html:8
