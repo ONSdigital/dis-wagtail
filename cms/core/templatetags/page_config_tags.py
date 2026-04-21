@@ -178,7 +178,7 @@ def _get_base_page_config(context: jinja2.runtime.Context, site: Site, request: 
 
 
 def get_page_config_cache_key(site: Site, page: Page, language_code: str) -> str:
-    return f"_cms_page_config_cache_key_{page.pk}_{site.pk}_{language_code}"
+    return f"_cms_page_config_cache_key_{page.cache_key}_{site.pk}_{language_code}"
 
 
 def _add_site_name_to_page_title(page_title: str, site: Site, is_homepage: bool) -> str:
