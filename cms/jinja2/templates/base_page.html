@@ -72,7 +72,7 @@
     {# Changes the location of the <main> tag from the base template - ensures it surrounds the header area #}
     {# This change should be adopted by the design system soon #}
     <main id="main-content">
-        {% if page.show_localised_version_not_available_notice(request) %}
+        {% if page and page.show_localised_version_not_available_notice(request) %}
             {% from "components/panel/_macro.njk" import onsPanel %}
             {# fmt:off #}
             {{-
