@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-17 09:10+0100\n"
+"POT-Creation-Date: 2026-04-21 08:40+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "11) ? 2 : 3;\n"
 
 #: cms/articles/models.py:220 cms/core/enums.py:8
-#: cms/core/formatting_utils.py:44
+#: cms/core/formatting_utils.py:45
 msgid "Article"
 msgstr "Erthygl"
 
@@ -113,11 +113,11 @@ msgstr "Adrodd"
 msgid "Webpage"
 msgstr "Tudalen we"
 
-#: cms/core/formatting_utils.py:56
+#: cms/core/formatting_utils.py:57
 msgid "Page"
 msgstr "Tudalen"
 
-#: cms/core/formatting_utils.py:102
+#: cms/core/formatting_utils.py:103
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:40
 msgid "Released"
 msgstr "Rhyddhawyd"
@@ -126,7 +126,7 @@ msgstr "Rhyddhawyd"
 msgid "Home"
 msgstr "Cartref"
 
-#: cms/datavis/blocks/base.py:416
+#: cms/datavis/blocks/base.py:416 cms/datavis/blocks/charts.py:825
 #: cms/jinja2/templates/components/streamfield/table_block.html:13
 msgid "Footnotes"
 msgstr "Troednodiadau"
