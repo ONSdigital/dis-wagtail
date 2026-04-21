@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-17 10:30+0100\n"
+"POT-Creation-Date: 2026-04-21 09:23+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "11) ? 2 : 3;\n"
 
 #: cms/articles/models.py:220 cms/core/enums.py:8
-#: cms/core/formatting_utils.py:44
+#: cms/core/formatting_utils.py:45
 msgid "Article"
 msgstr "Erthygl"
 
@@ -113,11 +113,11 @@ msgstr "Adrodd"
 msgid "Webpage"
 msgstr "Tudalen we"
 
-#: cms/core/formatting_utils.py:56
+#: cms/core/formatting_utils.py:57
 msgid "Page"
 msgstr "Tudalen"
 
-#: cms/core/formatting_utils.py:102
+#: cms/core/formatting_utils.py:103
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:40
 msgid "Released"
 msgstr "Rhyddhawyd"
@@ -126,7 +126,7 @@ msgstr "Rhyddhawyd"
 msgid "Home"
 msgstr "Cartref"
 
-#: cms/datavis/blocks/base.py:416
+#: cms/datavis/blocks/base.py:416 cms/datavis/blocks/charts.py:825
 #: cms/jinja2/templates/components/streamfield/table_block.html:13
 msgid "Footnotes"
 msgstr "Troednodiadau"
@@ -720,3 +720,54 @@ msgstr "Cymraeg"
 #: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:13
 msgid "Not started"
 msgstr "Heb ei ddechrau"
+
+#, python-format
+#~ msgid ""
+#~ "This page is currently not available %(in_language)s. It is displayed in "
+#~ "its original language."
+#~ msgstr ""
+#~ "Nid yw’r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe’i "
+#~ "harddangosir yn ei hiaith wreiddiol."
+
+#, python-format
+#~ msgid "Cookies on %(service_name)s"
+#~ msgstr "Cwcis ar %(service_name)s"
+
+#, python-format
+#~ msgid ""
+#~ "If the web address is correct, or you selected a link or button, <a "
+#~ "href=\"%(contact_url)s\">contact us</a>."
+#~ msgstr ""
+#~ "Os yw’r cyfeiriad gwe yn gywir, neu os ydych wedi dewis dolen neu botwm,"
+#~ "<a href=\"%(contact_url)s\">cysylltwch â ni</a>."
+
+#, python-format
+#~ msgid ""
+#~ "Our scheduled publications can also be found on our <a "
+#~ "href=\"%(backup_url)s\">backup site</a>."
+#~ msgstr ""
+#~ "Gellir dod o hyd i’n cyhoeddiadau wedi’u trefnu hefyd ar ein <a "
+#~ "href=\"%(backup_url)s\">gwefan wrth gefn</a>."
+
+#, python-format
+#~ msgid ""
+#~ "Office for National Statistics (ONS), last revised "
+#~ "%(latest_date_formatted)s, ONS website, methodology, %(cite_link)s"
+#~ msgstr ""
+#~ "Y Swyddfa Ystadegau Gwladol (SYG), diwygiwyd ddiwethaf "
+#~ "%(latest_date_formatted)s, Gwefan SYG, %(cite_link)s"
+
+#, python-format
+#~ msgid "Previous releases for %(title)s"
+#~ msgstr "Datganiadau blaenorol am %(title)s"
+
+#, python-format
+#~ msgid ""
+#~ "Office for National Statistics (ONS), released %(release_date)s, ONS "
+#~ "website, statistical article, %(cite_link)s"
+#~ msgstr ""
+#~ "Y Swyddfa Ystadegau Gwladol (SYG), wedi’i ryddhau %(release_date)s, SYG  "
+#~ "gwefan, erthygl ystadegol, %(cite_link)s"
+
+#~ msgid "Continue"
+#~ msgstr "Parhau"
