@@ -128,7 +128,8 @@ def strip_unwanted_control_chars_from_json(data: str) -> str:
 
 
 def deep_merge_mapping(dict1: Mapping, dict2: Mapping) -> dict:
-    """Deep merge mapping.
+    """Deep merge mapping keys.
+    Non-mapping values are referenced in the new dict, rather than copied.
     If there are conflicting keys, dict2 takes precedence.
     """
     # Must be a dict to allow internal mutation
