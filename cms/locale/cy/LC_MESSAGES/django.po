@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-21 09:23+0100\n"
+"POT-Creation-Date: 2026-04-21 16:33+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -148,11 +148,11 @@ msgstr "Mae hwn yn wasanaeth newydd."
 
 #: cms/jinja2/templates/base.html:36
 msgid "Menu links navigation"
-msgstr ""
+msgstr "Llywio dolenni dewislen"
 
 #: cms/jinja2/templates/base.html:37
 msgid "Menu links"
-msgstr ""
+msgstr "Dolenni dewislen"
 
 #: cms/jinja2/templates/base.html:38
 msgid "Menu"
@@ -160,7 +160,7 @@ msgstr "Dewislen"
 
 #: cms/jinja2/templates/base.html:39
 msgid "Toggle menu"
-msgstr ""
+msgstr "Togl dewislen"
 
 #: cms/jinja2/templates/base.html:40
 msgid "Breadcrumbs"
@@ -231,21 +231,21 @@ msgstr "Dangos pob diffiniad"
 msgid "Hide all definitions"
 msgstr "Cuddio pob diffiniad"
 
-#: cms/jinja2/templates/components/streamfield/image_block.html:20
+#: cms/jinja2/templates/components/streamfield/image_block.html:19
 #: cms/jinja2/templates/components/streamfield/table_block.html:9
 msgid "Source"
 msgstr "Ffynhonnell"
 
-#: cms/jinja2/templates/components/streamfield/image_block.html:37
+#: cms/jinja2/templates/components/streamfield/image_block.html:35
 msgid "Notes"
 msgstr "Nodiadau"
 
+#: cms/jinja2/templates/components/streamfield/image_block.html:41
 #: cms/jinja2/templates/components/streamfield/image_block.html:43
-#: cms/jinja2/templates/components/streamfield/image_block.html:45
 msgid "Download image"
 msgstr "Lawrlwythwch y ddelwedd"
 
-#: cms/jinja2/templates/components/streamfield/image_block.html:51
+#: cms/jinja2/templates/components/streamfield/image_block.html:48
 msgid "Download this image"
 msgstr "Lawrlwythwch y ddelwedd hon"
 
@@ -592,6 +592,11 @@ msgid ""
 "href=\"%(stats_authority_url)s\">Code of Practice for Statistics</a>. This "
 "broadly means that the statistics:"
 msgstr ""
+"Mae'r rhain yn ystadegau swyddogol achrededig. Maent wedi cael eu hadolygu'n "
+"annibynnol gan y Swyddfa Rheoleiddio Ystadegau (OSR) a chanfuwyd eu bod yn "
+"cydymffurfio â safonau dibynadwyedd, ansawdd a gwerth yn y <a "
+"href=\"%(stats_authority_url)s\"> Cod Ymarfer ar gyfer Ystadegau</a>. Mae "
+"hyn yn golygu'n fras bod yr ystadegau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:138
 msgid "meet user needs"
