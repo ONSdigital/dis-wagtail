@@ -5,7 +5,6 @@ from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale, Site
 from wagtail.test.utils import WagtailPageTestCase
 
-from cms.core.tests.utils import reset_url_caches
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import InformationPageFactory
 
@@ -44,13 +43,9 @@ class SubdomainLocalisationTests(WagtailPageTestCase):
     def setUp(self):
         self.dummy_request = get_dummy_request()
 
-        reset_url_caches()
-
     def tearDown(self):
         # Clear translation caches
         translation.deactivate()
-
-        reset_url_caches()
 
     def test_full_url(self):
         self.assertEqual(self.page.get_full_url(request=self.dummy_request), "http://ons.localhost/about")

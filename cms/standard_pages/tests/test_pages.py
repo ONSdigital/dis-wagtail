@@ -4,7 +4,7 @@ from django.utils import translation
 from wagtail.models import Site
 from wagtail.test.utils import WagtailPageTestCase
 
-from cms.core.tests.utils import TranslationResetMixin, reset_url_caches
+from cms.core.tests.utils import TranslationResetMixin
 from cms.standard_pages.models import CookiesPage
 from cms.standard_pages.utils import SUPPORTED_LANGUAGE_CODES
 
@@ -90,7 +90,6 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
     def test_view_cookies_link_is_localised_subdomain_routing_off(self):
         # remove all but the default site
         Site.objects.filter(is_default_site=False).delete()
-        reset_url_caches()
 
         response = self.client.get("/cy")
         self.assertContains(response, 'href="/cy/cookies"')
