@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, NamedTuple, override
 
 from django.core.management.base import CommandError
-from django.core.management.commands.makemessages import Command as MakeMessagesCommand
 from django.core.management.commands.makemessages import normalize_eols
 from django.core.management.utils import popen_wrapper
+from django_jinja.management.commands.makemessages import Command as MakeMessagesCommand
 
 if TYPE_CHECKING:
     from django.core.management.base import CommandParser
