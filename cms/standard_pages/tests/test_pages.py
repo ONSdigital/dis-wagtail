@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.test import override_settings
+from django.test import RequestFactory, override_settings
 from django.utils import translation
 from wagtail.models import Site
 from wagtail.test.utils import WagtailPageTestCase
@@ -22,6 +22,19 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
     def tearDown(self):
         # Clear translation caches
         translation.deactivate()
+
+    def test_welsh_cookies_page_shows_localised_version_notice_by_default(self):
+        request = RequestFactory().get(self.welsh_cookies_page.url)
+        request.LANGUAGE_CODE = "cy"
+
+        self.assertTrue(self.welsh_cookies_page.show_localised_version_not_available_notice(request))
+
+    @override_settings(CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED=False)
+    def test_welsh_cookies_page_can_hide_localised_version_notice_with_feature_flag(self):
+        request = RequestFactory().get(self.welsh_cookies_page.url)
+        request.LANGUAGE_CODE = "cy"
+
+        self.assertFalse(self.welsh_cookies_page.show_localised_version_not_available_notice(request))
 
     def test_get_cookies_page(self):
         response = self.client.get(self.cookies_page.url)
