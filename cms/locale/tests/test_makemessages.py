@@ -4,9 +4,10 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
+from django.core.management import execute_from_command_line
 from django.core.management.base import CommandError
-from django.core.management.commands.makemessages import Command as MakeMessagesCommand
 from django.test import SimpleTestCase
+from django_jinja.management.commands.makemessages import Command as DjangoJinjaCommand
 
 from cms.locale.management.commands.makemessages import Command, TranslationItem
 
@@ -197,7 +198,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
 class WritePOFileNormalModeTests(SimpleTestCase):
     """Tests for write_po_file when _check_mode is False."""
 
-    @patch.object(MakeMessagesCommand, "write_po_file")
+    @patch.object(DjangoJinjaCommand, "write_po_file")
     def test_delegates_to_parent(self, mock_write_parent):
         command = Command()
         command._check_mode = False  # pylint: disable=W0212
@@ -209,10 +210,22 @@ class WritePOFileNormalModeTests(SimpleTestCase):
         mock_write_parent.assert_called_once_with("/tmp/django.pot", "cy")  # noqa: S108
 
 
+class CommandClassTests(SimpleTestCase):
+    def test_class_is_instance_of_django_jinja_command(self):
+        self.assertTrue(issubclass(Command, DjangoJinjaCommand))
+
+    @patch("cms.locale.management.commands.makemessages.Command")
+    def test_custom_command_used(self, mock_command):
+        args = ["./manage.py", "makemessages", "--locale", "cy", "--check"]
+        execute_from_command_line(args)
+
+        mock_command.assert_called_once()
+
+
 class HandleCheckModeTests(SimpleTestCase):
     """Tests for handle() with --check flag.
 
-    Mock out the parent MakeMessagesCommand.handle() to avoid full gettext extraction.
+    Mock out the parent DjangoJinjaCommand.handle() to avoid full gettext extraction.
     Use the mock's side effect to populate _modified_po_files to simulate detecting changes.
     """
 
@@ -227,14 +240,14 @@ class HandleCheckModeTests(SimpleTestCase):
         command.stderr = self.stderr
         return command
 
-    @patch.object(MakeMessagesCommand, "handle")
+    @patch.object(DjangoJinjaCommand, "handle")
     def test_no_changes_exists_zero(self, _):
         command = self._make_command()
         command.handle(check=True, verbosity=1, jinja_engine=None)
 
         self.assertIn("All .po files are up to date.", self.stdout.getvalue())
 
-    @patch.object(MakeMessagesCommand, "handle")
+    @patch.object(DjangoJinjaCommand, "handle")
     def test_changes_detected_exits_non_zero(self, mock_parent_handle):
         command = self._make_command()
 
@@ -248,7 +261,7 @@ class HandleCheckModeTests(SimpleTestCase):
 
         self.assertEqual(ctx.exception.code, 1)
 
-    @patch.object(MakeMessagesCommand, "handle")
+    @patch.object(DjangoJinjaCommand, "handle")
     def test_changes_listed_in_stderr(self, mock_parent_handle):
         command = self._make_command()
         changed_path = "/some/locale/cy/LC_MESSAGES/django.po"
@@ -266,7 +279,7 @@ class HandleCheckModeTests(SimpleTestCase):
         self.assertIn("The following .po files are not up to date:", stderr_output)
         self.assertIn("Run `makemessages` to update them.", stderr_output)
 
-    @patch.object(MakeMessagesCommand, "handle")
+    @patch.object(DjangoJinjaCommand, "handle")
     def test_without_check_delegates_to_default_makemessages(self, mock_parent_handle):
         command = self._make_command()
         command.handle(check=False, verbosity=1, jinja_engine=None)
@@ -276,7 +289,7 @@ class HandleCheckModeTests(SimpleTestCase):
         self.assertNotIn("up to date", self.stdout.getvalue())
         self.assertEqual(self.stderr.getvalue(), "")
 
-    @patch.object(MakeMessagesCommand, "handle")
+    @patch.object(DjangoJinjaCommand, "handle")
     def test_quiet_mode_suppresses_success_message(self, _):
         command = self._make_command()
         command.handle(check=False, verbosity=0, jinja_engine=None)
