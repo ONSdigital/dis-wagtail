@@ -6,8 +6,10 @@ from typing import TYPE_CHECKING, Any
 from django.http import Http404, HttpResponse
 from wagtail.contrib.routable_page.models import path
 
+from cms.core.blocks import ONSTableBlock
 from cms.core.blocks.constants import CHART_BLOCK_TYPES, TABLE_BLOCK_TYPES
 from cms.data_downloads.utils import create_data_csv_download_response_from_data, flatten_table_data
+from cms.datavis.blocks.base import BaseChartBlock
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -57,6 +59,33 @@ class DataDownloadMixin:
             ):
                 return dict(content_block.value)
         return {}
+
+    def _get_downloadable_blocks(self) -> list[tuple[str, str]]:
+        blocks: list[tuple[str, str]] = []
+
+        for content_block in self._iter_content_blocks():
+            if content_block.id is not None and (
+                content_block.block_type in TABLE_BLOCK_TYPES or content_block.block_type in CHART_BLOCK_TYPES
+            ):
+                block_type: str = content_block.block_type
+                block_id: str = content_block.id
+                blocks.append((block_type, block_id))
+
+        return blocks
+
+    def get_downloadable_block_paths(self) -> list[str]:
+        paths: list[str] = []
+
+        for block_type, block_id in self._get_downloadable_blocks():
+            block_path = ""
+            if block_type in TABLE_BLOCK_TYPES:
+                block_path = ONSTableBlock._build_download_path_fragment(block_id)  # pylint: disable=protected-access
+            elif block_type in CHART_BLOCK_TYPES:
+                block_path = BaseChartBlock._build_download_path_fragment(block_id)  # pylint: disable=protected-access
+            if block_path:
+                paths.append(block_path)
+
+        return paths
 
     def get_table(self, table_id: str) -> dict[str, Any]:
         """Finds a table block by its unique block ID in content.
