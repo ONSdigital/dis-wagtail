@@ -1,3 +1,5 @@
+import json
+import time
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, cast
 
@@ -56,6 +58,51 @@ class BundleContentsMixin:
 class PreviewBundlePageView(BundleContentsMixin, TemplateView):
     http_method_names: Sequence[str] = ["get"]
 
+    @staticmethod
+    def _update_preview_cookie(request: HttpRequest, response: TemplateResponse, bundle: Bundle, page_id: int) -> None:
+        """Write a signed preview cookie listing the bundle/page grants for this user.
+
+        Each entry carries its own expiry so that the cookie cannot be refreshed
+        indefinitely - a grant is pinned to when it was issued, not when the cookie
+        was last written. Entries are also accumulated so that multiple preview tabs
+        don't clobber each other's cookie data.
+        """
+        preview_entries: list[dict[str, int]] = []
+        existing_data = request.get_signed_cookie(
+            settings.BUNDLE_PREVIEW_COOKIE_NAME,
+            default=None,
+            salt=f"previewer-{request.user.pk}",
+            max_age=settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
+        )
+        if existing_data is not None:
+            parsed = json.loads(existing_data)
+            preview_entries = parsed if isinstance(parsed, list) else [parsed]
+
+        now = int(time.time())
+        preview_entries = [e for e in preview_entries if e.get("page") != page_id and e.get("expires_at", 0) > now]
+
+        if len(preview_entries) >= settings.CMS_BUNDLE_PREVIEW_MAX_COOKIE_ENTRIES:
+            raise PermissionDenied
+
+        preview_entries.append(
+            {
+                "bundle": bundle.pk,
+                "page": page_id,
+                "expires_at": now + settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
+            }
+        )
+
+        response.set_signed_cookie(
+            settings.BUNDLE_PREVIEW_COOKIE_NAME,
+            json.dumps(preview_entries),
+            max_age=settings.BUNDLE_PREVIEW_COOKIE_MAX_AGE,
+            salt=f"previewer-{request.user.pk}",
+            # Set secure to true in production, but allow it to be false in development for ease of testing
+            secure=not settings.DEBUG,
+            httponly=True,
+            samesite="Lax",
+        )
+
     def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
         bundle_id = kwargs["bundle_id"]
         bundle = get_object_or_404(Bundle, id=bundle_id)
@@ -97,7 +144,11 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
             data={"type": "page", "id": page_id, "title": getattr(page, "display_title", page.title)},
         )
 
-        return TemplateResponse(request, page.get_template(request), context)
+        response = TemplateResponse(request, page.get_template(request), context)
+
+        self._update_preview_cookie(request, response, bundle, page_id)
+
+        return response
 
 
 class PreviewBundleReleaseCalendarView(BundleContentsMixin, TemplateView):
