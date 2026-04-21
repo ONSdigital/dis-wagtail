@@ -1,6 +1,5 @@
 {% extends "wagtailadmin/generic/base.html" %}
-
-{% block titletag %}{{ page_title }}: {{ page_subtitle }}{% endblock %}
+{% load i18n wagtailadmin_tags %}
 
 {% block main_content %}
     <p>This page is currently ready to be published. Are you sure you want to unlock editing for this page?</p>
@@ -10,7 +9,7 @@
 
         <div>
             <button class="button" type="submit">Yes, unlock it</button>
-            <a href="{{ next }}" class="button button-secondary">No, don’t unlock</a>
+            <a href="{{ next_url }}" class="button button-secondary">{% trans "No, don't unlock" %}</a>
         </div>
     </form>
 {% endblock %}

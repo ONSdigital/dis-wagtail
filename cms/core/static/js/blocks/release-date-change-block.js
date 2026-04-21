@@ -8,7 +8,7 @@ class ReleaseDateChangeBlockDefinition extends ReadonlyStructBlockDefinition {
     try {
       const previousReleaseDateJson = document.getElementById('previous-release-date');
       this.previous_date = JSON.parse(previousReleaseDateJson.innerText);
-    } catch {
+    } catch (e) {
       this.previous_date = null;
     }
   }
