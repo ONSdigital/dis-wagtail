@@ -595,7 +595,7 @@ msgstr ""
 "Mae'r rhain yn ystadegau swyddogol achrededig. Maent wedi cael eu hadolygu'n "
 "annibynnol gan y Swyddfa Rheoleiddio Ystadegau (OSR) a chanfuwyd eu bod yn "
 "cydymffurfio â safonau dibynadwyedd, ansawdd a gwerth yn y <a "
-"href=\"%(stats_authority_url)s\"> Cod Ymarfer ar gyfer Ystadegau</a>. Mae "
+"href=\"%(stats_authority_url)s\">Cod Ymarfer ar gyfer Ystadegau</a>. Mae "
 "hyn yn golygu'n fras bod yr ystadegau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:138
