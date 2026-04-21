@@ -95,9 +95,11 @@ def user_can_access_asset(
     # clobbering when multiple preview tabs are open simultaneously.
     preview_entries: list[dict[str, int]] = parsed if isinstance(parsed, list) else [parsed]
 
-    # Filter to entries that haven't passed their per-entry expiry and where the user
-    # can actually preview the bundle. The per-entry expiry prevents the cookie from
-    # being refreshed indefinitely — each grant is pinned to when it was issued.
+    # Trust non-expired preview grants from the signed, user-scoped cookie.
+    # We intentionally do not re-check current bundle membership here: access is
+    # granted based on the original preview authorisation and remains valid until
+    # the entry's per-item expiry. The per-entry expiry prevents unrelated previews
+    # from extending older grants indefinitely.
     now = int(time.time())
     authorized_page_ids = [entry["page"] for entry in preview_entries if entry.get("expires_at", 0) > now]
 
