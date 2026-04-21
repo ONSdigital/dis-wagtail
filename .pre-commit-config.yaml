@@ -17,6 +17,7 @@ repos: # Python linting and formatting
         name: makemessages-check
         language: system
         entry: make makemessages-check
+        pass_filenames: false
       - id: pylint
         name: pylint
         entry: poetry run pylint
