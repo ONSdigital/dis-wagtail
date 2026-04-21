@@ -1,8 +1,9 @@
 from collections.abc import Iterable
-from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, TypedDict, Union
+from datetime import UTC, date, datetime
+from typing import TYPE_CHECKING, Any, TypedDict, Union, overload
 
 from django.utils.formats import date_format
+from django.utils.timezone import is_aware, make_aware
 from django.utils.translation import gettext_lazy as _
 from wagtail.models import Page
 
@@ -122,3 +123,24 @@ def get_document_metadata(
         metadata["date"] = get_document_metadata_date(date_value, prefix=prefix)
 
     return metadata
+
+
+@overload
+def to_rfc3339_datetime(value: None) -> None: ...
+@overload
+def to_rfc3339_datetime(value: date | datetime) -> str: ...
+def to_rfc3339_datetime(value: date | datetime | None) -> str | None:
+    """Converts a date or datetime to an RFC3339 date-time compliant string."""
+    if value is None:
+        return None
+
+    if not isinstance(value, datetime):
+        # set time to midnight for dates
+        value = datetime.combine(value, datetime.min.time())
+
+    if not is_aware(value):
+        value = make_aware(value, timezone=UTC)
+
+    formatted = value.replace(microsecond=0).isoformat(sep="T")
+
+    return formatted

@@ -13,7 +13,6 @@ from cms.core.tests.utils import (
     TranslationResetMixin,
     extract_datalayer_pushed_values,
     extract_response_jsonld,
-    reset_url_caches,
 )
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
@@ -22,9 +21,6 @@ from cms.standard_pages.tests.factories import IndexPageFactory, InformationPage
 class HomePageTests(TranslationResetMixin, WagtailPageTestCase):
     def setUp(self):
         self.page = HomePage.objects.first()
-
-    def tearDown(self):
-        reset_url_caches()
 
     def test_home_page_can_be_served(self):
         """Test that the home page can be served."""
