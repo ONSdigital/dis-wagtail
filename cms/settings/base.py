@@ -958,6 +958,11 @@ DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "ons.gov.uk")
 ONS_COOKIES_PAGE_SLUG = "cookies"
 
+# Feature flag to suppress the untranslated-page notice on CookiesPage aliases.
+CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED = (
+    env.get("CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED", "true").lower() == "true"
+)
+
 # Search redirect path
 ONS_WEBSITE_SEARCH_PATH = env.get("ONS_WEBSITE_SEARCH_PATH", "/search")
 
