@@ -56,21 +56,25 @@ class Command(MakeMessagesCommand):
 
         super().handle(*args, **options)
 
-        if self._check_mode:
-            if self._modified_po_files:
-                self.stderr.write("The following .po files are not up to date:\n")
-                for path in self._modified_po_files:
-                    self.stderr.write(f"{path}\n\n")
-                    if len(self._modified_po_files[path]) > 0:
-                        self.stderr.write("The following translation items have changed:\n\n")
-                        for item in self._modified_po_files[path]:
-                            self.stderr.write(f"{item}\n\n")
-                    else:
-                        self.stderr.write("new file\n")
-                self.stderr.write("\nRun `makemessages` to update them.\n")
-                raise SystemExit(1)
+        if not self._check_mode:
+            return
+
+        if not self._modified_po_files:
             if self.verbosity > 0:
                 self.stdout.write("All .po files are up to date.\n")
+            return
+
+        self.stderr.write("The following .po files are not up to date:\n")
+        for path, items in self._modified_po_files.items():
+            self.stderr.write(f"{path}\n\n")
+            if items:
+                self.stderr.write("The following translation items have changed:\n\n")
+                for item in items:
+                    self.stderr.write(f"{item}\n\n")
+            else:
+                self.stderr.write("new file\n")
+        self.stderr.write("\nRun `makemessages` to update them.\n")
+        raise SystemExit(1)
 
     @override
     def write_po_file(self, potfile: str, locale: str) -> None:
