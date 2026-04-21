@@ -7,10 +7,13 @@ from django.core.cache import cache
 from django.core.signals import setting_changed
 from django.db.models.signals import pre_save
 from django.utils.log import configure_logging
-from wagtail.models import DraftStateMixin, Page, Revision, Site
-from wagtail.signals import page_published, page_unpublished
+from wagtail.models import DraftStateMixin, Locale, Page, Revision, Site
+from wagtail.signals import page_published, page_slug_changed, page_unpublished
 
 from cms.core.templatetags.page_config_tags import get_page_config_cache_key
+
+# Tree depth of the home page
+HOME_PAGE_DEPTH = 2
 
 
 def remove_go_live_seconds(
@@ -55,12 +58,33 @@ def invalidate_page_config_cache(sender: Any, instance: Page, **kwargs: Any) -> 
     )
 
 
+def sync_alias_translation_slugs(sender: Any, instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
+    # Don't attempt to sync slugs for children of the root page
+    if instance.depth == HOME_PAGE_DEPTH:
+        return
+
+    # Only process the signal for instances with a locale matching the default language,
+    # to avoid potential issues with circular updates between translations
+    if not instance.locale_id or instance.locale_id != Locale.get_default().pk:
+        return
+
+    updatable_aliased_translations = (
+        instance.get_translations().filter(alias_of__isnull=False).exclude(slug=instance.slug)
+    )
+    for translation in updatable_aliased_translations:
+        translation.slug = instance.slug
+        # Use save() to trigger any related functionality
+        translation.save()
+
+
 def register_signal_handlers() -> None:
     for model in apps.get_models():
         if issubclass(model, DraftStateMixin):
             pre_save.connect(remove_go_live_seconds, sender=model)
 
     pre_save.connect(remove_approved_go_live_seconds, sender=Revision)
+
+    page_slug_changed.connect(sync_alias_translation_slugs)
 
     setting_changed.connect(reload_logging_config)
 

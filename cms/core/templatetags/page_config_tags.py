@@ -5,10 +5,12 @@ from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpRequest
 from django.utils.translation import gettext_lazy as _
+from wagtail.coreutils import WAGTAIL_APPEND_SLASH
 from wagtail.models import Locale, Page, Site
 
 from cms.core.models import BasePage
 from cms.core.utils import deep_merge_mapping
+from cms.locale.utils import get_mapped_site_root_paths
 from cms.navigation.models import FooterMenu, MainMenu, NavigationSettings
 from cms.navigation.utils import footer_menu_columns, main_menu_columns, main_menu_highlights
 
@@ -31,45 +33,46 @@ class HreflangDict(TypedDict):
 
 
 def _build_locale_urls(request: HttpRequest, page: BasePage) -> list[LocaleURLsDict]:
-    """Internal helper to build a list of dicts that map each locale to:
-    - its variant (or fallback to default_page if missing)
-    - the final URL to use
-    - the locale object itself.
+    """Build a list of locale URL mappings by preserving the current request path
+    and swapping the language component (prefix or domain).
+
+    This ensures routable sub-paths (e.g. /editions/, /related-data/) are preserved
+    when switching language, rather than resolving to the page's canonical URL.
     """
+    # TODO: if request.is_preview -> use view_draft URLs
     if prebuilt_locale_urls := getattr(page, "_locale_urls", None):
         return prebuilt_locale_urls  # type: ignore[no-any-return]
 
-    default_locale = Locale.get_default()
-
-    variants = {variant.locale_id: variant for variant in page.get_translations(inclusive=True).defer_streamfields()}
-    default_page = variants.get(default_locale.pk)
-
+    request_path = request.path
     use_subdomain_locale = settings.CMS_USE_SUBDOMAIN_LOCALES
     results: list[LocaleURLsDict] = []
-    for locale in Locale.objects.all().order_by("pk"):
-        variant = variants.get(locale.pk, default_page)
-        if not variant:
-            # In case a preview of a non-existent page is requested
-            continue
 
-        # If there's no real translation in this locale, prepend
-        # the locale code to the default page's URL so that strings in
-        # templates can be localized:
-        if use_subdomain_locale:
-            # Use the full URL to handle locale subdomains
-            url = variant.get_full_url(request=request)
-        elif variant == default_page and locale.pk != variant.locale_id:
-            # Handle the specific case for the default page with a different locale
-            url = f"/{locale.language_code}{variant.get_url(request=request)}"
-        else:
-            url = variant.get_url(request=request)
+    if use_subdomain_locale:
+        # Subdomain mode: preserve request path, swap domain
+        site_root_paths = get_mapped_site_root_paths(host=request.get_host())
+        locale_root_urls: dict[str, str] = {}
+        for srp in site_root_paths:
+            if srp.language_code not in locale_root_urls:
+                locale_root_urls[srp.language_code] = srp.root_url
 
-        results.append(
-            {
-                "locale": locale,
-                "url": url,
-            }
-        )
+        for locale in Locale.objects.all().order_by("pk"):
+            root_url = locale_root_urls.get(locale.language_code)
+            if not root_url:
+                continue
+            results.append({"locale": locale, "url": f"{root_url}{request_path}"})
+    else:
+        # Path-based mode: preserve request path, swap locale prefix
+        default_locale = Locale.get_default()
+        bare_path = _strip_locale_prefix(request_path)
+
+        for locale in Locale.objects.all().order_by("pk"):
+            if locale.pk == default_locale.pk:
+                url = bare_path
+            elif bare_path == "/":
+                url = f"/{locale.language_code}/" if WAGTAIL_APPEND_SLASH else f"/{locale.language_code}"
+            else:
+                url = f"/{locale.language_code}{bare_path}"
+            results.append({"locale": locale, "url": url})
 
     page._locale_urls = results  # pylint: disable=protected-access
 
@@ -102,6 +105,20 @@ def get_translation_urls(request: HttpRequest, page: BasePage) -> list[Translati
             }
         )
     return urls
+
+
+def _strip_locale_prefix(path: str) -> str:
+    """Strip any locale prefix from a URL path.
+
+    e.g. "/cy/topic/articles" -> "/topic/articles", "/cy" -> "/".
+    """
+    for lang_code, _lang_name in settings.LANGUAGES:
+        prefix = f"/{lang_code}/"
+        if path.startswith(prefix):
+            return path[len(f"/{lang_code}") :]
+        if path == f"/{lang_code}":
+            return "/"
+    return path
 
 
 def get_base_page_config_cache_key(site: Site, language_code: str) -> str:

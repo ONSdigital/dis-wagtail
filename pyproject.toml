@@ -12,8 +12,8 @@ requires-poetry = ">=2.2"
 
 [tool.poetry.dependencies]
 python = "^3.14"
-django = "~5.2.11"
-wagtail = "~7.2.2"
+django = "~6.0.4"
+wagtail = "~7.3.1"
 dj-database-url = "~3.1.0"
 django-csp = "~4.0"
 django-defender = "~0.9.8"
@@ -21,17 +21,17 @@ django-extensions = "~4.1"
 django-jinja = "^2.11.0"
 django-redis = "~6.0.0"
 django-storages = { version = "~1.14.6", extras = ["s3"] }
-gunicorn = "~23.0.0"
+gunicorn = "~25.3.0"
 psycopg = "~3.3.2"
 wagtail-font-awesome-svg = "^2.0"
 apscheduler = "^3.11.2"
 wagtailmath = "~1.3.1"
-whitenoise = "~6.11.0"
-slack-sdk = "^3.39.0"
+whitenoise = "~6.12.0"
+slack-sdk = "^3.41.0"
 django-cache-memoize = "^0.2.1"
 django-iam-dbauth = "^0.2.1"
-requests = "^2.32.5"
-django-treebeard = "^4.8.0"
+requests = "^2.33.1"
+django-treebeard = "^4.8.0" # Wagtail 7.3 requires treebeard < 5.0
 kafka-python = "^2.3.0"
 wagtail-tinytableblock = "^0.4.0"
 queryish = "^0.3"
@@ -45,16 +45,16 @@ django-ses = "^4.7.0"
 aws-msk-iam-sasl-signer-python = "^1.0.2"
 wagtailtables = "^0.2.2"
 pyjwt = "^2.12.0"
-cryptography = "^46.0.5"
+cryptography = "^46.0.7"
 django-pglock = "^1.8.0"
 wagtail-schema-org = "5.0.0"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules
-djhtml = "3.0.10"  # keep version in sync with .pre-commit-config.yaml
+djhtml = "3.0.11"  # keep version in sync with .pre-commit-config.yaml
 mypy = "^1.19.1"
 types-requests = "^2.32.4.20260107"
-django-stubs = { version="^5.2.9", extras=["compatible-mypy"]}
+django-stubs = { version="^6.0.2", extras=["compatible-mypy"]}
 pylint = "^4.0.4"
 pylint-django = "^2.7.0"
 ruff = "0.14.14"  # keep version in sync with .pre-commit-config.yaml

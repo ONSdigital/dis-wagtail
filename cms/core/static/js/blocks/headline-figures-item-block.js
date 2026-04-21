@@ -5,7 +5,7 @@ class HeadlineFiguresItemBlock extends window.wagtailStreamField.blocks.StructBl
     try {
       const usedFigures = document.getElementById('figures-used-by-ancestor');
       this.usedFigures = JSON.parse(usedFigures.innerText) || [];
-    } catch (e) {
+    } catch {
       this.usedFigures = [];
     }
   }
