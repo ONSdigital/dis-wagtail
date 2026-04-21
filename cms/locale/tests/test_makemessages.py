@@ -230,7 +230,7 @@ class HandleCheckModeTests(SimpleTestCase):
     @patch.object(MakeMessagesCommand, "handle")
     def test_no_changes_exists_zero(self, _):
         command = self._make_command()
-        command.handle(check=True, verbosity=1)
+        command.handle(check=True, verbosity=1, jinja_engine=None)
 
         self.assertIn("All .po files are up to date.", self.stdout.getvalue())
 
@@ -244,7 +244,7 @@ class HandleCheckModeTests(SimpleTestCase):
         mock_parent_handle.side_effect = simulate_changes
 
         with self.assertRaises(SystemExit) as ctx:
-            command.handle(check=True, verbosity=1)
+            command.handle(check=True, verbosity=1, jinja_engine=None)
 
         self.assertEqual(ctx.exception.code, 1)
 
@@ -259,7 +259,7 @@ class HandleCheckModeTests(SimpleTestCase):
         mock_parent_handle.side_effect = simulate_changes
 
         with self.assertRaises(SystemExit):
-            command.handle(check=True, verbosity=1)
+            command.handle(check=True, verbosity=1, jinja_engine=None)
 
         stderr_output = self.stderr.getvalue()
         self.assertIn(changed_path, stderr_output)
@@ -269,7 +269,7 @@ class HandleCheckModeTests(SimpleTestCase):
     @patch.object(MakeMessagesCommand, "handle")
     def test_without_check_delegates_to_default_makemessages(self, mock_parent_handle):
         command = self._make_command()
-        command.handle(check=False, verbosity=1)
+        command.handle(check=False, verbosity=1, jinja_engine=None)
 
         mock_parent_handle.assert_called_once()
 
@@ -279,6 +279,6 @@ class HandleCheckModeTests(SimpleTestCase):
     @patch.object(MakeMessagesCommand, "handle")
     def test_quiet_mode_suppresses_success_message(self, _):
         command = self._make_command()
-        command.handle(check=False, verbosity=0)
+        command.handle(check=False, verbosity=0, jinja_engine=None)
 
         self.assertEqual(self.stdout.getvalue(), "")
