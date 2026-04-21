@@ -23,32 +23,37 @@ class InvalidatePageConfigCacheSignalTestCase(TestCase):
     def setUp(self):
         self.page: HomePage = HomePage.objects.first()
 
-        self.cache_keys = [
-            get_page_config_cache_key(self.page.get_site(), self.page, language_code)
-            for language_code in dict(settings.LANGUAGES)
-        ]
+        self.site = self.page.get_site()
 
         # Warm the cache
         self.client.get(self.page.get_url())
 
+    def _cache_keys_for_page(self, page: Page) -> list[str]:
+        return [get_page_config_cache_key(self.site, page, language_code) for language_code in dict(settings.LANGUAGES)]
+
     def tearDown(self):
         cache.clear()
 
+    def test_stable_cache_key(self):
+        with self.assertNumQueries(0):
+            self.assertEqual(self._cache_keys_for_page(self.page), self._cache_keys_for_page(self.page))
+
     def test_invalidate_on_publish(self):
-        self.assertNotEqual(cache.get_many(self.cache_keys), {})
+        self.assertNotEqual(cache.get_many(self._cache_keys_for_page(self.page)), {})
 
         # Publish a change
         self.page.save_revision().publish()
+        self.page.refresh_from_db()
 
-        self.assertEqual(cache.get_many(self.cache_keys), {})
+        self.assertEqual(cache.get_many(self._cache_keys_for_page(self.page)), {})
 
     def test_invalidate_on_unpublish(self):
-        self.assertNotEqual(cache.get_many(self.cache_keys), {})
+        self.assertNotEqual(cache.get_many(self._cache_keys_for_page(self.page)), {})
 
         # Unpublish the revision
         self.page.unpublish()
 
-        self.assertEqual(cache.get_many(self.cache_keys), {})
+        self.assertEqual(cache.get_many(self._cache_keys_for_page(self.page)), {})
 
 
 class SyncAliasTranslationSlugsTestCase(TestCase):

@@ -33,6 +33,14 @@ class InvalidateBaseConfigCacheSignalTestCase(TestCase):
     def tearDown(self):
         cache.clear()
 
+    def test_stable_cache_key(self):
+        for language_code in dict(settings.LANGUAGES):
+            with self.subTest(language_code), self.assertNumQueries(0):
+                self.assertEqual(
+                    get_base_page_config_cache_key(self.navigation_settings.site, language_code),
+                    get_base_page_config_cache_key(self.navigation_settings.site, language_code),
+                )
+
     def test_invalidate_on_settings_save(self):
         self.assertNotEqual(cache.get_many(self.cache_keys), {})
 
