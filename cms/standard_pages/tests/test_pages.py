@@ -1,3 +1,5 @@
+from unittest import skip
+
 from django.conf import settings
 from django.test import RequestFactory, override_settings
 from django.utils import translation
@@ -58,7 +60,20 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
             html=True,
         )
 
-    def test_get_welsh_cookies_page(self):
+    def test_welsh_cookies_page_renders_translated_furniture(self):
+        response = self.client.get(self.welsh_cookies_page.url, headers={"host": "cy.ons.localhost"})
+        self.assertEqual(response.status_code, 200)
+
+        # Check the breadcrumbs include the home page link
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{self.welsh_site.root_url}">Cartref</a>',
+            html=True,
+        )
+
+    # TODO: Remove skip when translations for Cookies page are available
+    @skip("Welsh cookies page content translations temporarily disabled until full translations are available")
+    def test_welsh_cookies_page_renders_translated_content(self):
         response = self.client.get(self.welsh_cookies_page.url, headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, 200)
         self.assertContains(
@@ -73,12 +88,6 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
             html=True,
         )
         self.assertContains(response, "Gosodiadau cwcis")
-        # Check the breadcrumbs include the home page link
-        self.assertContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{self.welsh_site.root_url}">Cartref</a>',
-            html=True,
-        )
 
     def test_cookies_page_exists_for_all_supported_language(self):
         # The english cookies page should be the original
