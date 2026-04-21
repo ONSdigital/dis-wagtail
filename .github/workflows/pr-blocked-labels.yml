@@ -27,5 +27,5 @@ jobs:
             On Hold ✋
           add_comment: true
           message:
-            "This PR is being prevented from merging because you have added one of our blocking labels: `{{ applied }}`\n\n
+            "This PR is being prevented from merging because you have added one of our blocking labels: {{ applied }}\n\n
             You'll need to remove it before this PR can be merged."
