@@ -152,25 +152,28 @@ def health(request: HttpRequest) -> HttpResponse:
             if isinstance(e, DatabaseError):
                 message = "Backend failed"
             else:
-                logger.exception("Unexpected error connection to backend %s", connection.alias)
+                logger.exception("Unexpected error connecting to backend %s", connection.alias)
                 message = "Unexpected error"
 
         checks.append(build_check(f"{connection.alias} database", message, failed))
 
-    if isinstance(caches["default"], RedisCache):
+    for cache_alias in caches:
+        cache = caches[cache_alias]
+        if not isinstance(cache, RedisCache):
+            continue
         failed = False
         message = "Cache is ok"
         try:
-            get_redis_connection().ping()
+            get_redis_connection(cache_alias).ping()
         except Exception as e:  # pylint: disable=broad-exception-caught
             failed = True
             if isinstance(e, redis.exceptions.ConnectionError):
                 message = "Ping failed"
             else:
-                logger.exception("Unexpected error connection to Redis")
+                logger.exception("Unexpected error connecting to Redis")
                 message = "Unexpected error"
 
-        checks.append(build_check("cache", message, failed))
+        checks.append(build_check(f"{cache_alias} cache", message, failed))
 
     checks_failed = any(check["status"] != "OK" for check in checks)
 

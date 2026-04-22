@@ -216,7 +216,7 @@ class HealthProbeTestCase(TestCase):
 
         self.assertEqual(response.status_code, 500)
 
-        cache_check = next(check for check in response.json()["checks"] if check["name"] == "cache")
+        cache_check = next(check for check in response.json()["checks"] if check["name"] == "default cache")
 
         self.assertIsNotNone(cache_check)
 
