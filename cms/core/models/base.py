@@ -203,6 +203,10 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return request.build_absolute_uri(request.get_full_path())
         return cast(str, canonical_page.get_full_url(request=request))
 
+    def show_localised_version_not_available_notice(self, request: HttpRequest) -> bool:
+        """Return whether to show a notice that this page is not available in the active language."""
+        return bool(self.alias_of and self.alias_of.locale.language_code != request.LANGUAGE_CODE)
+
     def get_url_parts(self, request: HttpRequest | None = None) -> tuple[int, str | None, str | None] | None:
         """Override get_url_parts to generate URLs without trailing slashes."""
         parts = super().get_url_parts(request)
