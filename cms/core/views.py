@@ -74,6 +74,8 @@ def ready(request: HttpRequest) -> HttpResponse:
 
     Readiness should reflect whether this instance can currently serve traffic,
     including access to required dependencies.
+
+    The cache is intentionally absent as an unavailable cache just results in cache misses.
     """
     for connection in connections.all():
         try:
@@ -90,13 +92,6 @@ def ready(request: HttpRequest) -> HttpResponse:
             )
             return HttpResponseServerError(f"Database {connection.alias} reported an error")
 
-    if isinstance(caches["default"], RedisCache):
-        try:
-            get_redis_connection().ping()
-        except Exception:  # pylint: disable=broad-exception-caught
-            logger.exception("Unable to ping Redis")
-            return HttpResponseServerError("Unable to ping Redis")
-
     return HttpResponse(status=200)
 
 
@@ -108,7 +103,7 @@ def liveness(request: HttpRequest) -> HttpResponse:
     If this fails, the container will be restarted.
 
     This should be shallow and only indicate whether the process is alive and
-    responsive; dependency issues (e.g. DB/Redis) belong in readiness.
+    responsive; dependency issues (e.g. DB) belong in readiness.
     """
     return HttpResponse(status=200)
 

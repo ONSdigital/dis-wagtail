@@ -68,17 +68,6 @@ class LivenessProbeTestCase(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-@override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": "redis://",
-            "OPTIONS": {
-                "CONNECTION_POOL_KWARGS": {"connection_class": FakeConnection},
-            },
-        }
-    },
-)
 class ReadinessProbeTestCase(TestCase):
     """Tests for the readiness probe endpoint."""
 
@@ -108,20 +97,6 @@ class ReadinessProbeTestCase(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.content, b"Database default reported an error")
-
-    @override_settings(
-        CACHES={
-            "default": {
-                "BACKEND": "django_redis.cache.RedisCache",
-                "LOCATION": "redis:///does-not-exist",
-                "OPTIONS": {},
-            }
-        }
-    )
-    def test_broken_redis_connection(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 500)
-        self.assertEqual(response.content, b"Unable to ping Redis")
 
     @override_settings(XFF_STRICT=True)
     def test_xff_exempt(self):
