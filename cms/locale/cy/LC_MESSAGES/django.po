@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-21 16:33+0100\n"
+"POT-Creation-Date: 2026-04-23 12:47+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -312,126 +312,131 @@ msgstr ""
 msgid "reloading the page in case there was a temporary fault with JavaScript"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:59
+#: cms/jinja2/templates/pages/cookies.html:58
 msgid ""
 "We use four types of cookie. You can choose which cookies you’re happy for "
 "us to use."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:63
+#: cms/jinja2/templates/pages/cookies.html:59
+msgid "You can change your settings at any time by returning to this page."
+msgstr ""
+
+#: cms/jinja2/templates/pages/cookies.html:62
 msgid "Cookies that measure website use"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:65
+#: cms/jinja2/templates/pages/cookies.html:64
 msgid ""
 "We use Google Analytics and Hotjar cookies to measure how you use the "
 "website."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:67
+#: cms/jinja2/templates/pages/cookies.html:66
 msgid "These cookies collect information about:"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:69
+#: cms/jinja2/templates/pages/cookies.html:68
 msgid "how you got to the site"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:70
+#: cms/jinja2/templates/pages/cookies.html:69
 msgid "the pages you visit and how long you spend on each page"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:71
+#: cms/jinja2/templates/pages/cookies.html:70
 msgid "what you click on while you are visiting the site"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:72
+#: cms/jinja2/templates/pages/cookies.html:71
 msgid "the way in which you interact with a page"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:73
+#: cms/jinja2/templates/pages/cookies.html:72
 msgid "whether you have participated in a Hotjar survey"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:75
+#: cms/jinja2/templates/pages/cookies.html:74
 msgid ""
 "We do not allow Google or Hotjar to use or share this data for their own "
 "purposes."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:77
+#: cms/jinja2/templates/pages/cookies.html:76
 msgid "Do you want to allow cookies that measure website use?"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:78
+#: cms/jinja2/templates/pages/cookies.html:77
 msgid "Yes"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:79
+#: cms/jinja2/templates/pages/cookies.html:78
 msgid "No"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:106
+#: cms/jinja2/templates/pages/cookies.html:105
 msgid "Cookies that help with our communications and marketing"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:108
+#: cms/jinja2/templates/pages/cookies.html:107
 msgid ""
 "These cookies may be set by third-party websites, like YouTube and Vimeo. "
 "They do things like measure how you view YouTube videos that are on the ONS "
 "website."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:111
+#: cms/jinja2/templates/pages/cookies.html:110
 msgid ""
 "Do you want to allow cookies that help with our communications and marketing?"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:138
+#: cms/jinja2/templates/pages/cookies.html:137
 msgid "Cookies that remember your settings"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:140
+#: cms/jinja2/templates/pages/cookies.html:139
 msgid ""
 "These cookies do things like remember your preferences and the choices you "
 "make, to personalise your experience of using the site."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:143
+#: cms/jinja2/templates/pages/cookies.html:142
 msgid ""
 "We currently do not use these cookies but do store your choice to accept or "
-"reject them as part of our strictly necessary cookies."
+"reject them. You can change your selection at any time."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:146
+#: cms/jinja2/templates/pages/cookies.html:145
 msgid "Do you want to allow cookies that remember your settings?"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:173
+#: cms/jinja2/templates/pages/cookies.html:172
 msgid "Strictly necessary cookies"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:174
+#: cms/jinja2/templates/pages/cookies.html:173
 msgid "These essential cookies do things like:"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:176
+#: cms/jinja2/templates/pages/cookies.html:175
 msgid ""
-"remember the notifications you’ve seen so we do not show them to you again"
+"remember your cookies settings and the notifications you’ve seen so we do "
+"not show them to you again"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:177
+#: cms/jinja2/templates/pages/cookies.html:176
 msgid "remember your progress through a form (for example, an ONS study)"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:178
+#: cms/jinja2/templates/pages/cookies.html:177
 msgid "improve performance and identify potential security threats"
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:180
+#: cms/jinja2/templates/pages/cookies.html:179
 msgid "They always need to be on."
 msgstr ""
 
-#: cms/jinja2/templates/pages/cookies.html:182
+#: cms/jinja2/templates/pages/cookies.html:181
 msgid "Save changes"
 msgstr ""
 
@@ -595,8 +600,8 @@ msgstr ""
 "Mae'r rhain yn ystadegau swyddogol achrededig. Maent wedi cael eu hadolygu'n "
 "annibynnol gan y Swyddfa Rheoleiddio Ystadegau (OSR) a chanfuwyd eu bod yn "
 "cydymffurfio â safonau dibynadwyedd, ansawdd a gwerth yn y <a "
-"href=\"%(stats_authority_url)s\">Cod Ymarfer ar gyfer Ystadegau</a>. Mae "
-"hyn yn golygu'n fras bod yr ystadegau:"
+"href=\"%(stats_authority_url)s\">Cod Ymarfer ar gyfer Ystadegau</a>. Mae hyn "
+"yn golygu'n fras bod yr ystadegau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:138
 msgid "meet user needs"
