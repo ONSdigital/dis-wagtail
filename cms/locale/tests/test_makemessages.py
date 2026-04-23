@@ -37,7 +37,6 @@ class ExtractTranslationsTests(SimpleTestCase):
 
         cleaned = result.pop()
 
-        print(repr(cleaned))
         self.assertEqual(cleaned, TranslationItem("\nsecond line\nthird line\n", "", ""))
 
     def test_plurals_are_extracted(self):
@@ -321,7 +320,7 @@ class MakemessagesIntegrationTests(SimpleTestCase):
         template_file.write_text(
             """
         <h1>{{ _("Cookies") }}</h1>
-        {% trans trimmed name="World", place="Universe %}
+        {% trans trimmed name="World", place="Universe" %}
             Hello {{ name }}, welcome to {{ place }}
         {% endtrans %}
         {% trans "Goodbye" %}
