@@ -4,9 +4,9 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
-from django.core.management import execute_from_command_line
+from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 from django_jinja.management.commands.makemessages import Command as DjangoJinjaCommand
 
 from cms.locale.management.commands.makemessages import Command, TranslationItem
@@ -214,10 +214,9 @@ class CommandClassTests(SimpleTestCase):
     def test_class_is_instance_of_django_jinja_command(self):
         self.assertTrue(issubclass(Command, DjangoJinjaCommand))
 
-    @patch("cms.locale.management.commands.makemessages.Command")
+    @patch("cms.locale.management.commands.makemessages.Command.handle", return_value=None)
     def test_custom_command_used(self, mock_command):
-        args = ["./manage.py", "makemessages", "--locale", "cy", "--check"]
-        execute_from_command_line(args)
+        call_command("makemessages", locale=["cy"], check=True)
 
         mock_command.assert_called_once()
 
@@ -295,3 +294,70 @@ class HandleCheckModeTests(SimpleTestCase):
         command.handle(check=False, verbosity=0, jinja_engine=None)
 
         self.assertEqual(self.stdout.getvalue(), "")
+
+
+class MakemessagesIntegrationTests(SimpleTestCase):
+    def setUp(self):
+        self.tmp_dir_obj = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
+        self.tmp_dir = self.tmp_dir_obj.name
+        self.addCleanup(self.tmp_dir_obj.cleanup)
+
+        tmp_path = Path(self.tmp_dir)
+
+        self.template_dir = tmp_path / "jinja2"
+        self.template_dir.mkdir()
+
+        self.locale_dir = tmp_path / "locale"
+        self.locale_dir.mkdir()
+
+        self.old_cwd = os.getcwd()
+        os.chdir(self.tmp_dir)
+
+        self.addCleanup(lambda cwd=self.old_cwd: os.chdir(cwd))
+
+    def test_extract_trans_block_from_jinja2_template(self):
+        template_file = self.template_dir / "text_extract.html"
+
+        template_file.write_text(
+            """
+        <h1>{{ _("Cookies") }}</h1>
+        {% trans trimmed name="World", place="Universe %}
+            Hello {{ name }}, welcome to {{ place }}
+        {% endtrans %}
+        {% trans "Goodbye" %}
+        """,
+            encoding="utf-8",
+        )
+
+        test_templates = [
+            {
+                "BACKEND": "django_jinja.jinja2.Jinja2",
+                "DIRS": [
+                    str(self.template_dir),
+                ],
+                "APP_DIRS": False,
+                "OPTIONS": {
+                    "match_extension": ".html",
+                },
+            }
+        ]
+
+        with override_settings(
+            TEMPLATES=test_templates,
+            LOCALE_PATHS=[str(self.locale_dir)],
+        ):
+            call_command("makemessages", locale=["cy"], verbosity=0, domain="django")
+
+        po_file = self.locale_dir / "cy" / "LC_MESSAGES" / "django.po"
+        self.assertTrue(po_file.exists(), f"Expected .po file to exist at {po_file}")
+
+        po_content = po_file.read_text(encoding="utf-8")
+
+        expected_msgid_gettext = 'msgid "Cookies"'
+        self.assertIn(expected_msgid_gettext, po_content)
+
+        expected_msgid_trans_block = 'msgid "Hello %(name)s, welcome to %(place)s"'
+        self.assertIn(expected_msgid_trans_block, po_content)
+
+        expected_msgid_inline_trans = 'msgid "Goodbye"'
+        self.assertIn(expected_msgid_inline_trans, po_content)
