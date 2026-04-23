@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -eux -o pipefail
+
 apt --quiet --yes update
 apt --quiet --yes install \
     git \
