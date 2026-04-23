@@ -10,9 +10,9 @@ from wagtail.blocks import (
     StructBlockValidationError,
     StructValue,
     TextBlock,
-    URLBlock,
 )
 
+from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
 from cms.core.url_utils import extract_url_path, validate_ons_url_struct_block
 from cms.datasets.views import dataset_chooser_viewset
 
@@ -24,7 +24,7 @@ DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
 class ManualDatasetBlock(StructBlock):
     title = CharBlock(required=True)
     description = TextBlock(required=False)
-    url = URLBlock(required=True)
+    url = RelativeOrAbsoluteURLBlock(required=True)
 
     class Meta:
         icon = "link"

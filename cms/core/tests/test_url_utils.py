@@ -64,6 +64,16 @@ class TestValidateONSUrl(TestCase):
             "Please enter a valid URL. It should start with 'https://' and contain a valid domain name.",
         )
 
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_relative_url_is_allowed(self):
+        url = "/releases/foo"
+        self.assertIsNone(validate_ons_url(url))
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=[""])
+    def test_relative_url_is_allowed_when_no_domains_allowed(self):
+        url = "/releases/foo"
+        self.assertIsNone(validate_ons_url(url))
+
 
 class TestValidateONSUrlBlock(TestCase):
     """Test validation of a StructBlock that contains a URL field which is restricted to ONS domain."""
@@ -105,6 +115,15 @@ class TestValidateONSUrlBlock(TestCase):
     def test_happy_path(self):
         block = self.TestBlock()
         value = {"title": "Test Title", "url": "https://example.com"}
+
+        errors = validate_ons_url_struct_block(value, block.child_blocks)
+
+        self.assertEqual(errors, {})
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_relative_url_passes(self):
+        block = self.TestBlock()
+        value = {"title": "Test Title", "url": "/releases/foo"}
 
         errors = validate_ons_url_struct_block(value, block.child_blocks)
 

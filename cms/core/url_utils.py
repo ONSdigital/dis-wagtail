@@ -33,7 +33,11 @@ def validate_ons_url_struct_block(
 def validate_ons_url(url: str) -> ValidationError | None:
     """Checks that the given URL matches the allowed ONS domain,
     otherwise return a dict holding a ValidationError to be used in the clean method of a StructBlock.
+    Relative URLs (starting with "/") are treated as internal and are not checked against the domain whitelist.
     """
+    if url.startswith("/"):
+        return None
+
     error = None
     parsed_url = urlparse(url)
 
