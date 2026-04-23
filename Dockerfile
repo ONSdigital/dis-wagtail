@@ -198,7 +198,7 @@ ENV GIT_COMMIT=${GIT_COMMIT} BUILD_TIME=${BUILD_TIME}
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 COPY ./scripts/install-docker-dev-deps.sh ./install-docker-dev-deps.sh
-RUN chmod +x ./install-docker-dev-deps.sh && ./install-docker-dev-deps.sh && rm ./install-docker-dev-deps.sh
+RUN ./install-docker-dev-deps.sh && rm ./install-docker-dev-deps.sh
 
 # Give the unprivileged user passwordless sudo access
 ARG USERNAME=cms
