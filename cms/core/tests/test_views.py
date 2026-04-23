@@ -208,7 +208,12 @@ class HealthProbeTestCase(TestCase):
                 "BACKEND": "django_redis.cache.RedisCache",
                 "LOCATION": "redis:///does-not-exist",
                 "OPTIONS": {},
-            }
+            },
+            "other": {
+                "BACKEND": "django_redis.cache.RedisCache",
+                "LOCATION": "redis:///also-does-not-exist",
+                "OPTIONS": {},
+            },
         }
     )
     def test_broken_redis_connection(self):
@@ -216,16 +221,22 @@ class HealthProbeTestCase(TestCase):
 
         self.assertEqual(response.status_code, 500)
 
-        cache_check = next(check for check in response.json()["checks"] if check["name"] == "default cache")
+        match_count = 0
+        for check in response.json()["checks"]:
+            if "cache" not in check["name"]:
+                continue
 
-        self.assertIsNotNone(cache_check)
+            match_count += 1
 
-        self.assertEqual(cache_check["status"], "CRITICAL")
-        self.assertEqual(cache_check["status_code"], 500)
-        self.assertEqual(cache_check["message"], "Ping failed")
-        self.assertEqual(cache_check["last_checked"], "2000-01-02T00:00:00+00:00")
-        self.assertIsNone(cache_check["last_success"])
-        self.assertEqual(cache_check["last_failure"], "2000-01-02T00:00:00+00:00")
+            with self.subTest(check["name"]):
+                self.assertEqual(check["status"], "CRITICAL")
+                self.assertEqual(check["status_code"], 500)
+                self.assertEqual(check["message"], "Ping failed")
+                self.assertEqual(check["last_checked"], "2000-01-02T00:00:00+00:00")
+                self.assertIsNone(check["last_success"])
+                self.assertEqual(check["last_failure"], "2000-01-02T00:00:00+00:00")
+
+        self.assertEqual(match_count, 2)
 
     @override_settings(XFF_STRICT=True)
     def test_xff_exempt(self):
