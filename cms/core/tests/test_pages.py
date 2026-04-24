@@ -288,12 +288,12 @@ class ErrorPageTests(TranslationResetMixin, WagtailPageTestCase):
             response.content.decode("utf-8"),
         )
 
-    def test_301_before_404_page(self):
-        """Test that a 301 redirect is returned before the 404 page is served when necessary."""
-        # The lack of a trailing slash on the URL should result in a 301 redirect,
+    def test_308_before_404_page(self):
+        """Test that a 308 redirect is returned before the 404 page is served when necessary."""
+        # The lack of a trailing slash on the URL should result in a 308 redirect,
         # even if the page does not exist.
         response = self.client.get("/non-existent-page-with-trailing-slash/")
-        self.assertEqual(response.status_code, HTTPStatus.MOVED_PERMANENTLY)
+        self.assertEqual(response.status_code, HTTPStatus.PERMANENT_REDIRECT)
 
         # Follow the redirect
         response = self.client.get(response["Location"])
