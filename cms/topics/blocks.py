@@ -22,7 +22,7 @@ from wagtail.images.blocks import ImageChooserBlock
 
 from cms.articles.models import ArticleSeriesPage
 from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
-from cms.core.url_utils import normalise_url, validate_ons_url_struct_block
+from cms.core.url_utils import extract_url_path, validate_ons_url_struct_block
 
 from .viewsets import series_with_headline_figures_chooser_viewset
 
@@ -220,7 +220,7 @@ class TimeSeriesPageStoryBlock(StreamBlock):
         # For each time series URL, record the indices of the blocks it appears in
         urls = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url = normalise_url(block.value["url"])
+            url = extract_url_path(block.value["url"]).lower()
 
             urls[url].add(block_index)
 

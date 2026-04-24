@@ -58,15 +58,6 @@ def validate_ons_url(url: str) -> ValidationError | None:
     return error
 
 
-def normalise_url(url: str) -> str:
-    """Normalise functionally equivalent URLs for comparison
-    when checking for duplicates across StreamValue entities.
-    """
-    url = url.lower().rstrip("/")  # Treat URLs with and without trailing slashes as equivalent
-    url = url.removeprefix("https://").removeprefix("www.")  # Normalise the URL
-    return url
-
-
 def extract_url_path(url: str) -> str:
     """Extracts and returns the path component of a URL."""
     parsed_url = urlparse(url)

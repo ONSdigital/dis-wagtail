@@ -5,7 +5,6 @@ from wagtail.blocks import CharBlock, StructBlock, URLBlock
 from cms.core.url_utils import (
     extract_url_path,
     is_hostname_in_domain,
-    normalise_url,
     validate_ons_url,
     validate_ons_url_struct_block,
 )
@@ -141,18 +140,6 @@ class TestValidateONSUrlBlock(TestCase):
         errors = validate_ons_url_struct_block(value, block.child_blocks)
 
         self.assertEqual(errors, {})
-
-
-class TestNormaliseUrl(TestCase):
-    def test_strips_trailing_slash(self):
-        url_with_slash = "https://example.com/"
-        url_without_slash = "https://example.com"
-        self.assertEqual(normalise_url(url_with_slash), normalise_url(url_without_slash))
-
-    def test_removes_https_and_www_prefixes(self):
-        url_with_prefixes = "https://www.example.com"
-        url_without_prefixes = "example.com"
-        self.assertEqual(normalise_url(url_with_prefixes), normalise_url(url_without_prefixes))
 
 
 class TestGetUrlPath(TestCase):
