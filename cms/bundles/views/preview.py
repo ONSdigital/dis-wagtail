@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.views.generic import TemplateView
@@ -25,10 +25,11 @@ from cms.bundles.utils import (
     serialize_datasets_for_release_calendar_page,
 )
 from cms.core.fields import StreamField
+from cms.core.utils import redirect
 from cms.release_calendar.enums import ReleaseStatus
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponseRedirect
+    from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
 
 
 class BundleContentsMixin:
@@ -251,7 +252,9 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
 
         return None
 
-    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse | HttpResponseRedirect:
+    def get(
+        self, request: HttpRequest, *args: Any, **kwargs: Any
+    ) -> TemplateResponse | HttpResponseRedirect | HttpResponsePermanentRedirect:
         bundle_id = kwargs["bundle_id"]
 
         if settings.DIS_DATASETS_BUNDLE_API_ENABLED is False:
@@ -259,7 +262,7 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
                 request,
                 "The Datasets Bundle API is not enabled. Cannot preview dataset.",
             )
-            return redirect("bundle:inspect", bundle_id)
+            return redirect("bundle:inspect", bundle_id, preserve_request=False)
 
         bundle = get_object_or_404(Bundle, pk=bundle_id)
 
@@ -282,7 +285,7 @@ class PreviewBundleDatasetView(BundleContentsMixin, TemplateView):
                 "could not be found in this bundle or does not have a preview available.",
             )
             # Return to the bundle inspect page if we cannot show a preview of the dataset
-            return redirect("bundle:inspect", bundle_id)
+            return redirect("bundle:inspect", bundle_id, preserve_request=False)
 
         # Build preview items for all pages and datasets in the bundle.
         # While the view is for previewing a dataset, we still want to show all

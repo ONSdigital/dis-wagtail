@@ -5,7 +5,6 @@ from wagtail.blocks import RichTextBlock, StreamBlock, StructBlock
 
 from cms.core.blocks import (
     AccordionBlock,
-    AnnouncementPanelBlock,
     DocumentsBlock,
     HeadingBlock,
     InformationPanelBlock,
@@ -38,7 +37,6 @@ class SectionContentBlock(StreamBlock):
     quote = QuoteBlock()
     warning_panel = WarningPanelBlock()
     information_panel = InformationPanelBlock()
-    announcement_panel = AnnouncementPanelBlock()
     accordion = AccordionBlock()
     image = ImageBlock(group="Media")
     documents = DocumentsBlock(group="Media")

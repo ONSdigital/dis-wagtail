@@ -55,9 +55,8 @@
         </div>
 
         <div class="ons-u-db-no-js_disabled">
-            <p>
-                {{ _("We use four types of cookie. You can choose which cookies you’re happy for us to use.") }}
-            </p>
+            <p>{{ _("We use four types of cookie. You can choose which cookies you’re happy for us to use.") }}</p>
+            <p>{{ _("You can change your settings at any time by returning to this page.") }}</p>
 
             <form data-module="cookie-settings">
                 <h3>{{ _("Cookies that measure website use") }}</h3>
@@ -140,7 +139,7 @@
                     {{ _("These cookies do things like remember your preferences and the choices you make, to personalise your experience of using the site.") }}
                 </p>
                 <p>
-                    {{ _("We currently do not use these cookies but do store your choice to accept or reject them as part of our strictly necessary cookies.") }}
+                    {{ _("We currently do not use these cookies but do store your choice to accept or reject them. You can change your selection at any time.") }}
                 </p>
 
                 {% set settings_legend = _("Do you want to allow cookies that remember your settings?") %}
@@ -173,7 +172,7 @@
                 <h3>{{ _("Strictly necessary cookies") }}</h3>
                 <p>{{ _("These essential cookies do things like:") }}</p>
                 <ul>
-                    <li>{{ _("remember the notifications you’ve seen so we do not show them to you again") }}</li>
+                    <li>{{ _("remember your cookies settings and the notifications you’ve seen so we do not show them to you again") }}</li>
                     <li>{{ _("remember your progress through a form (for example, an ONS study)") }}</li>
                     <li>{{ _("improve performance and identify potential security threats") }}</li>
                 </ul>
