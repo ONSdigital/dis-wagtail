@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from wagtail.blocks import (
     CharBlock,
@@ -26,7 +27,8 @@ class ManualDatasetBlock(StructBlock):
     description = TextBlock(required=False)
     url = RelativeOrAbsoluteURLBlock(
         required=True,
-        help_text="Enter a relative URL (e.g. /some/path) or a full URL.",
+        help_text="Enter a relative URL (e.g. /some/path) or a full URL starting with 'https://' "
+        f"that matches one of the allowed domains or their subdomains: {', '.join(settings.ONS_ALLOWED_LINK_DOMAINS)}",
     )
 
     class Meta:
