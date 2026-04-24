@@ -94,6 +94,12 @@ class TestDatasetStoryBlock(TestCase):
                     {"title": "Dataset Title", "url": "https://example.com/datasets/spam/editions/eggs/versions/1"},
                 ),
             ],
+            [
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "/datasets/foo/editions/bar/versions/1"},
+                ),
+            ],
         ]
 
         for stream_data in stream_data_cases:
