@@ -24,7 +24,10 @@ DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
 class ManualDatasetBlock(StructBlock):
     title = CharBlock(required=True)
     description = TextBlock(required=False)
-    url = RelativeOrAbsoluteURLBlock(required=True)
+    url = RelativeOrAbsoluteURLBlock(
+        required=True,
+        help_text="Enter a relative URL (e.g. /some/path) or a full URL.",
+    )
 
     class Meta:
         icon = "link"
