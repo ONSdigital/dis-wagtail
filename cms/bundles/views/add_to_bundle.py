@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.text import get_text_list
@@ -16,9 +16,10 @@ from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.mixins import BundledPageMixin
 from cms.bundles.models import Bundle, BundlePage
 from cms.bundles.permissions import user_can_manage_bundles
+from cms.core.utils import redirect
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponseBase, HttpResponseRedirect
+    from django.http import HttpRequest, HttpResponseBase, HttpResponsePermanentRedirect, HttpResponseRedirect
 
 
 class AddToBundleView(FormView):
@@ -62,9 +63,9 @@ class AddToBundleView(FormView):
             )
 
             if self.goto_next:
-                return redirect(self.goto_next)
+                return redirect(self.goto_next, preserve_request=False)
 
-            return redirect("wagtailadmin_home")
+            return redirect("wagtailadmin_home", preserve_request=False)
 
         if self.page_to_add.in_active_bundle:
             text_list = get_text_list(
@@ -76,9 +77,9 @@ class AddToBundleView(FormView):
             messages.warning(request, f"Page '{admin_display_title}' is already in a bundle ('{text_list}')")
 
             if self.goto_next:
-                return redirect(self.goto_next)
+                return redirect(self.goto_next, preserve_request=False)
 
-            return redirect("wagtailadmin_home")
+            return redirect("wagtailadmin_home", preserve_request=False)
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -97,7 +98,7 @@ class AddToBundleView(FormView):
         )
         return context_data
 
-    def form_valid(self, form: AddToBundleForm) -> HttpResponseRedirect:
+    def form_valid(self, form: AddToBundleForm) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
         bundle: Bundle = form.cleaned_data["bundle"]  # the 'bundle' field is required in the form.
         bundle.bundled_pages.add(BundlePage(page=self.page_to_add))
         bundle.save()
@@ -114,6 +115,6 @@ class AddToBundleView(FormView):
         )
         redirect_to = self.request.POST.get("next", "")
         if url_has_allowed_host_and_scheme(url=redirect_to, allowed_hosts={self.request.get_host()}):
-            return redirect(redirect_to)
+            return redirect(redirect_to, preserve_request=False)
 
-        return redirect("wagtailadmin_explore", self.page_to_add.get_parent().id)
+        return redirect("wagtailadmin_explore", self.page_to_add.get_parent().id, preserve_request=False)

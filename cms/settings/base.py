@@ -311,6 +311,8 @@ CACHES: dict = {
 }
 
 redis_options = {
+    # IGNORE_EXCEPTIONS must be True to ensure an unavailable cache results in a
+    # miss rather than an error.
     "IGNORE_EXCEPTIONS": True,
     "SOCKET_CONNECT_TIMEOUT": 2,  # seconds
     "SOCKET_TIMEOUT": 2,  # seconds
