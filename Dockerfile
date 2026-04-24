@@ -47,16 +47,16 @@ ARG POSTGRES_VERSION=17
 # EOF
 RUN apt --quiet --yes update \
     && apt --quiet --yes install --no-install-recommends \
-        build-essential \
-        curl \
-        libpq-dev \
-        git \
-        jq \
-        unzip \
-        gettext \
-        cm-super \
-        postgresql-common \
-        texlive-latex-extra \
+    build-essential \
+    curl \
+    libpq-dev \
+    git \
+    jq \
+    unzip \
+    gettext \
+    cm-super \
+    postgresql-common \
+    texlive-latex-extra \
     # Install the Postgres repo
     && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
     # Install the Postgres client (matching production version)
@@ -197,29 +197,11 @@ ENV GIT_COMMIT=${GIT_COMMIT} BUILD_TIME=${BUILD_TIME}
 # Set default shell with pipefail option
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN <<EOF
-    apt --quiet --yes update
-    apt --quiet --yes install \
-        git \
-        gnupg \
-        less \
-        openssh-client \
-        sudo
-    # Download and import the Nodesource GPG key
-    mkdir -p /etc/apt/keyrings
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-    # Create NodeSource repository
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
-    # Update lists again and install Node.js
-    apt --quiet --yes update
-    apt --quiet --yes install nodejs
-    # Tidy up
-    apt --quiet --yes autoremove
-    rm -rf /var/lib/apt/lists/*
-EOF
+COPY .docker/install-docker-dev-deps.sh ./install-docker-dev-deps.sh
+RUN ./install-docker-dev-deps.sh && rm ./install-docker-dev-deps.sh
 
 # Give the unprivileged user passwordless sudo access
-ARG USERNAME
+ARG USERNAME=cms
 RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Make less the default pager for things like psql results and git logs
@@ -240,7 +222,7 @@ COPY --chown=$UID:$GID --from=frontend-deps --link /build/node_modules ./node_mo
 # Install the dev dependencies (they're omitted in the base stage)
 # TODO: when moving to ONS infrastructure, replace RUN with
 # RUN --mount=type=cache,target=/home/$USERNAME/.cache/,uid=$UID,gid=$GID \
- #    poetry install
+#    poetry install
 RUN poetry install
 
 # Just do nothing forever - exec commands elsewhere
