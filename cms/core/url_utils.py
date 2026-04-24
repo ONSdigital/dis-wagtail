@@ -43,7 +43,8 @@ def validate_ons_url(url: str) -> ValidationError | None:
 
     if not parsed_url.hostname or parsed_url.scheme != "https":
         error = ValidationError(
-            "Please enter a valid URL. It should start with 'https://' and contain a valid domain name."
+            "Please enter a valid URL. It should be a root-relative link or "
+            "start with 'https://' and contain a valid domain name."
         )
     elif not any(
         is_hostname_in_domain(parsed_url.hostname, allowed_domain)

@@ -61,7 +61,8 @@ class TestValidateONSUrl(TestCase):
         self.assertIsInstance(error, ValidationError)
         self.assertEqual(
             error.message,
-            "Please enter a valid URL. It should start with 'https://' and contain a valid domain name.",
+            "Please enter a valid URL. It should be a root-relative link or "
+            "start with 'https://' and contain a valid domain name.",
         )
 
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
@@ -73,6 +74,17 @@ class TestValidateONSUrl(TestCase):
     def test_relative_url_is_allowed_when_no_domains_allowed(self):
         url = "/releases/foo"
         self.assertIsNone(validate_ons_url(url))
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_non_root_relative_url_is_not_allowed(self):
+        url = "releases/foo"
+        error = validate_ons_url(url)
+        self.assertIsInstance(error, ValidationError)
+        self.assertEqual(
+            error.message,
+            "Please enter a valid URL. It should be a root-relative link or "
+            "start with 'https://' and contain a valid domain name.",
+        )
 
 
 class TestValidateONSUrlBlock(TestCase):
@@ -108,7 +120,8 @@ class TestValidateONSUrlBlock(TestCase):
         self.assertIsInstance(errors["url"], ValidationError)
         self.assertEqual(
             errors["url"].message,
-            "Please enter a valid URL. It should start with 'https://' and contain a valid domain name.",
+            "Please enter a valid URL. It should be a root-relative link or "
+            "start with 'https://' and contain a valid domain name.",
         )
 
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
