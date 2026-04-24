@@ -1061,6 +1061,10 @@ AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "false").lower(
 AWS_COGNITO_USER_POOL_ID = env.get("AWS_COGNITO_USER_POOL_ID")
 AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
 
+# Route Wagtail frontend private-page login through SSO when Cognito is enabled.
+if AWS_COGNITO_LOGIN_ENABLED:
+    WAGTAIL_FRONTEND_LOGIN_URL = env.get("WAGTAIL_FRONTEND_LOGIN_URL", "/auth/frontend-login")
+
 # Auth Sync Teams
 AWS_COGNITO_TEAM_SYNC_ENABLED = env.get("AWS_COGNITO_TEAM_SYNC_ENABLED", "false").lower() == "true"
 AWS_COGNITO_TEAM_SYNC_FREQUENCY = int(env.get("AWS_COGNITO_TEAM_SYNC_FREQUENCY", "1"))
