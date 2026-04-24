@@ -303,9 +303,6 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         Note: while the method signature implies we get a request object, in reality it can be a model too.
         """
-        if not settings.CMS_USE_SUBDOMAIN_LOCALES:
-            return cast(list["SiteRootPath"], super()._get_site_root_paths(request=request))
-
         cache_object = request if request is not None else self
         try:
             # pylint: disable=protected-access
@@ -313,8 +310,11 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             # pylint: enable=protected-access
             return cached_paths
         except AttributeError:
-            host = request.get_host() if isinstance(request, HttpRequest) else None
-            paths = get_mapped_site_root_paths(host)
+            if settings.CMS_USE_SUBDOMAIN_LOCALES:
+                host = request.get_host() if isinstance(request, HttpRequest) else None
+                paths = get_mapped_site_root_paths(host)
+            else:
+                paths = get_mapped_site_root_paths(default_site_only=True)
             # pylint: disable=protected-access,attribute-defined-outside-init
             cache_object._wagtail_cached_site_root_paths = paths  # type: ignore[union-attr]
             # pylint: enable=protected-access,attribute-defined-outside-init
