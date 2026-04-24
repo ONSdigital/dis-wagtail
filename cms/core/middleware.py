@@ -35,7 +35,7 @@ class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
                 if query:
                     path_without_slash = f"{path_without_slash}?{query}"
 
-                url: HttpResponsePermanentRedirect = redirect(path_without_slash, permanent=True)  # type:ignore
+                url: HttpResponsePermanentRedirect = redirect(path_without_slash, permanent=True)  # type: ignore
                 return url
         return None
 
