@@ -1,38 +1,38 @@
 from typing import TYPE_CHECKING
 
-from django.shortcuts import redirect
 from django.templatetags.static import static
 from django.utils.html import format_html
 from wagtail import hooks
 from wagtail.admin import messages
 from wagtail.admin.utils import get_valid_next_url_from_request
 
+from cms.core.utils import redirect
 from cms.release_calendar.models import ReleaseCalendarIndex, ReleaseCalendarPage
 from cms.release_calendar.viewsets import release_calendar_chooser_viewset
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponseRedirect
+    from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
     from wagtail.models import Page
 
     from .viewsets import FutureReleaseCalendarPageChooserViewSet
 
 
 @hooks.register("before_delete_page")
-def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | None:
+def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | HttpResponsePermanentRedirect | None:
     """Block release calendar page deletion and show a message."""
     if page.specific_class == ReleaseCalendarPage:
         messages.warning(request, "Release Calendar pages cannot be deleted. You can mark them as cancelled instead.")
-        return redirect("wagtailadmin_pages:edit", page.pk)
+        return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
 
     if page.specific_class == ReleaseCalendarIndex:
         messages.warning(request, "The Release Calendar index cannot be deleted.")
 
         # redirect to a valid next url (passed via the 'next' query parameter)
         if next_url := get_valid_next_url_from_request(request):
-            return redirect(next_url)
+            return redirect(next_url, preserve_request=False)
 
         # default to the Wagtail dashboard.
-        return redirect("wagtailadmin_home")
+        return redirect("wagtailadmin_home", preserve_request=False)
 
     return None
 
