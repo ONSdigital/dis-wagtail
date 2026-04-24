@@ -5,6 +5,7 @@ from django.shortcuts import redirect
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from wagtail import hooks
 from wagtail.admin import messages
 from wagtail.admin.utils import get_valid_next_url_from_request
@@ -93,10 +94,9 @@ def prevent_delete_of_previously_published_page(request: HttpRequest, page: Page
     if not _page_blocks_deletion(page):
         return None
 
-    message = format_html(
-        "<b>{}</b><br>This page cannot be deleted because it (or one of its descendants) has been "
-        "published previously. Only pages that have never been published can be deleted.",
-        "Deletion Not Allowed",
+    message = mark_safe(
+        "<b>Deletion Not Allowed</b><br>This page cannot be deleted because it (or one of its descendants) has been "
+        "published previously. Only pages that have never been published can be deleted."
     )
 
     messages.warning(
@@ -133,9 +133,8 @@ def prevent_bulk_delete_of_previously_published_pages(
         preview += f", and {len(blocked_titles) - _BLOCKED_TITLES_PREVIEW_COUNT} more"
 
     message = format_html(
-        "<b>{}</b><br>The following selected page(s) cannot be deleted because they (or their "
+        "<b>Deletion Not Allowed</b><br>The following selected page(s) cannot be deleted because they (or their "
         "descendants) have been published previously: {}. Only pages that have never been published can be deleted.",
-        "Deletion Not Allowed",
         preview,
     )
 
