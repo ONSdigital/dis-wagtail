@@ -34,7 +34,9 @@ class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
                 query = request.META.get("QUERY_STRING", "")
                 if query:
                     path_without_slash = f"{path_without_slash}?{query}"
-                return redirect(path_without_slash, permanent=True)
+
+                url: HttpResponsePermanentRedirect = redirect(path_without_slash, permanent=True)  # type:ignore
+                return url
         return None
 
     def is_request_path_allowed(self, path: str) -> bool:
