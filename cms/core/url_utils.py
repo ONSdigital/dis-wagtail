@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from wagtail.blocks import FieldBlock, StructValue
 
-ROOT_RELATIVE_URL_RE = re.compile(r"^/([^/]+/?)+$")
+ROOT_RELATIVE_URL_RE = re.compile(r"^/[^/]+(?:/[^/]+)*/?$")
 
 
 def is_hostname_in_domain(hostname: str, allowed_domain: str) -> bool:
