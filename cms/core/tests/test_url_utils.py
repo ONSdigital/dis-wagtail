@@ -110,6 +110,13 @@ class TestValidateONSUrl(TestCase):
             "start with 'https://' and contain a valid domain name.",
         )
 
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_protocol_relative_and_repeated_slashes_are_not_treated_as_relative(self):
+        for url in ("//evil.com/foo", "////abc", "//", "/hello//world"):
+            with self.subTest(url=url):
+                error = validate_ons_url(url, allow_relative_urls=True)
+                self.assertIsInstance(error, ValidationError)
+
 
 class TestValidateONSUrlBlock(TestCase):
     """Test validation of a StructBlock that contains a URL field which is restricted to ONS domain."""

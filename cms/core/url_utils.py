@@ -1,8 +1,11 @@
+import re
 from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from wagtail.blocks import FieldBlock, StructValue
+
+ROOT_RELATIVE_URL_RE = re.compile(r"^/([^/]+/?)+$")
 
 
 def is_hostname_in_domain(hostname: str, allowed_domain: str) -> bool:
@@ -37,7 +40,7 @@ def validate_ons_url(url: str, *, allow_relative_urls: bool = False) -> Validati
     If allow_relative_urls is True, relative URLs (starting with "/") are treated as internal and are
     not checked against the domain whitelist.
     """
-    if url.startswith("/") and allow_relative_urls:
+    if allow_relative_urls and ROOT_RELATIVE_URL_RE.match(url):
         return None
 
     error = None
