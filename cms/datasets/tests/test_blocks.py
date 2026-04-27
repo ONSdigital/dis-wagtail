@@ -34,6 +34,10 @@ class TestDatasetStoryBlock(TestCase):
                 ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url + "/"}),
             ],
             [
+                ("manual_link", {"title": "Dataset Title", "url": "/abc"}),
+                ("manual_link", {"title": "Dataset Title", "url": "/abc/"}),
+            ],
+            [
                 ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url}),
                 ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url}),
             ],

@@ -201,6 +201,26 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
             block.clean(stream_value)
             self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
 
+    def test_relative_urls_with_same_path_but_different_slash_suffixes_are_considered_duplicates(self):
+        block = TimeSeriesPageStoryBlock()
+        stream_value = StreamValue(
+            block,
+            [
+                (
+                    "time_series_page_link",
+                    {"title": "Link 1", "url": "/abc", "description": "Summary 1"},
+                ),
+                (
+                    "time_series_page_link",
+                    {"title": "Link 2", "url": "/abc/", "description": "Summary 2"},
+                ),
+            ],
+        )
+
+        with self.assertRaises(StreamBlockValidationError) as error_context:
+            block.clean(stream_value)
+            self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
+
     def test_identical_links_with_uppercase_and_lowercase_are_considered_duplicates(self):
         block = TimeSeriesPageStoryBlock()
         stream_value = StreamValue(
