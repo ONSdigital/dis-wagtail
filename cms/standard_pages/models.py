@@ -150,3 +150,8 @@ class CookiesPage(BasePage):  # type: ignore[django-manager-missing]
 
     parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
     _analytics_content_type = "cookies"
+
+    def show_localised_version_not_available_notice(self, request: HttpRequest) -> bool:
+        if settings.CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED:
+            return super().show_localised_version_not_available_notice(request)
+        return False

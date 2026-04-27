@@ -1,15 +1,25 @@
-{% extends "templates/base.html" %}
+{% extends "templates/base_page.html" %}
 {% from "components/radios/_macro.njk" import onsRadios %}
 {% from "components/button/_macro.njk" import onsButton %}
 {% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/details/_macro.njk" import onsDetails %}
 {% from "components/table/_macro.njk" import onsTable %}
 
+{%- set page_heading -%}
+    {% trans service_name=ONS_COOKIE_BANNER_SERVICE_NAME %}Cookies on {{ service_name }}{% endtrans %}
+{%- endset -%}
+
+{%- set page_title-%}
+    {%- with current_site=wagtail_site() -%}
+        {{ page_heading }} - {{ current_site.site_name }}
+    {%- endwith -%}
+{%- endset -%}
+
+{# Render the page heading in the main content area #}
+{% set render_heading_in_content = true %}
+
 {% block main %}
     <div class="ons-page__body">
-        {# TODO: pass the variable into gettext for context once we have babel #}
-        <h1 class="ons-u-fs-2xl">{{ _("Cookies on") }} {{ ONS_COOKIE_BANNER_SERVICE_NAME | upper }}</h1>
-
         {# fmt:off #}
         {% call onsPanel({
                 "classes": "ons-u-mb-l ons-u-d-no ons-cookies-confirmation-message",
@@ -26,7 +36,9 @@
         {# fmt:on #}
 
         <p>{{ _("Cookies are files saved on your phone, tablet or computer when you visit a website.") }}</p>
-        <p>{{ _("We use cookies to store information about how you use the ONS website, such as the pages you visit.") }}</p>
+        <p>{{ _("We use cookies to collect and store information about how you use the ONS website, such as the pages you visit.") }}</p>
+        {# :TODO: The URL should be updated post launch as the slug for the cookies page is changing to /help/cookies-information. #}
+        <p>{% trans help_cookies_url="/help/cookies" %}This page has a brief explanation of each type of cookie we use. If you want more details, <a href="{{ help_cookies_url }}">read our detailed cookie information</a>.{% endtrans %}</p>
 
         <h2>{{ _("Cookie settings") }}</h2>
 
@@ -43,29 +55,27 @@
         </div>
 
         <div class="ons-u-db-no-js_disabled">
-            <p>
-                {{ _("We use four types of cookie. There are three kinds of non-essential cookies that you can choose if
-                you’re happy for us to use, there are also strictly necessary cookies that must be turned on.") }}
-            </p>
+            <p>{{ _("We use four types of cookie. You can choose which cookies you’re happy for us to use.") }}</p>
+            <p>{{ _("You can change your settings at any time by returning to this page.") }}</p>
 
             <form data-module="cookie-settings">
                 <h3>{{ _("Cookies that measure website use") }}</h3>
                 <p>
-                    {{ _("We use Google Analytics and Hotjar to measure how you use the website so we can improve it based on
-                    user needs. Google Analytics and Hotjar set cookies that store anonymised information about:") }}
+                    {{ _("We use Google Analytics and Hotjar cookies to measure how you use the website.") }}
                 </p>
+                <p>{{ _("These cookies collect information about:") }}</p>
                 <ul>
                     <li>{{ _("how you got to the site") }}</li>
-                    {# TODO replace ons.gov.uk with ONS_COOKIE_BANNER_SERVICE_NAME one we have babel #}
-                    <li>{{ _("the pages you visit on ons.gov.uk and how long you spend on each page") }}</li>
+                    <li>{{ _("the pages you visit and how long you spend on each page") }}</li>
                     <li>{{ _("what you click on while you are visiting the site") }}</li>
                     <li>{{ _("the way in which you interact with a page") }}</li>
                     <li>{{ _("whether you have participated in a Hotjar survey") }}</li>
                 </ul>
+                <p>{{ _("We do not allow Google or Hotjar to use or share this data for their own purposes.") }}</p>
 
-                {% set usage_legend = _("Do you want to allow usage tracking?") %}
-                {% set radio_on = _("On") %}
-                {% set radio_off = _("Off") %}
+                {% set usage_legend = _("Do you want to allow cookies that measure website use?") %}
+                {% set radio_true = _("Yes") %}
+                {% set radio_false = _("No") %}
                 {# fmt:off #}
                 <div class="ons-u-mb-s">
                     {{ onsRadios({
@@ -76,14 +86,14 @@
                                 {
                                     "id": "on-1",
                                     "label": {
-                                        "text": radio_on
+                                        "text": radio_true
                                     },
                                     "value": "on"
                                 },
                                 {
                                     "id": "off-1",
                                     "label": {
-                                        "text": radio_off
+                                        "text": radio_false
                                     },
                                     "value": "off"
                                 }
@@ -91,16 +101,13 @@
                         }) }}
                 </div>
                 {# fmt:on #}
-                <p>{{ _("Your preference selection will expire after one year.") }}</p>
 
-                <h3>{{ _("Cookies that help with our communications") }}</h3>
+                <h3>{{ _("Cookies that help with our communications and marketing") }}</h3>
                 <p>
-                    {{ _("Some of our pages may contain content from other sites, like YouTube and Vimeo. We allow third party
-                    sites, like YouTube and Vimeo, to set cookies on our website when you view this content, they will
-                    measure how you engage with the content on our website.") }}
+                    {{ _("These cookies may be set by third-party websites, like YouTube and Vimeo. They do things like measure how you view YouTube videos that are on the ONS website.") }}
                 </p>
 
-                {% set campaigns_legend = _("Do you want to allow third party usage tracking?") %}
+                {% set campaigns_legend = _("Do you want to allow cookies that help with our communications and marketing?") %}
                 {# fmt:off #}
                 <div class="ons-u-mb-s">
                     {{ onsRadios({
@@ -111,14 +118,14 @@
                                 {
                                     "id": "on-2",
                                     "label": {
-                                        "text": radio_on
+                                        "text": radio_true
                                     },
                                     "value": "on"
                                 },
                                 {
                                     "id": "off-2",
                                     "label": {
-                                        "text": radio_off
+                                        "text": radio_false
                                     },
                                     "value": "off"
                                 }
@@ -127,20 +134,15 @@
                 </div>
                 {# fmt:on #}
 
-                <p>{{ _("Your preference selection will expire after one year.") }}</p>
+                <h3>{{ _("Cookies that remember your settings") }}</h3>
                 <p>
-                    {{ _("In addition, if you share a link to ons.gov.uk page, the service you share it on may set a cookie.
-                    We have no control over cookies set on other websites – you can turn them off, but not through us.") }}
+                    {{ _("These cookies do things like remember your preferences and the choices you make, to personalise your experience of using the site.") }}
+                </p>
+                <p>
+                    {{ _("We currently do not use these cookies but do store your choice to accept or reject them. You can change your selection at any time.") }}
                 </p>
 
-                <h3>{{ _("Cookies that remember your preference settings to tailor your experience") }}</h3>
-                <p>
-                    {{ _("These cookies remember the choices you make when using the site to personalise your experience.
-                    These cookies do not currently collect any data and but are set in preparation for potential future
-                    use.") }}
-                </p>
-
-                {% set settings_legend = _("Do you want to allow cookies for potential future use that tailor your experience?") %}
+                {% set settings_legend = _("Do you want to allow cookies that remember your settings?") %}
                 {# fmt:off #}
                 <div class="ons-u-mb-s">
                     {{ onsRadios({
@@ -151,14 +153,14 @@
                             {
                                 "id": "on-3",
                                 "label": {
-                                    "text": radio_on
+                                    "text": radio_true
                                 },
                                 "value": "on"
                             },
                             {
                                 "id": "off-3",
                                 "label": {
-                                    "text": radio_off
+                                    "text": radio_false
                                 },
                                 "value": "off"
                             }
@@ -166,31 +168,24 @@
                     }) }}
                 </div>
                 {# fmt:on #}
-                <p>{{ _("Your preference selection will expire after one year.") }}</p>
 
                 <h3>{{ _("Strictly necessary cookies") }}</h3>
                 <p>{{ _("These essential cookies do things like:") }}</p>
                 <ul>
-                    <li>{{ _("remember the notifications you’ve seen so we do not show them to you again") }}</li>
+                    <li>{{ _("remember your cookies settings and the notifications you’ve seen so we do not show them to you again") }}</li>
                     <li>{{ _("remember your progress through a form (for example, an ONS study)") }}</li>
                     <li>{{ _("improve performance and identify potential security threats") }}</li>
                 </ul>
-                <p>{{ _("They are necessary for proper website functionality and always need to be on.") }}</p>
-                <p>
-                    <a href="/help/cookies" target="_blank" rel="noopener">
-                        {# TODO: pass the variable into gettext for context once we have babel #}
-                        {{ _("Find out more about cookies on") }} {{ ONS_COOKIE_BANNER_SERVICE_NAME }}
-                    </a>
-                </p>
+                <p>{{ _("They always need to be on.") }}</p>
 
                 {% set save_changes_button = _('Save changes') %}
                 {# fmt:off #}
                 {{ onsButton({
-                        "type": 'submit',
-                        "text": save_changes_button
-                    }) }}
+                    "type": 'submit',
+                    "classes": "ons-u-mt-l",
+                    "text": save_changes_button
+                }) }}
                 {# fmt:on #}
-
             </form>
         </div>
     </div>

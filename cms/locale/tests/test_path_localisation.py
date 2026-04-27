@@ -10,7 +10,6 @@ from wagtail.models import Locale, Site
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
-from cms.core.tests.utils import reset_url_caches
 from cms.standard_pages.tests.factories import InformationPageFactory
 
 
@@ -40,13 +39,9 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
     def setUp(self):
         self.dummy_request = get_dummy_request()
 
-        reset_url_caches()
-
     def tearDown(self):
         # Clear translation caches
         translation.deactivate()
-
-        reset_url_caches()
 
     def get_template_side_effect(self, template_name, *args, **kwargs):
         """Side effect function to simulate template loading failures."""

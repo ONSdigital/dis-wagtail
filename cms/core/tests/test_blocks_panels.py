@@ -5,7 +5,6 @@ from django.test import TestCase
 from wagtail.blocks import StructBlockValidationError
 
 from cms.core.blocks.panels import (
-    AnnouncementPanelBlock,
     BasePanelBlock,
     InformationPanelBlock,
     WarningPanelBlock,
@@ -15,7 +14,7 @@ from cms.core.tests.utils import PanelBlockAssertions
 
 class PanelBlockTests(TestCase, PanelBlockAssertions):
     expected_panel_fields: ClassVar[set[str]] = {"body"}
-    panel_block_classes: ClassVar[list[type]] = [WarningPanelBlock, AnnouncementPanelBlock, InformationPanelBlock]
+    panel_block_classes: ClassVar[list[type]] = [WarningPanelBlock, InformationPanelBlock]
 
     def test_base_panel_block_body_field_features(self):
         block = BasePanelBlock()
@@ -25,12 +24,6 @@ class PanelBlockTests(TestCase, PanelBlockAssertions):
     def test_panel_block_meta_attributes(self):
         blocks = [
             (WarningPanelBlock, "templates/components/streamfield/warning_panel.html", "warning", "Warning Panel"),
-            (
-                AnnouncementPanelBlock,
-                "templates/components/streamfield/announcement_panel.html",
-                "pick",
-                "Announcement Panel",
-            ),
             (
                 InformationPanelBlock,
                 "templates/components/streamfield/information_panel.html",
