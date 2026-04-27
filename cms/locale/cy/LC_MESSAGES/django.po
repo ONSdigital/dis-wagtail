@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-23 12:47+0100\n"
+"POT-Creation-Date: 2026-04-24 16:26+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -368,11 +368,11 @@ msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:77
 msgid "Yes"
-msgstr ""
+msgstr "Yes"
 
 #: cms/jinja2/templates/pages/cookies.html:78
 msgid "No"
-msgstr ""
+msgstr "No"
 
 #: cms/jinja2/templates/pages/cookies.html:105
 msgid "Cookies that help with our communications and marketing"
@@ -791,11 +791,11 @@ msgstr "Cyhoeddiadau cysylltiedig"
 msgid "To be confirmed"
 msgstr "I’w gadarnhau"
 
-#: cms/settings/base.py:409
+#: cms/settings/base.py:411
 msgid "English"
 msgstr "Saesneg"
 
-#: cms/settings/base.py:410
+#: cms/settings/base.py:412
 msgid "Welsh"
 msgstr "Cymraeg"
 
