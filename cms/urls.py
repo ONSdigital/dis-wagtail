@@ -3,6 +3,7 @@ from django.conf import settings
 from django.conf.urls.i18n import i18n_patterns
 from django.urls import URLPattern, URLResolver, include, path, re_path
 from django.views.decorators.cache import never_cache
+from django.views.decorators.csp import csp_override
 from django.views.decorators.vary import vary_on_headers
 from django.views.generic import RedirectView, TemplateView
 from wagtail import urls as wagtail_urls
@@ -77,7 +78,12 @@ if not settings.IS_EXTERNAL_ENV:
         ]
 
     wagtail_admin_patterns += wagtailadmin_urls.urlpatterns
-    private_urlpatterns.append(path(settings.WAGTAILADMIN_HOME_PATH, include(wagtail_admin_patterns)))
+    private_urlpatterns.append(
+        path(
+            settings.WAGTAILADMIN_HOME_PATH,
+            include(decorate_urlpatterns(wagtail_admin_patterns, csp_override(settings.WAGTAIL_CSP))),
+        )
+    )
 
 if apps.is_installed("django.contrib.admin") and settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
     from django.contrib import admin  # pylint: disable=ungrouped-imports

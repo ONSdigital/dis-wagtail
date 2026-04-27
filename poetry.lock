@@ -888,28 +888,6 @@ files = [
 dev = ["black", "flake8", "therapist", "tox", "twine"]
 
 [[package]]
-name = "django-csp"
-version = "4.0"
-description = "Django Content Security Policy support."
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "django_csp-4.0-py3-none-any.whl", hash = "sha256:d5a0a05463a6b75a4f1fc1828c58c89af8db9364d09fc6e12f122b4d7f3d00dc"},
-    {file = "django_csp-4.0.tar.gz", hash = "sha256:b27010bb702eb20a3dad329178df2b61a2b82d338b70fbdc13c3a3bd28712833"},
-]
-
-[package.dependencies]
-django = ">=4.2"
-packaging = "*"
-
-[package.extras]
-dev = ["django-stubs[compatible-mypy]", "jinja2 (>=2.9.6)", "mypy", "pre-commit", "pytest", "pytest-cov", "pytest-django", "pytest-ruff", "sphinx", "sphinx-rtd-theme", "tox", "tox-gh-actions", "types-setuptools"]
-jinja2 = ["jinja2 (>=2.9.6)"]
-tests = ["jinja2 (>=2.9.6)", "pytest", "pytest-cov", "pytest-django", "pytest-ruff"]
-typing = ["django-stubs[compatible-mypy]", "jinja2 (>=2.9.6)", "mypy", "pytest", "pytest-django", "types-setuptools"]
-
-[[package]]
 name = "django-debug-toolbar"
 version = "6.3.0"
 description = "A configurable set of panels that display various debug information about the current request/response."
@@ -3897,4 +3875,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "a1683b19df58218c624f75cdc5f1618d9ca6b6d2a0222381d95e207d3b990b36"
+content-hash = "95202007938f0320848204c06e241f5732c75b6bf9ba69f8f16e52ed8146277a"
