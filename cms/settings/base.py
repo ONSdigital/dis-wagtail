@@ -790,6 +790,10 @@ SECURE_REFERRER_POLICY = env.get("SECURE_REFERRER_POLICY", "no-referrer-when-dow
 # Change default settings that enable basic auth.
 REST_FRAMEWORK = {"DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication",)}
 
+SILENCED_SYSTEM_CHECKS = [
+    "security.W005",  # Assumptions can't be made about subdomains
+    "security.W021",  # HSTS preload not required
+]
 
 AUTH_USER_MODEL = "users.User"
 
