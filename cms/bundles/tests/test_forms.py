@@ -48,7 +48,7 @@ class AddToBundleFormTestCase(TestCase):
         )
 
     def test_form_clean__validates_page_is_bundleable(self):
-        """Checks the given page inherits from BundlePageMixin."""
+        """Checks the given page inherits from BundledPageMixin."""
         form = AddToBundleForm(page_to_add=ArticlesIndexPageFactory(), data={"bundle": self.bundle.pk})
         self.assertFalse(form.is_valid())
         self.assertFormError(form, None, ["Pages of this type cannot be added."])
