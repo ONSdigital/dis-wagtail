@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 from django.conf import settings
-from django.shortcuts import redirect
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.html import format_html
@@ -12,13 +11,14 @@ from wagtail.admin.utils import get_valid_next_url_from_request
 from wagtail.models import Page
 from wagtail.snippets.models import register_snippet
 
+from cms.core.utils import redirect
 from cms.core.viewsets import ContactDetailsViewSet, DefinitionViewSet
 from cms.release_calendar.models import ReleaseCalendarIndex, ReleaseCalendarPage
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from django.http import HttpRequest, HttpResponseRedirect
+    from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
     from wagtail.admin.views.bulk_action import BulkAction
 
 
@@ -83,7 +83,9 @@ def _page_blocks_deletion(page: Page) -> bool:
 
 
 @hooks.register("before_delete_page")
-def prevent_delete_of_previously_published_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | None:
+def prevent_delete_of_previously_published_page(
+    request: HttpRequest, page: Page
+) -> HttpResponseRedirect | HttpResponsePermanentRedirect | None:
     """Block deletion of any page that has ever been published.
 
     Release Calendar pages are handled by `cms.release_calendar.wagtail_hooks`.
@@ -103,7 +105,7 @@ def prevent_delete_of_previously_published_page(request: HttpRequest, page: Page
         request,
         message,
     )
-    return redirect("wagtailadmin_pages:edit", page.pk)
+    return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
 
 
 @hooks.register("before_bulk_action")
@@ -112,7 +114,7 @@ def prevent_bulk_delete_of_previously_published_pages(
     action_type: str,
     objects: Sequence[Page],
     action: BulkAction,  # pylint: disable=unused-argument
-) -> HttpResponseRedirect | None:
+) -> HttpResponseRedirect | HttpResponsePermanentRedirect | None:
     """Block the Wagtail page-explorer bulk-delete action when any selected page (or any
     of its descendants) has been published previously. The per-page `before_delete_page`
     hook is bypassed by the bulk-action flow, so this guard covers that gap.
@@ -139,7 +141,7 @@ def prevent_bulk_delete_of_previously_published_pages(
     )
 
     messages.warning(request, message)
-    return redirect(get_valid_next_url_from_request(request) or reverse("wagtailadmin_home"))
+    return redirect(get_valid_next_url_from_request(request) or reverse("wagtailadmin_home"), preserve_request=False)
 
 
 @hooks.register("after_edit_page")
