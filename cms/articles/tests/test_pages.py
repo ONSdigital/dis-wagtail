@@ -127,6 +127,12 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
     def test_default_route_rendering(self):
         self.assertPageIsRenderable(self.page)
 
+    def test_serve_redirects_non_editions_path_to_editions_url_with_correct_code(self):
+        raw_url = f"{self.page.get_parent().url}/{self.page.slug}"
+        response = self.client.get(raw_url)
+        _, _, editions_path = self.page.get_url_parts()
+        self.assertRedirects(response, editions_path, status_code=307, fetch_redirect_response=False)
+
     def test_page_content(self):
         response = self.client.get(self.page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
