@@ -1042,6 +1042,22 @@ Django = "*"
 testing = ["django-modelcluster"]
 
 [[package]]
+name = "django-permissions-policy"
+version = "4.29.0"
+description = "Set the Permissions-Policy HTTP header on your Django app."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "django_permissions_policy-4.29.0-py3-none-any.whl", hash = "sha256:42adb0a2dea9a2e9bec3aa2b644fbdaebbfd29cec02ffc279560fdd231db94cf"},
+    {file = "django_permissions_policy-4.29.0.tar.gz", hash = "sha256:9046457a4c3f74e077df00f2d90007ffb14f812e8402b04b020ee0ff9cc1f6c3"},
+]
+
+[package.dependencies]
+asgiref = ">=3.6"
+django = ">=4.2"
+
+[[package]]
 name = "django-pgactivity"
 version = "1.8.0"
 description = "Monitor, kill, and analyze Postgres queries."
@@ -3875,4 +3891,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "95202007938f0320848204c06e241f5732c75b6bf9ba69f8f16e52ed8146277a"
+content-hash = "10b5f71594f2e558c41ebab59ef20212ffd4b182aec8b8a5ee71a3340ff86085"

@@ -146,6 +146,7 @@ MIDDLEWARE = [
     # SecurityMiddleware.
     # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
     "cms.core.whitenoise.CMSWhiteNoiseMiddleware",
+    "django_permissions_policy.PermissionsPolicyMiddleware",
     "cms.locale.middleware.SubdomainLocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -1154,3 +1155,22 @@ for csp_directives in WAGTAIL_CSP.values():
 # Wagail (and 3rd-party packages) depend on inline scripts
 WAGTAIL_CSP["script-src"].append(CSP.UNSAFE_INLINE)
 WAGTAIL_CSP["style-src"].append(CSP.UNSAFE_INLINE)
+
+# Set a sensible permissions policy to disable privacy-invading or annoying features
+PERMISSIONS_POLICY: dict = {
+    "accelerometer": [],
+    "ambient-light-sensor": [],
+    "autoplay": [],
+    "camera": [],
+    "display-capture": [],
+    "encrypted-media": [],
+    "fullscreen": [],
+    "geolocation": [],
+    "gyroscope": [],
+    "interest-cohort": [],
+    "magnetometer": [],
+    "microphone": [],
+    "midi": [],
+    "payment": [],
+    "usb": [],
+}
