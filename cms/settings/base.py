@@ -146,7 +146,6 @@ MIDDLEWARE = [
     # SecurityMiddleware.
     # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
     "cms.core.whitenoise.CMSWhiteNoiseMiddleware",
-    "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "cms.locale.middleware.SubdomainLocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -165,6 +164,11 @@ if not IS_EXTERNAL_ENV:
     MIDDLEWARE.insert(common_middleware_index, "cms.auth.middleware.ONSAuthMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
+
+
+if env.get("DISABLE_CSP", "false").lower().strip() != "true":
+    MIDDLEWARE.append("django.middleware.csp.ContentSecurityPolicyMiddleware")
+
 
 ROOT_URLCONF = "cms.urls"
 
@@ -1125,32 +1129,28 @@ WAGTAIL_AUTOSAVE_INTERVAL = 0
 
 # Content Security policy settings
 # https://docs.djangoproject.com/en/6.0/ref/csp/
-if env.get("DISABLE_CSP", "false").lower().strip() != "true":
-    static_sources = [ONS_CDN_URL, "https://cdnjs.cloudflare.com"]
-    SECURE_CSP: dict[str, list] = {
-        "default-src": [CSP.SELF],
-        "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_ALLOWED_DOMAINS],
-        # UNSAFE_INLINE is required by mathjax
-        "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE],
-        "img-src": [CSP.SELF, ONS_CDN_URL],
-        "script-src": [CSP.SELF, CSP.NONCE, *static_sources],
-        "font-src": [CSP.SELF, *static_sources],
-    }
-    if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
-        SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")
+static_sources = [ONS_CDN_URL, "https://cdnjs.cloudflare.com"]
+SECURE_CSP: dict[str, list] = {
+    "default-src": [CSP.SELF],
+    "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_ALLOWED_DOMAINS],
+    # UNSAFE_INLINE is required by mathjax
+    "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE],
+    "img-src": [CSP.SELF, ONS_CDN_URL],
+    "script-src": [CSP.SELF, CSP.NONCE, *static_sources],
+    "font-src": [CSP.SELF, *static_sources],
+}
+if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
+    SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")
 
-    WAGTAIL_CSP = deepcopy(SECURE_CSP)
+WAGTAIL_CSP = deepcopy(SECURE_CSP)
 
-    for csp_directives in WAGTAIL_CSP.values():
-        try:
-            # Wagtail's scripts don't add a nonce
-            csp_directives.remove(CSP.NONCE)
-        except ValueError:
-            pass
+for csp_directives in WAGTAIL_CSP.values():
+    try:
+        # Wagtail's scripts don't add a nonce
+        csp_directives.remove(CSP.NONCE)
+    except ValueError:
+        pass
 
-    # Wagail (and 3rd-party packages) depend on inline scripts
-    WAGTAIL_CSP["script-src"].append(CSP.UNSAFE_INLINE)
-    WAGTAIL_CSP["style-src"].append(CSP.UNSAFE_INLINE)
-else:
-    SECURE_CSP = {}
-    WAGTAIL_CSP = {}
+# Wagail (and 3rd-party packages) depend on inline scripts
+WAGTAIL_CSP["script-src"].append(CSP.UNSAFE_INLINE)
+WAGTAIL_CSP["style-src"].append(CSP.UNSAFE_INLINE)
