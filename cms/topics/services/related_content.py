@@ -6,9 +6,15 @@ from django.db.models import OuterRef, Q, Subquery
 from django.db.models.functions import Coalesce
 
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
-from cms.core.query import order_by_pk_position
 from cms.methodology.models import MethodologyPage
-from cms.topics.services.types import ArticleDict, InternalArticleDict, MethodologyDict
+from cms.topics.services.types import (
+    ArticleDict,
+    InternalArticleDict,
+    InternalMethodologyDict,
+    MethodologyDict,
+)
+
+from ...core.enums import RelatedContentType
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
@@ -75,6 +81,7 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
                     "url": related.external_url,
                     "title": related.title,
                     "description": "",
+                    "content_type": RelatedContentType.ARTICLE,
                     "is_external": True,
                 }
             return None
@@ -156,37 +163,55 @@ class RelatedMethodologyProcessor(BaseProcessor[MethodologyDict]):
         Manually highlighted methodologies are prioritised and shown in their configured order.
         """
         highlighted_pages, highlighted_page_pks = self._get_manual_methodologies()
-        highlighted_dicts: list[MethodologyDict] = [{"internal_page": page} for page in highlighted_pages]
 
         # If we have enough highlighted methodologies, return early
         if len(highlighted_pages) >= self.max_items_per_section:
-            return highlighted_dicts
+            return highlighted_pages
 
         # Calculate remaining slots and fetch automatic methodologies
         remaining_slots = self.max_items_per_section - len(highlighted_pages)
         auto_pages = self._get_automatic_methodologies(highlighted_page_pks, remaining_slots)
 
         # Combine highlighted and automatic methodologies
-        return highlighted_dicts + auto_pages
+        return highlighted_pages + auto_pages
 
     def _get_manual_methodologies(self) -> tuple[list[MethodologyPage], list[int]]:
         """Get manually highlighted methodologies in their configured order."""
-        highlighted_page_pks = list(self.topic_page.related_methodologies.values_list("page_id", flat=True))[
-            : self.max_items_per_section
-        ]
+        pages = []
+        highlighted_page_pks = []
 
-        if not highlighted_page_pks:
-            return [], []
+        for related in self.topic_page.related_methodologies.select_related("page").all()[: self.max_items_per_section]:
+            page = self._process_related_methodology(related)
+            if page:
+                pages.append(page)
+                if "is_external" not in page:
+                    highlighted_page_pks.append(page["internal_page"].pk)
 
-        # Fetch pages in the order they were added
-        pages = list(
-            order_by_pk_position(
-                MethodologyPage.objects.live().public().defer_streamfields(),
-                pks=highlighted_page_pks,
-                exclude_non_matches=True,
-            )
-        )
         return pages, highlighted_page_pks
+
+    def _process_related_methodology(self, related) -> MethodologyDict | None:
+        if not related.page:
+            if related.external_url:
+                return {
+                    "url": related.external_url,
+                    "title": related.title,
+                    "description": "",
+                    "content_type": related.content_type,
+                    "is_external": True,
+                }
+            return None
+
+        page = related.page.specific_deferred  # type: ignore[attr-defined]
+
+        # Skip non-live or restricted pages
+        if not page.live or page.get_view_restrictions().exists():
+            return None
+
+        methodology_dict: InternalMethodologyDict = {"internal_page": page}
+        if related.title:
+            methodology_dict["title"] = related.title
+
+        return methodology_dict
 
     def _get_automatic_methodologies(self, excluded_pks: Iterable[int], limit: int) -> list[MethodologyDict]:
         """Get automatically selected methodologies based on topic relationships using a single query."""

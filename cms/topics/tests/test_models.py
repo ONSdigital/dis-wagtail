@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from datetime import datetime
 from http import HTTPStatus
 
@@ -15,6 +16,7 @@ from cms.articles.tests.factories import (
     ArticleSeriesPageFactory,
     StatisticalArticlePageFactory,
 )
+from cms.core.enums import RelatedMethodologyType
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.home.models import HomePage
@@ -215,6 +217,83 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         # Third should be auto-populated (not self.article since older_article was manually selected)
         self.assertEqual(processed[2], {"internal_page": article_in_other_series})
 
+    def test_processed_methodologies_with_one_external_link(self):
+        """Test that external link appears first, followed by auto-populated articles."""
+        # Create additional article for auto-population
+        TopicPageRelatedMethodologyFactory(
+            parent=self.topic_page, page=None, external_url="https://ons.gov.uk", title="External Methodology"
+        )
+
+        processed = self.topic_page.processed_methodologies
+        self.assertEqual(len(processed), 3)
+
+        # First item should be the external link
+        self.assertIsInstance(processed[0], dict)
+        self.assertEqual(processed[0]["url"], "https://ons.gov.uk")
+        self.assertEqual(processed[0]["title"], "External Methodology")
+        self.assertTrue(processed[0]["is_external"])
+
+        # Remaining should be auto-populated articles
+        self.assertEqual(processed[1], {"internal_page": self.another_methodology})
+        self.assertEqual(processed[2], {"internal_page": self.methodology})
+
+    def test_processed_methodologies_with_three_external_links(self):
+        """Test that only the three external links are returned."""
+        # Create additional article for auto-population
+        for i in range(3):
+            TopicPageRelatedMethodologyFactory(
+                parent=self.topic_page,
+                page=None,
+                external_url=f"https://ons.gov.uk/{i}",
+                title=f"External Methodology {i}",
+            )
+
+        processed = self.topic_page.processed_methodologies
+
+        self.assertEqual(len(processed), 3)
+
+        for i, item in enumerate(processed):
+            self.assertIsInstance(item, dict)
+            self.assertEqual(item["url"], f"https://ons.gov.uk/{i}")
+            self.assertEqual(item["title"], f"External Methodology {i}")
+            self.assertTrue(item["is_external"])
+
+    def test_processed_methodologies_with_mixed_manual_links(self):
+        """Test mix of internal page and external link appear first, followed by auto-populated."""
+        # Create additional methodology for auto-population
+        manual_methodology = MethodologyPageFactory(
+            parent__parent=self.topic_page, publication_date=datetime(2025, 6, 1)
+        )
+
+        # Add a new internal page manually
+        TopicPageRelatedMethodologyFactory(
+            parent=self.topic_page,
+            page=self.methodology,
+        )
+
+        # Add an external link
+        TopicPageRelatedMethodologyFactory(
+            parent=self.topic_page,
+            page=None,
+            external_url="https://ons.gov.uk",
+            title="External Methodology",
+        )
+
+        processed = self.topic_page.processed_methodologies
+        self.assertEqual(len(processed), 3)
+
+        # First should be internal page
+        self.assertEqual(processed[0], {"internal_page": self.methodology})
+
+        # second should be external link
+        self.assertIsInstance(processed[1], dict)
+        self.assertEqual(processed[1]["url"], "https://ons.gov.uk")
+        self.assertEqual(processed[1]["title"], "External Methodology")
+        self.assertTrue(processed[1]["is_external"])
+
+        # third should be auto-populated
+        self.assertEqual(processed[2], {"internal_page": manual_methodology})
+
     def test_processed_articles_with_custom_title(self):
         """Test that custom title is included when provided for internal pages."""
         TopicPageRelatedArticleFactory(parent=self.topic_page, page=self.older_article, title="Custom Article Title")
@@ -228,6 +307,18 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
 
         # Second should be auto-populated without custom title
         self.assertEqual(processed[1], {"internal_page": self.article})
+
+    def test_processed_methodologies_with_custom_title(self):
+        """Test that custom title is included when provided for internal pages."""
+        TopicPageRelatedMethodologyFactory(
+            parent=self.topic_page, page=self.methodology, title="Custom Methodology Title"
+        )
+        processed = self.topic_page.processed_methodologies
+        self.assertEqual(len(processed), 2)
+
+        expected_first = {"internal_page": self.methodology, "title": "Custom Methodology Title"}
+        self.assertEqual(processed[0], expected_first)
+        self.assertEqual(processed[1], {"internal_page": self.another_methodology})
 
     def test_processed_methodologies_combines_highlighted_and_child_pages(self):
         expected = [{"internal_page": self.another_methodology}, {"internal_page": self.methodology}]
@@ -487,6 +578,23 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
             {"internal_page": tagged_methodology},
         ]
         self.assertListEqual(self.cross_pollination_topic_page.processed_methodologies, expected)
+
+    def test_methodology_external_url_must_be_approved_domain(self):
+        external_link_methodology = TopicPageRelatedMethodology(
+            parent=self.topic_page,
+            page=None,
+            external_url="https://example.com",
+            title="Unapproved domain external url",
+            content_type=RelatedMethodologyType.METHODOLOGY,
+        )
+        with self.assertRaises(ValidationError):
+            external_link_methodology.clean()
+
+    def test_default_content_type_for_related_methodology_pages(self):
+        related_methodology = TopicPageRelatedMethodology(parent=self.topic_page, page=self.methodology)
+        related_methodology.clean()
+
+        self.assertEqual(related_methodology.content_type, RelatedMethodologyType.METHODOLOGY)
 
     def test_table_of_contents_includes_all_sections(self):
         manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
