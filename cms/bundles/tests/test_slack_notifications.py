@@ -139,7 +139,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         SLACK_PUBLISH_LOG_CHANNEL="C024BE91L",
         SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE=True,
     )
-    @patch("cms.bundles.notifications.slack.send_or_update_message")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
     def test_notify_slack_of_status_change(self, mock_send):
         """Should send status updates when bundle status changes and the feature flag is enabled."""
         self.bundle.status = BundleStatus.IN_REVIEW
@@ -165,7 +165,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
-    @patch("cms.bundles.notifications.slack.send_or_update_message")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
     def test_notify_slack_of_publication_start(self, mock_send):
         """Test publication start message includes required fields."""
         start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
@@ -193,7 +193,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
-    @patch("cms.bundles.notifications.slack.send_or_update_message")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
     def test_notify_slack_of_publish_end(self, mock_send):
         """Test publication end message includes required fields."""
         start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
@@ -234,7 +234,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
-    @patch("cms.bundles.notifications.slack.send_or_update_message")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
     def test_notify_slack_of_bundle_pre_publish(self, mock_send):
         """Should send pre-publish notification with required fields."""
         scheduled_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
@@ -428,7 +428,7 @@ class BundleFailureAlertsTestCase(TestCase):
         cls.bundle = BundleFactory(name="Failed Bundle", bundled_pages=[StatisticalArticlePageFactory()])
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_ALARM_CHANNEL="C024BE91L")
-    @patch("cms.bundles.notifications.slack.send_or_update_message")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
     def test_alert_slack_of_bundle_content_failure(self, mock_send):
         """Should send a separate alert for content failures without updating the original message."""
         mock_send.return_value = "1503435956.000247"
