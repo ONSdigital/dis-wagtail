@@ -185,8 +185,3 @@ class GetSlackClientTestCase(TestCase):
         """Should return None when token is not configured."""
         client = get_slack_client()
         self.assertIsNone(client)
-
-    @override_settings(SLACK_BOT_TOKEN=None)
-    def test_require_slack_notification_config__token_not_configured(self):
-        """Should log and return none if Slack bot token is not configured."""
-        self.assertIsNone(get_slack_client())
