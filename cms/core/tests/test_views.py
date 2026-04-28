@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from unittest import mock
 
 import time_machine
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
@@ -41,6 +42,34 @@ class TestGoogleTagManagerTestCase(TestCase):
 
         self.assertIn("https://www.googletagmanager.com/gtm.js?id=", response.rendered_content)
         self.assertIn(settings.GOOGLE_TAG_MANAGER_CONTAINER_ID, response.rendered_content)
+
+
+class CSPTestCase(TestCase):
+    urls = frozenset(["/", "/test404"])
+
+    def test_has_nonce(self):
+        for url in self.urls:
+            with self.subTest(url):
+                seen_nonces = set()
+                response = self.client.get(url)
+
+                soup = BeautifulSoup(response.content.decode(), "html.parser")
+
+                for script_tag in soup.find_all("script"):
+                    with self.subTest(str(script_tag)):
+                        if script_tag.attrs.get("src") or script_tag.attrs.get("type") == "application/ld+json":
+                            continue
+                        self.assertIn("nonce", script_tag.attrs)
+                        self.assertTrue(script_tag.attrs["nonce"])
+                        seen_nonces.add(script_tag.attrs["nonce"])
+
+                self.assertEqual(len(seen_nonces), 1, seen_nonces)
+
+    def test_has_csp_header(self):
+        for url in self.urls:
+            with self.subTest(url):
+                response = self.client.get(url)
+                self.assertIn("Content-Security-Policy", response.headers)
 
 
 class LivenessProbeTestCase(SimpleTestCase):
