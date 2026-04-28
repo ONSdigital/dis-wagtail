@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 
-from cms.core.slack import send_or_update_message
+from cms.core.slack import send_or_update_slack_message
 
 if TYPE_CHECKING:
     from django.utils.functional import _StrOrPromise
@@ -49,7 +49,7 @@ def send_bundle_notification(  # pylint: disable=too-many-arguments  # noqa: PLR
         force_new: If True, always create a new message (default: False)
         save_timestamp: If True, save the message timestamp to the bundle to allow future updates (default: True)
     """
-    message_ts = send_or_update_message(
+    message_ts = send_or_update_slack_message(
         text=text,
         color=color,
         fields=fields,
@@ -304,7 +304,7 @@ def alert_slack_of_bundle_content_failure(
         {"title": "Exception", "value": exception_message, "short": False},
     ]
 
-    send_or_update_message(
+    send_or_update_slack_message(
         text="Bundle Publication Failure Detected",
         color="danger",
         fields=fields,

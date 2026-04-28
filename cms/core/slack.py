@@ -18,7 +18,7 @@ def get_slack_client() -> WebClient | None:
     return WebClient(token=token)
 
 
-def send_or_update_message(
+def send_or_update_slack_message(
     text: str,
     color: str,
     fields: list[dict],

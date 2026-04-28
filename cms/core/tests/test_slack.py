@@ -6,7 +6,7 @@ from slack_sdk.errors import SlackApiError
 
 from cms.core.slack import (
     get_slack_client,
-    send_or_update_message,
+    send_or_update_slack_message,
 )
 
 
@@ -20,7 +20,7 @@ class SendOrUpdateMessageTestCase(TestCase):
         mock_client.chat_postMessage.return_value = mock_response
         mock_get_client.return_value = mock_client
 
-        message_ts = send_or_update_message(
+        message_ts = send_or_update_slack_message(
             text="This is a test message",
             channel="C024BE91L",
             color="good",
@@ -48,7 +48,7 @@ class SendOrUpdateMessageTestCase(TestCase):
         mock_client.chat_update.return_value = mock_response
         mock_get_client.return_value = mock_client
 
-        message_ts = send_or_update_message(
+        message_ts = send_or_update_slack_message(
             text="This is a test message",
             channel="C024BE91L",
             color="good",
@@ -82,7 +82,7 @@ class SendOrUpdateMessageTestCase(TestCase):
         mock_get_client.return_value = mock_client
 
         with self.assertLogs("cms.core.slack", level="ERROR") as logs:
-            message_ts = send_or_update_message(
+            message_ts = send_or_update_slack_message(
                 text="This is a test message",
                 channel="C024BE91L",
                 color="good",
@@ -115,7 +115,7 @@ class SendOrUpdateMessageTestCase(TestCase):
         mock_get_client.return_value = mock_client
 
         with self.assertLogs("cms.core.slack", level="ERROR") as logs:
-            message_ts = send_or_update_message(
+            message_ts = send_or_update_slack_message(
                 text="This is a test message",
                 channel="C024BE91L",
                 color="good",
@@ -134,7 +134,7 @@ class SendOrUpdateMessageTestCase(TestCase):
     def test_log_message_if_token_is_not_configured(self):
         """Should log a message and skip sending if token is not configured, even if channel is provided."""
         with self.assertLogs("cms.core.slack", level="INFO") as logs:
-            message_ts = send_or_update_message(
+            message_ts = send_or_update_slack_message(
                 text="This is a test message",
                 channel="C024BE91L",
                 color="good",
@@ -154,7 +154,7 @@ class SendOrUpdateMessageTestCase(TestCase):
     def test_log_message_if_channel_is_not_given(self):
         """Should log a message and skip sending if the message channel is None."""
         with self.assertLogs("cms.core.slack", level="INFO") as logs:
-            message_ts = send_or_update_message(
+            message_ts = send_or_update_slack_message(
                 text="This is a test message",
                 channel=None,
                 color="good",

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from django.conf import settings
 
 from cms.bundles.notifications.slack import BundleAlertType
-from cms.core.slack import send_or_update_message
+from cms.core.slack import send_or_update_slack_message
 
 if TYPE_CHECKING:
     from wagtail.models import Page
@@ -43,7 +43,7 @@ def notify_slack_of_dataset_api_failure(
             {"title": "Page Name", "value": f"<{page.full_url}|{admin_url}>", "short": False},
         )
 
-    send_or_update_message(
+    send_or_update_slack_message(
         text="Dataset API Call Failure", color="danger", fields=fields, channel=settings.SLACK_PUBLISH_LOG_CHANNEL
     )
 
@@ -89,4 +89,4 @@ def notify_slack_of_third_party_api_failure(
             {"title": "Page Name", "value": f"<{page.full_url}|{admin_url}>", "short": False},
         )
 
-    send_or_update_message(text=title, color="danger", fields=fields, channel=settings.SLACK_PUBLISH_LOG_CHANNEL)
+    send_or_update_slack_message(text=title, color="danger", fields=fields, channel=settings.SLACK_PUBLISH_LOG_CHANNEL)
