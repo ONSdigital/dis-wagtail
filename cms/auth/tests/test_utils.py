@@ -299,32 +299,20 @@ class ValidateJWTTests(SimpleTestCase):
 @override_settings(
     AUTH_TOKEN_REFRESH_URL="/refresh/",
     WAGTAILADMIN_HOME_PATH="/admin/",
-    CSRF_COOKIE_NAME="csrftoken",
-    CSRF_HEADER_NAME="HTTP_X_CSRFTOKEN",
     SESSION_RENEWAL_OFFSET_SECONDS=30,
     ID_TOKEN_COOKIE_NAME="id",
 )
 class GetAuthConfigTests(SimpleTestCase):
-    def test_json_config_contains_expected_keys(self):
-        data = utils.get_auth_config()
-        expected_keys = {
-            "authTokenRefreshUrl",
-            "wagtailAdminHomePath",
-            "csrfCookieName",
-            "csrfHeaderName",
-            "sessionRenewalOffsetSeconds",
-            "idTokenCookieName",
-        }
-        self.assertEqual(expected_keys, set(data.keys()))
-
-    def test_values_exact(self):
-        data = utils.get_auth_config()
-        self.assertEqual(data["authTokenRefreshUrl"], "/refresh/")
-        self.assertEqual(data["wagtailAdminHomePath"], "/admin/")
-        self.assertEqual(data["csrfCookieName"], "csrftoken")
-        self.assertEqual(data["csrfHeaderName"], "X-CSRFTOKEN")  # header rewritten
-        self.assertEqual(data["sessionRenewalOffsetSeconds"], 30)
-        self.assertEqual(data["idTokenCookieName"], "id")
+    def test_values(self):
+        self.assertEqual(
+            utils.get_auth_config(),
+            {
+                "authTokenRefreshUrl": "/refresh/",
+                "wagtailAdminHomePath": "/admin/",
+                "sessionRenewalOffsetSeconds": 30,
+                "idTokenCookieName": "id",
+            },
+        )
 
 
 class JWKSCacheTests(SimpleTestCase):
