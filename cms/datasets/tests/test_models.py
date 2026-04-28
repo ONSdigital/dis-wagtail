@@ -4,12 +4,16 @@ from unittest.mock import patch
 import requests
 import responses
 from django.conf import settings
+from django.core.cache import caches
 from django.test import TestCase, override_settings
 
 from cms.datasets.models import ONSDataset, ONSDatasetApiQuerySet
 
 
 class TestONSDatasetApiQuerySet(TestCase):
+    def setUp(self) -> None:
+        caches["memory"].clear()
+
     @responses.activate
     def test_count_uses_total_count(self):
         responses.add(
@@ -291,6 +295,154 @@ class TestONSDatasetApiQuerySet(TestCase):
             mock_get.assert_called_once()
             _, kwargs = mock_get.call_args
             self.assertEqual(kwargs.get("timeout"), settings.HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS)
+
+    @responses.activate
+    def test_fetch_api_response_caches_repeated_calls(self):
+        """Identical url + params + token should only hit the API once within the TTL."""
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            json={"items": [], "total_count": 0, "count": 0},
+        )
+
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
+
+        first = api_queryset.fetch_api_response()
+        second = api_queryset.fetch_api_response()
+
+        self.assertEqual(first, second)
+        self.assertEqual(len(responses.calls), 1)
+
+    @responses.activate
+    def test_fetch_api_response_does_not_share_cache_across_tokens(self):
+        """Different tokens should get separate cache entries."""
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            json={"items": [{"id": "user-a"}], "total_count": 1, "count": 1},
+            match=[responses.matchers.header_matcher({"Authorization": "token-a"})],
+        )
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            json={"items": [{"id": "user-b"}], "total_count": 1, "count": 1},
+            match=[responses.matchers.header_matcher({"Authorization": "token-b"})],
+        )
+
+        base_qs = ONSDatasetApiQuerySet()
+        base_qs.base_url = settings.DATASETS_API_EDITIONS_URL
+
+        result_a = base_qs.with_token("token-a").fetch_api_response()
+        result_b = base_qs.with_token("token-b").fetch_api_response()
+        result_a_again = base_qs.with_token("token-a").fetch_api_response()
+
+        self.assertEqual(result_a["items"], [{"id": "user-a"}])
+        self.assertEqual(result_b["items"], [{"id": "user-b"}])
+        self.assertEqual(len(responses.calls), 2)
+
+        # Ensure that the second fetch return the cached response for token-a, not the token-b response
+        self.assertEqual(result_a_again["items"], [{"id": "user-a"}])
+
+    @responses.activate
+    def test_fetch_api_response_invalid_token_does_not_read_valid_token_cache(self):
+        """A subsequent request with an invalid token must hit the API and not read the
+        cached response populated by an earlier valid-token request.
+        """
+        valid_payload = {"items": [{"id": "secret"}], "total_count": 1, "count": 1}
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            json=valid_payload,
+            match=[responses.matchers.header_matcher({"Authorization": "valid-token"})],
+        )
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            status=HTTPStatus.UNAUTHORIZED,
+            match=[responses.matchers.header_matcher({"Authorization": "invalid-token"})],
+        )
+
+        base_qs = ONSDatasetApiQuerySet()
+        base_qs.base_url = settings.DATASETS_API_EDITIONS_URL
+
+        valid_result = base_qs.with_token("valid-token").fetch_api_response()
+        self.assertEqual(valid_result["items"], [{"id": "secret"}])
+
+        with self.assertRaises(requests.exceptions.HTTPError):
+            base_qs.with_token("invalid-token").fetch_api_response()
+
+        # Both requests reached the API — the invalid-token request did not read
+        # from the cache populated by the valid-token request.
+        self.assertEqual(len(responses.calls), 2)
+
+        # The exception shouldn't have poisoned the cache for the valid token
+        valid_result_again = base_qs.with_token("valid-token").fetch_api_response()
+        self.assertEqual(valid_result_again["items"], [{"id": "secret"}])
+        self.assertEqual(len(responses.calls), 2)  # Still only 2 calls
+
+    @responses.activate
+    def test_fetch_api_response_does_not_cache_errors(self):
+        """A failed request should not poison the cache; a subsequent success should hit the API."""
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            json={"items": [], "total_count": 0, "count": 0},
+        )
+
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
+
+        with self.assertRaises(requests.exceptions.HTTPError):
+            api_queryset.fetch_api_response()
+
+        result = api_queryset.fetch_api_response()
+        self.assertEqual(result["count"], 0)
+        self.assertEqual(len(responses.calls), 2)
+
+    @responses.activate
+    def test_fetch_api_response_separate_cache_per_params(self):
+        """Different query params should produce separate cache entries."""
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            json={"items": [], "total_count": 0, "count": 0},
+        )
+
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
+
+        api_queryset.fetch_api_response(params={"limit": 10})
+        api_queryset.fetch_api_response(params={"limit": 20})
+        api_queryset.fetch_api_response(params={"limit": 10})
+        api_queryset.fetch_api_response(params={"limit": 10})
+
+        self.assertEqual(len(responses.calls), 2)
+
+    @responses.activate
+    def test_fetch_api_response_post_processing_runs_on_cache_hit(self):
+        """`total_count` -> `count` rewrite must apply on cache hits, not just misses."""
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_EDITIONS_URL,
+            json={"items": [], "total_count": 7},
+        )
+
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
+
+        first = api_queryset.fetch_api_response()
+        second = api_queryset.fetch_api_response()
+
+        self.assertEqual(first["count"], 7)
+        # The cached data has the `total_count` key, but the queryset should rewrite it to `count`
+        self.assertEqual(second["count"], 7)
+        self.assertEqual(len(responses.calls), 1)
 
 
 class TestONSDataset(TestCase):

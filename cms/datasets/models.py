@@ -9,6 +9,7 @@ from django.db import models
 from django.db.models import UniqueConstraint
 from queryish.rest import APIModel, APIQuerySet
 
+from cms.core.cache import memory_cache
 from cms.datasets.utils import (
     construct_chooser_dataset_compound_id,
     convert_old_dataset_format,
@@ -18,7 +19,32 @@ from cms.datasets.utils import (
 logger = logging.getLogger(__name__)
 
 
-# TODO: This needs a revisit. Consider caching + fewer requests
+@memory_cache(
+    settings.CMS_DATASETS_API_CACHE_TTL_SECONDS,
+    prefix="datasets_api",
+)
+def _fetch_datasets_api_response(
+    url: str,
+    params_items: tuple[tuple[str, str | int | float | None], ...],
+    base_headers_items: tuple[tuple[str, str], ...],
+    token: str | None,
+    timeout: int,
+) -> dict:
+    """Fetch a raw datasets API response, cached in memory.
+
+    `params_items` and `base_headers_items` are sorted tuples so the cache key is deterministic.
+    `token` is included in the key so each user gets their own cache entries.
+    """
+    headers = dict(base_headers_items)
+    if token:
+        headers["Authorization"] = token
+    params = dict(params_items)
+    response = requests.get(url, params=params, headers=headers, timeout=timeout)
+    response.raise_for_status()
+    api_response: dict = response.json()
+    return api_response
+
+
 class ONSDatasetApiQuerySet(APIQuerySet):
     def __init__(self, *args: object, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)
@@ -50,28 +76,29 @@ class ONSDatasetApiQuerySet(APIQuerySet):
         return results
 
     def fetch_api_response(self, url: str | None = None, params: Mapping | None = None) -> dict:
-        # Add Authorization header if token is set
-        headers = dict(self.http_headers) if self.http_headers else {}
-        if self.token:
-            # Note: Don't prepend "Bearer " - it's already in the token
-            headers["Authorization"] = self.token
-
         if url is None:
             url = self.base_url
         if params is None:
             params = {}
 
         is_detail_request = url.startswith(ONSDataset.Meta.detail_url.split("%s", maxsplit=1)[0])
+        # Prepare for deterministic caching
+        params_items = tuple(sorted(params.items()))
+        base_headers_items = tuple(sorted((self.http_headers or {}).items()))
 
+        logger.debug("Fetching datasets from API", extra={"url": url, "params": params})
         try:
-            logger.debug("Fetching datasets from API", extra={"url": url, "params": params})
-            response = requests.get(url, params=params, headers=headers, timeout=self.timeout)
-            response.raise_for_status()
+            api_response = _fetch_datasets_api_response(
+                url=url,
+                params_items=params_items,
+                base_headers_items=base_headers_items,
+                token=self.token,
+                timeout=self.timeout,
+            )
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
                 logger.warning("Rate limit exceeded when fetching datasets", extra={"url": url})
                 raise
-            # Check for 5xx server errors (500-599)
             if e.response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
                 logger.error(
                     "Server error when fetching datasets",
@@ -79,20 +106,19 @@ class ONSDatasetApiQuerySet(APIQuerySet):
                 )
                 raise
             raise
+        except ValueError as e:
+            logger.error("Failed to parse JSON response when fetching datasets", extra={"url": url, "params": params})
+            raise ValueError("Failed to parse JSON response from datasets API") from e
         except requests.exceptions.RequestException as e:
             logger.error("Request failed when fetching datasets", extra={"url": url, "error": str(e)})
             raise
 
-        try:
-            api_response: dict = response.json()
-        except ValueError as e:
-            logger.error("Failed to parse JSON response when fetching datasets", extra={"url": url, "params": params})
-            raise ValueError("Failed to parse JSON response from datasets API") from e
-
-        # api_response should be a dict, let's raise a clear error if not
         if not isinstance(api_response, dict):
             logger.error("Invalid API response format when fetching datasets", extra={"url": url, "params": params})
             raise ValueError("Invalid API response format, expected a dictionary-like object")
+
+        # Copy so cached payload is never mutated by post-processing.
+        api_response = dict(api_response)
 
         if is_detail_request:
             api_response = self._process_detail_response(api_response)
