@@ -77,6 +77,13 @@ if not settings.IS_EXTERNAL_ENV:
         ]
 
     wagtail_admin_patterns += wagtailadmin_urls.urlpatterns
+    if settings.WAGTAILADMIN_HOME_PATH.endswith("/"):
+        private_urlpatterns.append(
+            path(
+                settings.WAGTAILADMIN_HOME_PATH.removesuffix("/"),
+                RedirectView.as_view(pattern_name="wagtailadmin_home", permanent=False),
+            )
+        )
     private_urlpatterns.append(path(settings.WAGTAILADMIN_HOME_PATH, include(wagtail_admin_patterns)))
 
 if apps.is_installed("django.contrib.admin") and settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
