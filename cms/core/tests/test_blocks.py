@@ -966,6 +966,22 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         download_url = result["options"]["download"]["itemsList"][0]["url"]
         self.assertEqual(download_url, "/economy/articles/test-article/download-table/test-block-id")
 
+    def test_footnotes_heading_level_with_title(self):
+        """Test that footnotes_heading_level is 4 when table title is present."""
+        context = self.block.get_context(self.full_data)
+        self.assertEqual(context["footnotes_heading_level"], "4")
+
+    def test_footnotes_heading_level_without_title(self):
+        """Test that footnotes_heading_level is 3 when table title is not present."""
+        data_without_title = {
+            "caption": "The caption",
+            "source": "https://ons.gov.uk",
+            "footnotes": "footnotes",
+            "data": self.simple_table_data,
+        }
+        context = self.block.get_context(data_without_title)
+        self.assertEqual(context["footnotes_heading_level"], "3")
+
     def test_ons_table_block_download_config_missing_without_page(self):
         """Test that download is empty when page is missing from context."""
         context = {
