@@ -10,7 +10,7 @@ from cms.settings import base
 
 
 class SettingsTestCase(TestCase):
-    """Tests for the Referrer-Policy header."""
+    """Test that our settings are as expected."""
 
     def test_referrer_policy(self):
         """Test that we have a Referrer-Policy header."""
