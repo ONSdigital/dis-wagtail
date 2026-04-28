@@ -80,7 +80,7 @@ if not settings.IS_EXTERNAL_ENV:
     if settings.WAGTAILADMIN_HOME_PATH.endswith("/"):
         private_urlpatterns.append(
             path(
-                settings.WAGTAILADMIN_HOME_PATH.removesuffix("/"),
+                settings.WAGTAILADMIN_HOME_PATH.rstrip("/"),
                 RedirectView.as_view(pattern_name="wagtailadmin_home", permanent=False),
             )
         )
