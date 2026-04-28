@@ -151,7 +151,7 @@ class BundleAPIClient:
             # Determine alert type based on status code
             alert_type = (
                 BundleAlertType.CRITICAL
-                if e.response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR
+                if e.response.status_code >= HTTPStatus.BAD_REQUEST
                 else BundleAlertType.WARNING
             )
 
