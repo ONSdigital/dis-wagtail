@@ -25,11 +25,6 @@ SILENCED_SYSTEM_CHECKS.append("staticfiles.W004")  # noqa: F405
 
 TEST_RUNNER = "cms.core.tests.runner.OldConnectionsCleanupDiscoveryRunner"
 
-# Don't redirect to HTTPS in tests or send the HSTS header
-SECURE_SSL_REDIRECT = False
-SECURE_HSTS_SECONDS = 0
-
-
 # Quieten down the logging in tests
 LOGGING["handlers"]["console"]["class"] = "logging.NullHandler"  # type: ignore[index] # noqa: F405
 

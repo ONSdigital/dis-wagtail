@@ -758,29 +758,10 @@ SESSION_COOKIE_HTTPONLY = True
 # Custom view to handle CSRF failures.
 CSRF_FAILURE_VIEW = "cms.core.views.csrf_failure"
 
-# Force HTTPS redirect (enabled by default!)
-# https://docs.djangoproject.com/en/stable/ref/settings/#secure-ssl-redirect
-SECURE_SSL_REDIRECT = env.get("SECURE_SSL_REDIRECT", "true").lower().strip() == "true"
-
-
 # This will allow the cache to swallow the fact that the website is behind TLS
 # and inform the Django using "X-Forwarded-Proto" HTTP header.
 # https://docs.djangoproject.com/en/stable/ref/settings/#secure-proxy-ssl-header
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-
-# This is a setting activating the HSTS header. This will enforce the visitors to use
-# HTTPS for an amount of time specified in the header. Since we are expecting our apps
-# to run via TLS by default, this header is activated by default.
-# The header can be deactivated by setting this setting to 0, as it is done in the
-# dev and testing settings.
-# https://docs.djangoproject.com/en/stable/ref/settings/#secure-hsts-seconds
-DEFAULT_HSTS_SECONDS = 30 * 24 * 60 * 60  # 30 days
-SECURE_HSTS_SECONDS = int(env.get("SECURE_HSTS_SECONDS", DEFAULT_HSTS_SECONDS))
-
-# We don't enforce HSTS on subdomains as anything at subdomains is likely outside our control.
-# https://docs.djangoproject.com/en/3.2/ref/settings/#secure-hsts-include-subdomains
-SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#secure-content-type-nosniff
@@ -796,8 +777,8 @@ SECURE_REFERRER_POLICY = env.get("SECURE_REFERRER_POLICY", "no-referrer-when-dow
 REST_FRAMEWORK = {"DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication",)}
 
 SILENCED_SYSTEM_CHECKS = [
-    "security.W005",  # Assumptions can't be made about subdomains
-    "security.W021",  # HSTS preload not required
+    "security.W004",  # Set HSTS at infrastructure level
+    "security.W008",  # Redirect to HTTPS at infrastructure level
 ]
 
 AUTH_USER_MODEL = "users.User"
