@@ -194,11 +194,14 @@ class ONSTableBlock(TinyTableBlock):
         if block_id and parent_context:
             options["download"] = self._get_download_config(parent_context=parent_context, block_id=block_id, data=data)
 
+        footnotes_heading_level = "4" if value.get("title") else "3"
+
         table_context = {
             "title": value.get("title"),
             "options": options,
             "source": value.get("source"),
             "footnotes": value.get("footnotes"),
+            "footnotes_heading_level": footnotes_heading_level,
             **context,
         }
 
