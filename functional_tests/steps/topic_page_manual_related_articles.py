@@ -94,14 +94,6 @@ def user_can_see_title_in_related_articles_section(context: Context, title: str)
     expect(related_articles_section.get_by_role("link", name=title)).to_be_visible()
 
 
-@then('the related article "{title}" appears at the top of the list')
-def related_article_appears_at_top_of_list(context: Context, title: str) -> None:
-    """Assert that the given title appears first in the related articles list."""
-    related_articles_section = context.page.locator("section#related-articles")
-    first_article = related_articles_section.locator("li.ons-document-list__item").first
-    expect(first_article.get_by_role("link", name=title)).to_be_visible()
-
-
 @then("the related articles section contains {count:d} articles")
 def related_articles_section_contains_count_articles(context: Context, count: int) -> None:
     """Assert that the related articles section contains the expected number of articles."""
