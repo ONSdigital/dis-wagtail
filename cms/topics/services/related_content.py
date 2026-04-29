@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, cast
 
 from django.db.models import OuterRef, Q, Subquery
 from django.db.models.functions import Coalesce
@@ -9,6 +9,7 @@ from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.methodology.models import MethodologyPage
 from cms.topics.services.types import (
     ArticleDict,
+    ExternalArticleDict,
     InternalArticleDict,
     InternalMethodologyDict,
     MethodologyDict,
@@ -19,11 +20,23 @@ from ...core.enums import RelatedContentType
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
 
-    from ..models import TopicPage, TopicPageRelatedArticle
+    from ..models import TopicPage
 
 
-class BaseProcessor[T](ABC):
+class BaseRelatedItem(Protocol):
+    page: object | None
+    external_url: str
+    title: str
+
+
+class MethodologyRelatedItem(BaseRelatedItem, Protocol):
+    content_type: object | None
+
+
+class BaseProcessor[T, R: BaseRelatedItem](ABC):
     """Abstract base class for processors handling related content for topic pages."""
+
+    manual_relation_name: str
 
     def __init__(self, topic_page: TopicPage, max_items_per_section: int) -> None:
         self.topic_page = topic_page
@@ -32,58 +45,66 @@ class BaseProcessor[T](ABC):
     def __call__(self) -> list[T]:
         return self.process()
 
-    @abstractmethod
     def process(self) -> list[T]:
-        """Abstract method to be implemented by subclasses to return processed items."""
+        """Build a section list by combining manual items and automatic top-up items."""
+        manual_pages, highlighted_page_pks = self._get_manual_pages()
+
+        if len(manual_pages) >= self.max_items_per_section:
+            return manual_pages
+
+        remaining_slots = self.max_items_per_section - len(manual_pages)
+        auto_pages = self._get_automatic_pages(highlighted_page_pks, remaining_slots)
+
+        return manual_pages + auto_pages
+
+    @abstractmethod
+    def _get_automatic_pages(self, excluded_pks: Iterable[int], limit: int) -> list[T]:
+        """Return automatic items, excluding selected internal page PKs."""
+
+    @abstractmethod
+    def _process_related(self, related: R) -> T | None:
+        """Transform a related object into a display item or return None to skip it."""
+
+    def _get_manual_pages(self) -> tuple[list[T], list[int]]:
+        """Collect manual related items and track highlighted internal page PKs."""
+        manual_items: list[T] = []
+        highlighted_page_pks: list[int] = []
+
+        related_manager = getattr(self.topic_page, self.manual_relation_name)
+        related_items = cast(Iterable[R], related_manager.select_related("page").all()[: self.max_items_per_section])
+        for related in related_items:
+            item = self._process_related(related)
+            if not item:
+                continue
+
+            manual_items.append(item)
+
+            if isinstance(item, dict) and not item.get("is_external"):
+                internal_page = item.get("internal_page")
+                if internal_page:
+                    highlighted_page_pks.append(internal_page.pk)
+
+        return manual_items, highlighted_page_pks
 
 
-class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
+class RelatedArticleProcessor(BaseProcessor[ArticleDict, BaseRelatedItem]):
     """Processor for handling related articles for topic pages."""
 
-    def process(self) -> list[ArticleDict]:
-        """Returns a list of dictionaries representing related articles.
+    manual_relation_name = "related_articles"
 
-        Each dict has 'internal_page' pointing to a Page (or None for external) and optional 'title'.
-        Manually added articles (both internal and external) are prioritised.
-        """
-        manual_articles, highlighted_page_pks = self._get_manual_articles()
-
-        # If we have enough manual articles, return early
-        if len(manual_articles) >= self.max_items_per_section:
-            return manual_articles
-
-        # Calculate remaining slots and fetch automatic articles
-        remaining_slots = self.max_items_per_section - len(manual_articles)
-        auto_articles = self._get_automatic_articles(highlighted_page_pks, remaining_slots)
-
-        return manual_articles + auto_articles
-
-    def _get_manual_articles(self) -> tuple[list[ArticleDict], list[int]]:
-        """Extract manually configured related articles."""
-        manual_articles = []
-        highlighted_page_pks = []
-
-        for related in self.topic_page.related_articles.select_related("page").all()[: self.max_items_per_section]:
-            article = self._process_related_article(related)
-            if article:
-                manual_articles.append(article)
-                if "is_external" not in article:
-                    highlighted_page_pks.append(article["internal_page"].pk)
-
-        return manual_articles, highlighted_page_pks
-
-    def _process_related_article(self, related: TopicPageRelatedArticle) -> ArticleDict | None:
+    def _process_related(self, related: BaseRelatedItem) -> ArticleDict | None:
         """Process a single related article entry."""
         # Handle external articles
         if not related.page:
             if related.external_url:
-                return {
+                external_article: ExternalArticleDict = {
                     "url": related.external_url,
                     "title": related.title,
                     "description": "",
                     "content_type": RelatedContentType.ARTICLE,
                     "is_external": True,
                 }
+                return external_article
             return None
 
         # Handle internal pages
@@ -100,7 +121,7 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
 
         return article_dict
 
-    def _get_automatic_articles(self, excluded_pks: Iterable[int], limit: int) -> list[ArticleDict]:
+    def _get_automatic_pages(self, excluded_pks: Iterable[int], limit: int) -> list[ArticleDict]:
         """Return up to `limit` latest StatisticalArticlePages related to this topic."""
         excluded_pks = set(excluded_pks)
 
@@ -133,7 +154,10 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
             .order_by("-release_date", "-pk")
         )
 
-        return [{"internal_page": page} for page in qs[:limit]]
+        auto_articles: list[ArticleDict] = []
+        for page in qs[:limit]:
+            auto_articles.append({"internal_page": page})
+        return auto_articles
 
     def _latest_article_pks_for_series(self, series_qs: PageQuerySet) -> set[int]:
         """For each series in `series_qs`, return the PK of its latest StatisticalArticlePage."""
@@ -153,52 +177,22 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
         )
 
 
-class RelatedMethodologyProcessor(BaseProcessor[MethodologyDict]):
+class RelatedMethodologyProcessor(BaseProcessor[MethodologyDict, MethodologyRelatedItem]):
     """Processor for handling related methodologies for topic pages."""
 
-    def process(self) -> list[MethodologyDict]:
-        """Returns a list of dictionaries representing methodologies relevant for this topic.
+    manual_relation_name = "related_methodologies"
 
-        Each dict has 'internal_page' pointing to a MethodologyPage.
-        Manually highlighted methodologies are prioritised and shown in their configured order.
-        """
-        highlighted_pages, highlighted_page_pks = self._get_manual_methodologies()
-
-        # If we have enough highlighted methodologies, return early
-        if len(highlighted_pages) >= self.max_items_per_section:
-            return highlighted_pages
-
-        # Calculate remaining slots and fetch automatic methodologies
-        remaining_slots = self.max_items_per_section - len(highlighted_pages)
-        auto_pages = self._get_automatic_methodologies(highlighted_page_pks, remaining_slots)
-
-        # Combine highlighted and automatic methodologies
-        return highlighted_pages + auto_pages
-
-    def _get_manual_methodologies(self) -> tuple[list[MethodologyPage], list[int]]:
-        """Get manually highlighted methodologies in their configured order."""
-        pages = []
-        highlighted_page_pks = []
-
-        for related in self.topic_page.related_methodologies.select_related("page").all()[: self.max_items_per_section]:
-            page = self._process_related_methodology(related)
-            if page:
-                pages.append(page)
-                if "is_external" not in page:
-                    highlighted_page_pks.append(page["internal_page"].pk)
-
-        return pages, highlighted_page_pks
-
-    def _process_related_methodology(self, related) -> MethodologyDict | None:
+    def _process_related(self, related: MethodologyRelatedItem) -> MethodologyDict | None:
         if not related.page:
             if related.external_url:
-                return {
+                external_methodology: ExternalArticleDict = {
                     "url": related.external_url,
                     "title": related.title,
                     "description": "",
-                    "content_type": related.content_type,
+                    "content_type": cast(RelatedContentType, related.content_type),
                     "is_external": True,
                 }
+                return external_methodology
             return None
 
         page = related.page.specific_deferred  # type: ignore[attr-defined]
@@ -213,7 +207,7 @@ class RelatedMethodologyProcessor(BaseProcessor[MethodologyDict]):
 
         return methodology_dict
 
-    def _get_automatic_methodologies(self, excluded_pks: Iterable[int], limit: int) -> list[MethodologyDict]:
+    def _get_automatic_pages(self, excluded_pks: Iterable[int], limit: int) -> list[MethodologyDict]:
         """Get automatically selected methodologies based on topic relationships using a single query."""
         descendant_qs = MethodologyPage.objects.descendant_of(self.topic_page)
         descendant_condition = Q(pk__in=descendant_qs.values("pk"))
@@ -229,4 +223,7 @@ class RelatedMethodologyProcessor(BaseProcessor[MethodologyDict]):
             .order_by(Coalesce("last_revised_date", "publication_date").desc())
         )
 
-        return [{"internal_page": page} for page in methodologies[:limit]]
+        auto_methodologies: list[MethodologyDict] = []
+        for page in methodologies[:limit]:
+            auto_methodologies.append({"internal_page": page})
+        return auto_methodologies
