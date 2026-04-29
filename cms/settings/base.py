@@ -1117,9 +1117,10 @@ SECURE_CSP: dict[str, list] = {
     "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_ALLOWED_DOMAINS],
     # UNSAFE_INLINE is required by mathjax
     "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE],
-    "img-src": [CSP.SELF, ONS_CDN_URL],
+    "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com"],
     "script-src": [CSP.SELF, CSP.NONCE, *static_sources],
     "font-src": [CSP.SELF, *static_sources],
+    "connect-src": [CSP.SELF, "www.googletagmanager.com", "www.google.com"],
 }
 if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
     SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")
