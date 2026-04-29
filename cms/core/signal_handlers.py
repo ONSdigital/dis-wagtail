@@ -1,12 +1,16 @@
+import itertools
 from typing import Any
 
 from django.apps import apps
 from django.conf import settings
+from django.core.cache import cache
 from django.core.signals import setting_changed
 from django.db.models.signals import pre_save
 from django.utils.log import configure_logging
-from wagtail.models import DraftStateMixin, Locale, Page, Revision
-from wagtail.signals import page_slug_changed
+from wagtail.models import DraftStateMixin, Locale, Page, Revision, Site
+from wagtail.signals import page_published, page_slug_changed, page_unpublished
+
+from cms.core.templatetags.page_config_tags import get_page_config_cache_key
 
 # Tree depth of the home page
 HOME_PAGE_DEPTH = 2
@@ -39,10 +43,19 @@ def remove_approved_go_live_seconds(
 def reload_logging_config(*, setting: str, **kwargs: Any) -> None:
     """Reload logging config when the relevant settings change.
 
-    @see https://code.djangoproject.com/ticket/36958#ticket
+    @see https://code.djangoproject.com/ticket/36958
     """
     if setting in {"LOGGING", "LOGGING_CONFIG"}:
         configure_logging(settings.LOGGING_CONFIG, settings.LOGGING)
+
+
+def invalidate_page_config_cache(sender: Any, instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
+    cache.delete_many(
+        [
+            get_page_config_cache_key(site, instance, language_code)
+            for site, language_code in itertools.product(Site.objects.all(), dict(settings.LANGUAGES).keys())
+        ]
+    )
 
 
 def sync_alias_translation_slugs(sender: Any, instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
@@ -74,3 +87,6 @@ def register_signal_handlers() -> None:
     page_slug_changed.connect(sync_alias_translation_slugs)
 
     setting_changed.connect(reload_logging_config)
+
+    page_published.connect(invalidate_page_config_cache)
+    page_unpublished.connect(invalidate_page_config_cache)

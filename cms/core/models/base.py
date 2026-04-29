@@ -198,7 +198,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         - If the request is for a subpage (marked by setting the attribute `is_for_subpage=True` on the request object),
           then it will include the subpage route from the request.
         """
-        canonical_page = self.alias_of or self
+        canonical_page = self.alias_of if self.alias_of_id else self
         if getattr(request, "is_for_subpage", False) and getattr(request, "routable_resolver_match", None):
             return request.build_absolute_uri(request.get_full_path())
         return cast(str, canonical_page.get_full_url(request=request))
