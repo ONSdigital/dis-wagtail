@@ -82,6 +82,12 @@ class ContactDetailsTestCase(WagtailTestUtils, TestCase):
         )
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
+    def test_save_draft_without_required_fields_succeeds(self):
+        # No action-publish in POST data means Wagtail treats this as a draft save.
+        self.client.force_login(self.publishing_admin)
+        self.client.post(self.add_url, data={})
+        self.assertEqual(ContactDetails.objects.count(), 2)
+
 
 class DefinitionTestCase(WagtailTestUtils, TestCase):
     @classmethod
@@ -121,6 +127,12 @@ class DefinitionTestCase(WagtailTestUtils, TestCase):
             follow=True,
         )
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+    def test_save_draft_without_required_fields_succeeds(self):
+        # No action-publish in POST data means Wagtail treats this as a draft save.
+        self.client.force_login(self.publishing_admin)
+        self.client.post(self.add_url, data={})
+        self.assertEqual(Definition.objects.count(), 1)
 
 
 class PageBreadcrumbsTestCase(TestCase):
