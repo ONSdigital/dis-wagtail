@@ -1145,7 +1145,6 @@ for csp_directives in WAGTAIL_CSP.values():
 # Set a sensible permissions policy to disable privacy-invading or annoying features
 PERMISSIONS_POLICY: dict = {
     "accelerometer": [],
-    "ambient-light-sensor": [],
     "autoplay": [],
     "camera": [],
     "display-capture": [],
@@ -1154,7 +1153,6 @@ PERMISSIONS_POLICY: dict = {
     "geolocation": [],
     "gyroscope": [],
     "interest-cohort": [],
-    "magnetometer": [],
     "microphone": [],
     "midi": [],
     "payment": [],
