@@ -1128,6 +1128,7 @@ SECURE_CSP: dict[str, list] = {
         "*.hotjar.io",
         "wss://*.hotjar.com",
     ],
+    "manifest-src": [CSP.SELF, ONS_CDN_URL],
 }
 if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
     SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")
