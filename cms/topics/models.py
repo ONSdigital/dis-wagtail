@@ -15,9 +15,11 @@ from wagtail.search import index
 from cms.articles.models import StatisticalArticlePage
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.analytics_utils import add_table_of_contents_gtm_attributes
+from cms.core.enums import RelatedMethodologyType
 from cms.core.fields import StreamField
 from cms.core.formatting_utils import get_formatted_pages_list
 from cms.core.models import BasePage
+from cms.core.url_utils import validate_ons_url
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
@@ -105,13 +107,70 @@ class TopicPageRelatedMethodology(Orderable):
         "wagtailcore.Page",
         on_delete=models.CASCADE,
         related_name="+",
+        help_text="Select an internal Wagtail page. If you want to link to an external page, use the fields below.",
+        null=True,
+        blank=True,
+    )
+    external_url: models.URLField = models.URLField(
+        blank=True,
+        verbose_name="URL",
+        help_text="Enter a relative URL (e.g. /some/path) or a full URL starting with 'https://' "
+        f"that matches one of the allowed domains or their subdomains: {', '.join(settings.ONS_ALLOWED_LINK_DOMAINS)}",
+    )
+    content_type = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        choices=RelatedMethodologyType.choices,
+        help_text="Required for external links. Auto-set to 'Methodology' for Wagtail pages.",
+    )
+    title = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text=(
+            "Populate when adding a external link. "
+            "When choosing a page, you can leave it blank to use the page’s own title."
+        ),
     )
 
-    panels: ClassVar[list[FieldPanel]] = [
-        FieldPanel(
-            "page", widget=HighlightedMethodologyPageChooserWidget(linked_fields={"topic_page_id": "#id_topic_page_id"})
-        )
+    panels: ClassVar[list[Panel]] = [
+        MultiFieldPanel(
+            [
+                FieldPanel(
+                    "page",
+                    widget=HighlightedMethodologyPageChooserWidget(
+                        linked_fields={"topic_page_id": "#id_topic_page_id"}
+                    ),
+                )
+            ],
+            heading="Internal Link",
+        ),
+        MultiFieldPanel(
+            [
+                FieldPanel("external_url"),
+                FieldPanel("content_type"),
+                FieldPanel("title"),
+            ],
+            heading="External Link",
+        ),
     ]
+
+    def clean(self):
+        super().clean()
+        if self.page_id and self.external_url:
+            raise ValidationError("Please select either a Wagtail page or provide an external link, not both.")
+        if not self.page_id and not self.external_url:
+            raise ValidationError("You must select a Wagtail page or provide an external link.")
+        if not self.external_url:
+            self.content_type = RelatedMethodologyType.METHODOLOGY
+            return
+
+        if not self.title:
+            raise ValidationError({"title": "This field is required when providing an external link."})
+        if not self.content_type:
+            raise ValidationError({"content_type": "This field is required when providing an external link."})
+        if error := validate_ons_url(self.external_url):
+            raise error
 
 
 class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
@@ -176,12 +235,13 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         ),
         InlinePanel(
             "related_methodologies",
-            heading="Highlighted methods and quality information",
+            heading="Quality, methods and supporting information",
             help_text=(
-                f"Choose up to {MAX_ITEMS_PER_SECTION} methodologies to highlight. "
-                "The 'Methods and quality information' section will be topped up automatically."
+                f"Choose up to {MAX_ITEMS_PER_SECTION} pages to highlight. "
+                "The 'Quality, methods and supporting information' section will be topped up automatically."
             ),
             max_num=MAX_ITEMS_PER_SECTION,
+            label="topic page supporting information",
         ),
         FieldPanel("explore_more", heading="Explore more"),
     ]
@@ -246,7 +306,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         if self.time_series_document_list:
             items += [{"url": "#time-series", "text": _("Time series")}]
         if self.processed_methodologies:
-            items += [{"url": "#related-methods", "text": _("Methods and quality information")}]
+            items += [{"url": "#related-methods", "text": _("Quality, methods and supporting information")}]
         if self.explore_more:
             items += [{"url": "#explore-more", "text": _("Explore more")}]
         add_table_of_contents_gtm_attributes(items)
