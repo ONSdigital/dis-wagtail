@@ -306,7 +306,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
         if self.time_series_document_list:
             items += [{"url": "#time-series", "text": _("Time series")}]
         if self.processed_methodologies:
-            items += [{"url": "#related-methods", "text": _("Methods and quality information")}]
+            items += [{"url": "#related-methods", "text": _("Quality, methods and supporting information")}]
         if self.explore_more:
             items += [{"url": "#explore-more", "text": _("Explore more")}]
         add_table_of_contents_gtm_attributes(items)

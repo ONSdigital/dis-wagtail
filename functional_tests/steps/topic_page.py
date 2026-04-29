@@ -249,7 +249,7 @@ def highlighted_section_visible(context: Context, section_type: str) -> None:
     """Check if the highlighted articles or methodologies section is visible."""
     section_map = {
         "articles": ("#related-articles", "Related articles"),
-        "methodologies": ("#related-methods", "Methods and quality information"),
+        "methodologies": ("#related-methods", "Quality, methods and supporting information"),
     }
 
     if section_type not in section_map:

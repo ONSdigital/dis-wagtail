@@ -647,11 +647,11 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                 },
                 {
                     "url": "#related-methods",
-                    "text": "Methods and quality information",
+                    "text": "Quality, methods and supporting information",
                     "attributes": {
                         "data-ga-event": "navigation-onpage",
                         "data-ga-navigation-type": "table-of-contents",
-                        "data-ga-section-title": "Methods and quality information",
+                        "data-ga-section-title": "Quality, methods and supporting information",
                     },
                 },
                 {
@@ -976,7 +976,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Methods and quality information")
+        self.assertContains(response, "Quality, methods and supporting information")
         self.assertContains(response, methodology_page.title)
         self.assertContains(response, "View all related methodology")
         self.assertContains(response, f"/{self.topic_tag.slug}/topicspecificmethodology")
@@ -991,7 +991,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Methods and quality information")
+        self.assertContains(response, "Quality, methods and supporting information")
         self.assertContains(response, methodology_page.title)
         self.assertContains(response, "View all related methodology")
         self.assertContains(response, f"/{self.topic_tag.slug}/topicspecificmethodology")
@@ -1007,7 +1007,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Methods and quality information")
+        self.assertNotContains(response, "Quality, methods and supporting information")
         self.assertNotContains(response, "View all related methodology")
         self.assertNotContains(response, f"/{self.topic_tag.slug}/topicspecificmethodology")
 
