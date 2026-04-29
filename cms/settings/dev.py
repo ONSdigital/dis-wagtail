@@ -43,11 +43,6 @@ ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
 INSTALLED_APPS += ["wagtail.contrib.styleguide"]  # noqa: F405
 INSTALLED_APPS += ["django_migration_linter"]
 
-# Disable forcing HTTPS locally since development server supports HTTP only.
-SECURE_SSL_REDIRECT = False
-# For the same reason the HSTS header should not be sent.
-SECURE_HSTS_SECONDS = 0
-
 SHOW_TOOLBAR = True  # Override in local.py
 
 # Adds Django Debug Toolbar
@@ -100,6 +95,7 @@ else:
 # Set auth stub as a trusted origin
 CSRF_TRUSTED_ORIGINS = env.get("CSRF_TRUSTED_ORIGINS", AUTH_STUB_URL).split(",")
 
+SECURE_CSP.setdefault("default-src", []).extend(["ws://localhost:3000"])  # noqa: F405
 
 MIGRATION_LINTER_OPTIONS = {
     "exclude_apps": [

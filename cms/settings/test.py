@@ -20,17 +20,10 @@ SECRET_KEY = "fake_secret_key_to_run_tests"  # noqa: S105
 
 ALLOWED_HOSTS = ["*"]
 
-SILENCED_SYSTEM_CHECKS = [
-    # It doesn't matter that STATICFILES_DIRS don't exist in tests
-    "staticfiles.W004",
-]
+# It doesn't matter that STATICFILES_DIRS don't exist in tests
+SILENCED_SYSTEM_CHECKS.append("staticfiles.W004")  # noqa: F405
 
 TEST_RUNNER = "cms.core.tests.runner.OldConnectionsCleanupDiscoveryRunner"
-
-# Don't redirect to HTTPS in tests or send the HSTS header
-SECURE_SSL_REDIRECT = False
-SECURE_HSTS_SECONDS = 0
-
 
 # Quieten down the logging in tests
 LOGGING["handlers"]["console"]["class"] = "logging.NullHandler"  # type: ignore[index] # noqa: F405

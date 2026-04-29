@@ -5,6 +5,9 @@ from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.cache import add_never_cache_headers, patch_cache_control
+from django.utils.csp import CSP
+from django.utils.decorators import method_decorator
+from django.views.decorators.csp import csp_override
 from django.views.generic import View
 from wagtail.documents import get_document_model
 from wagtail.documents.models import document_served
@@ -28,6 +31,7 @@ class ImageServeView(View):
     http_method_names: Sequence[str] = ["get"]
     key = None
 
+    @method_decorator(csp_override({"default-src": [CSP.NONE]}))
     def get(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         request: HttpRequest,
@@ -133,9 +137,6 @@ class ImageServeView(View):
         rendition.file.open("rb")
         response = FileResponse(rendition.file, content_type=mime_type)
 
-        # Add a CSP header to prevent inline execution
-        response["Content-Security-Policy"] = "default-src 'none'"
-
         # Prevent browsers from auto-detecting the content-type
         response["X-Content-Type-Options"] = "nosniff"
 
@@ -145,6 +146,7 @@ class ImageServeView(View):
 class DocumentServeView(View):
     http_method_names: Sequence[str] = ["get"]
 
+    @method_decorator(csp_override({"default-src": [CSP.NONE]}))
     def get(self, request: HttpRequest, document_id: int, document_filename: str) -> HttpResponseBase:
         """This method immitates `wagtail.documents.views.serve.serve()`, but introduces an
         additional permission check for private documents, and returns responses with varied
@@ -235,9 +237,6 @@ class DocumentServeView(View):
         response["Content-Disposition"] = document.content_disposition
 
         response["Content-Length"] = document.file.size
-
-        # Add a CSP header to prevent inline execution
-        response["Content-Security-Policy"] = "default-src 'none'"
 
         # Prevent browsers from auto-detecting the content-type of a document
         response["X-Content-Type-Options"] = "nosniff"

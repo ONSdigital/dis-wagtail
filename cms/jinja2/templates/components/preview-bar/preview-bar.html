@@ -34,7 +34,7 @@
         </div>
     </div>
 
-    <script>
+    <script {% if csp_nonce %}nonce="{{ csp_nonce }}"{% endif %}>
         document.getElementById("preview-items").addEventListener("change", function() {
             window.location = this.value;
         });

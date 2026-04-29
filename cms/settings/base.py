@@ -11,6 +11,7 @@ from typing import cast
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.csp import CSP
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 from wagtail.utils.deprecation import RemovedInWagtail80Warning
@@ -145,6 +146,7 @@ MIDDLEWARE = [
     # SecurityMiddleware.
     # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
     "cms.core.whitenoise.CMSWhiteNoiseMiddleware",
+    "django_permissions_policy.PermissionsPolicyMiddleware",
     "cms.locale.middleware.SubdomainLocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -164,11 +166,17 @@ if not IS_EXTERNAL_ENV:
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
 
+
+if env.get("DISABLE_CSP", "false").lower().strip() != "true":
+    MIDDLEWARE.append("django.middleware.csp.ContentSecurityPolicyMiddleware")
+
+
 ROOT_URLCONF = "cms.urls"
 
 context_processors = [
     "django.template.context_processors.debug",
     "django.template.context_processors.request",
+    "django.template.context_processors.csp",
     "wagtail.contrib.settings.context_processors.settings",
     # This is a custom context processor that lets us add custom
     # global variables to all the templates.
@@ -744,34 +752,16 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = int(env.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 10_
 # Enabling this doesn't have any benefits but will make it harder to make
 # requests from javascript because the csrf cookie won't be easily accessible.
 # https://docs.djangoproject.com/en/stable/ref/settings/#csrf-cookie-httponly
-# CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_HTTPONLY = True
 
 # Custom view to handle CSRF failures.
 CSRF_FAILURE_VIEW = "cms.core.views.csrf_failure"
-
-# Force HTTPS redirect (enabled by default!)
-# https://docs.djangoproject.com/en/stable/ref/settings/#secure-ssl-redirect
-SECURE_SSL_REDIRECT = env.get("SECURE_SSL_REDIRECT", "true").lower().strip() == "true"
-
 
 # This will allow the cache to swallow the fact that the website is behind TLS
 # and inform the Django using "X-Forwarded-Proto" HTTP header.
 # https://docs.djangoproject.com/en/stable/ref/settings/#secure-proxy-ssl-header
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-
-# This is a setting activating the HSTS header. This will enforce the visitors to use
-# HTTPS for an amount of time specified in the header. Since we are expecting our apps
-# to run via TLS by default, this header is activated by default.
-# The header can be deactivated by setting this setting to 0, as it is done in the
-# dev and testing settings.
-# https://docs.djangoproject.com/en/stable/ref/settings/#secure-hsts-seconds
-DEFAULT_HSTS_SECONDS = 30 * 24 * 60 * 60  # 30 days
-SECURE_HSTS_SECONDS = int(env.get("SECURE_HSTS_SECONDS", DEFAULT_HSTS_SECONDS))
-
-# We don't enforce HSTS on subdomains as anything at subdomains is likely outside our control.
-# https://docs.djangoproject.com/en/3.2/ref/settings/#secure-hsts-include-subdomains
-SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#secure-content-type-nosniff
@@ -782,45 +772,14 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = env.get("SECURE_REFERRER_POLICY", "no-referrer-when-downgrade").strip()
 
 
-# Content Security policy settings
-# Most modern browsers don't honor the X-XSS-Protection HTTP header.
-# You can use Content-Security-Policy without allowing 'unsafe-inline' scripts instead.
-# https://django-csp.readthedocs.io/en/latest/configuration.html
-if "CSP_DEFAULT_SRC" in env:
-    MIDDLEWARE.append("csp.middleware.CSPMiddleware")
-
-    # The “special” source values of 'self', 'unsafe-inline', 'unsafe-eval', and 'none' must be quoted!
-    # e.g.: CSP_DEFAULT_SRC = "'self'" Without quotes they will not work as intended.
-    CSP_DEFAULT_SRC = env.get("CSP_DEFAULT_SRC", "").split(",")
-    CSP_DIRECTIVES = {
-        "default-src": CSP_DEFAULT_SRC,
-    }
-
-    if "CSP_SCRIPT_SRC" in env:
-        CSP_DIRECTIVES["script-src"] = env.get("CSP_SCRIPT_SRC", "").split(",")
-    if "CSP_STYLE_SRC" in env:
-        CSP_DIRECTIVES["style-src"] = env.get("CSP_STYLE_SRC", "").split(",")
-    if "CSP_IMG_SRC" in env:
-        CSP_DIRECTIVES["img-src"] = env.get("CSP_IMG_SRC", "").split(",")
-    if "CSP_CONNECT_SRC" in env:
-        CSP_DIRECTIVES["connect-src"] = env.get("CSP_CONNECT_SRC", "").split(",")
-    if "CSP_FONT_SRC" in env:
-        CSP_DIRECTIVES["font-src"] = env.get("CSP_FONT_SRC", "").split(",")
-    if "CSP_BASE_URI" in env:
-        CSP_DIRECTIVES["base-uri"] = env.get("CSP_BASE_URI", "").split(",")
-    if "CSP_OBJECT_SRC" in env:
-        CSP_DIRECTIVES["object-src"] = env.get("CSP_OBJECT_SRC", "").split(",")
-
-    if env.get("CSP_REPORT_ONLY", "false").lower() == "true":
-        CONTENT_SECURITY_POLICY_REPORT_ONLY = {"DIRECTIVES": CSP_DIRECTIVES}
-    else:
-        CONTENT_SECURITY_POLICY = {"DIRECTIVES": CSP_DIRECTIVES}
-
-
 # Django REST framework settings
 # Change default settings that enable basic auth.
 REST_FRAMEWORK = {"DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication",)}
 
+SILENCED_SYSTEM_CHECKS = [
+    "security.W004",  # Set HSTS at infrastructure level
+    "security.W008",  # Redirect to HTTPS at infrastructure level
+]
 
 AUTH_USER_MODEL = "users.User"
 
@@ -993,7 +952,10 @@ BUNDLE_DATASET_STATUS_VALIDATION_ENABLED = (
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
 
-DEFAULT_OG_IMAGE_URL = env.get("DEFAULT_OG_IMAGE_URL", "https://cdn.ons.gov.uk/assets/images/ons-logo/v2/ons-logo.png")
+ONS_CDN_URL = "https://cdn.ons.gov.uk"
+
+DEFAULT_OG_IMAGE_URL = env.get("DEFAULT_OG_IMAGE_URL", f"{ONS_CDN_URL}/assets/images/ons-logo/v2/ons-logo.png")
+WAGTAIL_GRAVATAR_PROVIDER_URL = None
 
 WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 
@@ -1146,3 +1108,50 @@ CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED",
 
 # Disable Wagtail's auto-saving feature
 WAGTAIL_AUTOSAVE_INTERVAL = 0
+
+# Content Security policy settings
+# https://docs.djangoproject.com/en/6.0/ref/csp/
+static_sources = [ONS_CDN_URL, "https://cdnjs.cloudflare.com"]
+SECURE_CSP: dict[str, list] = {
+    "default-src": [CSP.SELF],
+    "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_ALLOWED_DOMAINS],
+    # UNSAFE_INLINE is required by mathjax
+    "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE],
+    "img-src": [CSP.SELF, ONS_CDN_URL],
+    "script-src": [CSP.SELF, CSP.NONCE, *static_sources],
+    "font-src": [CSP.SELF, *static_sources],
+}
+if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
+    SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")
+
+WAGTAIL_CSP = deepcopy(SECURE_CSP)
+
+for csp_directives in WAGTAIL_CSP.values():
+    try:
+        # Wagtail's scripts don't add a nonce
+        csp_directives.remove(CSP.NONCE)
+    except ValueError:
+        pass
+
+# Wagail (and 3rd-party packages) depend on inline scripts
+WAGTAIL_CSP["script-src"].append(CSP.UNSAFE_INLINE)
+WAGTAIL_CSP["style-src"].append(CSP.UNSAFE_INLINE)
+
+# Set a sensible permissions policy to disable privacy-invading or annoying features
+PERMISSIONS_POLICY: dict = {
+    "accelerometer": [],
+    "ambient-light-sensor": [],
+    "autoplay": [],
+    "camera": [],
+    "display-capture": [],
+    "encrypted-media": [],
+    "fullscreen": [],
+    "geolocation": [],
+    "gyroscope": [],
+    "interest-cohort": [],
+    "magnetometer": [],
+    "microphone": [],
+    "midi": [],
+    "payment": [],
+    "usb": [],
+}
