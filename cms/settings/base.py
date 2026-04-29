@@ -167,7 +167,7 @@ if not IS_EXTERNAL_ENV:
     MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
 
 
-if env.get("DISABLE_CSP", "false").lower().strip() != "true":
+if env.get("CMS_CSP_ENABLED", "true").lower().strip() == "true":
     MIDDLEWARE.append("django.middleware.csp.ContentSecurityPolicyMiddleware")
 
 
