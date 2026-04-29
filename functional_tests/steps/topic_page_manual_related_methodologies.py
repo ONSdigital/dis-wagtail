@@ -1,4 +1,5 @@
 # pylint: disable=not-callable
+
 from behave import given, then, when
 from behave.runner import Context
 from playwright.sync_api import expect
@@ -8,7 +9,7 @@ from cms.topics.tests.factories import TopicPageRelatedMethodologyFactory
 
 
 @given("the topic page has at least 3 child methodologies")
-def the_topic_page_has_at_least_3_statistical_articles_in_a_series(
+def the_topic_page_has_at_least_3_child_methodologies(
     context: Context,
 ) -> None:
     """Create 3 methodology pages under the topic page."""
@@ -38,11 +39,34 @@ def user_adds_external_related_methodology(context: Context, title: str) -> None
     context.manual_methodology_index += 1
 
 
+@when('the user adds an external related methodology with content type "{content_type}" and title "{title}"')
+def user_adds_external_related_methodology_with_content_type(context: Context, content_type: str, title: str) -> None:
+    """Add an external related methodology with the given title and content_type."""
+    # Initialize counter if this is the first article being added in the scenario
+    if not hasattr(context, "manual_methodology_index"):
+        context.manual_methodology_index = 0
+
+    # Click the main "Add" button
+    context.page.locator("#id_related_methodologies-ADD").click()
+
+    # Fill the fields using the dynamic index
+    url_field = f"#id_related_methodologies-{context.manual_methodology_index}-external_url"
+    content_type_field = f"#id_related_methodologies-{context.manual_methodology_index}-content_type"
+    title_field = f"#id_related_methodologies-{context.manual_methodology_index}-title"
+
+    context.page.locator(url_field).fill(f"https://ons.gov.uk/{title.lower().replace(' ', '-')}")
+    context.page.locator(content_type_field).select_option(label=content_type)
+    context.page.locator(title_field).fill(title)
+
+    # Increment the counter
+    context.manual_methodology_index += 1
+
+
 @then('the user can see "{title}" in the related methodologies section')
 def user_can_see_title_in_related_methodologies_section(context: Context, title: str) -> None:
     """Assert that the given title is visible in the related methods section."""
-    related_articles_section = context.page.locator("section#related-methods")
-    expect(related_articles_section.get_by_role("link", name=title)).to_be_visible()
+    related_methods_section = context.page.locator("section#related-methods")
+    expect(related_methods_section.get_by_role("link", name=title)).to_be_visible()
 
 
 @then('the related methodology "{title}" is the first in the list')
@@ -55,7 +79,7 @@ def related_method_is_first_in_list(context: Context, title: str) -> None:
 
 @then("the related methods section contains {count:d} methods")
 def related_methods_section_contains_count_methods(context: Context, count: int) -> None:
-    """Assert that the related articles section contains the expected number of articles."""
+    """Assert that the related methods section contains the expected number of methods."""
     related_methods_section = context.page.locator("section#related-methods")
     methods = related_methods_section.locator("li.ons-document-list__item")
     expect(methods).to_have_count(count)
@@ -70,15 +94,15 @@ def related_methodology_is_second_in_list(context: Context, title: str) -> None:
 
 
 @then("the related methods section contains only the 3 manually added methods")
-def related_methods_section_contains_only_manually_added_articles(
+def related_methods_section_contains_only_manually_added_methods(
     context: Context,
 ) -> None:
-    """Assert that the related articles section contains only manually added articles (no auto-populated ones)."""
+    """Assert that the related methods section contains only manually added methods (no auto-populated ones)."""
     related_methods_section = context.page.locator("section#related-methods")
     methods = related_methods_section.locator("li.ons-document-list__item")
     expect(methods).to_have_count(3)
 
-    # Check that all three manually added articles are present
+    # Check that all three manually added methods are present
     expect(related_methods_section.get_by_role("link", name="Sticky Link 1")).to_be_visible()
     expect(related_methods_section.get_by_role("link", name="Sticky Link 2")).to_be_visible()
     expect(related_methods_section.get_by_role("link", name="Sticky Link 3")).to_be_visible()
@@ -104,11 +128,11 @@ def user_removes_first_manually_added_related_method(context: Context) -> None:
 
 
 @then("the related methods section contains 3 auto-populated methods")
-def related_articles_section_contains_auto_populated_methods(context: Context) -> None:
+def related_methods_section_contains_auto_populated_methods(context: Context) -> None:
     """Assert that the related methods section contains only auto-populated methods."""
     related_methods_section = context.page.locator("section#related-methods")
-    articles = related_methods_section.locator("li.ons-document-list__item")
-    expect(articles).to_have_count(3)
+    methods = related_methods_section.locator("li.ons-document-list__item")
+    expect(methods).to_have_count(3)
 
     # Check that all three auto-populated methods are present
     for method in context.methodologies:
@@ -120,6 +144,21 @@ def user_can_see_title_in_related_methods_section(context: Context, title: str) 
     """Assert that the given title is visible in the related methods section."""
     related_methods_section = context.page.locator("section#related-methods")
     expect(related_methods_section.get_by_role("link", name=title)).to_be_visible()
+
+
+@then('the user can see item "{title}" with content type "{content_type}" in the related methodologies section')
+def user_can_see_title_and_content_type_in_related_methods_section(
+    context: Context, title: str, content_type: str
+) -> None:
+    """Assert that the given title and correct content_type in the related methods section."""
+    related_methods_section = context.page.locator("section#related-methods")
+
+    related_methods_item = related_methods_section.locator("li.ons-document-list__item").filter(
+        has=context.page.get_by_role("link", name=title)
+    )
+
+    expect(related_methods_item).to_have_count(1)
+    expect(related_methods_item.first).to_contain_text(content_type)
 
 
 @when('the user adds an internal related methodology with custom title "{custom_title}"')
