@@ -10,7 +10,7 @@ echo ""
 
 for i in $(seq 1 $RUNS); do
     echo -n "Run $i/$RUNS ..."
-    LOG_FILE="$LOG_DIR/run_$(printf '%02d' $i).log"
+    LOG_FILE="$LOG_DIR/run_$(printf '%02d' "$i").log"
     if poetry run ./manage.py test --settings=cms.settings.test --parallel auto --shuffle 2>&1 | tee "$LOG_FILE"; then
         echo "OK"
         rm "$LOG_FILE"
@@ -21,7 +21,7 @@ for i in $(seq 1 $RUNS); do
 done
 
 echo ""
-echo "Result: $FAILURES/$RUN runs failed"
+echo "Result: $FAILURES/$RUNS runs failed"
 if [ $FAILURES -gt 0 ]; then
     echo "Check the logs in $LOG_DIR for details."
 fi
