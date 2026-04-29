@@ -92,6 +92,30 @@ class LocaleUtilsTestCase(TestCase):
             ],
         )
 
+    @override_settings(WAGTAILADMIN_BASE_URL="http://localhost:8000")
+    def test_get_mapped_site_root_paths_default_site_only(self):
+        """When default_site_only=True, only the default site is returned
+        with WAGTAILADMIN_BASE_URL as root_url, and translations are expanded.
+        """
+        result = get_mapped_site_root_paths(default_site_only=True)
+        self.assertEqual(
+            result,
+            [
+                SiteRootPath(
+                    site_id=self.english_site.pk,
+                    root_path=self.english_site.root_page.url_path,
+                    root_url="http://localhost:8000",
+                    language_code=self.en_locale.language_code,
+                ),
+                SiteRootPath(
+                    site_id=self.english_site.pk,
+                    root_path=self.welsh_home.url_path,
+                    root_url="http://localhost:8000",
+                    language_code=self.welsh_locale.language_code,
+                ),
+            ],
+        )
+
     @patch("cms.locale.utils.cache.get")
     @patch("cms.locale.utils.cache.set")
     def test_get_mapped_site_root_paths_caches_results(self, mock_cache_set, mock_cache_get):
