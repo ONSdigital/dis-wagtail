@@ -1111,16 +1111,23 @@ WAGTAIL_AUTOSAVE_INTERVAL = 0
 
 # Content Security policy settings
 # https://docs.djangoproject.com/en/6.0/ref/csp/
-static_sources = [ONS_CDN_URL, "https://cdnjs.cloudflare.com"]
+static_sources = [ONS_CDN_URL, "cdnjs.cloudflare.com"]
 SECURE_CSP: dict[str, list] = {
     "default-src": [CSP.SELF],
     "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_ALLOWED_DOMAINS],
     # UNSAFE_INLINE is required by mathjax
-    "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE],
-    "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com"],
-    "script-src": [CSP.SELF, CSP.NONCE, *static_sources],
-    "font-src": [CSP.SELF, *static_sources],
-    "connect-src": [CSP.SELF, "www.googletagmanager.com", "www.google.com"],
+    "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE, "*.hotjar.com"],
+    "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com", "*.hotjar.com"],
+    "script-src": [CSP.SELF, CSP.NONCE, *static_sources, "*.hotjar.com", CSP.UNSAFE_INLINE],
+    "font-src": [CSP.SELF, *static_sources, "*.hotjar.com"],
+    "connect-src": [
+        CSP.SELF,
+        "www.googletagmanager.com",
+        "www.google.com",
+        "*.hotjar.com",
+        "*.hotjar.io",
+        "wss://*.hotjar.com",
+    ],
 }
 if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
     SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")
@@ -1133,10 +1140,6 @@ for csp_directives in WAGTAIL_CSP.values():
         csp_directives.remove(CSP.NONCE)
     except ValueError:
         pass
-
-# Wagail (and 3rd-party packages) depend on inline scripts
-WAGTAIL_CSP["script-src"].append(CSP.UNSAFE_INLINE)
-WAGTAIL_CSP["style-src"].append(CSP.UNSAFE_INLINE)
 
 # Set a sensible permissions policy to disable privacy-invading or annoying features
 PERMISSIONS_POLICY: dict = {
