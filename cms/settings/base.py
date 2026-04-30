@@ -150,7 +150,6 @@ MIDDLEWARE = [
     "cms.locale.middleware.SubdomainLocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Custom middleware to redirect trailing slash URLs to non-trailing-slash equivalent
     # which needs to be placed after CommonMiddleware to avoid double redirects.
     "cms.core.middleware.NonTrailingSlashRedirectMiddleware",
@@ -1130,6 +1129,7 @@ SECURE_CSP: dict[str, list] = {
         "wss://*.hotjar.com",
     ],
     "manifest-src": [CSP.SELF, ONS_CDN_URL],
+    "frame-ancestors": [CSP.NONE if IS_EXTERNAL_ENV else CSP.SELF],
 }
 if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
     SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")

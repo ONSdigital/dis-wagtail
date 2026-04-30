@@ -3,8 +3,10 @@ from datetime import datetime
 from django.conf import settings
 from django.template import Context, Template
 from django.test import TestCase
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.csp import CSP
+
+from cms.home.models import HomePage
 
 
 class SettingsTestCase(TestCase):
@@ -115,8 +117,27 @@ class CSPTestCase(TestCase):
 
     def test_wagtail_csp(self):
         """https://github.com/wagtail/wagtail/issues?q=is%3Aissue%20state%3Aopen%20csp."""
-        response = self.client.get(reverse_lazy("wagtailadmin_login"))
+        response = self.client.get(reverse("wagtailadmin_login"))
 
         csp = self._parse_csp(response.headers["Content-Security-Policy"])
 
         self.assertIn(CSP.UNSAFE_INLINE, self.get_csp_expressions(csp, "script-src"))
+        self.assertIn(CSP.SELF, self.get_csp_expressions(csp, "frame-ancestors"))
+
+    def test_wagtail_preview_csp(self):
+        response = self.client.get(reverse("wagtailadmin_pages:preview_on_edit", args=[HomePage.objects.first().pk]))
+
+        csp = self._parse_csp(response.headers["Content-Security-Policy"])
+
+        self.assertIn(CSP.SELF, self.get_csp_expressions(csp, "frame-ancestors"))
+
+    def test_frame_ancestors(self):
+        for url in self.urls:
+            with self.subTest(url):
+                response = self.client.get(url)
+
+                csp = self._parse_csp(response.headers["Content-Security-Policy"])
+
+                self.assertIn(CSP.SELF, self.get_csp_expressions(csp, "frame-ancestors"))
+
+                self.assertNotIn("X-Frame-Origin", response.headers)
