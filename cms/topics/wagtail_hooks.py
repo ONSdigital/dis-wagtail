@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
-from django.shortcuts import redirect
 from wagtail import hooks
 from wagtail.admin import messages
 from wagtail.log_actions import LogFormatter
 
+from cms.core.utils import redirect
 from cms.themes.models import ThemePage
 
 from .models import TopicPage
@@ -56,7 +56,7 @@ def before_create_page(request: HttpRequest, page: Page) -> HttpResponse | None:
             request,
             "Topic and theme pages cannot be duplicated as selected taxonomy needs to be unique for each page.",
         )
-        return redirect("wagtailadmin_explore", page.get_parent().id)
+        return redirect("wagtailadmin_explore", page.get_parent().id, preserve_request=False)
     return None
 
 

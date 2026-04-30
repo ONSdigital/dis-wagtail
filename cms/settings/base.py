@@ -114,6 +114,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "django.contrib.auth",  # Wagtail requires the auth app be installed, even if it's not used.
     "django.contrib.contenttypes",
+    "django.contrib.postgres",
     "whitenoise.runserver_nostatic",  # Must be before `django.contrib.staticfiles`
     "django.contrib.staticfiles",
     "django_jinja",
@@ -310,6 +311,8 @@ CACHES: dict = {
 }
 
 redis_options = {
+    # IGNORE_EXCEPTIONS must be True to ensure an unavailable cache results in a
+    # miss rather than an error.
     "IGNORE_EXCEPTIONS": True,
     "SOCKET_CONNECT_TIMEOUT": 2,  # seconds
     "SOCKET_TIMEOUT": 2,  # seconds
@@ -867,8 +870,11 @@ WAGTAIL_APPEND_SLASH = False
 if "WAGTAILADMIN_BASE_URL" in env:
     WAGTAILADMIN_BASE_URL = env["WAGTAILADMIN_BASE_URL"]
 
+WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
+DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
+
 # https://docs.wagtail.org/en/latest/reference/settings.html#wagtailadmin-login-url
-WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", "/admin/login/")
+WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", f"/{WAGTAILADMIN_HOME_PATH}login/")
 
 # Custom image model
 # https://docs.wagtail.io/en/stable/advanced_topics/images/custom_image_model.html
@@ -917,6 +923,7 @@ WAGTAIL_PASSWORD_REQUIRED_TEMPLATE = "templates/pages/wagtail/password_required.
 # Default size of the pagination used on the front-end.
 DEFAULT_PER_PAGE = 20
 PREVIOUS_RELEASES_PER_PAGE = int(env.get("PREVIOUS_RELEASES_PER_PAGE", 10))
+CMS_RELEASES_INDEX_REDIRECT_ENABLED = env.get("CMS_RELEASES_INDEX_REDIRECT_ENABLED", "true").lower() == "true"
 RELATED_DATASETS_PER_PAGE = int(env.get("RELATED_DATASETS_PER_PAGE", DEFAULT_PER_PAGE))
 
 # Google Tag Manager ID from env
@@ -960,6 +967,11 @@ DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 # ONS Cookie banner settings
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "ons.gov.uk")
 ONS_COOKIES_PAGE_SLUG = "cookies"
+
+# Feature flag to suppress the untranslated-page notice on CookiesPage aliases.
+CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED = (
+    env.get("CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED", "true").lower() == "true"
+)
 
 # Search redirect path
 ONS_WEBSITE_SEARCH_PATH = env.get("ONS_WEBSITE_SEARCH_PATH", "/search")
@@ -1075,9 +1087,16 @@ ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
 REFRESH_TOKEN_COOKIE_NAME = "refresh_token"  # noqa: S105
 ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
 
-WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
-DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
 SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 5)  # 5 minutes
+
+# note: 30 seconds is a fairly arbitrary value. Long enough to allow for a slow preview generation,
+# but short enough that we don't have stale session data.
+BUNDLE_PREVIEW_COOKIE_NAME = "bundle-preview"
+BUNDLE_PREVIEW_COOKIE_MAX_AGE = 30  # seconds
+# Cap on the number of active preview grants held in the signed cookie. Prevents
+# a user from accumulating an unbounded list of simultaneous grants (and the
+# cookie growing past the ~4KB browser limit).
+CMS_BUNDLE_PREVIEW_MAX_COOKIE_ENTRIES = 20
 
 # Contact Us URL for error pages
 CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatisticalenquiries")
@@ -1127,5 +1146,9 @@ HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS = int(env.get("HTTP_REQUEST_DEFAULT_TIMEOUT
 
 DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "100"))
 
-
 WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_publish"
+
+CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
+
+# Disable Wagtail's auto-saving feature
+WAGTAIL_AUTOSAVE_INTERVAL = 0

@@ -1,10 +1,12 @@
+from unittest import skip
+
 from django.conf import settings
-from django.test import override_settings
+from django.test import RequestFactory, override_settings
 from django.utils import translation
 from wagtail.models import Site
 from wagtail.test.utils import WagtailPageTestCase
 
-from cms.core.tests.utils import TranslationResetMixin, reset_url_caches
+from cms.core.tests.utils import TranslationResetMixin
 from cms.standard_pages.models import CookiesPage
 from cms.standard_pages.utils import SUPPORTED_LANGUAGE_CODES
 
@@ -16,21 +18,75 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
         cls.welsh_cookies_page = CookiesPage.objects.get(locale__language_code="cy")
         cls.home = cls.cookies_page.get_parent().specific
         cls.welsh_home = cls.welsh_cookies_page.get_parent().specific
+        cls.english_site = Site.objects.get(is_default_site=True)
+        cls.welsh_site = Site.objects.get(root_page=cls.welsh_home)
 
     def tearDown(self):
         # Clear translation caches
         translation.deactivate()
 
+    def test_welsh_cookies_page_shows_localised_version_notice_by_default(self):
+        request = RequestFactory().get(self.welsh_cookies_page.url)
+        request.LANGUAGE_CODE = "cy"
+
+        self.assertTrue(self.welsh_cookies_page.show_localised_version_not_available_notice(request))
+
+    @override_settings(CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED=False)
+    def test_welsh_cookies_page_can_hide_localised_version_notice_with_feature_flag(self):
+        request = RequestFactory().get(self.welsh_cookies_page.url)
+        request.LANGUAGE_CODE = "cy"
+
+        self.assertFalse(self.welsh_cookies_page.show_localised_version_not_available_notice(request))
+
     def test_get_cookies_page(self):
         response = self.client.get(self.cookies_page.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Cookies on ONS.GOV.UK")
+        self.assertContains(
+            response,
+            f"<title>Cookies on {settings.ONS_COOKIE_BANNER_SERVICE_NAME} - Office for National Statistics</title>",
+            html=True,
+        )
+        self.assertContains(
+            response,
+            f'<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Cookies '
+            f"on {settings.ONS_COOKIE_BANNER_SERVICE_NAME}</h1>",
+            html=True,
+        )
         self.assertContains(response, "Cookie settings")
+        # Check the breadcrumbs include the home page link
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{self.english_site.root_url}">Home</a>',
+            html=True,
+        )
 
-    def test_get_welsh_cookies_page(self):
+    def test_welsh_cookies_page_renders_translated_furniture(self):
         response = self.client.get(self.welsh_cookies_page.url, headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Cwcis ar ONS.GOV.UK")
+
+        # Check the breadcrumbs include the home page link
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{self.welsh_site.root_url}">Cartref</a>',
+            html=True,
+        )
+
+    # TODO: Remove skip when translations for Cookies page are available
+    @skip("Welsh cookies page content translations temporarily disabled until full translations are available")
+    def test_welsh_cookies_page_renders_translated_content(self):
+        response = self.client.get(self.welsh_cookies_page.url, headers={"host": "cy.ons.localhost"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f"<title>Cwcis ar {settings.ONS_COOKIE_BANNER_SERVICE_NAME} - Swyddfa Ystadegau Gwladol</title>",
+            html=True,
+        )
+        self.assertContains(
+            response,
+            f'<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Cwcis ar'
+            f" {settings.ONS_COOKIE_BANNER_SERVICE_NAME}</h1>",
+            html=True,
+        )
         self.assertContains(response, "Gosodiadau cwcis")
 
     def test_cookies_page_exists_for_all_supported_language(self):
@@ -56,7 +112,6 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
     def test_view_cookies_link_is_localised_subdomain_routing_off(self):
         # remove all but the default site
         Site.objects.filter(is_default_site=False).delete()
-        reset_url_caches()
 
         response = self.client.get("/cy")
         self.assertContains(response, 'href="/cy/cookies"')

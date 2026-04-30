@@ -11,7 +11,6 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import F
 from django.http import HttpRequest
-from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.functional import cached_property
@@ -35,6 +34,7 @@ from cms.bundles.notifications.slack import (
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 from cms.bundles.utils import get_data_admin_action_url, publish_bundle
 from cms.core.custom_date_format import ons_date_format
+from cms.core.utils import redirect
 from cms.datasets.models import Dataset
 from cms.teams.models import Team
 
@@ -139,7 +139,7 @@ class BundleEditView(EditView):
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         if (instance := self.get_object()) and instance.status == BundleStatus.PUBLISHED:
-            return redirect(self.index_url_name)
+            return redirect(self.index_url_name, preserve_request=False)
 
         if request.method == "POST" and self.get_action(request) not in self.get_available_actions():
             # someone's trying to POST with an action that is not available, so bail out early
@@ -847,7 +847,7 @@ class BundleDeleteView(DeleteView):
             error = getattr(e, "message", str(e))
             error_message = f"The bundle could not be deleted due to errors. {error}."
             messages.error(self.request, error_message)
-            return redirect(reverse(self.index_url_name))
+            return redirect(reverse(self.index_url_name), preserve_request=False)
 
 
 class BundleIndexView(IndexView):
