@@ -1118,7 +1118,8 @@ SECURE_CSP: dict[str, list] = {
     # UNSAFE_INLINE is required by mathjax
     "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE, "*.hotjar.com"],
     "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com", "*.hotjar.com"],
-    "script-src": [CSP.SELF, CSP.NONCE, *static_sources, "*.hotjar.com", CSP.UNSAFE_INLINE],
+    # UNSAFE_INLINE is required by hotjar
+    "script-src": [CSP.SELF, *static_sources, "*.hotjar.com", CSP.UNSAFE_INLINE],
     "font-src": [CSP.SELF, *static_sources, "*.hotjar.com"],
     "connect-src": [
         CSP.SELF,
@@ -1134,13 +1135,6 @@ if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
     SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")
 
 WAGTAIL_CSP = deepcopy(SECURE_CSP)
-
-for csp_directives in WAGTAIL_CSP.values():
-    try:
-        # Wagtail's scripts don't add a nonce
-        csp_directives.remove(CSP.NONCE)
-    except ValueError:
-        pass
 
 # Set a sensible permissions policy to disable privacy-invading or annoying features
 PERMISSIONS_POLICY: dict = {

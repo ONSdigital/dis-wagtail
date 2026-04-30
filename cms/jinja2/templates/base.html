@@ -89,7 +89,6 @@
         "hrefLangs": hreflangs,
         "canonicalUrl": canonical_url,
     },
-    "cspNonce": csp_nonce|default("")
 }
 %}
 
@@ -98,7 +97,7 @@
     <link rel="stylesheet" href="{{ static ('css/main.css') }}">
 
     {% if GOOGLE_TAG_MANAGER_CONTAINER_ID and not request.is_preview %}
-        <script {% if csp_nonce %}nonce="{{ csp_nonce }}"{% endif %}>
+        <script>
             window.dataLayer = window.dataLayer || [];
             dataLayer.push({
                 "product": "wagtail",
@@ -108,12 +107,12 @@
         </script>
 
         {% if page %}
-            <script {% if csp_nonce %}nonce="{{ csp_nonce }}"{% endif %}>
+            <script>
                 dataLayer.push({{ page.get_analytics_values(request)|tojson }});
             </script>
         {% endif %}
 
-        <script {% if csp_nonce %}nonce="{{ csp_nonce }}"{% endif %}>
+        <script>
             function loadGTM(){
                 // nonce-aware version of the GTM container
                 (function(w,d,s,l,i){
