@@ -1,6 +1,7 @@
 import logging
 import platform
 from datetime import UTC, datetime
+from http import HTTPStatus
 from unittest import mock
 
 import time_machine
@@ -28,6 +29,33 @@ class CSRFTestCase(TestCase):
             self.client.post("/admin/login/", {})
 
         self.assertIn("CSRF Failure: CSRF cookie", logs.output[0])
+
+
+class WagtailAdminHomePathRedirectTestCase(SimpleTestCase):
+    def test_redirects_to_slash_suffixed_path(self):
+        """Test that the admin home path redirects to a slash-suffixed path when configured with a slash."""
+        with override_settings(
+            WAGTAILADMIN_HOME_PATH="wagtail-admin/",
+            WAGTAILADMIN_LOGIN_URL="/wagtail-admin/login/",
+        ):
+            response = self.client.get("/wagtail-admin")
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(response["Location"], "/wagtail-admin/")
+
+    def test_redirects_to_login(self):
+        """Test that the admin home path redirects to the login page when configured without a slash."""
+        with override_settings(
+            WAGTAILADMIN_HOME_PATH="wagtail-admin",
+            WAGTAILADMIN_LOGIN_URL="/wagtail-admin/login/",
+        ):
+            response = self.client.get("/wagtail-admin")
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(
+            response["Location"],
+            "/wagtail-admin/login/?next=/wagtail-admin",
+        )
 
 
 class TestGoogleTagManagerTestCase(TestCase):
