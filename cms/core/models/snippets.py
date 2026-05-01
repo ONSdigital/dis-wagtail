@@ -6,6 +6,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.functions import Lower
+from wagtail.admin.panels import FieldPanel
 from wagtail.fields import RichTextField
 from wagtail.models import DraftStateMixin, PreviewableMixin, RevisionMixin, TranslatableMixin
 from wagtail.search import index
@@ -29,8 +30,8 @@ class ContactDetails(TranslatableMixin, DraftStateMixin, RevisionMixin, index.In
     _revisions = GenericRelation("wagtailcore.Revision", related_query_name="contact_details")
 
     panels: ClassVar[list[Panel]] = [
-        "name",
-        "email",
+        FieldPanel("name", required_on_save=True),
+        FieldPanel("email", required_on_save=True),
         "phone",
     ]
 
@@ -92,8 +93,8 @@ class Definition(TranslatableMixin, PreviewableMixin, DraftStateMixin, RevisionM
     _revisions = GenericRelation("wagtailcore.Revision", related_query_name="definition")
 
     panels: ClassVar[list[Panel]] = [
-        "name",
-        "definition",
+        FieldPanel("name", required_on_save=True),
+        FieldPanel("definition", required_on_save=True),
         "owner",
     ]
 
