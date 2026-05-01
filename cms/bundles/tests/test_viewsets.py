@@ -21,7 +21,7 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.clients.api import BundleAPIClientError
-from cms.bundles.enums import BundleStatus
+from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
@@ -259,8 +259,12 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
     def test_bundle_edit_view__redirects_to_index_for_published_bundles(self):
         """Released bundles should no longer be editable."""
-        response = self.client.get(self.published_bundle_edit_url)
-        self.assertRedirects(response, self.bundle_index_url)
+        for bundle_status in PUBLISHED_BUNDLE_STATUSES:
+            with self.subTest(status=bundle_status):
+                self.published_bundle.status = bundle_status
+                self.published_bundle.save(update_fields=["status"])
+                response = self.client.get(self.published_bundle_edit_url)
+                self.assertRedirects(response, self.bundle_index_url)
 
     def post_with_action_and_test(self, action: str, expected_status: BundleStatus, redirects_to: str):
         self.client.force_login(self.superuser)
@@ -343,8 +347,8 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_bundle_edit_view__manual_publish__happy_path__when_linked_with_past_release_calendar_entry(
         self, mock_notify_end, mock_notify_start
     ):
@@ -1226,7 +1230,10 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
 
         self.assertContains(response, BundleStatus.DRAFT.label, 2)  # status + status filter
         self.assertContains(response, BundleStatus.APPROVED.label, 3)  # status + status filter + shortcut button
-        self.assertContains(response, BundleStatus.PUBLISHED.label, 1)  # status filter
+        # "\n " is to ensure we only match "Published" not "Partially Published"
+        self.assertContains(response, "\n " + BundleStatus.PUBLISHED.label, 1)  # status filter
+        self.assertContains(response, BundleStatus.PARTIALLY_PUBLISHED.label, 1)  # status filter
+        self.assertContains(response, BundleStatus.FAILED.label, 1)  # status filter
 
         self.assertContains(response, self.approved_bundle.name)
         self.assertContains(response, self.bundle.name)
@@ -1302,6 +1309,17 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
                     response.context_data["object_list"].query.order_by,
                     order_by,
                 )
+
+    def test_published_bundles_excluded_from_index(self):
+        """Checks that published bundles are excluded from the bundle index by default."""
+        for bundle_status in PUBLISHED_BUNDLE_STATUSES:
+            with self.subTest(status=bundle_status):
+                self.published_bundle.status = bundle_status
+                self.published_bundle.save(update_fields=["status"])
+
+                response = self.client.get(self.bundle_index_url)
+                self.assertNotContains(response, self.published_bundle.name)
+                self.assertNotContains(response, self.published_bundle_edit_url)
 
 
 class BundleDeleteTestCase(WagtailTestUtils, TestCase):
