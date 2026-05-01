@@ -1,5 +1,5 @@
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.test import TestCase, override_settings
 from wagtail.admin.panels import get_edit_handler
@@ -9,8 +9,31 @@ from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory
+from cms.datasets.models import Dataset
 from cms.datasets.tests.factories import DatasetFactory
 from cms.users.tests.factories import UserFactory
+
+
+def _patch_ons_dataset_api_no_drift() -> Any:
+    """Patch the ONS dataset API used by metadata validation to mirror local Dataset rows.
+
+    Returns a mock whose `objects.get(pk=namespace)` resolves to an object exposing the
+    same `title`/`description` as the local `Dataset` row, so the metadata-drift check
+    finds nothing to flag by default.
+    """
+
+    def fake_get(pk: Any = None) -> Any:
+        local = Dataset.objects.filter(namespace=pk).first()
+        item = MagicMock()
+        item.next = None
+        item.title = local.title if local else ""
+        item.description = local.description if local else ""
+        return item
+
+    patcher = patch("cms.bundles.forms.ONSDataset")
+    mock_ons = patcher.start()
+    mock_ons.objects.get.side_effect = fake_get
+    return patcher
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
@@ -90,9 +113,11 @@ class BundleDatasetValidationTestCase(TestCase):
         self.patcher = patch("cms.bundles.forms.BundleAPIClient")
         self.mock_client_class = self.patcher.start()
         self.mock_client = self.mock_client_class.return_value
+        self.ons_patcher = _patch_ons_dataset_api_no_drift()
 
     def tearDown(self):
         self.patcher.stop()
+        self.ons_patcher.stop()
 
     def raw_form_data_with_dataset(self, dataset: DatasetFactory) -> dict[str, Any]:
         """Returns raw form data with a dataset."""
@@ -375,6 +400,142 @@ class BundleDatasetValidationTestCase(TestCase):
 
         self.assertTrue(form.is_valid())
         self.mock_client.get_bundle_contents.assert_called_once_with("test-bundle-123")
+
+
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True, BUNDLE_DATASET_STATUS_VALIDATION_ENABLED=True)
+class BundleDatasetMetadataValidationTestCase(TestCase):
+    """Test cases for dataset metadata drift validation on bundle approval."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.bundle = BundleFactory(name="Test Bundle", bundle_api_bundle_id="test-bundle-123")
+        cls.form_class = get_edit_handler(Bundle).get_form_class()
+        cls.approver = UserFactory()
+
+    def setUp(self):
+        self.client_patcher = patch("cms.bundles.forms.BundleAPIClient")
+        mock_client_class = self.client_patcher.start()
+        self.mock_client = mock_client_class.return_value
+        # Bundle-API contents check is happy by default; we only exercise metadata drift here.
+        self.mock_client.get_bundle_contents.return_value = {"items": [], "etag_header": "etag"}
+
+        self.api_metadata: dict[str, dict[str, str]] = {}
+
+        def fake_get(pk: Any = None) -> Any:
+            data = self.api_metadata.get(pk, {})
+            item = MagicMock()
+            item.next = None
+            item.title = data.get("title", "")
+            item.description = data.get("description", "")
+            return item
+
+        self.ons_patcher = patch("cms.bundles.forms.ONSDataset")
+        mock_ons = self.ons_patcher.start()
+        mock_ons.objects.get.side_effect = fake_get
+
+    def tearDown(self):
+        self.client_patcher.stop()
+        self.ons_patcher.stop()
+
+    def _approve_form(self, dataset: Dataset) -> Any:
+        bundle_dataset = BundleDatasetFactory(parent=self.bundle, dataset=dataset)
+        raw_data = {
+            "name": self.bundle.name,
+            "status": BundleStatus.APPROVED,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset(
+                [{"id": bundle_dataset.id, "dataset": bundle_dataset.dataset_id, "ORDER": "1"}], initial=1
+            ),
+            "teams": inline_formset([]),
+        }
+        return self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+    def test_metadata_matches_passes(self):
+        dataset = DatasetFactory(title="Original Title", description="Original Description")
+        self.api_metadata[dataset.namespace] = {"title": dataset.title, "description": dataset.description}
+
+        form = self._approve_form(dataset)
+
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_title_drift_blocks_approval_and_updates_local_dataset(self):
+        dataset = DatasetFactory(title="Original Title", description="Original Description")
+        self.api_metadata[dataset.namespace] = {
+            "title": "Updated Title",
+            "description": dataset.description,
+        }
+
+        form = self._approve_form(dataset)
+
+        self.assertFalse(form.is_valid())
+        non_field_errors = form.non_field_errors()
+        self.assertIn(
+            "Dataset metadata has changed in the source API since the bundle was last edited or submitted. "
+            "The local records have been refreshed - please re-review the changes and reconfirm to approve:",
+            non_field_errors,
+        )
+        self.assertIn(
+            "'Original Title': title changed from 'Original Title' to 'Updated Title'",
+            non_field_errors,
+        )
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.title, "Updated Title")
+
+    def test_description_drift_blocks_approval_and_updates_local_dataset(self):
+        dataset = DatasetFactory(title="Original Title", description="Original Description")
+        self.api_metadata[dataset.namespace] = {
+            "title": dataset.title,
+            "description": "Updated Description",
+        }
+
+        form = self._approve_form(dataset)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "'Original Title': description has changed",
+            form.non_field_errors(),
+        )
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.description, "Updated Description")
+
+    def test_reapproval_after_drift_refresh_succeeds(self):
+        """After a first failed approve refreshes the local Dataset, a second approve passes."""
+        dataset = DatasetFactory(title="Original Title", description="Original Description")
+        self.api_metadata[dataset.namespace] = {
+            "title": "Updated Title",
+            "description": "Updated Description",
+        }
+
+        first = self._approve_form(dataset)
+        self.assertFalse(first.is_valid())
+
+        # Local Dataset has been refreshed in-place. Re-submitting now finds no drift.
+        second = self.form_class(
+            instance=self.bundle,
+            data=nested_form_data(
+                {
+                    "name": self.bundle.name,
+                    "status": BundleStatus.APPROVED,
+                    "bundled_pages": inline_formset([]),
+                    "bundled_datasets": inline_formset(
+                        [
+                            {
+                                "id": self.bundle.bundled_datasets.first().id,
+                                "dataset": dataset.id,
+                                "ORDER": "1",
+                            }
+                        ],
+                        initial=1,
+                    ),
+                    "teams": inline_formset([]),
+                }
+            ),
+            for_user=self.approver,
+        )
+
+        self.assertTrue(second.is_valid(), second.errors)
 
 
 class BundleDatasetValidationDisabledTestCase(TestCase):

@@ -16,6 +16,8 @@ from cms.bundles.clients.api import (
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from cms.core.forms import DeduplicateInlinePanelAdminForm
+from cms.datasets.models import Dataset, ONSDataset
+from cms.datasets.utils import get_dataset_for_published_state, update_dataset_metadata
 from cms.workflows.models import ReadyToPublishGroupTask
 
 from .bundle_api_sync_service import BundleAPISyncService
@@ -189,6 +191,67 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
             raise ValidationError(errors)
 
+    @datasets_bundle_api_enabled
+    def _validate_bundled_datasets_metadata(self) -> None:
+        """Compare bundled datasets' stored metadata against the dataset API.
+
+        On drift, update the local Dataset rows in place and block the approval
+        with a clear error so the approver must re-review the refreshed metadata
+        and reconfirm by submitting again.
+        """
+        if not settings.BUNDLE_DATASET_STATUS_VALIDATION_ENABLED:
+            return
+
+        if "bundled_datasets" not in self.formsets:
+            return
+
+        queryset = ONSDataset.objects  # pylint: disable=no-member
+        if self.datasets_bundle_api_user_access_token:
+            queryset = queryset.with_token(self.datasets_bundle_api_user_access_token)
+
+        drift_messages: list[str] = []
+        for form in self.formsets["bundled_datasets"].forms:
+            if not form.is_valid() or form.cleaned_data.get("DELETE"):
+                continue
+            dataset: Dataset | None = form.cleaned_data.get("dataset")
+            if not dataset:
+                continue
+
+            try:
+                item_from_api = queryset.get(pk=dataset.namespace)
+            except Exception:
+                logger.exception("Failed to fetch dataset %s for metadata validation on approval", dataset.namespace)
+                raise ValidationError(
+                    f"Could not verify the latest metadata for '{dataset.title}'. Please try again."
+                ) from None
+
+            api_dataset = get_dataset_for_published_state(item_from_api, published=False)
+            api_title = api_dataset.title
+            api_description = api_dataset.description
+
+            old_title = dataset.title
+            changes: list[str] = []
+            if api_title and old_title != api_title:
+                changes.append(f"title changed from '{old_title}' to '{api_title}'")
+            if api_description and dataset.description != api_description:
+                changes.append("description has changed")
+
+            if not changes:
+                continue
+
+            updated_fields = update_dataset_metadata(dataset, title=api_title, description=api_description)
+            if updated_fields:
+                dataset.save(update_fields=updated_fields)
+            drift_messages.append(f"'{old_title}': {'; '.join(changes)}")
+
+        if drift_messages:
+            errors = [
+                "Dataset metadata has changed in the source API since the bundle was last edited or submitted. "
+                "The local records have been refreshed - please re-review the changes and reconfirm to approve:",
+                *drift_messages,
+            ]
+            raise ValidationError(errors)
+
     def _validate_bundled_pages(self) -> None:
         """Validates related pages to ensure the selected page is not in another active bundle."""
         if "bundled_pages" not in self.formsets:
@@ -294,6 +357,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
             # ensure all bundled datasets are approved (the function will check if the API is enabled)
             self._validate_bundled_datasets_status()
+
+            # ensure stored dataset metadata still matches the source API
+            self._validate_bundled_datasets_metadata()
         except ValidationError as e:
             # revert the status change back to original to prevent "Approve" specific logic from applying
             self.cleaned_data["status"] = self.instance.status
