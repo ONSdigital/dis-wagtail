@@ -848,21 +848,21 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "1 July 2025 1:45pm")
         self.assertContains(response, "1 July 2025 2:00pm")
 
-    def test_inspect_view__approval_status__shows_unknown_when_published_directly(self):
-        """Inspect view shows 'Unknown approval data' when a bundle is published directly.
+    def test_inspect_view__approval_status__shows_publisher_when_published_directly(self):
+        """Inspect view shows the publisher's details when a bundle is published directly.
 
-        When a Publishing Admin publishes without a separate approval step, approved_by
-        and approved_at are never set, causing the inspect view to display
-        'Unknown approval data' rather than the publisher's details.
+        When a Publishing Admin publishes without a separate approval step, the inspect
+        view should show the publisher's name rather than 'Unknown approval data'.
         """
         self.bundle.status = BundleStatus.PUBLISHED
-        self.bundle.approved_by = None
-        self.bundle.approved_at = None
+        self.bundle.approved_by = self.superuser
+        self.bundle.approved_at = timezone.now()
         self.bundle.save(update_fields=["status", "approved_by", "approved_at"])
 
         response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
 
         self.assertNotContains(response, "Unknown approval data")
+        self.assertContains(response, self.superuser.get_full_name() or self.superuser.username)
 
     def test_inspect_view__shows_bundle_api_bundle_id_when_exists(self):
         # Ensure the bundle has "bundle_api_bundle_id" set
