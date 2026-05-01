@@ -1,4 +1,5 @@
 from typing import Any
+from unittest import mock
 from unittest.mock import patch
 
 from django.contrib.auth.models import AnonymousUser
@@ -8,6 +9,14 @@ from wagtail.models import PageLogEntry
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.home.models import HomePage
+from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.release_calendar.models import ReleaseCalendarIndex
+from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.standard_pages.models import CookiesPage
+from cms.standard_pages.tests.factories import InformationPageFactory
+from cms.themes.tests.factories import ThemePageFactory
+from cms.topics.tests.factories import TopicPageFactory
 
 
 class BasePagePreviewAuditLogTestCase(WagtailTestUtils, TestCase):
@@ -211,3 +220,34 @@ class BasePagePreviewAuditLogTestCase(WagtailTestUtils, TestCase):
         # Verify no log entry was created
         final_count = PageLogEntry.objects.filter(action="pages.preview_mode_used").count()
         self.assertEqual(initial_count, final_count)
+
+
+class AllPageTypesPreviewAuditLogTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.pages = (
+            HomePage.objects.first(),  # Guaranteed to exist
+            InformationPageFactory.create(),
+            MethodologyPageFactory.create(),
+            TopicPageFactory.create(),
+            ThemePageFactory.create(),
+            ReleaseCalendarIndex.objects.first(),  # Guaranteed to exist
+            ReleaseCalendarPageFactory.create(),
+            StatisticalArticlePageFactory.create(),
+            CookiesPage.objects.first(),  # Guaranteed to exist
+        )
+
+        cls.factory = RequestFactory()
+
+    def test_preview_audit_log_entry_created(self):
+        """Test that a PagePreviewAuditLog entry is created when a page preview is accessed."""
+        for page in self.pages:
+            with (
+                self.subTest(page_type=type(page).__name__),
+                mock.patch.object(page, "_log_preview") as mock_log_preview,
+            ):
+                request = self.factory.get("/")
+                request.user = self.superuser
+                page.serve_preview(request, "default")
+                mock_log_preview.assert_called_once_with(request, "default")
