@@ -374,6 +374,21 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
+    def test_bundle_edit_view__manual_publish__sets_approved_by_and_approved_at(self):
+        """Publishing directly should populate approved_by and approved_at.
+
+        When a Publishing Admin publishes a bundle directly (without a separate approval step),
+        the approved_by and approved_at fields are not set, causing the inspect view to show
+        'Unknown approval data' instead of the publisher's name and timestamp.
+        """
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        self.bundle.refresh_from_db()
+        self.assertIsNotNone(self.bundle.approved_at)
+        self.assertIsNotNone(self.bundle.approved_by)
+
     def test_bundle_edit_view__shows_release_calendar_page_details(self):
         """Release calendar page's title, status and release date are displayed when selected in bundles."""
         for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
@@ -832,6 +847,22 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "1 July 2025 1:37pm")
         self.assertContains(response, "1 July 2025 1:45pm")
         self.assertContains(response, "1 July 2025 2:00pm")
+
+    def test_inspect_view__approval_status__shows_publisher_when_published_directly(self):
+        """Inspect view shows the publisher's details when a bundle is published directly.
+
+        When a Publishing Admin publishes without a separate approval step, the inspect
+        view should show the publisher's name rather than 'Unknown approval data'.
+        """
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.approved_by = self.superuser
+        self.bundle.approved_at = timezone.now()
+        self.bundle.save(update_fields=["status", "approved_by", "approved_at"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertNotContains(response, "Unknown approval data")
+        self.assertContains(response, self.superuser.get_full_name() or self.superuser.username)
 
     def test_inspect_view__shows_bundle_api_bundle_id_when_exists(self):
         # Ensure the bundle has "bundle_api_bundle_id" set
