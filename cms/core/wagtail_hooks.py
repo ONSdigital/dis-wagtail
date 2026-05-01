@@ -75,8 +75,12 @@ def _page_blocks_deletion(page: Page) -> bool:
         return True
     if specific_class is ReleaseCalendarPage:
         # Release Calendar pages have no subpages, so no descendant check is needed.
-        return page.first_published_at is not None
+        if page.first_published_at is not None:
+            return True
+        return page.get_translations().filter(first_published_at__isnull=False).exists()
     if page.first_published_at is not None:
+        return True
+    if page.get_translations().filter(first_published_at__isnull=False).exists():
         return True
     has_previously_published_descendant: bool = page.get_descendants().filter(first_published_at__isnull=False).exists()
     return has_previously_published_descendant
@@ -136,7 +140,8 @@ def prevent_bulk_delete_of_previously_published_pages(
 
     message = format_html(
         "<b>Deletion Not Allowed</b><br>The following selected page(s) cannot be deleted because they (or their "
-        "descendants) have been published previously: {}. Only pages that have never been published can be deleted.",
+        "descendants or translations) have been published previously: {}. Only pages that have never been published "
+        "can be deleted.",
         preview,
     )
 

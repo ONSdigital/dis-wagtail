@@ -5,6 +5,7 @@ from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.standard_pages.models import InformationPage
@@ -46,6 +47,55 @@ class PreventDeleteOfPreviouslyPublishedPageHookTests(WagtailTestUtils, TestCase
 
         response = self.client.get(reverse("wagtailadmin_pages:delete", args=[page.pk]))
 
+        self.assertEqual(response.status_code, 200)
+
+    def test_delete_blocked_when_translation_was_previously_published(self):
+        page = InformationPageFactory(parent=self.index_page, live=False)
+        page.first_published_at = None
+        page.last_published_at = None
+        page.save(update_fields=["first_published_at", "last_published_at"])
+
+        welsh_locale = Locale.objects.get(language_code="cy")
+        self.index_page.copy_for_translation(welsh_locale, alias=True)
+        translation = page.copy_for_translation(welsh_locale)
+        translation.first_published_at = timezone.now() - timedelta(days=1)
+        translation.last_published_at = timezone.now()
+        translation.save(update_fields=["first_published_at", "last_published_at"])
+
+        response = self.client.post(reverse("wagtailadmin_pages:delete", args=[page.pk]), follow=True)
+        self._assert_hook_blocked(response, reverse("wagtailadmin_pages:edit", args=[page.pk]))
+
+    def test_delete_blocked_when_original_was_previously_published(self):
+        page = InformationPageFactory(
+            parent=self.index_page,
+            first_published_at=timezone.now() - timedelta(days=1),
+            last_published_at=timezone.now(),
+        )
+
+        welsh_locale = Locale.objects.get(language_code="cy")
+        self.index_page.copy_for_translation(welsh_locale, alias=True)
+        translation = page.copy_for_translation(welsh_locale)
+        translation.first_published_at = None
+        translation.last_published_at = None
+        translation.save(update_fields=["first_published_at", "last_published_at"])
+
+        response = self.client.post(reverse("wagtailadmin_pages:delete", args=[translation.pk]), follow=True)
+        self._assert_hook_blocked(response, reverse("wagtailadmin_pages:edit", args=[translation.pk]))
+
+    def test_delete_allowed_when_neither_page_nor_translation_published(self):
+        page = InformationPageFactory(parent=self.index_page, live=False)
+        page.first_published_at = None
+        page.last_published_at = None
+        page.save(update_fields=["first_published_at", "last_published_at"])
+
+        welsh_locale = Locale.objects.get(language_code="cy")
+        self.index_page.copy_for_translation(welsh_locale, alias=True)
+        translation = page.copy_for_translation(welsh_locale)
+        translation.first_published_at = None
+        translation.last_published_at = None
+        translation.save(update_fields=["first_published_at", "last_published_at"])
+
+        response = self.client.get(reverse("wagtailadmin_pages:delete", args=[translation.pk]))
         self.assertEqual(response.status_code, 200)
 
 
