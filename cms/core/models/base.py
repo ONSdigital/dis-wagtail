@@ -327,6 +327,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
     def _log_preview(self, request: HttpRequest, mode_name: str) -> None:
         """Log when a user previews a page in a specific preview mode."""
+        mode_name = mode_name or "default"
         if not self.pk:
             # Don't log if the page hasn't been saved yet (i.e. doesn't have a primary key)
             return
