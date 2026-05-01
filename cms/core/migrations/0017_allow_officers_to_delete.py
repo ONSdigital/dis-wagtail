@@ -39,7 +39,7 @@ def remove_publishing_officers_delete_permissions(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core", "0015_delete_existing_page_view_restrictions"),
+        ("core", "0016_backfill_alias_last_published_at"),
     ]
 
     operations = [
