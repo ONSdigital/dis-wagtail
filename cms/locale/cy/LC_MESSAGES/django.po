@@ -176,7 +176,7 @@ msgstr ", ac eithrio lle y nodir fel arall"
 
 #: cms/jinja2/templates/base_page.html:4
 msgid "Back to top"
-msgstr "Yn ôl i'r brig"
+msgstr "Nôl i’r brig"
 
 #: cms/jinja2/templates/base_page.html:63
 msgid "in English"
