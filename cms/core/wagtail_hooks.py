@@ -77,7 +77,8 @@ def _page_blocks_deletion(page: Page) -> bool:
         # Release Calendar pages have no subpages, so no descendant check is needed.
         if page.first_published_at is not None:
             return True
-        return page.get_translations().filter(first_published_at__isnull=False).exists()
+        has_published_translation: bool = page.get_translations().filter(first_published_at__isnull=False).exists()
+        return has_published_translation
     if page.first_published_at is not None:
         return True
     if page.get_translations().filter(first_published_at__isnull=False).exists():
