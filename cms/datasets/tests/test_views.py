@@ -330,7 +330,8 @@ class TestDatasetChooserForBundleURLPreservation(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, 200)
         # The abc parameter will not be preserved.
-        self.assertContains(response, f'{self.chooser_url}results/?for_bundle=true\\"')
+        self.assertContains(response, f"{self.chooser_url}results/?for_bundle=true")
+        self.assertNotContains(response, "abc=def")
 
 
 class TestDatasetChosenView(TestCase):

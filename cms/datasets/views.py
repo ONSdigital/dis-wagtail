@@ -310,7 +310,7 @@ class DatasetChooserViewSet(ChooserViewSet):
     icon = "tag"
     # Carry `for_bundle=true` through search/pagination URLs so the bundle chooser
     # keeps forcing published=false instead of falling back to the form default.
-    preserve_url_parameters: ClassVar[list[str]] = ["multiple", "for_bundle"]
+    preserve_url_parameters: ClassVar[list[str]] = [*ChooserViewSet.preserve_url_parameters, "for_bundle"]
     choose_one_text = "Choose a dataset"
     choose_another_text = "Choose another dataset"
     choose_view_class = DatasetChooseView
