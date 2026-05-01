@@ -408,6 +408,8 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     notifications.notify_slack_of_publication_start(bundle, url=bundle.full_inspect_url)
 
     failed_page_publishes: list[int] = []
+    # This tracks if no pages are published to enable logging in the event we have
+    # another regression in publishing logic
     successful_page_publishes = 0
 
     for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision"):
