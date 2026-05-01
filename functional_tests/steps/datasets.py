@@ -153,4 +153,8 @@ def check_only_published_datasets_shown(context: Context) -> None:
 
 @then("the published state filter is not displayed in the chooser")
 def check_published_state_filter_not_displayed(context: Context) -> None:
+    # Modal should be visible but the published status filter should not be visible
+    expect(context.page.locator(".modal-content")).to_be_visible()
+    expect(context.page.get_by_role("button", name="Confirm selection")).to_be_visible()
+
     expect(context.page.get_by_label("Published status")).not_to_be_visible()
