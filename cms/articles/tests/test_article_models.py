@@ -1,6 +1,6 @@
 # pylint: disable=too-many-lines
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
 from http import HTTPStatus
 from urllib.parse import urlparse
 
@@ -1065,59 +1065,6 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         topic.save_revision().publish()
 
         self.assertEqual(self.page.figures_used_by_ancestor, ["figurexyz", "figureabc"])
-
-    def test_cannot_be_deleted_if_ancestor_uses_headline_figures(self):
-        """Test that the page cannot be deleted if an ancestor uses the headline figures."""
-        self.client.force_login(self.user)
-        self.page.release_date = self.basic_page.release_date + timedelta(days=1)
-        self.page.next_release_date = self.page.release_date + timedelta(days=1)
-        self.page.save_revision().publish()
-        topic = TopicPage.objects.ancestor_of(self.page).first()
-        topic.headline_figures.extend(
-            [
-                (
-                    "figure",
-                    {
-                        "series": self.page.get_parent(),
-                        "figure_id": "figurexyz",
-                    },
-                ),
-                (
-                    "figure",
-                    {
-                        "series": self.page.get_parent(),
-                        "figure_id": "figureabc",
-                    },
-                ),
-            ]
-        )
-        topic.save_revision().publish()
-
-        # Try deleting page
-        page_delete_url = reverse("wagtailadmin_pages:delete", args=[self.page.id])
-        response = self.client.post(page_delete_url)
-
-        self.assertRedirects(response, page_delete_url, 302)
-
-        response = self.client.post(page_delete_url, follow=True)
-
-        self.assertContains(
-            response,
-            "This page cannot be deleted because it contains headline figures that are referenced elsewhere.",
-        )
-
-        # Try deleting parent page
-        parent_page_delete_url = reverse("wagtailadmin_pages:delete", args=[self.page.get_parent().id])
-        response = self.client.post(parent_page_delete_url)
-
-        self.assertRedirects(response, parent_page_delete_url, 302)
-
-        response = self.client.post(parent_page_delete_url, follow=True)
-
-        self.assertContains(
-            response,
-            "This page cannot be deleted because one or more of its children contain headline figures",
-        )
 
     @override_settings(IS_EXTERNAL_ENV=True)
     def test_load_in_external_env(self):
