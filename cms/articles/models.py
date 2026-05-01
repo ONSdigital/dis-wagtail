@@ -658,6 +658,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         ]
 
     def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        self._log_preview(request, mode_name)
         match mode_name:
             case "related_data":
                 return cast("TemplateResponse", self.related_data(request))
@@ -666,7 +667,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
                 topic_page_class = resolve_model_string("topics.TopicPage")
                 topic_page = topic_page_class.objects.ancestor_of(self).first()
                 return cast("TemplateResponse", topic_page.serve(request, featured_item=self))
-        return cast("TemplateResponse", super().serve_preview(request, mode_name))
+        return super().serve_preview(request, mode_name)
 
     @path("versions/<int:version>/")
     def previous_version(self, request: HttpRequest, version: int, **kwargs: Any) -> TemplateResponse | HttpResponse:
