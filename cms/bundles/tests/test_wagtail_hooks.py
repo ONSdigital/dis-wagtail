@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
-from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.articles.tests.factories import ArticlesIndexPageFactory, StatisticalArticlePageFactory
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import (
@@ -140,8 +140,8 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
                     self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
         cases_with_access = [
-            (self.publishing_officer, {"edit page": 2, "listing": 1}),  # Has all permissions, num buttons
-            (self.superuser, {"edit page": 2, "listing": 1}),  # Has all permissions, num buttons
+            (self.publishing_officer, {"edit page": 2, "listing": 2}),  # Has all permissions, num buttons
+            (self.superuser, {"edit page": 2, "listing": 2}),  # Has all permissions, num buttons
         ]
         for user, expected_count in cases_with_access:
             for url, context in contexts:
@@ -156,16 +156,16 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
 
     def test_add_to_bundle_buttons__doesnt_show_for_pages_in_bundle(self):
         """Checks that the button doesn't appear for pages already in a bundle."""
-        article_series_page = ArticleSeriesPageFactory()
+        articles_index_page = ArticlesIndexPageFactory()
         contexts = [
             (
-                reverse("wagtailadmin_pages:edit", args=[article_series_page.id]),
-                reverse("bundles:add_to_bundle", args=[article_series_page.id]),
+                reverse("wagtailadmin_pages:edit", args=[articles_index_page.id]),
+                reverse("bundles:add_to_bundle", args=[articles_index_page.id]),
                 "header",
             ),
             (
-                reverse("wagtailadmin_explore", args=[article_series_page.get_parent().id]),
-                reverse("bundles:add_to_bundle", args=[article_series_page.id]),
+                reverse("wagtailadmin_explore", args=[articles_index_page.get_parent().id]),
+                reverse("bundles:add_to_bundle", args=[articles_index_page.id]),
                 "listing",
             ),
         ]
