@@ -75,11 +75,11 @@ class Command(MakeMessagesCommand):
                 self.stderr.write("new file\n")
                 continue
             if items[0]:
-                self.stderr.write("The following translation items have added:\n\n")
+                self.stderr.write("The following translation items have been added:\n\n")
                 for item in items[0]:
                     self.stderr.write(f"{item.get_print_message(added=True)}\n\n")
             if items[1]:
-                self.stderr.write("The following translation items have removed:\n\n")
+                self.stderr.write("The following translation items have been removed:\n\n")
                 for item in items[1]:
                     self.stderr.write(f"{item.get_print_message()}\n\n")
         self.stderr.write("\nRun `makemessages` to update them.\n")
