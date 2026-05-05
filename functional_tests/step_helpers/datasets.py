@@ -97,11 +97,10 @@ def register_dataset_detail_route(
     the source API returning updated metadata mid-scenario).
     """
     url = f"{settings.DATASETS_API_BASE_URL}/{dataset['dataset_id']}"
-    register = mock_responses.replace if replace else mock_responses.get
     if replace:
-        register(responses.GET, url, json=dict(dataset))
+        mock_responses.replace(responses.GET, url, json=dict(dataset))
     else:
-        register(url, json=dict(dataset))
+        mock_responses.get(url, json=dict(dataset))
 
 
 @contextmanager
