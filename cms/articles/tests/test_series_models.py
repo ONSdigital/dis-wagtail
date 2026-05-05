@@ -8,6 +8,7 @@ from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.bundles.mixins import BundledPageMixin
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.utils import TranslationResetMixin
 from cms.datasets.blocks import DatasetStoryBlock
@@ -24,6 +25,10 @@ class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
 
     def test_permission_tester_inherits_from_basepagepermissiontester(self):
         self.assertIsInstance(self.series.permissions_for_user(UserFactory()), BasePagePermissionTester)
+
+    def test_is_bundleable(self):
+        """Article Series pages should be bundleable so they can be published with related content."""
+        self.assertIsInstance(self.series, BundledPageMixin)
 
     def test_index_redirect_404_with_no_subpages(self):
         """Test index path redirects to latest."""
