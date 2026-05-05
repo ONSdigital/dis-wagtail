@@ -30,12 +30,16 @@ class TranslationItem(NamedTuple):
     msgctxt: str = ""
     msgid_plural: str = ""
 
-    def __str__(self) -> str:
+    def get_print_message(self, added=False):
+        symbol = "+" if added else "-"
         return (
-            (f"- msgctxt: {self.msgctxt}\n" if self.msgctxt != "" else "")
-            + f"{'-' if self.msgctxt == '' else ' '} msgid: {self.msgid}"
+            (f"{symbol} msgctxt: {self.msgctxt}\n" if self.msgctxt != "" else "")
+            + f"{symbol if self.msgctxt == '' else ' '} msgid: {self.msgid}"
             + (f"\n  msgid_plural: {self.msgid_plural}" if self.msgid_plural != "" else "")
         )
+
+    def __str__(self) -> str:
+        return self.get_print_message()
 
 
 class Command(MakeMessagesCommand):
@@ -51,7 +55,7 @@ class Command(MakeMessagesCommand):
     @override
     def handle(self, *args: Any, **options: Any) -> None:
         self._check_mode = options.get("check", False)  # pylint: disable=W0201
-        self._modified_po_files: dict[str, set[TranslationItem]] = {}  # pylint: disable=W0201
+        self._modified_po_files: dict[str, tuple[list[TranslationItem], list[TranslationItem]]] = {}  # pylint: disable=W0201
         self.verbosity = options["verbosity"]  # pylint: disable=W0201
 
         super().handle(*args, **options)
@@ -67,14 +71,26 @@ class Command(MakeMessagesCommand):
         self.stderr.write("The following .po files are not up to date:\n")
         for path, items in self._modified_po_files.items():
             self.stderr.write(f"{path}\n\n")
-            if items:
-                self.stderr.write("The following translation items have changed:\n\n")
-                for item in items:
-                    self.stderr.write(f"{item}\n\n")
-            else:
+            if not (items[0] or items[1]):
                 self.stderr.write("new file\n")
+                continue
+            if items[0]:
+                self.stderr.write("The following translation items have added:\n\n")
+                for item in items[0]:
+                    self.stderr.write(f"{item.get_print_message(added=True)}\n\n")
+            if items[1]:
+                self.stderr.write("The following translation items have removed:\n\n")
+                for item in items[1]:
+                    self.stderr.write(f"{item.get_print_message()}\n\n")
         self.stderr.write("\nRun `makemessages` to update them.\n")
         raise SystemExit(1)
+
+    def _call_msgmerge(self, pofile: str, potfile: str) -> tuple[str, str, int]:
+        # Get all options to msgmerge except --update (and --backup) so no files on disk
+        # are touched and we get the updated contents as the first return value
+        check_options = [opt for opt in self.msgmerge_options if opt not in ("--update", "--backup=none")]
+        args = ["msgmerge", *check_options, pofile, potfile]
+        return popen_wrapper(args)
 
     @override
     def write_po_file(self, potfile: str, locale: str) -> None:
@@ -87,14 +103,10 @@ class Command(MakeMessagesCommand):
 
         # if the path doesn't already exist this must be a modification
         if not os.path.exists(pofile):
-            self._modified_po_files[pofile] = set()
+            self._modified_po_files[pofile] = ([], [])
             return
 
-        # Get all options to msgmerge except --update (and --backup) so no files on disk
-        # are touched and we get the updated contents as the first return value
-        check_options = [opt for opt in self.msgmerge_options if opt not in ("--update", "--backup=none")]
-        args = ["msgmerge", *check_options, pofile, potfile]
-        msgs, errors, status = popen_wrapper(args)
+        msgs, errors, status = self._call_msgmerge(pofile, potfile)
         if errors:
             if status != STATUS_OK:
                 raise CommandError(f"errors occurred while running msgmerge\n{errors}")
@@ -111,7 +123,15 @@ class Command(MakeMessagesCommand):
         new_msgids = self._extract_translations(msgs)
 
         if previous_msgids != new_msgids:
-            self._modified_po_files[pofile] = set(previous_msgids ^ new_msgids)
+            added = []
+            removed = []
+            for item in previous_msgids ^ new_msgids:
+                if item not in previous_msgids:
+                    added.append(item)
+                elif item not in new_msgids:
+                    removed.append(item)
+
+            self._modified_po_files[pofile] = (added, removed)
 
     @staticmethod
     def _extract_translations(content: str) -> set[TranslationItem]:

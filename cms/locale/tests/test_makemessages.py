@@ -17,6 +17,7 @@ from .po_fixtures import (
     SAMPLE_PO_CONTENT_MULTILINE,
     SAMPLE_PO_CONTENT_NEW_DATE,
     SAMPLE_PO_CONTENT_NEW_ENTRY,
+    SAMPLE_PO_CONTENT_REMOVED_ENTRY,
     SAMPLE_PO_CONTENT_WITH_MSGCTXT,
     SAMPLE_PO_CONTENT_WITH_MULTILINE,
 )
@@ -98,7 +99,7 @@ class WritePOFileCheckModeTests(SimpleTestCase):
         self.assertEqual(self.command._modified_po_files, {})  # pylint: disable=W0212
 
     @patch("cms.locale.management.commands.makemessages.popen_wrapper")
-    def test_changed_content_flagged(self, mock_popen):
+    def test_added_content_flagged(self, mock_popen):
         self._create_po_file(SAMPLE_PO_CONTENT)
 
         # stdout from msgmerge is different
@@ -106,8 +107,20 @@ class WritePOFileCheckModeTests(SimpleTestCase):
 
         self.command.write_po_file(self.potfile, "cy")
 
-        # new file should be in modififed dict
-        self.assertIn(("Good Morning", "", ""), self.command._modified_po_files[self.pofile])  # pylint: disable=W0212
+        # new file should be in added list
+        self.assertIn((TranslationItem("Good Morning", "", "")), self.command._modified_po_files[self.pofile][0])  # pylint: disable=W0212
+
+    @patch("cms.locale.management.commands.makemessages.popen_wrapper")
+    def test_removed_content_flagged(self, mock_popen):
+        self._create_po_file(SAMPLE_PO_CONTENT)
+
+        # stdout from msgmerge is different
+        mock_popen.return_value = (SAMPLE_PO_CONTENT_REMOVED_ENTRY, "", 0)
+
+        self.command.write_po_file(self.potfile, "cy")
+
+        # new file should be in removed list
+        self.assertIn((TranslationItem("Goodbye", "", "")), self.command._modified_po_files[self.pofile][1])  # pylint: disable=W0212
 
     @patch("cms.locale.management.commands.makemessages.popen_wrapper")
     def test_adding_msgctxt_is_considered_modified(self, mock_popen):
@@ -250,7 +263,7 @@ class HandleCheckModeTests(SimpleTestCase):
         command = self._make_command()
 
         def simulate_changes(*args, **_):
-            command._modified_po_files["/some/locale/cy/LC_MESSAGES/django.po"] = set()  # pylint: disable=W0212
+            command._modified_po_files["/some/locale/cy/LC_MESSAGES/django.po"] = ([], [])  # pylint: disable=W0212
 
         mock_parent_handle.side_effect = simulate_changes
 
@@ -265,7 +278,7 @@ class HandleCheckModeTests(SimpleTestCase):
         changed_path = "/some/locale/cy/LC_MESSAGES/django.po"
 
         def simulate_changes(*args, **_):
-            command._modified_po_files["/some/locale/cy/LC_MESSAGES/django.po"] = set()  # pylint: disable=W0212
+            command._modified_po_files["/some/locale/cy/LC_MESSAGES/django.po"] = ([], [])  # pylint: disable=W0212
 
         mock_parent_handle.side_effect = simulate_changes
 
