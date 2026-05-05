@@ -75,7 +75,7 @@ class Command(MakeMessagesCommand):
                 self.stderr.write("new file\n")
                 continue
             if items[0]:
-                self.stderr.write("The following translation items have been added:\n\n")
+                self.stderr.write("The following translation items have been updated or added:\n\n")
                 for item in items[0]:
                     self.stderr.write(f"{item.get_print_message(added=True)}\n\n")
             if items[1]:
