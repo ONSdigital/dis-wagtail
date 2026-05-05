@@ -966,6 +966,36 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         download_url = result["options"]["download"]["itemsList"][0]["url"]
         self.assertEqual(download_url, "/economy/articles/test-article/download-table/test-block-id")
 
+    def test_footnotes_heading_level_with_title(self):
+        """Test that footnotes_heading_level is 4 when table title is present."""
+        context = self.block.get_context(self.full_data)
+        self.assertEqual(context["footnotes_heading_level"], 4)
+
+        # Verify that the rendered output contains 'Footnotes' in an h4 tag
+        rendered = self.block.render(self.full_data)
+        soup = BeautifulSoup(rendered, "html.parser")
+        h4_tags = soup.find_all("h4")
+        footnotes_in_h4 = any("Footnotes" in tag.get_text() for tag in h4_tags)
+        self.assertTrue(footnotes_in_h4, "Expected 'Footnotes' to be rendered in an h4 tag")
+
+    def test_footnotes_heading_level_without_title(self):
+        """Test that footnotes_heading_level is 3 when table title is not present."""
+        data_without_title = {
+            "caption": "The caption",
+            "source": "https://ons.gov.uk",
+            "footnotes": "footnotes",
+            "data": self.simple_table_data,
+        }
+        context = self.block.get_context(data_without_title)
+        self.assertEqual(context["footnotes_heading_level"], 3)
+
+        # Verify that the rendered output contains 'Footnotes' in an h3 tag
+        rendered = self.block.render(data_without_title)
+        soup = BeautifulSoup(rendered, "html.parser")
+        h3_tags = soup.find_all("h3")
+        footnotes_in_h3 = any("Footnotes" in tag.get_text() for tag in h3_tags)
+        self.assertTrue(footnotes_in_h3, "Expected 'Footnotes' to be rendered in an h3 tag")
+
     def test_ons_table_block_download_config_missing_without_page(self):
         """Test that download is empty when page is missing from context."""
         context = {

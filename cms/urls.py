@@ -52,6 +52,7 @@ if not settings.IS_EXTERNAL_ENV:
     ]
     if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
         # Filter wagtail admin patterns to exclude /login and /password_reset
+        # These use a 301 as django RedirectView doesn't currently provide a preserve request option
         wagtail_admin_patterns += [
             path(
                 "login/",
@@ -67,6 +68,7 @@ if not settings.IS_EXTERNAL_ENV:
 
     if not settings.ALLOW_TEAM_MANAGEMENT and settings.AWS_COGNITO_TEAM_SYNC_ENABLED:
         # Redirect all preview teams pages to Florence groups when team sync is enabled
+        # These use a 301 as django RedirectView doesn't currently provide a preserve request option
         wagtail_admin_patterns += [
             re_path(
                 r"^teams/",
@@ -75,6 +77,13 @@ if not settings.IS_EXTERNAL_ENV:
         ]
 
     wagtail_admin_patterns += wagtailadmin_urls.urlpatterns
+    if settings.WAGTAILADMIN_HOME_PATH.endswith("/"):
+        private_urlpatterns.append(
+            path(
+                settings.WAGTAILADMIN_HOME_PATH.rstrip("/"),
+                RedirectView.as_view(pattern_name="wagtailadmin_home", permanent=False),
+            )
+        )
     private_urlpatterns.append(path(settings.WAGTAILADMIN_HOME_PATH, include(wagtail_admin_patterns)))
 
 if apps.is_installed("django.contrib.admin") and settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:

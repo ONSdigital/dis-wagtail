@@ -7,9 +7,9 @@ name: MegaLinter
 # Pull Requests to main
 on: # yamllint disable-line rule:truthy
   push:
-    branches: [main]
+    branches: [main, 'release/v*']
   pull_request:
-    branches: [main]
+    branches: [main, 'release/v*']
 
 # Comment env block if you do not want to apply fixes
 env:

@@ -203,6 +203,10 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return request.build_absolute_uri(request.get_full_path())
         return cast(str, canonical_page.get_full_url(request=request))
 
+    def show_localised_version_not_available_notice(self, request: HttpRequest) -> bool:
+        """Return whether to show a notice that this page is not available in the active language."""
+        return bool(self.alias_of and self.alias_of.locale.language_code != request.LANGUAGE_CODE)
+
     def get_url_parts(self, request: HttpRequest | None = None) -> tuple[int, str | None, str | None] | None:
         """Override get_url_parts to generate URLs without trailing slashes."""
         parts = super().get_url_parts(request)
@@ -286,6 +290,13 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         parent_theme = page_topic.get_base_parent()
         return cast(str, parent_theme.title)
+
+    def get_referenced_asset_ids(self, asset_model: type[models.Model]) -> set[str]:
+        stream_value = getattr(self, self.content_field_name)
+        # note: extract_references() is also used to populate the ReferenceIndex
+        references = stream_value.stream_block.extract_references(stream_value)
+
+        return {object_id for model, object_id, _, _ in references if model == asset_model}
 
     def _get_site_root_paths(self, request: HttpRequest | models.Model | None = None) -> list[SiteRootPath]:
         """Extends the core Page._get_site_root_paths to account for alternative domains.
