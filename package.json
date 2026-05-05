@@ -54,7 +54,7 @@
     "jest-environment-jsdom": "^30.3.0",
     "lighthouse": "^12.8.2",
     "mini-css-extract-plugin": "^2.7.6",
-    "postcss": "^8.4.31",
+    "postcss": "^8.5.14",
     "postcss-custom-properties": "^13.3.2",
     "postcss-loader": "^7.3.3",
     "prettier": "^3.3.3",
