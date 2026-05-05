@@ -1,5 +1,5 @@
 # pylint: disable=too-many-lines
-from datetime import datetime
+from datetime import date, datetime
 from http import HTTPStatus
 
 from django.core.exceptions import ValidationError
@@ -221,7 +221,12 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         """Test that external link appears first, followed by auto-populated articles."""
         # Create additional article for auto-population
         TopicPageRelatedMethodologyFactory(
-            parent=self.topic_page, page=None, external_url="https://ons.gov.uk", title="External Methodology"
+            parent=self.topic_page,
+            page=None,
+            external_url="https://ons.gov.uk",
+            title="External Methodology",
+            description="desc",
+            release_date=date.today(),
         )
 
         processed = self.topic_page.processed_methodologies
@@ -231,6 +236,8 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         self.assertIsInstance(processed[0], dict)
         self.assertEqual(processed[0]["url"], "https://ons.gov.uk")
         self.assertEqual(processed[0]["title"], "External Methodology")
+        self.assertEqual(processed[0]["description"], "desc")
+        self.assertEqual(processed[0]["release_date"], date.today())
         self.assertTrue(processed[0]["is_external"])
 
         # Remaining should be auto-populated articles

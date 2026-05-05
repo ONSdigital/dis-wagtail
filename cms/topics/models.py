@@ -117,13 +117,6 @@ class TopicPageRelatedMethodology(Orderable):
         help_text="Enter a relative URL (e.g. /some/path) or a full URL starting with 'https://' "
         f"that matches one of the allowed domains or their subdomains: {', '.join(settings.ONS_ALLOWED_LINK_DOMAINS)}",
     )
-    content_type: models.CharField = models.CharField(
-        max_length=20,
-        blank=True,
-        null=True,
-        choices=RelatedMethodologyType.choices,
-        help_text="Required for external links. Auto-set to 'Methodology' for Wagtail pages.",
-    )
     title: models.CharField = models.CharField(
         max_length=255,
         blank=True,
@@ -132,6 +125,15 @@ class TopicPageRelatedMethodology(Orderable):
             "When choosing a page, you can leave it blank to use the page’s own title."
         ),
     )
+    description: models.CharField = models.CharField(blank=True)
+    content_type: models.CharField = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        choices=RelatedMethodologyType.choices,
+        help_text="Required for external links. Auto-set to 'Methodology' for Wagtail pages.",
+    )
+    release_date: models.DateField = models.DateField(blank=True, null=True)
 
     panels: ClassVar[list[Panel]] = [
         MultiFieldPanel(
@@ -148,8 +150,10 @@ class TopicPageRelatedMethodology(Orderable):
         MultiFieldPanel(
             [
                 FieldPanel("external_url"),
-                FieldPanel("content_type"),
                 FieldPanel("title"),
+                FieldPanel("description"),
+                FieldPanel("content_type"),
+                FieldPanel("release_date"),
             ],
             heading="External Link",
         ),

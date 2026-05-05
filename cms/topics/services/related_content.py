@@ -1,3 +1,4 @@
+import datetime
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Protocol, cast
@@ -27,6 +28,8 @@ class BaseRelatedItem(Protocol):
     page: object | None
     external_url: str
     title: str
+    description: str
+    release_date: datetime.date | None
 
 
 class MethodologyRelatedItem(BaseRelatedItem, Protocol):
@@ -102,6 +105,7 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict, BaseRelatedItem]):
                     "title": related.title,
                     "description": "",
                     "content_type": RelatedContentType.ARTICLE,
+                    "release_date": None,
                     "is_external": True,
                 }
                 return external_article
@@ -188,8 +192,9 @@ class RelatedMethodologyProcessor(BaseProcessor[MethodologyDict, MethodologyRela
                 external_methodology: ExternalArticleDict = {
                     "url": related.external_url,
                     "title": related.title,
-                    "description": "",
+                    "description": related.description if related.description else "",
                     "content_type": cast(RelatedContentType, related.content_type),
+                    "release_date": related.release_date,
                     "is_external": True,
                 }
                 return external_methodology

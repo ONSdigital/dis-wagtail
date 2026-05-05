@@ -1,3 +1,4 @@
+import datetime
 from typing import TypedDict, TypeVar
 
 from cms.articles.models import StatisticalArticlePage
@@ -17,6 +18,7 @@ class ExternalArticleDict(TypedDict):
     title: str
     description: str
     content_type: RelatedContentType
+    release_date: datetime.date | None
     is_external: bool
 
 

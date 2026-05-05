@@ -27,14 +27,17 @@ PageDataCollection = Iterable[Union["ArticleDict", "MethodologyDict"]]
 
 
 def format_as_document_list_item(
-    title: str, url: str, content_type: StrOrPromise, description: str
+    title: str, url: str, content_type: StrOrPromise, description: str, release_date: date | None = None
 ) -> DocumentListItem:
     """Formats an object as a list element to be used in the ONS DocumentList design system component."""
-    return {
+    document_list_item: DocumentListItem = {
         "title": {"text": title, "url": url},
         "metadata": {"object": {"text": content_type}},
         "description": f"<p>{description}</p>",
     }
+    if release_date is not None:
+        document_list_item["metadata"]["date"] = get_document_metadata_date(release_date)
+    return document_list_item
 
 
 def _format_external_link(page_dict: ExternalArticleDict) -> DocumentListItem:
@@ -44,6 +47,7 @@ def _format_external_link(page_dict: ExternalArticleDict) -> DocumentListItem:
         url=page_dict["url"],
         content_type=page_dict["content_type"],
         description=page_dict.get("description", ""),
+        release_date=page_dict["release_date"],
     )
 
 
