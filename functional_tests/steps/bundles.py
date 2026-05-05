@@ -8,13 +8,20 @@ from django.urls import reverse
 from django.utils import timezone
 from playwright.sync_api import expect
 
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundlePage, BundleTeam
-from cms.bundles.tests.factories import BundleFactory
+from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.core.custom_date_format import ons_date_format
+from cms.datasets.models import Dataset
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import UserFactory
+from cms.workflows.tests.utils import mark_page_as_ready_to_publish
+from functional_tests.step_helpers.datasets import (
+    TEST_UNPUBLISHED_DATASETS,
+    register_dataset_detail_route,
+)
 from functional_tests.step_helpers.utils import get_page_from_context
 from functional_tests.steps.release_page import click_add_child_page, navigate_to_release_calendar_page
 
@@ -359,3 +366,73 @@ def the_page_is_in_the_given_bundle_with_status(
     bundle.status = status
     bundle.bundled_pages.add(BundlePage(page=the_page))
     bundle.save()
+
+
+@given("a bundle has been created with a dataset and a page ready to publish")
+def bundle_with_dataset_and_page_ready(context: Context) -> None:
+    test_dataset = TEST_UNPUBLISHED_DATASETS[0]
+
+    context.dataset = Dataset.objects.create(
+        namespace=test_dataset["dataset_id"],
+        edition=test_dataset["edition"],
+        version=int(test_dataset["latest_version"]["id"]),
+        title=test_dataset["title"],
+        description=test_dataset["description"],
+    )
+
+    context.statistical_article_page = StatisticalArticlePageFactory(
+        title="Drift article", parent__title="Drift parent topic", live=False
+    )
+
+    context.bundle = BundleFactory(name="Drift bundle", bundle_api_bundle_id="test-bundle-123")
+    BundlePageFactory(parent=context.bundle, page=context.statistical_article_page)
+    BundleDatasetFactory(parent=context.bundle, dataset=context.dataset)
+    mark_page_as_ready_to_publish(context.statistical_article_page)
+
+    register_dataset_detail_route(context.bundle_api_mock, test_dataset)
+
+
+@given("the bundle is ready for approval")
+def bundle_ready_for_approval(context: Context) -> None:
+    context.bundle.status = BundleStatus.IN_REVIEW
+    context.bundle.save(update_fields=["status"])
+
+
+@given("the dataset's title has changed in the source API")
+def dataset_title_changed_in_api(context: Context) -> None:
+    test_dataset = TEST_UNPUBLISHED_DATASETS[0]
+    context.api_updated_title = "Looked Up Dataset (Updated in API)"
+
+    register_dataset_detail_route(
+        context.bundle_api_mock,
+        {**test_dataset, "title": context.api_updated_title},
+        replace=True,
+    )
+
+
+@step('the user clicks the "Approve" action')
+def user_clicks_approve_action(context: Context) -> None:
+    context.page.get_by_text("More actions").click()
+    context.page.get_by_role("button", name="Approve", exact=True).click()
+
+
+@then("the user sees a validation error explaining the dataset metadata has changed")
+def validation_error_for_dataset_metadata(context: Context) -> None:
+    expect(
+        context.page.get_by_text(
+            "Dataset metadata has changed in the source API since the bundle was last edited or submitted."
+        )
+    ).to_be_visible()
+
+
+@then("the local dataset record reflects the new title")
+def local_dataset_reflects_new_title(context: Context) -> None:
+    expect(
+        context.page.get_by_text("Looked Up Dataset (Updated in API) (Edition: Example Dataset 1, Ver: 1)")
+    ).to_be_visible()
+
+
+@then("the bundle is approved successfully")
+def bundle_status_is_ready_to_publish(context: Context) -> None:
+    expect(context.page.get_by_text("Bundle 'Drift bundle' updated.")).to_be_visible()
+    expect(context.page.get_by_text("Ready to publish")).to_be_visible()
