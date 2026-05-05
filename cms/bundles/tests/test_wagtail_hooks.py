@@ -154,8 +154,10 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
                     self.assertContains(response, "boxes-stacked")  # icon name
                     self.assertContains(response, self.add_to_bundle_url)
 
-    def test_add_to_bundle_buttons__doesnt_show_for_pages_in_bundle(self):
-        """Checks that the button doesn't appear for pages already in a bundle."""
+    def test_add_to_bundle_buttons__doesnt_show_for_article_index_pages(self):
+        """Checks that the button doesn't appear for articles index pages
+        which are not bundleable.
+        """
         articles_index_page = ArticlesIndexPageFactory()
         contexts = [
             (
