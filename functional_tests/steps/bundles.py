@@ -435,4 +435,4 @@ def local_dataset_reflects_new_title(context: Context) -> None:
 @then("the bundle is approved successfully")
 def bundle_status_is_ready_to_publish(context: Context) -> None:
     expect(context.page.get_by_text("Bundle 'Drift bundle' updated.")).to_be_visible()
-    expect(context.page.get_by_text("Ready to publish")).to_be_visible()
+    expect(context.page.get_by_role("cell", name="Ready to publish")).to_be_visible()
