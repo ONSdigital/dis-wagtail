@@ -30,7 +30,7 @@ class TranslationItem(NamedTuple):
     msgctxt: str = ""
     msgid_plural: str = ""
 
-    def get_print_message(self, added=False):
+    def get_print_message(self, added: bool = False) -> str:
         symbol = "+" if added else "-"
         return (
             (f"{symbol} msgctxt: {self.msgctxt}\n" if self.msgctxt != "" else "")
