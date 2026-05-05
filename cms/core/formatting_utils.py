@@ -90,7 +90,7 @@ def get_formatted_pages_list(
 
             # mypy: custom_title will always be str or None for internal articles,
             # but mypy can't guarantee this due to TypedDict union, so type: ignore is required.
-            datum = _format_page_object(internal_page, request, custom_title)  # type: ignore
+            datum = _format_page_object(internal_page, request, custom_title)
 
         data.append(datum)
 
