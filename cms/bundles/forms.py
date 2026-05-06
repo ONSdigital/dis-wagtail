@@ -3,6 +3,7 @@ from datetime import datetime
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
+import requests
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -219,7 +220,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
             try:
                 item_from_api = queryset.get(pk=dataset.namespace)
-            except Exception:
+            except (requests.exceptions.RequestException, ValueError):
                 logger.exception("Failed to fetch dataset %s for metadata validation on approval", dataset.namespace)
                 raise ValidationError(
                     f"Could not verify the latest metadata for '{dataset.title}'. Please try again."

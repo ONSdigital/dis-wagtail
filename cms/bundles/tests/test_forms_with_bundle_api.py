@@ -1,6 +1,7 @@
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+import requests
 from django.test import TestCase, override_settings
 from wagtail.admin.panels import get_edit_handler
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
@@ -9,7 +10,7 @@ from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory
-from cms.datasets.models import Dataset
+from cms.datasets.models import Dataset, ONSDatasetApiQuerySet
 from cms.datasets.tests.factories import DatasetFactory
 from cms.users.tests.factories import UserFactory
 
@@ -430,8 +431,8 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             return item
 
         self.ons_patcher = patch("cms.bundles.forms.ONSDataset")
-        mock_ons = self.ons_patcher.start()
-        mock_ons.objects.get.side_effect = fake_get
+        self.mock_ons = self.ons_patcher.start()
+        self.mock_ons.objects.get.side_effect = fake_get
 
     def tearDown(self):
         self.client_patcher.stop()
@@ -536,6 +537,49 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         )
 
         self.assertTrue(second.is_valid(), second.errors)
+
+    def test_api_error_during_metadata_validation_blocks_approval(self):
+        """Test that known exceptions during metadata validation are caught and handled gracefully,
+        and a validation error message is shown.
+        """
+        test_exceptions = (
+            requests.exceptions.RequestException("API error"),
+            ONSDatasetApiQuerySet.does_not_exist_exception("Does not exist"),
+            ONSDatasetApiQuerySet.multiple_objects_returned_exception("Multiple objects returned"),
+            ValueError("Unexpected value"),
+        )
+
+        for test_exception in test_exceptions:
+            # Ensure fresh bundle and dataset are used
+            self.bundle = BundleFactory()
+            dataset = DatasetFactory()
+            with self.subTest(exception=test_exception):
+                self.mock_ons.objects.get.side_effect = test_exception
+
+                form = self._approve_form(dataset)
+
+                self.assertFalse(form.is_valid())
+                self.assertIn(
+                    f"Could not verify the latest metadata for '{dataset.title}'. Please try again.",
+                    form.non_field_errors(),
+                )
+
+    def test_other_exceptions_raised_during_metadata_validation_are_not_caught(self):
+        """Test that unexpected exceptions during metadata validation are not caught and handled gracefully,
+        to avoid masking bugs.
+        """
+        dataset = DatasetFactory(title="Original Title", description="Original Description")
+
+        class _CustomException(Exception):
+            pass
+
+        self.mock_ons.objects.get.side_effect = _CustomException("Unexpected error")
+
+        form = self._approve_form(dataset)
+
+        with self.assertRaises(_CustomException) as cm:
+            form.is_valid()
+        self.assertEqual(str(cm.exception), "Unexpected error")
 
 
 class BundleDatasetValidationDisabledTestCase(TestCase):
