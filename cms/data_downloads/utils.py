@@ -112,9 +112,9 @@ def sanitize_data_for_csv(data: list[list[str | int | float]]) -> list[list[str 
     """
     triggers = ("=", "+", "-", "@", "\t")
 
-    sanitized_row = []
+    sanitized_row: list[list[str | int | float]] = []
     for row in data:
-        new_row = []
+        new_row: list[str | int | float] = []
         for value in row:
             if isinstance(value, str) and value.startswith(triggers):
                 # If it's a number string (e.g. "-5"), do not prepend the quote
