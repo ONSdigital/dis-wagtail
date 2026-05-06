@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from wagtail.models import Page
 
 from cms.core.custom_date_format import ons_date_format
+from cms.core.utils import get_related_content_type_label
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -45,7 +46,7 @@ def _format_external_link(page_dict: ExternalArticleDict) -> DocumentListItem:
     return format_as_document_list_item(
         title=page_dict["title"],
         url=page_dict["url"],
-        content_type=page_dict["content_type"].label(),
+        content_type=get_related_content_type_label(page_dict["content_type"]),
         description=page_dict.get("description", ""),
         release_date=page_dict["release_date"],
     )
