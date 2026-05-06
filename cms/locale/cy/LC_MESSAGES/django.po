@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-24 16:26+0100\n"
+"POT-Creation-Date: 2026-05-01 07:58+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -174,15 +174,19 @@ msgstr "Mae’r holl gynnwys ar gael o dan y"
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
-#: cms/jinja2/templates/base_page.html:61
+#: cms/jinja2/templates/base_page.html:4
+msgid "Back to top"
+msgstr "Nôl i’r brig"
+
+#: cms/jinja2/templates/base_page.html:63
 msgid "in English"
 msgstr "yn Saesneg"
 
-#: cms/jinja2/templates/base_page.html:62
+#: cms/jinja2/templates/base_page.html:64
 msgid "in Welsh"
 msgstr "yn y Gymraeg"
 
-#: cms/jinja2/templates/base_page.html:69
+#: cms/jinja2/templates/base_page.html:71
 #, python-format
 msgid ""
 "This page is currently not available %(in_language)s. It is displayed in its "
