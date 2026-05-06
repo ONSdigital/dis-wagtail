@@ -114,7 +114,7 @@ class TopicPageRelatedMethodology(Orderable):
     external_url: models.URLField = models.URLField(
         blank=True,
         verbose_name="URL",
-        help_text="Enter a relative URL (e.g. /some/path) or a full URL starting with 'https://' "
+        help_text="Enter a full URL starting with 'https://' "
         f"that matches one of the allowed domains or their subdomains: {', '.join(settings.ONS_ALLOWED_LINK_DOMAINS)}",
     )
     title: models.CharField = models.CharField(

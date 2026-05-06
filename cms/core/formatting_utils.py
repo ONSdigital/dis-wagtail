@@ -45,7 +45,7 @@ def _format_external_link(page_dict: ExternalArticleDict) -> DocumentListItem:
     return format_as_document_list_item(
         title=page_dict["title"],
         url=page_dict["url"],
-        content_type=page_dict["content_type"],
+        content_type=page_dict["content_type"].label(),
         description=page_dict.get("description", ""),
         release_date=page_dict["release_date"],
     )
