@@ -232,7 +232,7 @@ def user_edits_topic_page(context: Context, topic_page_title: str) -> None:
 def user_manually_adds_item(context: Context, item_title: str, item_type: str) -> None:
     button_map = {
         "articles": ("Add topic page related article", "Choose Article page"),
-        "methodologies": ("Add topic page related methodology", "Choose Methodology page"),
+        "methodologies": ("Add topic page supporting information", "Choose Methodology page"),
     }
 
     if item_type not in button_map:
