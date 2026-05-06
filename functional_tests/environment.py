@@ -166,7 +166,7 @@ def before_tag(context: Context, tag: str) -> None:
         # Enable Bundle API integration for this scenario
         context.bundle_api_override = override_settings(
             DIS_DATASETS_BUNDLE_API_ENABLED=True,
-            BUNDLE_DATASET_STATUS_VALIDATION_ENABLED=True,
+            BUNDLE_DATASET_METADATA_VALIDATION_ENABLED=True,
         )
         context.bundle_api_override.enable()
 

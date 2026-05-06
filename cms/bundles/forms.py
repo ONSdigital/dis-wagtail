@@ -194,13 +194,21 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
     @datasets_bundle_api_enabled
     def _validate_bundled_datasets_metadata(self) -> None:
-        """Compare bundled datasets' stored metadata against the dataset API.
+        """Compare bundled datasets' stored metadata against the dataset API and
+        refresh local rows on drift.
 
-        On drift, update the local Dataset rows in place and block the approval
-        with a clear error so the approver must re-review the refreshed metadata
-        and reconfirm by submitting again.
+        Note: this validator deliberately has a side effect, it writes refreshed
+        title/description back to the local `Dataset` rows before raising. This is
+        intentional so that when the approver clicks Approve a second time, the
+        form re-renders with the up-to-date metadata they need to re-review.
+        The save is safe to do here because Django caches `cleaned_data`, so
+        `is_valid()` won't re-run this method within the same request.
+
+
+        On drift, the approval is blocked with a `ValidationError` listing the
+        changed fields, forcing the approver to reconfirm by submitting again.
         """
-        if not settings.BUNDLE_DATASET_STATUS_VALIDATION_ENABLED:
+        if not settings.BUNDLE_DATASET_METADATA_VALIDATION_ENABLED:
             return
 
         if "bundled_datasets" not in self.formsets:

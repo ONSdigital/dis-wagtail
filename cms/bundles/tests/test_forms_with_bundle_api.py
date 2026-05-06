@@ -403,7 +403,7 @@ class BundleDatasetValidationTestCase(TestCase):
         self.mock_client.get_bundle_contents.assert_called_once_with("test-bundle-123")
 
 
-@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True, BUNDLE_DATASET_STATUS_VALIDATION_ENABLED=True)
+@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True, BUNDLE_DATASET_METADATA_VALIDATION_ENABLED=True)
 class BundleDatasetMetadataValidationTestCase(TestCase):
     """Test cases for dataset metadata drift validation on bundle approval."""
 
