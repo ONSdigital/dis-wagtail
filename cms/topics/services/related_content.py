@@ -7,6 +7,7 @@ from django.db.models import OuterRef, Q, Subquery
 from django.db.models.functions import Coalesce
 
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
+from cms.core.enums import RelatedContentType
 from cms.methodology.models import MethodologyPage
 from cms.topics.services.types import (
     ArticleDict,
@@ -15,8 +16,6 @@ from cms.topics.services.types import (
     InternalMethodologyDict,
     MethodologyDict,
 )
-
-from ...core.enums import RelatedContentType
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
