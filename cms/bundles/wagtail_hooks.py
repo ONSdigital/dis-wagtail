@@ -131,7 +131,7 @@ class LatestBundlesPanel(Component):
         """Returns the latest 10 bundles if the panel is shown."""
         queryset: QuerySet[Bundle] = Bundle.objects.none()
         if self.is_shown:
-            queryset = Bundle.objects.active()[: self.num_bundles]
+            queryset = Bundle.objects.active().order_by("-updated_at")[: self.num_bundles]
 
         return queryset
 
@@ -174,7 +174,7 @@ class BundlesInReviewPanel(Component):
         if not self.is_shown:
             return cast(QuerySet[Bundle], Bundle.objects.none())
 
-        queryset: QuerySet[Bundle] = Bundle.objects.previewable().order_by("approved_at")
+        queryset: QuerySet[Bundle] = Bundle.objects.previewable().order_by("-updated_at")
         if self._can_manage:
             # show all "in preview" for users that can manage.
             return queryset
