@@ -1286,14 +1286,14 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
     def test_ordering(self):
         """Checks that the correct ordering is applied."""
         cases = {
-            "": ("name",),
+            "": ("-updated_at",),
             "name": ("name",),
             "-name": ("-name",),
             "scheduled_publication_date": (OrderBy(F("release_date"), descending=False, nulls_last=True),),
             "-scheduled_publication_date": (OrderBy(F("release_date"), descending=True, nulls_last=True),),
             "status": (OrderBy(F("status_label"), descending=False),),
             "-status": (OrderBy(F("status_label"), descending=True),),
-            "invalid_ordering": ("name",),
+            "invalid_ordering": ("-updated_at",),
         }
         for param, order_by in cases.items():
             with self.subTest(param=param):
@@ -1302,6 +1302,22 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
                     response.context_data["object_list"].query.order_by,
                     order_by,
                 )
+
+    def test_index_view_default_bundle_ordering_is_most_recently_updated(self):
+        old_bundle = BundleFactory(updated_at=timezone.now() - timedelta(days=1))
+        new_bundle = BundleFactory(updated_at=timezone.now())
+        response = self.client.get(self.bundle_index_url)
+
+        self.assertEqual(response.context_data["object_list"][0].id, new_bundle.id)
+        self.assertEqual(response.context_data["object_list"][1].id, old_bundle.id)
+
+        # Ensure the old bundle moves to the top of the list when updated
+        old_bundle.updated_at = timezone.now() + timedelta(days=1)
+        old_bundle.save(update_fields=["updated_at"])
+        response = self.client.get(self.bundle_index_url)
+
+        self.assertEqual(response.context_data["object_list"][0].id, old_bundle.id)
+        self.assertEqual(response.context_data["object_list"][1].id, new_bundle.id)
 
 
 class BundleDeleteTestCase(WagtailTestUtils, TestCase):
