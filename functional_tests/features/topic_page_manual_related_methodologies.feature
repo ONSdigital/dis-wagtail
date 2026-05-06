@@ -69,6 +69,6 @@ Feature: A CMS user can manually manage related methodologies on a Topic Page
         And the user adds an external related methodology with content type "Methodology" and title "Sticky Link 3"
         And the user clicks the "Save draft" button
         And the user views the topic page draft
-        Then the user can see item "Sticky Link 1" with content type "INFORMATION" in the related methodologies section
-        Then the user can see item "Sticky Link 2" with content type "ARTICLE" in the related methodologies section
-        Then the user can see item "Sticky Link 3" with content type "METHODOLOGY" in the related methodologies section
+        Then the user can see item "Sticky Link 1" with content type "Information" in the related methodologies section
+        Then the user can see item "Sticky Link 2" with content type "Article" in the related methodologies section
+        Then the user can see item "Sticky Link 3" with content type "Methodology" in the related methodologies section
