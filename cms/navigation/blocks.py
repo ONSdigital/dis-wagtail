@@ -1,15 +1,16 @@
 from typing import Any
 
-from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock, URLBlock
+from wagtail.blocks import CharBlock, ListBlock, PageChooserBlock, StructBlock
 
 from cms.core.blocks.base import LinkBlock
+from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
 
 
 class ThemeLinkBlock(LinkBlock):
     page = PageChooserBlock(required=False, page_type="themes.ThemePage")
 
     # TODO: day 2, remove external_url, title overrides when allowing Theme page creation
-    external_url = URLBlock(required=True, label="External Link")
+    external_url = RelativeOrAbsoluteURLBlock(required=True, label="External Link")
     title = CharBlock(required=True)
 
     # TODO: day 2, remove this __init__ when we allow creating Theme pages
