@@ -22,8 +22,8 @@ class PreventDeleteOfPreviouslyPublishedPageHookTests(WagtailTestUtils, TestCase
     def setUp(self):
         self.client.force_login(self.superuser)
 
-    def _assert_hook_blocked(self, response, edit_url):
-        self.assertRedirects(response, edit_url)
+    def _assert_hook_blocked(self, response, redirect_url):
+        self.assertRedirects(response, redirect_url)
         messages = [msg.message.strip() for msg in response.context["messages"]]
         self.assertTrue(
             any("published previously" in msg for msg in messages),
@@ -38,6 +38,20 @@ class PreventDeleteOfPreviouslyPublishedPageHookTests(WagtailTestUtils, TestCase
         )
         response = self.client.post(reverse("wagtailadmin_pages:delete", args=[page.pk]), follow=True)
         self._assert_hook_blocked(response, reverse("wagtailadmin_pages:edit", args=[page.pk]))
+
+    def test_delete_blocked_for_previously_published_page_and_redirected_to_next_url(self):
+        page = InformationPageFactory(
+            parent=self.index_page,
+            first_published_at=timezone.now() - timedelta(days=1),
+            last_published_at=timezone.now(),
+        )
+        response = self.client.post(
+            reverse("wagtailadmin_pages:delete", args=[page.pk]),
+            follow=True,
+            query_params={"next": reverse("wagtailadmin_home")},
+        )
+        # The hook should block the deletion and redirect to the provided next URL, not the edit page
+        self._assert_hook_blocked(response, reverse("wagtailadmin_home"))
 
     def test_delete_allowed_for_never_published_page(self):
         page = InformationPageFactory(parent=self.index_page, live=False)

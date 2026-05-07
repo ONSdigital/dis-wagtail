@@ -110,6 +110,10 @@ def prevent_delete_of_previously_published_page(
         request,
         message,
     )
+
+    if next_url := get_valid_next_url_from_request(request):
+        return redirect(next_url, preserve_request=False)
+
     return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
 
 
