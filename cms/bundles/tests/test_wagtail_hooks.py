@@ -81,7 +81,7 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
     def test_latest_bundles_panel_ordering(self):
         """Checks that the latest bundles dashboard panel orders bundles by updated_at descending."""
         old_bundle = BundleFactory(
-            name="Old Bundle", created_by=self.superuser, updated_at=timezone.now() - timedelta(days=3)
+            name="3 Day Old Bundle", created_by=self.superuser, updated_at=timezone.now() - timedelta(days=3)
         )
         new_bundle = BundleFactory(name="New Bundle", created_by=self.superuser, updated_at=timezone.now())
 
@@ -142,7 +142,10 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
     def test_bundles_to_preview_panel_ordering(self):
         """Checks that the bundles preview dashboard panel orders bundles by updated_at descending."""
         old_bundle = BundleFactory(
-            in_review=True, name="Old Bundle", created_by=self.superuser, updated_at=timezone.now() - timedelta(days=3)
+            in_review=True,
+            name="3 Day Old Bundle",
+            created_by=self.superuser,
+            updated_at=timezone.now() - timedelta(days=3),
         )
         new_bundle = BundleFactory(
             in_review=True, name="New Bundle", created_by=self.superuser, updated_at=timezone.now()

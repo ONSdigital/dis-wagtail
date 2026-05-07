@@ -1304,7 +1304,7 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
                 )
 
     def test_index_view_default_bundle_ordering_is_most_recently_updated(self):
-        old_bundle = BundleFactory(updated_at=timezone.now() - timedelta(days=1))
+        old_bundle = BundleFactory(name="1 Day Old Bundle", updated_at=timezone.now() - timedelta(days=1))
         new_bundle = BundleFactory(updated_at=timezone.now())
         response = self.client.get(self.bundle_index_url)
 
