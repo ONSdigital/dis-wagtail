@@ -1,8 +1,10 @@
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import PermissionDenied
+from django.db.models import Case, IntegerField, Value, When
 from wagtail import hooks
 
+from cms.home.models import HomePage
 from cms.standard_pages.models import CookiesPage
 
 if TYPE_CHECKING:
@@ -63,3 +65,17 @@ def before_unpublish_page(_request: HttpRequest, page: Page) -> None:
 def before_move_page(_request: HttpRequest, page: Page, _destination_page: Page) -> None:
     """Don't allow users to move the cookies pages."""
     deny_for_cookies_page(page)
+
+
+@hooks.register("construct_explorer_page_queryset")
+def pin_release_calendar_page(_parent_page: Page, pages: PageQuerySet, _request: HttpRequest) -> PageQuerySet:
+    if not isinstance(_parent_page.specific, HomePage):
+        return pages
+    return pages.order_by(
+        Case(
+            When(content_type__model="releasecalendarindex", then=Value(0)),
+            default=Value(1),
+            output_field=IntegerField(),
+        ),
+        "-latest_revision_created_at",
+    )
