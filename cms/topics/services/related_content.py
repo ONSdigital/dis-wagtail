@@ -81,10 +81,8 @@ class BaseProcessor[T, R: BaseRelatedItem](ABC):
 
             manual_items.append(item)
 
-            if isinstance(item, dict) and not item.get("is_external"):
-                internal_page = item.get("internal_page")
-                if internal_page:
-                    highlighted_page_pks.append(internal_page.pk)
+            if isinstance(item, dict) and not item.get("is_external") and (internal_page := item.get("internal_page")):
+                highlighted_page_pks.append(internal_page.pk)
 
         return manual_items, highlighted_page_pks
 

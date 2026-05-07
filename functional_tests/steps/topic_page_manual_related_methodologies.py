@@ -65,31 +65,31 @@ def user_adds_external_related_methodology_with_content_type(context: Context, c
 @then('the user can see "{title}" in the related methodologies section')
 def user_can_see_title_in_related_methodologies_section(context: Context, title: str) -> None:
     """Assert that the given title is visible in the related methods section."""
-    related_methods_section = context.page.locator("section#related-methods")
+    related_methods_section = context.page.locator("#related-methods")
     expect(related_methods_section.get_by_role("link", name=title)).to_be_visible()
 
 
 @then('the related methodology "{title}" is the first in the list')
 def related_method_is_first_in_list(context: Context, title: str) -> None:
     """Assert that the given title is the first methodology in the list."""
-    related_methods_section = context.page.locator("section#related-methods")
-    first_method = related_methods_section.locator("li.ons-document-list__item").first
+    related_methods_section = context.page.locator("#related-methods")
+    first_method = related_methods_section.locator(".ons-document-list__item").first
     expect(first_method.get_by_role("link", name=title)).to_be_visible()
 
 
 @then("the related methods section contains {count:d} methods")
 def related_methods_section_contains_count_methods(context: Context, count: int) -> None:
     """Assert that the related methods section contains the expected number of methods."""
-    related_methods_section = context.page.locator("section#related-methods")
-    methods = related_methods_section.locator("li.ons-document-list__item")
+    related_methods_section = context.page.locator("#related-methods")
+    methods = related_methods_section.locator(".ons-document-list__item")
     expect(methods).to_have_count(count)
 
 
 @then('the related methodology "{title}" is the second in the list')
 def related_methodology_is_second_in_list(context: Context, title: str) -> None:
     """Assert that the given title is the second article in the list."""
-    related_methods_section = context.page.locator("section#related-methods")
-    second_method = related_methods_section.locator("li.ons-document-list__item").nth(1)
+    related_methods_section = context.page.locator("#related-methods")
+    second_method = related_methods_section.locator(".ons-document-list__item").nth(1)
     expect(second_method.get_by_role("link", name=title)).to_be_visible()
 
 
@@ -98,8 +98,8 @@ def related_methods_section_contains_only_manually_added_methods(
     context: Context,
 ) -> None:
     """Assert that the related methods section contains only manually added methods (no auto-populated ones)."""
-    related_methods_section = context.page.locator("section#related-methods")
-    methods = related_methods_section.locator("li.ons-document-list__item")
+    related_methods_section = context.page.locator("#related-methods")
+    methods = related_methods_section.locator(".ons-document-list__item")
     expect(methods).to_have_count(3)
 
     # Check that all three manually added methods are present
@@ -130,8 +130,8 @@ def user_removes_first_manually_added_related_method(context: Context) -> None:
 @then("the related methods section contains 3 auto-populated methods")
 def related_methods_section_contains_auto_populated_methods(context: Context) -> None:
     """Assert that the related methods section contains only auto-populated methods."""
-    related_methods_section = context.page.locator("section#related-methods")
-    methods = related_methods_section.locator("li.ons-document-list__item")
+    related_methods_section = context.page.locator("#related-methods")
+    methods = related_methods_section.locator(".ons-document-list__item")
     expect(methods).to_have_count(3)
 
     # Check that all three auto-populated methods are present
@@ -142,7 +142,7 @@ def related_methods_section_contains_auto_populated_methods(context: Context) ->
 @then('the user can see "{title}" in the related methods section')
 def user_can_see_title_in_related_methods_section(context: Context, title: str) -> None:
     """Assert that the given title is visible in the related methods section."""
-    related_methods_section = context.page.locator("section#related-methods")
+    related_methods_section = context.page.locator("#related-methods")
     expect(related_methods_section.get_by_role("link", name=title)).to_be_visible()
 
 
@@ -151,9 +151,9 @@ def user_can_see_title_and_content_type_in_related_methods_section(
     context: Context, title: str, content_type: str
 ) -> None:
     """Assert that the given title and correct content_type in the related methods section."""
-    related_methods_section = context.page.locator("section#related-methods")
+    related_methods_section = context.page.locator("#related-methods")
 
-    related_methods_item = related_methods_section.locator("li.ons-document-list__item").filter(
+    related_methods_item = related_methods_section.locator(".ons-document-list__item").filter(
         has=context.page.get_by_role("link", name=title)
     )
 
@@ -195,11 +195,11 @@ def user_adds_internal_related_methodology_with_custom_title(context: Context, c
 @then("the custom title overrides the methods's original title")
 def custom_title_overrides_original_methods_title(context: Context) -> None:
     """Assert that the custom title is displayed instead of the page's original title."""
-    related_methods_section = context.page.locator("section#related-methods")
+    related_methods_section = context.page.locator("#related-methods")
 
     # Check that the custom title is visible
     expect(related_methods_section.get_by_role("link", name=context.custom_title)).to_be_visible()
 
     # Check that the original title is not visible in the first position
-    first_article = related_methods_section.locator("li.ons-document-list__item").first
+    first_article = related_methods_section.locator(".ons-document-list__item").first
     expect(first_article.get_by_role("link", name=context.selected_methodology.title)).not_to_be_visible()
