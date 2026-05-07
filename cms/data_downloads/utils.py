@@ -95,15 +95,6 @@ def flatten_table_data(data: Mapping) -> list[list[str | int | float]]:
     return result
 
 
-def _is_number(val: str) -> bool:
-    """Check if a string represents a valid number."""
-    try:
-        float(val)
-        return True
-    except ValueError:
-        return False
-
-
 def sanitize_data_for_csv(data: list[list[str | int | float]]) -> list[list[str | int | float]]:
     """Sanitize data for CSV export by escaping formula triggers.
 
@@ -112,21 +103,22 @@ def sanitize_data_for_csv(data: list[list[str | int | float]]) -> list[list[str 
     """
     triggers = ("=", "+", "-", "@", "\t")
 
-    sanitized_row: list[list[str | int | float]] = []
+    sanitized_rows: list[list[str | int | float]] = []
     for row in data:
         new_row: list[str | int | float] = []
         for value in row:
             if isinstance(value, str) and value.startswith(triggers):
                 # If it's a number string (e.g. "-5"), do not prepend the quote
-                if _is_number(value):
+                try:
+                    float(value)  # Check if it can be converted to a number
                     new_row.append(value)
-                else:
+                except ValueError:
                     new_row.append(f"'{value}")
             else:
                 new_row.append(value)
-        sanitized_row.append(new_row)
+        sanitized_rows.append(new_row)
 
-    return sanitized_row
+    return sanitized_rows
 
 
 def create_data_csv_download_response_from_data(data: list[list[str | int | float]], *, title: str) -> HttpResponse:
