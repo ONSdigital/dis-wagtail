@@ -44,14 +44,6 @@ from cms.workflows.tests.utils import (
     progress_page_workflow,
 )
 
-# TODO: remove when Wagtail updates to django-tasks >= 0.11
-TASKS_ENQUEUE_ON_COMMIT = {
-    "default": {
-        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
-        "ENQUEUE_ON_COMMIT": False,
-    }
-}
-
 
 class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
     RELEASE_CALENDAR_PAGE_CASES: ClassVar[list[tuple[str, ReleaseStatus, str]]] = [
@@ -1386,7 +1378,6 @@ class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
 
-    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
     def test_chooser_search(self):
         draft_bundle = BundleFactory(name="Draft")
         chooser_results_url = reverse(bundle_chooser_viewset.get_url_name("choose_results"))
