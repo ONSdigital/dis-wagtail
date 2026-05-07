@@ -139,7 +139,7 @@ class LatestBundlesPanel(Component):
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
-        context["bundles"] = sorted(self.get_latest_bundles(), key=lambda b: b.updated_at, reverse=True)
+        context["bundles"] = self.get_latest_bundles()
         context["is_shown"] = self.is_shown
         context["num_bundles"] = self.num_bundles
         return context
@@ -186,7 +186,7 @@ class BundlesInReviewPanel(Component):
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
-        context["bundles"] = sorted(self.bundles[: self.num_bundles], key=lambda b: b.updated_at, reverse=True)
+        context["bundles"] = self.bundles[: self.num_bundles]
         context["is_shown"] = self.is_shown
         context["more_link"] = len(self.bundles) > self.num_bundles
         return context
