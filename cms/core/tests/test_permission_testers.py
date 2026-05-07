@@ -250,7 +250,7 @@ class TestCustomPagePermissions(WagtailTestUtils, TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "You do not have permission")
+        self.assertContains(response, "you do not have permission")
         with self.assertRaises(InformationPage.DoesNotExist):
             InformationPage.objects.get(slug=new_slug)
 
