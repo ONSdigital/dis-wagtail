@@ -30,6 +30,7 @@ rm -rf ./cms/jinja2/components
 rm -rf ./cms/jinja2/layout
 mv -f templates/* ./cms/jinja2
 rm -rf templates
+rm -rf $TEMP_DIR
 echo "Saved Design System templates to 'cms/jinja2/components' and 'cms/jinja2/layout'"
 
 #
