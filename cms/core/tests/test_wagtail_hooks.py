@@ -169,7 +169,7 @@ class BulkActionDeleteHookTests(WagtailTestUtils, TestCase):
         return f"{base}?{query}&next={next_url}"
 
     @staticmethod
-    def _never_published(parent):
+    def _make_never_published(parent):
         page = InformationPageFactory(parent=parent, live=False)
         page.first_published_at = None
         page.last_published_at = None
@@ -177,7 +177,7 @@ class BulkActionDeleteHookTests(WagtailTestUtils, TestCase):
         return page
 
     def test_bulk_delete_blocked_when_any_selected_page_was_previously_published(self):
-        never_published = self._never_published(self.index_page)
+        never_published = self._make_never_published(self.index_page)
         previously_published = InformationPageFactory(
             parent=self.index_page,
             first_published_at=timezone.now() - timedelta(days=3),
@@ -197,8 +197,8 @@ class BulkActionDeleteHookTests(WagtailTestUtils, TestCase):
         self.assertTrue(InformationPage.objects.filter(pk=previously_published.pk).exists())
 
     def test_bulk_delete_allowed_when_all_pages_are_never_published(self):
-        page_a = self._never_published(self.index_page)
-        page_b = self._never_published(self.index_page)
+        page_a = self._make_never_published(self.index_page)
+        page_b = self._make_never_published(self.index_page)
 
         url = self._bulk_delete_url([page_a.pk, page_b.pk])
         response = self.client.post(url, {"confirm": "yes"}, follow=True)
@@ -208,13 +208,13 @@ class BulkActionDeleteHookTests(WagtailTestUtils, TestCase):
         self.assertFalse(InformationPage.objects.filter(pk=page_b.pk).exists())
 
     def test_bulk_delete_blocked_when_selected_page_has_previously_published_descendant(self):
-        parent = self._never_published(self.index_page)
+        parent = self._make_never_published(self.index_page)
         InformationPageFactory(
             parent=parent,
             first_published_at=timezone.now() - timedelta(days=2),
             last_published_at=timezone.now() - timedelta(days=1),
         )
-        sibling = self._never_published(self.index_page)
+        sibling = self._make_never_published(self.index_page)
 
         url = self._bulk_delete_url([parent.pk, sibling.pk])
         response = self.client.post(url, {"confirm": "yes"}, follow=True)
