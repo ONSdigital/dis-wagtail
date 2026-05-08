@@ -410,15 +410,27 @@ class SanitizeDataForCsvTests(SimpleTestCase):
 
     def test_prepends_quote_to_string_starting_with_plus(self):
         """Test that strings starting with + are prefixed with a single quote."""
+        data = [["+1A2B3C4D", "normal"]]
+        result = sanitize_data_for_csv(data)
+        self.assertEqual(result, [["'+1A2B3C4D", "normal"]])
+
+    def test_not_prepends_quote_to_numbers_starting_with_plus(self):
+        """Test that safe expressions like +1234 are not modified, as they are valid numbers."""
         data = [["+1234", "normal"]]
         result = sanitize_data_for_csv(data)
-        self.assertEqual(result, [["'+1234", "normal"]])
+        self.assertEqual(result, [["+1234", "normal"]])
 
     def test_prepends_quote_to_string_starting_with_minus(self):
         """Test that strings starting with - are prefixed with a single quote."""
         data = [["-cmd|'/c calc'!A1", "normal"]]
         result = sanitize_data_for_csv(data)
         self.assertEqual(result, [["'-cmd|'/c calc'!A1", "normal"]])
+
+    def test_negative_numbers_as_strings_are_not_modified(self):
+        """Test that negative numbers represented as strings are not modified."""
+        data = [["-5", "-3.14"]]
+        result = sanitize_data_for_csv(data)
+        self.assertEqual(result, [["-5", "-3.14"]])
 
     def test_prepends_quote_to_string_starting_with_at(self):
         """Test that strings starting with @ are prefixed with a single quote."""
