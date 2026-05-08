@@ -62,7 +62,7 @@ RUN apt --quiet --yes update \
     # Install the Postgres client (matching production version)
     && apt --quiet --yes install --no-install-recommends postgresql-client-${POSTGRES_VERSION} \
     && apt --quiet --yes autoremove \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
 
 # Create an unprivileged user and virtual environment for the app
@@ -93,7 +93,8 @@ ARG POETRY_HOME=/opt/poetry
 #     $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
 # EOF
 RUN python -m venv --upgrade-deps $POETRY_HOME \
-    && $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
+    && $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION \
+    && rm -rf /root/.cache/pip
 
 # Set common environment variables
 ENV \
@@ -123,7 +124,7 @@ COPY pyproject.toml poetry.lock ./
 #     # Install the production dependencies
 #     poetry install --no-root --without dev
 # EOF
-RUN poetry install --no-root --without dev
+RUN poetry install --no-root --without dev && rm -rf /home/$USERNAME/.cache/
 
 
 ###################

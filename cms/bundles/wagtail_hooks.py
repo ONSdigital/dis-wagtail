@@ -131,7 +131,7 @@ class LatestBundlesPanel(Component):
         """Returns the latest 10 bundles if the panel is shown."""
         queryset: QuerySet[Bundle] = Bundle.objects.none()
         if self.is_shown:
-            queryset = Bundle.objects.active()[: self.num_bundles]
+            queryset = Bundle.objects.active().order_by("-updated_at")[: self.num_bundles]
 
         return queryset
 
@@ -139,7 +139,7 @@ class LatestBundlesPanel(Component):
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
-        context["bundles"] = sorted(self.get_latest_bundles(), key=lambda b: b.name)
+        context["bundles"] = self.get_latest_bundles()
         context["is_shown"] = self.is_shown
         context["num_bundles"] = self.num_bundles
         return context
@@ -174,7 +174,7 @@ class BundlesInReviewPanel(Component):
         if not self.is_shown:
             return cast(QuerySet[Bundle], Bundle.objects.none())
 
-        queryset: QuerySet[Bundle] = Bundle.objects.previewable().order_by("approved_at")
+        queryset: QuerySet[Bundle] = Bundle.objects.previewable().order_by("-updated_at")
         if self._can_manage:
             # show all "in preview" for users that can manage.
             return queryset
@@ -186,7 +186,7 @@ class BundlesInReviewPanel(Component):
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
-        context["bundles"] = sorted(self.bundles[: self.num_bundles], key=lambda b: b.name)
+        context["bundles"] = self.bundles[: self.num_bundles]
         context["is_shown"] = self.is_shown
         context["more_link"] = len(self.bundles) > self.num_bundles
         return context

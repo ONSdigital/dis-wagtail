@@ -44,14 +44,6 @@ from cms.workflows.tests.utils import (
     progress_page_workflow,
 )
 
-# TODO: remove when Wagtail updates to django-tasks >= 0.11
-TASKS_ENQUEUE_ON_COMMIT = {
-    "default": {
-        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
-        "ENQUEUE_ON_COMMIT": False,
-    }
-}
-
 
 class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
     RELEASE_CALENDAR_PAGE_CASES: ClassVar[list[tuple[str, ReleaseStatus, str]]] = [
@@ -1296,14 +1288,14 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
     def test_ordering(self):
         """Checks that the correct ordering is applied."""
         cases = {
-            "": ("name",),
+            "": ("-updated_at",),
             "name": ("name",),
             "-name": ("-name",),
             "scheduled_publication_date": (OrderBy(F("release_date"), descending=False, nulls_last=True),),
             "-scheduled_publication_date": (OrderBy(F("release_date"), descending=True, nulls_last=True),),
             "status": (OrderBy(F("status_label"), descending=False),),
             "-status": (OrderBy(F("status_label"), descending=True),),
-            "invalid_ordering": ("name",),
+            "invalid_ordering": ("-updated_at",),
         }
         for param, order_by in cases.items():
             with self.subTest(param=param):
@@ -1312,6 +1304,22 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
                     response.context_data["object_list"].query.order_by,
                     order_by,
                 )
+
+    def test_index_view_default_bundle_ordering_is_most_recently_updated(self):
+        old_bundle = BundleFactory(name="1 Day Old Bundle", updated_at=timezone.now() - timedelta(days=1))
+        new_bundle = BundleFactory(updated_at=timezone.now())
+        response = self.client.get(self.bundle_index_url)
+
+        self.assertEqual(response.context_data["object_list"][0].id, new_bundle.id)
+        self.assertEqual(response.context_data["object_list"][1].id, old_bundle.id)
+
+        # Ensure the old bundle moves to the top of the list when updated
+        old_bundle.updated_at = timezone.now() + timedelta(days=1)
+        old_bundle.save(update_fields=["updated_at"])
+        response = self.client.get(self.bundle_index_url)
+
+        self.assertEqual(response.context_data["object_list"][0].id, old_bundle.id)
+        self.assertEqual(response.context_data["object_list"][1].id, new_bundle.id)
 
 
 class BundleDeleteTestCase(WagtailTestUtils, TestCase):
@@ -1396,7 +1404,6 @@ class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
 
-    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
     def test_chooser_search(self):
         draft_bundle = BundleFactory(name="Draft")
         chooser_results_url = reverse(bundle_chooser_viewset.get_url_name("choose_results"))
