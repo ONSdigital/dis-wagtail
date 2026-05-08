@@ -52,9 +52,9 @@ def hide_release_date_text_field_for_non_provisional_release_pages() -> str:
 
 
 @hooks.register("construct_explorer_page_queryset")
-def pin_release_calendar_page(parent_page: Page, pages: PageQuerySet, request: HttpRequest) -> PageQuerySet:
-    if not isinstance(parent_page.specific, HomePage):
-        return pages
+def pin_release_calendar_page(_parent_page: Page, pages: PageQuerySet, _request: HttpRequest) -> PageQuerySet:
+    if all(isinstance(page.specific, HomePage) for page in pages):
+        return pages.order_by("path")
     return pages.order_by(
         Case(
             When(content_type__model="releasecalendarindex", then=Value(0)),
