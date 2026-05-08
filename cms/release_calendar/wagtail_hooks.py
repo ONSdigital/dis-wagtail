@@ -21,7 +21,12 @@ if TYPE_CHECKING:
 def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | HttpResponsePermanentRedirect | None:
     """Block release calendar page deletion and show a message."""
     if page.specific_class == ReleaseCalendarPage:
-        messages.warning(request, "Release Calendar pages cannot be deleted. You can mark them as cancelled instead.")
+        if page.first_published_at is None:
+            # Never published, so allow deletion as normal
+            return None
+        messages.warning(
+            request, "Release Calendar pages cannot be deleted when published. You can mark them as cancelled instead."
+        )
         return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
 
     if page.specific_class == ReleaseCalendarIndex:

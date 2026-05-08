@@ -161,7 +161,7 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
         self.assertFalse(tester.can_delete())
 
         for user in [self.superuser, self.publishing_admin, self.publishing_officer]:
-            with self.subTest(f"{user=} cannot delete when page in active bundle"):
+            with self.subTest(f"{user=} can delete when page not in active bundle"):
                 tester = BasePagePermissionTester(user=user, page=self.english_index_page)
                 self.assertTrue(tester.can_delete())
 
@@ -178,6 +178,26 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
             with self.subTest(f"{user=} cannot delete when page is ready to publish"):
                 tester = BasePagePermissionTester(user=user, page=self.english_index_page)
                 self.assertFalse(tester.can_delete())
+
+    def test_can_unpublish_live_page(self):
+        # index page factory creates a live page
+        for user in [self.superuser, self.publishing_admin]:
+            with self.subTest(f"{user=} can unpublish a live page"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertTrue(tester.can_unpublish())
+
+        for user in [self.publishing_officer, self.user]:
+            with self.subTest(f"{user=} cannot unpublish a live page"):
+                tester = BasePagePermissionTester(user=user, page=self.english_index_page)
+                self.assertFalse(tester.can_unpublish())
+
+    def test_can_unpublish_non_live_page(self):
+        non_live = InformationPageFactory(parent=self.english_index_page, live=False)
+        # can_unpublish on a non-live page defers to core, which returns False
+        for user in [self.superuser, self.publishing_admin, self.publishing_officer, self.user]:
+            with self.subTest(f"{user=} cannot unpublish a non-live page"):
+                tester = BasePagePermissionTester(user=user, page=non_live)
+                self.assertFalse(tester.can_unpublish())
 
     def test_cannot_set_page_view_restrictions(self):
         mark_page_as_ready_to_publish(self.english_index_page)
