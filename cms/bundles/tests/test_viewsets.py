@@ -366,6 +366,16 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
+    def test_bundle_edit_view__manual_publish__sets_approved_by_and_approved_at(self):
+        """Publishing directly should populate approved_by and approved_at."""
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        self.bundle.refresh_from_db()
+        self.assertIsNotNone(self.bundle.approved_at)
+        self.assertIsNotNone(self.bundle.approved_by)
+
     def test_bundle_edit_view__shows_release_calendar_page_details(self):
         """Release calendar page's title, status and release date are displayed when selected in bundles."""
         for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
