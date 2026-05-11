@@ -10,7 +10,7 @@
 
         {%- if footnotes -%}
             {% from "components/details/_macro.njk" import onsDetails %}
-            {% call onsDetails({"id": block_id, "title": _("Footnotes")}) %}
+            {% call onsDetails({"id": block_id, "title": _("Footnotes"), "headingLevel": footnotes_heading_level}) %}
                 {{ footnotes }}
             {% endcall %}
         {%- endif -%}

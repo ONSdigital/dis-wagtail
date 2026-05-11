@@ -141,7 +141,7 @@ class ONSDatasetApiQuerySet(APIQuerySet):
 
         # The dataset API returns the per page count as "count" and the total results as "total_count"
         # Queryish expects "count" to be the total results count, so override it here
-        if count := api_response.get("total_count"):
+        if (count := api_response.get("total_count")) is not None:
             api_response["count"] = count
 
         return api_response

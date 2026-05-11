@@ -145,11 +145,21 @@ def _create_content_dict_for_pages(
     if article_pages:
         # NB: This string needs to match the one at the top of the file
         title = get_translated_string("Publications", language_code)
-        content.append({"type": "release_content", "value": {"title": title, "links": article_pages}})
+        content.append(
+            {
+                "type": "release_content",
+                "value": {"title": title, "links": article_pages},
+            }
+        )
     if methodology_pages:
         # NB: This string needs to match the one at the top of the file
         title = get_translated_string("Quality and methodology", language_code)
-        content.append({"type": "release_content", "value": {"title": title, "links": methodology_pages}})
+        content.append(
+            {
+                "type": "release_content",
+                "value": {"title": title, "links": methodology_pages},
+            }
+        )
     return content
 
 
@@ -175,7 +185,7 @@ def serialize_preview_page(page: Page, bundle_id: int, is_previewable: bool) -> 
             "page": None,
             "title": f"{specific_page.title} ({state})",
             "description": getattr(specific_page, "summary", ""),
-            "external_url": reverse("bundles:preview", args=[bundle_id, page.pk]) if is_previewable else "#",
+            "external_url": (reverse("bundles:preview", args=[bundle_id, page.pk]) if is_previewable else "#"),
         },
     }
 
@@ -230,7 +240,9 @@ def serialize_bundle_content_for_preview_release_calendar_page(
     return _create_content_dict_for_pages(all_pages, language_code)
 
 
-def serialize_datasets_for_release_calendar_page(bundle: Bundle) -> list[dict[str, Any]]:
+def serialize_datasets_for_release_calendar_page(
+    bundle: Bundle,
+) -> list[dict[str, Any]]:
     """Serializes the datasets of a bundle for a release calendar page."""
     return [
         {"type": "dataset_lookup", "id": uuid.uuid4(), "value": dataset["dataset"]}
@@ -409,7 +421,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     failed_pages: list[int] = []
     total_pages = bundle.get_bundled_pages().count()
 
-    for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision").not_live():
+    for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision"):
         try:
             # Durable ensures no other savepoint will roll back the publish
             with transaction.atomic(durable=True):
@@ -436,6 +448,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                         exception_message=f"<{page.full_edit_url}|Page (ID: {page.pk})> in the bundle did not "
                         "publish because it is not in a workflow or has no revisions",
                     )
+                    continue
         except Exception:  # pylint: disable=broad-exception-caught
             # Log exception, but don't raise it so publishing can continue
             failed_pages.append(page.pk)
@@ -463,6 +476,14 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
             # Total failure - no pages published
             failure_status = BundleStatus.FAILED
             alert_type = BundleAlertType.CRITICAL
+
+            logger.error(
+                "No pages were successfully published",
+                extra={
+                    "bundle_id": bundle.pk,
+                    "event": "publish_failed_no_success",
+                },
+            )
         else:
             # Partial failure - some pages published
             failure_status = BundleStatus.PARTIALLY_PUBLISHED
@@ -497,7 +518,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
         )
         return False
 
-    if update_status:
+    if update_status and pages_published > 0:
         bundle.status = BundleStatus.PUBLISHED
         bundle.save(update_fields=["status"])
 
@@ -560,7 +581,10 @@ def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: A
 
 
 def get_data_admin_action_url(
-    action: Literal["edit", "preview"], dataset_id: str, edition_id: str, version_id: str
+    action: Literal["edit", "preview"],
+    dataset_id: str,
+    edition_id: str,
+    version_id: str,
 ) -> str:
     """Generate a relative URL for dataset actions in the ONS Data Admin interface.
 

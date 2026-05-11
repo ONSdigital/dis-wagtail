@@ -852,6 +852,7 @@ class BundleViewSet(ModelViewSet):
     add_to_admin_menu = True
     inspect_view_enabled = True
     menu_order = 150
+    ordering = "-updated_at"
 
 
 bundle_viewset = BundleViewSet("bundle")
