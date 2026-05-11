@@ -79,6 +79,7 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
 
 
 class ArticleSeriesPage(  # type: ignore[django-manager-missing]
+    BundledPageMixin,
     NoTrailingSlashRoutablePageMixin,
     GenericTaxonomyMixin,
     BasePage,
@@ -92,6 +93,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     exclude_from_breadcrumbs = True
 
     content_panels: ClassVar[list[Panel]] = [
+        *BundledPageMixin.panels,
         *Page.content_panels,
         HelpPanel(
             content=(
