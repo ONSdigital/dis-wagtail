@@ -448,7 +448,6 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                         exception_message=f"<{page.full_edit_url}|Page (ID: {page.pk})> in the bundle did not "
                         "publish because it is not in a workflow or has no revisions",
                     )
-                    continue
         except Exception:  # pylint: disable=broad-exception-caught
             # Log exception, but don't raise it so publishing can continue
             failed_pages.append(page.pk)
