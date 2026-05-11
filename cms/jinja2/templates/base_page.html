@@ -1,10 +1,7 @@
 {% extends "templates/base.html" %}
 {% from "components/back-to-top/_macro.njk" import onsBackToTop %}
 
-{#- Untranslated pages will have aliases to the original page -#}
-{%- if page.alias_of and request.LANGUAGE_CODE != page.alias_of.locale.language_code -%}
-    {%- set localised_version_not_available = true -%}
-{%- endif -%}
+{%- set back_to_top = _('Back to top') -%}
 
 {% block meta %}
     {{ super() }}
@@ -77,7 +74,7 @@
     {# Changes the location of the <main> tag from the base template - ensures it surrounds the header area #}
     {# This change should be adopted by the design system soon #}
     <main id="main-content">
-        {% if localised_version_not_available %}
+        {% if page and page.show_localised_version_not_available_notice(request) %}
             {% from "components/panel/_macro.njk" import onsPanel %}
             {# fmt:off #}
             {{-
@@ -113,7 +110,12 @@
                             </h1>
                         {% endif %}
                         {% block main %}{% endblock %}
-                        {{ onsBackToTop() }}{# used in small viewports #}
+                        {# used in small viewports #}
+                        {# fmt:off #}
+                        {{ onsBackToTop({
+                            "description": back_to_top,
+                        }) }}
+                        {# fmt:on #}
                     </div>
                 </div>
             </div>

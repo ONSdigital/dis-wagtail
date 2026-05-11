@@ -77,6 +77,22 @@ def sync_alias_translation_slugs(sender: Any, instance: Page, **kwargs: Any) -> 
         translation.save()
 
 
+def sync_alias_last_published_at(sender: Any, instance: Page, alias: bool = False, **kwargs: Any) -> None:  # pylint: disable=unused-argument
+    # Only handle alias publish events where last_published_at wasn't carried over from the revision
+    if not alias or instance.last_published_at is not None:
+        return
+
+    # Wagtail populates the alias via the stored revision content, which predates the publish and
+    # has last_published_at=None. Fetch the value directly from the source page and backfill it.
+    source_last_published_at = (
+        Page.objects.filter(pk=instance.alias_of_id).values_list("last_published_at", flat=True).first()
+    )
+
+    if source_last_published_at:
+        Page.objects.filter(pk=instance.pk).update(last_published_at=source_last_published_at)
+        instance.last_published_at = source_last_published_at
+
+
 def register_signal_handlers() -> None:
     for model in apps.get_models():
         if issubclass(model, DraftStateMixin):
@@ -85,6 +101,7 @@ def register_signal_handlers() -> None:
     pre_save.connect(remove_approved_go_live_seconds, sender=Revision)
 
     page_slug_changed.connect(sync_alias_translation_slugs)
+    page_published.connect(sync_alias_last_published_at)
 
     setting_changed.connect(reload_logging_config)
 

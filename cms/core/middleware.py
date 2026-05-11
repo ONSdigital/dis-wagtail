@@ -4,6 +4,8 @@ from django.conf import settings
 from django.http import HttpRequest, HttpResponsePermanentRedirect
 from django.utils.deprecation import MiddlewareMixin
 
+from cms.core.utils import redirect
+
 NON_TRAILING_SLASH_METHODS = {"GET", "HEAD"}
 
 ALLOWED_REQUEST_PATHS = {
@@ -32,7 +34,9 @@ class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
                 query = request.META.get("QUERY_STRING", "")
                 if query:
                     path_without_slash = f"{path_without_slash}?{query}"
-                return HttpResponsePermanentRedirect(path_without_slash)
+
+                url: HttpResponsePermanentRedirect = redirect(path_without_slash, permanent=True)  # type: ignore
+                return url
         return None
 
     def is_request_path_allowed(self, path: str) -> bool:

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import FileResponse, Http404, HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.utils.cache import add_never_cache_headers, patch_cache_control
 from django.views.generic import View
 from wagtail.documents import get_document_model
@@ -15,10 +15,11 @@ from wagtail.images.models import SourceImageIOError
 from wagtail.images.permissions import permission_policy as image_permission_policy
 from wagtail.images.utils import verify_signature
 
+from cms.core.utils import redirect
 from cms.private_media.utils import user_can_access_asset
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponseBase, HttpResponseRedirect
+    from django.http import HttpRequest, HttpResponseBase, HttpResponsePermanentRedirect, HttpResponseRedirect
     from wagtail.documents.models import AbstractDocument
     from wagtail.images.models import AbstractImage, AbstractRendition
 
@@ -90,7 +91,7 @@ class ImageServeView(View):
         """
         return get_object_or_404(get_image_model(), id=image_id)
 
-    def redirect_to_file(self, url: str) -> HttpResponseRedirect:
+    def redirect_to_file(self, url: str) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
         """Return a cachable temporary redirect to the requested file URL.
 
         The response is cached for 1 hour to reduce load on the web server.
@@ -98,7 +99,7 @@ class ImageServeView(View):
         URL (and other rendition URLs) will be submitted to the active
         edge-cache provider.
         """
-        response = redirect(url)
+        response = redirect(url, preserve_request=False)
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
@@ -192,7 +193,7 @@ class DocumentServeView(View):
             raise Http404
         return obj
 
-    def redirect_to_file(self, url: str) -> HttpResponseRedirect:
+    def redirect_to_file(self, url: str) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
         """Return a cachable temporary redirect to the file URL.
 
         The redirect response is cached for 1 hour to alleviate load on the
@@ -200,7 +201,7 @@ class DocumentServeView(View):
         purge request for this URL will be submitted to the active edge-cache
         provider.
         """
-        response = redirect(url, permanent=False)
+        response = redirect(url, preserve_request=False)
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
