@@ -1,6 +1,7 @@
 import logging
 import platform
 from datetime import UTC, datetime
+from http import HTTPStatus
 from unittest import mock
 
 import time_machine
@@ -11,6 +12,7 @@ from fakeredis import FakeConnection
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.home.models import HomePage
+from cms.standard_pages.tests.factories import IndexPageFactory
 
 
 class CSRFTestCase(TestCase):
@@ -28,6 +30,33 @@ class CSRFTestCase(TestCase):
             self.client.post("/admin/login/", {})
 
         self.assertIn("CSRF Failure: CSRF cookie", logs.output[0])
+
+
+class WagtailAdminHomePathRedirectTestCase(SimpleTestCase):
+    def test_redirects_to_slash_suffixed_path(self):
+        """Test that the admin home path redirects to a slash-suffixed path when configured with a slash."""
+        with override_settings(
+            WAGTAILADMIN_HOME_PATH="wagtail-admin/",
+            WAGTAILADMIN_LOGIN_URL="/wagtail-admin/login/",
+        ):
+            response = self.client.get("/wagtail-admin")
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(response["Location"], "/wagtail-admin/")
+
+    def test_redirects_to_login(self):
+        """Test that the admin home path redirects to the login page when configured without a slash."""
+        with override_settings(
+            WAGTAILADMIN_HOME_PATH="wagtail-admin",
+            WAGTAILADMIN_LOGIN_URL="/wagtail-admin/login/",
+        ):
+            response = self.client.get("/wagtail-admin")
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(
+            response["Location"],
+            "/wagtail-admin/login/?next=/wagtail-admin",
+        )
 
 
 class TestGoogleTagManagerTestCase(TestCase):
@@ -255,6 +284,7 @@ class AdminPageTreeTestCase(WagtailTestUtils, TestCase):
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
         cls.homepage = HomePage.objects.first()
+        cls.index_page = IndexPageFactory(parent=cls.homepage)
 
     def setUp(self):
         self.client.force_login(self.superuser)
@@ -266,9 +296,15 @@ class AdminPageTreeTestCase(WagtailTestUtils, TestCase):
 
         self.assertInHTML('<span class="w-status w-status--label w-m-0">English</span>', content)
 
+    def test_root_page_redirects_from_copy_page(self):
+        """Test that the copy root page path redirects to admin home."""
+        response = self.client.get(reverse("wagtailadmin_pages:copy", args=[self.homepage.id]))
+
+        self.assertRedirects(response, f"/{settings.WAGTAILADMIN_HOME_PATH}")
+
     def test_copy_page_does_not_have_publish_or_alias_options(self):
         """Test that the options to publish or copy as alias are removed via cms.core.forms.ONSCopyForm."""
-        response = self.client.get(reverse("wagtailadmin_pages:copy", args=[self.homepage.id]))
+        response = self.client.get(reverse("wagtailadmin_pages:copy", args=[self.index_page.id]))
 
         self.assertNotContains(response, "id_publish_copies")
         self.assertNotContains(response, "id_alias")

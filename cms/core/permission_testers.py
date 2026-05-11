@@ -115,6 +115,9 @@ class BasePagePermissionTester(PagePermissionTester):
         """Overrides the core can_delete to extend with ONS publishing logic.
 
         To delete, the page must not be in an active bundle, or ready to publish.
+        Pages that have ever been published are blocked at the `before_delete_page`
+        hook layer, so the user gets a friendly "Deletion Not Allowed" message rather
+        than a generic permission-denied error.
         """
         if in_active_bundle(self.page):
             return False
@@ -124,6 +127,19 @@ class BasePagePermissionTester(PagePermissionTester):
 
         can_delete: bool = super().can_delete(ignore_bulk=ignore_bulk)
         return can_delete
+
+    def can_unpublish(self) -> bool:
+        """Overrides the core can_unpublish so that only Publishing Admins (or superusers)
+        can unpublish pages. Officers and other users lose the unpublish path.
+        """
+        if (
+            not self.user.is_superuser
+            and not self.user.groups.filter(name=settings.PUBLISHING_ADMINS_GROUP_NAME).exists()
+        ):
+            return False
+
+        can_unpublish: bool = super().can_unpublish()
+        return can_unpublish
 
     def can_set_view_restrictions(self) -> bool:
         """Overrides the core can_set_view_restrictions to always return False unless the
