@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 
 from django.test import TestCase
 
-from cms.articles.models import StatisticalArticlePage
-from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.utils import (
     BundleAPIBundleMetadata,
@@ -46,6 +46,7 @@ class BundlesUtilsTestCase(TestCase):
         self.assertListEqual(
             page_types,
             [
+                ArticleSeriesPage,
                 IndexPage,
                 InformationPage,
                 MethodologyPage,
@@ -448,3 +449,13 @@ class SerializeBundleContentTranslationTests(TestCase):
         content = serialize_bundle_content_for_published_release_calendar_page(bundle)
 
         self.assertEqual(content[0]["value"]["title"], "Publications")
+
+    def test_article_series_page_excluded_from_release_calendar_content(self):
+        """Article Series pages in a bundle must not be added to the Release Calendar content."""
+        bundle = BundleFactory()
+        series = ArticleSeriesPageFactory()
+        BundlePageFactory(parent=bundle, page=series)
+
+        content = serialize_bundle_content_for_published_release_calendar_page(bundle)
+
+        self.assertEqual(content, [])

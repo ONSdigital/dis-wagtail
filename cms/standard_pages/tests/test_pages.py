@@ -1,10 +1,12 @@
+from unittest import skip
+
 from django.conf import settings
-from django.test import override_settings
+from django.test import RequestFactory, override_settings
 from django.utils import translation
 from wagtail.models import Site
 from wagtail.test.utils import WagtailPageTestCase
 
-from cms.core.tests.utils import TranslationResetMixin, reset_url_caches
+from cms.core.tests.utils import TranslationResetMixin
 from cms.standard_pages.models import CookiesPage
 from cms.standard_pages.utils import SUPPORTED_LANGUAGE_CODES
 
@@ -22,6 +24,19 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
     def tearDown(self):
         # Clear translation caches
         translation.deactivate()
+
+    def test_welsh_cookies_page_shows_localised_version_notice_by_default(self):
+        request = RequestFactory().get(self.welsh_cookies_page.url)
+        request.LANGUAGE_CODE = "cy"
+
+        self.assertTrue(self.welsh_cookies_page.show_localised_version_not_available_notice(request))
+
+    @override_settings(CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED=False)
+    def test_welsh_cookies_page_can_hide_localised_version_notice_with_feature_flag(self):
+        request = RequestFactory().get(self.welsh_cookies_page.url)
+        request.LANGUAGE_CODE = "cy"
+
+        self.assertFalse(self.welsh_cookies_page.show_localised_version_not_available_notice(request))
 
     def test_get_cookies_page(self):
         response = self.client.get(self.cookies_page.url)
@@ -45,7 +60,20 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
             html=True,
         )
 
-    def test_get_welsh_cookies_page(self):
+    def test_welsh_cookies_page_renders_translated_furniture(self):
+        response = self.client.get(self.welsh_cookies_page.url, headers={"host": "cy.ons.localhost"})
+        self.assertEqual(response.status_code, 200)
+
+        # Check the breadcrumbs include the home page link
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{self.welsh_site.root_url}">Cartref</a>',
+            html=True,
+        )
+
+    # TODO: Remove skip when translations for Cookies page are available
+    @skip("Welsh cookies page content translations temporarily disabled until full translations are available")
+    def test_welsh_cookies_page_renders_translated_content(self):
         response = self.client.get(self.welsh_cookies_page.url, headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, 200)
         self.assertContains(
@@ -60,12 +88,6 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
             html=True,
         )
         self.assertContains(response, "Gosodiadau cwcis")
-        # Check the breadcrumbs include the home page link
-        self.assertContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{self.welsh_site.root_url}">Cartref</a>',
-            html=True,
-        )
 
     def test_cookies_page_exists_for_all_supported_language(self):
         # The english cookies page should be the original
@@ -90,7 +112,6 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
     def test_view_cookies_link_is_localised_subdomain_routing_off(self):
         # remove all but the default site
         Site.objects.filter(is_default_site=False).delete()
-        reset_url_caches()
 
         response = self.client.get("/cy")
         self.assertContains(response, 'href="/cy/cookies"')

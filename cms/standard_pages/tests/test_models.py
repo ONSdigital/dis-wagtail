@@ -4,6 +4,7 @@ from django.http import Http404
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from wagtail.coreutils import get_dummy_request
+from wagtail.models import Locale
 from wagtail.rich_text import RichText
 from wagtail.test.utils import WagtailTestUtils
 
@@ -500,3 +501,26 @@ class InformationPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(f"{self.page.url}/download-table/nonexistent-id")
 
         self.assertEqual(response.status_code, 404)
+
+
+class InformationPageAliasLastPublishedAtTestCase(WagtailTestUtils, TestCase):
+    """Regression tests for alias last_published_at sync on publish."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cy_locale = Locale.objects.get(language_code="cy")
+
+    def test_alias_last_published_at_is_set_when_source_page_was_drafted_before_first_publish(self):
+        en_page = InformationPageFactory(live=False)
+        cy_alias = en_page.copy_for_translation(locale=self.cy_locale, copy_parents=True, alias=True)
+
+        self.assertIsNone(cy_alias.last_published_at)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            en_page.save_revision().publish()
+
+        en_page.refresh_from_db()
+        cy_alias.refresh_from_db()
+
+        self.assertIsNotNone(cy_alias.last_published_at)
+        self.assertEqual(cy_alias.last_published_at, en_page.last_published_at)

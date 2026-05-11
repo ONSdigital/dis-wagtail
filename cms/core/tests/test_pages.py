@@ -13,7 +13,6 @@ from cms.core.tests.utils import (
     TranslationResetMixin,
     extract_datalayer_pushed_values,
     extract_response_jsonld,
-    reset_url_caches,
 )
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
@@ -22,9 +21,6 @@ from cms.standard_pages.tests.factories import IndexPageFactory, InformationPage
 class HomePageTests(TranslationResetMixin, WagtailPageTestCase):
     def setUp(self):
         self.page = HomePage.objects.first()
-
-    def tearDown(self):
-        reset_url_caches()
 
     def test_home_page_can_be_served(self):
         """Test that the home page can be served."""
@@ -273,12 +269,31 @@ class ErrorPageTests(TranslationResetMixin, WagtailPageTestCase):
                 self.assertIn("Page not found", response.content.decode("utf-8"))
                 self.assertIn("If you entered a web address, check it is correct.", response.content.decode("utf-8"))
 
-    def test_301_before_404_page(self):
-        """Test that a 301 redirect is returned before the 404 page is served when necessary."""
-        # The lack of a trailing slash on the URL should result in a 301 redirect,
+    def test_404_page_locale_switcher(self):
+        response = self.client.get("/non-existent-page")
+
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertInHTML(
+            '<a href="http://cy.ons.localhost/non-existent-page" lang="cy"',
+            response.content.decode("utf-8"),
+        )
+
+    @override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
+    def test_404_page_locale_switcher_path_based(self):
+        response = self.client.get("/non-existent-page")
+
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertInHTML(
+            '<a href="/cy/non-existent-page" lang="cy"',
+            response.content.decode("utf-8"),
+        )
+
+    def test_308_before_404_page(self):
+        """Test that a 308 redirect is returned before the 404 page is served when necessary."""
+        # The lack of a trailing slash on the URL should result in a 308 redirect,
         # even if the page does not exist.
         response = self.client.get("/non-existent-page-with-trailing-slash/")
-        self.assertEqual(response.status_code, HTTPStatus.MOVED_PERMANENTLY)
+        self.assertEqual(response.status_code, HTTPStatus.PERMANENT_REDIRECT)
 
         # Follow the redirect
         response = self.client.get(response["Location"])
@@ -326,6 +341,35 @@ class ErrorPageTests(TranslationResetMixin, WagtailPageTestCase):
         )
         # This uses the base template, which has OG tags
         self.assertContains(response, 'property="og:description"', status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    @patch("cms.standard_pages.models.InformationPage.serve")
+    def text_500_page_locale_switcher(self, mock_information_page_serve):
+        InformationPageFactory(slug="new-info-page")
+
+        mock_information_page_serve.side_effect = ValueError("Deliberate test error")
+
+        response = self.client.get("/new-info-page")
+
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertIn(
+            '<a href="http://cy.ons.localhost/new-info-page" lang="cy"',
+            response.content.decode("utf-8"),
+        )
+
+    @override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
+    @patch("cms.standard_pages.models.InformationPage.serve")
+    def text_500_page_locale_switcher_path_based(self, mock_information_page_serve):
+        InformationPageFactory(slug="new-info-page")
+
+        mock_information_page_serve.side_effect = ValueError("Deliberate test error")
+
+        response = self.client.get("/new-info-page")
+
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertInHTML(
+            '<a href="/cy/new-info-page" lang="cy"',
+            response.content.decode("utf-8"),
+        )
 
     @patch("cms.home.models.HomePage.serve")
     @patch("django.template.loader.get_template")

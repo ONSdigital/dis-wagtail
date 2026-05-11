@@ -90,7 +90,7 @@ class AuthIntegrationTests(CognitoTokenTestCase):
 
         self.set_jwt_cookies(access, id_token)
         # Trigger authentication (middleware runs)
-        self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        self.client.get(f"/{settings.WAGTAILADMIN_HOME_PATH}")
 
         # Refresh from DB and check details updated
         user.refresh_from_db()
@@ -235,7 +235,7 @@ class AuthIntegrationTests(CognitoTokenTestCase):
         access_2, id_token_2 = self.generate_tokens(username=uuid_other)
         self.set_jwt_cookies(access_2, id_token_2)
 
-        response_2 = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        response_2 = self.client.get(f"/{settings.WAGTAILADMIN_HOME_PATH}")
 
         self.assertEqual(response_2.status_code, 302)
         self.assertFalse(response_2.wsgi_request.user.is_authenticated)
@@ -332,14 +332,14 @@ class AuthIntegrationTests(CognitoTokenTestCase):
 
         # Now flip the flag to False and access the admin home
         with override_settings(WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False):
-            response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+            response = self.client.get(f"/{settings.WAGTAILADMIN_HOME_PATH}")
             self.assertLoggedOut()
 
     @override_settings(WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False)
     def test_core_admin_unavailable_when_core_admin_disabled(self):
         """Test that the core admin login page is unavailable when WAGTAIL_CORE_ADMIN_LOGIN_ENABLED is False."""
         User.objects.create_superuser(username="test", email="test@example.com", password="password123")
-        response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        response = self.client.get(f"/{settings.WAGTAILADMIN_HOME_PATH}")
         # Should redirect to florence login page or similar
         self.assertEqual(response.status_code, 302)
 
@@ -394,7 +394,7 @@ class WagtailHookTests(CognitoTokenTestCase):
             self.login_with_tokens()
             self.assertLoggedIn()
 
-            resp = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+            resp = self.client.get(f"/{settings.WAGTAILADMIN_HOME_PATH}")
             self.assertEqual(resp.status_code, 200)
             html = resp.content.decode()
 
@@ -418,7 +418,7 @@ class WagtailHookTests(CognitoTokenTestCase):
         # User with username 'test' should now exist after login
         self.assertTrue(User.objects.filter(username="test").exists())
 
-        response_admin = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        response_admin = self.client.get(f"/{settings.WAGTAILADMIN_HOME_PATH}")
         html = response_admin.content.decode()
 
         self.assertNotIn('id="auth-config"', html)

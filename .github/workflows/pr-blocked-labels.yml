@@ -1,0 +1,31 @@
+name: Block merge on blocking labels
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled, edited]
+
+jobs:
+  label-check:
+    name: label-check
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+
+    steps:
+      - uses: mheap/github-action-required-labels@v5
+        with:
+          mode: exactly
+          count: 0
+          labels: |
+            do not merge
+            status: Blocked
+            status: In-progress
+            status: Needs tests
+            status: Needs functional/UI tests
+            invalid
+            On Hold ✋
+          add_comment: true
+          message:
+            "This PR is being prevented from merging because you have added one of our blocking labels: {{ applied }}\n\n
+            You'll need to remove it before this PR can be merged."

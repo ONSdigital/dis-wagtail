@@ -8,6 +8,7 @@ from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.bundles.mixins import BundledPageMixin
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.utils import TranslationResetMixin
 from cms.datasets.blocks import DatasetStoryBlock
@@ -24,6 +25,10 @@ class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
 
     def test_permission_tester_inherits_from_basepagepermissiontester(self):
         self.assertIsInstance(self.series.permissions_for_user(UserFactory()), BasePagePermissionTester)
+
+    def test_is_bundleable(self):
+        """Article Series pages should be bundleable so they can be published with related content."""
+        self.assertIsInstance(self.series, BundledPageMixin)
 
     def test_index_redirect_404_with_no_subpages(self):
         """Test index path redirects to latest."""
@@ -211,25 +216,21 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
 
     def test_evergreen_route_related_data_alternate_urls(self):
         """Test that the related data page has correct hreflang alternate URLs."""
-        # TODO: Update tests once bug CMS-765 is resolved.
-        # For now, always use the article URL and not the series URL for hreflang links,
-        # nor the /related-data suffix.
         welsh_article = self.article_with_datasets.copy_for_translation(
             locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_article.save_revision().publish()
         response = self.client.get(f"{self.article_series_page.url}/related-data", headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        # TODO: Change to {self.article_series_page.url}/related-data once CMS-765 is resolved.
         self.assertContains(
             response,
-            f'<link rel="alternate" href="{self.article_with_datasets.url}" hreflang="en-gb" />',
+            f'<link rel="alternate" href="{self.article_series_page.get_full_url()}/related-data" hreflang="en-gb" />',
             html=True,
         )
-        # TODO: Change to {welsh_series_url}/related-data once CMS-765 is resolved.
+        welsh_series_url = welsh_article.get_parent().get_full_url()
         self.assertContains(
             response,
-            f'<link rel="alternate" href="{welsh_article.url}" hreflang="cy" />',
+            f'<link rel="alternate" href="{welsh_series_url}/related-data" hreflang="cy" />',
             html=True,
         )
 
