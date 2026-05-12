@@ -3,12 +3,12 @@ Feature: CMS users can manage bundles
     Background:
         Given a CMS user logs into the admin site
 
-    # General bundle page scenarios
+    # General bundle page scenarios
     Scenario: A content editor can see the date placeholder on the bundle page
         When the user navigates to the bundle creation page
         Then the date placeholder "YYYY-MM-DD HH:MM" is displayed in the "Publication date" textbox
     
-    # Release calendar specific scenarios
+    # Release calendar specific scenarios
     Scenario: A content editor can see the locale column when selecting a release calendar
         When the user navigates to the bundle creation page
         And the user opens the release calendar page chooser
@@ -61,7 +61,7 @@ Feature: CMS users can manage bundles
         And  the user tries to set the release calendar page status to "Cancelled"
         Then the user sees a validation error preventing the cancellation because the page is in a bundle
     
-    # Datasets specific scenarios
+    # Datasets specific scenarios
     Scenario: A content editor can select multiple datasets on the bundle page
         When the user navigates to the bundle creation page
         And the user selects multiple datasets
