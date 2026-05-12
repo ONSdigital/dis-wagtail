@@ -179,7 +179,7 @@ Feature: CMS users can manage bundles
             | Fair use policy | Information page | Ready to publish |
         And the bundle edit page is in read only mode
 
-    Scenario: A CMS user can publish a ready to publish bundle
+    Scenario: A CMS user can manually publish a ready to publish bundle
         Given a bundle called "Bundle help pages release four" exists in "ready to publish" with the following approved information pages:
             | Title          |
             | Contact us     |
