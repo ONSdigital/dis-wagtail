@@ -122,7 +122,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     def save(  # type: ignore[override]
         self, clean: bool = True, user: User | None = None, log_action: bool = False, **kwargs: Any
     ) -> ArticleSeriesPage | None:
-        original_values = {}
+        # typing ignored as we need TypedDict but mypy struggles with it
+        original_values = None  # typing: ignore[var-annotated]
         if self.pk:
             original_values = ArticleSeriesPage.objects.values("title", "slug").filter(pk=self.pk).first()
 
