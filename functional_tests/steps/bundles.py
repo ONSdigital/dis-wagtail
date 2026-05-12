@@ -364,7 +364,11 @@ def the_bundle_inspect_page_displays_metadata(context: Context) -> None:
     context.bundle = Bundle.objects.get(id=bundle_id)
 
     formatted_created_at = (
-        timezone.localtime(context.bundle.created_at).strftime("%d %b %Y %-I:%M%p").replace(" 0", " ")
+        timezone.localtime(context.bundle.created_at)
+        .strftime("%d %b %Y %-I:%M%p")
+        .replace(" 0", " ")
+        .replace("AM", "am")
+        .replace("PM", "pm")
     )
     created_by = context.bundle.created_by.username
     approval_status = get_bundle_approval_status(context.bundle)
@@ -377,16 +381,16 @@ def the_bundle_inspect_page_displays_metadata(context: Context) -> None:
 
         expect(dl_locator).to_contain_text(label)
 
-        if value:
-            expect(dl_locator).to_contain_text(value)
-        elif label == "Created at":
-            expect(context.page.get_by_text(formatted_created_at)).to_be_visible()
-        elif label == "Created by":
-            expect(dl_locator).to_contain_text(created_by)
-        elif label == "Teams":
-            expect(dl_locator).to_contain_text("-")
-        elif label == "Approval status":
-            expect(dl_locator).to_contain_text(approval_status)
+        default_values = {
+            "Created at": formatted_created_at,
+            "Created by": created_by,
+            "Teams": "-",
+            "Approval status": approval_status,
+        }
+
+        text_to_check = value or default_values.get(label)
+        if text_to_check:
+            expect(dl_locator).to_contain_text(text_to_check)
 
 
 @then("the bundle inspect page displays the following information pages:")
@@ -478,22 +482,19 @@ def the_bundle_edit_page_is_in_read_only_mode(context: Context) -> None:
 
     context.page.goto(edit_url)
 
-    # Bundle title is read-only
     expect(context.page.locator("#id_name")).to_be_disabled()
-
-    # Publication date is read-only
     expect(context.page.locator("#id_publication_date")).to_be_disabled()
 
-    # Bundled pages are rendered as read-only text output
-    # instead of chooser widgets
     bundled_pages = context.page.locator("#panel-bundled_pages-section .w-field__textoutput")
 
-    expect(bundled_pages).to_have_count(len(context.bundle.bundled_pages.all()))
+    expect(bundled_pages).to_have_count(context.bundle.bundled_pages.count())
 
     for bundled_page in context.bundle.bundled_pages.select_related("page"):
         page_title = bundled_page.page.title
 
-        expect(bundled_pages).to_contain_text(page_title)
+        matching_page = bundled_pages.filter(has_text=page_title)
 
-    # Add page button should be disabled
+        expect(matching_page).to_have_count(1)
+        expect(matching_page).to_contain_text("Ready to publish")
+
     expect(context.page.locator("#id_bundled_pages-OPEN_MODAL")).to_be_disabled()
