@@ -15,7 +15,7 @@ from cms.core.custom_date_format import ons_date_format
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.teams.tests.factories import TeamFactory
-from functional_tests.step_helpers.utils import get_page_from_context
+from functional_tests.step_helpers.utils import get_bundle_approval_status, get_page_from_context
 from functional_tests.steps.information_page import create_information_page
 from functional_tests.steps.release_page import click_add_child_page, navigate_to_release_calendar_page
 from functional_tests.steps.workflows import mark_page_as_ready_to_publish
@@ -367,6 +367,7 @@ def the_bundle_inspect_page_displays_metadata(context: Context) -> None:
         timezone.localtime(context.bundle.created_at).strftime("%d %b %Y %-I:%M%p").replace(" 0", " ")
     )
     created_by = context.bundle.created_by.username
+    approval_status = get_bundle_approval_status(context.bundle)
 
     dl_locator = context.page.locator("dl")
 
@@ -382,6 +383,10 @@ def the_bundle_inspect_page_displays_metadata(context: Context) -> None:
             expect(context.page.get_by_text(formatted_created_at)).to_be_visible()
         elif label == "Created by":
             expect(dl_locator).to_contain_text(created_by)
+        elif label == "Teams":
+            expect(dl_locator).to_contain_text("-")
+        elif label == "Approval status":
+            expect(dl_locator).to_contain_text(approval_status)
 
 
 @then("the bundle inspect page displays the following information pages:")
@@ -406,3 +411,89 @@ def the_bundle_inspect_page_displays_information_pages(context: Context) -> None
 def the_bundle_inspect_page_shows_no_datasets(context: Context) -> None:
     expect(context.page.locator("dl")).to_contain_text("Datasets")
     expect(context.page.locator("dl")).to_contain_text("No datasets in bundle")
+
+
+@given('a bundle called "{bundle_name}" exists in "{bundle_status}" with the following approved information pages:')
+def bundle_exists_with_approved_information_pages(
+    context: Context,
+    bundle_name: str,
+    bundle_status: Literal["draft", "review"],
+) -> None:
+    approved_pages = []
+
+    for row in context.table:
+        create_information_page(
+            context,
+            title=row["Title"],
+        )
+
+        mark_page_as_ready_to_publish(
+            context.information_page,
+            user=getattr(context, "user", None),
+        )
+
+        approved_pages.append(context.information_page)
+
+    status_mapping = {
+        "draft": BundleStatus.DRAFT,
+        "review": BundleStatus.IN_REVIEW,
+    }
+
+    context.bundle = BundleFactory(
+        name=bundle_name,
+        status=status_mapping[bundle_status.lower()],
+        bundled_pages=approved_pages,
+    )
+
+
+@when("the user navigates to the draft bundle page")
+@when("the user navigates to the bundle page in review")
+def the_user_navigates_to_the_draft_bundle_page(context: Context) -> None:
+    current_url = context.page.url
+    port = current_url.split(":")[2].split("/")[0]
+
+    bundle_id = context.bundle.id
+    edit_url = f"http://localhost:{port}/admin/bundle/edit/{bundle_id}/"
+
+    context.page.goto(edit_url)
+
+
+@when('the user moves the bundle to "{status}"')
+def the_user_moves_bundle_to_status(context: Context, status: str) -> None:
+    action_mapping = {
+        "review": "Save to preview",
+        "ready to publish": "Approve",
+    }
+    context.page.get_by_role("button", name="More actions").click()
+    context.page.get_by_role("button", name=action_mapping[status]).click()
+
+
+@then("the bundle edit page is in read only mode")
+def the_bundle_edit_page_is_in_read_only_mode(context: Context) -> None:
+    current_url = context.page.url
+    port = current_url.split(":")[2].split("/")[0]
+
+    bundle_id = context.bundle.id
+    edit_url = f"http://localhost:{port}/admin/bundle/edit/{bundle_id}/"
+
+    context.page.goto(edit_url)
+
+    # Bundle title is read-only
+    expect(context.page.locator("#id_name")).to_be_disabled()
+
+    # Publication date is read-only
+    expect(context.page.locator("#id_publication_date")).to_be_disabled()
+
+    # Bundled pages are rendered as read-only text output
+    # instead of chooser widgets
+    bundled_pages = context.page.locator("#panel-bundled_pages-section .w-field__textoutput")
+
+    expect(bundled_pages).to_have_count(len(context.bundle.bundled_pages.all()))
+
+    for bundled_page in context.bundle.bundled_pages.select_related("page"):
+        page_title = bundled_page.page.title
+
+        expect(bundled_pages).to_contain_text(page_title)
+
+    # Add page button should be disabled
+    expect(context.page.locator("#id_bundled_pages-OPEN_MODAL")).to_be_disabled()
