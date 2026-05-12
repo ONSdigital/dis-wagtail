@@ -19,7 +19,6 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
 
     def test_release_calendar_index_is_sorted_first(self):
         """Checks that the Release Calendar index page is placed before all other pages in the returned ordering."""
-        IndexPageFactory(parent=self.homepage, title="New Index Page")
         pages = self.homepage.get_children().specific()
         query = pin_release_calendar_page(
             self.homepage,
