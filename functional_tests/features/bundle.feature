@@ -134,13 +134,13 @@ Feature: CMS users can manage bundles
             | Privacy policy | Information page | Ready to publish |
         And the bundle inspect page shows no datasets
 
-    Scenario: A CMS user can move a draft bundle to review
+    Scenario: A CMS user can submit a draft bundle for review
         Given a bundle called "Bundle help pages release two" exists in "draft" with the following approved information pages:
             | Title                   |
             | Terms and conditions    |
             | Accessibility statement |
-        When the user navigates to the draft bundle page
-        And the user moves the bundle to "review"
+        When the user navigates to the bundle page in draft
+        And the user submits the bundle to "review"
         Then the bundle inspect page displays the following metadata:
             | Metadata Field                   | Metadata Value                |
             | Name                             | Bundle help pages release two |
@@ -156,14 +156,13 @@ Feature: CMS users can manage bundles
             | Terms and conditions    | Information page | Ready to publish |
             | Accessibility statement | Information page | Ready to publish |
 
-    @smoke
-    Scenario: A CMS user can move a bundle in review to ready to publish
+    Scenario: A CMS user can approve a bundle in review to ready to publish
         Given a bundle called "Bundle help pages release three" exists in "review" with the following approved information pages:
             | Title           |
             | Browsers        |
             | Fair use policy |
         When the user navigates to the bundle page in review
-        And the user moves the bundle to "ready to publish"
+        And the user submits the bundle to "ready to publish"
         Then the bundle inspect page displays the following metadata:
             | Metadata Field                   | Metadata Value                  |
             | Name                             | Bundle help pages release three |
@@ -179,3 +178,28 @@ Feature: CMS users can manage bundles
             | Browsers        | Information page | Ready to publish |
             | Fair use policy | Information page | Ready to publish |
         And the bundle edit page is in read only mode
+
+    Scenario: A CMS user can publish a ready to publish bundle
+        Given a bundle called "Bundle help pages release four" exists in "ready to publish" with the following approved information pages:
+            | Title          |
+            | Contact us     |
+            | Legal notice   |
+        When the user navigates to the bundle page in ready to publish
+        And the user publishes the bundle
+        Then the user is taken back to the bundles listing page
+        When the user filters the bundles listing page by "Published" status
+        And the user clicks on the published bundle "Bundle help pages release four"
+        Then the bundle inspect page displays the following metadata:
+            | Metadata Field                   | Metadata Value                  |
+            | Name                             | Bundle help pages release four  |
+            | Created at                       |                                 |
+            | Created by                       |                                 |
+            | Status                           | Published                       |
+            | Approval status                  |                                 |
+            | Scheduled publication            | No scheduled publication        |
+            | Associated release calendar page | N/A                             |
+            | Teams                            |                                 |
+        And the bundle inspect page displays the following information pages:
+            | Title          | Type             | Status           |
+            | Contact us     | Information page | Published        |
+            | Legal notice   | Information page | Published        |

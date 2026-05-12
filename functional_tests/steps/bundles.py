@@ -421,7 +421,7 @@ def the_bundle_inspect_page_shows_no_datasets(context: Context) -> None:
 def bundle_exists_with_approved_information_pages(
     context: Context,
     bundle_name: str,
-    bundle_status: Literal["draft", "review"],
+    bundle_status: Literal["draft", "review", "ready to publish"],
 ) -> None:
     approved_pages = []
 
@@ -441,6 +441,7 @@ def bundle_exists_with_approved_information_pages(
     status_mapping = {
         "draft": BundleStatus.DRAFT,
         "review": BundleStatus.IN_REVIEW,
+        "ready to publish": BundleStatus.APPROVED,
     }
 
     context.bundle = BundleFactory(
@@ -450,9 +451,10 @@ def bundle_exists_with_approved_information_pages(
     )
 
 
-@when("the user navigates to the draft bundle page")
+@when("the user navigates to the bundle page in draft")
 @when("the user navigates to the bundle page in review")
-def the_user_navigates_to_the_draft_bundle_page(context: Context) -> None:
+@when("the user navigates to the bundle page in ready to publish")
+def the_user_navigates_to_the_bundle_page(context: Context) -> None:
     current_url = context.page.url
     port = current_url.split(":")[2].split("/")[0]
 
@@ -462,14 +464,20 @@ def the_user_navigates_to_the_draft_bundle_page(context: Context) -> None:
     context.page.goto(edit_url)
 
 
-@when('the user moves the bundle to "{status}"')
-def the_user_moves_bundle_to_status(context: Context, status: str) -> None:
+@when('the user submits the bundle to "{status}"')
+def the_user_submits_bundle_to_status(context: Context, status: str) -> None:
     action_mapping = {
         "review": "Save to preview",
         "ready to publish": "Approve",
     }
     context.page.get_by_role("button", name="More actions").click()
     context.page.get_by_role("button", name=action_mapping[status]).click()
+
+
+@when("the user publishes the bundle")
+def the_user_publishes_the_bundle(context: Context) -> None:
+    context.page.get_by_role("button", name="More actions").click()
+    context.page.get_by_role("button", name="Publish").click()
 
 
 @then("the bundle edit page is in read only mode")
@@ -498,3 +506,25 @@ def the_bundle_edit_page_is_in_read_only_mode(context: Context) -> None:
         expect(matching_page).to_contain_text("Ready to publish")
 
     expect(context.page.locator("#id_bundled_pages-OPEN_MODAL")).to_be_disabled()
+
+
+@then("the user is taken back to the bundles listing page")
+def the_user_is_taken_back_to_bundles_listing_page(context: Context) -> None:
+    current_url = context.page.url
+    port = current_url.split(":")[2].split("/")[0]
+
+    expected_url = f"http://localhost:{port}/admin/bundle/"
+
+    expect(context.page).to_have_url(expected_url)
+
+
+@when("the user filters the bundles listing page by {filter_option} status")
+def the_user_filters_bundles_listing_by_status(context: Context, filter_option: str) -> None:
+    context.page.get_by_role("button", name="Show filters").click()
+    context.page.get_by_role("button", name="Status").click()
+    context.page.get_by_role("radio", name=filter_option.strip('"')).check()
+
+
+@when('the user clicks on the published bundle "{bundle_name}"')
+def the_user_clicks_on_published_bundle(context: Context, bundle_name: str) -> None:
+    context.page.get_by_role("link", name=bundle_name, exact=True).click()
