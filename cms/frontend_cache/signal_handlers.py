@@ -111,7 +111,7 @@ def register_signal_handlers() -> None:
     post_page_move.connect(purge_page_from_frontend_cache_after_move)
 
     for model in [ContactDetails, Definition]:
-        published.connect(purge_pages_containing_the_unpublished_snippet_from_frontend_cache, sender=model)
+        published.connect(purge_pages_containing_the_published_snippet_from_frontend_cache, sender=model)
         unpublished.connect(purge_pages_containing_the_unpublished_snippet_from_frontend_cache, sender=model)
         post_delete.connect(purge_pages_containing_the_deleted_snippet_from_frontend_cache, sender=model)
 

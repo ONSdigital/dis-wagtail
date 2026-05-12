@@ -5,7 +5,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
-from wagtail.models import Locale
+from wagtail.models import Locale, Site
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage, StatisticalArticlePage
@@ -609,6 +609,35 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                 another_index.get_full_url(self.request),  # old and new indexes
             }
         )
+
+
+@override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
+@patch("cms.frontend_cache.cache.purge_urls_from_cache")
+class PageFrontEndCacheInvalidationWithPathLocalisationTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.home_page = HomePage.objects.first()
+        cls.welsh_locale = Locale.objects.get(language_code="cy")
+
+        cls.topic_1 = TopicFactory()
+
+        cls.topic_page = TopicPageFactory(title="The topic page", topic=cls.topic_1)
+        cls.topic_page.save_revision().publish()
+        cls.topic_page_translation = cls.topic_page.get_translations().first()
+
+        # remove all but the default site
+        Site.objects.filter(is_default_site=False).delete()
+
+    def test_page_publish__in_path_based_locale_setup(self, patched_purge_urls):
+        self.topic_page.save_revision().publish()
+        patched_purge_urls.assert_has_calls(
+            [
+                call({self.topic_page.full_url}),
+                call({self.topic_page_translation.full_url}),
+            ]
+        )
+
+        self.assertStartsWith(self.topic_page_translation.url, "/cy/")
 
 
 @patch("cms.frontend_cache.cache.purge_urls_from_cache")

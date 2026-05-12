@@ -122,21 +122,23 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     def save(  # type: ignore[override]
         self, clean: bool = True, user: User | None = None, log_action: bool = False, **kwargs: Any
     ) -> ArticleSeriesPage | None:
-        instance: ArticleSeriesPage | None = super().save(  # type: ignore[call-arg]
-            clean=True, user=None, log_action=False, **kwargs
-        )
-
+        original_values = {}
         if self.pk:
             original_values = ArticleSeriesPage.objects.values("title", "slug").filter(pk=self.pk).first()
-            if original_values and self.title != original_values["title"] and self.slug == original_values["slug"]:
-                # The title has changed, but not the slug.
-                # The slug change is already handled by the `page_slug_changed` signal.
-                transaction.on_commit(
-                    lambda: series_title_changed.send(
-                        sender=self.__class__,
-                        instance=self,
-                    )
+
+        instance: ArticleSeriesPage | None = super().save(  # type: ignore[call-arg]
+            clean=clean, user=user, log_action=log_action, **kwargs
+        )
+
+        if original_values and self.title != original_values["title"] and self.slug == original_values["slug"]:
+            # The title has changed, but not the slug.
+            # The slug change is already handled by the `page_slug_changed` signal.
+            transaction.on_commit(
+                lambda: series_title_changed.send(
+                    sender=self.__class__,
+                    instance=self,
                 )
+            )
 
         return instance
 

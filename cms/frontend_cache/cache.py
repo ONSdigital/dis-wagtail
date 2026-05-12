@@ -132,7 +132,7 @@ def get_topic_pages_featuring_series(
     # Get the series topic path and exclude it as we handle the parent topic separately.
     # url_path is in the form: /home/topic/articles/series/ so this becomes /home/topic/
     parent_topic_path = "/".join(article_series.url_path.rstrip("/").split("/")[:-2]) + "/"
-    featured_on_topics_qs: PageQuerySet = article_series.featured_on_topic.exclude(path=parent_topic_path)
+    featured_on_topics_qs: PageQuerySet = article_series.featured_on_topic.exclude(url_path=parent_topic_path)
     for topic_page in featured_on_topics_qs.live().only("pk", "url_path"):
         urls.update(get_page_cached_urls(topic_page))
         topic_page_ids.append(topic_page.pk)
