@@ -12,14 +12,10 @@ from cms.standard_pages.tests.factories import IndexPageFactory
 class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.superuser = cls.create_superuser(username="admin")
         cls.root = Page.get_first_root_node()
         cls.homepages = HomePage.objects.specific()
         cls.homepage = cls.homepages.first()
         cls.release_calendar_index = ReleaseCalendarIndex.objects.first()
-
-    def setUp(self):
-        self.login()
 
     def test_release_calendar_index_is_sorted_first(self):
         """Checks that the Release Calendar index page is placed before all other pages in the returned ordering."""
@@ -34,6 +30,7 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
 
     def test_release_calendar_index_is_first_in_explorer_page(self):
         """Checks that the Release Calendar index page is displayed at the top of the explorer page."""
+        self.login()
         IndexPageFactory(parent=self.homepage, title="New Index Page")
         response = self.client.get(
             reverse(
