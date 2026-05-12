@@ -9,14 +9,16 @@ from django.utils import timezone
 from playwright.sync_api import expect
 
 from cms.bundles.enums import BundleStatus
-from cms.bundles.models import BundlePage, BundleTeam
+from cms.bundles.models import Bundle, BundlePage, BundleTeam
 from cms.bundles.tests.factories import BundleFactory
 from cms.core.custom_date_format import ons_date_format
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
-from cms.users.tests.factories import UserFactory
+from cms.teams.tests.factories import TeamFactory
 from functional_tests.step_helpers.utils import get_page_from_context
+from functional_tests.steps.information_page import create_information_page
 from functional_tests.steps.release_page import click_add_child_page, navigate_to_release_calendar_page
+from functional_tests.steps.workflows import mark_page_as_ready_to_publish
 
 tomorrow = timezone.now() + timedelta(days=1)
 
@@ -84,28 +86,11 @@ def the_selected_datasets_are_displayed(context: Context) -> None:
     ).is_visible()
 
 
-# bundle create amend
-@given("a bundle has been created with a creator")
-def a_bundle_has_been_created_with_user(context: Context) -> None:
-    context.bundle_creator = UserFactory()
-    context.bundle = BundleFactory(created_by=context.bundle_creator)
-
-
-@step("the bundle has creator removed")
-def delete_bundle_creator(context: Context) -> None:
-    context.bundle_creator.delete()
-
-
 # bundle goto
 @step("the user edits the bundle")
 @step("the user goes to edit the bundle")
-def user_edits_the_bundle(context: Context):
+def user_edits_the_bundle(context: Context) -> None:
     context.page.goto(context.base_url + reverse("bundle:edit", args=[context.bundle.pk]))
-
-
-@step("the user goes to the bundle inspect page")
-def go_to_bundle_inspect(context: Context) -> None:
-    context.page.goto(context.base_url + reverse("bundle:inspect", args=[context.bundle.pk]))
 
 
 @step("the user clicks on the inspect link for the created bundle")
@@ -115,34 +100,15 @@ def user_clicks_on_inspect_link_for_created_bundle(context: Context) -> None:
     context.page.get_by_role("link", name="Inspect", exact=True).click()
 
 
-@step("the user goes to the bundle menu page")
-def go_to_bundle_menu(context: Context) -> None:
-    context.page.goto(context.base_url + reverse("bundle:index"))
-
-
-# bundle Menu
-@step("the bundle menu shows bundle and Added by is not empty")
-def bundle_menu_contains_value(
-    context: Context,
-) -> None:
-    expect(context.page.get_by_role("table")).to_contain_text(context.bundle.name)
-    expect(context.page.get_by_role("table")).to_contain_text(context.bundle_creator.get_full_name())
-
-
-@step("the bundle menu shows bundle and Added by is empty")
-def bundle_menu_does_not_contain_value(context: Context) -> None:
-    expect(context.page.get_by_role("table")).to_contain_text(context.bundle.name)
-    expect(context.page.get_by_role("table")).not_to_contain_text(context.bundle_creator.get_full_name())
-
-
 @step("the user saves the bundle as draft")
 def user_saves_bundle_as_draft(context: Context) -> None:
     context.page.get_by_role("button", name="Save as Draft").click()
 
 
 @step("the user sets the bundle title")
-def user_sets_bundle_title(context: Context) -> None:
-    context.page.get_by_role("textbox", name="Name*").fill("Test Bundle")
+@step('the user sets the bundle title as "{title}"')
+def user_sets_bundle_title(context: Context, title: str = "Test Bundle") -> None:
+    context.page.get_by_role("textbox", name="Name*").fill(title)
 
 
 @step("the user opens the preview for one of the selected datasets")
@@ -154,19 +120,6 @@ def user_opens_preview_for_one_of_the_selected_datasets(context: Context) -> Non
 def user_can_see_preview_items_dropdown(context: Context) -> None:
     # Ensure we look for a select element with the specific id to avoid false positives
     context.page.locator("select#preview-items").is_visible()
-
-
-# bundle Inspect
-@step("the user can inspect Bundle details and Created by is not empty")
-def the_user_can_see_the_bundle_details_with_creator(context: Context) -> None:
-    expect(context.page.get_by_text("Created by")).to_be_visible()
-    expect(context.page.get_by_text(context.bundle_creator.get_username())).to_be_visible()
-
-
-@step("the user can inspect Bundle details and Created by is empty")
-def bundle_inspect_show(context: Context) -> None:
-    expect(context.page.get_by_text("Created by")).to_be_visible()
-    expect(context.page.get_by_text(context.bundle_creator.get_username())).not_to_be_visible()
 
 
 # To test release calendar page panel
@@ -222,11 +175,6 @@ def user_creates_bundle_with_future_release_calendar_page(context: Context) -> N
         title = context.saved_release_calendar_page_details["title"]
 
     context.page.get_by_text(title).click()
-
-
-@step('the user clicks "Save as draft"')
-def user_clicks_save_as_draft(context: Context) -> None:
-    context.page.get_by_role("button", name="Save as draft").click()
 
 
 @step("the user sees the release calendar page title, status and release date")
@@ -339,7 +287,7 @@ def user_sees_validation_error_preventing_cancellation(context: Context) -> None
 @step('the {page_str} page is in a "{bundle_status}" bundle')
 def the_page_is_in_the_given_bundle_with_status(
     context: Context, page_str: str, bundle_status: Literal["Draft", "In Preview", "Ready to publish", "Published"]
-):
+) -> None:
     the_page = get_page_from_context(context, page_str)
     bundle = getattr(context, "bundle", None)
     if not bundle:
@@ -359,3 +307,102 @@ def the_page_is_in_the_given_bundle_with_status(
     bundle.status = status
     bundle.bundled_pages.add(BundlePage(page=the_page))
     bundle.save()
+
+
+@given("the following approved information pages exist:")
+def approved_information_pages_exist(context: Context) -> None:
+    context.information_pages = []
+
+    for row in context.table:
+        create_information_page(context, title=row["Title"])
+
+        mark_page_as_ready_to_publish(
+            context.information_page,
+            user=getattr(context, "user", None),
+        )
+
+        context.information_pages.append(context.information_page)
+
+
+@given("the following preview teams exist:")
+def preview_teams_exist(context: Context) -> None:
+    context.preview_teams = []
+
+    for row in context.table:
+        team = TeamFactory(
+            name=row["Team name"],
+        )
+
+        context.preview_teams.append(team)
+
+
+@when("the user adds the following information pages to the bundle:")
+def the_user_adds_information_pages_to_bundle(context: Context) -> None:
+    context.page.get_by_role("button", name="Add page").click()
+    for row in context.table:
+        context.page.get_by_role("checkbox", name=row["Title"]).check()
+    context.page.get_by_role("button", name="Confirm selection").click()
+
+
+@when("the user adds the following preview teams to the bundle:")
+def the_user_adds_preview_teams_to_bundle(context: Context) -> None:
+    context.page.get_by_role("button", name="Add preview team").click()
+    for row in context.table:
+        context.page.get_by_role("checkbox", name=row["Team name"]).check()
+    context.page.get_by_role("button", name="Confirm selection").click()
+
+
+@then("the bundle inspect page displays the following metadata:")
+def the_bundle_inspect_page_displays_metadata(context: Context) -> None:
+    bundle_url = context.page.url
+    port = bundle_url.split(":")[2].split("/")[0]
+    bundle_id = bundle_url.split("/")[-2]
+    inspect_url = f"http://localhost:{port}/admin/bundle/inspect/{bundle_id}/"
+
+    context.page.goto(inspect_url)
+
+    context.bundle = Bundle.objects.get(id=bundle_id)
+
+    formatted_created_at = (
+        timezone.localtime(context.bundle.created_at).strftime("%d %b %Y %-I:%M%p").replace(" 0", " ")
+    )
+    created_by = context.bundle.created_by.username
+
+    dl_locator = context.page.locator("dl")
+
+    for row in context.table:
+        label = row["Metadata Field"]
+        value = row["Metadata Value"]
+
+        expect(dl_locator).to_contain_text(label)
+
+        if value:
+            expect(dl_locator).to_contain_text(value)
+        elif label == "Created at":
+            expect(context.page.get_by_text(formatted_created_at)).to_be_visible()
+        elif label == "Created by":
+            expect(dl_locator).to_contain_text(created_by)
+
+
+@then("the bundle inspect page displays the following information pages:")
+def the_bundle_inspect_page_displays_information_pages(context: Context) -> None:
+    table = context.page.get_by_role("table")
+
+    for row in context.table:
+        title = row["Title"]
+        page_type = row["Type"]
+        page_status = row["Status"]
+
+        table_row = table.locator("tbody tr").filter(has_text=title)
+
+        expect(table_row).to_have_count(1)
+
+        expect(table_row).to_contain_text(title)
+        expect(table_row).to_contain_text(page_type)
+        expect(table_row).to_contain_text(page_status)
+
+
+@then("the bundle inspect page shows no datasets")
+def the_bundle_inspect_page_shows_no_datasets(context: Context) -> None:
+    expect(context.page.locator("dl")).to_contain_text("Datasets")
+    expect(context.page.locator("dl")).to_contain_text("No datasets in bundle")

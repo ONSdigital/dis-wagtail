@@ -88,10 +88,14 @@ def the_given_button_is_present(
     expect(context.page.get_by_role("button", name=button_label, exact=True)).to_have_count(count)
 
 
-@then('the "{link_label}" link {exists}')
-def the_given_link_is_present(context: Context, link_label: str, exists: Literal["exists", "does not exist"]) -> None:
-    count = 1 if exists == "exists" else 0
-    expect(context.page.get_by_role("link", name=link_label, exact=True)).to_have_count(count)
+@then('the "{link_label}" link exists')
+def the_given_link_exists(context: Context, link_label: str) -> None:
+    expect(context.page.get_by_role("link", name=link_label, exact=True)).to_have_count(1)
+
+
+@then('the "{link_label}" link does not exist')
+def the_given_link_does_not_exist(context: Context, link_label: str) -> None:
+    expect(context.page.get_by_role("link", name=link_label, exact=True)).to_have_count(0)
 
 
 @then('the "{text}" text {displayed}')
