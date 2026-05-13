@@ -360,7 +360,7 @@ class BundleInspectView(InspectView):
     def get_field_label(self, field_name: str, field: Field) -> str:
         match field_name:
             case "approved":
-                label = "Approval status"
+                label = "Approved by"
             case "scheduled_publication":
                 label = "Scheduled publication"
             case "pages":
@@ -384,7 +384,7 @@ class BundleInspectView(InspectView):
         return ons_date_format(self.object.approved_at, settings.DATETIME_FORMAT) if self.object.approved_at else ""
 
     def get_approved_display_value(self) -> str:
-        """Custom approved by formatting. Varies based on status, and approver/time of approval."""
+        """Custom approved by formatting. Varies based on status and approver/time of approval."""
         if self.object.status in [BundleStatus.APPROVED, BundleStatus.PUBLISHED]:
             if self.object.approved_by_id and self.object.approved_at:
                 return (
