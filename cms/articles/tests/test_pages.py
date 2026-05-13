@@ -150,7 +150,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         # No corrections exist on this page
         response = self.client.get(f"{self.page.url}/versions/1")
         _, _, page_path = self.page.get_url_parts()
-        self.assertRedirects(response, page_path)
+        self.assertRedirects(response, page_path, status_code=HTTPStatus.TEMPORARY_REDIRECT)
 
     def test_correction_on_alias_redirects_to_alias(self):
         """Corrections live on the canonical page's revisions, so alias pages cannot serve them
@@ -180,7 +180,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
 
         response = self.client.get(f"{welsh_alias.url}/versions/1", headers={"host": "cy.ons.localhost"})
         _, _, page_path = welsh_alias.get_url_parts()
-        self.assertRedirects(response, page_path)
+        self.assertRedirects(response, page_path, status_code=HTTPStatus.TEMPORARY_REDIRECT)
 
     def test_can_add_correction(self):  # pylint: disable=too-many-statements # noqa
         response = self.client.get(self.page.url)
@@ -233,7 +233,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
 
         # V2 doesn't exist yet, should redirect to the main article
         v2_response = self.client.get(f"{self.page.url}/versions/2")
-        self.assertEqual(v2_response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(v2_response.status_code, HTTPStatus.TEMPORARY_REDIRECT)
 
         second_correction = {
             "version_id": 2,
@@ -277,7 +277,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
 
         # V3 doesn't exist yet, should redirect to the main article
         v3_response = self.client.get(f"{self.page.url}/versions/3")
-        self.assertEqual(v3_response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(v3_response.status_code, HTTPStatus.TEMPORARY_REDIRECT)
 
         third_correction = {
             "version_id": 3,

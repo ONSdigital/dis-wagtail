@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models
 from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
@@ -31,7 +31,7 @@ from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
-from cms.core.utils import redirect_to_parent_listing
+from cms.core.utils import redirect, redirect_to_parent_listing
 from cms.core.widgets import date_widget
 from cms.data_downloads.mixins import DataDownloadMixin
 from cms.datasets.blocks import DatasetStoryBlock
