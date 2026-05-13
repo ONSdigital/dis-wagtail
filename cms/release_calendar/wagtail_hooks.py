@@ -8,7 +8,6 @@ from wagtail.admin import messages
 from wagtail.admin.utils import get_valid_next_url_from_request
 
 from cms.core.utils import redirect
-from cms.home.models import HomePage
 from cms.release_calendar.models import ReleaseCalendarIndex, ReleaseCalendarPage
 from cms.release_calendar.viewsets import release_calendar_chooser_viewset
 
@@ -57,10 +56,18 @@ def hide_release_date_text_field_for_non_provisional_release_pages() -> str:
 
 
 @hooks.register("construct_explorer_page_queryset")
-def pin_release_calendar_page(_parent_page: Page, pages: PageQuerySet, _request: HttpRequest) -> PageQuerySet:
+def pin_release_calendar_page(parent_page: Page, pages: PageQuerySet, request: HttpRequest) -> PageQuerySet:
     """Pin the Release Calendar index to the top of the explorer page and explorer menu."""
-    if all(isinstance(page.specific, HomePage) for page in pages):
+    ordering = request.GET.get("ordering")
+
+    # Respect any existing ordering
+    if ordering:
+        return pages.order_by(ordering)
+
+    # Order home pages by path
+    if parent_page.is_root():
         return pages.order_by("path")
+
     return pages.order_by(
         Case(
             When(content_type__model="releasecalendarindex", then=Value(0)),
