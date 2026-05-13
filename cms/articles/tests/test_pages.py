@@ -149,8 +149,8 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         """Requesting a correction version that doesn't exist redirects to the article."""
         # No corrections exist on this page
         response = self.client.get(f"{self.page.url}/versions/1")
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        self.assertTrue(self.page.url.endswith(response.url))
+        _, _, page_path = self.page.get_url_parts()
+        self.assertRedirects(response, page_path)
 
     def test_correction_on_alias_redirects_to_alias(self):
         """Corrections live on the canonical page's revisions, so alias pages cannot serve them
@@ -179,8 +179,8 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         )
 
         response = self.client.get(f"{welsh_alias.url}/versions/1", headers={"host": "cy.ons.localhost"})
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        self.assertTrue(welsh_alias.url.endswith(response.url))
+        _, _, page_path = welsh_alias.get_url_parts()
+        self.assertRedirects(response, page_path)
 
     def test_can_add_correction(self):  # pylint: disable=too-many-statements # noqa
         response = self.client.get(self.page.url)
