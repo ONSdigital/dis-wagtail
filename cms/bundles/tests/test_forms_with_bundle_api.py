@@ -438,7 +438,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         self.client_patcher.stop()
         self.ons_patcher.stop()
 
-    def _approve_form(self, dataset: Dataset) -> Any:
+    def _get_approve_form(self, dataset: Dataset) -> Any:
         bundle_dataset = BundleDatasetFactory(parent=self.bundle, dataset=dataset)
         raw_data = {
             "name": self.bundle.name,
@@ -455,7 +455,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         dataset = DatasetFactory(title="Original Title", description="Original Description")
         self.api_metadata[dataset.namespace] = {"title": dataset.title, "description": dataset.description}
 
-        form = self._approve_form(dataset)
+        form = self._get_approve_form(dataset)
 
         self.assertTrue(form.is_valid(), form.errors)
 
@@ -466,7 +466,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             "description": dataset.description,
         }
 
-        form = self._approve_form(dataset)
+        form = self._get_approve_form(dataset)
 
         self.assertFalse(form.is_valid())
         non_field_errors = form.non_field_errors()
@@ -490,7 +490,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             "description": "Updated Description",
         }
 
-        form = self._approve_form(dataset)
+        form = self._get_approve_form(dataset)
 
         self.assertFalse(form.is_valid())
         self.assertIn(
@@ -509,7 +509,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             "description": "Updated Description",
         }
 
-        first = self._approve_form(dataset)
+        first = self._get_approve_form(dataset)
         self.assertFalse(first.is_valid())
 
         # Local Dataset has been refreshed in-place. Re-submitting now finds no drift.
@@ -556,7 +556,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             with self.subTest(exception=test_exception):
                 self.mock_ons.objects.get.side_effect = test_exception
 
-                form = self._approve_form(dataset)
+                form = self._get_approve_form(dataset)
 
                 self.assertFalse(form.is_valid())
                 self.assertIn(
@@ -575,7 +575,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
 
         self.mock_ons.objects.get.side_effect = _CustomException("Unexpected error")
 
-        form = self._approve_form(dataset)
+        form = self._get_approve_form(dataset)
 
         with self.assertRaises(_CustomException) as cm:
             form.is_valid()
