@@ -58,15 +58,9 @@ def hide_release_date_text_field_for_non_provisional_release_pages() -> str:
 @hooks.register("construct_explorer_page_queryset")
 def pin_release_calendar_page(parent_page: Page, pages: PageQuerySet, request: HttpRequest) -> PageQuerySet:
     """Pin the Release Calendar index to the top of the explorer page and explorer menu."""
-    ordering = request.GET.get("ordering")
-
     # Respect any existing ordering
-    if ordering:
-        return pages.order_by(ordering)
-
-    # Order home pages by path
-    if parent_page.is_root():
-        return pages.order_by("path")
+    if request.GET.get("ordering") or parent_page.is_root():
+        return pages
 
     return pages.order_by(
         Case(
