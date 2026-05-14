@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from datetime import timedelta
 from http import HTTPStatus
 
@@ -8,6 +9,7 @@ from django.urls import reverse
 from django.utils.html import strip_tags
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
+from wagtail.models import Locale
 from wagtail.rich_text import RichText
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -149,6 +151,43 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertPageIsRoutable(self.page, "versions/2")
         self.assertPageIsRoutable(self.page, "versions/3")
 
+    def test_nonexistent_correction_redirects_to_article(self):
+        """Requesting a correction version that doesn't exist redirects to the article."""
+        # No corrections exist on this page
+        response = self.client.get(f"{self.page.url}/versions/1")
+        _, _, page_path = self.page.get_url_parts()
+        self.assertRedirects(response, page_path, status_code=HTTPStatus.TEMPORARY_REDIRECT)
+
+    def test_correction_on_alias_redirects_to_alias(self):
+        """Corrections live on the canonical page's revisions, so alias pages cannot serve them
+        and should redirect to the alias URL instead of returning 404.
+        """
+        self.page.save_revision().publish()
+        original_revision_id = self.page.get_latest_revision().id
+
+        self.page.summary = "Corrected summary"
+        self.page.corrections = [
+            (
+                "correction",
+                {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "when": "2025-01-11",
+                    "frozen": True,
+                    "text": "First correction text",
+                },
+            )
+        ]
+        self.page.save_revision().publish()
+
+        welsh_alias = self.page.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True
+        )
+
+        response = self.client.get(f"{welsh_alias.url}/versions/1", headers={"host": "cy.ons.localhost"})
+        _, _, page_path = welsh_alias.get_url_parts()
+        self.assertRedirects(response, page_path, status_code=HTTPStatus.TEMPORARY_REDIRECT)
+
     def test_can_add_correction(self):  # pylint: disable=too-many-statements # noqa
         response = self.client.get(self.page.url)
         self.assertNotContains(response, "Corrections")
@@ -198,9 +237,9 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertNotContains(v1_response, "View superseded version")
         self.assertContains(v1_response, original_summary)
 
-        # V2 doesn't exist yet, should return 404
+        # V2 doesn't exist yet, should redirect to the main article
         v2_response = self.client.get(f"{self.page.url}/versions/2")
-        self.assertEqual(v2_response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(v2_response.status_code, HTTPStatus.TEMPORARY_REDIRECT)
 
         second_correction = {
             "version_id": 2,
@@ -242,9 +281,9 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertContains(v2_response, "First correction text")
         self.assertNotContains(v2_response, "Second correction text")
 
-        # V3 doesn't exist yet, should return 404
+        # V3 doesn't exist yet, should redirect to the main article
         v3_response = self.client.get(f"{self.page.url}/versions/3")
-        self.assertEqual(v3_response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(v3_response.status_code, HTTPStatus.TEMPORARY_REDIRECT)
 
         third_correction = {
             "version_id": 3,
