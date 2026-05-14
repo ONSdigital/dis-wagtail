@@ -214,9 +214,12 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         if "bundled_datasets" not in self.formsets:
             return
 
-        queryset = ONSDataset.objects  # pylint: disable=no-member
-        if self.datasets_bundle_api_user_access_token:
-            queryset = queryset.with_token(self.datasets_bundle_api_user_access_token)
+        if not self.datasets_bundle_api_user_access_token:
+            raise ValidationError("Your session has expired. Please sign in again to approve the bundle.")
+
+        queryset = ONSDataset.objects.with_token(  # pylint: disable=no-member
+            self.datasets_bundle_api_user_access_token
+        )
 
         drift_messages: list[str] = []
         for form in self.formsets["bundled_datasets"].forms:

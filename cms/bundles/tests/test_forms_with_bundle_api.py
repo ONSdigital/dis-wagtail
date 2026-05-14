@@ -432,7 +432,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
 
         self.ons_patcher = patch("cms.bundles.forms.ONSDataset")
         self.mock_ons = self.ons_patcher.start()
-        self.mock_ons.objects.get.side_effect = fake_get
+        self.mock_ons.objects.with_token.return_value.get.side_effect = fake_get
 
     def tearDown(self):
         self.client_patcher.stop()
@@ -449,7 +449,12 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             ),
             "teams": inline_formset([]),
         }
-        return self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+        return self.form_class(
+            instance=self.bundle,
+            data=nested_form_data(raw_data),
+            for_user=self.approver,
+            access_token="test-token",
+        )
 
     def test_metadata_matches_passes(self):
         dataset = DatasetFactory(title="Original Title", description="Original Description")
@@ -534,6 +539,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
                 }
             ),
             for_user=self.approver,
+            access_token="test-token",
         )
 
         self.assertTrue(second.is_valid(), second.errors)
@@ -554,7 +560,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             self.bundle = BundleFactory()
             dataset = DatasetFactory()
             with self.subTest(exception=test_exception):
-                self.mock_ons.objects.get.side_effect = test_exception
+                self.mock_ons.objects.with_token.return_value.get.side_effect = test_exception
 
                 form = self._get_approve_form(dataset)
 
@@ -563,6 +569,28 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
                     f"Could not verify the latest metadata for '{dataset.title}'. Please try again.",
                     form.non_field_errors(),
                 )
+
+    def test_missing_access_token_blocks_approval(self):
+        """Test that without a session token the user cannot proceed."""
+        dataset = DatasetFactory()
+        bundle_dataset = BundleDatasetFactory(parent=self.bundle, dataset=dataset)
+        raw_data = {
+            "name": self.bundle.name,
+            "status": BundleStatus.APPROVED,
+            "bundled_pages": inline_formset([]),
+            "bundled_datasets": inline_formset(
+                [{"id": bundle_dataset.id, "dataset": bundle_dataset.dataset_id, "ORDER": "1"}], initial=1
+            ),
+            "teams": inline_formset([]),
+        }
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Your session has expired. Please sign in again to approve the bundle.",
+            form.non_field_errors(),
+        )
+        self.mock_ons.objects.with_token.assert_not_called()
 
     def test_other_exceptions_raised_during_metadata_validation_are_not_caught(self):
         """Test that unexpected exceptions during metadata validation are not caught and handled gracefully,
@@ -573,7 +601,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         class _CustomException(Exception):
             pass
 
-        self.mock_ons.objects.get.side_effect = _CustomException("Unexpected error")
+        self.mock_ons.objects.with_token.return_value.get.side_effect = _CustomException("Unexpected error")
 
         form = self._get_approve_form(dataset)
 
