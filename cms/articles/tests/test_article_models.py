@@ -52,6 +52,9 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(self.page.display_title, "PSF: November 2024")
         self.assertEqual(self.page.display_title, f"{self.page.get_parent().title}: {self.page.title}")
 
+    def test_related_data_display_title(self):
+        self.assertEqual(self.page.related_data_display_title, "All data related to PSF: November 2024")
+
     def test_display_title_with_news_headline(self):
         """Test display_title returns news_headline when set."""
         self.page.news_headline = "Breaking News"
@@ -677,6 +680,19 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         self.assertContains(
             response,
             f'<a class="ons-breadcrumbs__link" href="{topics_page.full_url}">{topics_page.title}</a>',
+            html=True,
+        )
+
+    def test_related_data_breadcrumb_shows_full_title(self):
+        self.basic_page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[("manual_link", {"title": "A dataset", "description": "", "url": "https://example.com"})],
+        )
+        self.basic_page.save_revision().publish()
+        response = self.client.get(f"{self.basic_page_url}/related-data")
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{self.basic_page.full_url}">PSF: November 2024</a>',
             html=True,
         )
 
