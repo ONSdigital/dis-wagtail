@@ -74,7 +74,7 @@ def _build_locale_urls(request: HttpRequest) -> list[LocaleURLsDict]:
                 url = f"/{locale.language_code}{bare_path}"
             results.append({"locale": locale, "url": url})
 
-    request._locale_urls = results  # pylint: disable=protected-access
+    request._locale_urls = results  # type: ignore[attr-defined] # pylint: disable=protected-access
 
     return results
 
@@ -207,17 +207,17 @@ def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, sit
         cache_key = get_page_config_cache_key(site, page, getattr(request, "LANGUAGE_CODE", settings.LANGUAGE_CODE))
 
         # Don't cache previews
-        page_config = cache.get(cache_key) if not is_preview else None
+        page_config = cache.get(cache_key) if not is_preview else None  # type: ignore[assignment]
 
         is_homepage = page.pk == site.root_page_id
 
         if page_config is None:
-            page_title: str = page.seo_title or getattr(page, "display_title", page.title)  # type: ignore[assignment]
+            page_title: str = page.seo_title or getattr(page, "display_title", page.title)
 
             page_title = _add_site_name_to_page_title(page_title, site, is_homepage)
 
             page_config = {
-                "bodyClasses": "template-" + page._meta.verbose_name.lower().replace(" ", "-"),  # type: ignore[union-attr]
+                "bodyClasses": ("template-" + page._meta.verbose_name.lower().replace(" ", "-")),
                 "title": page_title,
                 "header": {"language": {"languages": get_translation_urls(request)}},
                 "meta": {
