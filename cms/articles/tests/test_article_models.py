@@ -1211,7 +1211,7 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
         self.assertInHTML(str(RichText(first_child.summary)), response.content.decode(encoding="utf-8"))
         self.assertContains(response, 'class="ons-document-list__item"', count=self.total_batch)
         self.assertContains(response, "Latest release", count=1)
-        self.assertContains(response, "Previous releases", count=1)
+        self.assertContains(response, "Previous releases", count=2)
 
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.previous_releases_url)
