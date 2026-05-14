@@ -199,7 +199,7 @@ class PageBreadcrumbsTestCase(TestCase):
             },
             {
                 "url": self.statistical_article.get_full_url(request=self.dummy_request),
-                "text": self.statistical_article.title,
+                "text": self.statistical_article.breadcrumb_title,
             },
         ]
 

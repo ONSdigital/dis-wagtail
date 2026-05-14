@@ -575,7 +575,7 @@ def user_clicks_view_data_used_in_article(context: Context) -> None:
 @then("the related data page for the article is shown")
 def check_related_data_page_content(context: Context) -> None:
     page = context.page
-    expect(page.get_by_role("heading", name="All data related to The article page")).to_be_visible()
+    expect(page.get_by_role("heading", name="All data related to PSF: The article page")).to_be_visible()
     expect(page.get_by_role("link", name="Looked Up Dataset")).to_be_visible()
     expect(page.get_by_text("Example dataset for functional testing")).to_be_visible()
     expect(page.get_by_role("link", name="Manual Dataset")).to_be_visible()
