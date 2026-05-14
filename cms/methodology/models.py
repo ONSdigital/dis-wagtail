@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     import datetime
 
     from django.http import HttpResponse
+    from django.template.response import TemplateResponse
     from django_stubs_ext import StrPromise
     from wagtail.admin.panels import Panel
     from wagtail.query import PageQuerySet
@@ -202,3 +203,7 @@ class MethodologyPage(  # type: ignore[django-manager-missing]
         if self.last_revised_date:
             values["lastUpdatedDate"] = format_date_for_gtm(self.last_revised_date)
         return values
+
+    def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        self._log_preview(request, mode_name)
+        return super().serve_preview(request, mode_name)

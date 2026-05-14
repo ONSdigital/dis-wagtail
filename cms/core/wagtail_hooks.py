@@ -1,6 +1,7 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
+from django.core.cache import cache
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.html import format_html
@@ -8,6 +9,7 @@ from django.utils.safestring import mark_safe
 from wagtail import hooks
 from wagtail.admin import messages
 from wagtail.admin.utils import get_valid_next_url_from_request
+from wagtail.log_actions import LogFormatter, log
 from wagtail.models import Page
 from wagtail.snippets.models import register_snippet
 
@@ -19,7 +21,10 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
-    from wagtail.admin.views.bulk_action import BulkAction
+    from wagtail.admin.views.bulk_action import BulkAction, ModelLogEntry
+    from wagtail.log_actions import LogActionRegistry
+
+PAGE_EDIT_VIEW_AUDIT_LOG_COOLDOWN_SECONDS = 30
 
 
 @hooks.register("register_icons")
@@ -58,6 +63,18 @@ def global_admin_css() -> str:
 
 register_snippet(ContactDetailsViewSet)
 register_snippet(DefinitionViewSet)
+
+
+@hooks.register("before_edit_page")
+def log_page_edit_view(request: HttpRequest, page: Page) -> None:
+    """Log when a user views the page edit view, with a cooldown to prevent duplicate entries."""
+    cache_key = f"page_edit_view_log:{page.pk}:{request.user.pk}"
+
+    if cache.get(cache_key):
+        return
+
+    log(action="pages.edit_view", instance=page)
+    cache.set(cache_key, True, timeout=PAGE_EDIT_VIEW_AUDIT_LOG_COOLDOWN_SECONDS)
 
 
 _BLOCKED_TITLES_PREVIEW_COUNT = 5
@@ -171,3 +188,68 @@ def after_edit_page(request: HttpRequest, page: Page) -> None:
             ],
             extra_tags="safe",
         )
+
+
+@hooks.register("register_log_actions")
+def register_core_log_actions(actions: LogActionRegistry) -> None:
+    """Registers custom logging actions for core content operations.
+
+    @see https://docs.wagtail.org/en/stable/extending/audit_log.html
+    @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-log-actions
+    """
+
+    @actions.register_action("content.chart_download")
+    class ChartDownload(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for chart CSV download actions."""
+
+        label = "Download chart CSV"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            try:
+                chart_id = log_entry.data.get("chart_id", "unknown")
+                message = f"Downloaded chart CSV for chart with ID {chart_id}"
+
+                return message
+
+            except (KeyError, AttributeError):
+                return "Downloaded chart CSV"
+
+    @actions.register_action("content.table_download")
+    class TableDownload(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for table CSV download actions."""
+
+        label = "Download table CSV"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            try:
+                table_id = log_entry.data.get("table_id", "unknown")
+                return f"Downloaded table CSV for table with ID {table_id}"
+
+            except (KeyError, AttributeError):
+                return "Downloaded table CSV"
+
+    @actions.register_action("pages.edit_view")
+    class PageEditView(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for viewing the page edit view."""
+
+        label = "View page editor"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            return "Viewed page editor"
+
+    @actions.register_action("pages.preview_mode_used")
+    class PreviewModeUse(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for viewing the page edit view."""
+
+        label = "Preview page"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            try:
+                preview_mode = log_entry.data.get("preview_mode", "unknown")
+                return f"Previewed page in mode: {preview_mode.replace('_', ' ')}"
+            except (KeyError, AttributeError):
+                return "Previewed page"
