@@ -640,7 +640,7 @@ msgstr "Datganiadau blaenorol am %(title)s"
 
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:13
 msgid "Previous releases"
-msgstr "Datganiadau Blaenorol"
+msgstr "Datganiadau blaenorol"
 
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:14
 msgid "Statistical articles"
