@@ -32,10 +32,22 @@ the following environment variables, if set
 
 ## Slack
 
-Currently, we send Slack notifications to a Slack webhook when bundle statuses change.
+The CMS is integrated with Slack to send notifications about important events, such as when a bundle is published or when a scheduled release is approaching.
 
 ### Environment variables
 
-| Var                               | Notes                                                                                                                     |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `SLACK_NOTIFICATIONS_WEBHOOK_URL` | Currently used by the [bundle](../custom-features/bundles.md) app to send notifications on status change, and publication |
+| Var                         | Notes                                                                                                                                    |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `SLACK_BOT_TOKEN`           | The token for the Slack bot that will be used to send notifications. [Documentation](https://docs.slack.dev/tools/python-slack-sdk/web/) |
+| `SLACK_PUBLISH_LOG_CHANNEL` | The ID of the Slack channel where logs will be sent.                                                                                     |
+| `SLACK_ALARM_CHANNEL`       | The ID of the Slack channel where alarms will be sent.                                                                                   |
+
+### Technical details
+
+The implementation stores the timestamp for most messages inside a bundle using the `slack_notification_ts` field, so that it can update the same message instead of sending a new one every time.
+
+### Testing and debugging
+
+In order to test the Slack integration, you may need to create your own workspace and bot, and set the appropriate environment variables.
+
+This will allow you to see the notifications in your own Slack channels and verify that the integration is working correctly.
