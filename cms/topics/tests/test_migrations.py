@@ -3,7 +3,6 @@ from datetime import date, datetime
 from typing import ClassVar
 
 from cms.core.tests import MigrationTestCase
-from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.taxonomy.tests.factories import TopicFactory
 from cms.topics.tests.factories import (
@@ -21,9 +20,8 @@ class TestMigration0009Rollback(MigrationTestCase):
 
     def test_rollback(self):
         # Setup on latest version
-        HomePage.objects.first()
-        TopicFactory()
-        topic_page = TopicPageFactory(title="Test Topic")
+        topic = TopicFactory()
+        topic_page = TopicPageFactory(title="Test Topic", topic=topic)
         methodology = MethodologyPageFactory(parent__parent=topic_page, publication_date=datetime(2024, 6, 1))
         TopicPageRelatedMethodologyFactory(page=methodology)
         TopicPageRelatedMethodologyFactory(
