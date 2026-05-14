@@ -8,6 +8,7 @@ from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
 from wagtail.admin.panels import FieldPanel, FieldRowPanel
@@ -280,3 +281,53 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         return ", ".join(
             list(self.teams.values_list("team__name", flat=True)) or ["-"],
         )
+
+
+class PublishActionType(models.TextChoices):
+    S3_ACL = "S3_ACL", _("Private Media ACLs")
+    SEARCH_UPDATED = "SEARCH_UPDATED", _("Search updated")
+
+
+class PublishActionStatus(models.TextChoices):
+    READY = ("READY", _("Ready"))
+    RUNNING = ("RUNNING", _("Running"))
+    FAILED = ("FAILED", _("Failed"))
+    SUCCESSFUL = ("SUCCESSFUL", _("Successful"))
+
+
+class PublishAction(models.Model):
+    action_type = models.CharField(
+        choices=PublishActionType,
+        max_length=max(len(value) for value in PublishActionType.values),
+    )
+    bundle = models.ForeignKey(Bundle, null=True, on_delete=models.CASCADE)
+    page = models.ForeignKey("wagtailcore.Page", on_delete=models.CASCADE)
+    status = models.CharField(
+        choices=PublishActionStatus,
+        max_length=max(len(value) for value in PublishActionStatus.values),
+        default=PublishActionStatus.READY,
+    )
+    failed_reason = models.TextField(default="")
+    enqueued_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True)
+    slack_notification_ts = models.CharField(max_length=32, blank=True, editable=False, db_default="")
+
+    class Meta:
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            # Page and type must be unique, optionally in the scope of a bundle
+            models.UniqueConstraint(
+                fields=["bundle", "page", "action_type"],
+                condition=models.Q(bundle__isnull=False),
+                name="bundle_page_type",
+            ),
+            models.UniqueConstraint(fields=["page", "action_type"], condition=models.Q(bundle=None), name="page_type"),
+            # Slack notification TS and bundle are mutually exclusive
+            models.CheckConstraint(
+                condition=models.Q(slack_notification_ts="", bundle__isnull=False)
+                | models.Q(slack_notification_ts__ne="", bundle=None),
+                name="slack_notification_bundle",
+            ),
+        ]
+        indexes: ClassVar[list[models.Index]] = [
+            models.Index("page", "bundle", "action_type", name="publish_action_relation")
+        ]
