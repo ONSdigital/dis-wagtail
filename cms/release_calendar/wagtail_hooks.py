@@ -8,6 +8,7 @@ from wagtail.admin import messages
 from wagtail.admin.utils import get_valid_next_url_from_request
 
 from cms.core.utils import redirect
+from cms.home.models import HomePage
 from cms.release_calendar.models import ReleaseCalendarIndex, ReleaseCalendarPage
 from cms.release_calendar.viewsets import release_calendar_chooser_viewset
 
