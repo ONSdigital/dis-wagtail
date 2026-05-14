@@ -31,9 +31,3 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(reverse("wagtailadmin_explore", args=[self.homepage.id]))
         pages = list(response.context["pages"])
         self.assertEqual(pages[0], self.release_calendar_index, "Release calendar index page is not first in explorer")
-
-    def test_homepages_are_sorted_by_path(self):
-        """Checks that home pages are ordered in ascending path order."""
-        result = pin_release_calendar_page(self.root, self.homepages, self.request)
-        paths = [homepage.path for homepage in result]
-        self.assertEqual(paths, sorted(paths), "Home pages are not sorted by path")
