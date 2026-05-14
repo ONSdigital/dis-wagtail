@@ -4,6 +4,12 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def cleanup_on_rollback(apps, schema_editor):
+    # previous version required a related page, so delete any entries that don't have one to avoid integrity errors
+    TopicPageRelatedMethodology = apps.get_model("topics", "TopicPageRelatedMethodology")  # pylint: disable=C0103
+    TopicPageRelatedMethodology.objects.filter(page=None).delete()
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("topics", "0008_topicpage_time_series"),
@@ -47,4 +53,5 @@ class Migration(migrations.Migration):
                 to="wagtailcore.page",
             ),
         ),
+        migrations.RunPython(migrations.RunPython.noop, cleanup_on_rollback),
     ]
