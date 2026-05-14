@@ -341,8 +341,9 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.bundles.viewsets.bundle.notify_slack_of_post_publish_end")
     def test_bundle_edit_view__manual_publish__happy_path__when_linked_with_past_release_calendar_entry(
-        self, mock_notify_end, mock_notify_start
+        self, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
     ):
         self.assertFalse(self.statistical_article_page.live)
 
@@ -357,6 +358,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
         self.assertTrue(mock_notify_start.called)
         self.assertTrue(mock_notify_end.called)
+        self.assertTrue(mock_notify_post_publish_end.called)
 
         response = self.client.get(release_calendar_page.url)
         self.assertContains(response, self.statistical_article_page.display_title)

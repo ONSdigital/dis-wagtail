@@ -1,3 +1,4 @@
+from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from django.contrib.contenttypes.models import ContentType
@@ -7,6 +8,8 @@ from django.db.models.functions import Cast
 from wagtail.models import Page, ReferenceIndex
 from wagtail.signals import published, unpublished
 
+from cms.bundles.utils import get_active_bundle_for_page
+from cms.post_publish_actions.handlers import PostPublishActionType, run_post_publish_action
 from cms.private_media.constants import Privacy
 from cms.private_media.models import PrivateImageMixin
 from cms.private_media.utils import get_private_media_models
@@ -15,12 +18,7 @@ if TYPE_CHECKING:
     from django.db.models import Model
 
 
-def publish_media_on_publish(instance: Model, **kwargs: Any) -> None:
-    """Signal handler to be connected to the 'page_published' and 'published'
-    signals for all publishable models. It is responsible for identifying any
-    privacy-controlled media used by the object, and ensuring that it is also
-    made public.
-    """
+def _publish_media(instance: Model) -> None:
     for model_class in get_private_media_models():
         model_ct = ContentType.objects.get_for_model(model_class)
         referenced_pks = (
@@ -41,6 +39,23 @@ def publish_media_on_publish(instance: Model, **kwargs: Any) -> None:
                 f"The manager for {model_class.__name__} is missing a bulk_make_public() method implementation. "
                 "Did you override the manager class and forget to subclass PrivateMediaModelManager?",
             )
+
+
+def publish_media_on_publish(instance: Model, **kwargs: Any) -> None:
+    """Signal handler to be connected to the 'page_published' and 'published'
+    signals for all publishable models. It is responsible for identifying any
+    privacy-controlled media used by the object, and ensuring that it is also
+    made public.
+    """
+    if isinstance(instance, Page):
+        run_post_publish_action(
+            PostPublishActionType.S3_ACL,
+            instance,
+            get_active_bundle_for_page(instance),
+            partial(_publish_media, instance),
+        )
+    else:
+        _publish_media(instance)
 
 
 def unpublish_media_on_unpublish(instance: Model, **kwargs: Any) -> None:

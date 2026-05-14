@@ -28,13 +28,14 @@ from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError, Bundl
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleContentItemState, BundleStatus
 from cms.bundles.models import Bundle
-from cms.bundles.notifications.slack import (
-    notify_slack_of_status_change,
-)
+from cms.bundles.notifications.slack import notify_slack_of_post_publish_end, notify_slack_of_status_change
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 from cms.bundles.utils import get_data_admin_action_url, publish_bundle
 from cms.core.custom_date_format import ons_date_format
+from cms.core.db_router import force_write_db
 from cms.core.utils import redirect
+from cms.post_publish_actions.executor import run_in_executor
+from cms.post_publish_actions.models import PostPublishAction, PostPublishActionStatus
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
@@ -246,13 +247,48 @@ class BundleEditView(EditView):
 
         return instance
 
+    @force_write_db()
     def run_after_hook(self) -> HttpResponseBase | None:
         """This method allows calling hooks or additional logic after an action has been executed.
 
         In our case, we want to replicate the scheduled publication (send Slack notification, publish pages, update RC).
         """
         if self.action == "publish" or (self.action == "edit" and self.object.status == BundleStatus.PUBLISHED):
+            start_time = time.monotonic()
+            start_date = timezone.now()
             publish_bundle(self.object, update_status=False)
+
+            while (time.monotonic() - start_time) <= settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS:
+                if not PostPublishAction.objects.unfinished().active().filter(bundle=self.object).exists():
+                    break
+
+                time.sleep(settings.BUNDLE_POST_PUBLISH_POLL_FREQUENCY)
+            else:
+                outstanding_actions = (
+                    PostPublishAction.objects.active()
+                    .unfinished()
+                    .filter(bundle=self.object)
+                    .update(
+                        status=PostPublishActionStatus.FAILED,
+                        failed_reason="Timeout",
+                        duration=None,
+                        finished_at=timezone.now(),
+                    )
+                )
+                logger.error(
+                    "Post publish actions timeout",
+                    extra={
+                        "unfinished_bundles": [self.object.pk],
+                        "outstanding_actions": outstanding_actions,
+                    },
+                )
+
+            run_in_executor(
+                notify_slack_of_post_publish_end,
+                bundle=self.object,
+                start_time=start_date,
+                end_time=timezone.now(),
+            )
 
     def get_action(self, request: HttpRequest) -> str:
         """Determine the POST action."""

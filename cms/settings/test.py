@@ -143,3 +143,7 @@ def _reset_url_caches_on_setting_changed_signal_handler(*, setting: str, **_: An
 
 
 setting_changed.connect(_reset_url_caches_on_setting_changed_signal_handler)
+
+BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS = 10
+BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT = False
+BUNDLE_POST_PUBLISH_POLL_FREQUENCY = 0.5

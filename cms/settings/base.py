@@ -94,6 +94,7 @@ INSTALLED_APPS = [
     "cms.taxonomy",
     "cms.search",
     "cms.workflows",
+    "cms.post_publish_actions",
     "wagtail.sites",
     "wagtail.users",
     "wagtail.snippets",
@@ -233,6 +234,10 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 AWS_REGION = env.get("AWS_REGION")
 
+BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS = float(env.get("BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS", 110))
+BUNDLE_POST_PUBLISH_CONCURRENCY = int(env.get("BUNDLE_POST_PUBLISH_CONCURRENCY", 4))
+BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT = True
+BUNDLE_POST_PUBLISH_POLL_FREQUENCY = float(env.get("BUNDLE_POST_PUBLISH_POLL_FREQUENCY", 5))
 
 # Database
 
@@ -1098,6 +1103,11 @@ BUNDLE_PREVIEW_COOKIE_MAX_AGE = 30  # seconds
 # a user from accumulating an unbounded list of simultaneous grants (and the
 # cookie growing past the ~4KB browser limit).
 CMS_BUNDLE_PREVIEW_MAX_COOKIE_ENTRIES = 20
+
+BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS = float(env.get("BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS", 110))
+BUNDLE_POST_PUBLISH_CONCURRENCY = int(env.get("BUNDLE_POST_PUBLISH_CONCURRENCY", 4))
+BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT = True
+BUNDLE_POST_PUBLISH_POLL_FREQUENCY = float(env.get("BUNDLE_POST_PUBLISH_POLL_FREQUENCY", 2))
 
 # Contact Us URL for error pages
 CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatisticalenquiries")
