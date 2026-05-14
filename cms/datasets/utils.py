@@ -6,7 +6,7 @@ from wagtail.blocks import StreamValue
 from cms.core.formatting_utils import format_as_document_list_item
 
 if TYPE_CHECKING:
-    from cms.datasets.models import ONSDataset
+    from cms.datasets.models import Dataset, ONSDataset
 
 EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
 
@@ -138,3 +138,24 @@ def get_published_from_state(state: str) -> bool:
 
 def get_dataset_for_published_state(dataset: ONSDataset, published: bool) -> ONSDataset:
     return dataset if published else dataset.next or dataset
+
+
+def update_dataset_metadata(dataset: Dataset, *, title: str, description: str) -> list[str]:
+    """Apply API metadata to a Dataset instance and return the updated field names.
+
+    Args:
+        dataset: The Dataset instance to update
+        title: The new title from the API
+        description: The new description from the API
+
+    Returns:
+        List of field names that were updated
+    """
+    updated_fields: list[str] = []
+    if title and dataset.title != title:
+        dataset.title = title
+        updated_fields.append("title")
+    if description and dataset.description != description:
+        dataset.description = description
+        updated_fields.append("description")
+    return updated_fields

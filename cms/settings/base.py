@@ -993,6 +993,11 @@ BUNDLE_DATASET_STATUS_VALIDATION_ENABLED = (
     env.get("BUNDLE_DATASET_STATUS_VALIDATION_ENABLED", "false").lower() == "true"
 )
 
+# Feature flag to enable/disable validation of bundled datasets metadata on bundle approval
+BUNDLE_DATASET_METADATA_VALIDATION_ENABLED = (
+    env.get("BUNDLE_DATASET_METADATA_VALIDATION_ENABLED", "false").lower() == "true"
+)
+
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
 

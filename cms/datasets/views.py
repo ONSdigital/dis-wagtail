@@ -25,33 +25,16 @@ from wagtail.admin.viewsets.chooser import ChooserViewSet
 from cms.core.db_router import force_write_db_for
 from cms.datasets.models import Dataset, ONSDataset
 from cms.datasets.permissions import user_can_access_unpublished_datasets
-from cms.datasets.utils import deconstruct_chooser_dataset_compound_id, get_dataset_for_published_state
+from cms.datasets.utils import (
+    deconstruct_chooser_dataset_compound_id,
+    get_dataset_for_published_state,
+    update_dataset_metadata,
+)
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse
 
 logger = logging.getLogger(__name__)
-
-
-def _update_dataset_metadata(dataset: Dataset, *, title: str, description: str) -> list[str]:
-    """Apply API metadata to a Dataset instance and return the updated field names.
-
-    Args:
-        dataset: The Dataset instance to update
-        title: The new title from the API
-        description: The new description from the API
-
-    Returns:
-        List of field names that were updated
-    """
-    updated_fields: list[str] = []
-    if title and dataset.title != title:
-        dataset.title = title
-        updated_fields.append("title")
-    if description and dataset.description != description:
-        dataset.description = description
-        updated_fields.append("description")
-    return updated_fields
 
 
 class DatasetChooserPermissionMixin:
@@ -207,7 +190,7 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, DatasetRetrievalMi
         )
         if not created:
             # Dataset already existed, check if metadata needs updating
-            updated_fields = _update_dataset_metadata(
+            updated_fields = update_dataset_metadata(
                 dataset,
                 title=item_from_api.title,
                 description=item_from_api.description,
@@ -279,7 +262,7 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
                 )
             else:
                 # Dataset exists, check if metadata needs updating
-                updated_fields = _update_dataset_metadata(
+                updated_fields = update_dataset_metadata(
                     existing_dataset,
                     title=data["title"],
                     description=data["description"],

@@ -98,3 +98,15 @@ Feature: CMS users can manage bundles
         When the user navigates to the bundle creation page
         And the user opens the bundle datasets chooser
         Then the published state filter is not displayed in the chooser
+
+    @bundle_api_enabled
+    Scenario: An approver is blocked when dataset metadata has changed in the source API
+        Given a bundle has been created with a dataset and a page ready to publish
+        And the dataset's title has changed in the source API
+        And the bundle is ready for approval
+        When the user goes to edit the bundle
+        And the user clicks the "Approve" action
+        Then the user sees a validation error explaining the dataset metadata has changed
+        And the local dataset record reflects the new title
+        When the user clicks the "Approve" action
+        Then the bundle is approved successfully

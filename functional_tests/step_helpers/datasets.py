@@ -88,6 +88,21 @@ def _prepare_datasets_response(datasets: list[Mapping[str, Any]]) -> dict[str, A
     }
 
 
+def register_dataset_detail_route(
+    mock_responses: responses.RequestsMock, dataset: Mapping[str, Any], *, replace: bool = False
+) -> None:
+    """Register the dataset detail endpoint on an existing RequestsMock.
+
+    Use `replace=True` to swap an existing registration for the same URL (e.g. to simulate
+    the source API returning updated metadata mid-scenario).
+    """
+    url = f"{settings.DATASETS_API_BASE_URL}/{dataset['dataset_id']}"
+    if replace:
+        mock_responses.replace(responses.GET, url, json=dict(dataset))
+    else:
+        mock_responses.get(url, json=dict(dataset))
+
+
 @contextmanager
 def mock_datasets_responses(
     datasets: list[Mapping[str, Any]], use_old_schema: bool = False
