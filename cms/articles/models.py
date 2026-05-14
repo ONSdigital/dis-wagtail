@@ -518,9 +518,14 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         previous_figure_ids = {figure.value["figure_id"] for figure in previous_to_latest_figures}
         return figures_in_use - previous_figure_ids
 
+    @property
+    def breadcrumb_title(self) -> str:
+        # The series page is excluded from breadcrumbs, so include it here for context.
+        return self.get_full_display_title()
+
     @cached_property
     def related_data_display_title(self) -> str:
-        return _("All data related to %(article_title)s") % {"article_title": self.title}
+        return _("All data related to %(article_title)s") % {"article_title": self.get_full_display_title()}
 
     @cached_property
     def dataset_document_list(self) -> list[dict[str, Any]]:
