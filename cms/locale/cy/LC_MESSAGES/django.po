@@ -639,7 +639,7 @@ msgid "Previous releases for %(title)s"
 msgstr "Datganiadau blaenorol am %(title)s"
 
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:13
-msgid "Previous Releases"
+msgid "Previous releases"
 msgstr "Datganiadau Blaenorol"
 
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:14
