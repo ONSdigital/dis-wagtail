@@ -12,21 +12,21 @@ class TestNonTrailingSlashRedirectMiddleware(TestCase):
         """Test that URLs with trailing slash are redirected to non-trailing slash."""
         request = self.factory.get("/some-page/")
         response = self.middleware.process_request(request)
-        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 308)
         self.assertEqual(response.url, "/some-page")
 
     def test_preserves_query_string(self):
         """Test that query parameters are preserved during redirection."""
         request = self.factory.get("/some-page/?foo=bar")
         response = self.middleware.process_request(request)
-        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 308)
         self.assertEqual(response.url, "/some-page?foo=bar")
 
     def test_preserves_complex_query_string(self):
         """Test that complex query strings with multiple parameters are preserved."""
         request = self.factory.get("/some-page/?foo=bar&baz=qux&test=value")
         response = self.middleware.process_request(request)
-        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 308)
         self.assertEqual(response.url, "/some-page?foo=bar&baz=qux&test=value")
 
     def test_ignores_root(self):
@@ -62,14 +62,14 @@ class TestNonTrailingSlashRedirectMiddleware(TestCase):
         """Test that nested paths with trailing slash are redirected correctly."""
         request = self.factory.get("/section/subsection/page/")
         response = self.middleware.process_request(request)
-        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 308)
         self.assertEqual(response.url, "/section/subsection/page")
 
     def test_nested_paths_with_query_string(self):
         """Test that nested paths with trailing slash and query string are handled correctly."""
         request = self.factory.get("/section/subsection/page/?param=value")
         response = self.middleware.process_request(request)
-        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 308)
         self.assertEqual(response.url, "/section/subsection/page?param=value")
 
     def test_empty_query_string_not_added(self):
@@ -78,7 +78,7 @@ class TestNonTrailingSlashRedirectMiddleware(TestCase):
         request = self.factory.get("/some-page/")
         request.META["QUERY_STRING"] = ""
         response = self.middleware.process_request(request)
-        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 308)
         self.assertEqual(response.url, "/some-page")
 
     def test_file_extension_with_trailing_slash_not_redirected(self):
@@ -93,14 +93,14 @@ class TestNonTrailingSlashRedirectMiddleware(TestCase):
         """Test that paths with special characters are handled correctly."""
         request = self.factory.get("/special-chars_%C3%A9_%C3%A1/")
         response = self.middleware.process_request(request)
-        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 308)
         self.assertEqual(response.url, "/special-chars_%C3%A9_%C3%A1")
 
     def test_multiple_trailing_slashes(self):
         """Test that multiple trailing slashes are handled correctly."""
         request = self.factory.get("/some-page///")
         response = self.middleware.process_request(request)
-        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 308)
         self.assertEqual(response.url, "/some-page")
 
     def test_different_http_methods(self):
@@ -112,7 +112,7 @@ class TestNonTrailingSlashRedirectMiddleware(TestCase):
             with self.subTest(method=method):
                 request = getattr(self.factory, method.lower())("/test-page/")
                 response = self.middleware.process_request(request)
-                self.assertEqual(response.status_code, 301)
+                self.assertEqual(response.status_code, 308)
                 self.assertEqual(response.url, "/test-page")
 
         for method in unaffected_methods:

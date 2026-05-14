@@ -13,7 +13,6 @@ from cms.core.tests.utils import (
     TranslationResetMixin,
     extract_datalayer_pushed_values,
     extract_response_jsonld,
-    reset_url_caches,
 )
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
@@ -22,9 +21,6 @@ from cms.standard_pages.tests.factories import IndexPageFactory, InformationPage
 class HomePageTests(TranslationResetMixin, WagtailPageTestCase):
     def setUp(self):
         self.page = HomePage.objects.first()
-
-    def tearDown(self):
-        reset_url_caches()
 
     def test_home_page_can_be_served(self):
         """Test that the home page can be served."""
@@ -292,12 +288,12 @@ class ErrorPageTests(TranslationResetMixin, WagtailPageTestCase):
             response.content.decode("utf-8"),
         )
 
-    def test_301_before_404_page(self):
-        """Test that a 301 redirect is returned before the 404 page is served when necessary."""
-        # The lack of a trailing slash on the URL should result in a 301 redirect,
+    def test_308_before_404_page(self):
+        """Test that a 308 redirect is returned before the 404 page is served when necessary."""
+        # The lack of a trailing slash on the URL should result in a 308 redirect,
         # even if the page does not exist.
         response = self.client.get("/non-existent-page-with-trailing-slash/")
-        self.assertEqual(response.status_code, HTTPStatus.MOVED_PERMANENTLY)
+        self.assertEqual(response.status_code, HTTPStatus.PERMANENT_REDIRECT)
 
         # Follow the redirect
         response = self.client.get(response["Location"])

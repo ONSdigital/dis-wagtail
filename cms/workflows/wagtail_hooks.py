@@ -2,7 +2,6 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import Permission
-from django.shortcuts import redirect
 from django.templatetags.static import static
 from django.urls import include, reverse
 from django.utils import timezone
@@ -12,6 +11,7 @@ from wagtail.admin import messages
 from wagtail.admin.action_menu import PageLockedMenuItem, WorkflowMenuItem
 
 from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
+from cms.core.utils import redirect
 
 from . import admin_urls
 from .action_menu import SubmitForModerationMenuItem, UnlockWorkflowMenuItem
@@ -104,7 +104,7 @@ def before_edit_page_post_workflow_action_without_workflow(request: HttpRequest,
         and not page.current_workflow_task
     ):
         messages.error(request, "Could not perform the action as the page is no longer in a workflow.")
-        return redirect("wagtailadmin_pages:edit", page.pk)
+        return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
     return None
 
 
@@ -118,7 +118,7 @@ def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
         or (request.POST.get("expire_at") and not page.expire_at)
     ):
         messages.error(request, "Cannot set page-level schedule while the page is in a bundle.")
-        return redirect("wagtailadmin_pages:edit", page.pk)
+        return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
 
     if request.POST.get("action-workflow-action") == "true":
         action_name = request.POST.get("workflow-action-name", "")
@@ -127,7 +127,7 @@ def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
             messages.error(
                 request, "Cannot self-approve your changes. Please ask another Publishing team member to do so."
             )
-            return redirect("wagtailadmin_pages:edit", page.pk)
+            return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
 
         if action_name == "locked-approve" and is_page_ready_to_publish(page) and not in_active_bundle(page):
             # The page is "Ready to publish" and the edit form was POSTed with the ReadyToPublishGroupTask
@@ -154,7 +154,7 @@ def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
             buttons.append(messages.button(reverse("wagtailadmin_pages:edit", args=(page.pk,)), "Edit"))
             messages.success(request, message, buttons=buttons)
 
-            return redirect("wagtailadmin_explore", page.get_parent().pk)
+            return redirect("wagtailadmin_explore", page.get_parent().pk, preserve_request=False)
 
     return None
 

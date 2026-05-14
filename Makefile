@@ -220,7 +220,15 @@ playwright-install:  ## Install Playwright dependencies
 
 .PHONY: makemessages
 makemessages:  ## We currently just require Welsh (cy), change to -a for all languages
-	poetry run python ./manage.py makemessages --locale cy --ignore "node_modules/*" --ignore ".venv"
+	poetry run python ./manage.py makemessages \
+		--locale cy \
+		--ignore "node_modules/*" \
+		--ignore ".venv" \
+		$(if $(check),--check)
+
+.PHONY: makemessages-check
+makemessages-check:  ## Run makemessages in check mode
+	$(MAKE) makemessages check=true
 
 .PHONY: compilemessages
 compilemessages:
