@@ -331,6 +331,10 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             if submitted_status == BundleStatus.APPROVED:
                 cleaned_data["approved_at"] = timezone.now()
                 cleaned_data["approved_by"] = self.for_user
+            elif submitted_status == BundleStatus.PUBLISHED:
+                if not self.instance.approved_by_id:
+                    cleaned_data["approved_at"] = timezone.now()
+                    cleaned_data["approved_by"] = self.for_user
             elif self.instance.status == BundleStatus.APPROVED:
                 # the bundle was approved, and is now unapproved.
                 cleaned_data["approved_at"] = None

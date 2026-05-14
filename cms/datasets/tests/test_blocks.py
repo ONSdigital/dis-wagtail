@@ -34,6 +34,10 @@ class TestDatasetStoryBlock(TestCase):
                 ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url + "/"}),
             ],
             [
+                ("manual_link", {"title": "Dataset Title", "url": "/abc"}),
+                ("manual_link", {"title": "Dataset Title", "url": "/abc/"}),
+            ],
+            [
                 ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url}),
                 ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url}),
             ],
@@ -92,6 +96,12 @@ class TestDatasetStoryBlock(TestCase):
                 (
                     "manual_link",
                     {"title": "Dataset Title", "url": "https://example.com/datasets/spam/editions/eggs/versions/1"},
+                ),
+            ],
+            [
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "/datasets/foo/editions/bar/versions/1"},
                 ),
             ],
         ]
