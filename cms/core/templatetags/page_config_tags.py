@@ -32,7 +32,7 @@ class HreflangDict(TypedDict):
     lang: str
 
 
-def _build_locale_urls(request: HttpRequest, page: BasePage) -> list[LocaleURLsDict]:
+def _build_locale_urls(request: HttpRequest, page: BasePage | None) -> list[LocaleURLsDict]:
     """Build a list of locale URL mappings by preserving the current request path
     and swapping the language component (prefix or domain).
 
@@ -40,7 +40,7 @@ def _build_locale_urls(request: HttpRequest, page: BasePage) -> list[LocaleURLsD
     when switching language, rather than resolving to the page's canonical URL.
     """
     # TODO: if request.is_preview -> use view_draft URLs
-    if prebuilt_locale_urls := getattr(page, "_locale_urls", None):
+    if page and (prebuilt_locale_urls := getattr(page, "_locale_urls", None)):
         return prebuilt_locale_urls  # type: ignore[no-any-return]
 
     request_path = request.path
@@ -74,12 +74,13 @@ def _build_locale_urls(request: HttpRequest, page: BasePage) -> list[LocaleURLsD
                 url = f"/{locale.language_code}{bare_path}"
             results.append({"locale": locale, "url": url})
 
-    page._locale_urls = results  # pylint: disable=protected-access
+    if page is not None:
+        page._locale_urls = results  # pylint: disable=protected-access
 
     return results
 
 
-def get_hreflangs(request: HttpRequest, page: BasePage) -> list[HreflangDict]:
+def get_hreflangs(request: HttpRequest, page: BasePage | None) -> list[HreflangDict]:
     """Returns a list of dictionaries containing URL and the full locale code.
     Typically used for HTML 'hreflang' tags.
     """
@@ -88,7 +89,7 @@ def get_hreflangs(request: HttpRequest, page: BasePage) -> list[HreflangDict]:
     return [{"url": item["url"], "lang": item["locale"].language_code} for item in base_urls]
 
 
-def get_translation_urls(request: HttpRequest, page: BasePage) -> list[TranslationURLDict]:
+def get_translation_urls(request: HttpRequest, page: BasePage | None) -> list[TranslationURLDict]:
     """Returns a list of dictionaries containing URL, ISO code, language name,
     and whether it is the current locale.
     """
@@ -199,8 +200,8 @@ def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, sit
         return {
             "bodyClasses": "",
             "title": _add_site_name_to_page_title(context.get("page_title", ""), site, False),
-            "header": {"language": {"languages": []}},
-            "meta": {"hrefLangs": [], "canonicalUrl": absolute_url},
+            "header": {"language": {"languages": get_translation_urls(request, page)}},
+            "meta": {"hrefLangs": get_hreflangs(request, page), "canonicalUrl": absolute_url},
             "absoluteUrl": absolute_url,
         }
 

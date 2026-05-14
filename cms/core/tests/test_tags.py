@@ -355,13 +355,14 @@ class PageConfigTestCase(TestCase):
         self.assertEqual(config["title"], "Office for National Statistics - custom title")
 
     def test_config_no_page(self):
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(8):
             config = get_page_config({"request": self.request, "page_title": "not found"})
 
         self.assertEqual(config["bodyClasses"], "")
         self.assertEqual(config["title"], "not found - Office for National Statistics")
-        self.assertEqual(config["header"]["language"], {"languages": []})
-        self.assertEqual(config["meta"], {"hrefLangs": [], "canonicalUrl": "http://ons.localhost:443/"})
+        self.assertEqual(len(config["header"]["language"]["languages"]), 2)
+        self.assertEqual(config["meta"]["canonicalUrl"], "http://ons.localhost:443/")
+        self.assertEqual(len(config["meta"]["hrefLangs"]), 2)
         self.assertEqual(config["absoluteUrl"], "http://ons.localhost:443/")
 
     @override_settings(
@@ -388,8 +389,8 @@ class PageConfigTestCase(TestCase):
         }
     )
     def test_no_page_served_from_cache(self):
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(7):
             get_page_config({"page_title": "not found", "request": self.request})
 
-        with self.assertNumQueries(0):
+        with self.assertNumQueries(2):
             get_page_config({"page_title": "not found", "request": self.request})
