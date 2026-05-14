@@ -32,7 +32,7 @@ class HreflangDict(TypedDict):
     lang: str
 
 
-def _build_locale_urls(request: HttpRequest, page: BasePage | None) -> list[LocaleURLsDict]:
+def _build_locale_urls(request: HttpRequest) -> list[LocaleURLsDict]:
     """Build a list of locale URL mappings by preserving the current request path
     and swapping the language component (prefix or domain).
 
@@ -40,7 +40,7 @@ def _build_locale_urls(request: HttpRequest, page: BasePage | None) -> list[Loca
     when switching language, rather than resolving to the page's canonical URL.
     """
     # TODO: if request.is_preview -> use view_draft URLs
-    if page and (prebuilt_locale_urls := getattr(page, "_locale_urls", None)):
+    if prebuilt_locale_urls := getattr(request, "_locale_urls", None):
         return prebuilt_locale_urls  # type: ignore[no-any-return]
 
     request_path = request.path
@@ -74,26 +74,25 @@ def _build_locale_urls(request: HttpRequest, page: BasePage | None) -> list[Loca
                 url = f"/{locale.language_code}{bare_path}"
             results.append({"locale": locale, "url": url})
 
-    if page is not None:
-        page._locale_urls = results  # pylint: disable=protected-access
+    request._locale_urls = results  # pylint: disable=protected-access
 
     return results
 
 
-def get_hreflangs(request: HttpRequest, page: BasePage | None) -> list[HreflangDict]:
+def get_hreflangs(request: HttpRequest) -> list[HreflangDict]:
     """Returns a list of dictionaries containing URL and the full locale code.
     Typically used for HTML 'hreflang' tags.
     """
     # TODO make aware of subpage routing!
-    base_urls = _build_locale_urls(request, page)
+    base_urls = _build_locale_urls(request)
     return [{"url": item["url"], "lang": item["locale"].language_code} for item in base_urls]
 
 
-def get_translation_urls(request: HttpRequest, page: BasePage | None) -> list[TranslationURLDict]:
+def get_translation_urls(request: HttpRequest) -> list[TranslationURLDict]:
     """Returns a list of dictionaries containing URL, ISO code, language name,
     and whether it is the current locale.
     """
-    base_urls = _build_locale_urls(request, page)
+    base_urls = _build_locale_urls(request)
     urls: list[TranslationURLDict] = []
     for item in base_urls:
         locale = item["locale"]
@@ -197,39 +196,38 @@ def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, sit
 
     # If there's no page, use sensible defaults
     if page is None:
-        return {
-            "bodyClasses": "",
-            "title": _add_site_name_to_page_title(context.get("page_title", ""), site, False),
-            "header": {"language": {"languages": get_translation_urls(request, page)}},
-            "meta": {"hrefLangs": get_hreflangs(request, page), "canonicalUrl": absolute_url},
-            "absoluteUrl": absolute_url,
-        }
-
-    is_preview = getattr(request, "is_preview", False)
-    cache_key = get_page_config_cache_key(site, page, getattr(request, "LANGUAGE_CODE", settings.LANGUAGE_CODE))
-
-    # Don't cache previews
-    page_config = cache.get(cache_key) if not is_preview else None
-
-    is_homepage = page.pk == site.root_page_id
-
-    if page_config is None:
-        page_title: str = page.seo_title or getattr(page, "display_title", page.title)  # type: ignore[assignment]
-
-        page_title = _add_site_name_to_page_title(page_title, site, is_homepage)
-
+        is_homepage = False
         page_config = {
-            "bodyClasses": "template-" + page._meta.verbose_name.lower().replace(" ", "-"),  # type: ignore[union-attr]
-            "title": page_title,
-            "header": {"language": {"languages": get_translation_urls(request, page)}},
-            "meta": {
-                "hrefLangs": get_hreflangs(request, page),
-                "canonicalUrl": page.get_canonical_url(request),
-            },
+            "bodyClasses": "",
+            "header": {"language": {"languages": get_translation_urls(request)}},
+            "meta": {"hrefLangs": get_hreflangs(request), "canonicalUrl": absolute_url},
         }
+    else:
+        is_preview = getattr(request, "is_preview", False)
+        cache_key = get_page_config_cache_key(site, page, getattr(request, "LANGUAGE_CODE", settings.LANGUAGE_CODE))
 
-        if not is_preview:
-            cache.set(cache_key, page_config)
+        # Don't cache previews
+        page_config = cache.get(cache_key) if not is_preview else None
+
+        is_homepage = page.pk == site.root_page_id
+
+        if page_config is None:
+            page_title: str = page.seo_title or getattr(page, "display_title", page.title)  # type: ignore[assignment]
+
+            page_title = _add_site_name_to_page_title(page_title, site, is_homepage)
+
+            page_config = {
+                "bodyClasses": "template-" + page._meta.verbose_name.lower().replace(" ", "-"),  # type: ignore[union-attr]
+                "title": page_title,
+                "header": {"language": {"languages": get_translation_urls(request)}},
+                "meta": {
+                    "hrefLangs": get_hreflangs(request),
+                    "canonicalUrl": page.get_canonical_url(request),
+                },
+            }
+
+            if not is_preview:
+                cache.set(cache_key, page_config)
 
     # Let page context override the page title.
     # This is intentionally not cached as it varies by context.
