@@ -58,8 +58,17 @@ def hide_release_date_text_field_for_non_provisional_release_pages() -> str:
 @hooks.register("construct_explorer_page_queryset")
 def pin_release_calendar_page(parent_page: Page, pages: PageQuerySet, request: HttpRequest) -> PageQuerySet:
     """Pin the Release Calendar index to the top of the explorer page and explorer menu."""
-    # Respect any existing ordering
-    if request.GET.get("ordering") or parent_page.is_root():
+    # Respect any existing user-selected ordering.
+    if request.GET.get("ordering"):
+        return pages
+
+    # Only apply to the homepage Explorer view.
+    resolver_match = getattr(request, "resolver_match", None)
+    is_homepage_explorer = getattr(resolver_match, "view_name", "") == "wagtailadmin_explore" and isinstance(
+        parent_page.specific_deferred, HomePage
+    )
+
+    if not is_homepage_explorer:
         return pages
 
     return pages.order_by(
