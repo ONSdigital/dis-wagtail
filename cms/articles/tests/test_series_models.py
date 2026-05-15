@@ -803,6 +803,51 @@ class ArticleSeriesChartDownloadWithVersionTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(f"{self.series.url}/editions/{article.slug}/versions/1/download-chart/new-chart-id")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
+    def test_download_chart_with_version_404_version_not_in_corrections(self):
+        """Test 404 when the requested version does not match any existing correction."""
+        article = StatisticalArticlePageFactory(parent=self.series)
+        article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Original Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": self.original_table_data,
+                            },
+                            "id": "chart-to-download",
+                        }
+                    ],
+                },
+            }
+        ]
+        article.save_revision().publish()
+        original_revision_id = article.latest_revision_id
+
+        article.corrections = [
+            {
+                "type": "correction",
+                "value": {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "date": "2024-01-15",
+                    "text": "Minor correction",
+                },
+            }
+        ]
+        article.save_revision().publish()
+
+        # Version 2 does not exist among the corrections
+        response = self.client.get(
+            f"{self.series.url}/editions/{article.slug}/versions/2/download-chart/chart-to-download"
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
     def test_download_with_version_zero_returns_404(self):
         """Test that requesting version 0 returns 404."""
         article = StatisticalArticlePageFactory(parent=self.series)
@@ -889,6 +934,35 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
         self.assertIn("Category", content)
         self.assertIn("2020", content)
         self.assertIn("100", content)
+
+    def test_download_chart_with_version_on_alias_returns_404(self):
+        """Corrections live on the canonical page, so versioned downloads on an alias return 404."""
+        original_revision_id = self.article.latest_revision_id
+        self.article.corrections = [
+            {
+                "type": "correction",
+                "value": {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "date": "2024-01-15",
+                    "text": "Minor correction",
+                },
+            }
+        ]
+        self.article.save_revision().publish()
+
+        welsh_article_alias = self.article.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"),
+            copy_parents=True,
+            alias=True,
+        )
+        welsh_series = welsh_article_alias.get_parent().specific
+
+        response = self.client.get(
+            f"{welsh_series.url}/editions/{welsh_article_alias.slug}/versions/1/download-chart/test-chart-id",
+            headers={"host": "cy.ons.localhost"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_download_chart_from_welsh_translation(self):
         """Test that chart download works from fully translated Welsh article."""
