@@ -191,7 +191,7 @@ def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, sit
 
     if page is None:
         is_homepage = False
-        page_title = context["page_title"]
+        page_title = context.get("page_title")
         canonical_url = absolute_url
         body_classes = ""
     else:
@@ -201,7 +201,7 @@ def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, sit
         body_classes = "template-" + page._meta.verbose_name.lower().replace(" ", "-")  # type: ignore[union-attr]
 
     page_config = {
-        "title": _add_site_name_to_page_title(page_title, site, is_homepage),
+        "title": _add_site_name_to_page_title(page_title, site, is_homepage) if page_title else None,
         "bodyClasses": body_classes,
         "header": {"language": {"languages": get_translation_urls(request)}},
         "meta": {"hrefLangs": get_hreflangs(request), "canonicalUrl": canonical_url},

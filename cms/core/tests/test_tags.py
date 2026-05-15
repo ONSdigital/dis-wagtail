@@ -367,6 +367,12 @@ class PageConfigTestCase(TestCase):
         self.assertEqual(len(config["meta"]["hrefLangs"]), 2)
         self.assertEqual(config["absoluteUrl"], "http://ons.localhost:443/")
 
+    def test_config_no_page_title(self):
+        with self.assertNumQueries(6):
+            config = get_page_config({"request": self.request})
+
+        self.assertIsNone(config["title"])
+
     @override_settings(
         CACHES={
             "default": {
