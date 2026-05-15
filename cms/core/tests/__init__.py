@@ -99,10 +99,6 @@ class MigrationTestCase(_TransactionTestCase):
         cls.executor.migrate(cls.next_migration)
         cls.apps = cls.executor.loader.project_state(cls.next_migration).apps
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-
     def migrate_to(self, target: Sequence[tuple[str, str]] | None = None):
         """Helper to migrate to a specific target state."""
         self.executor.migrate(target)
