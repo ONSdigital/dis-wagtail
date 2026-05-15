@@ -62,11 +62,10 @@ def _build_locale_urls(request: HttpRequest) -> list[LocaleURLsDict]:
             results.append({"locale": locale, "url": f"{root_url}{request_path}"})
     else:
         # Path-based mode: preserve request path, swap locale prefix
-        default_locale = Locale.get_default()
         bare_path = _strip_locale_prefix(request_path)
 
         for locale in Locale.objects.all().order_by("pk"):
-            if locale.pk == default_locale.pk:
+            if locale.is_default:
                 url = bare_path
             elif bare_path == "/":
                 url = f"/{locale.language_code}/" if WAGTAIL_APPEND_SLASH else f"/{locale.language_code}"

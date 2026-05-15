@@ -150,7 +150,7 @@ class LanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
 
     def test_caches_locale_urls_on_request(self):
         """Test that results are cached on the request object."""
-        with self.assertNumQueries(2):  # Locale.get_default() and Locale.objects.all()
+        with self.assertNumQueries(1):  # Locale.objects.all()
             get_translation_urls(self.dummy_request)
 
         self.assertIsNotNone(getattr(self.dummy_request, "_locale_urls", None))
