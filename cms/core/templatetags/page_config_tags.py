@@ -6,7 +6,7 @@ from django.core.cache import cache
 from django.http import HttpRequest
 from django.utils.translation import gettext_lazy as _
 from wagtail.coreutils import WAGTAIL_APPEND_SLASH
-from wagtail.models import Locale, Page, Site
+from wagtail.models import Locale, Site
 
 from cms.core.models import BasePage
 from cms.core.utils import deep_merge_mapping
@@ -177,10 +177,6 @@ def _get_base_page_config(context: jinja2.runtime.Context, site: Site, request: 
     return base_page_config
 
 
-def get_page_config_cache_key(site: Site, page: Page, language_code: str) -> str:
-    return f"_cms_page_config_cache_key_{page.cache_key}_{site.pk}_{language_code}"
-
-
 def _add_site_name_to_page_title(page_title: str, site: Site, is_homepage: bool) -> str:
     if not site.site_name:
         return page_title
@@ -194,48 +190,24 @@ def _add_site_name_to_page_title(page_title: str, site: Site, is_homepage: bool)
 def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, site: Site, request: HttpRequest) -> dict:
     absolute_url = request.build_absolute_uri()
 
-    # If there's no page, use sensible defaults
     if page is None:
         is_homepage = False
-        page_config = {
-            "bodyClasses": "",
-            "header": {"language": {"languages": get_translation_urls(request)}},
-            "meta": {"hrefLangs": get_hreflangs(request), "canonicalUrl": absolute_url},
-        }
+        page_title = context["page_title"]
+        canonical_url = absolute_url
+        body_classes = ""
     else:
-        is_preview = getattr(request, "is_preview", False)
-        cache_key = get_page_config_cache_key(site, page, getattr(request, "LANGUAGE_CODE", settings.LANGUAGE_CODE))
-
-        # Don't cache previews
-        page_config = cache.get(cache_key) if not is_preview else None  # type: ignore[assignment]
-
         is_homepage = page.pk == site.root_page_id
+        page_title = context.get("page_title") or page.seo_title or getattr(page, "display_title", page.title)
+        canonical_url = page.get_canonical_url(request)
+        body_classes = "template-" + page._meta.verbose_name.lower().replace(" ", "-")  # type: ignore[union-attr]
 
-        if page_config is None:
-            page_title: str = page.seo_title or getattr(page, "display_title", page.title)
-
-            page_title = _add_site_name_to_page_title(page_title, site, is_homepage)
-
-            page_config = {
-                "bodyClasses": ("template-" + page._meta.verbose_name.lower().replace(" ", "-")),
-                "title": page_title,
-                "header": {"language": {"languages": get_translation_urls(request)}},
-                "meta": {
-                    "hrefLangs": get_hreflangs(request),
-                    "canonicalUrl": page.get_canonical_url(request),
-                },
-            }
-
-            if not is_preview:
-                cache.set(cache_key, page_config)
-
-    # Let page context override the page title.
-    # This is intentionally not cached as it varies by context.
-    if page_title_from_context := context.get("page_title"):
-        page_config["title"] = _add_site_name_to_page_title(page_title_from_context, site, is_homepage)
-
-    # Set absolute URL outside the cache to support routable pages
-    page_config["absoluteUrl"] = absolute_url
+    page_config = {
+        "title": _add_site_name_to_page_title(page_title, site, is_homepage),
+        "bodyClasses": body_classes,
+        "header": {"language": {"languages": get_translation_urls(request)}},
+        "meta": {"hrefLangs": get_hreflangs(request), "canonicalUrl": canonical_url},
+        "absoluteUrl": absolute_url,
+    }
 
     return page_config
 
@@ -246,7 +218,7 @@ def get_page_config(context: jinja2.runtime.Context) -> dict:
     request = context["request"]
     site: Site = Site.find_for_request(request)
 
-    # Merge the base and page-specific config, so they can be cached (and invalidated) independently.
+    # Merge the base and page-specific config, so they can be cached independently.
     # Page config is passed first so it can take precedence.
     return deep_merge_mapping(
         _get_page_config(context, page, site, request),

@@ -1,59 +1,12 @@
 from unittest.mock import patch
 
 from django.conf import settings
-from django.core.cache import cache
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from wagtail.models import Locale, Page
 
 from cms.core.signal_handlers import sync_alias_translation_slugs
-from cms.core.templatetags.page_config_tags import get_page_config_cache_key
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import IndexPageFactory
-
-
-@override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "InvalidatePageConfigCacheSignalTestCase",
-        }
-    }
-)
-class InvalidatePageConfigCacheSignalTestCase(TestCase):
-    def setUp(self):
-        self.page: HomePage = HomePage.objects.first()
-
-        self.site = self.page.get_site()
-
-        # Warm the cache
-        self.client.get(self.page.get_url())
-
-    def _cache_keys_for_page(self, page: Page) -> list[str]:
-        return [get_page_config_cache_key(self.site, page, language_code) for language_code in dict(settings.LANGUAGES)]
-
-    def tearDown(self):
-        cache.clear()
-
-    def test_stable_cache_key(self):
-        with self.assertNumQueries(0):
-            self.assertEqual(self._cache_keys_for_page(self.page), self._cache_keys_for_page(self.page))
-
-    def test_invalidate_on_publish(self):
-        self.assertNotEqual(cache.get_many(self._cache_keys_for_page(self.page)), {})
-
-        # Publish a change
-        self.page.save_revision().publish()
-        self.page.refresh_from_db()
-
-        self.assertEqual(cache.get_many(self._cache_keys_for_page(self.page)), {})
-
-    def test_invalidate_on_unpublish(self):
-        self.assertNotEqual(cache.get_many(self._cache_keys_for_page(self.page)), {})
-
-        # Unpublish the revision
-        self.page.unpublish()
-
-        self.assertEqual(cache.get_many(self._cache_keys_for_page(self.page)), {})
 
 
 class SyncAliasTranslationSlugsTestCase(TestCase):
