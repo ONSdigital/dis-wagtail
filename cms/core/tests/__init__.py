@@ -90,6 +90,7 @@ class MigrationTestCase(_TransactionTestCase):
     next_migration = None
 
     databases: ClassVar[set] = {"default"}
+    serialized_rollback = True
 
     @classmethod
     def setUpClass(cls):
@@ -100,8 +101,6 @@ class MigrationTestCase(_TransactionTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.executor.loader.build_graph()
-        cls.executor.migrate(cls.next_migration)
         super().tearDownClass()
 
     def migrate_to(self, target: Sequence[tuple[str, str]] | None = None):
