@@ -181,7 +181,6 @@ jinja2_extensions = [
     "wagtail.images.jinja2tags.images",
     "wagtail.contrib.settings.jinja2tags.settings",
     "cms.core.jinja2tags.CoreExtension",
-    "cms.navigation.jinja2tags.NavigationExtension",
     "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
 ]
 

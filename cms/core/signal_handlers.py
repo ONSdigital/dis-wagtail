@@ -39,7 +39,7 @@ def remove_approved_go_live_seconds(
 def reload_logging_config(*, setting: str, **kwargs: Any) -> None:
     """Reload logging config when the relevant settings change.
 
-    @see https://code.djangoproject.com/ticket/36958#ticket
+    @see https://code.djangoproject.com/ticket/36958
     """
     if setting in {"LOGGING", "LOGGING_CONFIG"}:
         configure_logging(settings.LOGGING_CONFIG, settings.LOGGING)

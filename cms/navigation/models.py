@@ -88,6 +88,8 @@ class FooterMenu(TranslatableMixin, DraftStateMixin, RevisionMixin, PreviewableM
 
 @register_setting(icon="list-ul")
 class NavigationSettings(BaseSiteSetting):
+    select_related = ("main_menu", "footer_menu")
+
     main_menu = models.ForeignKey(
         MainMenu,
         on_delete=models.SET_NULL,

@@ -83,6 +83,7 @@ class FooterMenuFactory(factory.django.DjangoModelFactory):
 class NavigationSettingsFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = NavigationSettings
+        django_get_or_create = ("site",)
 
     main_menu = factory.SubFactory(MainMenuFactory)
     footer_menu = factory.SubFactory(FooterMenuFactory)

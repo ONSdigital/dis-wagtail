@@ -1,12 +1,16 @@
+from django.conf import settings
 from django.test import RequestFactory, TestCase, override_settings
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale, Site
 
-from cms.core.templatetags.util_tags import (
+from cms.core.templatetags.page_config_tags import (
     _strip_locale_prefix,
-    extend,
     get_hreflangs,
+    get_page_config,
     get_translation_urls,
+)
+from cms.core.templatetags.util_tags import (
+    extend,
 )
 from cms.home.models import HomePage
 
@@ -34,7 +38,8 @@ class LanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
 
     def test_get_translation_urls(self):
         """Test that get_translation_urls returns the correct URLs."""
-        urls = get_translation_urls({"request": self.dummy_request, "page": self.page})
+        # Call the function
+        urls = get_translation_urls(self.dummy_request)
 
         self.assertIsInstance(urls, list)
         for url in urls:
@@ -52,7 +57,8 @@ class LanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
 
     def test_get_hreflangs(self):
         """Test that get_hreflangs returns the correct hreflang URLs."""
-        hreflangs = get_hreflangs({"request": self.dummy_request, "page": self.page})
+        # Call the function
+        hreflangs = get_hreflangs(self.dummy_request)
 
         self.assertIsInstance(hreflangs, list)
         self.assertEqual(len(hreflangs), 2)
@@ -77,7 +83,8 @@ class LanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
         main_locale.language_code = "pl"
         main_locale.save()
 
-        hreflangs = get_hreflangs({"request": self.dummy_request, "page": self.page})
+        # Call the function
+        hreflangs = get_hreflangs(self.dummy_request)
 
         self.assertIsInstance(hreflangs, list)
         self.assertEqual(len(hreflangs), 2)
@@ -94,7 +101,7 @@ class LanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
     def test_translation_urls_preserve_sub_path(self):
         """Test that the language switcher preserves routable sub-paths."""
         request = get_dummy_request(path="/topic/articles/series/editions")
-        urls = get_translation_urls({"request": request, "page": self.page})
+        urls = get_translation_urls(request)
 
         en = self._get_url_by_iso(urls, "en")
         cy = self._get_url_by_iso(urls, "cy")
@@ -104,7 +111,7 @@ class LanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
     def test_translation_urls_preserve_sub_path_with_slug(self):
         """Test that the language switcher preserves edition slug sub-paths."""
         request = get_dummy_request(path="/topic/articles/series/editions/jan-2025")
-        urls = get_translation_urls({"request": request, "page": self.page})
+        urls = get_translation_urls(request)
 
         en = self._get_url_by_iso(urls, "en")
         cy = self._get_url_by_iso(urls, "cy")
@@ -114,7 +121,7 @@ class LanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
     def test_translation_urls_strip_welsh_prefix(self):
         """Test that Welsh prefix is correctly stripped and swapped."""
         request = get_dummy_request(path="/cy/topic/articles/series/editions")
-        urls = get_translation_urls({"request": request, "page": self.page})
+        urls = get_translation_urls(request)
 
         en = self._get_url_by_iso(urls, "en")
         cy = self._get_url_by_iso(urls, "cy")
@@ -124,7 +131,7 @@ class LanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
     def test_translation_urls_preserve_related_data_sub_path(self):
         """Test that the language switcher preserves related-data sub-paths."""
         request = get_dummy_request(path="/topic/articles/series/related-data")
-        urls = get_translation_urls({"request": request, "page": self.page})
+        urls = get_translation_urls(request)
 
         en = self._get_url_by_iso(urls, "en")
         cy = self._get_url_by_iso(urls, "cy")
@@ -134,45 +141,43 @@ class LanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
     def test_translation_urls_from_welsh_homepage(self):
         """Test that /cy (Welsh homepage) correctly maps back to / for English."""
         request = get_dummy_request(path="/cy")
-        urls = get_translation_urls({"request": request, "page": self.page})
+        urls = get_translation_urls(request)
 
         en = self._get_url_by_iso(urls, "en")
         cy = self._get_url_by_iso(urls, "cy")
         self.assertEqual(en["url"], "/")
         self.assertEqual(cy["url"], "/cy")
 
-    def test_caches_locale_urls_on_page(self):
-        """Test that results are cached on the page object."""
-        context = {"request": self.dummy_request, "page": self.page}
+    def test_caches_locale_urls_on_request(self):
+        """Test that results are cached on the request object."""
+        with self.assertNumQueries(1):  # Locale.objects.all()
+            get_translation_urls(self.dummy_request)
 
-        with self.assertNumQueries(2):  # Locale.get_default() and Locale.objects.all()
-            get_translation_urls(context)
-        self.assertIsNotNone(getattr(self.page, "_locale_urls", None))
+        self.assertIsNotNone(getattr(self.dummy_request, "_locale_urls", None))
 
         # Second call should use the cache and issue no DB queries.
         with self.assertNumQueries(0):
-            get_translation_urls(context)
+            get_translation_urls(self.dummy_request)
 
     @override_settings(
         CMS_USE_SUBDOMAIN_LOCALES=True,
     )
-    def test_caches_locale_urls_on_page_in_subdomain_mode(self):
-        """Test that locale URLs are cached on the page object in subdomain mode."""
-        context = {"request": self.dummy_request, "page": self.page}
-
+    def test_caches_locale_urls_on_request_in_subdomain_mode(self):
+        """Test that locale URLs are cached on the request object in subdomain mode."""
         # This test will behave the same way but for different reasons.
         with self.assertNumQueries(2):  # Locale.objects.all() and get_mapped_site_root_paths()
-            get_translation_urls(context)
-        self.assertIsNotNone(getattr(self.page, "_locale_urls", None))
+            get_translation_urls(self.dummy_request)
+
+        self.assertIsNotNone(getattr(self.dummy_request, "_locale_urls", None))
 
         # Second call should still use the cache and issue no DB queries.
         with self.assertNumQueries(0):
-            get_translation_urls(context)
+            get_translation_urls(self.dummy_request)
 
     def test_hreflangs_preserve_sub_path(self):
         """Test that hreflangs also preserve routable sub-paths."""
         request = get_dummy_request(path="/topic/articles/series/editions")
-        hreflangs = get_hreflangs({"request": request, "page": self.page})
+        hreflangs = get_hreflangs(request)
 
         en = self._get_hreflang_by_lang(hreflangs, "en-gb")
         cy = self._get_hreflang_by_lang(hreflangs, "cy")
@@ -212,7 +217,7 @@ class SubdomainLanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
     def test_translation_urls_from_english_domain(self):
         """Test URLs generated when on the English subdomain."""
         request = self._make_request("ons.localhost")
-        urls = get_translation_urls({"request": request, "page": self.page})
+        urls = get_translation_urls(request)
 
         en = self._get_url_by_iso(urls, "en")
         cy = self._get_url_by_iso(urls, "cy")
@@ -222,7 +227,7 @@ class SubdomainLanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
     def test_translation_urls_preserve_sub_path(self):
         """Test that subdomain mode preserves routable sub-paths."""
         request = self._make_request("ons.localhost", path="/topic/articles/series/editions")
-        urls = get_translation_urls({"request": request, "page": self.page})
+        urls = get_translation_urls(request)
 
         en = self._get_url_by_iso(urls, "en")
         cy = self._get_url_by_iso(urls, "cy")
@@ -232,7 +237,7 @@ class SubdomainLanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
     def test_translation_urls_from_welsh_domain(self):
         """Test that switching from Welsh domain preserves the path."""
         request = self._make_request("cy.ons.localhost", path="/topic/articles/series/editions")
-        urls = get_translation_urls({"request": request, "page": self.page})
+        urls = get_translation_urls(request)
 
         en = self._get_url_by_iso(urls, "en")
         cy = self._get_url_by_iso(urls, "cy")
@@ -242,7 +247,7 @@ class SubdomainLanguageTemplateTagTests(LocaleURLLookupMixin, TestCase):
     def test_hreflangs_preserve_sub_path(self):
         """Test that subdomain hreflangs preserve routable sub-paths."""
         request = self._make_request("ons.localhost", path="/topic/articles/series/editions")
-        hreflangs = get_hreflangs({"request": request, "page": self.page})
+        hreflangs = get_hreflangs(request)
 
         en = self._get_hreflang_by_lang(hreflangs, "en-gb")
         cy = self._get_hreflang_by_lang(hreflangs, "cy")
@@ -305,3 +310,101 @@ class ExtendFunctionTest(TestCase):
         """
         with self.assertRaises(TypeError):
             extend("not a list", {"name": "Series 3"})  # type: ignore
+
+
+@override_settings(CMS_USE_SUBDOMAIN_LOCALES=True)
+class PageConfigTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
+        cls.welsh_home_page = HomePage.objects.get(locale__language_code="cy")
+
+    def setUp(self):
+        self.request = get_dummy_request(site=Site.objects.get(hostname="ons.localhost"))
+        self.request.LANGUAGE_CODE = settings.LANGUAGE_CODE
+
+        self.welsh_request = get_dummy_request(site=Site.objects.get(hostname="cy.ons.localhost"))
+        self.welsh_request.LANGUAGE_CODE = "cy"
+
+    def test_page_config(self):
+        config = get_page_config({"page": self.page, "request": self.request})
+
+        self.assertEqual(config["bodyClasses"], "template-home-page")
+        self.assertEqual(config["title"], f"Office for National Statistics - {self.page.title}")
+        self.assertEqual(config["meta"]["canonicalUrl"], "https://ons.localhost/")
+        self.assertEqual(config["absoluteUrl"], "http://ons.localhost:443/")
+
+        self.assertEqual(
+            config["header"]["search"],
+            {"id": "search", "form": {"action": "/search", "inputName": "q"}},
+        )
+
+    def test_welsh_page_config(self):
+        config = get_page_config({"page": self.welsh_home_page, "request": self.welsh_request})
+
+        self.assertEqual(config["bodyClasses"], "template-home-page")
+        self.assertEqual(config["title"], f"Swyddfa Ystadegau Gwladol - {self.welsh_home_page.title}")
+        self.assertEqual(config["meta"]["canonicalUrl"], "https://cy.ons.localhost/")
+        self.assertEqual(config["absoluteUrl"], "http://cy.ons.localhost:443/")
+
+        self.assertEqual(
+            config["header"]["search"],
+            {"id": "search", "form": {"action": "/search", "inputName": "q"}},
+        )
+
+    def test_page_title_from_context_overrides_model(self):
+        config = get_page_config({"page": self.page, "request": self.request, "page_title": "custom title"})
+        self.assertEqual(config["title"], "Office for National Statistics - custom title")
+
+    def test_config_no_page(self):
+        with self.assertNumQueries(6):
+            config = get_page_config({"request": self.request, "page_title": "not found"})
+
+        self.assertEqual(config["bodyClasses"], "")
+        self.assertEqual(config["title"], "not found - Office for National Statistics")
+        self.assertEqual(len(config["header"]["language"]["languages"]), 2)
+        self.assertEqual(config["meta"]["canonicalUrl"], "http://ons.localhost:443/")
+        self.assertEqual(len(config["meta"]["hrefLangs"]), 2)
+        self.assertEqual(config["absoluteUrl"], "http://ons.localhost:443/")
+
+    def test_config_no_page_title(self):
+        with self.assertNumQueries(6):
+            config = get_page_config({"request": self.request})
+
+        self.assertIsNone(config["title"])
+
+    @override_settings(
+        CACHES={
+            "default": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+                "LOCATION": "test_served_from_cache",
+            }
+        }
+    )
+    def test_served_from_cache(self):
+        with self.assertNumQueries(6):
+            get_page_config({"page": self.page, "request": self.request})
+
+        with self.assertNumQueries(0):
+            get_page_config({"page": self.page, "request": self.request})
+
+    @override_settings(
+        CACHES={
+            "default": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+                "LOCATION": "test_no_page_served_from_cache",
+            }
+        }
+    )
+    def test_no_page_served_from_cache(self):
+        with self.assertNumQueries(6):
+            get_page_config({"page_title": "not found", "request": self.request})
+
+        with self.assertNumQueries(0):
+            get_page_config({"page_title": "not found", "request": self.request})
+
+        # Recreate request so any on-object caches are cleared
+        self.setUp()
+
+        with self.assertNumQueries(2):
+            get_page_config({"page_title": "not found", "request": self.request})
