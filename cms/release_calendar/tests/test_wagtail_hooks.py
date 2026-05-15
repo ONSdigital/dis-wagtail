@@ -14,8 +14,7 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.root = Page.get_first_root_node()
-        cls.homepages = HomePage.objects.specific()
-        cls.homepage = cls.homepages.first()
+        cls.homepage = HomePage.objects.first()
         cls.release_calendar_index = ReleaseCalendarIndex.objects.first()
         cls.release_calendar_index.save_revision().publish()
         cls.request = RequestFactory().get("/")
