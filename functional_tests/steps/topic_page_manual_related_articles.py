@@ -90,39 +90,31 @@ def user_removes_first_manually_added_related_article(context: Context) -> None:
 @then('the user can see "{title}" in the related articles section')
 def user_can_see_title_in_related_articles_section(context: Context, title: str) -> None:
     """Assert that the given title is visible in the related articles section."""
-    related_articles_section = context.page.locator("section#related-articles")
+    related_articles_section = context.page.locator("#related-articles")
     expect(related_articles_section.get_by_role("link", name=title)).to_be_visible()
-
-
-@then('the related article "{title}" appears at the top of the list')
-def related_article_appears_at_top_of_list(context: Context, title: str) -> None:
-    """Assert that the given title appears first in the related articles list."""
-    related_articles_section = context.page.locator("section#related-articles")
-    first_article = related_articles_section.locator("li.ons-document-list__item").first
-    expect(first_article.get_by_role("link", name=title)).to_be_visible()
 
 
 @then("the related articles section contains {count:d} articles")
 def related_articles_section_contains_count_articles(context: Context, count: int) -> None:
     """Assert that the related articles section contains the expected number of articles."""
-    related_articles_section = context.page.locator("section#related-articles")
-    articles = related_articles_section.locator("li.ons-document-list__item")
+    related_articles_section = context.page.locator("#related-articles")
+    articles = related_articles_section.locator(".ons-document-list__item")
     expect(articles).to_have_count(count)
 
 
 @then('the related article "{title}" is the first in the list')
 def related_article_is_first_in_list(context: Context, title: str) -> None:
     """Assert that the given title is the first article in the list."""
-    related_articles_section = context.page.locator("section#related-articles")
-    first_article = related_articles_section.locator("li.ons-document-list__item").first
+    related_articles_section = context.page.locator("#related-articles")
+    first_article = related_articles_section.locator(".ons-document-list__item").first
     expect(first_article.get_by_role("link", name=title)).to_be_visible()
 
 
 @then('the related article "{title}" is the second in the list')
 def related_article_is_second_in_list(context: Context, title: str) -> None:
     """Assert that the given title is the second article in the list."""
-    related_articles_section = context.page.locator("section#related-articles")
-    second_article = related_articles_section.locator("li.ons-document-list__item").nth(1)
+    related_articles_section = context.page.locator("#related-articles")
+    second_article = related_articles_section.locator(".ons-document-list__item").nth(1)
     expect(second_article.get_by_role("link", name=title)).to_be_visible()
 
 
@@ -131,8 +123,8 @@ def related_articles_section_contains_only_manually_added_articles(
     context: Context,
 ) -> None:
     """Assert that the related articles section contains only manually added articles (no auto-populated ones)."""
-    related_articles_section = context.page.locator("section#related-articles")
-    articles = related_articles_section.locator("li.ons-document-list__item")
+    related_articles_section = context.page.locator("#related-articles")
+    articles = related_articles_section.locator(".ons-document-list__item")
     expect(articles).to_have_count(3)
 
     # Check that all three manually added articles are present
@@ -148,8 +140,8 @@ def related_articles_section_contains_only_manually_added_articles(
 @then("the related articles section contains 3 auto-populated articles")
 def related_articles_section_contains_auto_populated_articles(context: Context) -> None:
     """Assert that the related articles section contains only auto-populated articles."""
-    related_articles_section = context.page.locator("section#related-articles")
-    articles = related_articles_section.locator("li.ons-document-list__item")
+    related_articles_section = context.page.locator("#related-articles")
+    articles = related_articles_section.locator(".ons-document-list__item")
     expect(articles).to_have_count(3)
 
     # Check that all three auto-populated articles are present
@@ -191,11 +183,11 @@ def user_adds_internal_related_article_with_custom_title(context: Context, custo
 @then("the custom title overrides the page's original title")
 def custom_title_overrides_original_title(context: Context) -> None:
     """Assert that the custom title is displayed instead of the page's original title."""
-    related_articles_section = context.page.locator("section#related-articles")
+    related_articles_section = context.page.locator("#related-articles")
 
     # Check that the custom title is visible
     expect(related_articles_section.get_by_role("link", name=context.custom_title)).to_be_visible()
 
     # Check that the original title is not visible in the first position
-    first_article = related_articles_section.locator("li.ons-document-list__item").first
+    first_article = related_articles_section.locator(".ons-document-list__item").first
     expect(first_article.get_by_role("link", name=context.selected_article.display_title)).not_to_be_visible()

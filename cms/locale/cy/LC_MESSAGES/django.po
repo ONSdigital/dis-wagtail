@@ -17,8 +17,7 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
 "11) ? 2 : 3;\n"
 
-#: cms/articles/models.py:220 cms/core/enums.py:8
-#: cms/core/formatting_utils.py:45
+#: cms/articles/models.py:220 cms/core/enums.py:8 cms/core/enums.py:21
 msgid "Article"
 msgstr "Erthygl"
 
@@ -88,20 +87,20 @@ msgstr "Dolenni cysylltiedig"
 msgid "Dataset"
 msgstr "Set ddata"
 
-#: cms/core/enums.py:10 cms/methodology/models.py:90
+#: cms/core/enums.py:10 cms/core/enums.py:23 cms/methodology/models.py:90
 msgid "Methodology"
 msgstr "Methodoleg"
 
-#: cms/core/enums.py:11 cms/topics/models.py:247
+#: cms/core/enums.py:11 cms/topics/models.py:307
 msgid "Time series"
 msgstr "Cyfres amser"
 
 #: cms/core/enums.py:12 cms/jinja2/templates/pages/topic_page.html:9
-#: cms/topics/models.py:125
+#: cms/topics/models.py:184
 msgid "Topic"
 msgstr "Pwnc"
 
-#: cms/core/enums.py:13
+#: cms/core/enums.py:13 cms/core/enums.py:22
 msgid "Information"
 msgstr "Gwybodaeth"
 
@@ -134,7 +133,7 @@ msgstr "Troednodiadau"
 #: cms/datavis/blocks/table.py:58
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:94
 #: cms/jinja2/templates/pages/topic_page.html:95
-#: cms/release_calendar/models.py:249 cms/topics/models.py:245
+#: cms/release_calendar/models.py:249 cms/topics/models.py:305
 msgid "Data"
 msgstr "Data"
 
@@ -747,11 +746,11 @@ msgstr "Pori"
 msgid "Theme"
 msgstr "Thema"
 
-#: cms/jinja2/templates/pages/topic_page.html:67 cms/topics/models.py:241
+#: cms/jinja2/templates/pages/topic_page.html:67 cms/topics/models.py:301
 msgid "Featured"
 msgstr "Dan Sylw"
 
-#: cms/jinja2/templates/pages/topic_page.html:77 cms/topics/models.py:243
+#: cms/jinja2/templates/pages/topic_page.html:77 cms/topics/models.py:303
 msgid "Related articles"
 msgstr "Erthyglau cysylltiedig"
 
@@ -771,15 +770,17 @@ msgstr "Cyfres amser"
 msgid "View all related time series"
 msgstr "Gweld yr holl gyfresi amser cysylltiedig"
 
-#: cms/jinja2/templates/pages/topic_page.html:131 cms/topics/models.py:249
-msgid "Methods and quality information"
+#: cms/jinja2/templates/pages/topic_page.html:131 cms/topics/models.py:309
+#, fuzzy
+#| msgid "Methods and quality information"
+msgid "Quality, methods and supporting information"
 msgstr "Dulliau a gwybodaeth o ansawdd"
 
 #: cms/jinja2/templates/pages/topic_page.html:141
 msgid "View all related methodology"
 msgstr "Gweld yr holl fethodolegau cysylltiedig"
 
-#: cms/jinja2/templates/pages/topic_page.html:149 cms/topics/models.py:251
+#: cms/jinja2/templates/pages/topic_page.html:149 cms/topics/models.py:311
 msgid "Explore more"
 msgstr "Archwilio mwy"
 

@@ -1,6 +1,8 @@
+import datetime
 from typing import TypedDict, TypeVar
 
 from cms.articles.models import StatisticalArticlePage
+from cms.core.enums import RelatedContentType
 from cms.methodology.models import MethodologyPage
 
 T = TypeVar("T")
@@ -15,11 +17,15 @@ class ExternalArticleDict(TypedDict):
     url: str
     title: str
     description: str
+    content_type: RelatedContentType
+    release_date: datetime.date | None
     is_external: bool
 
 
-class MethodologyDict(TypedDict):
+class InternalMethodologyDict(TypedDict, total=False):
     internal_page: MethodologyPage
+    title: str
 
 
 ArticleDict = InternalArticleDict | ExternalArticleDict
+MethodologyDict = InternalMethodologyDict | ExternalArticleDict

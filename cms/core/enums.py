@@ -13,3 +13,11 @@ class RelatedContentType(models.TextChoices):
     INFORMATION = "INFORMATION", _("Information")
     REPORT = "REPORT", _("Report")
     WEBPAGE = "WEBPAGE", _("Webpage")
+
+
+class RelatedMethodologyType(models.TextChoices):
+    """Related methodology page types."""
+
+    ARTICLE = "ARTICLE", _("Article")
+    INFORMATION = "INFORMATION", _("Information")
+    METHODOLOGY = "METHODOLOGY", _("Methodology")
