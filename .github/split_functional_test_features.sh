@@ -34,9 +34,7 @@ order_cmd=(sort)
 
 if [[ -n "$SHUFFLE_SEED" ]]; then
     echo "Using seed '$SHUFFLE_SEED' for shuffling" >&2
-    seedfile=$(mktemp)
-    printf '%s' "$SHUFFLE_SEED" >"$seedfile"
-    order_cmd=(shuf --random-source="$seedfile")
+    order_cmd=(shuf --random-source=<(openssl enc -aes-256-ctr -nosalt -k "$SHUFFLE_SEED" -in /dev/zero 2>/dev/null))
 fi
 
 find functional_tests/features -name '*.feature' |
