@@ -7,6 +7,7 @@ from cms.home.models import HomePage
 from cms.release_calendar.models import ReleaseCalendarIndex
 from cms.release_calendar.wagtail_hooks import pin_release_calendar_page
 from cms.standard_pages.tests.factories import IndexPageFactory
+from cms.topics.tests.factories import TopicPageFactory
 
 
 class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
@@ -16,7 +17,10 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         cls.homepages = HomePage.objects.specific()
         cls.homepage = cls.homepages.first()
         cls.release_calendar_index = ReleaseCalendarIndex.objects.first()
+        cls.release_calendar_index.save_revision().publish()
         cls.request = RequestFactory().get("/")
+        cls.index_page = IndexPageFactory(parent=cls.homepage, title="Index Page")
+        cls.index_page.save_revision().publish()
 
     def test_release_calendar_index_is_sorted_first(self):
         """Checks that the Release Calendar index page is placed before all other pages in the returned ordering."""
@@ -27,7 +31,21 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
     def test_release_calendar_index_is_first_in_explorer_page(self):
         """Checks that the Release Calendar index page is displayed at the top of the explorer page."""
         self.login()
-        IndexPageFactory(parent=self.homepage, title="New Index Page")
+
+        # Create two topic pages with initial revision timestamps
+        older_topic = TopicPageFactory(parent=self.homepage, title="Older Topic")
+        older_topic.save_revision().publish()
+
+        newer_topic = TopicPageFactory(parent=self.homepage, title="Newer Topic")
+        newer_topic.save_revision().publish()
+
+        # Update the older topic so it becomes the most recently modified page
+        older_topic.title = "Older Topic Updated"
+        older_topic.save_revision().publish()
+
         response = self.client.get(reverse("wagtailadmin_explore", args=[self.homepage.id]))
         pages = list(response.context["pages"])
+
         self.assertEqual(pages[0], self.release_calendar_index, "Release calendar index page is not first in explorer")
+        self.assertEqual(pages[1], older_topic, "Updated topic page is not second in explorer")
+        self.assertEqual(pages[2], newer_topic, "Topic page is not ordered by recency as expected")
