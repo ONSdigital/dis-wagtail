@@ -1,7 +1,6 @@
 from typing import Any
 
 from django.forms import ValidationError
-from django.utils.translation import gettext_lazy as _
 from PIL.Image import DecompressionBombError
 from wagtail.images.forms import BaseImageForm
 
@@ -26,7 +25,7 @@ class CustomImageForm(BaseImageForm):
                 "file",
                 ValidationError(
                     self.fields["file"].error_messages["file_too_many_pixels"]
-                    % {"num_pixels": _("unknown number"), "max_pixels_count": self.fields["file"].max_image_pixels},
+                    % {"num_pixels": "unknown number", "max_pixels_count": self.fields["file"].max_image_pixels},
                     code="file_too_many_pixels",
                 ),
             )
