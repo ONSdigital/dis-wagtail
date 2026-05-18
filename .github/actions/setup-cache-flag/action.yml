@@ -1,0 +1,26 @@
+---
+name: Setup cache flag
+description: Outputs empty string for cache inputs when on a release branch, disabling caching.
+
+outputs:
+  poetry-cache:
+    description: Value to pass to setup-python cache input ('poetry' or '')
+    value: ${{ steps.flag.outputs.poetry }}
+  npm-cache:
+    description: Value to pass to setup-node cache input ('npm' or '')
+    value: ${{ steps.flag.outputs.npm }}
+
+runs:
+  using: composite
+  steps:
+    - name: Determine cache values
+      id: flag
+      shell: bash
+      run: |
+        if [[ "${{ github.head_ref || github.ref }}" == *release* ]]; then
+          echo "poetry=" >> "$GITHUB_OUTPUT"
+          echo "npm=" >> "$GITHUB_OUTPUT"
+        else
+          echo "poetry=poetry" >> "$GITHUB_OUTPUT"
+          echo "npm=npm" >> "$GITHUB_OUTPUT"
+        fi
