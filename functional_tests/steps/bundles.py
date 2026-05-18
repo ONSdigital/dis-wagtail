@@ -326,14 +326,7 @@ def approved_information_pages_exist(context: Context) -> None:
 
 @given("the following preview teams exist:")
 def preview_teams_exist(context: Context) -> None:
-    context.preview_teams = []
-
-    for row in context.table:
-        team = TeamFactory(
-            name=row["Team name"],
-        )
-
-        context.preview_teams.append(team)
+    context.preview_teams = [TeamFactory(name=row["Team name"]) for row in context.table]
 
 
 @when("the user adds the following information pages to the bundle:")
