@@ -16,8 +16,12 @@ runs:
     - name: Determine cache values
       id: flag
       shell: bash
+      env:
+        HEAD_REF: ${{ github.head_ref }}
+        REF: ${{ github.ref }}
       run: |
-        if [[ "${{ github.head_ref || github.ref }}" == *release* ]]; then
+        BRANCH="${HEAD_REF:-$REF}"
+        if [[ "$BRANCH" == *release* ]]; then
           echo "poetry=" >> "$GITHUB_OUTPUT"
           echo "npm=" >> "$GITHUB_OUTPUT"
         else
