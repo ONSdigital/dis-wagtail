@@ -451,19 +451,6 @@ def bundle_exists_with_approved_information_pages(
     )
 
 
-@when("the user navigates to the bundle page in draft")
-@when("the user navigates to the bundle page in review")
-@when("the user navigates to the bundle page in ready to publish")
-def the_user_navigates_to_the_bundle_page(context: Context) -> None:
-    current_url = context.page.url
-    port = current_url.split(":")[2].split("/")[0]
-
-    bundle_id = context.bundle.id
-    edit_url = f"http://localhost:{port}/admin/bundle/edit/{bundle_id}/"
-
-    context.page.goto(edit_url)
-
-
 @when('the user submits the bundle to "{status}"')
 def the_user_submits_bundle_to_status(context: Context, status: str) -> None:
     action_mapping = {
@@ -482,13 +469,7 @@ def the_user_publishes_the_bundle(context: Context) -> None:
 
 @then("the bundle edit page is in read only mode")
 def the_bundle_edit_page_is_in_read_only_mode(context: Context) -> None:
-    current_url = context.page.url
-    port = current_url.split(":")[2].split("/")[0]
-
-    bundle_id = context.bundle.id
-    edit_url = f"http://localhost:{port}/admin/bundle/edit/{bundle_id}/"
-
-    context.page.goto(edit_url)
+    context.page.goto(context.base_url + reverse("bundle:edit", args=[context.bundle.pk]))
 
     expect(context.page.locator("#id_name")).to_be_disabled()
     expect(context.page.locator("#id_publication_date")).to_be_disabled()
@@ -510,12 +491,8 @@ def the_bundle_edit_page_is_in_read_only_mode(context: Context) -> None:
 
 @then("the user is taken back to the bundles listing page")
 def the_user_is_taken_back_to_bundles_listing_page(context: Context) -> None:
-    current_url = context.page.url
-    port = current_url.split(":")[2].split("/")[0]
-
-    expected_url = f"http://localhost:{port}/admin/bundle/"
-
-    expect(context.page).to_have_url(expected_url)
+    index_url = context.base_url + reverse("bundle:index")
+    expect(context.page).to_have_url(index_url)
 
 
 @when("the user filters the bundles listing page by {filter_option} status")

@@ -139,7 +139,7 @@ Feature: CMS users can manage bundles
             | Title                   |
             | Terms and conditions    |
             | Accessibility statement |
-        When the user navigates to the bundle page in draft
+        When the user goes to edit the bundle
         And the user submits the bundle to "review"
         Then the bundle inspect page displays the following metadata:
             | Metadata Field                   | Metadata Value                |
@@ -161,7 +161,7 @@ Feature: CMS users can manage bundles
             | Title           |
             | Browsers        |
             | Fair use policy |
-        When the user navigates to the bundle page in review
+        When the user goes to edit the bundle
         And the user submits the bundle to "ready to publish"
         Then the bundle inspect page displays the following metadata:
             | Metadata Field                   | Metadata Value                  |
@@ -184,7 +184,7 @@ Feature: CMS users can manage bundles
             | Title        |
             | Contact us   |
             | Legal notice |
-        When the user navigates to the bundle page in ready to publish
+        When the user goes to edit the bundle
         And the user publishes the bundle
         Then the user is taken back to the bundles listing page
         When the user filters the bundles listing page by "Published" status
