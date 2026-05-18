@@ -495,11 +495,11 @@ def the_user_is_taken_back_to_bundles_listing_page(context: Context) -> None:
     expect(context.page).to_have_url(index_url)
 
 
-@when("the user filters the bundles listing page by {filter_option} status")
+@when('the user filters the bundles listing page by "{filter_option}" status')
 def the_user_filters_bundles_listing_by_status(context: Context, filter_option: str) -> None:
     context.page.get_by_role("button", name="Show filters").click()
     context.page.get_by_role("button", name="Status").click()
-    context.page.get_by_role("radio", name=filter_option.strip('"')).check()
+    context.page.get_by_role("radio", name=filter_option).check()
 
 
 @when('the user clicks on the published bundle "{bundle_name}"')
