@@ -7,7 +7,7 @@ Feature: CMS users can manage bundles
     Scenario: A content editor can see the date placeholder on the bundle page
         When the user navigates to the bundle creation page
         Then the date placeholder "YYYY-MM-DD HH:MM" is displayed in the "Publication date" textbox
-    
+
     # Release calendar specific scenarios
     Scenario: A content editor can see the locale column when selecting a release calendar
         When the user navigates to the bundle creation page
@@ -23,10 +23,10 @@ Feature: CMS users can manage bundles
         And the user saves the bundle as draft
         Then the user sees the release calendar page title, status and release date
 
-    Examples:
-      | Release Status |
-      | Provisional    |
-      | Confirmed      |
+        Examples:
+            | Release Status |
+            | Provisional    |
+            | Confirmed      |
 
     Scenario: A content editor cannot add a "Cancelled" release calendar page to a bundle
         Given a release calendar page with a "Cancelled" status and future release date exists
@@ -46,10 +46,10 @@ Feature: CMS users can manage bundles
         And  returns to the bundle edit page
         Then the user sees the updated release calendar page's title, release date and the status "<New Status>"
 
-    Examples:
-      | New Status  |
-      | Provisional |
-      | Confirmed   |
+        Examples:
+            | New Status  |
+            | Provisional |
+            | Confirmed   |
 
     Scenario: A content editor cannot set a release calendar page to cancelled when it is in a bundle
         Given a release calendar page with a "Provisional" status and future release date exists
@@ -60,13 +60,13 @@ Feature: CMS users can manage bundles
         And  the user saves the bundle as draft
         And  the user tries to set the release calendar page status to "Cancelled"
         Then the user sees a validation error preventing the cancellation because the page is in a bundle
-    
+
     # Datasets specific scenarios
     Scenario: A content editor can select multiple datasets on the bundle page
         When the user navigates to the bundle creation page
         And the user selects multiple datasets
         Then the selected datasets are displayed in the "Data API datasets" section
-    
+
     @bundle_api_enabled
     Scenario: A content editor can see selected datasets on the inspect page
         When the user navigates to the bundle creation page
@@ -124,7 +124,7 @@ Feature: CMS users can manage bundles
             | Created at                       |                              |
             | Created by                       |                              |
             | Status                           | Draft                        |
-            | Approval status                  | Pending approval             |
+            | Approved by                      | Pending approval             |
             | Scheduled publication            | No scheduled publication     |
             | Associated release calendar page | N/A                          |
             | Teams                            | Help page team, Privacy team |
@@ -147,7 +147,7 @@ Feature: CMS users can manage bundles
             | Created at                       |                               |
             | Created by                       |                               |
             | Status                           | In Preview                    |
-            | Approval status                  | Pending approval              |
+            | Approved by                      | Pending approval              |
             | Scheduled publication            | No scheduled publication      |
             | Associated release calendar page | N/A                           |
             | Teams                            |                               |
@@ -169,7 +169,7 @@ Feature: CMS users can manage bundles
             | Created at                       |                                 |
             | Created by                       |                                 |
             | Status                           | Ready to publish                |
-            | Approval status                  |                                 |
+            | Approved by                      |                                 |
             | Scheduled publication            | No scheduled publication        |
             | Associated release calendar page | N/A                             |
             | Teams                            |                                 |
@@ -181,25 +181,25 @@ Feature: CMS users can manage bundles
 
     Scenario: A CMS user can manually publish a ready to publish bundle
         Given a bundle called "Bundle help pages release four" exists in "ready to publish" with the following approved information pages:
-            | Title          |
-            | Contact us     |
-            | Legal notice   |
+            | Title        |
+            | Contact us   |
+            | Legal notice |
         When the user navigates to the bundle page in ready to publish
         And the user publishes the bundle
         Then the user is taken back to the bundles listing page
         When the user filters the bundles listing page by "Published" status
         And the user clicks on the published bundle "Bundle help pages release four"
         Then the bundle inspect page displays the following metadata:
-            | Metadata Field                   | Metadata Value                  |
-            | Name                             | Bundle help pages release four  |
-            | Created at                       |                                 |
-            | Created by                       |                                 |
-            | Status                           | Published                       |
-            | Approval status                  |                                 |
-            | Scheduled publication            | No scheduled publication        |
-            | Associated release calendar page | N/A                             |
-            | Teams                            |                                 |
+            | Metadata Field                   | Metadata Value                 |
+            | Name                             | Bundle help pages release four |
+            | Created at                       |                                |
+            | Created by                       |                                |
+            | Status                           | Published                      |
+            | Approved by                      |                                |
+            | Scheduled publication            | No scheduled publication       |
+            | Associated release calendar page | N/A                            |
+            | Teams                            |                                |
         And the bundle inspect page displays the following information pages:
-            | Title          | Type             | Status           |
-            | Contact us     | Information page | Published        |
-            | Legal notice   | Information page | Published        |
+            | Title        | Type             | Status    |
+            | Contact us   | Information page | Published |
+            | Legal notice | Information page | Published |
