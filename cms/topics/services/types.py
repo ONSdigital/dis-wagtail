@@ -1,4 +1,5 @@
-from typing import TypedDict, TypeVar
+from datetime import date
+from typing import NotRequired, TypedDict, TypeVar
 
 from cms.articles.models import StatisticalArticlePage
 from cms.methodology.models import MethodologyPage
@@ -11,11 +12,13 @@ class InternalArticleDict(TypedDict, total=False):
     title: str
 
 
-class ExternalArticleDict(TypedDict):
+class ExternalArticleDict(TypedDict, total=False):
     url: str
     title: str
     description: str
     is_external: bool
+    content_type: NotRequired[str]
+    release_date: NotRequired[date | None]
 
 
 class MethodologyDict(TypedDict):

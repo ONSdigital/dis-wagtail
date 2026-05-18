@@ -39,12 +39,19 @@ def format_as_document_list_item(
 
 def _format_external_link(page_dict: ExternalArticleDict) -> DocumentListItem:
     """Format external link dictionary into DocumentListItem."""
-    return format_as_document_list_item(
+    content_type = page_dict.get("content_type") or _("Article")
+
+    page_datum: DocumentListItem = format_as_document_list_item(
         title=page_dict["title"],
         url=page_dict["url"],
-        content_type=_("Article"),
+        content_type=content_type,
         description=page_dict.get("description", ""),
     )
+
+    if release_date := page_dict.get("release_date"):
+        page_datum["metadata"]["date"] = get_document_metadata_date(release_date)
+
+    return page_datum
 
 
 def _format_page_object(

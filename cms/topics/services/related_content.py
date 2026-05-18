@@ -71,12 +71,17 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
         # Handle external articles
         if not related.page:
             if related.external_url:
-                return {
+                external_article: dict = {
                     "url": related.external_url,
                     "title": related.title,
-                    "description": "",
+                    "description": related.description,
                     "is_external": True,
                 }
+                if related.content_type:
+                    external_article["content_type"] = related.content_type
+                if related.release_date:
+                    external_article["release_date"] = related.release_date
+                return external_article  # type: ignore[return-value]
             return None
 
         # Handle internal pages

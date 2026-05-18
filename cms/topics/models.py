@@ -69,7 +69,21 @@ class TopicPageRelatedArticle(Orderable):
             "When choosing a page, you can leave it blank to use the page’s own title."
         ),
     )
-
+    description: models.TextField = models.TextField(
+        blank=True,
+        help_text="Description or summary for the external link.",
+    )
+    content_type: models.CharField = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Content type of the external content, e.g. Article (default), Dataset, Methodology.",
+    )
+    release_date: models.DateField = models.DateField(
+        blank=True,
+        null=True,
+        help_text="Release date of the external content.",
+    )
     panels: ClassVar[list[Panel]] = [
         MultiFieldPanel(
             [
@@ -84,6 +98,9 @@ class TopicPageRelatedArticle(Orderable):
             [
                 FieldPanel("external_url"),
                 FieldPanel("title"),
+                FieldPanel("description"),
+                FieldPanel("content_type"),
+                FieldPanel("release_date"),
             ],
             heading="External Link",
         ),
@@ -97,6 +114,8 @@ class TopicPageRelatedArticle(Orderable):
             raise ValidationError("You must select an internal page or provide an external URL.")
         if self.external_url and not self.title:
             raise ValidationError({"title": "This field is required when providing an external URL."})
+        if self.external_url and not self.description:
+            raise ValidationError({"description": "This field is required when providing an external URL."})
 
 
 class TopicPageRelatedMethodology(Orderable):
