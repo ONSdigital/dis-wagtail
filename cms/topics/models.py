@@ -174,7 +174,7 @@ class TopicPageRelatedMethodology(Orderable):
         if not self.content_type:
             raise ValidationError({"content_type": "This field is required when providing an external link."})
         if error := validate_ons_url(self.external_url):
-            raise error
+            raise ValidationError({"external_url": error})
 
 
 class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
