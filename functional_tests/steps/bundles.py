@@ -4,6 +4,7 @@ from typing import Literal
 
 from behave import given, step, then, when
 from behave.runner import Context
+from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 from playwright.sync_api import expect
@@ -356,13 +357,8 @@ def the_bundle_inspect_page_displays_metadata(context: Context) -> None:
 
     context.bundle = Bundle.objects.get(id=bundle_id)
 
-    formatted_created_at = (
-        timezone.localtime(context.bundle.created_at)
-        .strftime("%d %b %Y %-I:%M%p")
-        .replace(" 0", " ")
-        .replace("AM", "am")
-        .replace("PM", "pm")
-    )
+    formatted_created_at = ons_date_format(context.bundle.created_at, settings.DATETIME_FORMAT)
+
     created_by = context.bundle.created_by.username
     approval_status = get_bundle_approval_status(context.bundle)
 
@@ -383,7 +379,9 @@ def the_bundle_inspect_page_displays_metadata(context: Context) -> None:
 
         text_to_check = value or default_values.get(label)
 
-        assert text_to_check == dl_dict[label], f"expected label {label} to have value {value}, had {text_to_check}"
+        assert text_to_check == dl_dict[label], (
+            f"expected label {label} to have value {text_to_check}, had {dl_dict[label]}"
+        )
 
 
 @then("the bundle inspect page displays the following information pages:")
