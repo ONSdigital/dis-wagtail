@@ -433,7 +433,7 @@ def bundle_exists_with_approved_information_pages(
 
     context.bundle = BundleFactory(
         name=bundle_name,
-        status=status_mapping[bundle_status.lower()],
+        status=status_mapping[bundle_status],
         bundled_pages=approved_pages,
     )
 
