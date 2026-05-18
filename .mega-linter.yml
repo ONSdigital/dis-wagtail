@@ -65,3 +65,6 @@ SPELL_LYCHEE_FILE_EXTENSIONS: ['.md', '.txt']
 REPOSITORY_SECRETLINT_PRE_COMMANDS:
   # Allows disabling rules inline in files via comments
   - 'command': 'npm install --no-save --ignore-scripts --omit=dev @secretlint/secretlint-rule-filter-comments'
+
+ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES:
+  - GITHUB_TOKEN
