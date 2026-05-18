@@ -48,6 +48,7 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(pages[2], self.newer_topic, "Topic page is not ordered by recency as expected")
 
     def test_sidebar_is_not_reordered(self):
+        """Checks that the sidebar pages keep their original path order."""
         self.login()
 
         parent = self.home_page
