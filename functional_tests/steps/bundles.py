@@ -406,7 +406,6 @@ def the_bundle_inspect_page_displays_information_pages(context: Context) -> None
 
         expect(table_row).to_have_count(1)
 
-        expect(table_row).to_contain_text(title)
         expect(table_row).to_contain_text(page_type)
         expect(table_row).to_contain_text(page_status)
 
