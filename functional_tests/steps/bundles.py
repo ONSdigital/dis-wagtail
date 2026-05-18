@@ -15,7 +15,7 @@ from cms.core.custom_date_format import ons_date_format
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
 from cms.teams.tests.factories import TeamFactory
-from functional_tests.step_helpers.utils import get_bundle_approval_status, get_page_from_context
+from functional_tests.step_helpers.utils import dl_to_dict, get_bundle_approval_status, get_page_from_context
 from functional_tests.steps.information_page import create_information_page
 from functional_tests.steps.release_page import click_add_child_page, navigate_to_release_calendar_page
 from functional_tests.steps.workflows import mark_page_as_ready_to_publish
@@ -318,7 +318,7 @@ def approved_information_pages_exist(context: Context) -> None:
 
         mark_page_as_ready_to_publish(
             context.information_page,
-            user=getattr(context, "user", None),
+            user=getattr(context.user_data, "user", None),
         )
 
         context.information_pages.append(context.information_page)
@@ -366,24 +366,24 @@ def the_bundle_inspect_page_displays_metadata(context: Context) -> None:
     created_by = context.bundle.created_by.username
     approval_status = get_bundle_approval_status(context.bundle)
 
-    dl_locator = context.page.locator("dl")
+    default_values = {
+        "Created at": formatted_created_at,
+        "Created by": created_by,
+        "Teams": "-",
+        "Approved by": approval_status,
+    }
+
+    dl_dict = dl_to_dict(context.page)
 
     for row in context.table:
         label = row["Metadata Field"]
         value = row["Metadata Value"]
 
-        expect(dl_locator).to_contain_text(label)
-
-        default_values = {
-            "Created at": formatted_created_at,
-            "Created by": created_by,
-            "Teams": "-",
-            "Approval status": approval_status,
-        }
+        assert label in dl_dict, f"expected dl to contain label {label}"
 
         text_to_check = value or default_values.get(label)
-        if text_to_check:
-            expect(dl_locator).to_contain_text(text_to_check)
+
+        assert text_to_check == dl_dict[label], f"expected label {label} to have value {value}, had {text_to_check}"
 
 
 @then("the bundle inspect page displays the following information pages:")
@@ -418,14 +418,11 @@ def bundle_exists_with_approved_information_pages(
     approved_pages = []
 
     for row in context.table:
-        create_information_page(
-            context,
-            title=row["Title"],
-        )
+        create_information_page(context, title=row["Title"])
 
         mark_page_as_ready_to_publish(
             context.information_page,
-            user=getattr(context, "user", None),
+            user=getattr(context.user_data, "user", None),
         )
 
         approved_pages.append(context.information_page)
