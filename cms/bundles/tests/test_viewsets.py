@@ -623,7 +623,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Created by")
         self.assertContains(response, "Scheduled publication")
         self.assertContains(response, "Associated release calendar")
-        self.assertContains(response, "Approval status")
+        self.assertContains(response, "Approved by")
         self.assertContains(response, "Status")
 
     def test_inspect_view__previewers__contains_only_relevant_fields(self):
@@ -636,7 +636,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Created by")
         self.assertContains(response, "Scheduled publication")
         self.assertContains(response, "Associated release calendar")
-        self.assertNotContains(response, "Approval status")
+        self.assertNotContains(response, "Approved by")
         self.assertNotContains(response, "Status")
 
     def test_inspect_view__previewers__contains_only_relevant_pages(self):
