@@ -218,8 +218,8 @@ def get_page_config(context: jinja2.runtime.Context) -> dict:
     site: Site = Site.find_for_request(request)
 
     # Merge the base and page-specific config, so they can be cached independently.
-    # Page config is passed first so it can take precedence.
+    # Page config is passed last so it can take precedence.
     return deep_merge_mapping(
-        _get_page_config(context, page, site, request),
         _get_base_page_config(context, site, request),
+        _get_page_config(context, page, site, request),
     )
