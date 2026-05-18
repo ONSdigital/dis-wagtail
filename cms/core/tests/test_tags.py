@@ -312,7 +312,6 @@ class ExtendFunctionTest(TestCase):
             extend("not a list", {"name": "Series 3"})  # type: ignore
 
 
-@override_settings(CMS_USE_SUBDOMAIN_LOCALES=True)
 class PageConfigTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
