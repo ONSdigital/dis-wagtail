@@ -1265,7 +1265,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertContains(response, "Office for National Statistics")
 
 
-# Repeats test_download_link_serves_file_as_attachment against a mocked S3 backend to confirm
+# Verifies test_download_link_serves_file_as_attachment against a mocked S3 backend to confirm
 # the fix works in production where media is served from S3, not the local filesystem.
 @mock_aws
 @override_settings(
@@ -1274,7 +1274,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
     }
 )
-class InformationPageImageBlockS3DownloadTests(InformationPageImageBlockRenderingTests):
+class InformationPageImageBlockS3DownloadTests(WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         # @override_settings on the class takes effect here but @mock_aws does not,
@@ -1294,6 +1294,37 @@ class InformationPageImageBlockS3DownloadTests(InformationPageImageBlockRenderin
         )
         self.small = self.image.get_rendition("width-1024")
         self.large = self.image.get_rendition("width-2048")
+
+    def _make_information_page(self, *, download: bool) -> InformationPage:
+        page = InformationPage(
+            title="Info page with image",
+            summary="<p>Summary</p>",
+            content=[
+                {
+                    "type": "section",
+                    "value": {
+                        "title": "A section heading",
+                        "content": [
+                            {
+                                "type": "image",
+                                "value": {
+                                    "image": self.image.id,
+                                    "figure_title": "Figure 1",
+                                    "figure_subtitle": "Figure subtitle",
+                                    "supporting_text": "Office for National Statistics",
+                                    "download": download,
+                                },
+                                "id": str(uuid.uuid4()),
+                            }
+                        ],
+                    },
+                    "id": str(uuid.uuid4()),
+                }
+            ],
+        )
+        self.home.add_child(instance=page)
+        page.save_revision().publish()
+        return page
 
     def test_download_link_serves_file_as_attachment(self):
         """The image download link should download the file rather than open it in a new tab."""
