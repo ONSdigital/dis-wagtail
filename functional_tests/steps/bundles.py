@@ -1,6 +1,7 @@
 # pylint: disable=not-callable
 from datetime import datetime, time, timedelta
 from typing import Literal
+from urllib.parse import urlparse
 
 from behave import given, step, then, when
 from behave.runner import Context
@@ -348,10 +349,9 @@ def the_user_adds_preview_teams_to_bundle(context: Context) -> None:
 
 @then("the bundle inspect page displays the following metadata:")
 def the_bundle_inspect_page_displays_metadata(context: Context) -> None:
-    bundle_url = context.page.url
-    port = bundle_url.split(":")[2].split("/")[0]
-    bundle_id = bundle_url.split("/")[-2]
-    inspect_url = f"http://localhost:{port}/admin/bundle/inspect/{bundle_id}/"
+    bundle_url = urlparse(context.page.url)
+    bundle_id = bundle_url.path.split("/")[-2]
+    inspect_url = context.base_url + reverse("bundle:inspect", args=[bundle_id])
 
     context.page.goto(inspect_url)
 
