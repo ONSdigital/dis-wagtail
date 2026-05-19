@@ -21,10 +21,10 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         cls.request = RequestFactory().get("/")
 
         # Create two topic pages with initial revision timestamps
-        cls.older_topic = TopicPageFactory(parent=cls.home_page, title="Older Topic")
-        cls.older_topic.save_revision().publish()
-        cls.newer_topic = TopicPageFactory(parent=cls.home_page, title="Newer Topic")
-        cls.newer_topic.save_revision().publish()
+        cls.older_topic_page = TopicPageFactory(parent=cls.home_page, title="Older Topic")
+        cls.older_topic_page.save_revision().publish()
+        cls.newer_topic_page = TopicPageFactory(parent=cls.home_page, title="Newer Topic")
+        cls.newer_topic_page.save_revision().publish()
 
     def test_release_calendar_index_is_sorted_first(self):
         """Checks that the Release Calendar index page is placed before all other pages in the returned ordering."""
@@ -37,15 +37,15 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         self.login()
 
         # Update the older topic so it becomes the most recently modified page
-        self.older_topic.title = "Older Topic Updated"
-        self.older_topic.save_revision().publish()
+        self.older_topic_page.title = "Older Topic Updated"
+        self.older_topic_page.save_revision().publish()
 
         response = self.client.get(reverse("wagtailadmin_explore", args=[self.home_page.id]))
         pages = list(response.context["pages"])
 
         self.assertEqual(pages[0], self.release_calendar_index, "Release calendar index page is not first in explorer")
-        self.assertEqual(pages[1], self.older_topic, "Updated topic page is not second in explorer")
-        self.assertEqual(pages[2], self.newer_topic, "Topic page is not ordered by recency as expected")
+        self.assertEqual(pages[1], self.older_topic_page, "Updated topic page is not second in explorer")
+        self.assertEqual(pages[2], self.newer_topic_page, "Topic page is not ordered by recency as expected")
 
     def test_sidebar_is_not_reordered(self):
         """Checks that the sidebar pages keep their original path order."""
