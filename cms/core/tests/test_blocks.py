@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.template.defaultfilters import filesizeformat
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from moto import mock_aws
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.images import get_image_model
@@ -1188,18 +1189,18 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         # HTML5 download attribute present once (avoid base-template noise)
         self.assertContains(response, " download", count=1)
 
-        # Large rendition used for download (assert exact URL appears twice in the response)
-        # Assert exact downloadable rendition file URL appears twice: once in href, once in onsImage srcset
-        self.assertContains(response, self.large.file.url, count=2)
+        # Large and small rendition file URLs appear in the onsImage macro srcset
+        self.assertContains(response, self.large.file.url, count=1)
         self.assertContains(response, self.small.file.url, count=2)
 
-        # Assert the actual download anchor exists and targets the large rendition URL
+        # Assert the actual download anchor exists and targets the image download view
         html = response.content.decode(response.charset or "utf-8", errors="replace")
         soup = BeautifulSoup(html, "html.parser")
         download_link = soup.select_one("a[download]")
 
         self.assertIsNotNone(download_link)
-        self.assertEqual(download_link.get("href"), self.large.file.url)
+        expected_download_url = reverse("image_download", args=[self.large.pk])
+        self.assertEqual(download_link.get("href"), expected_download_url)
 
         expected = filesizeformat(self.large.file.size)
         self.assertIn(f"({expected})", download_link.get_text(strip=True))
