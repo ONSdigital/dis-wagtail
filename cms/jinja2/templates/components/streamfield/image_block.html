@@ -43,10 +43,10 @@
         {% set download_aria_label = _("Download image") %}
     {% endif -%}
 
-    {%- if value.download and large_src %}
+    {%- if value.download and download_url %}
         <div class="ons-u-mt-s">
             <h4 class="ons-u-fs-r--b ons-u-mb-2xs">{{ _("Download this image") }}</h4>
-            <a href="{{ large_src }}" download aria-label="{{ download_aria_label }}">
+            <a href="{{ download_url }}" download aria-label="{{ download_aria_label }}">
                 {{ file_type }}{% if file_size_human %} ({{ file_size_human }}){% endif %}
             </a>
         </div>

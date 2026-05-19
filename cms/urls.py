@@ -13,6 +13,7 @@ from cms.auth.views import ONSLogoutView, extend_session
 from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
 from cms.home.views import serve_localized_homepage
+from cms.images.views import ImageDownloadView
 from cms.private_media import views as private_media_views
 from cms.users.views import ONSAccountView
 
@@ -188,6 +189,11 @@ urlpatterns = (
             r"^images/([^/]*)/(\d*)/([^/]*)/[^/]*$",
             private_media_views.ImageServeView.as_view(),
             name="wagtailimages_serve",
+        ),
+        path(
+            "images/download/<int:rendition_id>",
+            ImageDownloadView.as_view(),
+            name="image_download",
         ),
     ]
 )
