@@ -26,6 +26,9 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         cls.newer_topic_page = TopicPageFactory(parent=cls.home_page, title="Newer Topic")
         cls.newer_topic_page.save_revision().publish()
 
+    def setUp(self):
+        self.login()
+
     def test_release_calendar_index_is_sorted_first(self):
         """Unit test ensures the Release Calendar index page is returned first in the queryset by directly calling
         pin_release_calendar_page, verifying the ordering logic in isolation from Wagtail’s admin layer.
@@ -38,8 +41,6 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         """Integration test ensures the Release Calendar index page appears first in the explorer page by
         validating the behaviour through Wagtail’s admin interface and confirming that the hook is invoked correctly.
         """
-        self.login()
-
         # Update the older topic so it becomes the most recently modified page
         self.older_topic_page.title = "Older Topic Updated"
         self.older_topic_page.save_revision().publish()
@@ -55,8 +56,6 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         """Unit test ensures sidebar pages retain their original path order by calling pin_release_calendar_page
         directly with a simulated sidebar request and verifying that the function returns the queryset unchanged.
         """
-        self.login()
-
         parent = self.home_page
         children = parent.get_children()
 
