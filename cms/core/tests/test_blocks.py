@@ -6,8 +6,10 @@ from unittest.mock import Mock
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
+from django.conf import settings
 from django.template.defaultfilters import filesizeformat
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from moto import mock_aws
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.images import get_image_model
 from wagtail.images.tests.utils import get_test_image_file
@@ -32,6 +34,7 @@ from cms.core.tests.factories import DefinitionFactory
 from cms.core.tests.utils import get_test_document
 from cms.core.utils import UNWANTED_CONTROL_CHARACTERS
 from cms.home.models import HomePage
+from cms.private_media.storages import AccessControlledS3Storage
 from cms.standard_pages.models import InformationPage
 
 
@@ -1201,6 +1204,20 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         expected = filesizeformat(self.large.file.size)
         self.assertIn(f"({expected})", download_link.get_text(strip=True))
 
+    def test_download_link_serves_file_as_attachment(self):
+        """The image download link should download the file rather than open it in a new tab."""
+        page = self._make_information_page(download=True)
+
+        page_response = self.client.get(page.url)
+        soup = BeautifulSoup(page_response.content.decode(), "html.parser")
+        download_anchor = soup.select_one("a[download]")
+        self.assertIsNotNone(download_anchor, "No download anchor found on page")
+
+        download_response = self.client.get(download_anchor["href"])
+
+        self.assertEqual(download_response.status_code, HTTPStatus.OK)
+        self.assertIn("attachment", download_response.get("Content-Disposition", ""))
+
     def test_does_not_render_download_link_when_disabled(self):
         page = self._make_information_page(download=False)
 
@@ -1245,3 +1262,48 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertContains(response, "Figure 1")
         self.assertContains(response, "Figure subtitle")
         self.assertContains(response, "Office for National Statistics")
+
+
+# Repeats test_download_link_serves_file_as_attachment against a mocked S3 backend to confirm
+# the fix works in production where media is served from S3, not the local filesystem.
+@mock_aws
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "cms.private_media.storages.AccessControlledS3Storage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    }
+)
+class InformationPageImageBlockS3DownloadTests(InformationPageImageBlockRenderingTests):
+    @classmethod
+    def setUpTestData(cls):
+        # @override_settings on the class takes effect here but @mock_aws does not,
+        # so we avoid any file operations that would hit S3 without moto intercepting.
+        cls.home = HomePage.objects.first()
+
+    def setUp(self):
+        super().setUp()
+        storage = AccessControlledS3Storage()
+        storage.connection.Bucket(settings.AWS_STORAGE_BUCKET_NAME).create()
+
+        image_model = get_image_model()
+        self.image = image_model.objects.create(
+            title="Test image title",
+            file=get_test_image_file(),
+            description="Meaningful alt text",
+        )
+        self.small = self.image.get_rendition("width-1024")
+        self.large = self.image.get_rendition("width-2048")
+
+    def test_download_link_serves_file_as_attachment(self):
+        """The image download link should download the file rather than open it in a new tab."""
+        page = self._make_information_page(download=True)
+
+        page_response = self.client.get(page.url)
+        soup = BeautifulSoup(page_response.content.decode(), "html.parser")
+        download_anchor = soup.select_one("a[download]")
+        self.assertIsNotNone(download_anchor, "No download anchor found on page")
+
+        download_response = self.client.get(download_anchor["href"])
+
+        self.assertEqual(download_response.status_code, HTTPStatus.OK)
+        self.assertIn("attachment", download_response.get("Content-Disposition", ""))
