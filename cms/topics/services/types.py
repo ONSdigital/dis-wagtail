@@ -12,7 +12,7 @@ class InternalArticleDict(TypedDict, total=False):
     title: str
 
 
-class ExternalArticleDict(TypedDict, total=False):
+class ExternalArticleDict(TypedDict):
     url: str
     title: str
     description: str
