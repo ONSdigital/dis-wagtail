@@ -21,7 +21,7 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         cls.request = RequestFactory().get("/")
 
         # Create two topic pages with initial revision timestamps
-        cls.older_topic = TopicPageFactory(parent=cls.home_page, title="Older Topic")
+        cls.older_topic_page = TopicPageFactory(parent=cls.home_page, title="Older Topic")
         cls.older_topic.save_revision().publish()
         cls.newer_topic = TopicPageFactory(parent=cls.home_page, title="Newer Topic")
         cls.newer_topic.save_revision().publish()
