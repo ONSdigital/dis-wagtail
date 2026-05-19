@@ -105,6 +105,9 @@ def user_clicks_on_inspect_link_for_created_bundle(context: Context) -> None:
 @step("the user saves the bundle as draft")
 def user_saves_bundle_as_draft(context: Context) -> None:
     context.page.get_by_role("button", name="Save as Draft").click()
+    bundle_url = urlparse(context.page.url)
+    bundle_id = bundle_url.path.split("/")[-2]
+    context.bundle = Bundle.objects.get(id=bundle_id)
 
 
 @step("the user sets the bundle title")
@@ -349,13 +352,10 @@ def the_user_adds_preview_teams_to_bundle(context: Context) -> None:
 
 @then("the bundle inspect page displays the following metadata:")
 def the_bundle_inspect_page_displays_metadata(context: Context) -> None:
-    bundle_url = urlparse(context.page.url)
-    bundle_id = bundle_url.path.split("/")[-2]
-    inspect_url = context.base_url + reverse("bundle:inspect", args=[bundle_id])
-
-    context.page.goto(inspect_url)
-
-    context.bundle = Bundle.objects.get(id=bundle_id)
+    context.bundle.refresh_from_db()
+    inspect_url = context.base_url + reverse("bundle:inspect", args=[context.bundle.id])
+    if context.page.url != inspect_url:
+        context.page.goto(inspect_url)
 
     formatted_created_at = ons_date_format(context.bundle.created_at, settings.DATETIME_FORMAT)
 
