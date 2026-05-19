@@ -27,13 +27,17 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         cls.newer_topic_page.save_revision().publish()
 
     def test_release_calendar_index_is_sorted_first(self):
-        """Checks that the Release Calendar index page is placed before all other pages in the returned ordering."""
+        """Unit test ensures the Release Calendar index page is returned first in the queryset by directly calling
+        pin_release_calendar_page, verifying the ordering logic in isolation from Wagtail’s admin layer.
+        """
         pages = self.home_page.get_children().specific()
         query = pin_release_calendar_page(self.home_page, pages, self.request)
         self.assertEqual(query.first(), self.release_calendar_index, "Release calendar index page is not first")
 
     def test_release_calendar_index_is_first_in_explorer_page(self):
-        """Checks that the Release Calendar index page is displayed at the top of the explorer page."""
+        """Integration test ensures the Release Calendar index page appears first in the explorer page by
+        validating the behaviour through Wagtail’s admin interface and confirming that the hook is invoked correctly.
+        """
         self.login()
 
         # Update the older topic so it becomes the most recently modified page
@@ -48,7 +52,9 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(pages[2], self.newer_topic_page, "Topic page is not ordered by recency as expected")
 
     def test_sidebar_is_not_reordered(self):
-        """Checks that the sidebar pages keep their original path order."""
+        """Unit test ensures sidebar pages retain their original path order by calling pin_release_calendar_page
+        directly with a simulated sidebar request and verifying that the function returns the queryset unchanged.
+        """
         self.login()
 
         parent = self.home_page
@@ -57,6 +63,8 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         # Simulate a sidebar request
         sidebar_request = self.client.get(f"/admin/api/pages/?child_of={parent.id}").wsgi_request
 
+        # Set resolver_match with the view_name and child_of values that mimic the routing metadata of a real sidebar
+        # listing request, allowing pin_release_calendar_page to recognise it as an admin sidebar call.
         sidebar_request.resolver_match = SimpleNamespace(
             view_name="wagtailadmin_api:pages:listing",
             kwargs={"child_of": parent.id},
