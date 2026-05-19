@@ -1295,7 +1295,7 @@ class InformationPageImageBlockS3DownloadTests(WagtailPageTestCase):
         self.small = self.image.get_rendition("width-1024")
         self.large = self.image.get_rendition("width-2048")
 
-    def _make_information_page(self, *, download: bool) -> InformationPage:
+    def _make_information_page(self) -> InformationPage:
         page = InformationPage(
             title="Info page with image",
             summary="<p>Summary</p>",
@@ -1312,7 +1312,7 @@ class InformationPageImageBlockS3DownloadTests(WagtailPageTestCase):
                                     "figure_title": "Figure 1",
                                     "figure_subtitle": "Figure subtitle",
                                     "supporting_text": "Office for National Statistics",
-                                    "download": download,
+                                    "download": True,
                                 },
                                 "id": str(uuid.uuid4()),
                             }
@@ -1328,7 +1328,7 @@ class InformationPageImageBlockS3DownloadTests(WagtailPageTestCase):
 
     def test_download_link_serves_file_as_attachment(self):
         """The image download link should download the file rather than open it in a new tab."""
-        page = self._make_information_page(download=True)
+        page = self._make_information_page()
 
         page_response = self.client.get(page.url)
         soup = BeautifulSoup(page_response.content.decode(), "html.parser")
