@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from playwright.sync_api import Page as PlaywrightPage
 
 
-def create_information_page(context: Context) -> None:
+def create_information_page(context: Context, title: str = "Test Info Page") -> None:
     home_page = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
     content = [
         {"type": "rich_text", "value": "<p>Some example rich text content</p>"},
@@ -36,7 +36,7 @@ def create_information_page(context: Context) -> None:
     ]
 
     kwargs = {
-        "title": "Test Info Page",
+        "title": title,
         "summary": "<p>My test information page</p>",
         "content": [{"type": "section", "value": {"content": content, "title": "Section 1"}}],
         "live": False,

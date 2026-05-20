@@ -110,7 +110,10 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
         response = self.client.get(f"{self.article_series_page.url}/related-data")
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        self.assertContains(response, f"All data related to {self.article_with_datasets.title}")
+        self.assertContains(
+            response,
+            f"All data related to {self.article_series_page.title}: {self.article_with_datasets.title}",
+        )
         self.assertContains(response, "Test dataset")
 
     def test_evergreen_route_related_data_canonical_url(self):
