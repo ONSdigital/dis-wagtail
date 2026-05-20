@@ -1,0 +1,3 @@
+[[IgnoredVulns]]
+id = "PYSEC-2025-183"
+reason = "Disputed CVE - key length is application responsibility, no fix available upstream"
