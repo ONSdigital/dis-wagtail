@@ -189,7 +189,6 @@ urlpatterns = (
             private_media_views.ImageServeView.as_view(),
             name="wagtailimages_serve",
         ),
-        path("", include("cms.images.urls")),
     ]
 )
 

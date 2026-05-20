@@ -9,7 +9,6 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.template.defaultfilters import filesizeformat
 from django.test import TestCase, override_settings
-from django.urls import reverse
 from moto import mock_aws
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.images import get_image_model
@@ -1199,7 +1198,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         download_link = soup.select_one("a[download]")
 
         self.assertIsNotNone(download_link)
-        expected_download_url = reverse("image_download", args=[self.large.pk])
+        expected_download_url = self.large.serve_url + "?force_download=true"
         self.assertEqual(download_link.get("href"), expected_download_url)
 
         expected = filesizeformat(self.large.file.size)

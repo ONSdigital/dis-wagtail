@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import filesizeformat
-from django.urls import reverse
 from wagtail import blocks
 from wagtail.blocks import StructBlockValidationError
 from wagtail.documents.blocks import DocumentChooserBlock
@@ -41,7 +40,7 @@ class ImageBlock(blocks.StructBlock):
 
         context["small_src"] = small.url
         context["large_src"] = large.url
-        context["download_url"] = reverse("image_download", args=[large.pk])
+        context["download_url"] = large.serve_url + "?force_download=true"
 
         # Get file extension of the rendition being downloaded (uppercase, without the dot)
         _, ext = os.path.splitext(large.file.name)
