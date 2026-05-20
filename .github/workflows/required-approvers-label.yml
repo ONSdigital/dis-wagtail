@@ -1,0 +1,50 @@
+name: Require ONS Approval
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled, edited]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  check-label-and-reviews:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: mheap/github-action-required-labels@0ac283b4e65c1fb28ce6079dea5546ceca98ccbe # v5.5.2
+        with:
+          mode: minimum
+          count: 1
+          labels: 'Requires ONS Approval'
+          exit_type: success
+
+      - name: Check for required approvals
+        if: steps.check-label.outputs.status == 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          # List of required reviewers
+          REQUIRED_REVIEWERS=("sanjeevz3009", "MebinAbraham")
+
+          # Fetch reviews for the pr
+          REVIEWS=$(gh api repos/${REPO}/pulls/${PR_NUMBER}/reviews
+
+          APPROVED=false
+          for reviewer in "${REQUIRED_REVIEWERS[@]}"; do
+            STATE=$(echo "$REVIEWS" | jq -r --arg user "$reviewer" \
+              '[.[] | select(.user.login == $user and .state == "APPROVED")] | length')
+            if [ "$STATE" -gt 0 ]; then
+              APPROVED=true
+              echo "PR approved by $reviewer"
+              break
+            fi
+          done
+
+          if [ "$APPROVED" = "false" ]; then
+            echo "PR requires approval from at least one of the following reviewers: ${REQUIRED_REVIEWERS[*]}"
+            exit 1
+          fi
