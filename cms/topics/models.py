@@ -71,6 +71,7 @@ class TopicPageRelatedArticle(Orderable):
     )
     description: models.TextField = models.TextField(
         blank=True,
+        default="",
         help_text="Description or summary for the external link.",
     )
     content_type: models.CharField = models.CharField(
