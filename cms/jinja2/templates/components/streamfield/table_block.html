@@ -10,7 +10,7 @@
 
         {%- if footnotes -%}
             {% from "components/details/_macro.njk" import onsDetails %}
-            {% call onsDetails({"id": block_id, "title": _("Footnotes"), "headingLevel": footnotes_heading_level}) %}
+            {% call onsDetails({"id": block_id, "title": _("Footnotes"), "headingLevel": additional_sections_heading_level}) %}
                 {{ footnotes }}
             {% endcall %}
         {%- endif -%}
@@ -18,7 +18,7 @@
         {% if options.download and options.download.title and options.download.itemsList | length > 0 %}
             {% from "components/list/_macro.njk" import onsList %}
             {# fmt:off #}
-                <h{{ downloads_heading_level }} class="ons-u-mt-l-not-important ons-u-fs-r--b">{{ options.download.title }}</h{{ downloads_heading_level }}>
+                <h{{ additional_sections_heading_level }} class="ons-u-mt-l-not-important ons-u-fs-r--b">{{ options.download.title }}</h{{ additional_sections_heading_level }}>
                 {{
                     onsList({
                         "element": "ol",
