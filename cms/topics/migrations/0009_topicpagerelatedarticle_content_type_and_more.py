@@ -12,12 +12,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="topicpagerelatedarticle",
             name="content_type",
-            field=models.CharField(blank=True, default="", max_length=255),
+            field=models.CharField(blank=True, default="", max_length=255, null=True),
         ),
         migrations.AddField(
             model_name="topicpagerelatedarticle",
             name="description",
-            field=models.TextField(blank=True, default=""),
+            field=models.TextField(blank=True, default="", null=True),
         ),
         migrations.AddField(
             model_name="topicpagerelatedarticle",
