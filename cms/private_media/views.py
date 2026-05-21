@@ -7,6 +7,7 @@ from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.cache import add_never_cache_headers, patch_cache_control
+from django.utils.http import content_disposition_header
 from django.views.generic import View
 from wagtail.documents import get_document_model
 from wagtail.documents.models import document_served
@@ -85,7 +86,9 @@ class ImageServeView(View):
             response = self._serve_rendition(rendition)
             add_never_cache_headers(response)
             _, ext = os.path.splitext(rendition.file.name)
-            response["Content-Disposition"] = f'attachment; filename="{image.title}{ext}"'
+            response["Content-Disposition"] = content_disposition_header(
+                as_attachment=True, filename=f"{image.title}{ext}"
+            )
             return response
 
         if image.is_public:
