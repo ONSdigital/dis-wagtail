@@ -213,7 +213,7 @@ class ReleaseChooserWithDetailsPanel(BundleFieldPanel):
 class HiddenFieldPanel(FieldPanel):
     """A FieldPanel that renders no output.
 
-    Used for fields managed purely via form logic that need to be excluded from all UI including minimap.
+    Used for fields managed purely via form logic that need to be excluded from all UI, including minimap.
     """
 
     def __init__(self, field_name: str, **kwargs: Any) -> None:
