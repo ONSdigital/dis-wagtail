@@ -1,6 +1,6 @@
 import os
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
@@ -85,8 +85,8 @@ class ImageServeView(View):
         if force_download:
             response = self.serve_private_rendition(rendition)
             _, ext = os.path.splitext(rendition.file.name)
-            response["Content-Disposition"] = content_disposition_header(
-                as_attachment=True, filename=f"{image.title}{ext}"
+            response["Content-Disposition"] = cast(
+                str, content_disposition_header(as_attachment=True, filename=f"{image.title}{ext}")
             )
             return response
 
