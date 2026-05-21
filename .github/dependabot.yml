@@ -22,6 +22,8 @@ updates:
         applies-to: version-updates
         patterns:
           - '*'
+    cooldown:
+      default-days: 7
 
   # Enable Security updates for Python package manager
   - package-ecosystem: pip
@@ -46,3 +48,5 @@ updates:
         applies-to: version-updates
         patterns:
           - '*'
+    cooldown:
+      default-days: 7
