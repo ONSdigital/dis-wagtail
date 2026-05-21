@@ -16,6 +16,7 @@ from cms.bundles.panels import (
     BundleDatasetChooserWidget,
     BundleMultipleChooserPanel,
     BundleNotePanel,
+    HiddenFieldPanel,
 )
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 
@@ -189,3 +190,23 @@ class BundleDatasetChooserPanelTestCase(TestCase):
 
         # Verify that for_bundle=true is in the URL
         self.assertIn("for_bundle=true", chooser_url)
+
+
+class HiddenFieldPanelTestCase(TestCase):
+    """Test HiddenFieldPanel functionality."""
+
+    def test_default_classname(self):
+        """Panel should default to hidden classnames without needing them passed explicitly."""
+        panel = HiddenFieldPanel("status")
+        self.assertEqual(panel.classname, "hidden w-hidden")
+
+    def test_classname_can_be_overridden(self):
+        """Custom classname should override the default."""
+        panel = HiddenFieldPanel("status", classname="custom-class")
+        self.assertEqual(panel.classname, "custom-class")
+
+    def test_is_shown_returns_false(self):
+        """Bound panel should not be shown, hiding it from the form and minimap."""
+        panel = HiddenFieldPanel("status")
+        bound_panel = panel.bind_to_model(Bundle).get_bound_panel(instance=Bundle())
+        self.assertFalse(bound_panel.is_shown())
