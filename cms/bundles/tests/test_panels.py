@@ -205,8 +205,8 @@ class HiddenFieldPanelTestCase(TestCase):
         panel = HiddenFieldPanel("status", classname="custom-class")
         self.assertEqual(panel.classname, "custom-class")
 
-    def test_is_shown_returns_false(self):
-        """Bound panel should not be shown, hiding it from the form and minimap."""
+    def test_heading_is_empty(self):
+        """Bound panel heading should be empty, hiding it from the minimap."""
         panel = HiddenFieldPanel("status")
         bound_panel = panel.bind_to_model(Bundle).get_bound_panel(instance=Bundle())
-        self.assertFalse(bound_panel.is_shown())
+        self.assertEqual(bound_panel.heading, "")
