@@ -83,8 +83,7 @@ class ImageServeView(View):
 
         # Serve file contents
         if force_download:
-            response = self._serve_rendition(rendition)
-            add_never_cache_headers(response)
+            response = self.serve_private_rendition(rendition)
             _, ext = os.path.splitext(rendition.file.name)
             response["Content-Disposition"] = content_disposition_header(
                 as_attachment=True, filename=f"{image.title}{ext}"
