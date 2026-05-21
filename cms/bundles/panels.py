@@ -221,6 +221,6 @@ class HiddenFieldPanel(FieldPanel):
         super().__init__(field_name, **kwargs)
 
     class BoundPanel(FieldPanel.BoundPanel):
-        def is_shown(self) -> bool:
-            # Exclude from the minimap and panel tree
-            return False
+        def __init__(self, **kwargs: Any) -> None:
+            super().__init__(**kwargs)
+            self.heading = ""
