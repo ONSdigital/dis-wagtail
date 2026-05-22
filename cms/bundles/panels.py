@@ -223,4 +223,6 @@ class HiddenFieldPanel(FieldPanel):
     class BoundPanel(FieldPanel.BoundPanel):
         def __init__(self, **kwargs: Any) -> None:
             super().__init__(**kwargs)
+            # Override heading to empty string. This prevents the header section html from being rendered
+            # in the form and stops it being displayed in the minimap
             self.heading = ""
