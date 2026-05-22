@@ -208,3 +208,21 @@ class ReleaseChooserWithDetailsPanel(BundleFieldPanel):
         if value is None:
             return ""
         return get_release_calendar_page_details(value)
+
+
+class HiddenFieldPanel(FieldPanel):
+    """A FieldPanel that renders no output.
+
+    Used for fields managed purely via form logic that need to be excluded from all UI, including minimap.
+    """
+
+    def __init__(self, field_name: str, **kwargs: Any) -> None:
+        kwargs.setdefault("classname", "hidden w-hidden")
+        super().__init__(field_name, **kwargs)
+
+    class BoundPanel(FieldPanel.BoundPanel):
+        def __init__(self, **kwargs: Any) -> None:
+            super().__init__(**kwargs)
+            # Override heading to empty string. This prevents the header section html from being rendered
+            # in the form and stops it being displayed in the minimap
+            self.heading = ""
