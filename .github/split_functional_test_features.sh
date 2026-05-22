@@ -31,12 +31,11 @@ shard_zero_based=$((SHARD_INDEX - 1))
 
 seedfile=""
 order_cmd=(sort)
+
 if [[ -n "$SHUFFLE_SEED" ]]; then
     echo "Using seed '$SHUFFLE_SEED' for shuffling" >&2
-    seedfile=$(mktemp -u)
-    mkfifo "$seedfile"
-    openssl enc -aes-256-ctr -nosalt -k "$SHUFFLE_SEED" -in /dev/zero 2>/dev/null >"$seedfile" &
-    openssl_pid=$!
+    seedfile=$(mktemp)
+    printf '%s' "$SHUFFLE_SEED" >"$seedfile"
     order_cmd=(shuf --random-source="$seedfile")
 fi
 
@@ -44,7 +43,4 @@ find functional_tests/features -name '*.feature' |
     "${order_cmd[@]}" |
     awk "NR % $TOTAL_SHARDS == $shard_zero_based"
 
-if [[ -n "$SHUFFLE_SEED" ]]; then
-    kill "$openssl_pid" 2>/dev/null || true
-    rm -f "$seedfile"
-fi
+[[ -n "$seedfile" ]] && rm -f "$seedfile"
