@@ -113,6 +113,7 @@ class TopicPageRelatedMethodology(Orderable):
     )
     external_url: models.URLField = models.URLField(
         blank=True,
+        null=True,
         verbose_name="URL",
         help_text="Enter a full URL starting with 'https://' "
         f"that matches one of the allowed domains or their subdomains: {', '.join(settings.ONS_ALLOWED_LINK_DOMAINS)}",
@@ -120,6 +121,7 @@ class TopicPageRelatedMethodology(Orderable):
     title: models.CharField = models.CharField(
         max_length=255,
         blank=True,
+        null=True,
         help_text=(
             "Populate when adding a external link. "
             "When choosing a page, you can leave it blank to use the page’s own title."
