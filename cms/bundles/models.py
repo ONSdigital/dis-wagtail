@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
-from wagtail.admin.panels import FieldPanel, FieldRowPanel
+from wagtail.admin.panels import FieldRowPanel
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
@@ -25,6 +25,7 @@ from .panels import (
     BundleFieldPanel,
     BundleMultipleChooserPanel,
     BundleStatusPanel,
+    HiddenFieldPanel,
     PageChooserWithStatusPanel,
     ReleaseChooserWithDetailsPanel,
 )
@@ -191,9 +192,9 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             chooser_field_name="team",
         ),
         # these are handled by the form
-        FieldPanel("status", classname="hidden w-hidden"),
-        FieldPanel("approved_by", classname="hidden w-hidden"),
-        FieldPanel("approved_at", classname="hidden w-hidden"),
+        HiddenFieldPanel("status"),
+        HiddenFieldPanel("approved_by"),
+        HiddenFieldPanel("approved_at"),
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
