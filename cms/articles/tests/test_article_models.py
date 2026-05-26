@@ -52,6 +52,9 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(self.page.display_title, "PSF: November 2024")
         self.assertEqual(self.page.display_title, f"{self.page.get_parent().title}: {self.page.title}")
 
+    def test_related_data_display_title(self):
+        self.assertEqual(self.page.related_data_display_title, "All data related to PSF: November 2024")
+
     def test_display_title_with_news_headline(self):
         """Test display_title returns news_headline when set."""
         self.page.news_headline = "Breaking News"
@@ -680,6 +683,19 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
             html=True,
         )
 
+    def test_related_data_breadcrumb_shows_full_title(self):
+        self.basic_page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[("manual_link", {"title": "A dataset", "description": "", "url": "https://example.com"})],
+        )
+        self.basic_page.save_revision().publish()
+        response = self.client.get(f"{self.basic_page_url}/related-data")
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{self.basic_page.full_url}">PSF: November 2024</a>',
+            html=True,
+        )
+
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.basic_page_url)
         expected = 'class="ons-pagination__link"'
@@ -1211,7 +1227,7 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
         self.assertInHTML(str(RichText(first_child.summary)), response.content.decode(encoding="utf-8"))
         self.assertContains(response, 'class="ons-document-list__item"', count=self.total_batch)
         self.assertContains(response, "Latest release", count=1)
-        self.assertContains(response, "Previous releases", count=1)
+        self.assertContains(response, '<h2 class="ons-hero--topic">Previous releases</h2>', count=1)
 
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.previous_releases_url)

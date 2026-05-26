@@ -1632,18 +1632,18 @@ export = ["jinja2 (>=3.1.2,<4)"]
 
 [[package]]
 name = "idna"
-version = "3.11"
+version = "3.15"
 description = "Internationalized Domain Names in Applications (IDNA)"
 optional = false
 python-versions = ">=3.8"
 groups = ["main", "dev"]
 files = [
-    {file = "idna-3.11-py3-none-any.whl", hash = "sha256:771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea"},
-    {file = "idna-3.11.tar.gz", hash = "sha256:795dafcc9c04ed0c1fb032c2aa73654d8e8c5023a7df64a53f39190ada629902"},
+    {file = "idna-3.15-py3-none-any.whl", hash = "sha256:048adeaf8c2d788c40fee287673ccaa74c24ffd8dcf09ffa555a2fbb59f10ac8"},
+    {file = "idna-3.15.tar.gz", hash = "sha256:ca962446ea538f7092a95e057da437618e886f4d349216d2b1e294abfdb65fdc"},
 ]
 
 [package.extras]
-all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
+all = ["mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
 
 [[package]]
 name = "isort"
@@ -3581,11 +3581,11 @@ description = "Provider of IANA time zone data"
 optional = false
 python-versions = ">=2"
 groups = ["main", "dev"]
-markers = "sys_platform == \"win32\" or platform_system == \"Windows\""
 files = [
     {file = "tzdata-2026.1-py2.py3-none-any.whl", hash = "sha256:4b1d2be7ac37ceafd7327b961aa3a54e467efbdb563a23655fbfe0d39cfc42a9"},
     {file = "tzdata-2026.1.tar.gz", hash = "sha256:67658a1903c75917309e753fdc349ac0efd8c27db7a0cb406a25be4840f87f98"},
 ]
+markers = {main = "platform_system == \"Windows\" or sys_platform == \"win32\"", dev = "sys_platform == \"win32\" or platform_system == \"Windows\""}
 
 [[package]]
 name = "tzlocal"
@@ -3607,14 +3607,14 @@ devenv = ["check-manifest", "pytest (>=4.3)", "pytest-cov", "pytest-mock (>=3.3)
 
 [[package]]
 name = "urllib3"
-version = "2.6.3"
+version = "2.7.0"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main", "dev"]
 files = [
-    {file = "urllib3-2.6.3-py3-none-any.whl", hash = "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4"},
-    {file = "urllib3-2.6.3.tar.gz", hash = "sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed"},
+    {file = "urllib3-2.7.0-py3-none-any.whl", hash = "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897"},
+    {file = "urllib3-2.7.0.tar.gz", hash = "sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c"},
 ]
 
 [package.extras]
@@ -3756,14 +3756,14 @@ testing = ["jinja2 (>=2.10,<4.0)", "markupsafe (==2.1.5)"]
 
 [[package]]
 name = "wagtail-tinytableblock"
-version = "0.4.1"
+version = "0.4.5"
 description = "A Wagtail StreamField block powered by TinyMCE and its table plugin"
 optional = false
 python-versions = ">=3.12"
 groups = ["main"]
 files = [
-    {file = "wagtail_tinytableblock-0.4.1-py3-none-any.whl", hash = "sha256:bf0a4e0bb6fd6258a1b7259945f279cdd11605447fb773daba008e2107dcfef0"},
-    {file = "wagtail_tinytableblock-0.4.1.tar.gz", hash = "sha256:dc301368d2acc6cf1ed42ee356d4faf783138a1aefd4a0c8da1219672bee51c6"},
+    {file = "wagtail_tinytableblock-0.4.5-py3-none-any.whl", hash = "sha256:a13d57c44e4b2a204172a683ca6e0e4ef5f5185b2cae97a1d0aad526b00b30f8"},
+    {file = "wagtail_tinytableblock-0.4.5.tar.gz", hash = "sha256:d7fd2c73f373a69b957c9c5197eaaee6f761293055ff7761b76d797bc67e6535"},
 ]
 
 [package.dependencies]
@@ -3897,4 +3897,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "dc75e0ecb1154cab02f3807f8f670bffcdbecc7777cacf552c3b6d2777a7f230"
+content-hash = "24cee9bc74c59081c22ab9cce0a2684d97488bdfcfb98a7a4af602e3c2b1bbf1"
