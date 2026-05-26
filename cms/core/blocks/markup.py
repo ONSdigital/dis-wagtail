@@ -130,15 +130,17 @@ class BasicTableBlock(WagtailTableBlock):
 class ONSTableBlock(TinyTableBlock):
     """The ONS table block."""
 
+    sub_heading = blocks.CharBlock(label="Sub-heading", required=False)
     source = blocks.CharBlock(label="Source", required=False)
+    accessible_label = blocks.CharBlock(
+        label="Accessible label",
+        required=True,
+        help_text="""
+            A short label to explain what this table is about for those
+            using a screen reader. This will not be visible on the page
+            but is important for accessibility.""",
+    )
     footnotes = blocks.RichTextBlock(label="Footnotes", features=settings.RICH_TEXT_BASIC, required=False)
-
-    def __init__(
-        self, *, local_blocks: list[blocks.Block] | None = None, search_index: bool = True, **kwargs: Any
-    ) -> None:
-        super().__init__(local_blocks=local_blocks, search_index=search_index, **kwargs)
-        # relabeled to match the publishing team's terminology
-        self.child_blocks["caption"].label = "Sub-heading"
 
     def _align_to_ons_classname(self, alignment: str) -> str:
         match alignment:
@@ -184,7 +186,7 @@ class ONSTableBlock(TinyTableBlock):
             return context
 
         options = {
-            "caption": value.get("caption"),
+            "ariaLabel": value.get("accessible_label"),
             "thList": [{"ths": self._prepare_header_cells(header_row)} for header_row in data.get("headers", [])],
             "trs": [{"tds": self._prepare_body_cells(row)} for row in data.get("rows", [])],
         }
@@ -199,6 +201,7 @@ class ONSTableBlock(TinyTableBlock):
 
         table_context = {
             "title": value.get("title"),
+            "sub_heading": value.get("sub_heading"),
             "options": options,
             "source": value.get("source"),
             "footnotes": value.get("footnotes"),
@@ -259,3 +262,8 @@ class ONSTableBlock(TinyTableBlock):
     class Meta:
         icon = "table"
         template = "templates/components/streamfield/table_block.html"
+        # Marker class on the StructBlock wrapper used by an admin CSS rule to
+        # hide the inherited `caption` child from editors. The field is kept so
+        # its data is preserved and remains available for future use.
+        # See cms/core/static/css/admin.css.
+        form_classname = "ons-table-block"
