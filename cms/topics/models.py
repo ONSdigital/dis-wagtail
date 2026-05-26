@@ -71,14 +71,12 @@ class TopicPageRelatedArticle(Orderable):
     )
     description: models.TextField = models.TextField(
         blank=True,
-        default="",
         null=True,
         help_text="Description or summary for the external link.",
     )
     content_type: models.CharField = models.CharField(
         max_length=255,
         blank=True,
-        default="",
         null=True,
         help_text="Content type of the external content, e.g. Article (default), Dataset, Methodology.",
     )
