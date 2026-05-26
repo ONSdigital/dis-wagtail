@@ -8,7 +8,7 @@ from django.db.models.functions import Coalesce
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.core.query import order_by_pk_position
 from cms.methodology.models import MethodologyPage
-from cms.topics.services.types import ArticleDict, InternalArticleDict, MethodologyDict
+from cms.topics.services.types import ArticleDict, ExternalArticleDict, InternalArticleDict, MethodologyDict
 
 if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
@@ -71,7 +71,7 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
         # Handle external articles
         if not related.page:
             if related.external_url:
-                external_article: dict = {
+                external_article: ExternalArticleDict = {
                     "url": related.external_url,
                     "title": related.title,
                     "description": related.description,
@@ -81,7 +81,7 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict]):
                     external_article["content_type"] = related.content_type
                 if related.release_date:
                     external_article["release_date"] = related.release_date
-                return external_article  # type: ignore[return-value]
+                return external_article
             return None
 
         # Handle internal pages
