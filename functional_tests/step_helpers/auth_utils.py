@@ -231,7 +231,6 @@ def force_login(context: Context, user: User):
             }
         ]
     )
-    context.page = context.browser_context.new_page()
 
 
 def get_session_key(user: User) -> str:
