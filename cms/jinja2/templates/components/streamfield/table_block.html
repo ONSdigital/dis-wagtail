@@ -1,5 +1,5 @@
 {% from "components/table/_macro.njk" import onsTable %}
-{%- set block_id = block.id | replace(":", "-") -%}
+
 {%- if options -%}
     <div class="ons-table-block" id="table-{{ block_id }}">
         {% if title %}<h3>{{ title }}</h3>{% endif %}
