@@ -189,6 +189,19 @@ class TestImageServeView(TestCase):
                 response = self.client.get(url)
                 self.assertNotIn("attachment", response.get("Content-Disposition", ""))
 
+    def test_force_download_filename_is_slugified(self):
+        """Filename in Content-Disposition is slugified to strip OS-forbidden characters."""
+        rendition = self.public_image_renditions[0]
+        self.public_image.title = "Hello/World:?"
+        self.public_image.save()
+
+        url = rendition.serve_url + "?force_download=true"
+        response = self.client.get(url)
+
+        disposition = response.get("Content-Disposition", "")
+        self.assertIn("helloworld", disposition)
+        self.assertNotIn("Hello/World:?", disposition)
+
     def test_force_download_ignored_on_external_env(self):
         """force_download=true is ignored in external environments; the normal redirect is returned."""
         rendition = self.public_image_renditions[0]
