@@ -176,6 +176,19 @@ class TestImageServeView(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("attachment", response.get("Content-Disposition", ""))
 
+    def test_content_disposition_not_set_without_exact_true_value(self):
+        """Content-Disposition is not set when force_download is absent or not exactly 'true'."""
+        rendition = self.public_image_renditions[0]
+        cases = [
+            ("no query param", rendition.serve_url),
+            ("force_download=false", rendition.serve_url + "?force_download=false"),
+            ("force_download=1", rendition.serve_url + "?force_download=1"),
+        ]
+        for label, url in cases:
+            with self.subTest(label):
+                response = self.client.get(url)
+                self.assertNotIn("attachment", response.get("Content-Disposition", ""))
+
     def test_force_download_ignored_on_external_env(self):
         """force_download=true is ignored in external environments; the normal redirect is returned."""
         rendition = self.public_image_renditions[0]
