@@ -568,6 +568,16 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
 
                 self.assertEqual("The reason" in str(response.content), is_shown)
 
+    def test_rendered_notice_renders_on_cancelled_page(self):
+        """Notice content should appear on the cancelled page."""
+        self.page.status = ReleaseStatus.CANCELLED
+        self.page.notice = "<p>Cancelled due to unforeseen circumstances</p>"
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(response, "<p>Cancelled due to unforeseen circumstances</p>", html=True)
+
     def test_release_date_text_overrides_release_datetime(self):
         """Check that if both release date and release date text are present,
         then release date text is used for provisional releases
