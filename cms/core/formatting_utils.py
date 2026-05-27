@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from wagtail.models import Page
 
 from cms.core.custom_date_format import ons_date_format
+from cms.core.enums import RelatedContentType
 from cms.core.utils import get_related_content_type_label
 
 if TYPE_CHECKING:
@@ -40,10 +41,8 @@ def format_as_document_list_item(
 
 def _format_external_link(page_dict: ExternalArticleDict) -> DocumentListItem:
     """Format external link dictionary into DocumentListItem."""
-    if page_type := page_dict.get("content_type"):
-        content_type = get_related_content_type_label(page_type)
-    else:
-        content_type = _("Article")
+    page_type = page_dict.get("content_type", RelatedContentType.ARTICLE)
+    content_type = get_related_content_type_label(page_type)
 
     page_datum: DocumentListItem = format_as_document_list_item(
         title=page_dict["title"],
