@@ -952,6 +952,49 @@ class TopicPageRelatedArticleValidationTests(TestCase):
         self.assertEqual(len(active_articles), 1)
 
 
+class TopicPageRelatedMethodologyDeduplicationTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.topic_page = TopicPageFactory(title="Test Topic")
+        cls.methodology = MethodologyPageFactory(parent__parent=cls.topic_page)
+
+    def test_duplicate_related_methodologies_are_deduplicated(self):
+        """TopicPageAdminForm.clean() should silently deduplicate the same methodology added more than once."""
+        data = nested_form_data(
+            {
+                "title": self.topic_page.title,
+                "slug": self.topic_page.slug,
+                "summary": rich_text("Summary"),
+                "featured_series": "",
+                "topic": self.topic_page.topic_id,
+                "related_articles": inline_formset([]),
+                "related_methodologies": inline_formset(
+                    [
+                        {"page": self.methodology.pk},
+                        {"page": self.methodology.pk},
+                    ]
+                ),
+                "explore_more": streamfield([]),
+                "headline_figures": streamfield([]),
+                "datasets": streamfield([]),
+                "time_series": streamfield([]),
+            }
+        )
+
+        form = self.topic_page.get_edit_handler().get_form_class()(
+            data,
+            instance=self.topic_page,
+            parent_page=self.topic_page.get_parent(),
+        )
+        self.assertTrue(form.is_valid())
+        active_methodologies = [
+            f
+            for f in form.formsets["related_methodologies"].forms
+            if f.cleaned_data and not f.cleaned_data.get("DELETE")
+        ]
+        self.assertEqual(len(active_methodologies), 1)
+
+
 class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
