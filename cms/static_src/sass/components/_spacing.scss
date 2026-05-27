@@ -7,3 +7,11 @@
         margin-bottom: 0;
     }
 }
+
+.ons-reading-width {
+    // Unit and location of class experimental for now - this class will be provided by the DS
+    // Using ch units could be interesting but would mean headings and rich text would appear as different lengths
+    // Using percentage widths means the reading width would vary depending on the parent width and the screen size
+    // The best opton may be rems
+    max-width: 500px;
+}

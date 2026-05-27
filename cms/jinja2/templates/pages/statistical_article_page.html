@@ -228,7 +228,8 @@
                         {% include_block page.content %}
 
                         {% if page.show_cite_this_page %}
-                            <section id="cite-this-page" class="spacing">
+                            {# Another example of a place we would need to update the reading width #}
+                            <section id="cite-this-page" class="spacing ons-reading-width">
                                 <h2 class="ons-u-fs-l">{{ _("Cite this analysis") }}</h2>
                                 <p>
                                     {%- set cite_link -%}

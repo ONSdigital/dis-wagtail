@@ -1,6 +1,9 @@
+{% set restricted_width_block_types = ["heading", "rich_text", "accordion"] %}
+
 {% for content_block in value %}
     {% with block_id = content_block.id %}
-        <div class="{% if content_block.block_type !='heading' %}spacing{% endif %}">
+        {# Using stream_block.html to restrict certain blocks at the top level #}
+        <div class="{% if content_block.block_type !='heading' %}spacing{% endif %} {% if content_block.block_type in restricted_width_block_types %}ons-reading-width{% endif %}">
             {% include_block content_block %}
         </div>
     {% endwith %}

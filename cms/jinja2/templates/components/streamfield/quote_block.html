@@ -1,5 +1,6 @@
 {% from "components/quote/_macro.njk" import onsQuote %}
 {% if value.attribution %}
+    {# For certain blocks like the quote we might want to impose the reading width at the DS component level, rather than in the cms - it would make sense for the DS to own it where there is a DS component that can be updated - unlike the case of the rich text block or the heading block #}
     {{- onsQuote({ "text": value.quote, "ref": value.attribution }) -}}
 {% else %}
     {{- onsQuote({ "text": value.quote }) -}}

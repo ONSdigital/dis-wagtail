@@ -1,5 +1,6 @@
 <section id="{{ value.title|slugify() }}">
-    <h2 class="ons-u-fs-l">{{ value.title }}</h2>
+    {# Example of placing the ons-reading-width class on an individual element rather than in a wrapper surrounding it - in this case that is more semantic #}
+    <h2 class="ons-u-fs-l ons-reading-width">{{ value.title }}</h2>
 
     {% include_block value.content %}
 </section>

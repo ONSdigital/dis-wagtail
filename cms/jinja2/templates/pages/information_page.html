@@ -25,6 +25,7 @@
 {# fmt:on #}
 
 {% block header_area %}
+    {# There is a fix on the way from the DS that sorts the width of the breadcrumbs component based on the pageConfig.wide setting #}
     {# fmt:off #}
     {{
         onsBreadcrumbs({
@@ -33,10 +34,12 @@
             "variant": 'grey'
         })
     }}
+    {# when we update the content width, the hero will need the 'wide' option applying manually, as it isn't in the base template. I've done this for a few page templates in this spike but not across the board. The title and paragraph text inside it already have a restricted width, but we might want to consider changing that to match the reading width. #}
     {{
         onsHero({
             "title": page.title,
             "variants": 'grey',
+            "wide": true,
             "richText": page.summary|richtext(),
             "detailsColumns": 12,
             "descriptionList": {

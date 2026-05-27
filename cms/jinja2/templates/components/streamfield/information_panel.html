@@ -1,7 +1,8 @@
 {% from "components/panel/_macro.njk" import onsPanel %}
 
+{# For the information panel we might want the background colour to span the full width, but for the text width to be restricted - therefore we might want to impose the width restriction in the DS component #}
 {# fmt:off #}
-{{- 
+{{-
     onsPanel({
         "variant": "info",
         "body": value.body,
