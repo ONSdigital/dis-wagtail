@@ -678,6 +678,48 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         cls.block = ONSTableBlock()
 
+    def test_clean__sub_heading_without_title_raises(self):
+        """A sub-heading cannot be saved without a title."""
+        value = self.block.to_python(
+            {
+                "sub_heading": "A sub-heading",
+                "accessible_label": "The accessible label",
+                "data": self.simple_table_data,
+            }
+        )
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            self.block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["sub_heading"].message,
+            "Please add a title if you want to add a sub-heading.",
+        )
+
+    def test_clean__sub_heading_with_title(self):
+        """A sub-heading paired with a title is allowed."""
+        value = self.block.to_python(
+            {
+                "title": "The table",
+                "sub_heading": "A sub-heading",
+                "accessible_label": "The accessible label",
+                "data": self.simple_table_data,
+            }
+        )
+        # Should not raise a validation error
+        self.block.clean(value)
+
+    def test_clean__no_sub_heading(self):
+        """A table with no sub-heading is allowed regardless of title."""
+        value = self.block.to_python(
+            {
+                "accessible_label": "The accessible label",
+                "data": self.simple_table_data,
+            }
+        )
+        # Should not raise a validation error
+        self.block.clean(value)
+
     def test_get_context(self):
         context = self.block.get_context(self.full_data)
         self.assertDictEqual(

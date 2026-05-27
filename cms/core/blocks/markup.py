@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
+from wagtail.blocks import StructBlockValidationError
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
 
@@ -141,6 +142,17 @@ class ONSTableBlock(TinyTableBlock):
             but is important for accessibility.""",
     )
     footnotes = blocks.RichTextBlock(label="Footnotes", features=settings.RICH_TEXT_BASIC, required=False)
+
+    def clean(self, value: dict) -> dict:
+        """Validate that a sub-heading is only present when a title is also provided."""
+        cleaned_value: dict = super().clean(value)
+
+        if cleaned_value.get("sub_heading") and not cleaned_value.get("title"):
+            raise StructBlockValidationError(
+                block_errors={"sub_heading": ValidationError("Please add a title if you want to add a sub-heading.")}
+            )
+
+        return cleaned_value
 
     def _align_to_ons_classname(self, alignment: str) -> str:
         match alignment:
