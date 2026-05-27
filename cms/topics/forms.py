@@ -1,10 +1,11 @@
 from typing import Any
 
 from django import forms
-from wagtail.admin.forms import WagtailAdminPageForm
+
+from cms.core.forms import DeduplicateInlinePanelAdminForm
 
 
-class TopicPageAdminForm(WagtailAdminPageForm):
+class TopicPageAdminForm(DeduplicateInlinePanelAdminForm):
     topic_page_id = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -16,12 +17,10 @@ class TopicPageAdminForm(WagtailAdminPageForm):
     def clean(self) -> dict[str, Any] | None:
         cleaned_data: dict[str, Any] = super().clean()
 
-        # remove topic_page_id before save
         cleaned_data.pop("topic_page_id", None)
 
-        # DeduplicateInlinePanelAdminForm.deduplicate_formset() can't be used here because it
-        # marks None-field entries as deleted. The `page` field is nullable (external URL rows
-        # have page=None), so using it would incorrectly remove those rows.
+        # `page` is nullable on related articles (external URL rows have page=None), so
+        # deduplicate_formset() can't be used — it would mark those rows as deleted.
         related_articles_formset = self.formsets.get("related_articles")
         if related_articles_formset:
             seen_pages: set = set()
@@ -35,5 +34,9 @@ class TopicPageAdminForm(WagtailAdminPageForm):
                     related_articles_formset.forms[index].cleaned_data["DELETE"] = True
                 else:
                     seen_pages.add(internal_page)
+
+        # `page` is non-nullable on related methodologies, so
+        # DeduplicateInlinePanelAdminForm.deduplicate_formset() is safe to use.
+        self.deduplicate_formset(formset="related_methodologies", target_field="page")
 
         return cleaned_data
