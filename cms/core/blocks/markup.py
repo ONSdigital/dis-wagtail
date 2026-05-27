@@ -197,7 +197,12 @@ class ONSTableBlock(TinyTableBlock):
             options["download"] = self._get_download_config(parent_context=parent_context, block_id=block_id, data=data)
 
         # Used by footnotes and downloads sections
-        additional_sections_heading_level = 4 if value.get("title") else 3
+        if value.get("title") and value.get("sub_heading"):
+            additional_sections_heading_level = 5
+        elif value.get("title"):
+            additional_sections_heading_level = 4
+        else:
+            additional_sections_heading_level = 3
 
         table_context = {
             "title": value.get("title"),
