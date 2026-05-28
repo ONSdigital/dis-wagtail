@@ -994,6 +994,48 @@ class TopicPageRelatedMethodologyDeduplicationTests(TestCase):
         ]
         self.assertEqual(len(active_methodologies), 1)
 
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["ons.gov.uk"])
+    def test_external_link_methodology_is_not_deleted_by_deduplication(self):
+        """External-link methodology rows (page=None) must survive deduplication."""
+        data = nested_form_data(
+            {
+                "title": self.topic_page.title,
+                "slug": self.topic_page.slug,
+                "summary": rich_text("Summary"),
+                "featured_series": "",
+                "topic": self.topic_page.topic_id,
+                "related_articles": inline_formset([]),
+                "related_methodologies": inline_formset(
+                    [
+                        {"page": self.methodology.pk},
+                        {
+                            "page": "",
+                            "external_url": "https://ons.gov.uk/methodology/external",
+                            "title": "External Methodology",
+                            "content_type": RelatedMethodologyType.METHODOLOGY,
+                        },
+                    ]
+                ),
+                "explore_more": streamfield([]),
+                "headline_figures": streamfield([]),
+                "datasets": streamfield([]),
+                "time_series": streamfield([]),
+            }
+        )
+
+        form = self.topic_page.get_edit_handler().get_form_class()(
+            data,
+            instance=self.topic_page,
+            parent_page=self.topic_page.get_parent(),
+        )
+        self.assertTrue(form.is_valid())
+        active_methodologies = [
+            f
+            for f in form.formsets["related_methodologies"].forms
+            if f.cleaned_data and not f.cleaned_data.get("DELETE")
+        ]
+        self.assertEqual(len(active_methodologies), 2)
+
 
 class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
     @classmethod

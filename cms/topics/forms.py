@@ -1,11 +1,10 @@
 from typing import Any
 
 from django import forms
+from wagtail.admin.forms import WagtailAdminPageForm
 
-from cms.core.forms import DeduplicateInlinePanelAdminForm
 
-
-class TopicPageAdminForm(DeduplicateInlinePanelAdminForm):
+class TopicPageAdminForm(WagtailAdminPageForm):
     topic_page_id = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -14,29 +13,31 @@ class TopicPageAdminForm(DeduplicateInlinePanelAdminForm):
         if self.instance.pk:
             self.fields["topic_page_id"].initial = self.instance.pk
 
+    def _deduplicate_nullable_page_formset(self, formset_name: str) -> None:
+        # `page` is nullable on these formsets (external URL rows have page=None), so we
+        # skip None rows rather than deleting them — unlike deduplicate_formset() which
+        # would mark them for deletion.
+        formset = self.formsets.get(formset_name)
+        if not formset:
+            return
+        seen_pages: set = set()
+        for index, form in enumerate(formset.forms):
+            if not form.is_valid():
+                continue
+            internal_page = form.clean().get("page")
+            if internal_page is None:
+                continue
+            if internal_page in seen_pages:
+                formset.forms[index].cleaned_data["DELETE"] = True
+            else:
+                seen_pages.add(internal_page)
+
     def clean(self) -> dict[str, Any] | None:
         cleaned_data: dict[str, Any] = super().clean()
 
         cleaned_data.pop("topic_page_id", None)
 
-        # `page` is nullable on related articles (external URL rows have page=None), so
-        # deduplicate_formset() can't be used — it would mark those rows as deleted.
-        related_articles_formset = self.formsets.get("related_articles")
-        if related_articles_formset:
-            seen_pages: set = set()
-            for index, article_form in enumerate(related_articles_formset.forms):
-                if not article_form.is_valid():
-                    continue
-                internal_page = article_form.clean().get("page")
-                if internal_page is None:
-                    continue
-                if internal_page in seen_pages:
-                    related_articles_formset.forms[index].cleaned_data["DELETE"] = True
-                else:
-                    seen_pages.add(internal_page)
-
-        # `page` is non-nullable on related methodologies, so
-        # DeduplicateInlinePanelAdminForm.deduplicate_formset() is safe to use.
-        self.deduplicate_formset(formset="related_methodologies", target_field="page")
+        self._deduplicate_nullable_page_formset("related_articles")
+        self._deduplicate_nullable_page_formset("related_methodologies")
 
         return cleaned_data
