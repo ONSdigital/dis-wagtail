@@ -86,6 +86,26 @@ class BundleModelTestCase(TestCase):
         unsaved_bundle = BundleFactory.build()
         self.assertEqual(unsaved_bundle.full_inspect_url, "")
 
+    def test_is_ready_to_be_published(self):
+        """Test is_ready_to_be_published returns True for appropriate statuses."""
+        test_cases = [
+            (BundleStatus.DRAFT, False),
+            (BundleStatus.IN_REVIEW, False),
+            (BundleStatus.APPROVED, True),
+            (BundleStatus.PUBLISHED, False),
+            (BundleStatus.PARTIALLY_PUBLISHED, True),
+            (BundleStatus.FAILED, True),
+        ]
+
+        for status, expected in test_cases:
+            with self.subTest(status=status):
+                self.bundle.status = status
+                self.assertEqual(
+                    self.bundle.is_ready_to_be_published,
+                    expected,
+                    f"Expected is_ready_to_be_published={expected} for status {status}",
+                )
+
 
 class BundledPageMixinTestCase(WagtailTestUtils, TestCase):
     """Test BundledPageMixin properties and methods."""
