@@ -258,6 +258,7 @@ class TestPrivateImageManager(TestCase):
 
     def setUp(self):
         # Create six images with renditions (a mix of private and public)
+        super().setUp()
         self.private_images = []
         self.public_images = []
         for _ in range(3):
@@ -267,6 +268,10 @@ class TestPrivateImageManager(TestCase):
             public_image.create_renditions(Filter("fill-10x10"), Filter("fill-20x20"))
             self.private_images.append(private_image)
             self.public_images.append(public_image)
+        PURGED_URLS.clear()
+
+    def tearDown(self):
+        super().tearDown()
         PURGED_URLS.clear()
 
     def test_bulk_make_public(self):
