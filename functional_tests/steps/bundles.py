@@ -486,7 +486,7 @@ def the_user_is_taken_back_to_bundles_listing_page(context: Context) -> None:
 def the_user_filters_bundles_listing_by_status(context: Context, filter_option: str) -> None:
     context.page.get_by_role("button", name="Show filters").click()
     context.page.get_by_role("button", name="Status").click()
-    context.page.get_by_role("radio", name=filter_option).check()
+    context.page.get_by_role("radio", name=filter_option, exact=True).check()
 
 
 @when('the user clicks on the published bundle "{bundle_name}"')
