@@ -174,7 +174,7 @@ class BundleAPIClient:
             )
             from cms.bundles.notifications.slack import BundleAlertType  # pylint: disable=import-outside-toplevel
 
-            error_msg = f"Network error for {method} {url}: {e!s}"
+            error_msg = f"Network error for {method}: {e!s}"
             logger.error("Network error for %s %s: %s", method, url, e)
 
             # Send Slack notification for API failure
