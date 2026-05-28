@@ -1,0 +1,39 @@
+{% extends 'wagtailadmin/shared/side_panels/includes/action_list_item.html' %}
+{% load wagtailadmin_tags i18n %}
+
+{% comment %}
+Shows the bundle's own status label (Draft, In Preview, Ready to publish, etc.)
+instead of Wagtail's generic Live/Draft indicator, which is only meaningful for
+models using DraftStateMixin.
+{% endcomment %}
+
+{% block content %}
+    {% trans "Status: " as screen_reader_title_prefix %}
+    {% if object.pk %}
+        {% with title=object.get_status_display %}
+            {% if object.live %}
+                {% with icon_name="doc-full-inverse" %}
+                    {{ block.super }}
+                {% endwith %}
+            {% else %}
+                {% with icon_name="draft" %}
+                    {{ block.super }}
+                {% endwith %}
+            {% endif %}
+        {% endwith %}
+    {% else %}
+        {% trans "Draft" as title %}
+        {% with icon_name="draft" %}
+            {{ block.super }}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block action %}
+    {% if history_url %}
+        {% with action_url=history_url %}
+            {% trans "View history" as action_text %}
+            {{ block.super }}
+        {% endwith %}
+    {% endif %}
+{% endblock %}

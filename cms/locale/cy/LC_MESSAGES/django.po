@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-01 07:58+0100\n"
+"POT-Creation-Date: 2026-05-28 15:48+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,27 +17,27 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
 "11) ? 2 : 3;\n"
 
-#: cms/articles/models.py:220 cms/core/enums.py:8
+#: cms/articles/models.py:222 cms/core/enums.py:8
 #: cms/core/formatting_utils.py:45
 msgid "Article"
 msgstr "Erthygl"
 
-#: cms/articles/models.py:452
+#: cms/articles/models.py:454
 msgid "Cite this article"
 msgstr "Dyfynnwch yr erthygl hon"
 
-#: cms/articles/models.py:454
+#: cms/articles/models.py:456
 #: cms/jinja2/templates/components/contact_details/contact_details.html:6
-#: cms/methodology/models.py:195 cms/release_calendar/models.py:260
+#: cms/methodology/models.py:195 cms/release_calendar/models.py:265
 msgid "Contact details"
 msgstr "Manylion cyswllt"
 
-#: cms/articles/models.py:521
+#: cms/articles/models.py:528
 #, python-format
 msgid "All data related to %(article_title)s"
 msgstr "Yr holl ddata sy'n gysylltiedig â %(article_title)s"
 
-#: cms/articles/models.py:580
+#: cms/articles/models.py:587
 msgid "Release date"
 msgstr "Dyddiad y datganiad"
 
@@ -53,11 +53,23 @@ msgstr "Hysbysiad"
 msgid "View superseded version"
 msgstr "Gweld fersiwn wedi’i disodli"
 
-#: cms/bundles/utils.py:28
+#: cms/bundles/templates/bundles/wagtailadmin/side_panels/bundle_status.html:11
+msgid "Status: "
+msgstr ""
+
+#: cms/bundles/templates/bundles/wagtailadmin/side_panels/bundle_status.html:25
+msgid "Draft"
+msgstr ""
+
+#: cms/bundles/templates/bundles/wagtailadmin/side_panels/bundle_status.html:35
+msgid "View history"
+msgstr ""
+
+#: cms/bundles/utils.py:35
 msgid "Publications"
 msgstr "Cyhoeddiadau"
 
-#: cms/bundles/utils.py:29
+#: cms/bundles/utils.py:36
 msgid "Quality and methodology"
 msgstr "Ansawdd a methodoleg"
 
@@ -71,11 +83,11 @@ msgstr "Dangos popeth"
 msgid "Hide all"
 msgstr "Cuddio popeth"
 
-#: cms/core/blocks/markup.py:228
+#: cms/core/blocks/markup.py:232
 msgid "Download this table"
 msgstr "Lawrlwythwch y tabl hwn"
 
-#: cms/core/blocks/markup.py:229
+#: cms/core/blocks/markup.py:233
 #, python-format
 msgid "Download CSV %(size)s"
 msgstr "Lawrlwythwch CSV %(size)s"
@@ -122,7 +134,7 @@ msgstr "Tudalen"
 msgid "Released"
 msgstr "Rhyddhawyd"
 
-#: cms/core/models/base.py:153
+#: cms/core/models/base.py:159
 msgid "Home"
 msgstr "Cartref"
 
@@ -134,7 +146,7 @@ msgstr "Troednodiadau"
 #: cms/datavis/blocks/table.py:58
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:94
 #: cms/jinja2/templates/pages/topic_page.html:95
-#: cms/release_calendar/models.py:249 cms/topics/models.py:245
+#: cms/release_calendar/models.py:254 cms/topics/models.py:245
 msgid "Data"
 msgstr "Data"
 
@@ -565,7 +577,7 @@ msgstr "Wedi’i ganslo"
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:52
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:50
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:111
-#: cms/release_calendar/models.py:255
+#: cms/release_calendar/models.py:260
 msgid "Changes to this release date"
 msgstr "Newidiadau i’r dyddiad rhyddhau hwn"
 
@@ -583,12 +595,12 @@ msgid "Next release date:"
 msgstr "Rhyddhad nesaf:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:85
-#: cms/release_calendar/models.py:242
+#: cms/release_calendar/models.py:247
 msgid "Summary"
 msgstr "Crynodeb"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:122
-#: cms/release_calendar/models.py:264
+#: cms/release_calendar/models.py:269
 msgid "About the data"
 msgstr "Ynglyn â’r data"
 
@@ -624,12 +636,12 @@ msgid "are managed impartially and objectively in the public interest"
 msgstr "yn cael eu rheoli yn ddiduedd ac yn wrthrychol er budd y cyhoedd"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:150
-#: cms/release_calendar/models.py:269
+#: cms/release_calendar/models.py:274
 msgid "Pre-release access list"
 msgstr "Rhestr mynediad cyn rhyddhau"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:157
-#: cms/release_calendar/models.py:273
+#: cms/release_calendar/models.py:278
 msgid "You might also be interested in"
 msgstr "Efallai y bydd gennych ddiddordeb yn"
 
