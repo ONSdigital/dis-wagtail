@@ -6,6 +6,8 @@ class OldConnectionsCleanupDiscoveryRunner(DiscoverRunner):
     def setup_databases(self, **kwargs):
         config = super().setup_databases(**kwargs)
 
+        # Running tests with the --parallel flag was failing due to attribute errors in the django parallel test
+        # runner setup. This adds a quick monkey patch that allows tests to run.
         for alias in connections:
             if not hasattr(connections[alias], "_test_serialized_contents"):
                 connections[alias]._test_serialized_contents = ""  # pylint: disable=W0212
