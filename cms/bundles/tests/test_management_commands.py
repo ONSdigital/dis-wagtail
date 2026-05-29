@@ -153,6 +153,14 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 0)
         self.assertTrue(PageLogEntry.objects.filter(action="wagtail.publish", page=self.statistical_article).exists())
 
+    def test_publish_bundle_with_only_datasets(self):
+        DatasetFactory()
+        BundleDatasetFactory(parent=self.bundle)
+        self.call_command()
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
+
     def test_publish_bundle_with_release_calendar(self):
         """Test publishing a bundle with an associated release calendar page."""
         release_page = ReleaseCalendarPageFactory(release_date=self.publication_date)

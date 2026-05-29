@@ -517,7 +517,8 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
         )
         return False
 
-    if update_status and pages_published > 0:
+    # we already handle failed pages, if the bundle only has datasets it still needs to be published successfully
+    if update_status and (pages_published + bundle.bundled_datasets.count()) > 0:
         bundle.status = BundleStatus.PUBLISHED
         bundle.save(update_fields=["status"])
 
