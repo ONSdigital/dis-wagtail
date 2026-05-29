@@ -107,6 +107,7 @@ class BundleModelTestCase(TestCase):
                 )
 
     def test_live(self):
+        """Live is True only for statuses that mean the bundle has gone through publishing."""
         test_cases = [
             (BundleStatus.DRAFT, False),
             (BundleStatus.IN_REVIEW, False),
@@ -121,6 +122,7 @@ class BundleModelTestCase(TestCase):
                 self.assertEqual(self.bundle.live, expected)
 
     def test_has_unpublished_changes(self):
+        """has_unpublished_changes is the inverse of live — True while the bundle is still in progress."""
         test_cases = [
             (BundleStatus.DRAFT, True),
             (BundleStatus.IN_REVIEW, True),
