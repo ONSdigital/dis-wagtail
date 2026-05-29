@@ -138,7 +138,7 @@ class BundleStatusSidePanel(StatusSidePanel):
     """
 
     def get_status_templates(self, context: dict) -> list[str]:
-        templates = super().get_status_templates(context)
+        templates: list[str] = super().get_status_templates(context)
         templates[0] = "bundles/wagtailadmin/side_panels/bundle_status.html"
         return templates
 
