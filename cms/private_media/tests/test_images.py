@@ -271,8 +271,8 @@ class TestPrivateImageManager(TestCase):
         PURGED_URLS.clear()
 
     def tearDown(self):
-        super().tearDown()
         PURGED_URLS.clear()
+        super().tearDown()
 
     def test_bulk_make_public(self):
         """Test the behaviour of PrivateImageManager.bulk_make_public()."""
