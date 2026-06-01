@@ -223,6 +223,25 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         self.assertEqual(self.page.latest_revision.user_id, self.publishing_officer.id)
         self.assertNotEqual(self.page.latest_revision.pk, latest_revision.pk)
 
+    def test_before_edit_page__prevents_self_reject(self):
+        """Test that the last editor cannot request changes on their own submission."""
+        self.client.force_login(self.publishing_admin)
+
+        workflow_state = mark_page_as_ready_for_review(self.page, self.publishing_admin)
+        latest_revision = self.page.latest_revision
+
+        data = self.get_simple_post_data(self.page)
+        data["workflow-action-name"] = "reject"
+        response = self.client.post(self.edit_url, data, follow=True)
+
+        self.assertContains(
+            response, "Cannot self-approve your changes. Please ask another Publishing team member to do so."
+        )
+        self.page.refresh_from_db()
+        self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)
+        workflow_state.refresh_from_db()
+        self.assertEqual(workflow_state.status, workflow_state.STATUS_IN_PROGRESS)
+
     def test_before_edit_page__prevents_schedule_mechanism_when_in_bundle(self):
         """Test that users cannot set individual page publishing schedule while in a bundle."""
         self.client.force_login(self.publishing_admin)
@@ -416,15 +435,15 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         self.client.force_login(self.publishing_officer)
         mark_page_as_ready_for_review(self.page, self.publishing_officer)
 
-        # check task actions
+        # self-approver should see no task actions at all
         self.assertEqual(
             self.page.current_workflow_task.get_actions(self.page, self.publishing_officer),
-            [("reject", "Request changes", True)],
+            [],
         )
 
         # check the dashboard
         response = self.client.get(self.dashboard_url)
-        self.assertContains(response, "Request changes")
+        self.assertNotContains(response, "Request changes")
         self.assertNotContains(response, "Approve")
         self.assertNotContains(response, "Approve with comment")
 
@@ -432,10 +451,10 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
 
-        self.assertEqual(len(menu_items), 2)
+        self.assertEqual(len(menu_items), 1)
 
         self.assertItemWithPropertyIn("name", "action-cancel-workflow", menu_items)
-        self.assertItemWithPropertyIn("name", "reject", menu_items)
+        self.assertItemWithPropertyNotIn("name", "reject", menu_items)
         self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
         self.assertItemWithPropertyNotIn("name", "approve", menu_items)
 
