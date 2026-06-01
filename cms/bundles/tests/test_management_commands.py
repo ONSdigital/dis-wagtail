@@ -73,8 +73,8 @@ class PublishBundlesCommandTestCase(TestCase):
         )
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_publish_bundle(self, mock_notify_end, mock_notify_start):
         """Test publishing a bundle."""
         # Sanity checks
@@ -114,8 +114,8 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 3)
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_publish_bundle_with_page_in_workflow(self, mock_notify_end, mock_notify_start):
         """Test publishing a bundle."""
         # Sanity checks
@@ -152,6 +152,15 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertEqual(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
         self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 0)
         self.assertTrue(PageLogEntry.objects.filter(action="wagtail.publish", page=self.statistical_article).exists())
+
+    def test_publish_bundle_with_only_datasets(self):
+        """Test publishing a bundle that only contains datasets and no pages publishes succesfully."""
+        DatasetFactory()
+        BundleDatasetFactory(parent=self.bundle)
+        self.call_command()
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
 
     def test_publish_bundle_with_release_calendar(self):
         """Test publishing a bundle with an associated release calendar page."""
@@ -223,7 +232,7 @@ class PublishBundlesCommandTestCase(TestCase):
 
     @patch("cms.bundles.utils.logger")
     def test_publish_bundle_with_no_successful_page_publishes(self, mock_utils_logger):
-        """Test that the bundle status is not updated if no pages were successfully published."""
+        """Test that the bundle status is updated to FAILED if no pages were successfully published."""
         # Create a page that will fail to publish (no revisions)
         page_with_no_revisions = StatisticalArticlePageFactory(live=False)
         page_with_no_revisions.revisions.all().delete()
@@ -232,9 +241,9 @@ class PublishBundlesCommandTestCase(TestCase):
 
         self.call_command()
 
-        # Check bundle status wasn't changed
+        # Check bundle status was updated to FAILED
         self.bundle.refresh_from_db()
-        self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
+        self.assertEqual(self.bundle.status, BundleStatus.FAILED)
 
         # Check error was logged in utils
         mock_utils_logger.error.assert_any_call(
@@ -291,7 +300,7 @@ class PublishBundlesCommandTestCase(TestCase):
 
         # Mock an error during publication
         with patch(
-            "cms.bundles.notifications.slack.notify_slack_of_publication_start",
+            "cms.bundles.utils.notify_slack_of_publication_start",
             side_effect=Exception("Test error"),
         ):
             self.call_command()
@@ -307,8 +316,8 @@ class PublishBundlesCommandTestCase(TestCase):
 
     @override_settings(WAGTAILADMIN_BASE_URL="https://test.ons.gov.uk")
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_publish_bundle_with_base_url(self, mock_notify_end, mock_notify_start):
         """Test publishing with a configured base URL."""
         self.call_command()
