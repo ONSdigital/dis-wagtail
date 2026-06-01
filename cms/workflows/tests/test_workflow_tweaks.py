@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth.models import Group
+from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -457,6 +458,18 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         self.assertItemWithPropertyNotIn("name", "reject", menu_items)
         self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
         self.assertItemWithPropertyNotIn("name", "approve", menu_items)
+
+    def test_reject_action__sends_email_notification_to_submitter(self):
+        """Rejection email is sent to the page submitter when a different user requests changes."""
+        workflow_state = mark_page_as_ready_for_review(self.page, self.publishing_officer)
+        mail.outbox = []
+
+        task_state = workflow_state.current_task_state
+        task_state.task.on_action(task_state, user=self.publishing_admin, action_name="reject")
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(self.publishing_officer.email, mail.outbox[0].to)
+        self.assertIn("rejected", mail.outbox[0].subject)
 
     def test_ready_to_publish_task__get_actions__user_can_publish__non_bundle_page(self):
         non_bundle_page = StatisticalArticlePageFactory()
