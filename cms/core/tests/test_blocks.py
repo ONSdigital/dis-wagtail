@@ -1006,6 +1006,27 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertTrue(any("Footnotes" in tag.get_text() for tag in h3_tags))
         self.assertTrue(any("Download this table" in tag.get_text() for tag in h3_tags))
 
+    def test_value_from_form_normalises_nbsp(self):
+        """Test that &nbsp; and unicode non-breaking spaces are normalised to regular spaces on save."""
+        block = ONSTableBlock()
+        # Simulate submitting HTML with &nbsp; in cell content
+        html = (
+            "<table><thead><tr><th>header&nbsp;cell</th></tr></thead>"
+            "<tbody><tr><td>row\u00a0cell</td></tr></tbody></table>"
+        )
+        data_block = block.child_blocks["data"]
+        result = data_block.value_from_form(html)
+
+        header_value = result["headers"][0][0]["value"]
+        row_value = result["rows"][0][0]["value"]
+
+        self.assertNotIn("&nbsp;", header_value)
+        self.assertNotIn("\u00a0", header_value)
+        self.assertNotIn("&nbsp;", row_value)
+        self.assertNotIn("\u00a0", row_value)
+        self.assertEqual(header_value, "header cell")
+        self.assertEqual(row_value, "row cell")
+
     def test_ons_table_block_download_config_missing_without_page(self):
         """Test that download is empty when page is missing from context."""
         context = {

@@ -7,7 +7,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
-from wagtail_tinytableblock.blocks import TinyTableBlock
+from wagtail_tinytableblock.blocks import TinyTableBlock, TinyTableFieldBlock
 
 from cms.core.utils import strip_unwanted_control_chars_from_json
 from cms.data_downloads.utils import flatten_table_data
@@ -127,6 +127,17 @@ class BasicTableBlock(WagtailTableBlock):
         return rendered
 
 
+class NormalisingTinyTableFieldBlock(TinyTableFieldBlock):
+    """A TinyTableFieldBlock that normalises non-breaking spaces before parsing."""
+
+    @staticmethod
+    def _normalise_html(value: str) -> str:
+        return value.replace("\u00a0", " ").replace("&nbsp;", " ")
+
+    def value_from_form(self, value: str) -> dict:
+        return super().value_from_form(self._normalise_html(value))
+
+
 class ONSTableBlock(TinyTableBlock):
     """The ONS table block."""
 
@@ -134,11 +145,32 @@ class ONSTableBlock(TinyTableBlock):
     footnotes = blocks.RichTextBlock(label="Footnotes", features=settings.RICH_TEXT_BASIC, required=False)
 
     def __init__(
-        self, *, local_blocks: list[blocks.Block] | None = None, search_index: bool = True, **kwargs: Any
+        self,
+        *,
+        local_blocks: list[blocks.Block] | None = None,
+        search_index: bool = True,
+        allow_links: bool = False,
+        enable_context_menu: bool = False,
+        **kwargs: Any,
     ) -> None:
-        super().__init__(local_blocks=local_blocks, search_index=search_index, **kwargs)
+        super().__init__(
+            local_blocks=local_blocks,
+            search_index=search_index,
+            allow_links=allow_links,
+            enable_context_menu=enable_context_menu,
+            **kwargs,
+        )
         # relabeled to match the publishing team's terminology
         self.child_blocks["caption"].label = "Sub-heading"
+        # replace the data block with our normalising subclass, forwarding the
+        # same kwargs that TinyTableBlock passes to TinyTableFieldBlock
+        normalising_data_block = NormalisingTinyTableFieldBlock(
+            required=False,
+            allow_links=allow_links,
+            enable_context_menu=enable_context_menu,
+        )
+        normalising_data_block.set_name("data")
+        self.child_blocks["data"] = normalising_data_block
 
     def _align_to_ons_classname(self, alignment: str) -> str:
         match alignment:
