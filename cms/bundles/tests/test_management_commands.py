@@ -154,6 +154,7 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertTrue(PageLogEntry.objects.filter(action="wagtail.publish", page=self.statistical_article).exists())
 
     def test_publish_bundle_with_only_datasets(self):
+        """Test publishing a bundle that only contains datasets and no pages publishes succesfully."""
         DatasetFactory()
         BundleDatasetFactory(parent=self.bundle)
         self.call_command()
