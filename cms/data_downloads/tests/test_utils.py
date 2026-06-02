@@ -305,6 +305,12 @@ class CleanCellValueTestCase(SimpleTestCase):
         self.assertEqual(clean_cell_value("  hello  "), "hello")
         self.assertEqual(clean_cell_value("\t\ntext\n\t"), "text")
 
+    def test_strips_non_breaking_spaces(self):
+        """Test that non-breaking spaces are replaced with regular spaces and stripped."""
+        self.assertEqual(clean_cell_value("\u00a0\u00a0hello\u00a0"), "hello")
+        self.assertEqual(clean_cell_value("&nbsp;text&nbsp;"), "text")
+        self.assertEqual(clean_cell_value("hello&nbsp;world"), "hello world")
+
     def test_converts_br_tags_to_newlines(self):
         """Test that <br> tag variations are converted to newlines."""
         self.assertEqual(clean_cell_value("line1<br/>line2"), "line1\nline2")
