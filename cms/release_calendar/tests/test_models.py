@@ -576,7 +576,13 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
 
         response = self.client.get(self.page.url)
 
-        self.assertContains(response, "<p>Cancelled due to unforeseen circumstances</p>", html=True)
+        self.assertContains(
+            response,
+            '<div class="ons-panel__body">'
+            '<div class="rich-text"><p>Cancelled due to unforeseen circumstances</p></div>'
+            "</div>",
+            html=True,
+        )
 
     def test_release_date_text_overrides_release_datetime(self):
         """Check that if both release date and release date text are present,
