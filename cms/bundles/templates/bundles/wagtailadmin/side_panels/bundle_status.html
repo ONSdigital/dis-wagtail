@@ -8,6 +8,9 @@ models using DraftStateMixin.
 {% endcomment %}
 
 {% block content %}
+    {% if last_updated_info %}
+        {% timesince_last_update last_updated_info.timestamp user_display_name=last_updated_info.user_display_name use_shorthand=True as help_text %}
+    {% endif %}
     {% if object.pk %}
         {% with title=object.get_status_display screen_reader_title_prefix="Status: " %}
             {% if object.live %}
