@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -135,7 +135,8 @@ class NormalisingTinyTableFieldBlock(TinyTableFieldBlock):
         return value.replace("\u00a0", " ").replace("&nbsp;", " ")
 
     def value_from_form(self, value: str) -> dict:
-        return super().value_from_form(self._normalise_html(value))
+        # mypy doesn't correctly read the type from the imported TinyTableFieldBlock method so explicitly cast
+        return cast(dict, super().value_from_form(self._normalise_html(value)))
 
 
 class ONSTableBlock(TinyTableBlock):
