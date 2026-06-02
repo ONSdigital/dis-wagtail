@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, ClassVar, Self, cast
 from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpRequest
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -142,6 +143,11 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         # Use the release_date field if available, otherwise return last_published_at.
         return getattr(self, "release_date", self.last_published_at)
 
+    @property
+    def breadcrumb_title(self) -> str:
+        # Override in subclasses where the breadcrumb label should differ from the page title.
+        return str(self.title)
+
     def get_breadcrumbs(self, request: HttpRequest) -> list[dict[str, object]]:
         """Returns the breadcrumbs for the page as a list of dictionaries compatible with the ONS design system
         breadcrumbs component.
@@ -159,7 +165,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
                 breadcrumbs.append({"url": ancestor_page.get_full_url(request=request), "text": ancestor_page.title})
         if getattr(request, "is_for_subpage", False):
-            breadcrumbs.append({"url": self.get_full_url(request=request), "text": self.title})
+            breadcrumbs.append({"url": self.get_full_url(request=request), "text": self.breadcrumb_title})
         self._breadcrumbs = breadcrumbs  # pylint: disable=attribute-defined-outside-init
         return breadcrumbs
 
@@ -324,6 +330,14 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             cache_object._wagtail_cached_site_root_paths = paths  # type: ignore[union-attr]
             # pylint: enable=protected-access,attribute-defined-outside-init
             return paths
+
+    @property
+    def full_edit_url(self) -> str | None:
+        """Returns the absolute URL for the page edit view, or an empty string if the page is not saved yet."""
+        if not self.pk:
+            return ""
+
+        return f"{settings.WAGTAILADMIN_BASE_URL}{reverse('wagtailadmin_pages:edit', args=[self.pk])}"
 
     def _log_preview(self, request: HttpRequest, mode_name: str) -> None:
         """Log when a user previews a page in a specific preview mode."""
