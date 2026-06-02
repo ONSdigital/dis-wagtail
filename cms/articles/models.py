@@ -556,9 +556,14 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         previous_figure_ids = {figure.value["figure_id"] for figure in previous_to_latest_figures}
         return figures_in_use - previous_figure_ids
 
+    @property
+    def breadcrumb_title(self) -> str:
+        # The series page is excluded from breadcrumbs, so include it here for context.
+        return self.get_full_display_title()
+
     @cached_property
     def related_data_display_title(self) -> str:
-        return _("All data related to %(article_title)s") % {"article_title": self.title}
+        return _("All data related to %(article_title)s") % {"article_title": self.get_full_display_title()}
 
     @cached_property
     def dataset_document_list(self) -> list[dict[str, Any]]:
@@ -710,23 +715,32 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
     @path("versions/<int:version>/")
     def previous_version(self, request: HttpRequest, version: int, **kwargs: Any) -> TemplateResponse | HttpResponse:
-        if version <= 0 or not self.corrections:
+        if version <= 0:
             raise Http404
 
+        chart_id = kwargs.pop("chart_id", None)
+        table_id = kwargs.pop("table_id", None)
+
+        is_requesting_download = bool(chart_id or table_id)
+
+        if not self.corrections or self.alias_of_id:
+            if is_requesting_download:
+                raise Http404
+            return redirect(self.get_url(request))
+
         # Find correction by version
-        for correction in self.corrections:
+        for correction in self.corrections:  # pylint: disable=not-an-iterable
             if correction.value["version_id"] == version:
                 break
         else:
-            raise Http404
+            if is_requesting_download:
+                raise Http404
+            return redirect(self.get_url(request))
 
         # NB: Little validation is done on previous_version, as it's assumed handled on save
         revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])
 
         page = revision.as_object()
-
-        chart_id = kwargs.pop("chart_id", None)
-        table_id = kwargs.pop("table_id", None)
 
         if chart_id:
             download_response: HttpResponse = page.download_chart(request, chart_id)

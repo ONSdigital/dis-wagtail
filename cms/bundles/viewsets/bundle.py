@@ -24,7 +24,7 @@ from wagtail.log_actions import log
 from cms.bundles.action_menu import BundleActionMenu
 from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError, BundleAPIClientError404
 from cms.bundles.decorators import datasets_bundle_api_enabled
-from cms.bundles.enums import BundleContentItemState, BundleStatus
+from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleContentItemState, BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import (
     notify_slack_of_status_change,
@@ -135,7 +135,7 @@ class BundleEditView(EditView):
     start_time: float | None = None
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
-        if (instance := self.get_object()) and instance.status == BundleStatus.PUBLISHED:
+        if (instance := self.get_object()) and instance.status in PUBLISHED_BUNDLE_STATUSES:
             return redirect(self.index_url_name, preserve_request=False)
 
         if request.method == "POST" and self.get_action(request) not in self.get_available_actions():
@@ -360,7 +360,7 @@ class BundleInspectView(InspectView):
     def get_field_label(self, field_name: str, field: Field) -> str:
         match field_name:
             case "approved":
-                label = "Approval status"
+                label = "Approved by"
             case "scheduled_publication":
                 label = "Scheduled publication"
             case "pages":
@@ -384,7 +384,7 @@ class BundleInspectView(InspectView):
         return ons_date_format(self.object.approved_at, settings.DATETIME_FORMAT) if self.object.approved_at else ""
 
     def get_approved_display_value(self) -> str:
-        """Custom approved by formatting. Varies based on status, and approver/time of approval."""
+        """Custom approved by formatting. Varies based on status and approver/time of approval."""
         if self.object.status in [BundleStatus.APPROVED, BundleStatus.PUBLISHED]:
             if self.object.approved_by_id and self.object.approved_at:
                 return (
@@ -745,7 +745,7 @@ class BundleIndexView(IndexView):
     def filter_queryset(self, queryset: BundlesQuerySet) -> BundlesQuerySet:
         # automatically filter out published bundles if the status filter is not applied
         if not self.request.GET.get("status"):
-            queryset = queryset.exclude(status=BundleStatus.PUBLISHED)
+            queryset = queryset.exclude(status__in=PUBLISHED_BUNDLE_STATUSES)
 
         return cast("BundlesQuerySet", super().filter_queryset(queryset))
 
@@ -765,10 +765,10 @@ class BundleIndexView(IndexView):
 
     def get_edit_url(self, instance: Bundle) -> str | None:
         """Override the default edit url to disable the edit URL for released bundles."""
-        if instance.status != BundleStatus.PUBLISHED:
-            edit_url: str | None = super().get_edit_url(instance)
-            return edit_url
-        return None
+        if instance.status in PUBLISHED_BUNDLE_STATUSES:
+            return None
+        edit_url: str | None = super().get_edit_url(instance)
+        return edit_url
 
     def get_copy_url(self, instance: Bundle) -> str | None:
         """Disables the bundle copy."""
