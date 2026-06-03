@@ -298,6 +298,28 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
         # Ref: https://api.highcharts.com/highcharts/xAxis.title
         self.assertNotIn("title", config["xAxis"])
 
+    def test_column_chart_category_axis_tick_interval_supported(self):
+        self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.COLUMN
+        self.raw_data["x_axis"]["tick_interval_mobile"] = 5
+        self.raw_data["x_axis"]["tick_interval_desktop"] = 6
+        try:
+            self.block.clean(self.get_value())
+        except ValidationError:
+            self.fail("Expected no ValidationError for column chart category axis tick interval")
+
+    def test_bar_chart_category_axis_tick_interval_not_supported(self):
+        self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.BAR
+        self.raw_data["x_axis"]["tick_interval_mobile"] = 5
+        self.raw_data["x_axis"]["tick_interval_desktop"] = 6
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+        for field_name in ("tick_interval_mobile", "tick_interval_desktop"):
+            with self.subTest(field_name=field_name):
+                self.assertEqual(
+                    BarColumnConfidenceIntervalChartBlock.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TICK_INTERVAL,
+                    cm.exception.block_errors["x_axis"].block_errors[field_name].code,
+                )
+
     def test_editable_y_axis_title(self):
         for chart_type in BarColumnConfidenceIntervalChartTypeChoices.values:
             with self.subTest(chart_type=chart_type):
