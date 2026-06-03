@@ -853,14 +853,14 @@ django = ">=4.2"
 
 [[package]]
 name = "django"
-version = "6.0.4"
+version = "6.0.5"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 optional = false
 python-versions = ">=3.12"
 groups = ["main", "dev"]
 files = [
-    {file = "django-6.0.4-py3-none-any.whl", hash = "sha256:14359c809fc16e8f81fd2b59d7d348e4d2d799da6840b10522b6edf7b8afc1da"},
-    {file = "django-6.0.4.tar.gz", hash = "sha256:8cfa2572b3f2768b2e84983cf3c4811877a01edb64e817986ec5d60751c113ac"},
+    {file = "django-6.0.5-py3-none-any.whl", hash = "sha256:9d58a7cb49244e74c8e161d5e403a46d6209f1009ba40f5a66d6aa0d0786a8f0"},
+    {file = "django-6.0.5.tar.gz", hash = "sha256:bc6d6872e98a2864c836e42edd644b362db311147dd5aa8d5b82ba7a032f5269"},
 ]
 
 [package.dependencies]
@@ -1632,18 +1632,18 @@ export = ["jinja2 (>=3.1.2,<4)"]
 
 [[package]]
 name = "idna"
-version = "3.11"
+version = "3.15"
 description = "Internationalized Domain Names in Applications (IDNA)"
 optional = false
 python-versions = ">=3.8"
 groups = ["main", "dev"]
 files = [
-    {file = "idna-3.11-py3-none-any.whl", hash = "sha256:771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea"},
-    {file = "idna-3.11.tar.gz", hash = "sha256:795dafcc9c04ed0c1fb032c2aa73654d8e8c5023a7df64a53f39190ada629902"},
+    {file = "idna-3.15-py3-none-any.whl", hash = "sha256:048adeaf8c2d788c40fee287673ccaa74c24ffd8dcf09ffa555a2fbb59f10ac8"},
+    {file = "idna-3.15.tar.gz", hash = "sha256:ca962446ea538f7092a95e057da437618e886f4d349216d2b1e294abfdb65fdc"},
 ]
 
 [package.extras]
-all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
+all = ["mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
 
 [[package]]
 name = "isort"
@@ -2888,21 +2888,18 @@ windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "pyjwt"
-version = "2.12.1"
+version = "2.13.0"
 description = "JSON Web Token implementation in Python"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "pyjwt-2.12.1-py3-none-any.whl", hash = "sha256:28ca37c070cad8ba8cd9790cd940535d40274d22f80ab87f3ac6a713e6e8454c"},
-    {file = "pyjwt-2.12.1.tar.gz", hash = "sha256:c74a7a2adf861c04d002db713dd85f84beb242228e671280bf709d765b03672b"},
+    {file = "pyjwt-2.13.0-py3-none-any.whl", hash = "sha256:66adcc2aff09b3f1bbd95fc1e1577df8ac8723c978552fd43304c8a290ac5728"},
+    {file = "pyjwt-2.13.0.tar.gz", hash = "sha256:41571c89ca91598c79e8ef18a2d07367d4810fbbd6f637794879baf1b7703423"},
 ]
 
 [package.extras]
 crypto = ["cryptography (>=3.4.0)"]
-dev = ["coverage[toml] (==7.10.7)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=8.4.2,<9.0.0)", "sphinx", "sphinx-rtd-theme", "zope.interface"]
-docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
-tests = ["coverage[toml] (==7.10.7)", "pytest (>=8.4.2,<9.0.0)"]
 
 [[package]]
 name = "pylint"
@@ -3607,14 +3604,14 @@ devenv = ["check-manifest", "pytest (>=4.3)", "pytest-cov", "pytest-mock (>=3.3)
 
 [[package]]
 name = "urllib3"
-version = "2.6.3"
+version = "2.7.0"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main", "dev"]
 files = [
-    {file = "urllib3-2.6.3-py3-none-any.whl", hash = "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4"},
-    {file = "urllib3-2.6.3.tar.gz", hash = "sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed"},
+    {file = "urllib3-2.7.0-py3-none-any.whl", hash = "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897"},
+    {file = "urllib3-2.7.0.tar.gz", hash = "sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c"},
 ]
 
 [package.extras]
@@ -3667,14 +3664,14 @@ dev = ["black", "pytest"]
 
 [[package]]
 name = "wagtail"
-version = "7.3.1"
+version = "7.3.2"
 description = "A Django content management system."
 optional = false
 python-versions = ">=3.10"
 groups = ["main", "dev"]
 files = [
-    {file = "wagtail-7.3.1-py3-none-any.whl", hash = "sha256:eab131e15ab9edc7ed24143d44271e92af79239e105bc3e173d26c95d2b489b3"},
-    {file = "wagtail-7.3.1.tar.gz", hash = "sha256:2ce131d9a4e7d55fdb5b592d320a758a189174b2cc3966b70a34a1b3dc56f449"},
+    {file = "wagtail-7.3.2-py3-none-any.whl", hash = "sha256:cf19b5c6df2f36781f73b311b6f690250da7da1e2f8bc6bf8dff83483980b91a"},
+    {file = "wagtail-7.3.2.tar.gz", hash = "sha256:d7114887402d878860b5427697e8ab47832198bc1aaf1467e2ac1f182cb13860"},
 ]
 
 [package.dependencies]
@@ -3756,14 +3753,14 @@ testing = ["jinja2 (>=2.10,<4.0)", "markupsafe (==2.1.5)"]
 
 [[package]]
 name = "wagtail-tinytableblock"
-version = "0.4.1"
+version = "0.4.5"
 description = "A Wagtail StreamField block powered by TinyMCE and its table plugin"
 optional = false
 python-versions = ">=3.12"
 groups = ["main"]
 files = [
-    {file = "wagtail_tinytableblock-0.4.1-py3-none-any.whl", hash = "sha256:bf0a4e0bb6fd6258a1b7259945f279cdd11605447fb773daba008e2107dcfef0"},
-    {file = "wagtail_tinytableblock-0.4.1.tar.gz", hash = "sha256:dc301368d2acc6cf1ed42ee356d4faf783138a1aefd4a0c8da1219672bee51c6"},
+    {file = "wagtail_tinytableblock-0.4.5-py3-none-any.whl", hash = "sha256:a13d57c44e4b2a204172a683ca6e0e4ef5f5185b2cae97a1d0aad526b00b30f8"},
+    {file = "wagtail_tinytableblock-0.4.5.tar.gz", hash = "sha256:d7fd2c73f373a69b957c9c5197eaaee6f761293055ff7761b76d797bc67e6535"},
 ]
 
 [package.dependencies]
@@ -3897,4 +3894,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "a1683b19df58218c624f75cdc5f1618d9ca6b6d2a0222381d95e207d3b990b36"
+content-hash = "f625f17ce8ae5e30d77c649f159e0b5245d54ba5ddce1133cd6a84cf3b333a07"

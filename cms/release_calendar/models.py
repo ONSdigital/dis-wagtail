@@ -21,6 +21,8 @@ from cms.core.utils import redirect
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
+from cms.release_calendar.permission_testers import ReleaseCalendarPagePermissionTester
+from cms.users.models import User
 
 from .blocks import (
     ReleaseCalendarChangesStoryBlock,
@@ -197,6 +199,9 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     ]
 
     _analytics_content_type: ClassVar[str] = "release-calendars"  # TODO agree in spec
+
+    def permissions_for_user(self, user: User) -> ReleaseCalendarPagePermissionTester:
+        return ReleaseCalendarPagePermissionTester(user, self)
 
     def get_template(self, request: HttpRequest, *args: Any, **kwargs: Any) -> str:
         """Select the correct template based on status."""

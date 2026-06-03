@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticlesIndexPageFactory, StatisticalArticlePageFactory
@@ -75,6 +78,22 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
             self.assertContains(response, bundle.status.label)
         self.assertNotContains(response, self.published_bundle.status.label)
 
+    def test_latest_bundles_panel_ordering(self):
+        """Checks that the latest bundles dashboard panel orders bundles by updated_at descending."""
+        old_bundle = BundleFactory(
+            name="3 Day Old Bundle", created_by=self.superuser, updated_at=timezone.now() - timedelta(days=3)
+        )
+        new_bundle = BundleFactory(name="New Bundle", created_by=self.superuser, updated_at=timezone.now())
+
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(self.dashboard_url)
+
+        panels = response.context["panels"]
+        self.assertIsInstance(panels[0], LatestBundlesPanel)
+        bundles = panels[0].get_context_data()["bundles"]
+        self.assertEqual(bundles[0], new_bundle)
+        self.assertEqual(bundles[1], old_bundle)
+
     def test_bundle_to_preview_panel_is_shown(self):
         cases = [
             (self.generic_user, 0),
@@ -119,6 +138,27 @@ class WagtailHooksTestCase(WagtailTestUtils, TestCase):
 
         self.assertNotContains(response, self.draft_bundle.name)
         self.assertNotContains(response, self.published_bundle.name)
+
+    def test_bundles_to_preview_panel_ordering(self):
+        """Checks that the bundles preview dashboard panel orders bundles by updated_at descending."""
+        old_bundle = BundleFactory(
+            in_review=True,
+            name="3 Day Old Bundle",
+            created_by=self.superuser,
+            updated_at=timezone.now() - timedelta(days=3),
+        )
+        new_bundle = BundleFactory(
+            in_review=True, name="New Bundle", created_by=self.superuser, updated_at=timezone.now()
+        )
+
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(self.dashboard_url)
+
+        panels = response.context["panels"]
+        self.assertIsInstance(panels[1], BundlesInReviewPanel)
+        bundles = panels[1].get_context_data()["bundles"]
+        self.assertEqual(bundles[0], new_bundle)
+        self.assertEqual(bundles[1], old_bundle)
 
     def test_bundles_in_preview_more_link_rendered(self):
         BundleFactory.create_batch(10, approved=True)  # + self.in_review_bundle

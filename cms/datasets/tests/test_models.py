@@ -21,6 +21,18 @@ class TestONSDatasetApiQuerySet(TestCase):
         self.assertEqual(api_queryset.count(), 2)
 
     @responses.activate
+    def test_count_handles_zero_total_count(self):
+        """A `total_count` of 0 must still be propagated to `count`. Otherwise queryish
+        receives no count field and pagination errors with a 500 on empty result sets
+        (e.g. the bundle chooser when no unpublished datasets exist).
+        """
+        responses.add(responses.GET, settings.DATASETS_API_EDITIONS_URL, json={"total_count": 0, "items": []})
+        api_queryset = ONSDatasetApiQuerySet()
+        api_queryset.base_url = settings.DATASETS_API_EDITIONS_URL
+        api_queryset.pagination_style = "offset-limit"
+        self.assertEqual(api_queryset.count(), 0)
+
+    @responses.activate
     def test_count_defaults_to_item_count(self):
         responses.add(
             responses.GET,

@@ -247,18 +247,6 @@ def the_user_can_lock_and_unlock_a_page(context: Context) -> None:
     expect(context.page.get_by_text(RE_UNLOCKED)).to_be_visible()
 
 
-@step("the user can bulk delete the topic page and its children")
-def the_user_can_bulk_delete_a_theme_page_and_its_children(context: Context) -> None:
-    context.page.get_by_role("button", name="Pages").click()
-    context.page.get_by_role("link", name="Home English", exact=True).click()
-    context.page.get_by_role("button", name=f"More options for '{context.topic_page.title}'").click()
-    context.page.get_by_role("link", name="Delete").click()
-    expect(context.page.get_by_role("link", name="This topic page is referenced")).to_be_visible()
-    expect(context.page.get_by_text("Are you sure you want to")).to_be_visible()
-    context.page.get_by_role("button", name="Yes, delete it").click()
-    expect(context.page.get_by_text(f"Page '{context.topic_page.title}' deleted.")).to_be_visible()
-
-
 @when('the user clicks "Save" to save the Snippet')
 def user_saves_in_navigation_settings(context: Context) -> None:
     context.page.get_by_role("button", name="Save").click()

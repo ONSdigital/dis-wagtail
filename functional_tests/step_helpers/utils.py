@@ -1,11 +1,18 @@
 from typing import TYPE_CHECKING
 
+from django.conf import settings
 from django.utils import timezone
+
+from cms.bundles.enums import BundleStatus
+from cms.core.custom_date_format import ons_date_format
 
 if TYPE_CHECKING:
     from behave.runner import Context
+    from playwright.sync_api import Locator
+    from playwright.sync_api import Page as PlaywrightPage
     from wagtail.models import Page
 
+    from cms.bundles.models import Bundle
     from cms.taxonomy.models import Topic
     from cms.users.models import User
 
@@ -74,3 +81,30 @@ def lock_page(the_page: Page, user: User) -> None:
     the_page.locked_by = user
     the_page.locked_at = timezone.now()
     the_page.save()
+
+
+def get_bundle_approval_status(bundle: Bundle) -> str:
+    if bundle.status in [BundleStatus.APPROVED, BundleStatus.PUBLISHED]:
+        if bundle.approved_by_id and bundle.approved_at:
+            return f"{bundle.approved_by} on {ons_date_format(bundle.approved_at, settings.DATETIME_FORMAT)}"
+
+        return "Unknown approval data"
+
+    return "Pending approval"
+
+
+def dl_to_dict(source: PlaywrightPage | Locator, selector: str = "dl") -> dict[str, str]:
+    """Extracts a dl element into a {dt: dd} dictionary.
+
+    Uses eval to reduce number of browser api calls necessary to get full list.
+    """
+    return source.locator(selector).evaluate("""dl => {
+        const result = {};
+        dl.querySelectorAll('dt').forEach(dt => {
+            const dd = dt.nextElementSibling;
+            if (dd?.tagName === 'DD') {
+                result[dt.textContent.trim()] = dd.textContent.trim();
+            }
+        });
+        return result;
+    }""")
