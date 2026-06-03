@@ -2,7 +2,7 @@ from __future__ import annotations  # needed for unquoted forward references bec
 
 import logging
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django import forms
 from django.conf import settings
@@ -308,6 +308,9 @@ class DatasetChosenMultipleView(DatasetChosenMultipleViewMixin, ChosenResponseMi
 class DatasetChooserViewSet(ChooserViewSet):
     model = Dataset
     icon = "tag"
+    # Carry `for_bundle=true` through search/pagination URLs so the bundle chooser
+    # keeps forcing published=false instead of falling back to the form default.
+    preserve_url_parameters: ClassVar[list[str]] = [*ChooserViewSet.preserve_url_parameters, "for_bundle"]
     choose_one_text = "Choose a dataset"
     choose_another_text = "Choose another dataset"
     choose_view_class = DatasetChooseView

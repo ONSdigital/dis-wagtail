@@ -82,6 +82,8 @@ XFF_STRICT = False
 # turn on the real Wagtail login form
 WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = True
 
+# Don't send slack notifications from tests if env vars are set
+SLACK_NOTIFICATIONS_WEBHOOK_URL = None
 
 # Setting dummy environment variables for credentials and region in our test setup for the S3 storage tests.
 AWS_STORAGE_BUCKET_NAME = "test-bucket"
@@ -110,6 +112,7 @@ URL_CONFIG_SETTINGS = {
     "AWS_COGNITO_TEAM_SYNC_ENABLED",
     "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED",
     "WAGTAILADMIN_HOME_PATH",
+    "WAGTAILADMIN_LOGIN_URL",
 }
 
 

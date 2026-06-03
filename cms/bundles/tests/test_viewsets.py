@@ -21,7 +21,7 @@ from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.clients.api import BundleAPIClientError
-from cms.bundles.enums import BundleStatus
+from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
@@ -43,14 +43,6 @@ from cms.workflows.tests.utils import (
     mark_page_as_ready_to_publish,
     progress_page_workflow,
 )
-
-# TODO: remove when Wagtail updates to django-tasks >= 0.11
-TASKS_ENQUEUE_ON_COMMIT = {
-    "default": {
-        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
-        "ENQUEUE_ON_COMMIT": False,
-    }
-}
 
 
 class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
@@ -259,8 +251,12 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
     def test_bundle_edit_view__redirects_to_index_for_published_bundles(self):
         """Released bundles should no longer be editable."""
-        response = self.client.get(self.published_bundle_edit_url)
-        self.assertRedirects(response, self.bundle_index_url)
+        for bundle_status in PUBLISHED_BUNDLE_STATUSES:
+            with self.subTest(status=bundle_status):
+                self.published_bundle.status = bundle_status
+                self.published_bundle.save(update_fields=["status"])
+                response = self.client.get(self.published_bundle_edit_url)
+                self.assertRedirects(response, self.bundle_index_url)
 
     def post_with_action_and_test(self, action: str, expected_status: BundleStatus, redirects_to: str):
         self.client.force_login(self.superuser)
@@ -343,8 +339,8 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_bundle_edit_view__manual_publish__happy_path__when_linked_with_past_release_calendar_entry(
         self, mock_notify_end, mock_notify_start
     ):
@@ -373,6 +369,16 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+    def test_bundle_edit_view__manual_publish__sets_approved_by_and_approved_at(self):
+        """Publishing directly should populate approved_by and approved_at."""
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        self.bundle.refresh_from_db()
+        self.assertIsNotNone(self.bundle.approved_at)
+        self.assertIsNotNone(self.bundle.approved_by)
 
     def test_bundle_edit_view__shows_release_calendar_page_details(self):
         """Release calendar page's title, status and release date are displayed when selected in bundles."""
@@ -621,7 +627,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Created by")
         self.assertContains(response, "Scheduled publication")
         self.assertContains(response, "Associated release calendar")
-        self.assertContains(response, "Approval status")
+        self.assertContains(response, "Approved by")
         self.assertContains(response, "Status")
 
     def test_inspect_view__previewers__contains_only_relevant_fields(self):
@@ -634,7 +640,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Created by")
         self.assertContains(response, "Scheduled publication")
         self.assertContains(response, "Associated release calendar")
-        self.assertNotContains(response, "Approval status")
+        self.assertNotContains(response, "Approved by")
         self.assertNotContains(response, "Status")
 
     def test_inspect_view__previewers__contains_only_relevant_pages(self):
@@ -1226,7 +1232,10 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
 
         self.assertContains(response, BundleStatus.DRAFT.label, 2)  # status + status filter
         self.assertContains(response, BundleStatus.APPROVED.label, 3)  # status + status filter + shortcut button
-        self.assertContains(response, BundleStatus.PUBLISHED.label, 1)  # status filter
+        # "\n " is to ensure we only match "Published" not "Partially Published"
+        self.assertContains(response, "\n " + BundleStatus.PUBLISHED.label, 1)  # status filter
+        self.assertContains(response, BundleStatus.PARTIALLY_PUBLISHED.label, 1)  # status filter
+        self.assertContains(response, BundleStatus.FAILED.label, 1)  # status filter
 
         self.assertContains(response, self.approved_bundle.name)
         self.assertContains(response, self.bundle.name)
@@ -1286,14 +1295,14 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
     def test_ordering(self):
         """Checks that the correct ordering is applied."""
         cases = {
-            "": ("name",),
+            "": ("-updated_at",),
             "name": ("name",),
             "-name": ("-name",),
             "scheduled_publication_date": (OrderBy(F("release_date"), descending=False, nulls_last=True),),
             "-scheduled_publication_date": (OrderBy(F("release_date"), descending=True, nulls_last=True),),
             "status": (OrderBy(F("status_label"), descending=False),),
             "-status": (OrderBy(F("status_label"), descending=True),),
-            "invalid_ordering": ("name",),
+            "invalid_ordering": ("-updated_at",),
         }
         for param, order_by in cases.items():
             with self.subTest(param=param):
@@ -1302,6 +1311,33 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
                     response.context_data["object_list"].query.order_by,
                     order_by,
                 )
+
+    def test_index_view_default_bundle_ordering_is_most_recently_updated(self):
+        old_bundle = BundleFactory(name="1 Day Old Bundle", updated_at=timezone.now() - timedelta(days=1))
+        new_bundle = BundleFactory(updated_at=timezone.now())
+        response = self.client.get(self.bundle_index_url)
+
+        self.assertEqual(response.context_data["object_list"][0].id, new_bundle.id)
+        self.assertEqual(response.context_data["object_list"][1].id, old_bundle.id)
+
+        # Ensure the old bundle moves to the top of the list when updated
+        old_bundle.updated_at = timezone.now() + timedelta(days=1)
+        old_bundle.save(update_fields=["updated_at"])
+        response = self.client.get(self.bundle_index_url)
+
+        self.assertEqual(response.context_data["object_list"][0].id, old_bundle.id)
+        self.assertEqual(response.context_data["object_list"][1].id, new_bundle.id)
+
+    def test_published_bundles_excluded_from_index(self):
+        """Checks that published bundles are excluded from the bundle index by default."""
+        for bundle_status in PUBLISHED_BUNDLE_STATUSES:
+            with self.subTest(status=bundle_status):
+                self.published_bundle.status = bundle_status
+                self.published_bundle.save(update_fields=["status"])
+
+                response = self.client.get(self.bundle_index_url)
+                self.assertNotContains(response, self.published_bundle.name)
+                self.assertNotContains(response, self.published_bundle_edit_url)
 
 
 class BundleDeleteTestCase(WagtailTestUtils, TestCase):
@@ -1386,7 +1422,6 @@ class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
 
-    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
     def test_chooser_search(self):
         draft_bundle = BundleFactory(name="Draft")
         chooser_results_url = reverse(bundle_chooser_viewset.get_url_name("choose_results"))

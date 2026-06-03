@@ -823,8 +823,11 @@ WAGTAIL_APPEND_SLASH = False
 if "WAGTAILADMIN_BASE_URL" in env:
     WAGTAILADMIN_BASE_URL = env["WAGTAILADMIN_BASE_URL"]
 
+WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
+DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
+
 # https://docs.wagtail.org/en/latest/reference/settings.html#wagtailadmin-login-url
-WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", "/admin/login/")
+WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", f"/{WAGTAILADMIN_HOME_PATH}login/")
 
 # Custom image model
 # https://docs.wagtail.io/en/stable/advanced_topics/images/custom_image_model.html
@@ -932,6 +935,13 @@ GIT_COMMIT = env.get("GIT_COMMIT") or None
 START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
+SLACK_BOT_TOKEN = env.get("SLACK_BOT_TOKEN")
+SLACK_PUBLISH_LOG_CHANNEL = env.get("SLACK_PUBLISH_LOG_CHANNEL", "")
+SLACK_ALARM_CHANNEL = env.get("SLACK_ALARM_CHANNEL", "")
+
+# Feature flag for sending slack messages on bundle status changes (before pre-publish, e.g. entering review)
+SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE = env.get("SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE", "false").lower() == "true"
+
 
 # API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
@@ -1040,8 +1050,6 @@ ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
 REFRESH_TOKEN_COOKIE_NAME = "refresh_token"  # noqa: S105
 ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
 
-WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
-DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
 SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 5)  # 5 minutes
 
 # note: 30 seconds is a fairly arbitrary value. Long enough to allow for a slow preview generation,

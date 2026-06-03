@@ -966,6 +966,46 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         download_url = result["options"]["download"]["itemsList"][0]["url"]
         self.assertEqual(download_url, "/economy/articles/test-article/download-table/test-block-id")
 
+    def test_additional_sections_heading_level_with_title(self):
+        """Test that footnotes and downloads headings render at h4 when table title is present."""
+        page = StatisticalArticlePageFactory()
+        parent_context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": None,
+        }
+        context = self.block.get_context(self.full_data, parent_context=parent_context)
+        self.assertEqual(context["additional_sections_heading_level"], 4)
+
+        rendered = self.block.render(self.full_data, context=parent_context)
+        soup = BeautifulSoup(rendered, "html.parser")
+        h4_tags = soup.find_all("h4")
+        self.assertTrue(any("Footnotes" in tag.get_text() for tag in h4_tags))
+        self.assertTrue(any("Download this table" in tag.get_text() for tag in h4_tags))
+
+    def test_additional_sections_heading_level_without_title(self):
+        """Test that footnotes and downloads headings render at h3 when table title is not present."""
+        data_without_title = {
+            "caption": "The caption",
+            "source": "https://ons.gov.uk",
+            "footnotes": "footnotes",
+            "data": self.simple_table_data,
+        }
+        page = StatisticalArticlePageFactory()
+        parent_context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": None,
+        }
+        context = self.block.get_context(data_without_title, parent_context=parent_context)
+        self.assertEqual(context["additional_sections_heading_level"], 3)
+
+        rendered = self.block.render(data_without_title, context=parent_context)
+        soup = BeautifulSoup(rendered, "html.parser")
+        h3_tags = soup.find_all("h3")
+        self.assertTrue(any("Footnotes" in tag.get_text() for tag in h3_tags))
+        self.assertTrue(any("Download this table" in tag.get_text() for tag in h3_tags))
+
     def test_ons_table_block_download_config_missing_without_page(self):
         """Test that download is empty when page is missing from context."""
         context = {

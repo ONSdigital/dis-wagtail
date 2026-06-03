@@ -444,18 +444,33 @@ class ReleaseCalendarPageAdminTests(WagtailTestUtils, TestCase):
                 self.assertContains(response, lookup)
 
     def test_delete_redirects_back_to_edit(self):
-        """Test that we get redirected back to edit when trying to delete a release calendar page."""
+        """Test that we get redirected back to edit when trying to delete a previously
+        published release calendar page.
+        """
+        self.release_calendar_page.first_published_at = timezone.now()
+        self.release_calendar_page.save(update_fields=["first_published_at"])
+
         delete_url = reverse("wagtailadmin_pages:delete", args=(self.release_calendar_page.id,))
         response = self.client.post(delete_url, follow=True)
 
         self.assertRedirects(response, self.edit_url)
         self.assertIn(
-            "Release Calendar pages cannot be deleted. You can mark them as cancelled instead.",
+            "Release Calendar pages cannot be deleted when published. You can mark them as cancelled instead.",
             [msg.message.strip() for msg in response.context["messages"]],
         )
 
         response = self.client.get(delete_url, follow=True)
         self.assertRedirects(response, self.edit_url)
+
+    def test_never_published_release_calendar_page_can_be_deleted(self):
+        """A never-published Release Calendar page should reach the normal delete flow."""
+        self.release_calendar_page.first_published_at = None
+        self.release_calendar_page.live = False
+        self.release_calendar_page.save(update_fields=["first_published_at", "live"])
+
+        delete_url = reverse("wagtailadmin_pages:delete", args=(self.release_calendar_page.id,))
+        response = self.client.get(delete_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_add_view_does_not_contain_the_bundle_note_panel(self):
         self.client.force_login(self.superuser)

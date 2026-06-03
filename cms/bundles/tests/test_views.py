@@ -67,7 +67,8 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
 
     def test_dispatch__returns_404_for_non_bundleable_page(self):
         """Only pages with BundledPageMixin can be added to a bundle."""
-        url = reverse("bundles:add_to_bundle", args=[self.statistical_article_page.get_parent().id])
+        articles_index_page = self.statistical_article_page.get_parent().get_parent()
+        url = reverse("bundles:add_to_bundle", args=[articles_index_page.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 

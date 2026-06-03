@@ -432,9 +432,8 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
 
-        self.assertEqual(len(menu_items), 3)
+        self.assertEqual(len(menu_items), 2)
 
-        self.assertItemWithPropertyIn("name", "action-unpublish", menu_items)
         self.assertItemWithPropertyIn("name", "action-cancel-workflow", menu_items)
         self.assertItemWithPropertyIn("name", "reject", menu_items)
         self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)

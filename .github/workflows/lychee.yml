@@ -5,13 +5,16 @@ name: Lychee
 # Pull Requests to main
 on: # yamllint disable-line rule:truthy
   push:
-    branches: [main]
+    branches: [main, 'release/v*']
   pull_request:
-    branches: [main]
+    branches: [main, 'release/v*']
 
 concurrency:
   group: '${{ github.head_ref || github.ref }}-${{ github.workflow }}'
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   lychee:
@@ -19,12 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          persist-credentials: 'false'
       - name: Link Checker
         id: lychee
-        uses: lycheeverse/lychee-action@v2.8.0
+        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2.8.0
         with:
           format: 'detailed'
           args: '.'

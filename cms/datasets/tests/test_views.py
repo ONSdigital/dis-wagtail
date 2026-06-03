@@ -8,6 +8,8 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.db import DEFAULT_DB_ALIAS
 from django.test import RequestFactory, TestCase
+from django.urls import reverse
+from wagtail.test.utils import WagtailTestUtils
 
 from cms.datasets.views import (
     DatasetChooserPermissionMixin,
@@ -294,6 +296,42 @@ class TestONSDatasetBaseChooseView(TestCase):
         mock_logger.info.assert_called_once_with(
             "Unpublished datasets requested", extra={"username": self.user.username}
         )
+
+
+class TestDatasetChooserForBundleURLPreservation(WagtailTestUtils, TestCase):
+    """Verify the bundle dataset chooser preserves `for_bundle=true` across search/pagination,
+    so the chooser keeps forcing published=false instead of falling back to the form default.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.chooser_url = reverse("dataset_chooser:choose")
+
+    def setUp(self):
+        self.client.force_login(self.superuser)
+
+    @patch("cms.datasets.models.ONSDatasetApiQuerySet.fetch_api_response")
+    def test_for_bundle_preserved_in_rendered_chooser(self, mock_fetch):
+        mock_fetch.return_value = {"items": [], "count": 0, "total_count": 0}
+
+        response = self.client.get(self.chooser_url, {"for_bundle": "true"})
+
+        self.assertEqual(response.status_code, 200)
+        # The search form / pagination links must carry `for_bundle=true` forward,
+        # otherwise subsequent requests lose the bundle context and surface published datasets.
+        self.assertContains(response, f"{self.chooser_url}results/?for_bundle=true")
+
+    @patch("cms.datasets.models.ONSDatasetApiQuerySet.fetch_api_response")
+    def test_for_bundle_preserved_in_rendered_chooser_with_additional_parameters(self, mock_fetch):
+        mock_fetch.return_value = {"items": [], "count": 0, "total_count": 0}
+
+        response = self.client.get(self.chooser_url, {"abc": "def", "for_bundle": "true"})
+
+        self.assertEqual(response.status_code, 200)
+        # The abc parameter will not be preserved.
+        self.assertContains(response, f"{self.chooser_url}results/?for_bundle=true")
+        self.assertNotContains(response, "abc=def")
 
 
 class TestDatasetChosenView(TestCase):

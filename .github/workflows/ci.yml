@@ -3,9 +3,9 @@ name: CI
 
 on: # yamllint disable-line rule:truthy
   push:
-    branches: [main]
+    branches: [main, 'release/v*']
   pull_request:
-    branches: [main]
+    branches: [main, 'release/v*']
 
 concurrency:
   group: '${{ github.head_ref || github.ref }}-${{ github.workflow }}'
@@ -15,23 +15,37 @@ env:
   POETRY_VERSION: '2.2.1' # keep in sync with pyproject.toml, Dockerfile
   COVERAGE_CORE: 'sysmon'
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: 'false'
       - name: Install Poetry
         run: pipx install poetry==${{ env.POETRY_VERSION }}
 
+      - name: Get cache flags
+        id: cache-flag
+        uses: ./.github/actions/setup-cache-flag
+
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version-file: .python-version
-          cache: poetry
+          cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
 
       - name: Install dependencies
         run: poetry install --no-root
 
+      - name: Install gettext
+        run: sudo apt-get install -y gettext
+
+      - name: Makemessages check
+        run: make makemessages-check
       - name: Lint Python
         run: make lint-py
       - name: Lint HTML
@@ -40,17 +54,26 @@ jobs:
   lint-front-end:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: 'false'
+
+      - name: Get cache flags
+        id: cache-flag
+        uses: ./.github/actions/setup-cache-flag
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0 # zizmor: ignore[cache-poisoning]
         with:
           node-version-file: '.nvmrc'
-          cache: npm
+          cache: ${{ steps.cache-flag.outputs.npm-cache }} # disabled on release branches via setup-cache-flag action
 
       - id: node-cache
-        uses: actions/cache@v5
+        if: "!contains(github.head_ref || github.ref, 'release')"
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5 # zizmor: ignore[cache-poisoning]
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/.nvmrc') }}-${{ hashFiles('**/package-lock.json') }}
+          lookup-only: false
 
       - if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm ci --no-audit
@@ -64,17 +87,26 @@ jobs:
   compile-static:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: 'false'
+
+      - name: Get cache flags
+        id: cache-flag
+        uses: ./.github/actions/setup-cache-flag
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0 # zizmor: ignore[cache-poisoning]
         with:
           node-version-file: '.nvmrc'
-          cache: npm
+          cache: ${{ steps.cache-flag.outputs.npm-cache }} # disabled on release branches via setup-cache-flag action
 
       - id: node-cache
-        uses: actions/cache@v5
+        if: "!contains(github.head_ref || github.ref, 'release')"
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5 # zizmor: ignore[cache-poisoning]
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/.nvmrc') }}-${{ hashFiles('**/package-lock.json') }}
+          lookup-only: false
 
       - if: steps.node-cache.outputs.cache-hit != 'true'
         name: Install npm dependencies
@@ -83,7 +115,7 @@ jobs:
       - name: Compile static files
         run: npm run build:prod
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: static
           path: cms/static_compiled/
@@ -136,22 +168,28 @@ jobs:
         ports: ['9092:9092']
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: 'false'
       - name: Install Poetry
         run: pipx install poetry==${{ env.POETRY_VERSION }}
 
+      - name: Get cache flags
+        id: cache-flag
+        uses: ./.github/actions/setup-cache-flag
+
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version-file: .python-version
-          cache: poetry
+          cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
 
       - name: Install dependencies
         run: |
           poetry install --no-root
           sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: static
           path: cms/static_compiled/
@@ -176,7 +214,7 @@ jobs:
           echo "## Coverage summary" >> "$GITHUB_STEP_SUMMARY"
           poetry run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
       - name: Upload coverage HTML report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: html-report
           path: htmlcov
@@ -186,16 +224,20 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: 'false'
       - name: Build Docker Image # Verify that the Dockerfile is valid and can build the web image
         run: docker build --target web -t ons .
 
   repository_checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: 'false'
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version-file: .python-version
       - name: Ensure .dockerignore (mostly) matches .gitignore
@@ -219,15 +261,21 @@ jobs:
       PLAYWRIGHT_TRACE: 'true'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: 'false'
       - name: Install Poetry
         run: pipx install poetry==${{ env.POETRY_VERSION }}
 
+      - name: Get cache flags
+        id: cache-flag
+        uses: ./.github/actions/setup-cache-flag
+
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version-file: .python-version
-          cache: poetry
+          cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
 
       - name: Install dependencies
         run: |
@@ -235,15 +283,17 @@ jobs:
           sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
 
       - name: Cache Playwright binaries
-        uses: actions/cache@v5
+        if: "!contains(github.head_ref || github.ref, 'release')"
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5 # zizmor: ignore[cache-poisoning]
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-pw-${{ matrix.browser }}
+          lookup-only: false
 
       - name: Playwright Install
         run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: static
           path: cms/static_compiled/
@@ -269,7 +319,7 @@ jobs:
 
       - name: Upload failure traces
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-traces-${{ matrix.browser }}-shard-${{ matrix.shard }}
           path: playwright_traces/

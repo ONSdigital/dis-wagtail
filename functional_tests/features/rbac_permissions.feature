@@ -19,12 +19,6 @@ Feature: Role Based Access Control Permission as defined in data migrations
         | Publishing Officer |
 
 
-    Scenario: A Publishing Admin can bulk delete pages
-        Given a topic page exists under the homepage
-        And a statistical article page has been published under the topic page
-        When a Publishing Admin logs into the admin site
-        Then the user can bulk delete the topic page and its children
-
     Scenario: A Publishing Admin can lock and unlock a page
         Given a statistical article exists
         And a Publishing Admin logs into the admin site
