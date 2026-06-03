@@ -20,9 +20,7 @@ class CustomImage(PrivateImageMixin, AbstractImage):  # type: ignore[django-mana
 class Rendition(AbstractPrivateRendition):
     """Our custom rendition class."""
 
-    image = models.ForeignKey(  # type: ignore[var-annotated]
-        "CustomImage", related_name="renditions", on_delete=models.CASCADE
-    )
+    image = models.ForeignKey("CustomImage", related_name="renditions", on_delete=models.CASCADE)
 
     class Meta:
         unique_together = (("image", "filter_spec", "focal_point_key"),)

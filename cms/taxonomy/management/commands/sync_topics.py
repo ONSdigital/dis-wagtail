@@ -156,9 +156,9 @@ def _update_topic(existing_topic: Topic, fetched_topic: Mapping[str, str]) -> No
     - Logs changes and warnings when moving topics.
     """
     logger.info("Updating existing topic", extra={"topic": existing_topic.id, "fetched_topic": fetched_topic})
-    existing_topic.title = fetched_topic.get("title")
+    existing_topic.title = fetched_topic["title"]
     existing_topic.description = fetched_topic.get("description")
-    existing_topic.slug = fetched_topic.get("slug")
+    existing_topic.slug = fetched_topic["slug"]
     existing_topic.removed = False
     existing_topic.save()
 
