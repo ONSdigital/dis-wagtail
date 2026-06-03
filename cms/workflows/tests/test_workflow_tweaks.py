@@ -207,7 +207,7 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.post(self.edit_url, data, follow=True)
 
         self.assertContains(
-            response, "Cannot self-approve your changes. Please ask another Publishing team member to do so."
+            response, "You cannot review your own changes. Please ask another Publishing team member to do so."
         )
         self.page.refresh_from_db()
         self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)
@@ -217,7 +217,7 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
 
         response = self.client.post(self.edit_url, data, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Cannot self-approve your changes")
+        self.assertNotContains(response, "You cannot review your own changes")
 
         self.assertTrue(is_page_ready_to_publish(self.page))
         self.page.refresh_from_db()
@@ -236,7 +236,7 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.post(self.edit_url, data, follow=True)
 
         self.assertContains(
-            response, "Cannot self-approve your changes. Please ask another Publishing team member to do so."
+            response, "You cannot review your own changes. Please ask another Publishing team member to do so."
         )
         self.page.refresh_from_db()
         self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)
@@ -721,7 +721,7 @@ class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.post(self.edit_url, data, follow=True)
 
         self.assertContains(
-            response, "Cannot self-approve your changes. Please ask another Publishing team member to do so."
+            response, "You cannot review your own changes. Please ask another Publishing team member to do so."
         )
         self.page.refresh_from_db()
         self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)
