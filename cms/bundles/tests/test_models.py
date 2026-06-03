@@ -106,6 +106,36 @@ class BundleModelTestCase(TestCase):
                     f"Expected is_ready_to_be_published={expected} for status {status}",
                 )
 
+    def test_live(self):
+        """Live is True only for statuses that mean the bundle has gone through publishing."""
+        test_cases = [
+            (BundleStatus.DRAFT, False),
+            (BundleStatus.IN_REVIEW, False),
+            (BundleStatus.APPROVED, False),
+            (BundleStatus.PUBLISHED, True),
+            (BundleStatus.PARTIALLY_PUBLISHED, True),
+            (BundleStatus.FAILED, True),
+        ]
+        for status, expected in test_cases:
+            with self.subTest(status=status):
+                self.bundle.status = status
+                self.assertEqual(self.bundle.live, expected)
+
+    def test_has_unpublished_changes(self):
+        """has_unpublished_changes is the inverse of live — True while the bundle is still in progress."""
+        test_cases = [
+            (BundleStatus.DRAFT, True),
+            (BundleStatus.IN_REVIEW, True),
+            (BundleStatus.APPROVED, True),
+            (BundleStatus.PUBLISHED, False),
+            (BundleStatus.PARTIALLY_PUBLISHED, False),
+            (BundleStatus.FAILED, False),
+        ]
+        for status, expected in test_cases:
+            with self.subTest(status=status):
+                self.bundle.status = status
+                self.assertEqual(self.bundle.has_unpublished_changes, expected)
+
 
 class BundledPageMixinTestCase(WagtailTestUtils, TestCase):
     """Test BundledPageMixin properties and methods."""
