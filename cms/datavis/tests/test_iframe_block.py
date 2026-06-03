@@ -187,15 +187,7 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         )
 
     def test_footnotes_configuration(self):
-        """Test that footnotes are configured correctly in the component config."""
-        # Test base case: empty footnotes
-        config = self.get_component_config()
-        self.assertIn("footnotes", config)
-        self.assertEqual(config["footnotes"]["title"], "Footnotes")
-        # IframeBlock always includes footnotes structure with empty content wrapped in rich text
-        self.assertEqual(config["footnotes"]["content"], '<div class="rich-text"></div>')
-
-        # Test with footnotes content
+        """Test that footnotes are configured correctly in the component config when set."""
         self.raw_data["footnotes"] = "Important note: This is test footnote text"
         config = self.get_component_config()
         self.assertEqual(
@@ -205,3 +197,9 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
                 "content": '<div class="rich-text">Important note: This is test footnote text</div>',
             },
         )
+
+    def test_footnotes_not_in_config_when_not_set(self):
+        """Footnotes should be omitted from the component config when no footnotes have been entered."""
+        self.raw_data["footnotes"] = ""
+        config = self.get_component_config()
+        self.assertNotIn("footnotes", config)
