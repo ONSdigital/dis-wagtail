@@ -19,7 +19,7 @@ def clean_cell_value(value: str | int | float) -> str | int | float:
     if not isinstance(value, str):
         return value
 
-    # Remove non-breaking spaces to prevent malformed characters in CSV output
+    # Sanitise non-breaking spaces to prevent malformed characters in CSV output
     # Do this before `strip` to ensure `&nbsp;` is also removed from the ends of strings
     value = value.replace("\u00a0", " ").replace("&nbsp;", " ")
 
