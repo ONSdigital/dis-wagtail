@@ -32,8 +32,8 @@ def _patch_ons_dataset_api_no_drift() -> Any:
         return item
 
     patcher = patch("cms.bundles.forms.ONSDataset")
-    mock_ons = patcher.start()
-    mock_ons.objects.get.side_effect = fake_get
+    mock_ons_dataset_class = patcher.start()
+    mock_ons_dataset_class.objects.get.side_effect = fake_get
     return patcher
 
 
@@ -111,14 +111,14 @@ class BundleDatasetValidationTestCase(TestCase):
         cls.approver = UserFactory()
 
     def setUp(self):
-        self.patcher = patch("cms.bundles.forms.BundleAPIClient")
-        self.mock_client_class = self.patcher.start()
+        self.bundle_api_client_patcher = patch("cms.bundles.forms.BundleAPIClient")
+        self.mock_client_class = self.bundle_api_client_patcher.start()
         self.mock_client = self.mock_client_class.return_value
-        self.ons_patcher = _patch_ons_dataset_api_no_drift()
+        self.ons_dataset_patcher = _patch_ons_dataset_api_no_drift()
 
     def tearDown(self):
-        self.patcher.stop()
-        self.ons_patcher.stop()
+        self.bundle_api_client_patcher.stop()
+        self.ons_dataset_patcher.stop()
 
     def raw_form_data_with_dataset(self, dataset: DatasetFactory) -> dict[str, Any]:
         """Returns raw form data with a dataset."""
@@ -414,8 +414,8 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         cls.approver = UserFactory()
 
     def setUp(self):
-        self.client_patcher = patch("cms.bundles.forms.BundleAPIClient")
-        mock_client_class = self.client_patcher.start()
+        self.bundle_api_client_patcher = patch("cms.bundles.forms.BundleAPIClient")
+        mock_client_class = self.bundle_api_client_patcher.start()
         self.mock_client = mock_client_class.return_value
         # Bundle-API contents check is happy by default; we only exercise metadata drift here.
         self.mock_client.get_bundle_contents.return_value = {"items": [], "etag_header": "etag"}
@@ -430,13 +430,13 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             item.description = data.get("description", "")
             return item
 
-        self.ons_patcher = patch("cms.bundles.forms.ONSDataset")
-        self.mock_ons = self.ons_patcher.start()
-        self.mock_ons.objects.with_token.return_value.get.side_effect = fake_get
+        self.ons_dataset_patcher = patch("cms.bundles.forms.ONSDataset")
+        self.mock_ons_dataset_class = self.ons_dataset_patcher.start()
+        self.mock_ons_dataset_class.objects.with_token.return_value.get.side_effect = fake_get
 
     def tearDown(self):
-        self.client_patcher.stop()
-        self.ons_patcher.stop()
+        self.bundle_api_client_patcher.stop()
+        self.ons_dataset_patcher.stop()
 
     def _get_approve_form(self, dataset: Dataset) -> Any:
         bundle_dataset = BundleDatasetFactory(parent=self.bundle, dataset=dataset)
@@ -560,7 +560,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             self.bundle = BundleFactory()
             dataset = DatasetFactory()
             with self.subTest(exception=test_exception):
-                self.mock_ons.objects.with_token.return_value.get.side_effect = test_exception
+                self.mock_ons_dataset_class.objects.with_token.return_value.get.side_effect = test_exception
 
                 form = self._get_approve_form(dataset)
 
@@ -590,7 +590,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             "Your session has expired. Please sign in again to approve the bundle.",
             form.non_field_errors(),
         )
-        self.mock_ons.objects.with_token.assert_not_called()
+        self.mock_ons_dataset_class.objects.with_token.assert_not_called()
 
     def test_other_exceptions_raised_during_metadata_validation_are_not_caught(self):
         """Test that unexpected exceptions during metadata validation are not caught and handled gracefully,
@@ -601,7 +601,9 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         class _CustomException(Exception):
             pass
 
-        self.mock_ons.objects.with_token.return_value.get.side_effect = _CustomException("Unexpected error")
+        self.mock_ons_dataset_class.objects.with_token.return_value.get.side_effect = _CustomException(
+            "Unexpected error"
+        )
 
         form = self._get_approve_form(dataset)
 
@@ -620,12 +622,12 @@ class BundleDatasetValidationDisabledTestCase(TestCase):
         cls.approver = UserFactory()
 
     def setUp(self):
-        self.patcher = patch("cms.bundles.forms.BundleAPIClient")
-        self.mock_client_class = self.patcher.start()
+        self.bundle_api_client_patcher = patch("cms.bundles.forms.BundleAPIClient")
+        self.mock_client_class = self.bundle_api_client_patcher.start()
         self.mock_client = self.mock_client_class.return_value
 
     def tearDown(self):
-        self.patcher.stop()
+        self.bundle_api_client_patcher.stop()
 
     def _assert_validation_skipped(self):
         """Helper method to assert dataset validation is skipped."""
