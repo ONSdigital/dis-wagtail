@@ -35,7 +35,10 @@ order_cmd=(sort)
 if [[ -n "$SHUFFLE_SEED" ]]; then
     echo "Using seed '$SHUFFLE_SEED' for shuffling" >&2
     seedfile=$(mktemp)
-    printf '%s' "$SHUFFLE_SEED" >"$seedfile"
+    # Print the seed to the file 10 times to ensure enough randomness for shuf
+    for _ in {1..10}; do
+        printf '%s' "$SHUFFLE_SEED"
+    done >"$seedfile"
     order_cmd=(shuf --random-source="$seedfile")
 fi
 
