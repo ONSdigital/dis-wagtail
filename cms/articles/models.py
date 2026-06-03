@@ -19,6 +19,7 @@ from wagtail.coreutils import WAGTAIL_APPEND_SLASH, resolve_model_string
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
+from wagtail.templatetags.wagtailcore_tags import richtext
 
 from cms.articles.enums import SortingChoices
 from cms.articles.forms import StatisticalArticlePageAdminForm
@@ -617,7 +618,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             "metadata": {
                 "text": self.label,
             },
-            "description": self.main_points_summary,
+            "description": richtext(self.main_points_summary),
         }
 
         if self.release_date:

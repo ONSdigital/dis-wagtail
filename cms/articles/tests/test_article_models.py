@@ -1168,7 +1168,7 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
             contact_details=None,
             show_cite_this_page=False,
             release_date=datetime(2024, 11, 1),
-            main_points_summary="Test main points summary",
+            main_points_summary="<p>Test main points summary</p>",
         )
 
     def test_as_featured_article_macro_data(self):
@@ -1187,7 +1187,7 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(data["metadata"]["date"]["short"], "1 November 2024")
         self.assertEqual(data["metadata"]["date"]["iso"], "2024-11-01")
 
-        self.assertEqual(data["description"], "Test main points summary")
+        self.assertInHTML("<p>Test main points summary</p>", data["description"])
 
     def test_as_featured_article_macro_data_with_chart(self):
         """Test that a chart is used when available."""
