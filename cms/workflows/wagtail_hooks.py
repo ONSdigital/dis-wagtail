@@ -129,7 +129,7 @@ def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
             and page.latest_revision.user_id == request.user.pk
         ):
             messages.error(
-                request, "Cannot self-approve your changes. Please ask another Publishing team member to do so."
+                request, "You cannot review your own changes. Please ask another Publishing team member to do so."
             )
             return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
 
