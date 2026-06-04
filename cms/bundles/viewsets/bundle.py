@@ -1,7 +1,6 @@
 from __future__ import annotations  # needed for unquoted forward references because of Django Views
 
 import logging
-import textwrap
 import time
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
@@ -16,6 +15,8 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
 from wagtail.admin import messages
+from wagtail.admin.ui.components import MediaContainer
+from wagtail.admin.ui.side_panels import StatusSidePanel
 from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.views.generic import CreateView, DeleteView, EditView, IndexView, InspectView
 from wagtail.admin.viewsets.model import ModelViewSet
@@ -33,6 +34,7 @@ from cms.bundles.notifications.slack import (
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 from cms.bundles.utils import get_data_admin_action_url, publish_bundle
+from cms.bundles.viewsets.utils import add_exception_cause_to_form
 from cms.core.custom_date_format import ons_date_format
 from cms.core.utils import redirect
 from cms.datasets.models import Dataset
@@ -40,7 +42,6 @@ from cms.teams.models import Team
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
-    from django.forms import BaseForm
     from django.http import HttpResponseBase
     from django.template.response import TemplateResponse
     from django.utils.safestring import SafeString
@@ -52,24 +53,6 @@ logger = logging.getLogger(__name__)
 
 # Fallback value for missing dataset metadata
 MISSING_VALUE = "Data missing"
-
-
-def add_exception_cause_to_form(exception: Exception, *, form: BaseForm) -> None:
-    """Adds errors from a BundleAPIClientError exception cause to the form errors."""
-    cause = getattr(exception, "__cause__", None)
-    if not cause:
-        return
-
-    # Currently only handle BundleAPIClientError causes
-    if not isinstance(cause, BundleAPIClientError):
-        return
-
-    for error in cause.errors:
-        desc = error.get("description") or "Unknown API Error"
-        form.add_error(
-            field=None,
-            error=textwrap.shorten(desc, width=250, placeholder="..."),  # limit chars to avoid overly long errors
-        )
 
 
 class BundleCreateView(CreateView):
@@ -127,6 +110,20 @@ class BundleCreateView(CreateView):
         context["media"] += action_menu.media
         context["action_menu"] = action_menu
         return context
+
+
+class BundleStatusSidePanel(StatusSidePanel):
+    """Status side panel that shows the bundle's own status label.
+
+    Wagtail's default StatusSidePanel renders workflow.html which shows "Live" unconditionally
+    for models without DraftStateMixin (draftstate_enabled=False). Bundles have a custom status
+    workflow, so we swap in a bundle-specific template that reads get_status_display() instead.
+    """
+
+    def get_status_templates(self, context: dict) -> list[str]:
+        templates: list[str] = super().get_status_templates(context)
+        templates[0] = "bundles/wagtailadmin/side_panels/bundle_status.html"
+        return templates
 
 
 class BundleEditView(EditView):
@@ -401,6 +398,22 @@ class BundleEditView(EditView):
             return cast(list, super().get_success_buttons())
 
         return []
+
+    def get_side_panels(self) -> MediaContainer:
+        side_panels = []
+        usage_url = self.get_usage_url()
+        history_url = self.get_history_url()
+        if usage_url or history_url:
+            side_panels.append(
+                BundleStatusSidePanel(
+                    self.object,
+                    self.request,
+                    usage_url=usage_url,
+                    history_url=history_url,
+                    last_updated_info=self.get_last_updated_info(),
+                )
+            )
+        return MediaContainer(side_panels)
 
     def get_context_data(self, **kwargs: Any) -> dict:
         """Updates the template context.

@@ -542,6 +542,23 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.edit_url)
         self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
 
+    def test_edit_view_status_sidebar_reflects_bundle_status(self):
+        """The status side panel must reflect the bundle's actual status, not always show 'Live'."""
+        # Each BundleStatus label maps to a cautious-slugified aria ID in the sidebar heading.
+        # "Draft" -> status-sidebar-draft, "In Preview" -> status-sidebar-in-preview, etc.
+        status_cases = [
+            (BundleStatus.DRAFT, "status-sidebar-draft"),
+            (BundleStatus.IN_REVIEW, "status-sidebar-in-preview"),
+            (BundleStatus.APPROVED, "status-sidebar-ready-to-publish"),
+        ]
+        for status, expected_id in status_cases:
+            with self.subTest(status=status):
+                self.bundle.status = status
+                self.bundle.save(update_fields=["status"])
+                response = self.client.get(self.edit_url)
+                self.assertNotContains(response, "status-sidebar-live")
+                self.assertContains(response, expected_id)
+
     def test_edit_view__creates_audit_log_entry(self):
         """Test that viewing the edit page creates an audit log entry."""
         ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
