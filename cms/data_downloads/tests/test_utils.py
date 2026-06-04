@@ -601,5 +601,6 @@ class CreateDataCsvDownloadResponseFromDataTests(SimpleTestCase):
 
     def test_handles_empty_data(self):
         # This is an edge case as all charts will have some data
+        # Responses should start with a BOM regardless of any content
         response = create_data_csv_download_response_from_data([], title="empty")
         self.assertEqual(response.content, codecs.BOM_UTF8)
