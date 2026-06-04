@@ -562,6 +562,10 @@ class CreateDataCsvDownloadResponseFromDataTests(SimpleTestCase):
         response = create_data_csv_download_response_from_data([["a", "b"]], title="test")
         self.assertEqual(response["Content-Type"], "text/csv")
 
+    def test_content_starts_with_bom(self):
+        response = create_data_csv_download_response_from_data([["a", "b"]], title="test")
+        self.assertStartsWith(response.content, codecs.BOM_UTF8)
+
     def test_sets_content_disposition_with_slugified_filename(self):
         response = create_data_csv_download_response_from_data([["a", "b"]], title="My Chart")
         self.assertEqual(response["Content-Disposition"], 'attachment; filename="my-chart.csv"')
