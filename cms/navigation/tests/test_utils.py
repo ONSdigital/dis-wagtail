@@ -2,11 +2,6 @@ from django.test import TestCase
 from wagtail.coreutils import get_dummy_request
 
 from cms.core.tests.factories import LinkBlockFactory
-from cms.navigation.templatetags.navigation_tags import (
-    footer_menu_columns,
-    main_menu_columns,
-    main_menu_highlights,
-)
 from cms.navigation.tests.factories import (
     FooterMenuFactory,
     HighlightsBlockFactory,
@@ -16,9 +11,14 @@ from cms.navigation.tests.factories import (
     MainMenuSectionBlockFactory,
     TopicLinkBlockFactory,
 )
+from cms.navigation.utils import (
+    footer_menu_columns,
+    main_menu_columns,
+    main_menu_highlights,
+)
 
 
-class MainMenuTemplateTagTests(TestCase):
+class MainMenuTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.mock_request = get_dummy_request()
@@ -45,7 +45,7 @@ class MainMenuTemplateTagTests(TestCase):
 
     def test_main_menu_highlights_output_format(self):
         """Test that main_menu_highlights outputs the correct format."""
-        highlights = main_menu_highlights({"request": self.mock_request}, self.main_menu)
+        highlights = main_menu_highlights(self.mock_request, self.main_menu)
 
         self.assertIsInstance(highlights, list)
         self.assertEqual(len(highlights), 3)
@@ -57,7 +57,7 @@ class MainMenuTemplateTagTests(TestCase):
 
     def test_main_menu_columns_output_format(self):
         """Test that main_menu_columns outputs the correct format."""
-        columns = main_menu_columns({"request": self.mock_request}, self.main_menu)
+        columns = main_menu_columns(self.mock_request, self.main_menu)
 
         expected_columns = [
             {
@@ -105,7 +105,7 @@ class MainMenuTemplateTagTests(TestCase):
         self.assertEqual(columns, [])
 
 
-class FooterMenuTemplateTagTests(TestCase):
+class FooterMenuTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.mock_request = get_dummy_request()
@@ -122,7 +122,7 @@ class FooterMenuTemplateTagTests(TestCase):
 
     def test_footer_menu_output_format(self):
         """Test that footer_menu outputs the correct format."""
-        columns = footer_menu_columns({"request": self.mock_request}, self.footer_menu)
+        columns = footer_menu_columns(self.mock_request, self.footer_menu)
 
         expected_columns = [
             {
