@@ -60,18 +60,15 @@ class GroupReviewTask(AbstractGroupApprovalTask):
         if not self.user_can_access_editor(obj, user):
             return []
 
-        actions = [("reject", "Request changes", True)]
-
         is_self_approver = obj.latest_revision and obj.latest_revision.user_id == user.pk  # type: ignore[attr-defined]
-        if not is_self_approver:
-            actions.extend(
-                [
-                    ("approve", "Approve", False),
-                    ("approve", "Approve with comment", True),
-                ]
-            )
+        if is_self_approver:
+            return []
 
-        return actions
+        return [
+            ("reject", "Request changes", True),
+            ("approve", "Approve", False),
+            ("approve", "Approve with comment", True),
+        ]
 
     class Meta:
         verbose_name = "Group review task"
