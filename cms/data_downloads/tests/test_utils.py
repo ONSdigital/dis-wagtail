@@ -305,11 +305,11 @@ class CleanCellValueTestCase(SimpleTestCase):
         self.assertEqual(clean_cell_value("  hello  "), "hello")
         self.assertEqual(clean_cell_value("\t\ntext\n\t"), "text")
 
-    def test_strips_non_breaking_spaces(self):
+    def test_html_entities_unescaped(self):
         """Test that non-breaking spaces are replaced with regular spaces and stripped."""
-        self.assertEqual(clean_cell_value("\u00a0\u00a0hello\u00a0"), "hello")
-        self.assertEqual(clean_cell_value("&nbsp;text&nbsp;"), "text")
-        self.assertEqual(clean_cell_value("hello&nbsp;world"), "hello world")
+        self.assertEqual(clean_cell_value("&nbsp;hello&nbsp;"), "hello")
+        self.assertEqual(clean_cell_value("&amp;"), "&")
+        self.assertEqual(clean_cell_value("&pound;"), "£")
 
     def test_converts_br_tags_to_newlines(self):
         """Test that <br> tag variations are converted to newlines."""

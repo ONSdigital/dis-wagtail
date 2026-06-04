@@ -1,4 +1,5 @@
 import csv
+import html
 import re
 from collections.abc import Mapping
 
@@ -19,11 +20,7 @@ def clean_cell_value(value: str | int | float) -> str | int | float:
     if not isinstance(value, str):
         return value
 
-    # Sanitise non-breaking spaces to prevent malformed characters in CSV output
-    # Do this before `strip` to ensure `&nbsp;` is also removed from the ends of strings
-    value = value.replace("\u00a0", " ").replace("&nbsp;", " ")
-
-    value = value.strip()
+    value = html.unescape(value).strip()
 
     # Replace <br> tags (all variations) with newlines
     value = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
