@@ -1,3 +1,4 @@
+import codecs
 import csv
 import html
 import re
@@ -139,6 +140,7 @@ def create_data_csv_download_response_from_data(data: list[list[str | int | floa
             "Content-Disposition": f'attachment; filename="{filename}.csv"',
         },
     )
+    response.write(codecs.BOM_UTF8)
     writer = csv.writer(response)
     writer.writerows(sanitize_data_for_csv(data))
     return response
