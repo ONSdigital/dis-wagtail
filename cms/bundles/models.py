@@ -19,7 +19,13 @@ from cms.home.models import HomePage
 from cms.topics.models import TopicPage
 from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
-from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
+from .enums import (
+    ACTIVE_BUNDLE_STATUSES,
+    EDITABLE_BUNDLE_STATUSES,
+    PREVIEWABLE_BUNDLE_STATUSES,
+    PUBLISHED_BUNDLE_STATUSES,
+    BundleStatus,
+)
 from .forms import BundleAdminForm
 from .panels import (
     BundleFieldPanel,
@@ -226,6 +232,14 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         # Workaround for https://github.com/wagtail/wagtail/issues/6616
         # Currently Wagtail cannot search a QuerySet that's been filtered by a field on a related object
         return self.active_team_ids
+
+    @property
+    def live(self) -> bool:
+        return self.status in PUBLISHED_BUNDLE_STATUSES
+
+    @property
+    def has_unpublished_changes(self) -> bool:
+        return self.status not in PUBLISHED_BUNDLE_STATUSES
 
     @property
     def can_be_approved(self) -> bool:
