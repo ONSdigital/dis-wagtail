@@ -156,9 +156,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertEqual(call_kwargs["color"], "good")
         self.assertIn({"title": "Bundle Name", "value": "First Bundle", "short": False}, call_kwargs["fields"])
         self.assertIn({"title": "Changed By", "value": "Publishing Officer", "short": True}, call_kwargs["fields"])
-        self.assertIn(
-            {"title": "Changed At", "value": "17/02/2026 - 10:00:00.000", "short": True}, call_kwargs["fields"]
-        )
+        self.assertIn({"title": "Changed At", "value": "17/02/2026 - 10:00:00", "short": True}, call_kwargs["fields"])
         self.assertIn({"title": "Old Status", "value": BundleStatus.DRAFT.label, "short": True}, call_kwargs["fields"])
         self.assertIn(
             {"title": "New Status", "value": BundleStatus.IN_REVIEW.label, "short": True}, call_kwargs["fields"]
@@ -810,7 +808,7 @@ class HelperFunctionsTestCase(TestCase):
         """Milliseconds should be padded with 0s if they aren't specified in the datetime."""
         dt = datetime(2026, 2, 17, 14, 30, 45, tzinfo=UTC)
         formatted = _format_publish_datetime(dt)
-        self.assertEqual(formatted, "17/02/2026 - 14:30:45.000")
+        self.assertEqual(formatted, "17/02/2026 - 14:30:45")
 
     def test_get_example_page_url__release_calendar(self):
         """Should return release calendar URL when bundle has release_calendar_page_id."""
