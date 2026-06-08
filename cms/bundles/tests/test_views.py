@@ -724,7 +724,7 @@ class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.preview_url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         # Check the iframe URL is in the response content
-        self.assertContains(response, "http://data-admin.local/preview/dataset/cpih01/time-series/1")
+        self.assertContains(response, "/retail-industry/datasets/cpih01/editions/time-series/versions/1")
 
     @patch("cms.bundles.views.preview.BundleAPIClient")
     def test_view_redirects_if_dataset_not_in_bundle(self, mock_client_class):
