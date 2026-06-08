@@ -734,6 +734,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         edition_b = "2023"
         version_a = 1
         version_b = 2
+        expected_edit_url_a = f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
+        expected_view_url_a = f"/retail-industry/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
+        expected_edit_url_b = f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}"
 
         # Create local datasets
         dataset_a = DatasetFactory(namespace=dataset_id_a, edition=edition_a, version=version_a, title="Dataset A")
@@ -758,8 +761,8 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                     },
                     "state": "PUBLISHED",
                     "links": {
-                        "edit": f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}",
-                        "preview": f"/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}",
+                        "edit": expected_edit_url_a,
+                        "preview": expected_view_url_a,
                     },
                 },
                 {
@@ -773,8 +776,10 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                     },
                     "state": "APPROVED",
                     "links": {
-                        "edit": f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}",
-                        "preview": f"/datasets/{dataset_id_b}/editions/{edition_b}/versions/{version_b}",
+                        "edit": expected_edit_url_b,
+                        "preview": (
+                            f"/retail-industry/datasets/{dataset_id_b}/editions/{edition_b}/versions/{version_b}"
+                        ),
                     },
                 },
             ]
@@ -790,8 +795,6 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, "Dataset A API Title")
         self.assertContains(response, str(version_a))
         self.assertContains(response, edition_a)
-        expected_edit_url_a = f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
-        expected_view_url_a = f"/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
         self.assertContains(response, f'href="{expected_edit_url_a}"')
         self.assertContains(response, f'href="{expected_view_url_a}"')
         self.assertContains(response, "View Live")
@@ -801,7 +804,6 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, "Dataset B API Title")
         self.assertContains(response, str(version_b))
         self.assertContains(response, edition_b)
-        expected_edit_url_b = f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}"
         self.assertContains(response, f'href="{expected_edit_url_b}"')
 
     @override_settings(  # Address race condition in tests caused when calling delete() on a page
@@ -980,6 +982,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                         "version_id": "2",
                     },
                     "state": "PUBLISHED",
+                    "links": {
+                        "preview": "/retail-industry/datasets/dataset-two/editions/2023/versions/2",
+                    },
                 },
             ]
         }
@@ -996,7 +1001,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Published")
         # Published dataset should have View Live link
         self.assertContains(response, "View Live")
-        self.assertContains(response, 'href="/datasets/dataset-two/editions/2023/versions/2"')
+        self.assertContains(response, 'href="/retail-industry/datasets/dataset-two/editions/2023/versions/2"')
 
     @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")

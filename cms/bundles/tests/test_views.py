@@ -680,7 +680,7 @@ class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
                         "version_id": cls.version_id,
                         "title": "Consumer Price Inflation",
                     },
-                    "links": {"preview": "http://data-admin.local/preview/dataset/cpih01/time-series/1"},
+                    "links": {"preview": "/retail-industry/datasets/cpih01/editions/time-series/versions/1"},
                 }
             ]
         }

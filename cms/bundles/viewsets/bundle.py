@@ -32,9 +32,10 @@ from cms.bundles.notifications.slack import (
     notify_slack_of_status_change,
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
-from cms.bundles.utils import get_data_admin_action_url, publish_bundle
+from cms.bundles.utils import publish_bundle
 from cms.core.custom_date_format import ons_date_format
 from cms.core.utils import redirect
+from cms.datasets.models import Dataset
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
@@ -46,7 +47,6 @@ if TYPE_CHECKING:
 
     from cms.bundles.forms import BundleAdminForm
     from cms.bundles.models import BundlesQuerySet
-    from cms.datasets.models import Dataset
 
 logger = logging.getLogger(__name__)
 
@@ -587,10 +587,11 @@ class BundleInspectView(InspectView):
     def _build_action_button(self, state: str, preview_url: str | None, dataset: Dataset) -> SafeString | str:
         """Build the action button HTML based on dataset state."""
         if state == BundleContentItemState.PUBLISHED:
-            view_url = get_data_admin_action_url("preview", dataset.namespace, dataset.edition, str(dataset.version))
+            if not preview_url:
+                return ""
             return format_html(
                 '<a href="{}" class="button button-small button-secondary">View Live</a>',
-                view_url,
+                preview_url,
             )
         if preview_url:
             cms_preview_url = reverse(
