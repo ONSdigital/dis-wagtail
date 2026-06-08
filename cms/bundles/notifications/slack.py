@@ -85,7 +85,7 @@ def _format_publish_datetime(dt: datetime) -> str:
     Returns:
         Formatted string in DD/MM/YYYY - HH:MM:SS.sss format.
     """
-    return dt.strftime("%d/%m/%Y - %H:%M:%S.%f")[:-3]  # Trim microseconds to milliseconds
+    return f"{dt:%d/%m/%Y - %H:%M:%S}.{dt.microsecond // 1000:03d}"
 
 
 def _get_example_page_url(bundle: Bundle) -> str | None:
