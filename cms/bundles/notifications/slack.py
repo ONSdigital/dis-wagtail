@@ -228,7 +228,7 @@ def notify_slack_of_publish_end(
         {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": True},
         {"title": "Page Count", "value": str(bundle_page_count), "short": bundle_page_count > 0},
     ]
-    if pages_published > 0:
+    if bundle_page_count > 0:
         fields.append({"title": "Pages Published", "value": str(pages_published), "short": True})
 
     fields.append(
