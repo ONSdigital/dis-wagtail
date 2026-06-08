@@ -735,6 +735,12 @@ class HelperFunctionsTestCase(TestCase):
         formatted = _format_publish_datetime(dt)
         self.assertEqual(formatted, "17/02/2026 - 14:30:45")
 
+    def test_format_publish_datetime_pads_milliseconds_zeros_if_not_in_datetime(self):
+        """Milliseconds should be padded with 0s if they aren't specified in the datetime."""
+        dt = datetime(2026, 2, 17, 14, 30, 45, tzinfo=UTC)
+        formatted = _format_publish_datetime(dt)
+        self.assertEqual(formatted, "17/02/2026 - 14:30:45.000")
+
     def test_get_example_page_url__release_calendar(self):
         """Should return release calendar URL when bundle has release_calendar_page_id."""
         release_page = ReleaseCalendarPageFactory()
