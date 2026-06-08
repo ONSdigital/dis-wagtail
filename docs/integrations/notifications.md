@@ -36,11 +36,12 @@ The CMS is integrated with Slack to send notifications about important events, s
 
 ### Environment variables
 
-| Var                         | Notes                                                                                                                                    |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `SLACK_BOT_TOKEN`           | The token for the Slack bot that will be used to send notifications. [Documentation](https://docs.slack.dev/tools/python-slack-sdk/web/) |
-| `SLACK_PUBLISH_LOG_CHANNEL` | The ID of the Slack channel where logs will be sent.                                                                                     |
-| `SLACK_ALARM_CHANNEL`       | The ID of the Slack channel where alarms will be sent.                                                                                   |
+| Var                                    | Notes                                                                                                                                    |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `SLACK_BOT_TOKEN`                      | The token for the Slack bot that will be used to send notifications. [Documentation](https://docs.slack.dev/tools/python-slack-sdk/web/) |
+| `SLACK_PUBLISH_LOG_CHANNEL`            | The ID of the Slack channel where logs will be sent.                                                                                     |
+| `SLACK_ALARM_CHANNEL`                  | The ID of the Slack channel where alarms will be sent.                                                                                   |
+| `SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE` | Defaults to `false`. Feature flag for sending Slack messages on bundle status changes (before pre-publish, e.g. entering review)         |
 
 ### Technical details
 
