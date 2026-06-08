@@ -25,7 +25,7 @@ from cms.bundles.notifications.slack import (
     notify_slack_of_status_change,
     send_bundle_notification,
 )
-from cms.bundles.tests.factories import BundleFactory
+from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.users.tests.factories import UserFactory
 
@@ -225,6 +225,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": True}, fields)
         self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
         self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
+        self.assertIn({"title": "Dataset Count", "value": "0", "short": False}, fields)
         self.assertIn(
             {
                 "title": "Example Page",
@@ -236,6 +237,76 @@ class BundleStatusNotificationsTestCase(TestCase):
 
         self.bundle.refresh_from_db()
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_publish_end_does_not_contain_pages_published_if_no_pages(self, mock_send):
+        """Test publication end message doesn't include pages published if no pages in bundle."""
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
+        # create new bundle with no pages
+        no_pages_bundle = BundleFactory(name="Test Bundle", bundled_pages=[])
+        pages_published = 0
+        message_timestamp = "1503435956.000247"
+        mock_send.return_value = message_timestamp
+
+        notify_slack_of_publish_end(no_pages_bundle, start_time, end_time, pages_published, self.inspect_url)
+
+        call_kwargs = mock_send.call_args[1]
+
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended")
+        self.assertEqual(call_kwargs["color"], "good")  # Green
+
+        fields = call_kwargs["fields"]
+
+        self.assertFalse(any(f.get("title") == "Pages Published" for f in fields))
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_publish_end_displays_correct_dataset_count(self, mock_send):
+        """Test publication end message doesn't include pages published if no pages in bundle."""
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
+        # add dataset to bundle
+        BundleDatasetFactory(parent=self.bundle)
+        pages_published = 0
+        message_timestamp = "1503435956.000247"
+        mock_send.return_value = message_timestamp
+
+        notify_slack_of_publish_end(self.bundle, start_time, end_time, pages_published, self.inspect_url)
+
+        call_kwargs = mock_send.call_args[1]
+
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended")
+        self.assertEqual(call_kwargs["color"], "good")  # Green
+
+        fields = call_kwargs["fields"]
+
+        self.assertIn({"title": "Dataset Count", "value": "1", "short": False}, fields)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_publish_end_contains_long_page_count_if_no_pages(self, mock_send):
+        """Test publication end message includes count when there are no pages in bundle, and it takes up a line."""
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
+        # create new bundle with zero pages
+        no_pages_bundle = BundleFactory(name="Test Bundle", bundled_pages=[])
+        pages_published = 0
+        message_timestamp = "1503435956.000247"
+        mock_send.return_value = message_timestamp
+
+        notify_slack_of_publish_end(no_pages_bundle, start_time, end_time, pages_published, self.inspect_url)
+
+        call_kwargs = mock_send.call_args[1]
+
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended")
+        self.assertEqual(call_kwargs["color"], "good")  # Green
+
+        fields = call_kwargs["fields"]
+
+        # Page count should be present and take whole line
+        self.assertIn({"title": "Page Count", "value": "0", "short": False}, fields)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.send_or_update_slack_message")

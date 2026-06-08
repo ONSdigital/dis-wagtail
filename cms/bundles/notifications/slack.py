@@ -218,15 +218,22 @@ def notify_slack_of_publish_end(
         pages_published: Number of pages successfully published.
         url: The URL to link to the bundle (optional).
     """
+    bundle_page_count = bundle.get_bundled_pages().count()
+    bundle_dataset_count = bundle.bundled_datasets.count()
     fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
         {"title": "Publish Type", "value": _get_publish_type(bundle), "short": True},
         {"title": "Publish Start", "value": _format_publish_datetime(start_time), "short": True},
         {"title": "Publish End", "value": _format_publish_datetime(end_time), "short": True},
         {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": True},
-        {"title": "Page Count", "value": str(bundle.get_bundled_pages().count()), "short": True},
-        {"title": "Pages Published", "value": str(pages_published), "short": True},
+        {"title": "Page Count", "value": str(bundle_page_count), "short": bundle_page_count > 0},
     ]
+    if pages_published > 0:
+        fields.append({"title": "Pages Published", "value": str(pages_published), "short": True})
+
+    fields.append(
+        {"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False},
+    )
 
     if example_page_url := _get_example_page_url(bundle):
         fields.append({"title": "Example Page", "value": example_page_url, "short": False})
