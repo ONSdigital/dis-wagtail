@@ -107,8 +107,9 @@ def _get_example_page_url(bundle: Bundle) -> str | None:
     return str(first_page.specific_deferred.full_url) if first_page else None
 
 
-def notify_slack_of_status_change(
+def notify_slack_of_status_change(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913
     bundle: Bundle,
+    changed_at: datetime,
     old_status: _StrOrPromise,
     user: User | None = None,
     url: str | None = None,
@@ -119,10 +120,11 @@ def notify_slack_of_status_change(
         return
 
     fields: list[dict[str, Any]] = [
-        {"title": "Title", "value": bundle.name, "short": True},
-        {"title": "Changed by", "value": user.get_full_name() if user else "System", "short": True},
-        {"title": "Old status", "value": old_status, "short": True},
-        {"title": "New status", "value": bundle.get_status_display(), "short": True},
+        {"title": "Bundle Name", "value": bundle.name, "short": False},
+        {"title": "Changed By", "value": user.get_full_name() if user else "System", "short": True},
+        {"title": "Changed At", "value": _format_publish_datetime(changed_at), "short": True},
+        {"title": "Old Status", "value": old_status, "short": True},
+        {"title": "New Status", "value": bundle.get_status_display(), "short": True},
     ]
     if context_message:
         fields.append({"title": "Context", "value": context_message})

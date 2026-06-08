@@ -143,21 +143,25 @@ class BundleStatusNotificationsTestCase(TestCase):
     def test_notify_slack_of_status_change(self, mock_send):
         """Should send status updates when bundle status changes and the feature flag is enabled."""
         self.bundle.status = BundleStatus.IN_REVIEW
+        updated_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
         message_timestamp = "1503435956.000247"
         mock_send.return_value = message_timestamp
 
-        notify_slack_of_status_change(self.bundle, BundleStatus.DRAFT.label, self.user, self.inspect_url)
+        notify_slack_of_status_change(self.bundle, updated_time, BundleStatus.DRAFT.label, self.user, self.inspect_url)
 
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
 
         self.assertEqual(call_kwargs["text"], "Bundle status changed")
         self.assertEqual(call_kwargs["color"], "good")
-        self.assertIn({"title": "Title", "value": "First Bundle", "short": True}, call_kwargs["fields"])
-        self.assertIn({"title": "Changed by", "value": "Publishing Officer", "short": True}, call_kwargs["fields"])
-        self.assertIn({"title": "Old status", "value": BundleStatus.DRAFT.label, "short": True}, call_kwargs["fields"])
+        self.assertIn({"title": "Bundle Name", "value": "First Bundle", "short": False}, call_kwargs["fields"])
+        self.assertIn({"title": "Changed By", "value": "Publishing Officer", "short": True}, call_kwargs["fields"])
         self.assertIn(
-            {"title": "New status", "value": BundleStatus.IN_REVIEW.label, "short": True}, call_kwargs["fields"]
+            {"title": "Changed At", "value": "17/02/2026 - 10:00:00.000", "short": True}, call_kwargs["fields"]
+        )
+        self.assertIn({"title": "Old Status", "value": BundleStatus.DRAFT.label, "short": True}, call_kwargs["fields"])
+        self.assertIn(
+            {"title": "New Status", "value": BundleStatus.IN_REVIEW.label, "short": True}, call_kwargs["fields"]
         )
         self.assertIn({"title": "Link", "value": self.inspect_url, "short": False}, call_kwargs["fields"])
 
