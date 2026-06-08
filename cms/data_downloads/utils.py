@@ -21,10 +21,10 @@ def clean_cell_value(value: str | int | float) -> str | int | float:
     if not isinstance(value, str):
         return value
 
-    value = html.unescape(value).strip()
-
     # Replace <br> tags (all variations) with newlines
     value = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
+
+    value = html.unescape(value).strip()
 
     if "<" not in value:
         # Return early if there are no HTML tags to process

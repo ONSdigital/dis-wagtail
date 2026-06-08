@@ -307,8 +307,8 @@ class CleanCellValueTestCase(SimpleTestCase):
         self.assertEqual(clean_cell_value("\t\ntext\n\t"), "text")
 
     def test_html_entities_unescaped(self):
-        """Test that html entites are unescaped to unicode characters."""
-        # Ensure html entities that represent spaces are stripped from the ends
+        """Test that HTML entites are unescaped to unicode characters."""
+        # Ensure HTML entities that represent spaces are stripped from the ends
         self.assertEqual(clean_cell_value("&nbsp;hello&nbsp;"), "hello")
         self.assertEqual(clean_cell_value("&amp;"), "&")
         self.assertEqual(clean_cell_value("&pound;"), "£")
