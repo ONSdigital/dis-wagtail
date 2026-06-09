@@ -15,28 +15,6 @@ from cms.datasets.tests.factories import DatasetFactory
 from cms.users.tests.factories import UserFactory
 
 
-def _patch_ons_dataset_api_no_drift() -> Any:
-    """Patch the ONS dataset API used by metadata validation to mirror local Dataset rows.
-
-    Returns a mock whose `objects.get(pk=namespace)` resolves to an object exposing the
-    same `title`/`description` as the local `Dataset` row, so the metadata-drift check
-    finds nothing to flag by default.
-    """
-
-    def fake_get(pk: Any = None) -> Any:
-        local = Dataset.objects.filter(namespace=pk).first()
-        item = MagicMock()
-        item.next = None
-        item.title = local.title if local else ""
-        item.description = local.description if local else ""
-        return item
-
-    patcher = patch("cms.bundles.forms.ONSDataset")
-    mock_ons_dataset_class = patcher.start()
-    mock_ons_dataset_class.objects.get.side_effect = fake_get
-    return patcher
-
-
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
 class BundleFormDelegationToBundleSyncServiceTestCase(TestCase):
     """Test that Bundle form delegates to BundleAPISyncService on save()."""
@@ -100,7 +78,11 @@ class BundleFormDelegationToBundleSyncServiceTestCase(TestCase):
             mock_svc_cls.assert_not_called()
 
 
-@override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True, BUNDLE_DATASET_STATUS_VALIDATION_ENABLED=True)
+@override_settings(
+    DIS_DATASETS_BUNDLE_API_ENABLED=True,
+    BUNDLE_DATASET_STATUS_VALIDATION_ENABLED=True,
+    BUNDLE_DATASET_METADATA_VALIDATION_ENABLED=False,
+)
 class BundleDatasetValidationTestCase(TestCase):
     """Test cases for dataset validation in the BundleAdminForm."""
 
@@ -114,11 +96,9 @@ class BundleDatasetValidationTestCase(TestCase):
         self.bundle_api_client_patcher = patch("cms.bundles.forms.BundleAPIClient")
         self.mock_client_class = self.bundle_api_client_patcher.start()
         self.mock_client = self.mock_client_class.return_value
-        self.ons_dataset_patcher = _patch_ons_dataset_api_no_drift()
 
     def tearDown(self):
         self.bundle_api_client_patcher.stop()
-        self.ons_dataset_patcher.stop()
 
     def raw_form_data_with_dataset(self, dataset: DatasetFactory) -> dict[str, Any]:
         """Returns raw form data with a dataset."""
@@ -654,7 +634,11 @@ class BundleDatasetValidationDisabledTestCase(TestCase):
         """Test that dataset validation is skipped when DIS_DATASETS_BUNDLE_API_ENABLED is False."""
         self._assert_validation_skipped()
 
-    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True, BUNDLE_DATASET_STATUS_VALIDATION_ENABLED=False)
+    @override_settings(
+        DIS_DATASETS_BUNDLE_API_ENABLED=True,
+        BUNDLE_DATASET_STATUS_VALIDATION_ENABLED=False,
+        BUNDLE_DATASET_METADATA_VALIDATION_ENABLED=False,
+    )
     def test_dataset_validation_skipped_when_validation_flag_disabled(self):
         """Test that dataset validation is skipped when BUNDLE_DATASET_STATUS_VALIDATION_ENABLED is False."""
         self._assert_validation_skipped()
