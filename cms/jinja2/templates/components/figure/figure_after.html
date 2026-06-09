@@ -1,0 +1,13 @@
+{% from "components/list/_macro.njk" import onsList %}
+{% from "components/details/_macro.njk" import onsDetails %}
+
+{% if download_title and download_list%}
+    <h5>{{ download_title }}</h5>
+    {{
+    onsList({
+    "element": "ol",
+    "itemsList": download_list
+    })
+    }}
+{% endif %}
+</figure>

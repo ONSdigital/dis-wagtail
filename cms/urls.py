@@ -122,6 +122,10 @@ if settings.DEBUG:
             "test500",
             TemplateView.as_view(template_name="templates/pages/errors/500.html"),
         ),
+        path(
+            "figure-experiments",
+            TemplateView.as_view(template_name="templates/pages/figure_experiments.html"),
+        ),
     ]
 
     # Try to install the django debug toolbar, if exists

@@ -1,0 +1,22 @@
+{% from "components/list/_macro.njk" import onsList %}
+
+{% macro figure(title=None, subtitle=None, download_title=None, download_list=None) %}
+    <figure>
+        {% if title %}
+            <h3>{{ title }}</h3>
+        {% endif %}
+        {% if subtitle %}
+            <h4>{{ subtitle }}</h4>
+        {% endif %}
+        {{ caller() }}
+        {% if download_title and download_list %}
+            <h5>{{ download_title }}</h5>
+            {{
+            onsList({
+            "element": "ol",
+            "itemsList": download_list
+            })
+            }}
+        {% endif %}
+    </figure>
+{% endmacro %}
