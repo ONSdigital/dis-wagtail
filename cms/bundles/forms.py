@@ -208,10 +208,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         On drift, the approval is blocked with a `ValidationError` listing the
         changed fields, forcing the approver to reconfirm by submitting again.
         """
-        if not settings.BUNDLE_DATASET_METADATA_VALIDATION_ENABLED:
-            return
-
-        if "bundled_datasets" not in self.formsets:
+        if not settings.BUNDLE_DATASET_METADATA_VALIDATION_ENABLED or "bundled_datasets" not in self.formsets:
             return
 
         if not self.datasets_bundle_api_user_access_token:
@@ -222,6 +219,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         )
 
         drift_messages: list[str] = []
+        api_items_by_namespace: dict[str, Any] = {}
         for form in self.formsets["bundled_datasets"].forms:
             if (
                 not form.is_valid()
@@ -230,13 +228,18 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             ):
                 continue
 
-            try:
-                item_from_api = queryset.get(pk=dataset.namespace)
-            except (requests.exceptions.RequestException, ValueError):
-                logger.exception("Failed to fetch dataset %s for metadata validation on approval", dataset.namespace)
-                raise ValidationError(
-                    f"Could not verify the latest metadata for '{dataset.title}'. Please try again."
-                ) from None
+            if dataset.namespace not in api_items_by_namespace:
+                try:
+                    api_items_by_namespace[dataset.namespace] = queryset.get(pk=dataset.namespace)
+                except (requests.exceptions.RequestException, ValueError):
+                    logger.exception(
+                        "Failed to fetch dataset %s for metadata validation on approval", dataset.namespace
+                    )
+                    raise ValidationError(
+                        f"Could not verify the latest metadata for '{dataset.title}'. Please try again."
+                    ) from None
+
+            item_from_api = api_items_by_namespace[dataset.namespace]
 
             api_dataset = get_dataset_for_published_state(item_from_api, published=False)
             api_title = api_dataset.title
