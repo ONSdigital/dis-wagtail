@@ -183,10 +183,23 @@ def notify_slack_of_publication_start(
     """
     fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
-        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": True},
-        {"title": "Scheduled Start", "value": _format_publish_datetime(start_time), "short": True},
-        {"title": "Page Count", "value": str(bundle.get_bundled_pages().count()), "short": True},
+        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": _get_publish_type(bundle) != "Manual"},
     ]
+    if _get_publish_type(bundle) != "Manual":
+        fields.append(
+            {
+                "title": "Scheduled Date",
+                "value": _format_publish_datetime(bundle.scheduled_publication_date),
+                "short": True,
+            }
+        )
+    fields.extend(
+        [
+            {"title": "Publish Start", "value": _format_publish_datetime(start_time), "short": False},
+            {"title": "Page Count", "value": str(bundle.get_bundled_pages().count()), "short": False},
+            {"title": "Dataset Count", "value": str(bundle.bundled_datasets.count()), "short": False},
+        ]
+    )
 
     if example_page_url := _get_example_page_url(bundle):
         fields.append({"title": "Example Page", "value": example_page_url, "short": False})
@@ -222,12 +235,26 @@ def notify_slack_of_publish_end(
     bundle_dataset_count = bundle.bundled_datasets.count()
     fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
-        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": True},
-        {"title": "Publish Start", "value": _format_publish_datetime(start_time), "short": True},
-        {"title": "Publish End", "value": _format_publish_datetime(end_time), "short": True},
-        {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": True},
-        {"title": "Page Count", "value": str(bundle_page_count), "short": bundle_page_count > 0},
+        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": _get_publish_type(bundle) != "Manual"},
     ]
+    if _get_publish_type(bundle) != "Manual":
+        fields.append(
+            {
+                "title": "Scheduled Date",
+                "value": _format_publish_datetime(bundle.scheduled_publication_date),
+                "short": True,
+            }
+        )
+
+    fields.extend(
+        [
+            {"title": "Publish Start", "value": _format_publish_datetime(start_time), "short": True},
+            {"title": "Publish End", "value": _format_publish_datetime(end_time), "short": True},
+            {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": False},
+            {"title": "Page Count", "value": str(bundle_page_count), "short": bundle_page_count > 0},
+        ]
+    )
+
     if bundle_page_count > 0:
         fields.append({"title": "Pages Published", "value": str(pages_published), "short": True})
 
