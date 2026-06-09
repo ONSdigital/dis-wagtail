@@ -191,9 +191,11 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn("First Bundle", fields[0]["value"])
         self.assertIn(self.inspect_url, fields[0]["value"])
 
+
         self.assertIn({"title": "Publish Type", "value": "Manual", "short": False}, fields)
-        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00", "short": False}, fields)
+        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00.000", "short": False}, fields)
         self.assertIn({"title": "Page Count", "value": "1", "short": False}, fields)
+
 
         self.bundle.refresh_from_db()
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
@@ -222,9 +224,10 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn(self.inspect_url, fields[0]["value"])
 
         self.assertIn({"title": "Publish Type", "value": "Manual", "short": False}, fields)
-        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00", "short": True}, fields)
-        self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01", "short": True}, fields)
+        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00.000", "short": True}, fields)
+        self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01.234", "short": True}, fields)
         self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": False}, fields)
+
         self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
         self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
         self.assertIn({"title": "Dataset Count", "value": "0", "short": False}, fields)
@@ -332,7 +335,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn("First Bundle", fields[0]["value"])
         self.assertIn(self.bundle.full_inspect_url, fields[0]["value"])
 
-        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00", "short": True}, fields)
+        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00.000", "short": True}, fields)
 
         self.bundle.refresh_from_db()
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
@@ -426,8 +429,8 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Alert Type", "value": "Critical", "short": True}, fields)
         self.assertIn({"title": "Exception", "value": "1 of 1 page(s) failed to publish", "short": False}, fields)
         self.assertIn({"title": "Publish Type", "value": "Manual", "short": True}, fields)
-        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00", "short": True}, fields)
-        self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01", "short": True}, fields)
+        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00.000", "short": True}, fields)
+        self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01.234", "short": True}, fields)
         self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": True}, fields)
         self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
         self.assertIn({"title": "Pages Published", "value": "0", "short": True}, fields)
@@ -463,8 +466,8 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Alert Type", "value": "Fail", "short": True}, fields)
         self.assertIn({"title": "Exception", "value": "1 of 2 page(s) failed to publish", "short": False}, fields)
         self.assertIn({"title": "Publish Type", "value": "Manual", "short": True}, fields)
-        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00", "short": True}, fields)
-        self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01", "short": True}, fields)
+        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00.000", "short": True}, fields)
+        self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01.234", "short": True}, fields)
         self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": True}, fields)
         self.assertIn({"title": "Page Count", "value": "2", "short": True}, fields)
         self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
@@ -854,10 +857,16 @@ class HelperFunctionsTestCase(TestCase):
         self.assertEqual(_get_publish_type(bundle), "Manual")
 
     def test_format_publish_datetime(self):
-        """Should format datetime as DD/MM/YYYY - HH:MM:SS."""
+        """Should format datetime as DD/MM/YYYY - HH:MM:SS.sss."""
+        dt = datetime(2026, 2, 17, 14, 30, 45, 234000, tzinfo=UTC)
+        formatted = _format_publish_datetime(dt)
+        self.assertEqual(formatted, "17/02/2026 - 14:30:45.234")
+
+    def test_format_publish_datetime_pads_milliseconds_zeros_if_not_in_datetime(self):
+        """Milliseconds should be padded with 0s if they aren't specified in the datetime."""
         dt = datetime(2026, 2, 17, 14, 30, 45, tzinfo=UTC)
         formatted = _format_publish_datetime(dt)
-        self.assertEqual(formatted, "17/02/2026 - 14:30:45")
+        self.assertEqual(formatted, "17/02/2026 - 14:30:45.000")
 
     def test_format_publish_datetime_pads_milliseconds_zeros_if_not_in_datetime(self):
         """Milliseconds should be padded with 0s if they aren't specified in the datetime."""

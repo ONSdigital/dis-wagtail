@@ -77,15 +77,15 @@ def _get_publish_type(bundle: Bundle) -> str:
 
 
 def _format_publish_datetime(dt: datetime) -> str:
-    """Format datetime as DD/MM/YYYY - HH:MM:SS.
+    """Format datetime as DD/MM/YYYY - HH:MM:SS.sss.
 
     Args:
         dt: The datetime to format.
 
     Returns:
-        Formatted string in DD/MM/YYYY - HH:MM:SS format.
+        Formatted string in DD/MM/YYYY - HH:MM:SS.sss format.
     """
-    return dt.strftime("%d/%m/%Y - %H:%M:%S")
+    return f"{dt:%d/%m/%Y - %H:%M:%S}.{dt.microsecond // 1000:03d}"
 
 
 def _get_example_page_url(bundle: Bundle) -> str | None:
