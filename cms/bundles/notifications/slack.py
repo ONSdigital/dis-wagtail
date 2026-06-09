@@ -77,15 +77,15 @@ def _get_publish_type(bundle: Bundle) -> str:
 
 
 def _format_publish_datetime(dt: datetime) -> str:
-    """Format datetime as DD/MM/YYYY - HH:MM:SS.
+    """Format datetime as DD/MM/YYYY - HH:MM:SS.sss.
 
     Args:
         dt: The datetime to format.
 
     Returns:
-        Formatted string in DD/MM/YYYY - HH:MM:SS format.
+        Formatted string in DD/MM/YYYY - HH:MM:SS.sss format.
     """
-    return dt.strftime("%d/%m/%Y - %H:%M:%S")
+    return f"{dt:%d/%m/%Y - %H:%M:%S}.{dt.microsecond // 1000:03d}"
 
 
 def _get_example_page_url(bundle: Bundle) -> str | None:
@@ -107,8 +107,9 @@ def _get_example_page_url(bundle: Bundle) -> str | None:
     return str(first_page.specific_deferred.full_url) if first_page else None
 
 
-def notify_slack_of_status_change(
+def notify_slack_of_status_change(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913
     bundle: Bundle,
+    changed_at: datetime,
     old_status: _StrOrPromise,
     user: User | None = None,
     url: str | None = None,
@@ -119,10 +120,11 @@ def notify_slack_of_status_change(
         return
 
     fields: list[dict[str, Any]] = [
-        {"title": "Title", "value": bundle.name, "short": True},
-        {"title": "Changed by", "value": user.get_full_name() if user else "System", "short": True},
-        {"title": "Old status", "value": old_status, "short": True},
-        {"title": "New status", "value": bundle.get_status_display(), "short": True},
+        {"title": "Bundle Name", "value": f"<{bundle.full_inspect_url}|{bundle.name}>", "short": False},
+        {"title": "Changed By", "value": user.get_full_name() if user else "System", "short": True},
+        {"title": "Changed At", "value": _format_publish_datetime(changed_at), "short": True},
+        {"title": "Old Status", "value": old_status, "short": True},
+        {"title": "New Status", "value": bundle.get_status_display(), "short": True},
     ]
     if context_message:
         fields.append({"title": "Context", "value": context_message})
@@ -181,10 +183,24 @@ def notify_slack_of_publication_start(
     """
     fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
-        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": True},
-        {"title": "Scheduled Start", "value": _format_publish_datetime(start_time), "short": True},
-        {"title": "Page Count", "value": str(bundle.get_bundled_pages().count()), "short": True},
+        # If there is a scheduled date make short to show both on same line, otherwise span full line.
+        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": bool(bundle.scheduled_publication_date)},
     ]
+    if bundle.scheduled_publication_date:
+        fields.append(
+            {
+                "title": "Scheduled Date",
+                "value": _format_publish_datetime(bundle.scheduled_publication_date),
+                "short": True,
+            }
+        )
+    fields.extend(
+        [
+            {"title": "Publish Start", "value": _format_publish_datetime(start_time), "short": False},
+            {"title": "Page Count", "value": str(bundle.get_bundled_pages().count()), "short": False},
+            {"title": "Dataset Count", "value": str(bundle.bundled_datasets.count()), "short": False},
+        ]
+    )
 
     if example_page_url := _get_example_page_url(bundle):
         fields.append({"title": "Example Page", "value": example_page_url, "short": False})
@@ -216,15 +232,38 @@ def notify_slack_of_publish_end(
         pages_published: Number of pages successfully published.
         url: The URL to link to the bundle (optional).
     """
+    bundle_page_count = bundle.get_bundled_pages().count()
+    bundle_dataset_count = bundle.bundled_datasets.count()
     fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
-        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": True},
-        {"title": "Publish Start", "value": _format_publish_datetime(start_time), "short": True},
-        {"title": "Publish End", "value": _format_publish_datetime(end_time), "short": True},
-        {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": True},
-        {"title": "Page Count", "value": str(bundle.get_bundled_pages().count()), "short": True},
-        {"title": "Pages Published", "value": str(pages_published), "short": True},
+        # If there is a scheduled date make short to show both on same line, otherwise span full line.
+        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": bool(bundle.scheduled_publication_date)},
     ]
+    if bundle.scheduled_publication_date:
+        fields.append(
+            {
+                "title": "Scheduled Date",
+                "value": _format_publish_datetime(bundle.scheduled_publication_date),
+                "short": True,
+            }
+        )
+
+    fields.extend(
+        [
+            {"title": "Publish Start", "value": _format_publish_datetime(start_time), "short": True},
+            {"title": "Publish End", "value": _format_publish_datetime(end_time), "short": True},
+            {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": False},
+            # If there are pages, make short to show "Pages Published" on the same line. Otherwise span full line.
+            {"title": "Page Count", "value": str(bundle_page_count), "short": bundle_page_count > 0},
+        ]
+    )
+
+    if bundle_page_count > 0:
+        fields.append({"title": "Pages Published", "value": str(pages_published), "short": True})
+
+    fields.append(
+        {"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False},
+    )
 
     if example_page_url := _get_example_page_url(bundle):
         fields.append({"title": "Example Page", "value": example_page_url, "short": False})
