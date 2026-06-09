@@ -337,6 +337,57 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.bundle.refresh_from_db()
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
 
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_publication_start_for_scheduled_bundle(self, mock_send):
+        """Test start message includes Scheduled Date and short Publish Type when bundle has a scheduled date."""
+        scheduled_date = datetime(2026, 2, 17, 9, 0, 0, tzinfo=UTC)
+        scheduled_bundle = BundleFactory(
+            name="Scheduled Bundle",
+            bundled_pages=[StatisticalArticlePageFactory()],
+            publication_date=scheduled_date,
+        )
+        start_time = datetime(2026, 2, 17, 9, 0, 0, tzinfo=UTC)
+        mock_send.return_value = "1503435956.000247"
+
+        notify_slack_of_publication_start(scheduled_bundle, start_time, self.inspect_url)
+
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args[1]
+
+        fields = call_kwargs["fields"]
+
+        # Publish Type should be short=True when scheduled_publication_date is set
+        self.assertIn({"title": "Publish Type", "value": "Scheduled", "short": True}, fields)
+        # Scheduled Date field should be present with correct formatted value
+        self.assertIn({"title": "Scheduled Date", "value": "17/02/2026 - 09:00:00", "short": True}, fields)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_publish_end_for_scheduled_bundle(self, mock_send):
+        """Test end message includes Scheduled Date and short Publish Type when bundle has a scheduled date."""
+        scheduled_date = datetime(2026, 2, 17, 9, 0, 0, tzinfo=UTC)
+        scheduled_bundle = BundleFactory(
+            name="Scheduled Bundle",
+            bundled_pages=[StatisticalArticlePageFactory()],
+            publication_date=scheduled_date,
+        )
+        start_time = datetime(2026, 2, 17, 9, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 9, 0, 1, 234000, tzinfo=UTC)
+        mock_send.return_value = "1503435956.000247"
+
+        notify_slack_of_publish_end(scheduled_bundle, start_time, end_time, 1, self.inspect_url)
+
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args[1]
+
+        fields = call_kwargs["fields"]
+
+        # Publish Type should be short=True when scheduled_publication_date is set
+        self.assertIn({"title": "Publish Type", "value": "Scheduled", "short": True}, fields)
+        # Scheduled Date field should be present with correct formatted value
+        self.assertIn({"title": "Scheduled Date", "value": "17/02/2026 - 09:00:00", "short": True}, fields)
+
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="")
     def test_notify_slack_of_bundle_pre_publish__no_channel_configured(self):
         """Should return early and log warning if no channel is configured."""
