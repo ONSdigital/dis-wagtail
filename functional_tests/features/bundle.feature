@@ -99,7 +99,8 @@ Feature: CMS users can manage bundles
 
     @bundle_api_enabled
     Scenario: An approver is blocked when dataset metadata has changed in the source API
-        Given a bundle has been created with a dataset and a page ready to publish
+        Given the user is authenticated
+        And a bundle has been created with a dataset and a page ready to publish
         And the dataset's title has changed in the source API
         And the bundle is ready for approval
         When the user goes to edit the bundle

@@ -17,7 +17,7 @@ from cms.bundles.clients.api import (
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from cms.core.forms import DeduplicateInlinePanelAdminForm
-from cms.datasets.models import Dataset, ONSDataset
+from cms.datasets.models import ONSDataset
 from cms.datasets.utils import get_dataset_for_published_state, update_dataset_metadata
 from cms.workflows.models import ReadyToPublishGroupTask
 
@@ -223,10 +223,11 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
         drift_messages: list[str] = []
         for form in self.formsets["bundled_datasets"].forms:
-            if not form.is_valid() or form.cleaned_data.get("DELETE"):
-                continue
-            dataset: Dataset | None = form.cleaned_data.get("dataset")
-            if not dataset:
+            if (
+                not form.is_valid()
+                or form.cleaned_data.get("DELETE")
+                or (dataset := form.cleaned_data.get("dataset")) is None
+            ):
                 continue
 
             try:
@@ -254,12 +255,13 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             updated_fields = update_dataset_metadata(dataset, title=api_title, description=api_description)
             if updated_fields:
                 dataset.save(update_fields=updated_fields)
-            drift_messages.append(f"'{old_title}': {'; '.join(changes)}")
+            for change in changes:
+                drift_messages.append(f"'{old_title}': {change}")
 
         if drift_messages:
             errors = [
-                "Dataset metadata has changed in the source API since the bundle was last edited or submitted. "
-                "The local records have been refreshed - please re-review the changes and reconfirm to approve:",
+                "Approval could not be completed because dataset metadata has changed since they were added. "
+                "The latest metadata has been imported. Please review the changes below and approve the bundle again.",
                 *drift_messages,
             ]
             raise ValidationError(errors)

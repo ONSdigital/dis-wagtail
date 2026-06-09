@@ -552,7 +552,7 @@ def user_clicks_approve_action(context: Context) -> None:
 def validation_error_for_dataset_metadata(context: Context) -> None:
     expect(
         context.page.get_by_text(
-            "Dataset metadata has changed in the source API since the bundle was last edited or submitted."
+            "Approval could not be completed because dataset metadata has changed since they were added."
         )
     ).to_be_visible()
 
