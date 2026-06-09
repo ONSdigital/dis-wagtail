@@ -7,6 +7,7 @@ import requests
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
 
@@ -220,46 +221,47 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
         drift_messages: list[str] = []
         api_items_by_namespace: dict[str, Any] = {}
-        for form in self.formsets["bundled_datasets"].forms:
-            if (
-                not form.is_valid()
-                or form.cleaned_data.get("DELETE")
-                or (dataset := form.cleaned_data.get("dataset")) is None
-            ):
-                continue
+        with transaction.atomic():
+            for form in self.formsets["bundled_datasets"].forms:
+                if (
+                    not form.is_valid()
+                    or form.cleaned_data.get("DELETE")
+                    or (dataset := form.cleaned_data.get("dataset")) is None
+                ):
+                    continue
 
-            if dataset.namespace not in api_items_by_namespace:
-                try:
-                    api_items_by_namespace[dataset.namespace] = queryset.get(pk=dataset.namespace)
-                except (requests.exceptions.RequestException, ValueError):
-                    logger.exception(
-                        "Failed to fetch dataset %s for metadata validation on approval", dataset.namespace
-                    )
-                    raise ValidationError(
-                        f"Could not verify the latest metadata for '{dataset.title}'. Please try again."
-                    ) from None
+                if dataset.namespace not in api_items_by_namespace:
+                    try:
+                        api_items_by_namespace[dataset.namespace] = queryset.get(pk=dataset.namespace)
+                    except (requests.exceptions.RequestException, ValueError):
+                        logger.exception(
+                            "Failed to fetch dataset %s for metadata validation on approval", dataset.namespace
+                        )
+                        raise ValidationError(
+                            f"Could not verify the latest metadata for '{dataset.title}'. Please try again."
+                        ) from None
 
-            item_from_api = api_items_by_namespace[dataset.namespace]
+                item_from_api = api_items_by_namespace[dataset.namespace]
 
-            api_dataset = get_dataset_for_published_state(item_from_api, published=False)
-            api_title = api_dataset.title
-            api_description = api_dataset.description
+                api_dataset = get_dataset_for_published_state(item_from_api, published=False)
+                api_title = api_dataset.title
+                api_description = api_dataset.description
 
-            old_title = dataset.title
-            changes: list[str] = []
-            if api_title and old_title != api_title:
-                changes.append(f"title changed from '{old_title}' to '{api_title}'")
-            if api_description and dataset.description != api_description:
-                changes.append("description has changed")
+                old_title = dataset.title
+                changes: list[str] = []
+                if api_title and old_title != api_title:
+                    changes.append(f"title changed from '{old_title}' to '{api_title}'")
+                if api_description and dataset.description != api_description:
+                    changes.append("description has changed")
 
-            if not changes:
-                continue
+                if not changes:
+                    continue
 
-            updated_fields = update_dataset_metadata(dataset, title=api_title, description=api_description)
-            if updated_fields:
-                dataset.save(update_fields=updated_fields)
-            for change in changes:
-                drift_messages.append(f"'{old_title}': {change}")
+                updated_fields = update_dataset_metadata(dataset, title=api_title, description=api_description)
+                if updated_fields:
+                    dataset.save(update_fields=updated_fields)
+                for change in changes:
+                    drift_messages.append(f"'{old_title}': {change}")
 
         if drift_messages:
             errors = [
