@@ -225,7 +225,7 @@ class BundleEditView(EditView):
         if instance.status == BundleStatus.APPROVED:
             action = "bundles.approve"
             kwargs["data"] = {"old": original_status}
-            notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+            notify_slack_of_status_change(instance, timezone.now(), original_status, user=self.request.user, url=url)
         elif instance.status == BundleStatus.PUBLISHED.value:
             action = "wagtail.publish"
             self.start_time = time.time()
@@ -235,7 +235,7 @@ class BundleEditView(EditView):
                 "old": original_status,
                 "new": instance.get_status_display(),
             }
-            notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+            notify_slack_of_status_change(instance, timezone.now(), original_status, user=self.request.user, url=url)
 
         # now log the status change
         log(
