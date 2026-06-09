@@ -160,7 +160,9 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn(self.inspect_url, fields[0]["value"])
 
         self.assertIn({"title": "Changed By", "value": "Publishing Officer", "short": True}, call_kwargs["fields"])
-        self.assertIn({"title": "Changed At", "value": "17/02/2026 - 10:00:00", "short": True}, call_kwargs["fields"])
+        self.assertIn(
+            {"title": "Changed At", "value": "17/02/2026 - 10:00:00.000", "short": True}, call_kwargs["fields"]
+        )
         self.assertIn({"title": "Old Status", "value": BundleStatus.DRAFT.label, "short": True}, call_kwargs["fields"])
         self.assertIn(
             {"title": "New Status", "value": BundleStatus.IN_REVIEW.label, "short": True}, call_kwargs["fields"]
@@ -191,11 +193,9 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn("First Bundle", fields[0]["value"])
         self.assertIn(self.inspect_url, fields[0]["value"])
 
-
         self.assertIn({"title": "Publish Type", "value": "Manual", "short": False}, fields)
         self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00.000", "short": False}, fields)
         self.assertIn({"title": "Page Count", "value": "1", "short": False}, fields)
-
 
         self.bundle.refresh_from_db()
         self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
@@ -363,7 +363,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         # Publish Type should be short=True when scheduled_publication_date is set
         self.assertIn({"title": "Publish Type", "value": "Scheduled", "short": True}, fields)
         # Scheduled Date field should be present with correct formatted value
-        self.assertIn({"title": "Scheduled Date", "value": "17/02/2026 - 09:00:00", "short": True}, fields)
+        self.assertIn({"title": "Scheduled Date", "value": "17/02/2026 - 09:00:00.000", "short": True}, fields)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
@@ -389,7 +389,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         # Publish Type should be short=True when scheduled_publication_date is set
         self.assertIn({"title": "Publish Type", "value": "Scheduled", "short": True}, fields)
         # Scheduled Date field should be present with correct formatted value
-        self.assertIn({"title": "Scheduled Date", "value": "17/02/2026 - 09:00:00", "short": True}, fields)
+        self.assertIn({"title": "Scheduled Date", "value": "17/02/2026 - 09:00:00.000", "short": True}, fields)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="")
     def test_notify_slack_of_bundle_pre_publish__no_channel_configured(self):
@@ -867,12 +867,6 @@ class HelperFunctionsTestCase(TestCase):
         dt = datetime(2026, 2, 17, 14, 30, 45, tzinfo=UTC)
         formatted = _format_publish_datetime(dt)
         self.assertEqual(formatted, "17/02/2026 - 14:30:45.000")
-
-    def test_format_publish_datetime_pads_milliseconds_zeros_if_not_in_datetime(self):
-        """Milliseconds should be padded with 0s if they aren't specified in the datetime."""
-        dt = datetime(2026, 2, 17, 14, 30, 45, tzinfo=UTC)
-        formatted = _format_publish_datetime(dt)
-        self.assertEqual(formatted, "17/02/2026 - 14:30:45")
 
     def test_get_example_page_url__release_calendar(self):
         """Should return release calendar URL when bundle has release_calendar_page_id."""
