@@ -118,8 +118,7 @@ class TopicPageRelatedArticle(Orderable):
 
         errors = {}
         if self.page_id:
-            if self.title:
-                errors["title"] = "This field should be left blank when linking to an internal page."
+            # title is still an optional field when using an internal page
             if self.description:
                 errors["description"] = "This field should be left blank when linking to an internal page."
             if self.content_type:
