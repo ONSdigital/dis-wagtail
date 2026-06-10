@@ -401,6 +401,13 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     Returns:
         True if all pages published successfully, False if any pages failed.
     """
+    logger.info(
+        "Publishing Bundle",
+        extra={
+            "bundle_id": bundle.pk,
+            "event": "publishing_bundle",
+        },
+    )
     start_time = timezone.now()
 
     # Send publishing started notification
