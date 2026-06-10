@@ -123,9 +123,13 @@ def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
     if request.POST.get("action-workflow-action") == "true":
         action_name = request.POST.get("workflow-action-name", "")
 
-        if action_name == "approve" and page.latest_revision and page.latest_revision.user_id == request.user.pk:
+        if (
+            action_name in ("approve", "reject")
+            and page.latest_revision
+            and page.latest_revision.user_id == request.user.pk
+        ):
             messages.error(
-                request, "Cannot self-approve your changes. Please ask another Publishing team member to do so."
+                request, "You cannot review your own changes. Please ask another Publishing team member to do so."
             )
             return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
 
