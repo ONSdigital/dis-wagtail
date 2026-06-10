@@ -360,7 +360,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
     def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
         self._log_preview(request, mode_name)
-        return cast("TemplateResponse", super().serve_preview(request, mode_name))
+        response: TemplateResponse = super().serve_preview(request, mode_name)
+        return response
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

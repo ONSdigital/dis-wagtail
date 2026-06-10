@@ -436,8 +436,8 @@ def register_bundle_log_actions(actions: LogActionRegistry) -> None:
         def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             try:
-                old = log_entry.data.get("old", "Not set")
-                new = log_entry.data.get("new", "Not set")
+                old = log_entry.data.get("old") or "Not set"
+                new = log_entry.data.get("new") or "Not set"
                 return f"Changed publication date from '{old}' to '{new}'"
             except KeyError:
                 return "Changed publication date"
@@ -450,4 +450,4 @@ def register_bundle_log_actions(actions: LogActionRegistry) -> None:
 
         def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
-            return "Viewed bundle details"
+            return "Viewed bundle inspect page"
