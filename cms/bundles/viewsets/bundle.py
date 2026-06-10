@@ -15,6 +15,8 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
 from wagtail.admin import messages
+from wagtail.admin.ui.components import MediaContainer
+from wagtail.admin.ui.side_panels import StatusSidePanel
 from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.views.generic import CreateView, DeleteView, EditView, IndexView, InspectView
 from wagtail.admin.viewsets.model import ModelViewSet
@@ -127,6 +129,20 @@ class BundleCreateView(CreateView):
         return context
 
 
+class BundleStatusSidePanel(StatusSidePanel):
+    """Status side panel that shows the bundle's own status label.
+
+    Wagtail's default StatusSidePanel renders workflow.html which shows "Live" unconditionally
+    for models without DraftStateMixin (draftstate_enabled=False). Bundles have a custom status
+    workflow, so we swap in a bundle-specific template that reads get_status_display() instead.
+    """
+
+    def get_status_templates(self, context: dict) -> list[str]:
+        templates: list[str] = super().get_status_templates(context)
+        templates[0] = "bundles/wagtailadmin/side_panels/bundle_status.html"
+        return templates
+
+
 class BundleEditView(EditView):
     """The Bundle edit view class."""
 
@@ -209,7 +225,7 @@ class BundleEditView(EditView):
         if instance.status == BundleStatus.APPROVED:
             action = "bundles.approve"
             kwargs["data"] = {"old": original_status}
-            notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+            notify_slack_of_status_change(instance, timezone.now(), original_status, user=self.request.user, url=url)
         elif instance.status == BundleStatus.PUBLISHED.value:
             action = "wagtail.publish"
             self.start_time = time.time()
@@ -219,7 +235,7 @@ class BundleEditView(EditView):
                 "old": original_status,
                 "new": instance.get_status_display(),
             }
-            notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+            notify_slack_of_status_change(instance, timezone.now(), original_status, user=self.request.user, url=url)
 
         # now log the status change
         log(
@@ -285,6 +301,22 @@ class BundleEditView(EditView):
             return cast(list, super().get_success_buttons())
 
         return []
+
+    def get_side_panels(self) -> MediaContainer:
+        side_panels = []
+        usage_url = self.get_usage_url()
+        history_url = self.get_history_url()
+        if usage_url or history_url:
+            side_panels.append(
+                BundleStatusSidePanel(
+                    self.object,
+                    self.request,
+                    usage_url=usage_url,
+                    history_url=history_url,
+                    last_updated_info=self.get_last_updated_info(),
+                )
+            )
+        return MediaContainer(side_panels)
 
     def get_context_data(self, **kwargs: Any) -> dict:
         """Updates the template context.
