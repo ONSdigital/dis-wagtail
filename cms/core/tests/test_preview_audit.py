@@ -5,17 +5,20 @@ from unittest.mock import patch
 from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
 from django.test import RequestFactory, TestCase, override_settings
-from wagtail.models import PageLogEntry
+from wagtail.models import PageLogEntry, get_page_models
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.core.models.base import BasePage
 from cms.home.models import HomePage
+from cms.methodology.models import MethodologyIndexPage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.models import ReleaseCalendarIndex
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.standard_pages.models import CookiesPage
-from cms.standard_pages.tests.factories import InformationPageFactory
-from cms.themes.tests.factories import ThemePageFactory
+from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
+from cms.themes.tests.factories import ThemeIndexPageFactory, ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -226,16 +229,19 @@ class AllPageTypesPreviewAuditLogTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.superuser = cls.create_superuser(username="admin")
+        theme_index = ThemeIndexPageFactory.create()
         cls.pages = (
             HomePage.objects.first(),  # Guaranteed to exist
             InformationPageFactory.create(),
             MethodologyPageFactory.create(),
             TopicPageFactory.create(),
-            ThemePageFactory.create(),
+            theme_index,
+            ThemePageFactory.create(parent=theme_index),
             ReleaseCalendarIndex.objects.first(),  # Guaranteed to exist
             ReleaseCalendarPageFactory.create(),
             StatisticalArticlePageFactory.create(),
             CookiesPage.objects.first(),  # Guaranteed to exist
+            IndexPageFactory.create(),
         )
 
         cls.factory = RequestFactory()
@@ -243,11 +249,25 @@ class AllPageTypesPreviewAuditLogTestCase(WagtailTestUtils, TestCase):
     def test_preview_audit_log_entry_created(self):
         """Test that a PagePreviewAuditLog entry is created when a page preview is accessed."""
         for page in self.pages:
-            with (
-                self.subTest(page_type=type(page).__name__),
-                mock.patch.object(page, "_log_preview") as mock_log_preview,
-            ):
+            with self.subTest(page_type=type(page).__name__):
+                self.assertTrue(page.preview_modes, "Included page type does not support previewing")
                 request = self.factory.get("/")
                 request.user = self.superuser
-                page.serve_preview(request, "default")
-                mock_log_preview.assert_called_once_with(request, "default")
+                with mock.patch.object(page, "_log_preview") as mock_log_preview:
+                    page.serve_preview(request, "default")
+                    mock_log_preview.assert_called_once_with(request, "default")
+
+    def test_all_page_types_are_covered(self):
+        """Fail if a new BasePage subclass is added but not tested above."""
+        all_page_types = {model for model in get_page_models() if issubclass(model, BasePage)}
+        covered = {type(page) for page in self.pages}
+        self.assertEqual(
+            all_page_types - covered,
+            # Pages which do not support previewing are listed below
+            {
+                ArticlesIndexPage,
+                MethodologyIndexPage,
+                ArticleSeriesPage,
+            },
+            "Some BasePage subclasses are not covered by the preview audit log test",
+        )
