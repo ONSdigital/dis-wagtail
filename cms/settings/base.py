@@ -1151,5 +1151,5 @@ WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_pu
 
 CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
 
-# Disable Wagtail's auto-saving feature
-WAGTAIL_AUTOSAVE_INTERVAL = 0
+# Use default autosave value if not specified. Set to 0 to disable
+WAGTAIL_AUTOSAVE_INTERVAL = int(env.get("WAGTAIL_AUTOSAVE_INTERVAL", 500))
