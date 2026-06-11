@@ -460,18 +460,19 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         # Breadcrumbs
         content = response.content.decode(encoding="utf-8")
 
-        topic = self.page.get_parent().get_parent()
+        articles_index = self.page.get_parent().get_parent()
+        articles_index_full_url = articles_index.get_full_url(request=request)
+        topic = articles_index.get_parent()
         topic_full_url = topic.get_full_url(request=request)
-        theme = topic.get_parent()
-        theme_full_url = theme.get_full_url(request=request)
 
-        self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{topic_full_url}">{topic.title}</a>',
+        # The articles index is a non-navigable container, so it is excluded from the breadcrumb.
+        self.assertNotIn(
+            f'<a class="ons-breadcrumbs__link" href="{articles_index_full_url}">{articles_index.title}</a>',
             content,
         )
 
         self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{theme_full_url}">{theme.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{topic_full_url}">{topic.title}</a>',
             content,
         )
 
