@@ -456,8 +456,8 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         self.assertFalse(form.is_valid())
         non_field_errors = form.non_field_errors()
         self.assertIn(
-            "Dataset metadata has changed in the source API since the bundle was last edited or submitted. "
-            "The local records have been refreshed - please re-review the changes and reconfirm to approve:",
+            "Approval could not be completed because dataset metadata has changed since they were added. "
+            "The latest metadata has been imported. Please review the changes below and approve the bundle again.",
             non_field_errors,
         )
         self.assertIn(
