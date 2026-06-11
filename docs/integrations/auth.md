@@ -69,4 +69,3 @@ TODO: add details about the middleware, auth.js, ONSLogoutView and the team sync
 
 Autosave has been tested in development alongside the auth stub and works as expected.
 The client side token renewal on interaction works correctly given the default debounce of 500ms.
-
