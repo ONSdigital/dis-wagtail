@@ -87,7 +87,7 @@ def _format_publish_datetime(dt: datetime) -> str:
         Formatted string in DD/MM/YYYY - HH:MM:SS.sss format, representing the
         datetime in Europe/London local time.
     """
-    local_dt = dt.astimezone(timezone.get_default_timezone())
+    local_dt = timezone.localtime(dt)
 
     return f"{local_dt:%d/%m/%Y - %H:%M:%S}.{local_dt.microsecond // 1000:03d}"
 
