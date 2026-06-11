@@ -862,6 +862,12 @@ class HelperFunctionsTestCase(TestCase):
         formatted = _format_publish_datetime(dt)
         self.assertEqual(formatted, "17/02/2026 - 14:30:45.234")
 
+    def test_format_publish_datetime_applies_bst_offset(self):
+        """Should return datetime with the BST offset."""
+        dt = datetime(2026, 6, 17, 14, 30, 45, 234000, tzinfo=UTC)
+        formatted = _format_publish_datetime(dt)
+        self.assertEqual(formatted, "17/06/2026 - 15:30:45.234")
+
     def test_format_publish_datetime_pads_milliseconds_zeros_if_not_in_datetime(self):
         """Milliseconds should be padded with 0s if they aren't specified in the datetime."""
         dt = datetime(2026, 2, 17, 14, 30, 45, tzinfo=UTC)
