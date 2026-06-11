@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from slack_sdk.errors import SlackApiError
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
@@ -865,7 +866,8 @@ class HelperFunctionsTestCase(TestCase):
     def test_format_publish_datetime_applies_bst_offset(self):
         """Should return datetime with the BST offset."""
         dt = datetime(2026, 6, 17, 14, 30, 45, 234000, tzinfo=UTC)
-        formatted = _format_publish_datetime(dt)
+        with timezone.override("Europe/London"):
+            formatted = _format_publish_datetime(dt)
         self.assertEqual(formatted, "17/06/2026 - 15:30:45.234")
 
     def test_format_publish_datetime_pads_milliseconds_zeros_if_not_in_datetime(self):
