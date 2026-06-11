@@ -341,7 +341,7 @@ def alert_slack_of_bundle_content_failure(
     """
     fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{bundle.full_inspect_url}|{bundle.name}>", "short": False},
-        {"title": "Timestamp", "value": _format_publish_datetime(datetime.now()), "short": True},
+        {"title": "Timestamp", "value": _format_publish_datetime(timezone.now()), "short": True},
         {"title": "Publish Type", "value": _get_publish_type(bundle), "short": True},
         {"title": "Alert Type", "value": alert_type, "short": True},
         {"title": "Exception", "value": exception_message, "short": False},
