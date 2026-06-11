@@ -89,6 +89,10 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
             html=True,
         )
 
+    def test_analytics_content_type(self):
+        """Test that the GTM content type is 'previous-releases'."""
+        self.assertEqual(self.article_series_page.analytics_content_type, "previous-releases")
+
 
 class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
     @classmethod

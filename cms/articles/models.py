@@ -89,6 +89,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 ):
     """The article series model."""
 
+    _analytics_content_type = "previous-releases"
+
     parent_page_types: ClassVar[list[str]] = ["ArticlesIndexPage"]
     subpage_types: ClassVar[list[str]] = ["StatisticalArticlePage"]
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
