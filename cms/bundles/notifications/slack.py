@@ -78,14 +78,14 @@ def _get_publish_type(bundle: Bundle) -> str:
 
 
 def _format_publish_datetime(dt: datetime) -> str:
-    """Format datetime as DD/MM/YYYY - HH:MM:SS.sss in Europe/London local time.
+    """Format datetime as DD/MM/YYYY - HH:MM:SS.sss in the current active local time.
 
     Args:
         dt: The datetime to format.
 
     Returns:
         Formatted string in DD/MM/YYYY - HH:MM:SS.sss format, representing the
-        datetime in Europe/London local time.
+        datetime in the current active local time.
     """
     local_dt = timezone.localtime(dt)
 
