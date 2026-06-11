@@ -6,6 +6,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
+from django.utils import timezone
 
 from cms.core.slack import send_or_update_slack_message
 
@@ -77,15 +78,18 @@ def _get_publish_type(bundle: Bundle) -> str:
 
 
 def _format_publish_datetime(dt: datetime) -> str:
-    """Format datetime as DD/MM/YYYY - HH:MM:SS.sss.
+    """Format datetime as DD/MM/YYYY - HH:MM:SS.sss in Europe/London local time.
 
     Args:
         dt: The datetime to format.
 
     Returns:
-        Formatted string in DD/MM/YYYY - HH:MM:SS.sss format.
+        Formatted string in DD/MM/YYYY - HH:MM:SS.sss format, representing the
+        datetime in Europe/London local time.
     """
-    return f"{dt:%d/%m/%Y - %H:%M:%S}.{dt.microsecond // 1000:03d}"
+    local_dt = dt.astimezone(timezone.get_default_timezone())
+
+    return f"{local_dt:%d/%m/%Y - %H:%M:%S}.{local_dt.microsecond // 1000:03d}"
 
 
 def _get_example_page_url(bundle: Bundle) -> str | None:
