@@ -51,6 +51,10 @@ def run_action(
     action.status = PostPublishActionStatus.RUNNING
     action.save(update_fields=["status"])
 
+    # Close connection just before running handler. If the handler doesn't touch the DB,
+    # this frees up a connection for another thread to use.
+    close_old_connections()
+
     logger.info(
         "Starting publish action",
         extra={

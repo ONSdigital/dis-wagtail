@@ -234,11 +234,6 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 AWS_REGION = env.get("AWS_REGION")
 
-BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS = float(env.get("BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS", 110))
-BUNDLE_POST_PUBLISH_CONCURRENCY = int(env.get("BUNDLE_POST_PUBLISH_CONCURRENCY", 4))
-BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT = True
-BUNDLE_POST_PUBLISH_POLL_FREQUENCY = float(env.get("BUNDLE_POST_PUBLISH_POLL_FREQUENCY", 5))
-
 # Database
 
 if "PG_DB_ADDR" in env:
@@ -288,7 +283,7 @@ if "read_replica" not in DATABASES:
 # The numbers are intentionally low, as contention on connections shouldn't be high.
 db_pool_options = {
     "min_size": 1,
-    "max_size": max(BUNDLE_POST_PUBLISH_CONCURRENCY, 2),
+    "max_size": 3,
 }
 
 DATABASES["default"].setdefault("OPTIONS", {})["pool"] = deepcopy(db_pool_options)
@@ -990,6 +985,10 @@ SLACK_ALARM_CHANNEL = env.get("SLACK_ALARM_CHANNEL", "")
 # Feature flag for sending slack messages on bundle status changes (before pre-publish, e.g. entering review)
 SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE = env.get("SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE", "false").lower() == "true"
 
+BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS = float(env.get("BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS", 110))
+BUNDLE_POST_PUBLISH_CONCURRENCY = int(env.get("BUNDLE_POST_PUBLISH_CONCURRENCY", 4))
+BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT = True
+BUNDLE_POST_PUBLISH_POLL_FREQUENCY = float(env.get("BUNDLE_POST_PUBLISH_POLL_FREQUENCY", 5))
 
 # API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
