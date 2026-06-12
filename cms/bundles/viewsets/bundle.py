@@ -225,7 +225,7 @@ class BundleEditView(EditView):
         if instance.status == BundleStatus.APPROVED:
             action = "bundles.approve"
             kwargs["data"] = {"old": original_status}
-            notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+            notify_slack_of_status_change(instance, timezone.now(), original_status, user=self.request.user, url=url)
         elif instance.status == BundleStatus.PUBLISHED.value:
             action = "wagtail.publish"
             self.start_time = time.time()
@@ -235,7 +235,7 @@ class BundleEditView(EditView):
                 "old": original_status,
                 "new": instance.get_status_display(),
             }
-            notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+            notify_slack_of_status_change(instance, timezone.now(), original_status, user=self.request.user, url=url)
 
         # now log the status change
         log(
@@ -457,15 +457,18 @@ class BundleInspectView(InspectView):
                 return "Published"
             return page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"
 
-        def get_action(page: Page) -> str:
+        def get_action(page: Page) -> tuple[str, str]:
             if self.object.status == BundleStatus.PUBLISHED and page.live:
-                return str(page.get_url(request=self.request))
-            return reverse(
-                "bundles:preview",
-                args=(
-                    self.object.pk,
-                    page.pk,
+                return str(page.get_url(request=self.request)), "View Live"
+            return (
+                reverse(
+                    "bundles:preview",
+                    args=(
+                        self.object.pk,
+                        page.pk,
+                    ),
                 ),
+                "Preview",
             )
 
         data = (
@@ -474,7 +477,7 @@ class BundleInspectView(InspectView):
                 page.get_admin_display_title(),
                 page.get_verbose_name(),
                 get_page_status(page),
-                get_action(page),
+                *get_action(page),
             )
             for page in pages
         )
@@ -482,7 +485,7 @@ class BundleInspectView(InspectView):
         page_data = format_html_join(
             "\n",
             '<tr><td class="title"><strong><a href="{}">{}</a></strong></td><td>{}</td><td>{}</td> '
-            '<td><a href="{}" class="button button-small button-secondary">Preview</a></td></tr>',
+            '<td><a href="{}" class="button button-small button-secondary">{}</a></td></tr>',
             data,
         )
 
