@@ -70,16 +70,22 @@ def user_adds_external_related_article(context: Context, title: str) -> None:
         context.manual_article_index = 0
 
     # Click the main "Add" button
-    context.page.locator("#id_related_articles-ADD").click()
+    add_button = context.page.locator("#id_related_articles-ADD")
+    add_button.wait_for(state="attached", timeout=1000)
+    add_button.click()
 
     # Fill the fields using the dynamic index
     url_field = f"#id_related_articles-{context.manual_article_index}-external_url"
     title_field = f"#id_related_articles-{context.manual_article_index}-title"
     description_field = f"#id_related_articles-{context.manual_article_index}-description"
+    content_type_field = f"#id_related_articles-{context.manual_article_index}-content_type"
+    release_date_field = f"#id_related_articles-{context.manual_article_index}-release_date"
 
     context.page.locator(url_field).fill(f"https://example.com/{title.lower().replace(' ', '-')}")
     context.page.locator(title_field).fill(title)
     context.page.locator(description_field).fill(f"This is a short description for {title}.")
+    context.page.locator(content_type_field).select_option("Article")
+    context.page.locator(release_date_field).fill("2025-01-01")
 
     # Increment the counter
     context.manual_article_index += 1
@@ -129,6 +135,30 @@ def related_article_is_second_in_list(context: Context, title: str) -> None:
     related_articles_section = context.page.locator("section#related-articles")
     second_article = related_articles_section.locator("li.ons-document-list__item").nth(1)
     expect(second_article.get_by_role("link", name=title)).to_be_visible()
+
+
+@then('the related article "{title}" displays the description "{description}"')
+def related_article_displays_description(context: Context, title: str, description: str) -> None:
+    """Assert that the given related article's description appears in the list item."""
+    related_articles_section = context.page.locator("section#related-articles")
+    li = related_articles_section.locator(f'li:has-text("{title}")').first
+    expect(li).to_contain_text(description)
+
+
+@then('the related article "{title}" displays content type "{content_type}"')
+def related_article_displays_content_type(context: Context, title: str, content_type: str) -> None:
+    """Assert that the content type for the related article is visible."""
+    related_articles_section = context.page.locator("section#related-articles")
+    li = related_articles_section.locator(f'li:has-text("{title}")').first
+    expect(li).to_contain_text(content_type)
+
+
+@then('the related article "{title}" displays release year "{year}"')
+def related_article_displays_release_year(context: Context, title: str, year: str) -> None:
+    """Assert that the release year for the related article is visible."""
+    related_articles_section = context.page.locator("section#related-articles")
+    li = related_articles_section.locator(f'li:has-text("{title}")').first
+    expect(li).to_contain_text(year)
 
 
 @then("the related articles section contains only the 3 manually added articles")
