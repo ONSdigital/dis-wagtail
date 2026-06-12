@@ -173,8 +173,6 @@ class TopicPageRelatedMethodology(Orderable):
 
         if not self.title:
             raise ValidationError({"title": "This field is required when providing an external link."})
-        if not self.content_type:
-            raise ValidationError({"content_type": "This field is required when providing an external link."})
         if error := validate_ons_url(self.external_url):
             raise ValidationError({"external_url": error})
 
