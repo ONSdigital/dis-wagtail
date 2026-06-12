@@ -161,6 +161,57 @@ def user_can_see_title_and_content_type_in_related_methods_section(
     expect(related_methods_item.first).to_contain_text(content_type)
 
 
+@when("the user adds an external related methodology with the following details")
+def user_adds_external_related_methodology_with_description_and_release_date(context: Context) -> None:
+    """Add an external related methodology using a table of field/value pairs.
+
+    Supported fields: title, description, release_date, content_type (defaults to "Methodology").
+    """
+    if not hasattr(context, "manual_methodology_index"):
+        context.manual_methodology_index = 0
+
+    data = {row["field"]: row["value"] for row in context.table}
+    title = data["title"]
+    description = data.get("description", "")
+    release_date = data.get("release_date", "")
+    content_type = data.get("content_type", "Methodology")
+
+    context.page.locator("#id_related_methodologies-ADD").click()
+
+    index = context.manual_methodology_index
+    context.page.locator(f"#id_related_methodologies-{index}-external_url").fill(
+        f"https://ons.gov.uk/{title.lower().replace(' ', '-')}"
+    )
+    context.page.locator(f"#id_related_methodologies-{index}-content_type").select_option(label=content_type)
+    context.page.locator(f"#id_related_methodologies-{index}-title").fill(title)
+    if description:
+        context.page.locator(f"#id_related_methodologies-{index}-description").fill(description)
+    if release_date:
+        context.page.locator(f"#id_related_methodologies-{index}-release_date").fill(release_date)
+
+    context.manual_methodology_index += 1
+
+
+@then('the methodology "{title}" in the related methods section has description "{description}"')
+def methodology_has_description(context: Context, title: str, description: str) -> None:
+    """Assert that the given methodology item contains the expected description text."""
+    related_methods_section = context.page.locator("#related-methods")
+    methodology_item = related_methods_section.locator(".ons-document-list__item").filter(
+        has=context.page.get_by_role("link", name=title)
+    )
+    expect(methodology_item).to_contain_text(description)
+
+
+@then('the methodology "{title}" in the related methods section has release date "{formatted_date}"')
+def methodology_has_release_date(context: Context, title: str, formatted_date: str) -> None:
+    """Assert that the given methodology item contains the expected formatted release date."""
+    related_methods_section = context.page.locator("#related-methods")
+    methodology_item = related_methods_section.locator(".ons-document-list__item").filter(
+        has=context.page.get_by_role("link", name=title)
+    )
+    expect(methodology_item).to_contain_text(formatted_date)
+
+
 @when('the user adds an internal related methodology with custom title "{custom_title}"')
 def user_adds_internal_related_methodology_with_custom_title(context: Context, custom_title: str) -> None:
     """Add an internal related methodology with a custom title."""

@@ -62,6 +62,18 @@ Feature: A CMS user can manually manage related methodologies on a Topic Page
         Then the user can see "Custom Article Title" in the related methods section
         And the custom title overrides the methods's original title
 
+    Scenario: A user can set the description and release date for an external methodology
+        When the user edits the topic page
+        And the user adds an external related methodology with the following details
+            | field        | value                    |
+            | title        | Methodology With Details |
+            | description  | Some useful description  |
+            | release_date | 2024-01-15               |
+        And the user clicks the "Save draft" button
+        And the user views the topic page draft
+        Then the methodology "Methodology With Details" in the related methods section has description "Some useful description"
+        And the methodology "Methodology With Details" in the related methods section has release date "15 January 2024"
+
     Scenario: A user can specify the content type of manual links
         When the user edits the topic page
         And the user adds an external related methodology with content type "Information" and title "Sticky Link 1"
