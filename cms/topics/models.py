@@ -115,25 +115,8 @@ class TopicPageRelatedArticle(Orderable):
             raise ValidationError("Please select either an internal page or provide an external URL, not both.")
         if not self.page_id and not self.external_url:
             raise ValidationError("You must select an internal page or provide an external URL.")
-
-        errors = {}
-        if self.page_id:
-            # title is still an optional field when using an internal page
-            if self.description:
-                errors["description"] = "This field should be left blank when linking to an internal page."
-            if self.content_type:
-                errors["content_type"] = "This field should be left blank when linking to an internal page."
-            if self.release_date:
-                errors["release_date"] = "This field should be left blank when linking to an internal page."
-
-        if self.external_url:
-            if not self.title:
-                errors["title"] = "This field is required when providing an external URL."
-            if not self.description:
-                errors["description"] = "This field is required when providing an external URL."
-
-        if errors:
-            raise ValidationError(errors)
+        if self.external_url and not self.title:
+            raise ValidationError({"title": "This field is required when providing an external URL."})
 
 
 class TopicPageRelatedMethodology(Orderable):
