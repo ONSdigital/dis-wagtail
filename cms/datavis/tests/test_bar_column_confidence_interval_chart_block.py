@@ -302,12 +302,32 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
         self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.COLUMN
         self.raw_data["x_axis"]["tick_interval_mobile"] = 5
         self.raw_data["x_axis"]["tick_interval_desktop"] = 6
+        x_axis_config = self.get_value().block.get_component_config(self.get_value())["xAxis"]
+        for key in ["tickIntervalMobile", "tickIntervalDesktop"]:
+            with self.subTest(key=key):
+                self.assertIn(key, x_axis_config)
+
+    def test_column_chart_category_axis_tick_interval_validation(self):
+        self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.COLUMN
+        self.raw_data["x_axis"]["tick_interval_mobile"] = 5
+        self.raw_data["x_axis"]["tick_interval_desktop"] = 6
         try:
             self.block.clean(self.get_value())
         except ValidationError:
             self.fail("Expected no ValidationError for column chart category axis tick interval")
 
-    def test_bar_chart_category_axis_tick_interval_not_supported(self):
+    def test_bar_chart_category_axis_has_no_tick_interval(self):
+        self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.BAR
+        self.raw_data["x_axis"]["tick_interval_mobile"] = 5
+        self.raw_data["x_axis"]["tick_interval_desktop"] = 6
+        with self.assertRaises(blocks.StructBlockValidationError):
+            self.block.clean(self.get_value())
+            x_axis_config = self.get_value().block.get_component_config(self.get_value())["xAxis"]
+            for key in ["tickIntervalMobile", "tickIntervalDesktop"]:
+                with self.subTest(key=key):
+                    self.assertNotIn(key, x_axis_config)
+
+    def test_bar_chart_category_axis_tick_interval_validation(self):
         self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.BAR
         self.raw_data["x_axis"]["tick_interval_mobile"] = 5
         self.raw_data["x_axis"]["tick_interval_desktop"] = 6
