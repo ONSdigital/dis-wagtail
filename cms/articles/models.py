@@ -57,6 +57,8 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     page_description = "A container for statistical article series. Used for URL structure purposes."
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode as this redirects away
+    # The index page is a container that cannot be navigated to, so omit it from breadcrumbs.
+    exclude_from_breadcrumbs = True
 
     content_panels: ClassVar[list[Panel]] = [
         *Page.content_panels,
