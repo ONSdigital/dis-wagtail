@@ -156,25 +156,22 @@ class PageBreadcrumbsTestCase(TestCase):
         """Test that get_breadcrumbs correctly outputs the parent pages in the correct format."""
         breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
 
-        series_parent = self.series.get_parent()
+        # The articles index page is a non-navigable container, so it is excluded from the trail.
+        topic = self.series.get_parent().get_parent()
 
         expected_entries = [
             {
-                "url": series_parent.get_site().root_url,
+                "url": self.statistical_article.get_site().root_url,
                 "text": "Home",
             },
             {
-                "url": series_parent.get_parent().get_full_url(request=self.dummy_request),
-                "text": series_parent.get_parent().title,
-            },
-            {
-                "url": series_parent.get_full_url(request=self.dummy_request),
-                "text": series_parent.title,
+                "url": topic.get_full_url(request=self.dummy_request),
+                "text": topic.title,
             },
         ]
 
         self.assertIsInstance(breadcrumbs_output, list)
-        self.assertEqual(len(breadcrumbs_output), 3)
+        self.assertEqual(len(breadcrumbs_output), 2)
         self.assertListEqual(breadcrumbs_output, expected_entries)
 
     def test_breadcrumbs_include_self(self):
@@ -182,20 +179,17 @@ class PageBreadcrumbsTestCase(TestCase):
         self.dummy_request.is_for_subpage = True
         breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
 
-        series_parent = self.series.get_parent()
+        # The articles index page is a non-navigable container, so it is excluded from the trail.
+        topic = self.series.get_parent().get_parent()
 
         expected_entries = [
             {
-                "url": series_parent.get_site().root_url,
+                "url": self.statistical_article.get_site().root_url,
                 "text": "Home",
             },
             {
-                "url": series_parent.get_parent().get_full_url(request=self.dummy_request),
-                "text": series_parent.get_parent().title,
-            },
-            {
-                "url": series_parent.get_full_url(request=self.dummy_request),
-                "text": series_parent.title,
+                "url": topic.get_full_url(request=self.dummy_request),
+                "text": topic.title,
             },
             {
                 "url": self.statistical_article.get_full_url(request=self.dummy_request),
@@ -204,7 +198,7 @@ class PageBreadcrumbsTestCase(TestCase):
         ]
 
         self.assertIsInstance(breadcrumbs_output, list)
-        self.assertEqual(len(breadcrumbs_output), 4)
+        self.assertEqual(len(breadcrumbs_output), 3)
         self.assertListEqual(breadcrumbs_output, expected_entries)
 
 
