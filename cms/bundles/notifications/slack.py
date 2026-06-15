@@ -6,6 +6,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
+from django.utils import timezone
 
 from cms.core.slack import send_or_update_slack_message
 
@@ -77,15 +78,18 @@ def _get_publish_type(bundle: Bundle) -> str:
 
 
 def _format_publish_datetime(dt: datetime) -> str:
-    """Format datetime as DD/MM/YYYY - HH:MM:SS.sss.
+    """Format datetime as DD/MM/YYYY - HH:MM:SS.sss in the current active local time.
 
     Args:
         dt: The datetime to format.
 
     Returns:
-        Formatted string in DD/MM/YYYY - HH:MM:SS.sss format.
+        Formatted string in DD/MM/YYYY - HH:MM:SS.sss format, representing the
+        datetime in the current active local time.
     """
-    return f"{dt:%d/%m/%Y - %H:%M:%S}.{dt.microsecond // 1000:03d}"
+    local_dt = timezone.localtime(dt)
+
+    return f"{local_dt:%d/%m/%Y - %H:%M:%S}.{local_dt.microsecond // 1000:03d}"
 
 
 def _get_example_page_url(bundle: Bundle) -> str | None:
@@ -337,7 +341,7 @@ def alert_slack_of_bundle_content_failure(
     """
     fields: list[dict[str, Any]] = [
         {"title": "Bundle Name", "value": f"<{bundle.full_inspect_url}|{bundle.name}>", "short": False},
-        {"title": "Timestamp", "value": _format_publish_datetime(datetime.now()), "short": True},
+        {"title": "Timestamp", "value": _format_publish_datetime(timezone.now()), "short": True},
         {"title": "Publish Type", "value": _get_publish_type(bundle), "short": True},
         {"title": "Alert Type", "value": alert_type, "short": True},
         {"title": "Exception", "value": exception_message, "short": False},
