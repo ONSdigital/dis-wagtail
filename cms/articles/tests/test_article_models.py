@@ -665,21 +665,33 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         self.assertNotContains(response, expected)
 
-    def test_breadcrumb_doesnt_contains_series_url(self):
+    def test_breadcrumb_excludes_container_pages(self):
         response = self.client.get(self.basic_page_url)
-        # confirm that current breadcrumb is there
+        dummy_request = get_dummy_request()
+        # confirm the series container page is not in the breadcrumb
         article_series = self.basic_page.get_parent()
+        series_url = article_series.get_full_url(request=dummy_request)
         self.assertNotContains(
             response,
-            f'<a class="ons-breadcrumbs__link" href="{article_series.full_url}">{article_series.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{series_url}">{article_series.title}</a>',
             html=True,
         )
 
-        # confirm that current breadcrumb points to the parent page
-        topics_page = article_series.get_parent()
+        # confirm the articles index container page is not in the breadcrumb
+        articles_index = article_series.get_parent()
+        articles_index_url = articles_index.get_full_url(request=dummy_request)
+        self.assertNotContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{articles_index_url}">{articles_index.title}</a>',
+            html=True,
+        )
+
+        # confirm the breadcrumb points to the topic page (the closest navigable ancestor)
+        topic_page = articles_index.get_parent()
+        topic_url = topic_page.get_full_url(request=dummy_request)
         self.assertContains(
             response,
-            f'<a class="ons-breadcrumbs__link" href="{topics_page.full_url}">{topics_page.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{topic_url}">{topic_page.title}</a>',
             html=True,
         )
 
@@ -693,6 +705,15 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         self.assertContains(
             response,
             f'<a class="ons-breadcrumbs__link" href="{self.basic_page.full_url}">PSF: November 2024</a>',
+            html=True,
+        )
+
+        # confirm the articles index container page is not in the related data breadcrumb
+        articles_index = self.basic_page.get_parent().get_parent()
+        articles_index_url = articles_index.get_full_url(request=get_dummy_request())
+        self.assertNotContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{articles_index_url}">{articles_index.title}</a>',
             html=True,
         )
 
@@ -1199,16 +1220,24 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
     def setUp(self):
         self.dummy_request = get_dummy_request()
 
-    def test_breadcrumb_does_contains_series_url(self):
+    def test_breadcrumb_excludes_articles_index(self):
         response = self.client.get(self.previous_releases_url)
-        parent_page = self.article_series.get_parent()
-        # confirm that current breadcrumb is there and that current breadcrumb points to the parent page
-        # TODO currently this test points to the article page not to the series page
-        # f'<a class="ons-breadcrumbs__link" href="{self.article_series.url}">{self.article_series.title}</a>',
 
+        # confirm the articles index container page is not in the breadcrumb
+        articles_index = self.article_series.get_parent()
+        articles_index_url = articles_index.get_full_url(request=self.dummy_request)
+        self.assertNotContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{articles_index_url}">{articles_index.title}</a>',
+            html=True,
+        )
+
+        # confirm the breadcrumb points to the topic page (the closest navigable ancestor)
+        topic_page = articles_index.get_parent()
+        topic_url = topic_page.get_full_url(request=self.dummy_request)
         self.assertContains(
             response,
-            f'<a class="ons-breadcrumbs__link" href="{parent_page.full_url}">{parent_page.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{topic_url}">{topic_page.title}</a>',
             html=True,
         )
 
