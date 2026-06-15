@@ -806,6 +806,52 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, edition_b)
         self.assertContains(response, f'href="{expected_edit_url_b}"')
 
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__published_dataset_without_preview_url_has_no_action_button(self, mock_api_client):
+        """Checks that published datasets without a preview URL do not display a View Live button."""
+        self.bundle.bundle_api_bundle_id = "test-bundle-id"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        dataset_id = "dataset-123"
+        edition = "2024"
+        version = 1
+        expected_edit_url = f"/data-admin/series/{dataset_id}/editions/{edition}/versions/{version}"
+
+        dataset = DatasetFactory(namespace=dataset_id, edition=edition, version=version, title="Dataset A")
+        BundleDatasetFactory(parent=self.bundle, dataset=dataset, bundle_api_content_id="content-123")
+
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "items": [
+                {
+                    "id": "content-123",
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": dataset_id,
+                        "title": "Dataset A API Title",
+                        "edition_id": edition,
+                        "version_id": version,
+                    },
+                    "state": "PUBLISHED",
+                    "links": {
+                        "edit": expected_edit_url,
+                    },
+                },
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertContains(response, "Dataset A")
+        self.assertContains(response, "Published")
+        self.assertNotContains(response, "View Live")
+        self.assertInHTML(
+            f'<tr><td class="title"><strong><a href="{expected_edit_url}">Dataset A</a></strong></td>'
+            f"<td>{edition}</td><td>{version}</td><td>Published</td><td></td></tr>",
+            response.content.decode("utf-8"),
+        )
+
     @override_settings(  # Address race condition in tests caused when calling delete() on a page
         WAGTAILSEARCH_BACKENDS={
             "default": {
