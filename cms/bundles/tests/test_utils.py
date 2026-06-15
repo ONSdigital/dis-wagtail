@@ -15,7 +15,6 @@ from cms.bundles.utils import (
     build_content_item_for_dataset,
     extract_content_id_from_bundle_response,
     get_bundleable_page_types,
-    get_data_admin_action_url,
     get_dataset_preview_key,
     get_language_code_from_page,
     get_pages_in_active_bundles,
@@ -80,26 +79,6 @@ class BundlesUtilsTestCase(TestCase):
         self.assertTrue(in_bundle_ready_to_be_published(page))
 
 
-class DatasetGetDataAdminActionUrlTests(TestCase):
-    """Tests for the get_data_admin_action_url function."""
-
-    def test_get_data_admin_action_url_with_different_actions(self):
-        """Test that different actions work correctly."""
-        dataset_id = "test-dataset"
-        edition_id = "time-series"
-        version_id = "2"
-
-        # Test multiple actions
-
-        url = get_data_admin_action_url("edit", dataset_id, edition_id, version_id)
-        expected = f"/data-admin/series/{dataset_id}/editions/{edition_id}/versions/{version_id}"
-        self.assertEqual(url, expected)
-
-        url = get_data_admin_action_url("preview", dataset_id, edition_id, version_id)
-        expected = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
-        self.assertEqual(url, expected)
-
-
 class DatasetContentItemUtilityTests(TestCase):
     """Tests for content item utility functions."""
 
@@ -125,10 +104,6 @@ class DatasetContentItemUtilityTests(TestCase):
                 "dataset_id": "cpih",
                 "edition_id": "time-series",
                 "version_id": 1,
-            },
-            "links": {
-                "edit": "/data-admin/series/cpih/editions/time-series/versions/1",
-                "preview": "/datasets/cpih/editions/time-series/versions/1",
             },
         }
 
