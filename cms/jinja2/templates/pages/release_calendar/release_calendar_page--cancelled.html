@@ -41,7 +41,7 @@
 
     {% block release_note %}
         <div class="ons-container ons-u-mt-m">
-            {{ onsPanel({"body": page.notice }) }}
+            {{ onsPanel({"body": page.notice|richtext }) }}
         </div>
     {% endblock %}
 {% endblock %}

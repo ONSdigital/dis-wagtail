@@ -520,6 +520,23 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.edit_url)
         self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
 
+    def test_edit_view_status_sidebar_reflects_bundle_status(self):
+        """The status side panel must reflect the bundle's actual status, not always show 'Live'."""
+        # Each BundleStatus label maps to a cautious-slugified aria ID in the sidebar heading.
+        # "Draft" -> status-sidebar-draft, "In Preview" -> status-sidebar-in-preview, etc.
+        status_cases = [
+            (BundleStatus.DRAFT, "status-sidebar-draft"),
+            (BundleStatus.IN_REVIEW, "status-sidebar-in-preview"),
+            (BundleStatus.APPROVED, "status-sidebar-ready-to-publish"),
+        ]
+        for status, expected_id in status_cases:
+            with self.subTest(status=status):
+                self.bundle.status = status
+                self.bundle.save(update_fields=["status"])
+                response = self.client.get(self.edit_url)
+                self.assertNotContains(response, "status-sidebar-live")
+                self.assertContains(response, expected_id)
+
 
 class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseBase):
     LONG_TEXT = "Some long description to test truncation. " * 500
@@ -824,6 +841,34 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Foobar Release Calendar Page")
         self.assertContains(response, release_calendar_page.get_url(request=get_dummy_request()))
         self.assertNotContains(response, reverse("bundles:preview_release_calendar", args=[self.bundle.id]))
+
+    def test_inspect_view__labels_page_action_as_view_live_after_publication(self):
+        page = StatisticalArticlePageFactory(title="Published bundled page", live=True)
+        BundlePageFactory(parent=self.bundle, page=page)
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        expected_live_url = page.get_url(request=get_dummy_request())
+        self.assertContains(
+            response,
+            f'<a href="{expected_live_url}" class="button button-small button-secondary">View Live</a>',
+            html=True,
+        )
+
+    def test_inspect_view__labels_page_action_as_preview_before_publication(self):
+        page = StatisticalArticlePageFactory(title="Preview bundled page", live=False)
+        BundlePageFactory(parent=self.bundle, page=page)
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        expected_preview_url = reverse("bundles:preview", args=[self.bundle.pk, page.pk])
+        self.assertContains(
+            response,
+            f'<a href="{expected_preview_url}" class="button button-small button-secondary">Preview</a>',
+            html=True,
+        )
 
     @time_machine.travel(datetime(2025, 7, 1, 12, 37), tick=False)
     def test_inspect_view__datetime_use_configured_timezone(self):

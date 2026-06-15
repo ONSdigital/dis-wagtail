@@ -875,11 +875,12 @@ class IframeBlock(BaseVisualisationBlock):
             "caption": value.get("caption"),
             "description": value.get("audio_description"),
             "iframeUrl": value.get("iframe_source_url"),
-            "footnotes": {
-                "title": _("Footnotes"),
-                "content": str(value.get("footnotes", "")),
-            },
         }
+        if footnotes := value.get("footnotes"):
+            config["footnotes"] = {
+                "title": _("Footnotes"),
+                "content": str(footnotes),
+            }
 
         return config
 
