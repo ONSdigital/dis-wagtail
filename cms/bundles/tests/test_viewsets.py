@@ -842,6 +842,34 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, release_calendar_page.get_url(request=get_dummy_request()))
         self.assertNotContains(response, reverse("bundles:preview_release_calendar", args=[self.bundle.id]))
 
+    def test_inspect_view__labels_page_action_as_view_live_after_publication(self):
+        page = StatisticalArticlePageFactory(title="Published bundled page", live=True)
+        BundlePageFactory(parent=self.bundle, page=page)
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        expected_live_url = page.get_url(request=get_dummy_request())
+        self.assertContains(
+            response,
+            f'<a href="{expected_live_url}" class="button button-small button-secondary">View Live</a>',
+            html=True,
+        )
+
+    def test_inspect_view__labels_page_action_as_preview_before_publication(self):
+        page = StatisticalArticlePageFactory(title="Preview bundled page", live=False)
+        BundlePageFactory(parent=self.bundle, page=page)
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        expected_preview_url = reverse("bundles:preview", args=[self.bundle.pk, page.pk])
+        self.assertContains(
+            response,
+            f'<a href="{expected_preview_url}" class="button button-small button-secondary">Preview</a>',
+            html=True,
+        )
+
     @time_machine.travel(datetime(2025, 7, 1, 12, 37), tick=False)
     def test_inspect_view__datetime_use_configured_timezone(self):
         bundle = BundleFactory(
