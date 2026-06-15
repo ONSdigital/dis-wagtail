@@ -1,8 +1,10 @@
 from datetime import datetime
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from wagtail.models import PageLogEntry
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -382,3 +384,106 @@ class SeriesWithHeadlineFiguresChooserViewSetTest(WagtailTestUtils, TestCase):
 
         self.assertContains(response, "1 January 2024")
         self.assertContains(response, "1 February 2025")
+
+    def test_choose_view_logs_viewed_headline_figures(self):
+        """Test that viewing headline figures in the chooser creates an audit log entry."""
+        with patch("cms.core.audit.audit_logger") as mock_logger:
+            self.client.get(f"{self.chooser_url}?topic_page_id={self.topic_page.id}")
+
+            mock_logger.info.assert_called_once()
+            call_args = mock_logger.info.call_args
+            extra = call_args[1]["extra"]
+
+            self.assertEqual(extra["event"], "topics.headline_figures_chooser.view")
+            self.assertEqual(extra["object_id"], self.topic_page.id)
+            self.assertIn("figurexyz", extra["data"]["figure_ids"])
+            self.assertIn("figureabc", extra["data"]["figure_ids"])
+            self.assertIn("foobar123", extra["data"]["figure_ids"])
+            self.assertIn("foobar321", extra["data"]["figure_ids"])
+
+    def test_choose_view_creates_page_log_entry(self):
+        """Test that viewing headline figures creates a PageLogEntry for the topic page."""
+        initial_count = PageLogEntry.objects.filter(
+            page=self.topic_page,
+            action="topics.headline_figures_chooser.view",
+        ).count()
+
+        self.client.get(f"{self.chooser_url}?topic_page_id={self.topic_page.id}")
+
+        log_entries = PageLogEntry.objects.filter(
+            page=self.topic_page,
+            action="topics.headline_figures_chooser.view",
+        )
+        self.assertEqual(log_entries.count(), initial_count + 1)
+
+        log_entry = log_entries.latest("timestamp")
+        self.assertEqual(log_entry.user, self.superuser)
+        self.assertIn("figurexyz", log_entry.data["figure_ids"])
+        self.assertIn("figureabc", log_entry.data["figure_ids"])
+
+    def test_choose_view_does_not_log_without_topic_page_id(self):
+        """Test that no audit log is created when topic_page_id is not provided."""
+        initial_count = PageLogEntry.objects.filter(
+            action="topics.headline_figures_chooser.view",
+        ).count()
+
+        self.client.get(self.chooser_url)
+
+        self.assertEqual(
+            PageLogEntry.objects.filter(action="topics.headline_figures_chooser.view").count(),
+            initial_count,
+        )
+
+    def test_choose_view_does_not_log_for_invalid_topic_page_id(self):
+        """Test that no audit log is created when topic_page_id is invalid."""
+        initial_count = PageLogEntry.objects.filter(
+            action="topics.headline_figures_chooser.view",
+        ).count()
+
+        self.client.get(f"{self.chooser_url}?topic_page_id=99999")
+
+        self.assertEqual(
+            PageLogEntry.objects.filter(action="topics.headline_figures_chooser.view").count(),
+            initial_count,
+        )
+
+    def test_results_view_logs_viewed_headline_figures(self):
+        """Test that the results view also logs viewed headline figures."""
+        with patch("cms.core.audit.audit_logger") as mock_logger:
+            self.client.get(f"{self.chooser_results_url}?topic_page_id={self.topic_page.id}")
+
+            mock_logger.info.assert_called_once()
+            call_args = mock_logger.info.call_args
+            extra = call_args[1]["extra"]
+
+            self.assertEqual(extra["event"], "topics.headline_figures_chooser.view")
+            self.assertEqual(extra["object_id"], self.topic_page.id)
+
+    def test_log_entry_contains_only_figure_ids(self):
+        """Test that the log entry only contains figure IDs, not sensitive figure data."""
+        # Sanity check - ensure no log entries exist before the test
+        self.assertFalse(
+            PageLogEntry.objects.filter(
+                action="topics.headline_figures_chooser.view",
+            ).exists()
+        )
+
+        self.client.get(f"{self.chooser_url}?topic_page_id={self.topic_page.id}")
+
+        log_entry = PageLogEntry.objects.filter(
+            page=self.topic_page,
+            action="topics.headline_figures_chooser.view",
+        ).latest("timestamp")
+
+        # Verify only figure_ids key is present in data
+        self.assertEqual(list(log_entry.data.keys()), ["figure_ids"])
+
+        # Verify figure values/text are not logged
+        data_str = str(log_entry.data)
+
+        self.assertNotIn("999 million", data_str)
+        self.assertNotIn("123 billion", data_str)
+        self.assertNotIn("Foobar figure title", data_str)
+        self.assertNotIn("Figure supporting text", data_str)
+        self.assertIn("figurexyz", data_str)
+        self.assertIn("figureabc", data_str)
