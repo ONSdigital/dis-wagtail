@@ -16,8 +16,11 @@ max_requests_jitter = int(os.environ.get("GUNICORN_MAX_REQUESTS_JITTER", "50"))
 # Log to stdout
 accesslog = "-"
 
-# Time out after 25 seconds (notably shorter than Heroku's)
+# Time out after 25 seconds
 timeout = int(os.environ.get("GUNICORN_TIMEOUT", "25"))
+
+# Allow the bundle publishing timeout to expire before considering a terminate "ungraceful".
+graceful_timeout = float(os.environ.get("BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS", "110"))
 
 # Load app pre-fork to save memory and worker startup time
 preload_app = True

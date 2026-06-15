@@ -129,3 +129,35 @@ def run_in_executor[**P](fn: Callable[P, None], *args: P.args, **kwargs: P.kwarg
 
 def run_in_support_executor[**P](fn: Callable[P, None], *args: P.args, **kwargs: P.kwargs) -> Future:
     return _support_executor.submit(partial(_executor_wrapper, fn, *args, **kwargs))
+
+
+def executor_stop_and_wait(progress: bool = False) -> None:
+    """Shutdown the executors, and wait for them to completely stop.
+
+    This is similar to .shutdown(wait=True), but with optional progress reporting.
+    """
+    _executor.shutdown(wait=False)
+    _support_executor.shutdown(wait=False)
+
+    # Give the threads time to terminate to avoid unnecessary printing.
+    if progress:
+        time.sleep(0.01)
+
+    executor_threads = _executor._threads | _support_executor._threads  # pylint: disable=protected-access
+
+    last_running_threads = len(executor_threads)
+
+    while running_threads := [t for t in executor_threads if t.is_alive()]:
+        if progress and last_running_threads > len(running_threads):
+            logging.debug(
+                "Waiting for %d threads",
+                len(running_threads),
+                extra={
+                    "thread_ids": [t.native_id for t in running_threads],
+                    "thread_names": [t.name for t in running_threads],
+                },
+            )
+            last_running_threads = len(running_threads)
+
+        # 1 second is long enough for the other threads to do work, but not so long as to delay unnecessarily.
+        time.sleep(1)
