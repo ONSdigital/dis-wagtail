@@ -1,5 +1,4 @@
 import logging
-from functools import partial
 from typing import Any
 
 from django.conf import settings
@@ -8,12 +7,19 @@ from django.dispatch import receiver
 from wagtail.models import Page
 from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move
 
-from cms.bundles.utils import get_active_bundle_for_page
-from cms.post_publish_actions.handlers import PostPublishActionType, run_post_publish_action
+from cms.bundles.models import Bundle
+from cms.post_publish_actions.models import PostPublishActionType
+from cms.post_publish_actions.registry import post_publish_action
 from cms.search.publishers import get_publisher
 from cms.search.utils import get_model_by_name, is_indexable_page
 
 logger = logging.getLogger(__name__)
+
+
+@post_publish_action(PostPublishActionType.SEARCH_UPDATED)
+def update_index_post_publish_action(page: Page, _bundle: Bundle | None) -> None:
+    if is_indexable_page(page):
+        get_publisher().publish_created_or_updated(page)
 
 
 @receiver(page_published)
@@ -21,13 +27,6 @@ def on_page_published(sender: type[Page], instance: Page, **kwargs: Any) -> None
     """Called whenever a Wagtail Page is published (UI or code).
     instance is the published Page object.
     """
-    if is_indexable_page(instance):
-        run_post_publish_action(
-            PostPublishActionType.SEARCH_UPDATED,
-            instance,
-            get_active_bundle_for_page(instance),
-            partial(get_publisher().publish_created_or_updated, instance),
-        )
 
 
 @receiver(page_unpublished)

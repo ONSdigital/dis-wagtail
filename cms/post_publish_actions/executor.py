@@ -10,10 +10,12 @@ from typing import Any
 from django.conf import settings
 from django.db import close_old_connections
 from django.utils import timezone
+from wagtail.models import Page
 
 from cms.core.db_router import force_write_db
 
 from .models import PostPublishAction, PostPublishActionStatus, PostPublishActionType
+from .registry import ActionHandler
 
 
 def _build_executor() -> ThreadPoolExecutor:
@@ -48,11 +50,13 @@ def _executor_wrapper[**P](executor_fn: Callable[P, None], *args: P.args, **kwar
 
 @force_write_db()
 def run_action(
-    action_handler: Callable,
+    action_handler: ActionHandler,
     action_type: PostPublishActionType,
     page_id: int,
     bundle_id: int | None,
 ) -> None:
+    from cms.bundles.models import Bundle  # pylint: disable=import-outside-toplevel
+
     # TODO: Support page-only publishes
     if bundle_id is None:
         raise RuntimeError("Bundle id required")
@@ -76,8 +80,11 @@ def run_action(
     )
     start_time = time.perf_counter()
 
+    page = Page.objects.get(id=page_id)
+    bundle = Bundle.objects.get(id=bundle_id)
+
     try:
-        action_handler()
+        action_handler(page, bundle)
     except Exception as e:  # pylint: disable=broad-exception-caught
         duration = time.perf_counter() - start_time
         logger.exception(

@@ -1,4 +1,3 @@
-from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from django.contrib.contenttypes.models import ContentType
@@ -8,8 +7,9 @@ from django.db.models.functions import Cast
 from wagtail.models import Page, ReferenceIndex
 from wagtail.signals import published, unpublished
 
-from cms.bundles.utils import get_active_bundle_for_page
-from cms.post_publish_actions.handlers import PostPublishActionType, run_post_publish_action
+from cms.bundles.models import Bundle
+from cms.post_publish_actions.models import PostPublishActionType
+from cms.post_publish_actions.registry import register_post_publish_action
 from cms.private_media.constants import Privacy
 from cms.private_media.models import PrivateImageMixin
 from cms.private_media.utils import get_private_media_models
@@ -42,20 +42,17 @@ def _publish_media(instance: Model) -> None:
 
 
 def publish_media_on_publish(instance: Model, **kwargs: Any) -> None:
-    """Signal handler to be connected to the 'page_published' and 'published'
-    signals for all publishable models. It is responsible for identifying any
-    privacy-controlled media used by the object, and ensuring that it is also
-    made public.
+    """Signal handler to be connected to the 'published' signal for all
+    publishable models. It is responsible for identifying any privacy-controlled
+    media used by the object, and ensuring that it is also made public.
     """
-    if isinstance(instance, Page):
-        run_post_publish_action(
-            PostPublishActionType.S3_ACL,
-            instance,
-            get_active_bundle_for_page(instance),
-            partial(_publish_media, instance),
-        )
-    else:
+    # NB: Pages are handled by post-publish actions.
+    if not isinstance(instance, Page):
         _publish_media(instance)
+
+
+def publish_media_post_publish_action(page: Page, _bundle: Bundle | None) -> None:
+    _publish_media(page)
 
 
 def unpublish_media_on_unpublish(instance: Model, **kwargs: Any) -> None:
@@ -123,3 +120,5 @@ def register_signal_handlers() -> None:
     """Register signal handlers for models using the private media system."""
     published.connect(publish_media_on_publish, dispatch_uid="publish_media")
     unpublished.connect(unpublish_media_on_unpublish, dispatch_uid="unpublish_media")
+
+    register_post_publish_action(PostPublishActionType.S3_ACL, publish_media_post_publish_action)
