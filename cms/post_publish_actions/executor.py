@@ -22,7 +22,17 @@ def _build_executor() -> ThreadPoolExecutor:
     )
 
 
+def _build_support_executor() -> ThreadPoolExecutor:
+    return ThreadPoolExecutor(
+        max_workers=settings.BUNDLE_POST_PUBLISH_CONCURRENCY, thread_name_prefix="post_publish_actions_support"
+    )
+
+
+# The main executor is reserved exclusively for post-publish actions
 _executor = _build_executor()
+
+# The "support" executor should be used for ancillary tasks
+_support_executor = _build_support_executor()
 
 logger = logging.getLogger(__name__)
 
@@ -105,11 +115,17 @@ def run_action(
 
 
 def flush_executor() -> None:
-    global _executor  # noqa: PLW0603 # pylint: disable=global-statement
+    global _executor, _support_executor  # noqa: PLW0603 # pylint: disable=global-statement
     _executor.shutdown(wait=True)
+    _support_executor.shutdown(wait=True)
 
     _executor = _build_executor()
+    _support_executor = _build_support_executor()
 
 
 def run_in_executor[**P](fn: Callable[P, None], *args: P.args, **kwargs: P.kwargs) -> Future:
     return _executor.submit(partial(_executor_wrapper, fn, *args, **kwargs))
+
+
+def run_in_support_executor[**P](fn: Callable[P, None], *args: P.args, **kwargs: P.kwargs) -> Future:
+    return _support_executor.submit(partial(_executor_wrapper, fn, *args, **kwargs))

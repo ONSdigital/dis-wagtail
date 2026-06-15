@@ -14,8 +14,10 @@ from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import notify_slack_of_bundle_pre_publish, notify_slack_of_post_publish_end
 from cms.bundles.utils import publish_bundle
 from cms.core.db_router import force_write_db
-from cms.post_publish_actions.executor import run_in_executor as run_in_post_publish_executor
+from cms.core.utils import GeneratorCollector
+from cms.post_publish_actions.executor import run_in_support_executor as run_in_post_publish_support_executor
 from cms.post_publish_actions.models import PostPublishAction, PostPublishActionStatus
+from cms.post_publish_actions.utils import as_completed_actions_by_bundle
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +45,6 @@ class Command(BaseCommand):
                 "Bundles in the future will be held until their publishing time."
             ),
         )
-        parser.add_argument(
-            "--poll-frequency",
-            type=int,
-            default=settings.BUNDLE_POST_PUBLISH_POLL_FREQUENCY,
-            help=("Number of seconds between checks of post-publish actions (default: %(default)r)"),
-        )
 
     def _handle_bundle_action(self, bundle: Bundle) -> None:
         try:
@@ -65,39 +61,22 @@ class Command(BaseCommand):
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("Publish failed", extra={"bundle_id": bundle.pk, "event": "publish_failed"})
 
-    def _await_bundle_post_publish_actions(self, bundles: list[Bundle], poll_frequency: int) -> None:
-        # Copy bundles to allow mutation
-        bundles_to_check = list(bundles)
-
-        start_time = time.monotonic()
+    def _await_bundle_post_publish_actions(self, bundles: list[Bundle]) -> None:
+        start_time = min(self.bundle_start_times.values())
+        as_completed_collector = GeneratorCollector(as_completed_actions_by_bundle(bundles, start_time))
 
         bundle_complete_futures = []
 
-        while bundles_to_check and (time.monotonic() - start_time) <= settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS:
-            unfinished_bundles: set[int] = set(
-                PostPublishAction.objects.unfinished()
-                .active()
-                .filter(bundle__in=bundles_to_check)
-                .values_list("bundle_id", flat=True)
-                .distinct()
+        for completed_bundle in as_completed_collector:
+            bundle_complete_futures.append(
+                run_in_post_publish_support_executor(self._handle_bundle_post_publish_complete, bundle=completed_bundle)
             )
 
-            for bundle in bundles_to_check.copy():
-                if bundle.pk not in unfinished_bundles:
-                    bundle_complete_futures.append(
-                        run_in_post_publish_executor(self._handle_bundle_post_publish_complete, bundle=bundle)
-                    )
-                    bundles_to_check.remove(bundle)
-
-            # Only wait if there are bundles to check
-            if bundles_to_check:
-                time.sleep(poll_frequency)
-
-        if bundles_to_check:
+        if as_completed_collector.value:
             outstanding_actions = (
                 PostPublishAction.objects.unfinished()
                 .active()
-                .filter(bundle__in=bundles_to_check)
+                .filter(bundle__in=as_completed_collector.value)
                 .update(
                     status=PostPublishActionStatus.FAILED,
                     failed_reason="Timeout",
@@ -108,17 +87,23 @@ class Command(BaseCommand):
             logger.error(
                 "Post publish actions timeout",
                 extra={
-                    "unfinished_bundles": [bundle.pk for bundle in bundles_to_check],
+                    "unfinished_bundles": [bundle.pk for bundle in as_completed_collector.value],
                     "outstanding_actions": outstanding_actions,
                 },
             )
+            for bundle in as_completed_collector.value:
+                bundle_complete_futures.append(
+                    run_in_post_publish_support_executor(self._handle_bundle_post_publish_complete, bundle=bundle)
+                )
 
-        remaining_time = max(settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS - (time.monotonic() - start_time), 1)
+        remaining_time = max(
+            settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS - (timezone.now() - start_time).total_seconds(), 1
+        )
 
         concurrent.futures.wait(
             bundle_complete_futures,
             return_when=concurrent.futures.ALL_COMPLETED,
-            timeout=remaining_time + poll_frequency,
+            timeout=remaining_time + settings.BUNDLE_POST_PUBLISH_POLL_FREQUENCY,
         )
 
     @force_write_db()
@@ -175,4 +160,4 @@ class Command(BaseCommand):
 
             bundle_scheduler.run()
 
-            self._await_bundle_post_publish_actions(bundles_to_publish.copy(), options["poll_frequency"])
+            self._await_bundle_post_publish_actions(bundles_to_publish.copy())

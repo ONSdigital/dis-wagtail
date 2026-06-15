@@ -22,7 +22,7 @@ from cms.bundles.notifications.slack import (
     notify_slack_of_publish_end,
 )
 from cms.core.fields import StreamField
-from cms.post_publish_actions.executor import run_in_executor
+from cms.post_publish_actions.executor import run_in_support_executor
 from cms.post_publish_actions.models import PostPublishAction
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.utils import get_translated_string
@@ -446,7 +446,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                             "event": "publish_page_failed",
                         },
                     )
-                    run_in_executor(
+                    run_in_support_executor(
                         alert_slack_of_bundle_content_failure,
                         bundle=bundle,
                         exception_message=f"<{page.full_edit_url}|Page (ID: {page.pk})> in the bundle did not "
@@ -463,7 +463,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                     "event": "publish_page_failed",
                 },
             )
-            run_in_executor(
+            run_in_support_executor(
                 alert_slack_of_bundle_content_failure,
                 bundle=bundle,
                 exception_message=f"<{page.full_edit_url}|Page (ID: {page.pk})> in the bundle failed to publish",
@@ -499,7 +499,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
 
         # Send failure notification
         end_time = timezone.now()
-        run_in_executor(
+        run_in_support_executor(
             notify_slack_of_bundle_failure,
             bundle=bundle,
             start_time=start_time,
@@ -528,7 +528,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
         bundle.save(update_fields=["status"])
 
     # Send publishing ended notification
-    run_in_executor(
+    run_in_support_executor(
         notify_slack_of_publish_end,
         bundle=bundle,
         start_time=start_time,
