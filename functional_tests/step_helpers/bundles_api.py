@@ -60,8 +60,8 @@ def prepare_dataset_content_item(  # noqa: PLR0913  # pylint: disable=too-many-a
             "title": title,
         },
         "links": {
-            "edit": f"https://example.com/edit/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}",
-            "preview": f"https://example.com/preview/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}",
+            "edit": f"/data-admin/series/{dataset_id}/editions/{edition_id}/versions/{version_id}",
+            "preview": f"/retail-industry/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}",
         },
     }
 
