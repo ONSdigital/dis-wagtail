@@ -538,8 +538,8 @@ class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.preview_url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        self.assertContains(response, statistical_article.title)
-        self.assertContains(response, methodology_article.title)
+        self.assertContains(response, statistical_article.display_title)
+        self.assertContains(response, methodology_article.display_title)
         self.assertContains(response, bundle_dataset_a.dataset.title)
         self.assertContains(response, bundle_dataset_b.dataset.title)
         self.assertContains(response, bundle_dataset_c.dataset.title)
@@ -553,19 +553,19 @@ class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.preview_url)
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(response, f"{statistical_article.title} (Draft)")
+        self.assertContains(response, f"{statistical_article.display_title} (Draft)")
 
         workflow_state = mark_page_as_ready_for_review(statistical_article, self.publishing_officer)
 
         response = self.client.get(self.preview_url)
 
-        self.assertContains(response, f"{statistical_article.title} (In Preview)")
+        self.assertContains(response, f"{statistical_article.display_title} (In Preview)")
 
         progress_page_workflow(workflow_state)
 
         response = self.client.get(self.preview_url)
 
-        self.assertContains(response, f"{statistical_article.title} (Ready to publish)")
+        self.assertContains(response, f"{statistical_article.display_title} (Ready to publish)")
 
     def test_preview_release_calendar_page_has_preview_bar(self):
         self.client.force_login(self.publishing_officer)
