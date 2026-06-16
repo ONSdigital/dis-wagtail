@@ -15,6 +15,8 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
 from wagtail.admin import messages
+from wagtail.admin.ui.components import MediaContainer
+from wagtail.admin.ui.side_panels import StatusSidePanel
 from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.views.generic import CreateView, DeleteView, EditView, IndexView, InspectView
 from wagtail.admin.viewsets.model import ModelViewSet
@@ -30,9 +32,10 @@ from cms.bundles.notifications.slack import (
     notify_slack_of_status_change,
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
-from cms.bundles.utils import get_data_admin_action_url, publish_bundle
+from cms.bundles.utils import publish_bundle
 from cms.core.custom_date_format import ons_date_format
 from cms.core.utils import redirect
+from cms.datasets.models import Dataset
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
@@ -44,7 +47,6 @@ if TYPE_CHECKING:
 
     from cms.bundles.forms import BundleAdminForm
     from cms.bundles.models import BundlesQuerySet
-    from cms.datasets.models import Dataset
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +127,20 @@ class BundleCreateView(CreateView):
         context["media"] += action_menu.media
         context["action_menu"] = action_menu
         return context
+
+
+class BundleStatusSidePanel(StatusSidePanel):
+    """Status side panel that shows the bundle's own status label.
+
+    Wagtail's default StatusSidePanel renders workflow.html which shows "Live" unconditionally
+    for models without DraftStateMixin (draftstate_enabled=False). Bundles have a custom status
+    workflow, so we swap in a bundle-specific template that reads get_status_display() instead.
+    """
+
+    def get_status_templates(self, context: dict) -> list[str]:
+        templates: list[str] = super().get_status_templates(context)
+        templates[0] = "bundles/wagtailadmin/side_panels/bundle_status.html"
+        return templates
 
 
 class BundleEditView(EditView):
@@ -209,7 +225,7 @@ class BundleEditView(EditView):
         if instance.status == BundleStatus.APPROVED:
             action = "bundles.approve"
             kwargs["data"] = {"old": original_status}
-            notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+            notify_slack_of_status_change(instance, timezone.now(), original_status, user=self.request.user, url=url)
         elif instance.status == BundleStatus.PUBLISHED.value:
             action = "wagtail.publish"
             self.start_time = time.time()
@@ -219,7 +235,7 @@ class BundleEditView(EditView):
                 "old": original_status,
                 "new": instance.get_status_display(),
             }
-            notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+            notify_slack_of_status_change(instance, timezone.now(), original_status, user=self.request.user, url=url)
 
         # now log the status change
         log(
@@ -285,6 +301,22 @@ class BundleEditView(EditView):
             return cast(list, super().get_success_buttons())
 
         return []
+
+    def get_side_panels(self) -> MediaContainer:
+        side_panels = []
+        usage_url = self.get_usage_url()
+        history_url = self.get_history_url()
+        if usage_url or history_url:
+            side_panels.append(
+                BundleStatusSidePanel(
+                    self.object,
+                    self.request,
+                    usage_url=usage_url,
+                    history_url=history_url,
+                    last_updated_info=self.get_last_updated_info(),
+                )
+            )
+        return MediaContainer(side_panels)
 
     def get_context_data(self, **kwargs: Any) -> dict:
         """Updates the template context.
@@ -425,15 +457,18 @@ class BundleInspectView(InspectView):
                 return "Published"
             return page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"
 
-        def get_action(page: Page) -> str:
+        def get_action(page: Page) -> tuple[str, str]:
             if self.object.status == BundleStatus.PUBLISHED and page.live:
-                return str(page.get_url(request=self.request))
-            return reverse(
-                "bundles:preview",
-                args=(
-                    self.object.pk,
-                    page.pk,
+                return str(page.get_url(request=self.request)), "View Live"
+            return (
+                reverse(
+                    "bundles:preview",
+                    args=(
+                        self.object.pk,
+                        page.pk,
+                    ),
                 ),
+                "Preview",
             )
 
         data = (
@@ -442,7 +477,7 @@ class BundleInspectView(InspectView):
                 page.get_admin_display_title(),
                 page.get_verbose_name(),
                 get_page_status(page),
-                get_action(page),
+                *get_action(page),
             )
             for page in pages
         )
@@ -450,7 +485,7 @@ class BundleInspectView(InspectView):
         page_data = format_html_join(
             "\n",
             '<tr><td class="title"><strong><a href="{}">{}</a></strong></td><td>{}</td><td>{}</td> '
-            '<td><a href="{}" class="button button-small button-secondary">Preview</a></td></tr>',
+            '<td><a href="{}" class="button button-small button-secondary">{}</a></td></tr>',
             data,
         )
 
@@ -555,10 +590,11 @@ class BundleInspectView(InspectView):
     def _build_action_button(self, state: str, preview_url: str | None, dataset: Dataset) -> SafeString | str:
         """Build the action button HTML based on dataset state."""
         if state == BundleContentItemState.PUBLISHED:
-            view_url = get_data_admin_action_url("preview", dataset.namespace, dataset.edition, str(dataset.version))
+            if not preview_url:
+                return ""
             return format_html(
                 '<a href="{}" class="button button-small button-secondary">View Live</a>',
-                view_url,
+                preview_url,
             )
         if preview_url:
             cms_preview_url = reverse(

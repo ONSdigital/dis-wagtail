@@ -245,6 +245,32 @@ class SocialMetaTests(WagtailPageTestCase):
             f'<meta property="og:image" content="{settings.DEFAULT_OG_IMAGE_URL}" />',
         )
 
+    def test_meta_description(self):
+        """Test that the meta description tag is populated with the page's search description."""
+        self.page.search_description = "This is a search description."
+        self.page.save(update_fields=["search_description"])
+
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(
+            response,
+            '<meta name="description" content="This is a search description." />',
+            html=True,
+        )
+
+    def test_no_meta_description_tag(self):
+        """Test that the meta description tag is not present when there is no
+        search description or its body is empty.
+        """
+        self.page.search_description = ""  # Set to empty string to test empty description case
+        self.page.save(update_fields=["search_description"])
+
+        response = self.client.get(self.page.get_url(request=self.dummy_request))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertNotContains(response, '<meta name="description"')
+
 
 class ErrorPageTests(TranslationResetMixin, WagtailPageTestCase):
     def get_template_side_effect(self, template_name, *args, **kwargs):

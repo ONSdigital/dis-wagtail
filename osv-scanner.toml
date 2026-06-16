@@ -1,4 +1,2 @@
 [[IgnoredVulns]]
-id = "CVE-2026-41907"
-reason = "Dependency of webpack-dev-server, only a local development tool. No fix available upstream and extemely low risk of any exploit. Can remove when webpack-dev-server is updated to a version that doesn't depend on this vulnerable version of uuid"
 

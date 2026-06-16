@@ -72,5 +72,10 @@
   },
   "dependencies": {
     "dis-authorisation-client-js": "^1.0.1"
+  },
+  "overrides": {
+    "sockjs": {
+      "uuid": "^11"
+    }
   }
 }
