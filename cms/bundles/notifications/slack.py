@@ -259,7 +259,11 @@ def notify_slack_of_publish_end(
 
     if bundle_page_count > 0:
         fields.append(
-            {"title": "Pages Published", "value": str(bundle.get_bundled_pages().public().count()), "short": True}
+            {
+                "title": "Pages Published",
+                "value": str(bundle.get_bundled_pages().filter(has_unpublished_changes=False).count()),
+                "short": True,
+            }
         )
 
     fields.extend(
@@ -353,7 +357,11 @@ def notify_slack_of_post_publish_end(
 
     if bundle_page_count > 0:
         fields.append(
-            {"title": "Pages Published", "value": str(bundle.get_bundled_pages().public().count()), "short": True}
+            {
+                "title": "Pages Published",
+                "value": str(bundle.get_bundled_pages().filter(has_unpublished_changes=False).count()),
+                "short": True,
+            }
         )
 
     fields.extend(
@@ -417,7 +425,11 @@ def notify_slack_of_bundle_failure(  # pylint: disable=too-many-arguments  # noq
         {"title": "Publish End", "value": _format_publish_datetime(end_time), "short": True},
         {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": True},
         {"title": "Page Count", "value": str(bundle.get_bundled_pages().count()), "short": True},
-        {"title": "Pages Published", "value": str(bundle.get_bundled_pages().public().count()), "short": True},
+        {
+            "title": "Pages Published",
+            "value": str(bundle.get_bundled_pages().filter(has_unpublished_changes=False).count()),
+            "short": True,
+        },
         {"title": "Alert Type", "value": alert_type, "short": True},
         {"title": "Exception", "value": exception_message, "short": False},
     ]
