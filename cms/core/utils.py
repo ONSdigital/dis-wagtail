@@ -103,8 +103,8 @@ def redirect(
 
     User-provided redirect targets must be validated before calling this helper.
     """
-    # codeql[py/url-redirection] This intentionally preserves Django's redirect helper contract.
     return _redirect(
+        # codeql[py/url-redirection] This intentionally preserves Django's redirect helper contract.
         to,
         *args,
         permanent=permanent,
