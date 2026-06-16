@@ -1,4 +1,0 @@
-services:
-  web:
-    volumes:
-      - /Users/helen/repos/ons/design-system:/Users/helen/repos/ons/design-system
