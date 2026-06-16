@@ -98,10 +98,10 @@ def run_action(
             },
         )
         action.status = PostPublishActionStatus.FAILED
-        action.duration = timedelta(seconds=duration)
         action.finished_at = timezone.now()
         action.failed_reason = traceback.format_exception_only(e)[0].strip()
-        action.save(update_fields=["status", "finished_at", "fail_reason", "duration"])
+        action.duration = timedelta(seconds=duration)
+        action.save(update_fields=["status", "finished_at", "failed_reason", "duration"])
     else:
         duration = time.perf_counter() - start_time
         logger.info(

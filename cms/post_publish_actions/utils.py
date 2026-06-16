@@ -10,7 +10,7 @@ from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import notify_slack_of_post_publish_end
 from cms.core.utils import GeneratorCollector
 
-from .models import PostPublishAction, PostPublishActionStatus
+from .models import PostPublishAction
 
 logger = logging.getLogger(__name__)
 
@@ -58,17 +58,7 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle) -> None:
 
     # If the generator returned a value, it means the bundle timed out
     if as_completed_collector.value:
-        outstanding_actions = (
-            PostPublishAction.objects.active()
-            .unfinished()
-            .filter(bundle=bundle)
-            .update(
-                status=PostPublishActionStatus.FAILED,
-                failed_reason="Timeout",
-                duration=None,
-                finished_at=timezone.now(),
-            )
-        )
+        outstanding_actions = PostPublishAction.objects.active().unfinished().filter(bundle=bundle).mark_timed_out()
         logger.error(
             "Post publish actions timeout",
             extra={

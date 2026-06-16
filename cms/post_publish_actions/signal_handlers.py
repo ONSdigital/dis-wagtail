@@ -13,7 +13,7 @@ from .models import PostPublishAction, PostPublishActionStatus
 from .registry import get_post_publish_actions
 
 
-def run_post_publish_actions(sender: type[Page], instance: Page, revision: Revision, **kwargs: Any) -> None:
+def run_post_publish_actions(sender: type[Page], instance: Page, revision: Revision, **kwargs: Any) -> None:  # pylint: disable=unused-argument
     bundle = get_active_bundle_for_page(instance)
 
     registry = get_post_publish_actions()

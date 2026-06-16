@@ -16,7 +16,7 @@ from cms.bundles.utils import publish_bundle
 from cms.core.db_router import force_write_db
 from cms.core.utils import GeneratorCollector
 from cms.post_publish_actions.executor import run_in_support_executor as run_in_post_publish_support_executor
-from cms.post_publish_actions.models import PostPublishAction, PostPublishActionStatus
+from cms.post_publish_actions.models import PostPublishAction
 from cms.post_publish_actions.utils import as_completed_actions_by_bundle
 
 logger = logging.getLogger(__name__)
@@ -77,12 +77,7 @@ class Command(BaseCommand):
                 PostPublishAction.objects.unfinished()
                 .active()
                 .filter(bundle__in=as_completed_collector.value)
-                .update(
-                    status=PostPublishActionStatus.FAILED,
-                    failed_reason="Timeout",
-                    duration=None,
-                    finished_at=timezone.now(),
-                )
+                .mark_timed_out()
             )
             logger.error(
                 "Post publish actions timeout",

@@ -1,6 +1,7 @@
 from typing import ClassVar, Self
 
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
@@ -29,6 +30,16 @@ class PostPublishActionQuerySet(models.QuerySet):
     def unfinished(self) -> Self:
         return self.filter(finished_at=None)
 
+    def mark_timed_out(self) -> int:
+        now = timezone.now()
+        return self.update(
+            status=PostPublishActionStatus.FAILED,
+            failed_reason="Timeout",
+            duration=None,
+            finished_at=now,
+            timed_out_at=now,
+        )
+
 
 class PostPublishAction(models.Model):
     action_type = models.CharField(
@@ -46,6 +57,7 @@ class PostPublishAction(models.Model):
     enqueued_at = models.DateTimeField(auto_now_add=True)
     duration = models.DurationField(null=True)
     finished_at = models.DateTimeField(null=True)
+    timed_out_at = models.DateTimeField(null=True)
 
     objects = PostPublishActionQuerySet.as_manager()
 
