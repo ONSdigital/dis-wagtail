@@ -221,13 +221,13 @@ def force_login(context: Context, user: User):
     context.browser_context.add_cookies(
         [
             {
-                "name": "sessionid",
+                "name": settings.SESSION_COOKIE_NAME,
                 "value": session_key,
                 "path": "/",
                 "domain": "localhost",
-                "secure": False,
+                "secure": settings.SESSION_COOKIE_SECURE,
                 "httponly": True,
-                "samesite": "Lax",
+                "samesite": settings.SESSION_COOKIE_SAMESITE,
             }
         ]
     )
