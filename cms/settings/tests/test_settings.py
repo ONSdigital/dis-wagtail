@@ -48,7 +48,7 @@ class CSPTestCase(TestCase):
 
         return directives
 
-    def get_csp_expressions(self, policy: dict[str, list[str]], directive: str) -> list[str]:
+    def _get_csp_expressions(self, policy: dict[str, list[str]], directive: str) -> list[str]:
         # Fall back to default-src if directive is not present
         return policy.get(directive, policy.get("default-src", []))
 
@@ -61,7 +61,7 @@ class CSPTestCase(TestCase):
 
                 for directive in settings.SECURE_CSP:
                     with self.subTest(directive):
-                        self.assertIn(CSP.SELF, self.get_csp_expressions(csp, directive))
+                        self.assertIn(CSP.SELF, self._get_csp_expressions(csp, directive))
 
     def test_gtm_csp(self):
         """https://developers.google.com/tag-platform/security/guides/csp."""
@@ -71,9 +71,9 @@ class CSPTestCase(TestCase):
 
                 csp = self._parse_csp(response.headers["Content-Security-Policy"])
 
-                self.assertIn("www.googletagmanager.com", self.get_csp_expressions(csp, "img-src"))
-                self.assertIn("www.googletagmanager.com", self.get_csp_expressions(csp, "connect-src"))
-                self.assertIn("www.google.com", self.get_csp_expressions(csp, "connect-src"))
+                self.assertIn("www.googletagmanager.com", self._get_csp_expressions(csp, "img-src"))
+                self.assertIn("www.googletagmanager.com", self._get_csp_expressions(csp, "connect-src"))
+                self.assertIn("www.google.com", self._get_csp_expressions(csp, "connect-src"))
 
     def test_hotjar_csp(self):
         """https://help.hotjar.com/hc/en-us/articles/36820026388881-Content-Security-Policies."""
@@ -82,15 +82,15 @@ class CSPTestCase(TestCase):
                 response = self.client.get(url)
                 csp = self._parse_csp(response.headers["Content-Security-Policy"])
 
-                self.assertIn("*.hotjar.com", self.get_csp_expressions(csp, "img-src"))
-                self.assertIn("*.hotjar.com", self.get_csp_expressions(csp, "script-src"))
-                self.assertIn(CSP.UNSAFE_INLINE, self.get_csp_expressions(csp, "script-src"))
-                self.assertIn("*.hotjar.com", self.get_csp_expressions(csp, "connect-src"))
-                self.assertIn("*.hotjar.io", self.get_csp_expressions(csp, "connect-src"))
-                self.assertIn("wss://*.hotjar.com", self.get_csp_expressions(csp, "connect-src"))
-                self.assertIn("*.hotjar.com", self.get_csp_expressions(csp, "font-src"))
-                self.assertIn("*.hotjar.com", self.get_csp_expressions(csp, "style-src"))
-                self.assertIn(CSP.UNSAFE_INLINE, self.get_csp_expressions(csp, "style-src"))
+                self.assertIn("*.hotjar.com", self._get_csp_expressions(csp, "img-src"))
+                self.assertIn("*.hotjar.com", self._get_csp_expressions(csp, "script-src"))
+                self.assertIn(CSP.UNSAFE_INLINE, self._get_csp_expressions(csp, "script-src"))
+                self.assertIn("*.hotjar.com", self._get_csp_expressions(csp, "connect-src"))
+                self.assertIn("*.hotjar.io", self._get_csp_expressions(csp, "connect-src"))
+                self.assertIn("wss://*.hotjar.com", self._get_csp_expressions(csp, "connect-src"))
+                self.assertIn("*.hotjar.com", self._get_csp_expressions(csp, "font-src"))
+                self.assertIn("*.hotjar.com", self._get_csp_expressions(csp, "style-src"))
+                self.assertIn(CSP.UNSAFE_INLINE, self._get_csp_expressions(csp, "style-src"))
 
     def test_mathjax_csp(self):
         for url in self.urls:
@@ -99,10 +99,10 @@ class CSPTestCase(TestCase):
 
                 csp = self._parse_csp(response.headers["Content-Security-Policy"])
 
-                self.assertIn("cdnjs.cloudflare.com", self.get_csp_expressions(csp, "style-src"))
-                self.assertIn(CSP.UNSAFE_INLINE, self.get_csp_expressions(csp, "style-src"))
-                self.assertIn("cdnjs.cloudflare.com", self.get_csp_expressions(csp, "script-src"))
-                self.assertIn("cdnjs.cloudflare.com", self.get_csp_expressions(csp, "font-src"))
+                self.assertIn("cdnjs.cloudflare.com", self._get_csp_expressions(csp, "style-src"))
+                self.assertIn(CSP.UNSAFE_INLINE, self._get_csp_expressions(csp, "style-src"))
+                self.assertIn("cdnjs.cloudflare.com", self._get_csp_expressions(csp, "script-src"))
+                self.assertIn("cdnjs.cloudflare.com", self._get_csp_expressions(csp, "font-src"))
 
     def test_design_system_csp(self):
         for url in self.urls:
@@ -111,10 +111,10 @@ class CSPTestCase(TestCase):
 
                 csp = self._parse_csp(response.headers["Content-Security-Policy"])
 
-                self.assertIn(settings.ONS_CDN_URL, self.get_csp_expressions(csp, "style-src"))
-                self.assertIn(settings.ONS_CDN_URL, self.get_csp_expressions(csp, "script-src"))
-                self.assertIn(settings.ONS_CDN_URL, self.get_csp_expressions(csp, "font-src"))
-                self.assertIn(settings.ONS_CDN_URL, self.get_csp_expressions(csp, "manifest-src"))
+                self.assertIn(settings.ONS_CDN_URL, self._get_csp_expressions(csp, "style-src"))
+                self.assertIn(settings.ONS_CDN_URL, self._get_csp_expressions(csp, "script-src"))
+                self.assertIn(settings.ONS_CDN_URL, self._get_csp_expressions(csp, "font-src"))
+                self.assertIn(settings.ONS_CDN_URL, self._get_csp_expressions(csp, "manifest-src"))
 
     def test_iframe_visualisation_csp(self):
         for url in self.urls:
@@ -125,7 +125,7 @@ class CSPTestCase(TestCase):
 
                 for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS:
                     with self.subTest(allowed_domain):
-                        self.assertIn(allowed_domain, self.get_csp_expressions(csp, "frame-src"))
+                        self.assertIn(allowed_domain, self._get_csp_expressions(csp, "frame-src"))
 
     def test_wagtail_csp(self):
         """https://github.com/wagtail/wagtail/issues?q=is%3Aissue%20state%3Aopen%20csp."""
@@ -133,15 +133,15 @@ class CSPTestCase(TestCase):
 
         csp = self._parse_csp(response.headers["Content-Security-Policy"])
 
-        self.assertIn(CSP.UNSAFE_INLINE, self.get_csp_expressions(csp, "script-src"))
-        self.assertIn(CSP.SELF, self.get_csp_expressions(csp, "frame-ancestors"))
+        self.assertIn(CSP.UNSAFE_INLINE, self._get_csp_expressions(csp, "script-src"))
+        self.assertIn(CSP.SELF, self._get_csp_expressions(csp, "frame-ancestors"))
 
     def test_wagtail_preview_csp(self):
         response = self.client.get(reverse("wagtailadmin_pages:preview_on_edit", args=[HomePage.objects.first().pk]))
 
         csp = self._parse_csp(response.headers["Content-Security-Policy"])
 
-        self.assertIn(CSP.SELF, self.get_csp_expressions(csp, "frame-ancestors"))
+        self.assertIn(CSP.SELF, self._get_csp_expressions(csp, "frame-ancestors"))
 
     def test_frame_ancestors(self):
         for url in self.urls:
@@ -150,6 +150,6 @@ class CSPTestCase(TestCase):
 
                 csp = self._parse_csp(response.headers["Content-Security-Policy"])
 
-                self.assertIn(CSP.SELF, self.get_csp_expressions(csp, "frame-ancestors"))
+                self.assertIn(CSP.SELF, self._get_csp_expressions(csp, "frame-ancestors"))
 
                 self.assertNotIn("X-Frame-Origin", response.headers)
