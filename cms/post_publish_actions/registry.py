@@ -32,3 +32,7 @@ def post_publish_action(action_type: PostPublishActionType) -> Callable[[ActionH
 
 def get_post_publish_actions() -> dict[PostPublishActionType, ActionHandler]:
     return _registry
+
+
+def get_post_publish_action_for_type(action_type: PostPublishActionType) -> ActionHandler:
+    return _registry[action_type]
