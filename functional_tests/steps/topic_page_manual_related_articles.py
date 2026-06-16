@@ -141,7 +141,7 @@ def related_article_is_second_in_list(context: Context, title: str) -> None:
 def related_article_displays_description(context: Context, title: str, description: str) -> None:
     """Assert that the given related article's description appears in the list item."""
     related_articles_section = context.page.locator("section#related-articles")
-    li = related_articles_section.locator(f'li:has-text("{title}")').first
+    li = related_articles_section.get_by_text(title).locator("xpath=ancestor::li").first
     expect(li).to_contain_text(description)
 
 
@@ -149,7 +149,7 @@ def related_article_displays_description(context: Context, title: str, descripti
 def related_article_displays_content_type(context: Context, title: str, content_type: str) -> None:
     """Assert that the content type for the related article is visible."""
     related_articles_section = context.page.locator("section#related-articles")
-    li = related_articles_section.locator(f'li:has-text("{title}")').first
+    li = related_articles_section.get_by_text(title).locator("xpath=ancestor::li").first
     expect(li).to_contain_text(content_type)
 
 
@@ -157,7 +157,7 @@ def related_article_displays_content_type(context: Context, title: str, content_
 def related_article_displays_release_year(context: Context, title: str, year: str) -> None:
     """Assert that the release year for the related article is visible."""
     related_articles_section = context.page.locator("section#related-articles")
-    li = related_articles_section.locator(f'li:has-text("{title}")').first
+    li = related_articles_section.get_by_text(title).locator("xpath=ancestor::li").first
     expect(li).to_contain_text(year)
 
 
