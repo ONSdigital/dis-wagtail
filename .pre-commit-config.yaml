@@ -27,6 +27,7 @@ repos: # Python linting and formatting
           - '--reports=n' # only display messages
           - '--output-format=colorized'
           - '--rcfile=.pylintrc'
+          - '--init-hook=import sys; sys.path.insert(0, ".")'
           - '--django-settings-module=cms.settings.production'
           - '-j 0' # detect number of processors available to use
 
