@@ -1,4 +1,6 @@
+import codecs
 import csv
+import html
 import re
 from collections.abc import Mapping
 
@@ -19,10 +21,10 @@ def clean_cell_value(value: str | int | float) -> str | int | float:
     if not isinstance(value, str):
         return value
 
-    value = value.strip()
-
     # Replace <br> tags (all variations) with newlines
     value = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
+
+    value = html.unescape(value).strip()
 
     if "<" not in value:
         # Return early if there are no HTML tags to process
@@ -138,6 +140,7 @@ def create_data_csv_download_response_from_data(data: list[list[str | int | floa
             "Content-Disposition": f'attachment; filename="{filename}.csv"',
         },
     )
+    response.write(codecs.BOM_UTF8)
     writer = csv.writer(response)
     writer.writerows(sanitize_data_for_csv(data))
     return response
