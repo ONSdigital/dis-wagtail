@@ -11,59 +11,70 @@
         <div class="ons-container ons-u-mb-3xl">
             <h1>Figure experiments</h1>
 
-            <h2 class="ons-u-mt-xl">Before and after components</h2>
+            <h2 class="ons-u-mt-xl">Before and after components - living in the CMS</h2>
             <p>This is a very simple method with one template used for the opening figure contents, and one after - it's not very clean as it means templates without fully nested html.</p>
+
+            {# fmt:off #}
             {% set title = "Title" %}
             {% set subtitle = "Subtitle" %}
             {% set download_title = "Download" %}
             {% set download_list = [
-            {"text": "Download CSV (12 KB)", "url": "/example.csv"},
-            {"text": "Download image (45 KB)", "url": "/example.png"}
+                {"text": "Download CSV (12 KB)", "url": "/example.csv"},
+                {"text": "Download image (45 KB)", "url": "/example.png"}
             ] %}
+            {# fmt:on #}
+
             {% include "templates/components/figure/figure_before.html" %}
+
             <img src="https://placecats.com/300/200" alt="A cat" />
+
             {% include "templates/components/figure/figure_after.html" %}
 
-            <h2 class="ons-u-mt-3xl">Nested figure component using a macro</h2>
+            <h2 class="ons-u-mt-3xl">Nested figure component using a macro - living in the CMS</h2>
             <p>This is neater - we use a macro to render the opening and closing figure content, with anything we like nested between</p>
             {% include "templates/components/figure/figure_nested.html" %}
 
             <h2 class="ons-u-mt-3xl">Experiment with nesting DS macros</h2>
             <p>If we had an onsFigure component, which like the onsAccordion component accepted a 'content' html, then we could render a chart or an image inside a figure in a similar way. This example renders an onsPanel inside an onsAccordion just to illustrate the possibility.</p>
+            {# fmt:off #}
             {% set panel_html %}
                 {{ onsPanel({
-                "spacious": true,
-                "body": '<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p><ul><li>VAT</li><li>Internet sales</li></ul>'
+                    "spacious": true,
+                    "body": '<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p><ul><li>VAT</li><li>Internet sales</li></ul>'
                 }) }}
             {% endset %}
 
             {{
-            onsAccordion({
-            "id": "accordion-example",
-            "allButton": {
-            "open": "Show all",
-            "close": "Hide all",
-            "openAriaLabel": "Show all sections",
-            "closeAriaLabel": "Hide all sections",
-            "attributes": {
-            "data-toggle-button": "accordion-toggle-all"
-            }
-            },
-            "itemsList": [
-            {
-            "title": "Food sales",
-            "content": "<h3 class=\"ons-u-fs-r\">Include:</h3><ul class=\"ons-list\"><li class=\"ons-list__item\">all fresh food</li><li class=\"ons-list__item\">other food for human consumption (except chocolate and sugar confectionery)</li><li class=\"ons-list__item\">soft drinks</li></ul><h3 class=\"ons-u-fs-r\">Exclude:</h3><ul class=\"ons-list\"><li class=\"ons-list__item\">sales from catering facilities used by customers</li></ul>"
-            },
-            {
-            "title": "Alcohol, confectionery, soft drinks and tobacco sales",
-            "content": panel_html
-            }
-            ]
-            })
+                onsAccordion({
+                    "id": "accordion-example",
+                    "allButton": {
+                        "open": "Show all",
+                        "close": "Hide all",
+                        "openAriaLabel": "Show all sections",
+                        "closeAriaLabel": "Hide all sections",
+                        "attributes": {
+                            "data-toggle-button": "accordion-toggle-all"
+                        }
+                    },
+                    "itemsList": [
+                        {
+                            "title": "Food sales",
+                            "content": "<h3 class=\"ons-u-fs-r\">Include:</h3><ul class=\"ons-list\"><li class=\"ons-list__item\">all fresh food</li><li class=\"ons-list__item\">other food for human consumption (except chocolate and sugar confectionery)</li><li class=\"ons-list__item\">soft drinks</li></ul><h3 class=\"ons-u-fs-r\">Exclude:</h3><ul class=\"ons-list\"><li class=\"ons-list__item\">sales from catering facilities used by customers</li></ul>"
+                        },
+                        {
+                            "title": "Alcohol, confectionery, soft drinks and tobacco sales",
+                            "content": panel_html
+                        }
+                    ]
+                })
             }}
+            {# fmt:on #}
 
 
-            <h2 class="ons-u-mt-3xl">Using the onsFigure component from the spike and nesting an image</h2>
+            <h2 class="ons-u-mt-3xl">Using the onsFigure component from the DS spike and nesting an image</h2>
+
+            <p>This example relies on setting up a DS local build checked out on either of the figure proof of concept branches. You then need to create a symlink to the DS templates so your local CMS build consumes the local DS templates</p>
+            {# fmt:off #}
             {% call onsFigure({
                 "headingLevel": 3,
                 "title": "Image 1: Cat",
@@ -95,10 +106,12 @@
                     })
                 }}
             {% endcall %}
+            {# fmt:on #}
 
 
             <h2 class="ons-u-mt-3xl">Using the onsFigure component from the spike and nesting CMS content</h2>
 
+            {# fmt:off #}
             {% call onsFigure({
                 "headingLevel": 3,
                 "title": "A nested streamfield block",
@@ -112,6 +125,7 @@
             }) %}
                 {% include "templates/components/streamfield/information_panel.html" %}
             {% endcall %}
+            {# fmt:on #}
 
 
         </div>
