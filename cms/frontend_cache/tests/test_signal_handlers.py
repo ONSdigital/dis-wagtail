@@ -5,7 +5,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
-from wagtail.models import Locale, Site
+from wagtail.models import Locale, Page, Site
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage, StatisticalArticlePage
@@ -14,6 +14,7 @@ from cms.core.models import ContactDetails, Definition
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.tests.factories import DatasetFactory
 from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
+from cms.frontend_cache.cache import get_page_cached_urls
 from cms.frontend_cache.signal_handlers import _get_tracked_page_models
 from cms.home.models import HomePage
 from cms.methodology.models import MethodologyIndexPage, MethodologyPage
@@ -714,4 +715,66 @@ class PageViaSnippetFrontEndCacheInvalidationTestCase(TestCase):
 
         mocked_purge_urls.assert_called_once_with(
             {self.statistical_article_url, self.statistical_article_related_data_url}
+        )
+
+
+class GetPageCachedUrlsTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.topic_page = TopicPageFactory(title="The topic page")
+        # StatisticalArticlePage adds extra cached paths (e.g. /related-data)
+        cls.statistical_article = StatisticalArticlePageFactory(title="The article")
+        cls.request = get_dummy_request()
+
+    def test_no_routable_url_returns_empty_list(self):
+        with patch.object(Page, "get_full_url", return_value=None):
+            self.assertEqual(get_page_cached_urls(self.topic_page), [])
+
+    @override_settings(WAGTAIL_APPEND_SLASH=False)
+    def test_without_append_slash(self):
+        page_url = self.topic_page.get_full_url(self.request)
+
+        self.assertEqual(get_page_cached_urls(self.topic_page), [page_url.rstrip("/")])
+
+    @override_settings(WAGTAIL_APPEND_SLASH=True)
+    def test_with_append_slash(self):
+        page_url = self.topic_page.get_full_url(self.request)
+
+        self.assertEqual(get_page_cached_urls(self.topic_page), [f"{page_url.rstrip('/')}/"])
+
+    @override_settings(WAGTAIL_APPEND_SLASH=False)
+    def test_sub_paths_without_append_slash(self):
+        article_url = self.statistical_article.get_full_url(self.request).rstrip("/")
+
+        self.assertEqual(
+            get_page_cached_urls(self.statistical_article),
+            [article_url, f"{article_url}/related-data"],
+        )
+
+    @override_settings(WAGTAIL_APPEND_SLASH=True)
+    def test_sub_paths_with_append_slash(self):
+        article_url = self.statistical_article.get_full_url(self.request).rstrip("/")
+
+        self.assertEqual(
+            get_page_cached_urls(self.statistical_article),
+            [f"{article_url}/", f"{article_url}/related-data/"],
+        )
+
+    @override_settings(WAGTAIL_APPEND_SLASH=True)
+    def test_query_string_path_with_append_slash(self):
+        # The slash is added to the path, not after the query string.
+        series_url = self.statistical_article.get_parent().get_full_url(self.request).rstrip("/")
+
+        self.assertEqual(
+            get_page_cached_urls(self.statistical_article.get_parent()),
+            [f"{series_url}/", f"{series_url}/editions/", f"{series_url}/editions/?page=1"],
+        )
+
+    @override_settings(WAGTAIL_APPEND_SLASH=False)
+    def test_query_string_path_without_append_slash(self):
+        series_url = self.statistical_article.get_parent().get_full_url(self.request).rstrip("/")
+
+        self.assertEqual(
+            get_page_cached_urls(self.statistical_article.get_parent()),
+            [series_url, f"{series_url}/editions", f"{series_url}/editions?page=1"],
         )

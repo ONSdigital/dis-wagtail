@@ -17,8 +17,15 @@ if TYPE_CHECKING:
     from wagtail.query import PageQuerySet
 
 
+def _normalise_trailing_slash(url: str) -> str:
+    """Add or strip the trailing slash on a URL's path according to WAGTAIL_APPEND_SLASH."""
+    path, separator, query = url.partition("?")
+    path = (path if path.endswith("/") else f"{path}/") if settings.WAGTAIL_APPEND_SLASH else path.rstrip("/")
+    return f"{path}{separator}{query}"
+
+
 def get_page_cached_urls(page: Page, cache_object: Any | None = None) -> list[str]:
-    """This is a modified version of core's get_page_cached_urls taking into account our no-trailing slash setup.
+    """This is a modified version of core's get_page_cached_urls that honours the WAGTAIL_APPEND_SLASH setting.
 
     See https://github.com/wagtail/wagtail/issues/13920
     """
@@ -26,8 +33,10 @@ def get_page_cached_urls(page: Page, cache_object: Any | None = None) -> list[st
         # nothing to be done if the page has no routable URL
         return []
 
+    base_url = page_url.rstrip("/")
     return [
-        f"{page_url.rstrip('/')}/{path.lstrip('/')}".rstrip("/") for path in page.specific_deferred.get_cached_paths()
+        _normalise_trailing_slash(f"{base_url}/{path.lstrip('/')}")
+        for path in page.specific_deferred.get_cached_paths()
     ]
 
 
