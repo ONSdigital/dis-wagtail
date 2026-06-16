@@ -65,9 +65,8 @@ def run_action(
     action.status = PostPublishActionStatus.RUNNING
     action.save(update_fields=["status"])
 
-    # Close connection just before running handler. If the handler doesn't touch the DB,
-    # this frees up a connection for another thread to use.
-    close_old_connections()
+    page = Page.objects.get(id=page_id)
+    bundle = Bundle.objects.get(id=bundle_id)
 
     logger.info(
         "Starting publish action",
@@ -78,11 +77,12 @@ def run_action(
             "event": "post_publish_action_start",
         },
     )
+
+    # Close connection just before running handler. If the handler doesn't touch the DB,
+    # this frees up a connection for another thread to use.
+    close_old_connections()
+
     start_time = time.perf_counter()
-
-    page = Page.objects.get(id=page_id)
-    bundle = Bundle.objects.get(id=bundle_id)
-
     try:
         action_handler(page, bundle)
     except Exception as e:  # pylint: disable=broad-exception-caught
