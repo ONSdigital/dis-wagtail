@@ -517,7 +517,8 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
         )
         return False
 
-    if update_status and pages_published > 0:
+    # we already handle failed pages, if the bundle only has datasets it still needs to be published successfully
+    if update_status and (pages_published > 0 or bundle.has_datasets):
         bundle.status = BundleStatus.PUBLISHED
         bundle.save(update_fields=["status"])
 
@@ -550,10 +551,6 @@ def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
             "edition_id": dataset.edition,
             "version_id": dataset.version,
         },
-        "links": {
-            "edit": get_data_admin_action_url("edit", dataset.namespace, dataset.edition, dataset.version),
-            "preview": get_data_admin_action_url("preview", dataset.namespace, dataset.edition, dataset.version),
-        },
     }
 
 
@@ -577,34 +574,6 @@ def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: A
         return content_id if content_id is not None else None
 
     return None
-
-
-def get_data_admin_action_url(
-    action: Literal["edit", "preview"],
-    dataset_id: str,
-    edition_id: str,
-    version_id: str,
-) -> str:
-    """Generate a relative URL for dataset actions in the ONS Data Admin interface.
-
-    This function constructs relative URLs for dataset operations in the ONS Data Admin
-    system, which is used for editing and previewing datasets.
-
-    Args:
-        action: The action to perform ("edit", "preview")
-        dataset_id: The unique identifier for the dataset
-        edition_id: The edition identifier for the dataset
-        version_id: The version identifier for the dataset
-
-    Returns:
-        A relative URL string for the specified dataset action
-
-    Example:
-        >>> get_data_admin_action_url("edit", "cpih", "time-series", "1")
-        "/data-admin/series/cpih/editions/time-series/versions/1"
-    """
-    prefix = "data-admin/series" if action == "edit" else "datasets"
-    return f"/{prefix}/{dataset_id}/editions/{edition_id}/versions/{version_id}"
 
 
 def in_active_bundle(item: Model) -> bool:

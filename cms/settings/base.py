@@ -181,7 +181,6 @@ jinja2_extensions = [
     "wagtail.images.jinja2tags.images",
     "wagtail.contrib.settings.jinja2tags.settings",
     "cms.core.jinja2tags.CoreExtension",
-    "cms.navigation.jinja2tags.NavigationExtension",
     "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
 ]
 
@@ -998,6 +997,11 @@ DIS_DATASETS_BUNDLE_API_ENABLED = env.get("DIS_DATASETS_BUNDLE_API_ENABLED", "fa
 # Feature flag to enable/disable validation of bundled datasets status on bundle approval
 BUNDLE_DATASET_STATUS_VALIDATION_ENABLED = (
     env.get("BUNDLE_DATASET_STATUS_VALIDATION_ENABLED", "false").lower() == "true"
+)
+
+# Feature flag to enable/disable validation of bundled datasets metadata on bundle approval
+BUNDLE_DATASET_METADATA_VALIDATION_ENABLED = (
+    env.get("BUNDLE_DATASET_METADATA_VALIDATION_ENABLED", "true").lower() == "true"
 )
 
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")

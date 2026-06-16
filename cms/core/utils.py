@@ -2,6 +2,7 @@ import io
 import json
 import re
 import string
+from collections.abc import Mapping
 from itertools import chain
 from threading import Lock
 from typing import TYPE_CHECKING, Any
@@ -98,7 +99,11 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
 def redirect(
     to: str, *args: Any, permanent: bool = False, preserve_request: bool = True, **kwargs: Any
 ) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
-    """Wrapper for Django's redirect that defaults preserve_request=True."""
+    """Wrapper for Django's redirect that defaults preserve_request=True.
+
+    User-provided redirect targets must be validated before calling this helper.
+    """
+    # codeql[py/url-redirection] This intentionally preserves Django's redirect helper contract.
     return _redirect(
         to,
         *args,
@@ -124,3 +129,20 @@ def redirect_to_parent_listing(
 def strip_unwanted_control_chars_from_json(data: str) -> str:
     """Remove control characters (C0 and C1) from JSON string (without decoding)."""
     return JSON_ENCODED_UNWANTED_CONTROL_CHARS_RE.sub("", data)
+
+
+def deep_merge_mapping(dict1: Mapping, dict2: Mapping) -> dict:
+    """Deep merge mapping keys.
+    Non-mapping values are referenced in the new dict, rather than copied.
+    If there are conflicting keys, dict2 takes precedence.
+    """
+    # Must be a dict to allow internal mutation
+    result = dict(dict1)
+
+    for key, value in dict2.items():
+        if key in result and isinstance(result[key], Mapping) and isinstance(value, Mapping):
+            result[key] = deep_merge_mapping(result[key], value)
+        else:
+            result[key] = value
+
+    return result
