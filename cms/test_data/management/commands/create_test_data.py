@@ -96,6 +96,7 @@ class TestDataFactory:
                 ),
                 "parent": self.root_page,
                 "title": self.title_factory,
+                "live": self.faker.boolean(int(self.config.topics.published_probability * 100)),
             }
 
             topic_datasets_counter = itertools.count()
@@ -119,11 +120,7 @@ class TestDataFactory:
             for _ in range(self.get_config_count(self.config.topics.revisions)):
                 topic_page.specific.save_revision()
 
-            if (
-                not topic_page.live
-                and topic_page.latest_revision_id
-                and self.faker.boolean(int(self.config.topics.published_probability * 100))
-            ):
+            if topic_page.live:
                 topic_page.specific.latest_revision.publish()
 
 

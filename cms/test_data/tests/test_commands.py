@@ -50,7 +50,7 @@ class CreateTestDataTestCase(TestCase):
                     "datasets": 1,
                     "dataset_manual_links": 1,
                     "explore_more": 2,
-                    "published": 1,
+                    "published_probability": 1,
                     "revisions": {"min": 2, "max": 3},
                 }
             }

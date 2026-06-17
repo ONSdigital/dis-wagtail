@@ -2,12 +2,17 @@ from typing import Annotated, Self
 
 import annotated_types
 from faker import Faker
-from pydantic import BaseModel, NonNegativeInt, PositiveInt, model_validator
+from pydantic import BaseModel, ConfigDict, NonNegativeInt, PositiveInt, model_validator
 
 FractionalFloat = Annotated[float, annotated_types.Ge(0), annotated_types.Le(1)]
 
 
-class RangeConfig(BaseModel):
+class BaseConfigModel(BaseModel):
+    """A base model which ensures unknown fields raise an error."""
+    model_config = ConfigDict(extra="forbid")
+
+
+class RangeConfig(BaseConfigModel):
     min: NonNegativeInt = 1
     max: PositiveInt
 
@@ -20,7 +25,7 @@ class RangeConfig(BaseModel):
         return self
 
 
-class ModelCreationConfig(BaseModel):
+class ModelCreationConfig(BaseConfigModel):
     count: NonNegativeInt | RangeConfig = 1
 
 
@@ -35,7 +40,7 @@ class TopicCreationConfig(PageCreationConfig):
     explore_more: NonNegativeInt | RangeConfig = 1
 
 
-class TestDataConfig(BaseModel):
+class TestDataConfig(BaseConfigModel):
     datasets: ModelCreationConfig = ModelCreationConfig()
     images: ModelCreationConfig = ModelCreationConfig()
     topics: TopicCreationConfig = TopicCreationConfig(count=3)
