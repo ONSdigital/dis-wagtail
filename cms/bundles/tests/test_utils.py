@@ -2,6 +2,7 @@
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
+from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
 
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
@@ -20,6 +21,7 @@ from cms.bundles.utils import (
     in_active_bundle,
     in_bundle_ready_to_be_published,
     publish_bundle,
+    serialize_bundle_content_for_preview_release_calendar_page,
     serialize_bundle_content_for_published_release_calendar_page,
 )
 from cms.core.tests.utils import rebuild_internal_search_index
@@ -629,3 +631,26 @@ class PublishBundleFailureTests(TestCase):
 
         # Failure notification should still be sent when update_status=False
         mock_notify_failure.assert_called_once()
+
+
+class SerializePreviewBundleContentTests(TestCase):
+    """Tests for serialize_bundle_content_for_preview_release_calendar_page."""
+
+    def setUp(self):
+        series = ArticleSeriesPageFactory(title="Business demography, UK")
+        self.article = StatisticalArticlePageFactory(
+            parent=series,
+            title="2024",
+            news_headline="",
+        )
+        self.bundle = BundleFactory()
+        BundlePageFactory(parent=self.bundle, page=self.article)
+
+    def test_preview_publication_title_includes_series_name(self):
+        """Publication links in preview must show 'Series: Edition', not just 'Edition'."""
+        content = serialize_bundle_content_for_preview_release_calendar_page(self.bundle, AnonymousUser())
+
+        self.assertEqual(
+            content[0]["value"]["links"][0]["value"]["title"],
+            self.article.display_title + " (Draft)",
+        )
