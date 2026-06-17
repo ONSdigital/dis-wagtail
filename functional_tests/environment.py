@@ -164,7 +164,10 @@ def before_tag(context: Context, tag: str) -> None:
         context.aws_override.enable()
     elif tag == "bundle_api_enabled":
         # Enable Bundle API integration for this scenario
-        context.bundle_api_override = override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+        context.bundle_api_override = override_settings(
+            DIS_DATASETS_BUNDLE_API_ENABLED=True,
+            BUNDLE_DATASET_METADATA_VALIDATION_ENABLED=True,
+        )
         context.bundle_api_override.enable()
 
         # Create Bundle API content items from TEST_UNPUBLISHED_DATASETS
@@ -184,8 +187,9 @@ def before_tag(context: Context, tag: str) -> None:
         # Set up Bundle API mocks for the scenario
         context.bundle_api_cm = mock_bundle_api(contents=contents)
         # Enter the Bundle API mock context manager - we have to do the dunder call manually here
-        # because our steps run within the scenario
-        context.bundle_api_cm.__enter__()  # pylint: disable=unnecessary-dunder-call
+        # because our steps run within the scenario. We capture the yielded RequestsMock so steps
+        # can register additional routes (e.g. dataset detail endpoints) on the same active mock.
+        context.bundle_api_mock = context.bundle_api_cm.__enter__()  # pylint: disable=unnecessary-dunder-call
 
 
 def after_tag(context: Context, tag: str) -> None:

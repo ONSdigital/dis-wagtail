@@ -7,3 +7,6 @@ DATABASES["default"]["PORT"] = DATABASES["read_replica"]["PORT"] = 15432  # noqa
 SEARCH_INDEX_PUBLISHER_BACKEND = "kafka"
 
 KAFKA_SERVERS = ["localhost:19094"]
+
+# Default to false, override to true with tag
+BUNDLE_DATASET_METADATA_VALIDATION_ENABLED = False
