@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 from django.conf import settings
 from django.forms.widgets import RadioSelect
 from django.urls import reverse
+from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
@@ -412,6 +413,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         )
 
     def get_footnotes_config(self, value: StructValue) -> dict[_StrOrPromise, Any]:
-        if footnotes := value.get("footnotes"):
+        # Check for meaningful text before displaying footnotes
+        if (footnotes := value.get("footnotes")) and strip_tags(str(footnotes)).strip():
             return {"title": _("Footnotes"), "content": str(footnotes)}
         return {}
