@@ -9,6 +9,7 @@ FractionalFloat = Annotated[float, annotated_types.Ge(0), annotated_types.Le(1)]
 
 class BaseConfigModel(BaseModel):
     """A base model which ensures unknown fields raise an error."""
+
     model_config = ConfigDict(extra="forbid")
 
 
