@@ -183,7 +183,7 @@ def serialize_preview_page(page: Page, bundle_id: int, is_previewable: bool) -> 
         "type": "item",
         "value": {
             "page": None,
-            "title": f"{specific_page.title} ({state})",
+            "title": getattr(specific_page, "display_title", specific_page.title) + " (" + state + ")",
             "description": getattr(specific_page, "summary", ""),
             "external_url": (reverse("bundles:preview", args=[bundle_id, page.pk]) if is_previewable else "#"),
         },
