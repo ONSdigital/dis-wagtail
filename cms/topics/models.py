@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from modelcluster.fields import ParentalKey
 from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
 from wagtail.fields import RichTextField
-from wagtail.models import Orderable, Page, PagePermissionTester
+from wagtail.models import Orderable, Page
 from wagtail.search import index
 
 from cms.articles.models import StatisticalArticlePage
@@ -40,7 +40,6 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from wagtail.admin.panels import Panel
 
-    from cms.users.models import User
 
 MAX_ITEMS_PER_SECTION = 3
 
@@ -113,26 +112,6 @@ class TopicPageRelatedMethodology(Orderable):
             "page", widget=HighlightedMethodologyPageChooserWidget(linked_fields={"topic_page_id": "#id_topic_page_id"})
         )
     ]
-
-
-class TopicPagePermissionTester(PagePermissionTester):
-    def can_add_subpage(self) -> bool:
-        """Overrides the core can_add_subpage to consider max_count_per_parent.
-
-        TODO: remove when https://github.com/wagtail/wagtail/issues/13286 is fixed
-        """
-        if not self.user.is_active:
-            return False
-        if (specific_class := self.page.specific_class) is None:
-            return False
-        creatable_subpage_models = [
-            page_model
-            for page_model in specific_class.creatable_subpage_models()
-            if page_model.can_create_at(self.page)
-        ]
-        if specific_class is None or not creatable_subpage_models:
-            return False
-        return self.user.is_superuser or ("add" in self.permissions)
 
 
 class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manager-missing]
@@ -209,6 +188,8 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
 
     search_fields: ClassVar[list[index.BaseField]] = [*BasePage.search_fields, index.SearchField("summary")]
 
+    search_index_content_type: ClassVar[str] = "product_page"
+
     _analytics_content_type: ClassVar[str] = "topics"
 
     def get_context(self, request: HttpRequest, *args: Any, **kwargs: Any) -> dict:
@@ -260,14 +241,14 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             items += [{"url": "#featured", "text": _("Featured")}]
         if self.processed_articles:  # pylint: disable=not-an-iterable,useless-suppression
             items += [{"url": "#related-articles", "text": _("Related articles")}]
-        if self.processed_methodologies:
-            items += [{"url": "#related-methods", "text": _("Methods and quality information")}]
-        if self.explore_more:
-            items += [{"url": "#explore-more", "text": _("Explore more")}]
         if self.dataset_document_list:
             items += [{"url": "#data", "text": _("Data")}]
         if self.time_series_document_list:
             items += [{"url": "#time-series", "text": _("Time series")}]
+        if self.processed_methodologies:
+            items += [{"url": "#related-methods", "text": _("Methods and quality information")}]
+        if self.explore_more:
+            items += [{"url": "#explore-more", "text": _("Explore more")}]
         add_table_of_contents_gtm_attributes(items)
         return items
 
@@ -290,14 +271,6 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
             figure_ids = [figure.value["figure_id"] for figure in self.headline_figures]  # pylint: disable=not-an-iterable
             if len(figure_ids) != len(set(figure_ids)):
                 raise ValidationError({"headline_figures": "Duplicate headline figures are not allowed."})
-
-    def permissions_for_user(self, user: User) -> PagePermissionTester:
-        """Overrides the core permissions_for_user to use our permission tester.
-
-        TopicPagePermissionTester.can_add_subpage() takes into account max_count / max_count_per_parent.
-        TODO: replaces when https://github.com/wagtail/wagtail/issues/13286 is fixed.
-        """
-        return TopicPagePermissionTester(user, self)
 
     def get_search_page_urls(self) -> dict[str, str] | None:
         """Returns a dictionary of links to search pages related to the taxonomy topic,

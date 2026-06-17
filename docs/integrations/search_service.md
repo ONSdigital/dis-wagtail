@@ -28,7 +28,7 @@ We use [kafka-python](https://pypi.org/project/kafka-python/) to send data to Ka
 [aws-msk-iam-sasl-signer-python](https://pypi.org/project/aws-msk-iam-sasl-signer-python/) to authenticate using IAM.
 
 The implementation is in [`cms/search`](https://github.com/ONSdigital/dis-wagtail/tree/main/cms/search). The publisher
-classes are defined in [`cms/search/publishers.py`](https://github.com/ONSdigital/dis-wagtail/blob/main/cms/search/publishers.py).
+classes are defined in [`cms/search/publishers/kafka.py`](https://github.com/ONSdigital/dis-wagtail/blob/main/cms/search/publishers/kafka.py).
 
 Messages are sent via [Django signal handlers](https://docs.djangoproject.com/en/5.2/topics/signals/#listening-to-signals) in [`cms/search/signal_handlers.py`](https://github.com/ONSdigital/dis-wagtail/blob/main/cms/search/signal_handlers.py),
 specifically, on page publish, unpublish and delete.

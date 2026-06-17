@@ -6,6 +6,7 @@ from urllib.parse import ParseResult, urlparse
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import widgets
+from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 
 from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
@@ -632,7 +633,7 @@ class ScatterPlotBlock(BaseChartBlock):
         rows: list[list[str | int | float]] = value["table"].rows
         groups = defaultdict(list)
 
-        for x, y, group_name, *_ in rows:
+        for x, y, group_name, *_rest in rows:
             groups[group_name].append((x, y))
 
         series = [
@@ -821,6 +822,11 @@ class IframeBlock(BaseVisualisationBlock):
             "description": value.get("audio_description"),
             "iframeUrl": value.get("iframe_source_url"),
         }
+        if footnotes := value.get("footnotes"):
+            config["footnotes"] = {
+                "title": _("Footnotes"),
+                "content": str(footnotes),
+            }
 
         return config
 

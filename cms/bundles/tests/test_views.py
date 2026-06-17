@@ -1,3 +1,4 @@
+from datetime import timedelta
 from http import HTTPStatus
 from unittest.mock import patch
 
@@ -5,6 +6,7 @@ import responses
 from django.conf import settings
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from wagtail.models import ModelLogEntry
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
@@ -65,7 +67,8 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
 
     def test_dispatch__returns_404_for_non_bundleable_page(self):
         """Only pages with BundledPageMixin can be added to a bundle."""
-        url = reverse("bundles:add_to_bundle", args=[self.statistical_article_page.get_parent().id])
+        articles_index_page = self.statistical_article_page.get_parent().get_parent()
+        url = reverse("bundles:add_to_bundle", args=[articles_index_page.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
@@ -75,6 +78,68 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.add_url, follow=True)
         self.assertRedirects(response, "/admin/")
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+    def test_dispatch__doesnt_allow_adding_page_if_it_has_publication_schedule(self):
+        """Tests that we get redirected away with a corresponding message when the page we try to add to the bundle if
+        the page has a publishing schedule.
+        """
+        for go_live_at in [timezone.now() + timedelta(days=1), timezone.now() - timedelta(days=1)]:
+            with self.subTest():
+                self.statistical_article_page.go_live_at = go_live_at
+                self.statistical_article_page.save(update_fields=["go_live_at"])
+
+                response = self.client.get(self.add_url, follow=True)
+                self.assertRedirects(response, "/admin/")
+                self.assertContains(
+                    response,
+                    "Page &#x27;PSF: November 2024&#x27; cannot be bundled because it has a page-level schedule",
+                )
+
+    def test_dispatch__doesnt_allow_adding_page_if_it_is_live_and_has_draft_with_publication_schedule(self):
+        self.statistical_article_page.save_revision().publish()
+
+        for go_live_at in [timezone.now() + timedelta(days=1), timezone.now() - timedelta(days=1)]:
+            with self.subTest():
+                self.statistical_article_page.go_live_at = go_live_at
+                self.statistical_article_page.save(update_fields=["go_live_at"])
+
+                response = self.client.get(self.add_url, follow=True)
+                self.assertRedirects(response, "/admin/")
+                self.assertContains(
+                    response,
+                    "Page &#x27;PSF: November 2024&#x27; cannot be bundled because it has a page-level schedule",
+                )
+
+    def test_dispatch__doesnt_allow_adding_page_if_it_has_expiry_schedule(self):
+        """Tests that we get redirected away with a corresponding message when the page we try to add to the bundle if
+        the page has a publishing schedule.
+        """
+        for expire_at in [timezone.now() + timedelta(days=1), timezone.now() - timedelta(days=1)]:
+            with self.subTest():
+                self.statistical_article_page.expire_at = expire_at
+                self.statistical_article_page.save_revision()
+
+                response = self.client.get(self.add_url, follow=True)
+                self.assertRedirects(response, "/admin/")
+                self.assertContains(
+                    response,
+                    "Page &#x27;PSF: November 2024&#x27; cannot be bundled because it has a page-level schedule",
+                )
+
+    def test_dispatch__doesnt_allow_adding_page_if_it_is_live_and_has_draft_with_expiry_schedule(self):
+        self.statistical_article_page.save_revision().publish()
+
+        for expire_at in [timezone.now() + timedelta(days=1), timezone.now() - timedelta(days=1)]:
+            with self.subTest():
+                self.statistical_article_page.expire_at = expire_at
+                self.statistical_article_page.save_revision()
+
+                response = self.client.get(self.add_url, follow=True)
+                self.assertRedirects(response, "/admin/")
+                self.assertContains(
+                    response,
+                    "Page &#x27;PSF: November 2024&#x27; cannot be bundled because it has a page-level schedule",
+                )
 
     def test_dispatch__doesnt_allow_adding_page_already_in_active_bundle(self):
         """Tests that we get redirected away with a corresponding message when the page we try to add to the bundle is
@@ -473,8 +538,8 @@ class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.preview_url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        self.assertContains(response, statistical_article.title)
-        self.assertContains(response, methodology_article.title)
+        self.assertContains(response, statistical_article.display_title)
+        self.assertContains(response, methodology_article.display_title)
         self.assertContains(response, bundle_dataset_a.dataset.title)
         self.assertContains(response, bundle_dataset_b.dataset.title)
         self.assertContains(response, bundle_dataset_c.dataset.title)
@@ -488,19 +553,19 @@ class PreviewBundleReleaseCalendarViewTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.preview_url)
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(response, f"{statistical_article.title} (Draft)")
+        self.assertContains(response, f"{statistical_article.display_title} (Draft)")
 
         workflow_state = mark_page_as_ready_for_review(statistical_article, self.publishing_officer)
 
         response = self.client.get(self.preview_url)
 
-        self.assertContains(response, f"{statistical_article.title} (In Preview)")
+        self.assertContains(response, f"{statistical_article.display_title} (In Preview)")
 
         progress_page_workflow(workflow_state)
 
         response = self.client.get(self.preview_url)
 
-        self.assertContains(response, f"{statistical_article.title} (Ready to publish)")
+        self.assertContains(response, f"{statistical_article.display_title} (Ready to publish)")
 
     def test_preview_release_calendar_page_has_preview_bar(self):
         self.client.force_login(self.publishing_officer)
@@ -615,7 +680,7 @@ class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
                         "version_id": cls.version_id,
                         "title": "Consumer Price Inflation",
                     },
-                    "links": {"preview": "http://data-admin.local/preview/dataset/cpih01/time-series/1"},
+                    "links": {"preview": "/retail-industry/datasets/cpih01/editions/time-series/versions/1"},
                 }
             ]
         }
@@ -659,7 +724,7 @@ class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.preview_url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         # Check the iframe URL is in the response content
-        self.assertContains(response, "http://data-admin.local/preview/dataset/cpih01/time-series/1")
+        self.assertContains(response, "/retail-industry/datasets/cpih01/editions/time-series/versions/1")
 
     @patch("cms.bundles.views.preview.BundleAPIClient")
     def test_view_redirects_if_dataset_not_in_bundle(self, mock_client_class):

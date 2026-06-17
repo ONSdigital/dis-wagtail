@@ -9,3 +9,4 @@ The following are project-specific features:
 - [Deployment environments](deployment-environments.md)
 - [DB read replica](db-read-replica.md)
 - [Locked migrate](locked-migrate.md)
+- [Cache Invalidation Replay](cache-invalidation-replay.md)

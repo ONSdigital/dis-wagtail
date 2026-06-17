@@ -1,4 +1,3 @@
-from django.db import DEFAULT_DB_ALIAS
 from django.db.models.signals import post_save
 from django.test import override_settings
 from modelsearch.signal_handlers import post_save_signal_handler
@@ -43,8 +42,7 @@ class SiteSettingsTestCase(TransactionTestCase):
         with self.assertNumQueriesConnection(default=4, replica=1):
             SocialMediaSettings.for_request(self.request)
 
-        # Explicitly use default connection to work around strange issue with Django
-        self.assertTrue(SocialMediaSettings.objects.using(DEFAULT_DB_ALIAS).exists())
+        self.assertTrue(SocialMediaSettings.objects.exists())
 
         with self.assertNumQueriesConnection(default=0, replica=0):
             # This load is cached on the Site

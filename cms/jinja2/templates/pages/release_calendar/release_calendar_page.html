@@ -130,8 +130,8 @@
                     </div>
                     {% if page.is_accredited %}
                         <p>
-                            {% trans trimmed %}
-                                These are accredited official statistics. They have been independently reviewed by the Office for Statistics Regulation (OSR) and found to comply with the standards of trustworthiness, quality and value in the <a href="https://code.statisticsauthority.gov.uk/the-code/">Code of Practice for Statistics</a>. This broadly means that the statistics:
+                            {% trans trimmed stats_authority_url="https://code.statisticsauthority.gov.uk/the-code/" %}
+                                These are accredited official statistics. They have been independently reviewed by the Office for Statistics Regulation (OSR) and found to comply with the standards of trustworthiness, quality and value in the <a href="{{ stats_authority_url }}">Code of Practice for Statistics</a>. This broadly means that the statistics:
                             {% endtrans %}
                         </p>
                         <ul class="ons-list">

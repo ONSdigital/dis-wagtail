@@ -75,9 +75,11 @@ INSTALLED_APPS = [
     "cms.auth",
     "cms.bundles",
     "cms.core",
+    "cms.data_downloads",
     "cms.datasets",
     "cms.datavis",
     "cms.documents",
+    "cms.locale",
     "cms.home",
     "cms.images",
     "cms.private_media",
@@ -113,6 +115,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "django.contrib.auth",  # Wagtail requires the auth app be installed, even if it's not used.
     "django.contrib.contenttypes",
+    "django.contrib.postgres",
     "whitenoise.runserver_nostatic",  # Must be before `django.contrib.staticfiles`
     "django.contrib.staticfiles",
     "django_jinja",
@@ -143,7 +146,7 @@ MIDDLEWARE = [
     # SecurityMiddleware.
     # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
     "cms.core.whitenoise.CMSWhiteNoiseMiddleware",
-    "django.middleware.locale.LocaleMiddleware",
+    "cms.locale.middleware.SubdomainLocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -153,7 +156,7 @@ MIDDLEWARE = [
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 ]
 
-# Some middleware isn't needed for a external environment.
+# Some middleware isn't needed for an external environment.
 # Disable them to improve performance
 if not IS_EXTERNAL_ENV:
     common_middleware_index = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")
@@ -173,6 +176,15 @@ context_processors = [
     "cms.core.context_processors.global_vars",
 ]
 
+jinja2_extensions = [
+    *DEFAULT_EXTENSIONS,
+    "wagtail.jinja2tags.core",
+    "wagtail.images.jinja2tags.images",
+    "wagtail.contrib.settings.jinja2tags.settings",
+    "cms.core.jinja2tags.CoreExtension",
+    "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
+]
+
 if not IS_EXTERNAL_ENV:
     context_processors.extend(
         [
@@ -180,6 +192,12 @@ if not IS_EXTERNAL_ENV:
             "django.contrib.auth.context_processors.auth",
         ]
     )
+    jinja2_extensions.extend(
+        [
+            "wagtail.admin.jinja2tags.userbar",
+        ]
+    )
+
 
 TEMPLATES = [
     {
@@ -193,16 +211,7 @@ TEMPLATES = [
             "app_dirname": "jinja2",
             "undefined": "jinja2.ChainableUndefined",
             "context_processors": context_processors,
-            "extensions": [
-                *DEFAULT_EXTENSIONS,
-                "wagtail.jinja2tags.core",
-                "wagtail.admin.jinja2tags.userbar",
-                "wagtail.images.jinja2tags.images",
-                "wagtail.contrib.settings.jinja2tags.settings",
-                "cms.core.jinja2tags.CoreExtension",
-                "cms.navigation.jinja2tags.NavigationExtension",
-                "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
-            ],
+            "extensions": jinja2_extensions,
             "policies": {
                 # https://jinja.palletsprojects.com/en/stable/api/#policies
                 "json.dumps_function": custom_json_dumps,
@@ -267,6 +276,10 @@ else:
         ),
     }
 
+    # Allow overriding the database port for local development with multiple instances
+    if "DB_PORT" in env:
+        DATABASES["default"]["PORT"] = env["DB_PORT"]
+
     if "READ_REPLICA_DATABASE_URL" in env:
         DATABASES["read_replica"] = dj_database_url.config(
             env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age or 0
@@ -298,6 +311,8 @@ CACHES: dict = {
 }
 
 redis_options = {
+    # IGNORE_EXCEPTIONS must be True to ensure an unavailable cache results in a
+    # miss rather than an error.
     "IGNORE_EXCEPTIONS": True,
     "SOCKET_CONNECT_TIMEOUT": 2,  # seconds
     "SOCKET_TIMEOUT": 2,  # seconds
@@ -339,6 +354,23 @@ elif elasticache_addr := env.get("ELASTICACHE_ADDR"):
             },
         },
     }
+
+    if elasticache_invalidate_replay_addr := env.get("ELASTICACHE_INVALIDATE_REPLAY_ADDR"):
+        CACHES["default"]["BACKEND"] = "cms.core.cache.InvalidateReplayRedisCache"
+        CACHES["invalidate_replay"] = {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": f"rediss://{elasticache_invalidate_replay_addr}:{port}",
+            "OPTIONS": {
+                **redis_options,
+                "CONNECTION_POOL_KWARGS": {
+                    "credential_provider": ElastiCacheIAMCredentialProvider(
+                        user=env["ELASTICACHE_INVALIDATE_REPLAY_USER_NAME"],
+                        cluster_name=env["ELASTICACHE_INVALIDATE_REPLAY_CLUSTER_NAME"],
+                        region=AWS_REGION,
+                    )
+                },
+            },
+        }
 else:
     CACHES["default"] = {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
@@ -384,6 +416,7 @@ _valid_language_codes = {code for code, _ in LANGUAGES}
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
 
+LANGUAGE_COOKIE_NAME = "ons_language"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/stable/howto/static-files/
@@ -493,10 +526,11 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
     # https://github.com/jschneier/django-storages/blob/10d1929de5e0318dbd63d715db4bebc9a42257b5/storages/backends/s3boto3.py#L217
     AWS_S3_URL_PROTOCOL = env.get("AWS_S3_URL_PROTOCOL", "https:")
 
-PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get("PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5)
+# Whether to log output as JSON or "verbose". By default, check whether we're running with a TTY
+# This can't be easily overridden in tests, so it's lowercase to stop it being incorrectly overwritten as a setting.
+log_as_json = env.get("LOG_AS_JSON", str(not sys.stdout.isatty())).lower().strip() == "true"
 
-# Is the application running interactively (such as a management command)
-INTERACTIVE = sys.stdout.isatty()
+PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS = env.get("PRIVATE_MEDIA_BULK_UPDATE_MAX_WORKERS", 5)
 
 # Logging
 # This logging is configured to be used with ONS logging and console logs. Console
@@ -511,12 +545,12 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "verbose" if INTERACTIVE else "json",
+            "formatter": "json" if log_as_json else "verbose",
         },
         "gunicorn_access": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "verbose" if INTERACTIVE else "gunicorn_json",
+            "formatter": "gunicorn_json" if log_as_json else "verbose",
         },
     },
     "formatters": {
@@ -525,8 +559,13 @@ LOGGING = {
             "()": "cms.core.logs.JSONFormatter",
         },
         "gunicorn_json": {
-            "()": "cms.core.logs.GunicornJsonFormatter",
+            "()": "cms.core.logs.GunicornAccessJSONFormatter",
         },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+        "propagate": False,
     },
     "loggers": {
         "cms": {
@@ -826,8 +865,11 @@ WAGTAIL_APPEND_SLASH = False
 if "WAGTAILADMIN_BASE_URL" in env:
     WAGTAILADMIN_BASE_URL = env["WAGTAILADMIN_BASE_URL"]
 
+WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
+DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
+
 # https://docs.wagtail.org/en/latest/reference/settings.html#wagtailadmin-login-url
-WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", "/admin/login/")
+WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", f"/{WAGTAILADMIN_HOME_PATH}login/")
 
 # Custom image model
 # https://docs.wagtail.io/en/stable/advanced_topics/images/custom_image_model.html
@@ -858,6 +900,9 @@ WAGTAILADMIN_RICH_TEXT_EDITORS = {
 # Custom document model
 # https://docs.wagtail.io/en/stable/advanced_topics/documents/custom_document_model.html
 WAGTAILDOCS_DOCUMENT_MODEL = "documents.CustomDocument"
+WAGTAILDOCS_DOCUMENT_FORM_BASE = "cms.documents.forms.ONSDocumentForm"
+DOCUMENTS_MAX_UPLOAD_SIZE = int(env.get("DOCUMENTS_MAX_UPLOAD_SIZE", 50 * 1024 * 1024))  # 50MB default
+WAGTAILDOCS_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "xml", "ppt", "pptx", "txt", "rtf", "csv"]
 
 
 # Document serve method - avoid serving files directly from the storage.
@@ -873,6 +918,7 @@ WAGTAIL_PASSWORD_REQUIRED_TEMPLATE = "templates/pages/wagtail/password_required.
 # Default size of the pagination used on the front-end.
 DEFAULT_PER_PAGE = 20
 PREVIOUS_RELEASES_PER_PAGE = int(env.get("PREVIOUS_RELEASES_PER_PAGE", 10))
+CMS_RELEASES_INDEX_REDIRECT_ENABLED = env.get("CMS_RELEASES_INDEX_REDIRECT_ENABLED", "true").lower() == "true"
 RELATED_DATASETS_PER_PAGE = int(env.get("RELATED_DATASETS_PER_PAGE", DEFAULT_PER_PAGE))
 
 # Google Tag Manager ID from env
@@ -917,13 +963,27 @@ DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "ons.gov.uk")
 ONS_COOKIES_PAGE_SLUG = "cookies"
 
+# Feature flag to suppress the untranslated-page notice on CookiesPage aliases.
+CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED = (
+    env.get("CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED", "true").lower() == "true"
+)
+
+# Search redirect path
+ONS_WEBSITE_SEARCH_PATH = env.get("ONS_WEBSITE_SEARCH_PATH", "/search")
+
 # Project information
 BUILD_TIME = datetime.datetime.fromtimestamp(int(env["BUILD_TIME"])) if env.get("BUILD_TIME") else None
 GIT_COMMIT = env.get("GIT_COMMIT") or None
-TAG = env.get("TAG") or None
 START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
+SLACK_BOT_TOKEN = env.get("SLACK_BOT_TOKEN")
+SLACK_PUBLISH_LOG_CHANNEL = env.get("SLACK_PUBLISH_LOG_CHANNEL", "")
+SLACK_ALARM_CHANNEL = env.get("SLACK_ALARM_CHANNEL", "")
+
+# Feature flag for sending slack messages on bundle status changes (before pre-publish, e.g. entering review)
+SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE = env.get("SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE", "false").lower() == "true"
+
 
 # API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
@@ -938,6 +998,11 @@ DIS_DATASETS_BUNDLE_API_ENABLED = env.get("DIS_DATASETS_BUNDLE_API_ENABLED", "fa
 # Feature flag to enable/disable validation of bundled datasets status on bundle approval
 BUNDLE_DATASET_STATUS_VALIDATION_ENABLED = (
     env.get("BUNDLE_DATASET_STATUS_VALIDATION_ENABLED", "false").lower() == "true"
+)
+
+# Feature flag to enable/disable validation of bundled datasets metadata on bundle approval
+BUNDLE_DATASET_METADATA_VALIDATION_ENABLED = (
+    env.get("BUNDLE_DATASET_METADATA_VALIDATION_ENABLED", "true").lower() == "true"
 )
 
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
@@ -960,7 +1025,6 @@ SEARCH_INDEX_EXCLUDED_PAGE_TYPES = {
     "ReleaseCalendarIndex",
     "ThemeIndexPage",
     "ThemePage",
-    "TopicPage",
     "CookiesPage",
     "Page",
 }
@@ -987,6 +1051,7 @@ IFRAME_VISUALISATION_PATH_PREFIXES = env.get(
 # FIXME: remove before going live
 ENFORCE_EXCLUSIVE_TAXONOMY = env.get("ENFORCE_EXCLUSIVE_TAXONOMY", "true").lower() == "true"
 ALLOW_TEAM_MANAGEMENT = env.get("ALLOW_TEAM_MANAGEMENT", "false").lower() == "true"
+FLORENCE_GROUPS_PATH = env.get("FLORENCE_GROUPS_PATH", "/florence/groups")
 
 SEARCH_API_DEFAULT_PAGE_SIZE = int(os.getenv("SEARCH_API_DEFAULT_PAGE_SIZE", "20"))
 SEARCH_API_MAX_PAGE_SIZE = int(os.getenv("SEARCH_API_MAX_PAGE_SIZE", "500"))
@@ -998,6 +1063,14 @@ LOGOUT_REDIRECT_URL = env.get("LOGOUT_REDIRECT_URL", WAGTAILADMIN_LOGIN_URL)
 AUTH_TOKEN_REFRESH_URL = env.get("AUTH_TOKEN_REFRESH_URL")
 SESSION_COOKIE_AGE = int(env.get("SESSION_COOKIE_AGE", 60 * 15))  # 15 minutes to match Auth Service
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+session_db_cache_enabled = env.get("SESSION_DB_CACHE_ENABLED", "true").lower() == "true"
+if "DatabaseCache" in CACHES["default"]["BACKEND"]:
+    # The session cache is unnecessary if the cache backend is the database
+    session_db_cache_enabled = False
+SESSION_ENGINE = (
+    "django.contrib.sessions.backends.cached_db" if session_db_cache_enabled else "django.contrib.sessions.backends.db"
+)
 IDENTITY_API_BASE_URL = env.get("IDENTITY_API_BASE_URL")
 AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "false").lower() == "true"
 AWS_COGNITO_USER_POOL_ID = env.get("AWS_COGNITO_USER_POOL_ID")
@@ -1013,14 +1086,24 @@ PUBLISHING_OFFICERS_GROUP_NAME = "Publishing Officers"
 VIEWERS_GROUP_NAME = "Viewers"
 ROLE_GROUP_IDS = {"role-admin", "role-publisher"}
 
+# Flag to enable direct publishing of pages without going through the workflow process.
+ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT = env.get("ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT", "false").lower() == "true"
+
 # Cookie Names
 ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
 REFRESH_TOKEN_COOKIE_NAME = "refresh_token"  # noqa: S105
 ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
 
-WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
-DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
 SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 5)  # 5 minutes
+
+# note: 30 seconds is a fairly arbitrary value. Long enough to allow for a slow preview generation,
+# but short enough that we don't have stale session data.
+BUNDLE_PREVIEW_COOKIE_NAME = "bundle-preview"
+BUNDLE_PREVIEW_COOKIE_MAX_AGE = 30  # seconds
+# Cap on the number of active preview grants held in the signed cookie. Prevents
+# a user from accumulating an unbounded list of simultaneous grants (and the
+# cookie growing past the ~4KB browser limit).
+CMS_BUNDLE_PREVIEW_MAX_COOKIE_ENTRIES = 20
 
 # Contact Us URL for error pages
 CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatisticalenquiries")
@@ -1037,9 +1120,42 @@ CMS_SEARCH_NOTIFY_ON_DELETE_OR_UNPUBLISH = env.get("CMS_SEARCH_NOTIFY_ON_DELETE_
 
 # Domain-based locale configuration
 CMS_USE_SUBDOMAIN_LOCALES = env.get("CMS_USE_SUBDOMAIN_LOCALES", "true").lower() == "true"
+CMS_HOSTNAME_LOCALE_MAP = {}  # helps determine the locale for a hostname when using subdomain locales.
+
+# Used to generate full URLs for language alternatives when using one of the alternative domains.
+# Wagtail's Sites are configured with the main domains, but we need to handle the internal ones too.
+CMS_HOSTNAME_ALTERNATIVES = {}
+if CMS_USE_SUBDOMAIN_LOCALES and (config_string := env.get("CMS_HOSTNAME_LOCALE_MAP", "")):
+    # The env var is expected to have the following format:
+    # en:default_domain,alternative_domain|cy:default_domain,alternative_domain
+    # Which then gets converted to dict in the form of {domain: lang_code}
+    for locale_config in config_string.strip().split("|"):
+        if not locale_config.strip():
+            continue
+
+        # Split lang_code from domains
+        lang_code, domains_str = locale_config.strip().split(":", 1)
+        domains = [d.strip() for d in domains_str.split(",") if d.strip()]
+
+        if domains:
+            default_domain = domains[0]
+            for domain in domains:
+                CMS_HOSTNAME_LOCALE_MAP[domain] = lang_code
+
+            # there should be only one domain, but guard for cases where there is no alternate, or there multiple
+            alternative_domains = domains[1:]
+            if len(alternative_domains) == 1:
+                CMS_HOSTNAME_ALTERNATIVES[default_domain] = alternative_domains[0]
 
 # This must remain lower than the Gunicorn worker timeout.
 # Note, the Gunicorn timeout may itself be overridden in deployment config (e.g. gunicorn.conf.py, Helm chart values).
 HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS = int(env.get("HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS", 10))
 
 DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "100"))
+
+WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_publish"
+
+CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
+
+# Disable Wagtail's auto-saving feature
+WAGTAIL_AUTOSAVE_INTERVAL = 0

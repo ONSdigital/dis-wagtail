@@ -87,7 +87,7 @@ class Command(BaseCommand):
 
             matching_instances = model._default_manager.filter(lookups)  # pylint: disable=protected-access
 
-            collector.collect(matching_instances)  # type: ignore[arg-type]
+            collector.collect(matching_instances)
 
             if issubclass(model, MP_Node):
                 # Child nodes aren't automatically picked up by the collector.

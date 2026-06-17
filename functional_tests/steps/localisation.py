@@ -10,13 +10,10 @@ def user_goes_to_edit_home_page(context: Context) -> None:
     context.page.get_by_role("link", name="Edit 'Home'").first.click()
 
 
-@step("the user creates a Welsh version of the page")
-def user_creates_welsh_version_of_page(context: Context) -> None:
-    context.page.locator("#w-slim-header-buttons").get_by_role("button", name="Actions", exact=True).click()
-    context.page.get_by_role("link", name="Translate").click()
-    context.page.locator("#id_locales_0").check()
-    context.page.locator("#id_include_subtree").check()
-    context.page.get_by_role("button", name="Submit").click()
+@then("the user can see the option to add a translation")
+def user_can_see_the_option_to_add_a_translation(context: Context) -> None:
+    context.page.get_by_role("button", name="Actions", exact=True).click()
+    expect(context.page.get_by_role("link", name="Translate")).to_be_visible()
 
 
 @step("the user switches to the Welsh locale")
@@ -28,7 +25,7 @@ def user_switches_to_welsh_locale(context: Context) -> None:
 
 @step("the user switches to the English locale")
 def user_switches_to_english_locale(context: Context) -> None:
-    # Status tab is normally shown at this point
+    context.page.get_by_role("button", name="Status").click()
     context.page.get_by_role("button", name="Switch locales").click()
     context.page.get_by_role("link", name="English").click()
 
@@ -46,9 +43,9 @@ def user_populates_the_information_page_with_welsh_content(context: Context) -> 
 
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Tudalen wybodaeth fy mhrawf")
     context.page.wait_for_timeout(50)  # added to allow JS to be ready
-    context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill(
-        "Rhywfaint o gynnwys testun enghreifftiol"
-    )
+    context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").filter(
+        has_text="Some example rich text content"
+    ).fill("Rhywfaint o gynnwys testun enghreifftiol")
     context.page.wait_for_timeout(500)  # ensure that the rich text content is picked up
 
 
@@ -73,7 +70,7 @@ def user_returns_to_editing_the_welsh_statistical_article_page(
 def check_new_information_is_displayed_with_welsh_content(context: Context) -> None:
     expect(context.page.get_by_role("heading", name="Tudalen Gwybodaeth Profi")).to_be_visible()
     expect(context.page.get_by_text("Tudalen wybodaeth fy mhrawf")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Rhywfaint o gynnwys testun enghreifftiol")).to_be_visible()
+    expect(context.page.get_by_text("Rhywfaint o gynnwys testun enghreifftiol")).to_be_visible()
 
 
 @then("the page furniture is displayed in English")

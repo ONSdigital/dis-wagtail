@@ -8,9 +8,12 @@ from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.bundles.mixins import BundledPageMixin
+from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.utils import TranslationResetMixin
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datavis.tests.factories import TableDataFactory
+from cms.users.tests.factories import UserFactory
 
 
 class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
@@ -19,6 +22,13 @@ class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.series = ArticleSeriesPageFactory()
+
+    def test_permission_tester_inherits_from_basepagepermissiontester(self):
+        self.assertIsInstance(self.series.permissions_for_user(UserFactory()), BasePagePermissionTester)
+
+    def test_is_bundleable(self):
+        """Article Series pages should be bundleable so they can be published with related content."""
+        self.assertIsInstance(self.series, BundledPageMixin)
 
     def test_index_redirect_404_with_no_subpages(self):
         """Test index path redirects to latest."""
@@ -90,7 +100,7 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
 
         self.assertContains(
             response,
-            f'<a href="{self.article_series_page.url}/related-data" class="ons-list__link">'
+            f'<a href="{self.article_series_page.get_relative_path()}/related-data" class="ons-list__link">'
             + "View data used in this article</a>",
             html=True,
         )
@@ -100,7 +110,10 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
         response = self.client.get(f"{self.article_series_page.url}/related-data")
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        self.assertContains(response, f"All data related to {self.article_with_datasets.title}")
+        self.assertContains(
+            response,
+            f"All data related to {self.article_series_page.title}: {self.article_with_datasets.title}",
+        )
         self.assertContains(response, "Test dataset")
 
     def test_evergreen_route_related_data_canonical_url(self):
@@ -152,11 +165,10 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
         request_factory = RequestFactory()
         request_factory_server_name = request_factory._base_environ()["SERVER_NAME"]  # pylint: disable=protected-access
 
+        relative_path = self.article_with_datasets.get_relative_path()
         self.assertContains(
             response,
-            f'<link rel="canonical" href="http://{request_factory_server_name}{
-                self.article_with_datasets.url
-            }/related-data">',
+            f'<link rel="canonical" href="http://{request_factory_server_name}{relative_path}/related-data">',
             html=True,
         )
         self.assertNotContains(
@@ -200,32 +212,28 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
             locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_article.save_revision().publish()
-        response = self.client.get(f"{welsh_article.url}/related-data")
+        response = self.client.get(f"{welsh_article.url}/related-data", headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
         welsh_series_url = welsh_article.get_parent().get_full_url()
         self.assertContains(response, f'<link rel="canonical" href="{welsh_series_url}/related-data">', html=True)
 
     def test_evergreen_route_related_data_alternate_urls(self):
         """Test that the related data page has correct hreflang alternate URLs."""
-        # TODO: Update tests once bug CMS-765 is resolved.
-        # For now, always use the article URL and not the series URL for hreflang links,
-        # nor the /related-data suffix.
         welsh_article = self.article_with_datasets.copy_for_translation(
             locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_article.save_revision().publish()
-        response = self.client.get(f"{self.article_series_page.url}/related-data")
+        response = self.client.get(f"{self.article_series_page.url}/related-data", headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        # TODO: Change to {self.article_series_page.url}/related-data once CMS-765 is resolved.
         self.assertContains(
             response,
-            f'<link rel="alternate" href="{self.article_with_datasets.url}" hreflang="en-gb" />',
+            f'<link rel="alternate" href="{self.article_series_page.get_full_url()}/related-data" hreflang="en-gb" />',
             html=True,
         )
-        # TODO: Change to {welsh_series_url}/related-data once CMS-765 is resolved.
+        welsh_series_url = welsh_article.get_parent().get_full_url()
         self.assertContains(
             response,
-            f'<link rel="alternate" href="{welsh_article.url}" hreflang="cy" />',
+            f'<link rel="alternate" href="{welsh_series_url}/related-data" hreflang="cy" />',
             html=True,
         )
 
@@ -798,6 +806,51 @@ class ArticleSeriesChartDownloadWithVersionTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(f"{self.series.url}/editions/{article.slug}/versions/1/download-chart/new-chart-id")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
+    def test_download_chart_with_version_404_version_not_in_corrections(self):
+        """Test 404 when the requested version does not match any existing correction."""
+        article = StatisticalArticlePageFactory(parent=self.series)
+        article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Original Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": self.original_table_data,
+                            },
+                            "id": "chart-to-download",
+                        }
+                    ],
+                },
+            }
+        ]
+        article.save_revision().publish()
+        original_revision_id = article.latest_revision_id
+
+        article.corrections = [
+            {
+                "type": "correction",
+                "value": {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "date": "2024-01-15",
+                    "text": "Minor correction",
+                },
+            }
+        ]
+        article.save_revision().publish()
+
+        # Version 2 does not exist among the corrections
+        response = self.client.get(
+            f"{self.series.url}/editions/{article.slug}/versions/2/download-chart/chart-to-download"
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
     def test_download_with_version_zero_returns_404(self):
         """Test that requesting version 0 returns 404."""
         article = StatisticalArticlePageFactory(parent=self.series)
@@ -884,6 +937,35 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
         self.assertIn("Category", content)
         self.assertIn("2020", content)
         self.assertIn("100", content)
+
+    def test_download_chart_with_version_on_alias_returns_404(self):
+        """Corrections live on the canonical page, so versioned downloads on an alias return 404."""
+        original_revision_id = self.article.latest_revision_id
+        self.article.corrections = [
+            {
+                "type": "correction",
+                "value": {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "date": "2024-01-15",
+                    "text": "Minor correction",
+                },
+            }
+        ]
+        self.article.save_revision().publish()
+
+        welsh_article_alias = self.article.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"),
+            copy_parents=True,
+            alias=True,
+        )
+        welsh_series = welsh_article_alias.get_parent().specific
+
+        response = self.client.get(
+            f"{welsh_series.url}/editions/{welsh_article_alias.slug}/versions/1/download-chart/test-chart-id",
+            headers={"host": "cy.ons.localhost"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_download_chart_from_welsh_translation(self):
         """Test that chart download works from fully translated Welsh article."""
@@ -981,7 +1063,8 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
         # Download chart from Welsh article
         welsh_series = welsh_article.get_parent().specific
         welsh_response = self.client.get(
-            f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id-2"
+            f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id-2",
+            headers={"host": "cy.ons.localhost"},
         )
         welsh_content = welsh_response.content.decode("utf-8")
 
@@ -1025,7 +1108,10 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
 
         # Attempt to download chart that doesn't exist in Welsh translation
         welsh_series = welsh_article.get_parent().specific
-        response = self.client.get(f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id")
+        response = self.client.get(
+            f"{welsh_series.url}/editions/{welsh_article.slug}/download-chart/test-chart-id",
+            headers={"host": "cy.ons.localhost"},
+        )
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_download_chart_welsh_translation_with_version(self):
@@ -1108,7 +1194,8 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
 
         # Download the original version (version 1)
         response = self.client.get(
-            f"{welsh_series.url}/editions/{welsh_article.slug}/versions/1/download-chart/test-chart-id"
+            f"{welsh_series.url}/editions/{welsh_article.slug}/versions/1/download-chart/test-chart-id",
+            headers={"host": "cy.ons.localhost"},
         )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)

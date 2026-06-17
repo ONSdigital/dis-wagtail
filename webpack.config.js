@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-require-imports */
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
@@ -197,7 +197,7 @@ const webpackConfig = (environment, argv) => {
       proxy: [
         {
           context: () => true,
-          target: 'http://localhost:8000',
+          target: `http://localhost:${process.env.WEB_PORT || 8000}`,
         },
       ],
       client: {

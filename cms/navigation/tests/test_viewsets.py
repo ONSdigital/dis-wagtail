@@ -5,7 +5,6 @@ from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.navigation.models import FooterMenu, MainMenu
-from cms.navigation.tests.factories import FooterMenuFactory, MainMenuFactory
 
 
 class MainMenuViewSetTestCase(WagtailTestUtils, TestCase):
@@ -19,9 +18,19 @@ class MainMenuViewSetTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
         self.client.force_login(self.superuser)
 
+    def get_main_menu_locales(self):
+        return list(MainMenu.objects.values_list("locale__language_code", flat=True))
+
+    def test_main_menu_exists_from_migrations(self):
+        """MainMenu should exist because migrations create the default instance and its translation."""
+        self.assertEqual(MainMenu.objects.count(), 2, "MainMenu should exist from migrations.")
+        self.assertListEqual(
+            self.get_main_menu_locales(), ["en-gb", "cy"], "Should have one English and one Welsh MainMenu."
+        )
+
     def test_main_menu_add_view_can_be_accessed_when_none_exists(self):
         """If no MainMenu exists, the user should be able to access the add view."""
-        self.assertEqual(MainMenu.objects.count(), 0, "No MainMenu should exist yet.")
+        MainMenu.objects.all().delete()
         response = self.client.get(self.add_url)
 
         self.assertEqual(
@@ -30,8 +39,10 @@ class MainMenuViewSetTestCase(WagtailTestUtils, TestCase):
 
     def test_main_menu_add_redirects_to_dashboard_when_it_already_exists(self):
         """If a MainMenu already exists, the user should be redirected to the Wagtail dashboard."""
-        MainMenuFactory()
-        self.assertEqual(MainMenu.objects.count(), 1)
+        self.assertEqual(MainMenu.objects.count(), 2, "MainMenu should exist from migrations.")
+        self.assertListEqual(
+            self.get_main_menu_locales(), ["en-gb", "cy"], "Should have one English and one Welsh MainMenu."
+        )
 
         response = self.client.get(self.add_url)
 
@@ -53,9 +64,19 @@ class FooterMenuViewSetTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
         self.client.force_login(self.superuser)
 
+    def get_footer_menu_locales(self):
+        return list(FooterMenu.objects.values_list("locale__language_code", flat=True))
+
+    def test_footer_menu_exists_from_migrations(self):
+        """FooterMenu should exist because migrations create the default instance and its translation."""
+        self.assertEqual(FooterMenu.objects.count(), 2, "FooterMenu should exist from migrations.")
+        self.assertListEqual(
+            self.get_footer_menu_locales(), ["en-gb", "cy"], "Should have one English and one Welsh FooterMenu."
+        )
+
     def test_footer_menu_add_view_can_be_accessed_when_none_exist(self):
         """If FooterMenu does not exist, the user should be able to access the add view."""
-        self.assertEqual(FooterMenu.objects.count(), 0, "No Footer Menu should exist yet.")
+        FooterMenu.objects.all().delete()
         response = self.client.get(self.add_url)
 
         self.assertEqual(
@@ -64,8 +85,10 @@ class FooterMenuViewSetTestCase(WagtailTestUtils, TestCase):
 
     def test_footer_menu_add_redirects_to_dashboard_when_it_already_exists(self):
         """If a FooterMenu already exists, the user should be redirected to the Wagtail dashboard."""
-        FooterMenuFactory()
-        self.assertEqual(FooterMenu.objects.count(), 1)
+        self.assertEqual(FooterMenu.objects.count(), 2, "FooterMenu should exist from migrations.")
+        self.assertListEqual(
+            self.get_footer_menu_locales(), ["en-gb", "cy"], "Should have one English and one Welsh FooterMenu."
+        )
 
         response = self.client.get(self.add_url)
 

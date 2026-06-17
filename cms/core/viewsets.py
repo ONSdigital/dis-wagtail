@@ -1,6 +1,6 @@
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
-from django.db.models import F, QuerySet
+from django.db.models import F
 from wagtail.admin.ui.tables import Column, LocaleColumn, UpdatedAtColumn, UserColumn
 from wagtail.snippets.views.chooser import ChooseResultsView as SnippetChooseResultsView
 from wagtail.snippets.views.chooser import ChooseView as SnippetChooseView
@@ -10,12 +10,15 @@ from wagtail.snippets.views.snippets import SnippetViewSet
 
 from cms.core.models import ContactDetails, Definition
 
+if TYPE_CHECKING:
+    from django.db.models import QuerySet
+
 
 class ContactDetailsIndex(SnippetIndexView):
     list_display: ClassVar[list[str | Column]] = ["name", "locale", "email", "phone", UpdatedAtColumn()]
 
 
-class ContactDetailsChooseColumnsMixin:
+class ContactDetailsChooseMixin:
     @property
     def columns(self) -> list[Column]:
         title_column = self.title_column  # type: ignore[attr-defined]
@@ -27,11 +30,14 @@ class ContactDetailsChooseColumnsMixin:
             Column("phone"),
         ]
 
+    def get_object_list(self) -> QuerySet[ContactDetails]:
+        return ContactDetails.objects.filter(live=True)
 
-class ContactDetailsChooseView(ContactDetailsChooseColumnsMixin, SnippetChooseView): ...
+
+class ContactDetailsChooseView(ContactDetailsChooseMixin, SnippetChooseView): ...
 
 
-class ContactDetailsChooseResultsView(ContactDetailsChooseColumnsMixin, SnippetChooseResultsView): ...
+class ContactDetailsChooseResultsView(ContactDetailsChooseMixin, SnippetChooseResultsView): ...
 
 
 class ContactDetailsChooserViewset(SnippetChooserViewSet):
@@ -81,11 +87,11 @@ class DefinitionsChooseColumnsMixin:
         ]
 
     def get_object_list(self) -> QuerySet[Definition]:
-        queryset = Definition.objects.select_related(
-            "latest_revision", "latest_revision__user", "latest_revision__user__wagtail_userprofile"
+        return (
+            Definition.objects.filter(live=True)
+            .annotate(_updated_at=F("latest_revision__created_at"))
+            .select_related("latest_revision", "latest_revision__user", "latest_revision__user__wagtail_userprofile")
         )
-        queryset = queryset.annotate(_updated_at=F("latest_revision__created_at"))
-        return queryset
 
 
 class DefinitionChooseView(DefinitionsChooseColumnsMixin, SnippetChooseView): ...

@@ -1,11 +1,10 @@
-import csv
 from typing import TYPE_CHECKING
 
-from django.http import HttpResponse
-from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from cms.core.custom_date_format import ons_date_format
+
+__all__ = ["serialize_correction_or_notice"]
 
 if TYPE_CHECKING:
     from wagtail.blocks.stream_block import StreamChild
@@ -37,39 +36,3 @@ def serialize_correction_or_notice(entry: StreamChild, *, superseded_url: str | 
         content["urlText"] = _("View superseded version")
 
     return content
-
-
-def create_data_csv_download_response_from_data(data: list[list[str | int | float]], *, title: str) -> HttpResponse:
-    """Creates a Django HttpResponse for downloading a CSV file from table data.
-
-    Args:
-        data: The list of data rows to be converted to CSV, where each row is a list of values.
-        title: The title for the CSV file, which will be slugified to create the filename.
-
-    Returns:
-        A Django HttpResponse object configured for CSV file download.
-    """
-    filename = slugify(title) or "chart"
-    response = HttpResponse(
-        content_type="text/csv",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}.csv"',
-        },
-    )
-    writer = csv.writer(response)
-    writer.writerows(sanitize_data_for_csv(data))
-    return response
-
-
-def sanitize_data_for_csv(data: list[list[str | int | float]]) -> list[list[str | int | float]]:
-    """Sanitize data for CSV export by escaping formula triggers.
-
-    Prevents CSV injection by prepending ' to strings starting with
-    =, +, -, @, or tab characters.
-    """
-    triggers = ("=", "+", "-", "@", "\t")
-
-    return [
-        [f"'{value}" if isinstance(value, str) and value.startswith(triggers) else value for value in row]
-        for row in data
-    ]

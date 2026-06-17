@@ -1,10 +1,13 @@
 DESIGN_SYSTEM_VERSION=`cat .design-system-version`
 
+
 .DEFAULT_GOAL := all
 
 .EXPORT_ALL_VARIABLES:
 # Default to development config if DJANGO_SETTINGS_MODULE is not set
 DJANGO_SETTINGS_MODULE ?= cms.settings.dev
+# Default web port for local development
+WEB_PORT ?= 8000
 
 .PHONY: all
 all: ## Show the available make targets.
@@ -41,7 +44,7 @@ format-frontend:  ## Format front-end files (CSS, JS, YAML, MD)
 
 .PHONY: npm-build
 npm-build: ## Build the front-end assets
-	. $$HOME/.nvm/nvm.sh; nvm use; npm run build
+	@if [ -f "$$HOME/.nvm/nvm.sh" ]; then . $$HOME/.nvm/nvm.sh && nvm use; fi && npm run build
 
 .PHONY: lint
 lint: lint-py lint-html lint-frontend lint-migrations ## Run all linters (python, html, front-end, migrations)
@@ -51,7 +54,7 @@ lint-py:  ## Run all Python linters (ruff/pylint/mypy).
 	poetry run ruff check .
 	poetry run ruff format --check .
 	find . -type f -name "*.py" | xargs poetry run pylint --reports=n --output-format=colorized --rcfile=.pylintrc --django-settings-module=cms.settings.production -j 0
-	make mypy
+	$(MAKE) mypy
 
 .PHONY: lint-html
 lint-html:  ## Run HTML Linters
@@ -68,13 +71,17 @@ lint-migrations: ## Run django-migration-linter
 .PHONY: test
 test:  ## Run the tests and check coverage.
 	poetry run coverage erase
-	COVERAGE_CORE=sysmon poetry run coverage run ./manage.py test --parallel --settings=cms.settings.test --shuffle
+	COVERAGE_CORE=sysmon poetry run coverage run ./manage.py test --settings=cms.settings.test --shuffle
 	poetry run coverage combine
 	poetry run coverage report --fail-under=90
 
 .PHONY: mypy
 mypy:  ## Run mypy.
 	poetry run mypy cms/ .github/*.py
+
+.PHONY: pa11y
+pa11y:  ## Run pa11y accessibility tests against the sitemap
+	pa11y-ci --sitemap http://localhost:$(WEB_PORT)/sitemap.xml --config ./pa11y.config.js
 
 .PHONY: install
 install:  ## Install the dependencies excluding dev.
@@ -85,12 +92,15 @@ install:  ## Install the dependencies excluding dev.
 install-dev:  ## Install the dependencies including dev.
 	npm ci
 	poetry install --no-root
+	pip install pre-commit && pre-commit install
 
 .PHONY: megalint
-megalint:  ## Run the mega-linter.
+.PHONY: megalint
+megalint:  ## Run the mega-linter. Use LINTER=NAME to run only one.
 	docker run --platform linux/amd64 --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock:rw \
 		-v $(shell pwd):/tmp/lint:rw \
+		$(if $(LINTER),-e ENABLE_LINTERS=$(LINTER),) \
 		ghcr.io/oxsecurity/megalinter-cupcake:v9
 
 .PHONY: load-design-system-templates
@@ -169,12 +179,14 @@ createsuperuser: ## Create a super user with a default username and password
 
 .PHONY: runserver
 runserver: ## Run the Django application locally
-	poetry run python ./manage.py runserver 0:8000
+	poetry run python ./manage.py runserver 0:$(WEB_PORT)
 
 .PHONY: dev-init
 dev-init: load-design-system-templates npm-build collectstatic compilemessages makemigrations migrate load-topics createsuperuser ## Run the pre-run setup scripts
-	## Set all Wagtail sites to our development port of 8000
-	poetry run python manage.py shell -c "from wagtail.models import Site; Site.objects.all().update(port=8000)"
+	## Set all Wagtail sites to our development port
+	poetry run python manage.py shell -c "from wagtail.models import Site; Site.objects.all().update(port=$(WEB_PORT))"
+	# Clear the cache to prevent any issues with stale data
+	$(MAKE) cache-clear
 
 .PHONY: functional-tests-up
 functional-tests-up:  ## Start the functional tests docker compose dependencies
@@ -190,12 +202,17 @@ functional-tests-down:  ## Stop the functional tests docker compose dependencies
 
 .PHONY: functional-tests-run
 functional-tests-run: load-design-system-templates collectstatic ## Only run the functional tests (dependencies must be run separately)
-	# Run migrations to work around Django bug (#35967)
-	poetry run ./manage.py migrate --noinput --settings cms.settings.functional_test
 	poetry run behave functional_tests
 
 .PHONY: functional-tests
 functional-tests: functional-tests-up functional-tests-run functional-tests-down  ## Run the functional tests with dependencies (all in one)
+
+.PHONY: functional-tests-list
+functional-tests-list:  ## Run the functional tests against a specific list of features
+	[ -n "$(FEATURES)" ] || { echo 'FEATURES is empty' ; exit 1 ; }
+	@echo "Running $$(echo $(FEATURES) | wc -w) feature files:"
+	@for f in $(FEATURES); do echo "  - $$f"; done
+	poetry run behave $(FEATURES)
 
 .PHONY: playwright-install
 playwright-install:  ## Install Playwright dependencies
@@ -203,11 +220,25 @@ playwright-install:  ## Install Playwright dependencies
 
 .PHONY: makemessages
 makemessages:  ## We currently just require Welsh (cy), change to -a for all languages
-	poetry run python ./manage.py makemessages --locale cy --ignore "node_modules/*" --ignore ".venv"
+	poetry run python ./manage.py makemessages \
+		--locale cy \
+		--ignore "node_modules/*" \
+		--ignore ".venv" \
+		$(if $(check),--check)
+
+.PHONY: makemessages-check
+makemessages-check:  ## Run makemessages in check mode
+	$(MAKE) makemessages check=true
 
 .PHONY: compilemessages
 compilemessages:
 	poetry run python ./manage.py compilemessages
+
+# Dev helper commands
+
+.PHONY: cache-clear
+cache-clear:  ## Clear the Django cache
+	poetry run python ./manage.py shell -c "from django.core.cache import cache; cache.clear()"
 
 # Aliases
 .PHONY: start

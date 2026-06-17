@@ -12,11 +12,11 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
     And the time selection dropdown displays options in 30-minute intervals
 
   Scenario Outline: A CMS user inputs a datetime on a release calendar page, the correct period is displayed
-    When the user clicks "Add child page" to create a new draft release calendar page
-    And the user enters some example content on the page
+    Given a release calendar page exists
+    When the user edits the release calendar page
     And the user inputs a <MeridiemIndicator> datetime
-    And the user clicks "Publish"
-    And the user clicks "View Live" on the publish confirmation banner
+    And the user clicks the "Save draft" button
+    And the user views the release calendar page draft
     Then the datetime is displayed with "<MeridiemIndicator>"
 
     Examples:
@@ -25,11 +25,12 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
       | pm                |
 
   Scenario Outline: A CMS user can create and publish a release calendar page with different statuses
-    When the user clicks "Add child page" to create a new draft release calendar page
-    And the user sets the page status to "<PageStatus>"
-    And the user enters "<PageStatus>" page content
-    And the user clicks "Publish"
-    And the user clicks "View Live" on the publish confirmation banner
+    Given a release calendar page exists
+    When the user edits the release calendar page
+    And  the user sets the page status to "<PageStatus>"
+    And  the user enters "<PageStatus>" page content
+    And  the release calendar page goes through the publishing steps with superuser as user and Publishing Officer as reviewer
+    And  the user clicks "View Live" on the publish confirmation banner
     Then the "<PageStatus>" page is displayed
 
     Examples:
@@ -41,7 +42,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
   Scenario Outline: A CMS user can use preview modes to preview the page at different statuses
       When the user clicks "Add child page" to create a new draft release calendar page
       And the user enters "<PageStatus>" page content
-      And the user clicks the "Save Draft" button
+      And the user clicks the "Save draft" button
       And the user opens the preview in a new tab, using the "<PageStatus>" preview mode
       Then the "<PageStatus>" page is displayed in the preview tab
 
@@ -52,14 +53,13 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
         | Published   |
         | Cancelled   |
 
-  Scenario Outline: A CMS user adds different types of content to a release calendar page and verifies their display in the Published preview tab
-    When the user clicks "Add child page" to create a new draft release calendar page
-    And the user enters some example content on the page
-    And the user adds <Feature> to the release calendar page
-    And the user clicks the "Save Draft" button
-    And the user opens the preview in a new tab, using the "Published" preview mode
+  Scenario Outline: A CMS user adds <Feature> to a release calendar page and verifies their display in the Published preview tab
+    Given a sample release calendar page exists
+    When the user edits the release calendar page
+    And  the user adds <Feature> to the release calendar page
+    And  the user opens the preview in a new tab, using the "Published" preview mode
     Then the example content is displayed in the preview tab
-    And <Feature> is displayed in the release calendar page preview tab
+    And  <Feature> is displayed in the release calendar page preview tab
 
     Examples:
       | Feature                        |
@@ -67,6 +67,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
       | a next release date text       |
       | a related link                 |
       | pre-release access information |
+
 
 # Checks visibility of release date text field based on page status (Provisional vs. others) in the admin interface.
   Scenario: A CMS user can see release date text field for a provisional release calendar page
@@ -87,7 +88,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
     When the user clicks "Add child page" to create a new draft release calendar page
     And the user enters some example content on the page
     And the user adds <Input> to the release calendar page
-    And the user clicks "Publish"
+    And the user clicks the "Save draft" button
     Then an error message is displayed to say the page could not be created
     And the user sees a validation error message: <Error>
 
@@ -102,7 +103,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
     When the user clicks "Add child page" to create a new draft release calendar page
     And the user sets the page status to "Cancelled"
     And the user enters some example content on the page
-    And the user clicks "Publish"
+    And the user clicks the "Save draft" button
     Then an error message is displayed to say the page could not be created
     And the user sees a validation error message: a cancellation notice must be added
 
@@ -110,7 +111,7 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
     When the user clicks "Add child page" to create a new draft release calendar page
     And the user enters some example content on the page
     And <Feature> <is/are> added under pre-release access
-    And the user clicks "Publish"
+    And the user clicks the "Save draft" button
     Then an error message is displayed to say the page could not be created
     And the user sees a validation error message: <Error>
 
@@ -122,17 +123,17 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
       | an empty table                        | is     | empty tables are not allowed |
 
   Scenario: A CMS user can add a date change log, under changes to release date, and preview it in the published preview tab
-    When the user publishes a "Confirmed" page with example content
-    And the user returns to editing the published page
-    And the user changes the release date to a new date
-    And the user adds a date change log to the release calendar page
-    And the user opens the preview in a new tab, using the "Published" preview mode
+    Given a "Confirmed" published release calendar page exists
+    When the user edits the release calendar page
+    And  the user changes the release date to a new date
+    And  the user adds a date change log to the release calendar page
+    And  the user opens the preview in a new tab, using the "Published" preview mode
     Then the example content is displayed in the preview tab
-    And a release date change is displayed in the release calendar page preview tab
+    And  a release date change is displayed in the release calendar page preview tab
 
   Scenario: The previous date in the date change log block is pre-populated
-    When the user publishes a "Confirmed" page with example content
-    And the user returns to editing the published page
+    Given a "Confirmed" published release calendar page exists
+    When the user edits the release calendar page
     And the user changes the release date to a new date
     And the user adds a date change log to the release calendar page
     Then the previous date field is pre-populated with the old release date
@@ -142,36 +143,32 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
     Then the Changes to release date block is not visible
 
   Scenario: The previous date field in the date change log block is uneditable
-    When the user publishes a "Confirmed" page with example content
-    And the user returns to editing the published page
-    And the user adds a date change log to the release calendar page
+    Given a "Confirmed" published release calendar page exists
+    When the user edits the release calendar page
+    And  the user adds a date change log to the release calendar page
     Then the previous release date field is not editable
 
   Scenario: A CMS user cannot delete a date change log that has been published
-    When the user publishes a "Confirmed" page with example content
-    And the user returns to editing the published page
-    And the user changes the release date to a new date
-    And the user adds a date change log to the release calendar page
-    And the user clicks "Publish"
-    And the user returns to editing the published page
+    Given a "Confirmed" published release calendar page with a date change log exists
+    When the user edits the release calendar page
     Then the user cannot delete the date change log
 
   Scenario: Validation error is raised when multiple date change logs are added
-    When the user publishes a "Confirmed" page with example content
-    And the user returns to editing the published page
-    And the user changes the release date to a new date
-    And the user adds multiple date change logs under changes to release date
-    And the user clicks "Publish"
+    Given a "Confirmed" published release calendar page exists
+    When the user edits the release calendar page
+    And  the user changes the release date to a new date
+    And  the user adds multiple date change logs under changes to release date
+    And  the user clicks the "Save draft" button
     Then an error message is displayed to say the page could not be saved
-    And the user sees a validation error message: multiple release date change logs
+    And  the user sees a validation error message: multiple release date change logs
 
   Scenario Outline: Validation errors are raised when release date changes and date change log fields are inconsistent on a confirmed page
-    When the user publishes a "Confirmed" page with example content
-    And the user returns to editing the published page
-    And the user adds a <DateChangeLogValidationError> under changes to release date
-    And the user clicks "Publish"
+    Given a "Confirmed" published release calendar page exists
+    When the user edits the release calendar page
+    And  the user adds a <DateChangeLogValidationError> under changes to release date
+    And  the user clicks the "Save draft" button
     Then an error message is displayed to say the page could not be saved
-    And the user sees a validation error message: <DateChangeLogValidationError>
+    And  the user sees a validation error message: <DateChangeLogValidationError>
 
     Examples:
       | DateChangeLogValidationError                 |
@@ -179,18 +176,16 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
       | date change log with no release date change  |
 
 Scenario: A CMS user can add another date change log after the first one is published
-    When the user publishes a "Confirmed" page with example content
-    And the user returns to editing the published page
+    Given a "Confirmed" published release calendar page exists
+    When the user edits the release calendar page
     And the user changes the release date to a new date
     And the user adds a date change log to the release calendar page
-    And the user clicks "Publish"
+    And the release calendar page goes through the publishing steps with superuser as user and Publishing Admin as reviewer
     And the user returns to editing the published page
     And the user changes the release date to a new date again
     And the user adds another date change log under changes to release date
-    And the user clicks the "Save Draft" button
-    Then the release calendar page is successfully updated
+    Then the user can save the page
     # Done twice on purpose to check validation is working
-    When the user clicks the "Save Draft" button
-    Then the release calendar page is successfully updated
-    When the user clicks "Publish"
-    Then the release calendar page is successfully published
+    Then the user can save the page
+    When the release calendar page goes through the publishing steps with superuser as user and Publishing Admin as reviewer
+    Then the page is published

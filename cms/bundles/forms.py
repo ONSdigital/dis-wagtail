@@ -3,9 +3,11 @@ from datetime import datetime
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
+import requests
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.template.defaultfilters import pluralize
 from django.utils import timezone
 
@@ -16,6 +18,8 @@ from cms.bundles.clients.api import (
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from cms.core.forms import DeduplicateInlinePanelAdminForm
+from cms.datasets.models import ONSDataset
+from cms.datasets.utils import get_dataset_for_published_state, update_dataset_metadata
 from cms.workflows.models import ReadyToPublishGroupTask
 
 from .bundle_api_sync_service import BundleAPISyncService
@@ -189,6 +193,84 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
             raise ValidationError(errors)
 
+    @datasets_bundle_api_enabled
+    def _validate_bundled_datasets_metadata(self) -> None:
+        """Compare bundled datasets' stored metadata against the dataset API and
+        refresh local rows on drift.
+
+        Note: this validator deliberately has a side effect, it writes refreshed
+        title/description back to the local `Dataset` rows before raising. This is
+        intentional so that when the approver clicks Approve a second time, the
+        form re-renders with the up-to-date metadata they need to re-review.
+        The save is safe to do here because Django caches `cleaned_data`, so
+        `is_valid()` won't re-run this method within the same request.
+
+
+        On drift, the approval is blocked with a `ValidationError` listing the
+        changed fields, forcing the approver to reconfirm by submitting again.
+        """
+        if not settings.BUNDLE_DATASET_METADATA_VALIDATION_ENABLED or "bundled_datasets" not in self.formsets:
+            return
+
+        if not self.datasets_bundle_api_user_access_token:
+            raise ValidationError("Your session has expired. Please sign in again to approve the bundle.")
+
+        queryset = ONSDataset.objects.with_token(  # pylint: disable=no-member
+            self.datasets_bundle_api_user_access_token
+        )
+
+        drift_messages: list[str] = []
+        api_items_by_namespace: dict[str, Any] = {}
+        with transaction.atomic():
+            for form in self.formsets["bundled_datasets"].forms:
+                if (
+                    not form.is_valid()
+                    or form.cleaned_data.get("DELETE")
+                    or (dataset := form.cleaned_data.get("dataset")) is None
+                ):
+                    continue
+
+                if dataset.namespace not in api_items_by_namespace:
+                    try:
+                        api_items_by_namespace[dataset.namespace] = queryset.get(pk=dataset.namespace)
+                    except (requests.exceptions.RequestException, ValueError):
+                        logger.exception(
+                            "Failed to fetch dataset %s for metadata validation on approval", dataset.namespace
+                        )
+                        raise ValidationError(
+                            f"Could not verify the latest metadata for '{dataset.title}'. Please try again."
+                        ) from None
+
+                item_from_api = api_items_by_namespace[dataset.namespace]
+
+                api_dataset = get_dataset_for_published_state(item_from_api, published=False)
+                api_title = api_dataset.title
+                api_description = api_dataset.description
+
+                old_title = dataset.title
+                changes: list[str] = []
+                if api_title and old_title != api_title:
+                    changes.append(f"title changed from '{old_title}' to '{api_title}'")
+                if api_description and dataset.description != api_description:
+                    changes.append("description has changed")
+
+                if not changes:
+                    continue
+
+                updated_fields = update_dataset_metadata(dataset, title=api_title, description=api_description)
+                if updated_fields:
+                    dataset.save(update_fields=updated_fields)
+                for change in changes:
+                    drift_messages.append(f"'{old_title}': {change}")
+
+        if drift_messages:
+            errors = [
+                "Approval could not be completed because dataset metadata has changed since they were added. "
+                "The latest metadata has been imported. Please review the changes below and approve the bundle again.",
+                *drift_messages,
+            ]
+            raise ValidationError(errors)
+
     def _validate_bundled_pages(self) -> None:
         """Validates related pages to ensure the selected page is not in another active bundle."""
         if "bundled_pages" not in self.formsets:
@@ -294,6 +376,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
             # ensure all bundled datasets are approved (the function will check if the API is enabled)
             self._validate_bundled_datasets_status()
+
+            # ensure stored dataset metadata still matches the source API
+            self._validate_bundled_datasets_metadata()
         except ValidationError as e:
             # revert the status change back to original to prevent "Approve" specific logic from applying
             self.cleaned_data["status"] = self.instance.status
@@ -331,6 +416,10 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             if submitted_status == BundleStatus.APPROVED:
                 cleaned_data["approved_at"] = timezone.now()
                 cleaned_data["approved_by"] = self.for_user
+            elif submitted_status == BundleStatus.PUBLISHED:
+                if not self.instance.approved_by_id:
+                    cleaned_data["approved_at"] = timezone.now()
+                    cleaned_data["approved_by"] = self.for_user
             elif self.instance.status == BundleStatus.APPROVED:
                 # the bundle was approved, and is now unapproved.
                 cleaned_data["approved_at"] = None

@@ -9,6 +9,7 @@ from cms.articles.tests.factories import (
     StatisticalArticlePageFactory,
 )
 from functional_tests.step_helpers.users import create_user
+from functional_tests.steps.page_editor import click_the_given_button
 
 
 @given("a superuser logs into the admin site")
@@ -55,9 +56,7 @@ def user_has_added_one_external_related_article(context: Context) -> None:
     context.page.locator(f"#id_related_articles-{context.manual_article_index}-title").fill("Test External Article")
     context.manual_article_index += 1
 
-    # Publish the page
-    context.page.get_by_role("button", name="More actions").click()
-    context.page.get_by_role("button", name="Publish").click()
+    click_the_given_button(context, "Save draft")
 
 
 @when('the user adds an external related article with title "{title}" and a short description')

@@ -2,9 +2,11 @@ from collections.abc import Generator
 from typing import TYPE_CHECKING, Any, cast
 
 from django.db.models import QuerySet
-from django.urls import include, path
+from django.urls import include, path, reverse
 from django.utils.functional import cached_property
 from wagtail import hooks
+from wagtail.admin.search import SearchArea
+from wagtail.admin.site_summary import SummaryItem
 from wagtail.admin.ui.components import Component
 from wagtail.admin.ui.menus.pages import PageMenuItem
 from wagtail.log_actions import LogFormatter
@@ -13,6 +15,7 @@ from wagtail.permission_policies import ModelPermissionPolicy
 from . import admin_urls
 from .mixins import BundledPageMixin
 from .models import Bundle
+from .permissions import user_can_manage_bundles
 from .viewsets.bundle import bundle_viewset
 from .viewsets.bundle_chooser import bundle_chooser_viewset
 from .viewsets.bundle_page_chooser import bundle_page_chooser_viewset
@@ -128,7 +131,7 @@ class LatestBundlesPanel(Component):
         """Returns the latest 10 bundles if the panel is shown."""
         queryset: QuerySet[Bundle] = Bundle.objects.none()
         if self.is_shown:
-            queryset = Bundle.objects.active()[: self.num_bundles]
+            queryset = Bundle.objects.active().order_by("-updated_at")[: self.num_bundles]
 
         return queryset
 
@@ -136,7 +139,7 @@ class LatestBundlesPanel(Component):
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
-        context["bundles"] = sorted(self.get_latest_bundles(), key=lambda b: b.name)
+        context["bundles"] = self.get_latest_bundles()
         context["is_shown"] = self.is_shown
         context["num_bundles"] = self.num_bundles
         return context
@@ -171,7 +174,7 @@ class BundlesInReviewPanel(Component):
         if not self.is_shown:
             return cast(QuerySet[Bundle], Bundle.objects.none())
 
-        queryset: QuerySet[Bundle] = Bundle.objects.previewable().order_by("approved_at")
+        queryset: QuerySet[Bundle] = Bundle.objects.previewable().order_by("-updated_at")
         if self._can_manage:
             # show all "in preview" for users that can manage.
             return queryset
@@ -183,20 +186,71 @@ class BundlesInReviewPanel(Component):
         """Adds the request, the latest bundles and whether the panel is shown to the panel context."""
         context = super().get_context_data(parent_context)
         context["request"] = self.request
-        context["bundles"] = sorted(self.bundles[: self.num_bundles], key=lambda b: b.name)
+        context["bundles"] = self.bundles[: self.num_bundles]
         context["is_shown"] = self.is_shown
         context["more_link"] = len(self.bundles) > self.num_bundles
         return context
 
 
 @hooks.register("construct_homepage_panels")
-def add_latest_bundles_panel(request: HttpRequest, panels: list[Component]) -> None:
+def add_bundle_panels(request: HttpRequest, panels: list[Component]) -> None:
     """Adds the LatestBundlesPanel to the list of Wagtail admin dashboard panels.
 
     @see https://docs.wagtail.org/en/stable/reference/hooks.html#construct-homepage-panels
     """
     panels.append(LatestBundlesPanel(request))
     panels.append(BundlesInReviewPanel(request))
+
+
+class BundleSearchArea(SearchArea):
+    def is_shown(self, request: HttpRequest) -> bool:
+        permission_policy = ModelPermissionPolicy(Bundle)
+        is_shown: bool = permission_policy.user_has_any_permission(request.user, ["add", "change", "delete", "view"])
+        return is_shown
+
+
+@hooks.register("register_admin_search_area")
+def register_bundle_search_area() -> SearchArea:
+    return BundleSearchArea(
+        "Bundles",
+        reverse("bundle:index"),
+        name="bundles",
+        icon_name="boxes-stacked",
+        order=400,
+    )
+
+
+class BundleSummaryItem(SummaryItem):
+    order = 400
+    template_name = "bundles/wagtailadmin/homepage/site_summary_bundles.html"
+
+    def __init__(self, request: HttpRequest) -> None:
+        super().__init__(request)
+        self.permission_policy = ModelPermissionPolicy(Bundle)
+
+    @cached_property
+    def can_manage(self) -> bool:
+        return user_can_manage_bundles(self.request.user)
+
+    def get_context_data(self, parent_context: RenderContext | None = None) -> RenderContext | None:
+        queryset = Bundle.objects.active()
+        if not self.can_manage:
+            queryset = queryset.previewable().filter(teams__team__in=self.request.user.active_team_ids).distinct()
+
+        return {
+            "total": queryset.count(),
+        }
+
+    def is_shown(self) -> bool:
+        is_shown: bool = self.permission_policy.user_has_any_permission(
+            self.request.user, ["add", "change", "delete", "view"]
+        )
+        return is_shown
+
+
+@hooks.register("construct_homepage_summary_items")
+def add_media_summary_item(request: HttpRequest, items: list[SummaryItem]) -> None:
+    items.append(BundleSummaryItem(request))
 
 
 @hooks.register("register_log_actions")

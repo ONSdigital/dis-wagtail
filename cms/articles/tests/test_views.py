@@ -60,7 +60,7 @@ class RevisionChartDownloadViewTestCase(WagtailTestUtils, TestCase):
     def get_download_url(self, page_id=None, revision_id=None, chart_id="test-chart-id"):
         """Helper to build the download URL."""
         return reverse(
-            "articles:revision_chart_download",
+            "data_downloads:revision_chart_download",
             kwargs={
                 "page_id": page_id or self.article.pk,
                 "revision_id": revision_id or self.revision_id,
@@ -270,7 +270,7 @@ class RevisionChartDownloadBundlePermissionsTestCase(WagtailTestUtils, TestCase)
         """Helper to build the download URL."""
         # We do this because we use factories to create the pages
         return reverse(
-            "articles:revision_chart_download",
+            "data_downloads:revision_chart_download",
             kwargs={
                 "page_id": self.article.pk,
                 "revision_id": self.revision_id,
@@ -397,7 +397,7 @@ class RevisionTableDownloadViewTestCase(WagtailTestUtils, TestCase):
     def get_download_url(self, page_id=None, revision_id=None, table_id="test-table-id"):
         """Helper to build the download URL."""
         return reverse(
-            "articles:revision_table_download",
+            "data_downloads:revision_table_download",
             kwargs={
                 "page_id": page_id or self.article.pk,
                 "revision_id": revision_id or self.revision_id,
@@ -525,7 +525,7 @@ class ChartAndTableDownloadTestCase(WagtailTestUtils, TestCase):
     def get_chart_download_url(self, chart_id="population-chart"):
         """Helper to build the chart download URL."""
         return reverse(
-            "articles:revision_chart_download",
+            "data_downloads:revision_chart_download",
             kwargs={
                 "page_id": self.article.pk,
                 "revision_id": self.revision_id,
@@ -536,7 +536,7 @@ class ChartAndTableDownloadTestCase(WagtailTestUtils, TestCase):
     def get_table_download_url(self, table_id="regional-table"):
         """Helper to build the table download URL."""
         return reverse(
-            "articles:revision_table_download",
+            "data_downloads:revision_table_download",
             kwargs={
                 "page_id": self.article.pk,
                 "revision_id": self.revision_id,

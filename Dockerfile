@@ -36,7 +36,7 @@ WORKDIR /app
 
 # Install the correct version of the Postgres client
 # library (Debian's bundled version is normally too old)
-ARG POSTGRES_VERSION=16
+ARG POSTGRES_VERSION=17
 
 # Install common OS-level dependencies
 # TODO: when moving to ONS infrastructure, replace RUN with:
@@ -47,22 +47,22 @@ ARG POSTGRES_VERSION=16
 # EOF
 RUN apt --quiet --yes update \
     && apt --quiet --yes install --no-install-recommends \
-        build-essential \
-        curl \
-        libpq-dev \
-        git \
-        jq \
-        unzip \
-        gettext \
-        cm-super \
-        postgresql-common \
-        texlive-latex-extra \
+    build-essential \
+    curl \
+    libpq-dev \
+    git \
+    jq \
+    unzip \
+    gettext \
+    cm-super \
+    postgresql-common \
+    texlive-latex-extra \
     # Install the Postgres repo
     && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
     # Install the Postgres client (matching production version)
     && apt --quiet --yes install --no-install-recommends postgresql-client-${POSTGRES_VERSION} \
     && apt --quiet --yes autoremove \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
 
 # Create an unprivileged user and virtual environment for the app
@@ -93,7 +93,8 @@ ARG POETRY_HOME=/opt/poetry
 #     $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
 # EOF
 RUN python -m venv --upgrade-deps $POETRY_HOME \
-    && $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
+    && $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION \
+    && rm -rf /root/.cache/pip
 
 # Set common environment variables
 ENV \
@@ -123,7 +124,7 @@ COPY pyproject.toml poetry.lock ./
 #     # Install the production dependencies
 #     poetry install --no-root --without dev
 # EOF
-RUN poetry install --no-root --without dev
+RUN poetry install --no-root --without dev && rm -rf /home/$USERNAME/.cache/
 
 
 ###################
@@ -164,58 +165,6 @@ RUN npm run build:prod
 
 
 #############
-# web stage #
-#############
-
-# This is the stage that actually gets run in staging and production on Heroku.
-# It extends the base stage by installing production Python dependencies and
-# copying in the compiled front-end assets. It runs the WSGI server, gunicorn,
-# in its CMD.
-
-FROM base AS web
-
-ARG GIT_COMMIT=""
-ARG BUILD_TIME=""
-ARG TAG=""
-
-# Set production environment variables
-ENV \
-    # Django settings module
-    DJANGO_SETTINGS_MODULE=cms.settings.production \
-    # Default port and number of workers for gunicorn to spawn
-    PORT=8000 \
-    WEB_CONCURRENCY=2 \
-    # Commit SHA from building the project
-    GIT_COMMIT=${GIT_COMMIT} \
-    # Time the container was built
-    BUILD_TIME=${BUILD_TIME} \
-    # Container tag
-    TAG=${TAG}
-
-# Copy in built static files and the application code. Run collectstatic so
-# whitenoise can serve static files for us.
-# TODO: when moving to ONS infrastructure, replace with:
-# ARG UID
-ARG UID=1000
-# TODO: when moving to ONS infrastructure, replace with:
-# ARG GID
-ARG GID=1000
-
-COPY --chown=$UID:$GID . .
-
-# Get the Design System templates
-RUN make load-design-system-templates
-
-COPY --chown=$UID:$GID --from=frontend-build --link /build/cms/static_compiled ./cms/static_compiled
-RUN django-admin collectstatic --noinput --clear && django-admin compilemessages
-
-# Run Gunicorn using the config in gunicorn.conf.py (the default location for
-# the config file). To change gunicorn settings without needing to make code
-# changes and rebuild this image, set the GUNICORN_CMD_ARGS environment variable.
-CMD ["gunicorn"]
-
-
-#############
 # dev stage #
 #############
 
@@ -243,36 +192,17 @@ USER root
 
 ARG GIT_COMMIT=""
 ARG BUILD_TIME=""
-ARG TAG=""
 
-ENV GIT_COMMIT=${GIT_COMMIT} BUILD_TIME=${BUILD_TIME} TAG=${TAG}
+ENV GIT_COMMIT=${GIT_COMMIT} BUILD_TIME=${BUILD_TIME}
 
 # Set default shell with pipefail option
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN <<EOF
-    apt --quiet --yes update
-    apt --quiet --yes install \
-        git \
-        gnupg \
-        less \
-        openssh-client \
-        sudo
-    # Download and import the Nodesource GPG key
-    mkdir -p /etc/apt/keyrings
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-    # Create NodeSource repository
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
-    # Update lists again and install Node.js
-    apt --quiet --yes update
-    apt --quiet --yes install nodejs
-    # Tidy up
-    apt --quiet --yes autoremove
-    rm -rf /var/lib/apt/lists/*
-EOF
+COPY .docker/install-docker-dev-deps.sh ./install-docker-dev-deps.sh
+RUN ./install-docker-dev-deps.sh && rm ./install-docker-dev-deps.sh
 
 # Give the unprivileged user passwordless sudo access
-ARG USERNAME
+ARG USERNAME=cms
 RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Make less the default pager for things like psql results and git logs
@@ -293,8 +223,62 @@ COPY --chown=$UID:$GID --from=frontend-deps --link /build/node_modules ./node_mo
 # Install the dev dependencies (they're omitted in the base stage)
 # TODO: when moving to ONS infrastructure, replace RUN with
 # RUN --mount=type=cache,target=/home/$USERNAME/.cache/,uid=$UID,gid=$GID \
- #    poetry install
+#    poetry install
 RUN poetry install
 
 # Just do nothing forever - exec commands elsewhere
 CMD ["tail", "-f", "/dev/null"]
+
+
+#############
+# web stage #
+#############
+
+# This is the stage that actually gets run in staging and production on Heroku.
+# It extends the base stage by installing production Python dependencies and
+# copying in the compiled front-end assets. It runs the WSGI server, gunicorn,
+# in its CMD.
+
+FROM base AS web
+
+ARG GIT_COMMIT=""
+ARG BUILD_TIME=""
+
+# Set production environment variables
+ENV \
+    # Django settings module
+    DJANGO_SETTINGS_MODULE=cms.settings.production \
+    # Default port and number of workers for gunicorn to spawn
+    PORT=8000 \
+    WEB_CONCURRENCY=2 \
+    # Commit SHA from building the project
+    GIT_COMMIT=${GIT_COMMIT} \
+    # Time the container was built
+    BUILD_TIME=${BUILD_TIME}
+
+# Copy in built static files and the application code. Run collectstatic so
+# whitenoise can serve static files for us.
+# TODO: when moving to ONS infrastructure, replace with:
+# ARG UID
+ARG UID=1000
+# TODO: when moving to ONS infrastructure, replace with:
+# ARG GID
+ARG GID=1000
+
+ARG USERNAME=cms
+
+# Explicitly set the runtime user
+USER $USERNAME
+
+COPY --chown=$UID:$GID . .
+
+# Get the Design System templates
+RUN make load-design-system-templates
+
+COPY --chown=$UID:$GID --from=frontend-build --link /build/cms/static_compiled ./cms/static_compiled
+RUN django-admin collectstatic --noinput --clear && django-admin compilemessages
+
+# Run Gunicorn using the config in gunicorn.conf.py (the default location for
+# the config file). To change gunicorn settings without needing to make code
+# changes and rebuild this image, set the GUNICORN_CMD_ARGS environment variable.
+CMD ["gunicorn"]

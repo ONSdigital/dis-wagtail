@@ -4,6 +4,15 @@ from django.contrib.auth.models import Group
 from cms.users.tests.factories import UserFactory
 
 
+def get_user_data(user) -> dict[str, str]:
+    return {
+        "user": user,
+        "username": user.username,
+        "full_name": f"{user.first_name} {user.last_name}",
+        "password": "password",  # pragma: allowlist secret
+    }
+
+
 def create_user(user_type: str) -> dict[str, str]:
     match user_type:
         case "Publishing Admin":
@@ -18,9 +27,4 @@ def create_user(user_type: str) -> dict[str, str]:
         case _:
             user = UserFactory(is_superuser=True)
 
-    return {
-        "user": user,
-        "username": user.username,
-        "full_name": f"{user.first_name} {user.last_name}",
-        "password": "password",  # pragma: allowlist secret
-    }
+    return get_user_data(user)

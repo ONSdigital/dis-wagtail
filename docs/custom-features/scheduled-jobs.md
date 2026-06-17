@@ -24,3 +24,7 @@ How far in the future bundles should be included is set with the `--include-futu
 ## `publish_scheduled_without_bundles`
 
 Is a modified version of the Wagtail core [`publish_scheduled`](https://github.com/wagtail/wagtail/blob/main/wagtail/management/commands/publish_scheduled.py) management command that excludes any pages that are in an active bundle. Pages are considered for publishing if their publish date is in the past.
+
+### `--include-future`
+
+See `--include-future` on `publish_bundles` for more details. This functionality applies to pages due to be published or unpublished.

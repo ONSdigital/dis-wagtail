@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
@@ -7,8 +6,8 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models
-from django.http import Http404, HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
@@ -18,12 +17,12 @@ from wagtail.coreutils import WAGTAIL_APPEND_SLASH, resolve_model_string
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
-from wagtailschemaorg.utils import extend
+from wagtail.templatetags.wagtailcore_tags import richtext
 
 from cms.articles.enums import SortingChoices
 from cms.articles.forms import StatisticalArticlePageAdminForm
 from cms.articles.panels import HeadlineFiguresFieldPanel
-from cms.articles.utils import create_data_csv_download_response_from_data, serialize_correction_or_notice
+from cms.articles.utils import serialize_correction_or_notice
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, bool_to_yes_no, format_date_for_gtm
 from cms.core.blocks.headline_figures import HeadlineFiguresItemBlock
@@ -33,16 +32,17 @@ from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
-from cms.core.utils import flatten_table_data, redirect_to_parent_listing
+from cms.core.utils import redirect, redirect_to_parent_listing
 from cms.core.widgets import date_widget
+from cms.data_downloads.mixins import DataDownloadMixin
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
 from cms.datavis.blocks.base import BaseChartBlock
 from cms.datavis.blocks.featured_charts import FeaturedChartBlock
-from cms.datavis.constants import CHART_BLOCK_TYPES
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
+    from django.http import HttpRequest, HttpResponse
     from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
 
@@ -51,18 +51,14 @@ logger = logging.getLogger(__name__)
 
 FIGURE_ID_SEPARATOR = ","
 
-TABLE_BLOCK_TYPES: frozenset[str] = frozenset(
-    {
-        "table",
-    }
-)
-
 
 class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
     max_count_per_parent = 1
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     page_description = "A container for statistical article series. Used for URL structure purposes."
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode as this redirects away
+    # The index page is a container that cannot be navigated to, so omit it from breadcrumbs.
+    exclude_from_breadcrumbs = True
 
     content_panels: ClassVar[list[Panel]] = [
         *Page.content_panels,
@@ -86,11 +82,14 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
 
 
 class ArticleSeriesPage(  # type: ignore[django-manager-missing]
+    BundledPageMixin,
     NoTrailingSlashRoutablePageMixin,
     GenericTaxonomyMixin,
     BasePage,
 ):
     """The article series model."""
+
+    _analytics_content_type = "previous-releases"
 
     parent_page_types: ClassVar[list[str]] = ["ArticlesIndexPage"]
     subpage_types: ClassVar[list[str]] = ["StatisticalArticlePage"]
@@ -99,6 +98,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     exclude_from_breadcrumbs = True
 
     content_panels: ClassVar[list[Panel]] = [
+        *BundledPageMixin.panels,
         *Page.content_panels,
         HelpPanel(
             content=(
@@ -111,6 +111,12 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
             )
         ),
     ]
+
+    @cached_property
+    def summary(self) -> str:
+        """Returns the summary of the latest article in the series."""
+        # TODO: update to include drafts when looking at previews holistically.
+        return latest.summary if (latest := self.get_latest()) else ""
 
     def get_latest(self) -> StatisticalArticlePage | None:
         latest: StatisticalArticlePage | None = (
@@ -133,8 +139,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
             raise Http404
 
         request.is_for_subpage = True  # type: ignore[attr-defined]
-
-        return cast("HttpResponse", latest.related_data(request, *args, **kwargs))
+        response: HttpResponse = latest.related_data(request, *args, **kwargs)
+        return response
 
     @path("editions/")
     def previous_releases(self, request: HttpRequest) -> TemplateResponse:
@@ -160,15 +166,18 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     def release(self, request: HttpRequest, slug: str, **kwargs: Any) -> HttpResponse:
         if not (edition := StatisticalArticlePage.objects.live().child_of(self).filter(slug=slug).first()):
             raise Http404
-        return cast("HttpResponse", edition.serve(request, serve_as_edition=True, **kwargs))
+        response: HttpResponse = edition.serve(request, serve_as_edition=True, **kwargs)
+        return response
 
     @path("editions/<str:slug>/related-data/")
     def release_related_data(self, request: HttpRequest, slug: str) -> HttpResponse:
-        return cast("HttpResponse", self.release(request, slug, related_data=True))
+        response: HttpResponse = self.release(request, slug, related_data=True)
+        return response
 
     @path("editions/<str:slug>/versions/<int:version>/")
     def release_with_versions(self, request: HttpRequest, slug: str, version: int) -> HttpResponse:
-        return cast("HttpResponse", self.release(request, slug, version=version))
+        response: HttpResponse = self.release(request, slug, version=version)
+        return response
 
     @path("editions/<str:slug>/download-chart/<str:chart_id>/")
     def download_chart(self, request: HttpRequest, slug: str, chart_id: str) -> HttpResponse:
@@ -197,6 +206,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
 # pylint: disable=too-many-public-methods
 class StatisticalArticlePage(  # type: ignore[django-manager-missing]
+    DataDownloadMixin,
     BundledPageMixin,
     NoTrailingSlashRoutablePageMixin,
     BasePage,
@@ -415,85 +425,6 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         return {}
 
-    def _get_block_in_types_by_id(self, block_types: frozenset[str], block_id: str) -> dict[str, Any]:
-        """Helper method to find a block by its unique block ID in content for specified block types.
-
-        Args:
-            block_types: The list or frozenset of block types to search within.
-            block_id: The unique block ID of the block to find.
-
-        Returns:
-            The block's value as a dictionary, or an empty dict if not found.
-
-        Note:
-            Block IDs are automatically assigned by Wagtail when content is created
-            through the admin interface. Blocks without IDs (e.g., programmatically
-            created test data) cannot be retrieved by this method.
-        """
-        for section_block in self.content or []:
-            if section_block.block_type != "section":
-                continue
-            section_content = section_block.value.get("content", [])
-            for content_block in section_content:
-                if (
-                    content_block.block_type in block_types
-                    and content_block.id is not None
-                    and str(content_block.id) == block_id
-                ):
-                    return dict(content_block.value)
-
-        return {}
-
-    def get_chart(self, chart_id: str) -> dict[str, Any]:
-        """Finds a chart block by its unique block ID in content.
-
-        Args:
-            chart_id: The unique block ID of the chart to find
-
-        Returns:
-            The chart block's value as a dictionary, or an empty dict if not found.
-        """
-        return self._get_block_in_types_by_id(CHART_BLOCK_TYPES, chart_id)
-
-    def get_table(self, table_id: str) -> dict[str, Any]:
-        """Finds a data table block by its unique block ID in content.
-
-        Args:
-            table_id: The unique block ID of the data table to find
-
-        Returns:
-            The data table block's value as a dictionary, or an empty dict if not found.
-        """
-        return self._get_block_in_types_by_id(TABLE_BLOCK_TYPES, table_id)
-
-    def get_table_data_for_csv(self, table_id: str) -> list[list[str | int | float]]:
-        """Extracts table data in CSV-ready format from TinyTableBlock.
-
-        Flattens structured cell data (headers + rows) into 2D array.
-        Extracts only the "value" field from each cell object.
-
-        Args:
-            table_id: The unique block ID of the table to extract data from.
-
-        Returns:
-            A 2D list of values suitable for CSV export (headers first, then rows).
-
-        Raises:
-            ValueError: If table not found or has no data.
-        """
-        table_data = self.get_table(table_id)
-        if not table_data:
-            raise ValueError(f"Table with ID {table_id} not found")
-
-        data_dict = table_data.get("data", {})
-
-        # Headers first, then rows - extract only "value" from cell objects
-        csv_data = flatten_table_data(data_dict)
-
-        if not csv_data:
-            raise ValueError(f"Table {table_id} has no data")
-        return csv_data
-
     @property
     def headline_figures_figure_ids_list(self) -> list[str]:
         """Returns a list of figure IDs from the headline figures."""
@@ -592,9 +523,14 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         previous_figure_ids = {figure.value["figure_id"] for figure in previous_to_latest_figures}
         return figures_in_use - previous_figure_ids
 
+    @property
+    def breadcrumb_title(self) -> str:
+        # The series page is excluded from breadcrumbs, so include it here for context.
+        return self.get_full_display_title()
+
     @cached_property
     def related_data_display_title(self) -> str:
-        return _("All data related to %(article_title)s") % {"article_title": self.title}
+        return _("All data related to %(article_title)s") % {"article_title": self.get_full_display_title()}
 
     @cached_property
     def dataset_document_list(self) -> list[dict[str, Any]]:
@@ -648,7 +584,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             "metadata": {
                 "text": self.label,
             },
-            "description": self.main_points_summary,
+            "description": richtext(self.main_points_summary),
         }
 
         if self.release_date:
@@ -674,12 +610,11 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
         return data
 
-    def ld_entity(self) -> dict[str, object]:
+    def ld_entity(self, request: HttpRequest) -> dict[str, object]:
         """Add statistical article specific schema properties to JSON LD."""
-        # TODO pass through request to this, once wagtailschemaorg supports it
-        # https://github.com/neon-jungle/wagtail-schema.org/issues/29
-        properties = {
-            "url": self.get_full_url(),
+        return {
+            **super().ld_entity(request),
+            "url": self.get_full_url(request=request),
             "headline": self.seo_title or self.listing_title or self.get_full_display_title(),
             "description": self.search_description or self.listing_summary or strip_tags(self.summary),
             "datePublished": self.release_date.isoformat(),
@@ -695,10 +630,9 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             },
             "mainEntityOfPage": {
                 "@type": "WebPage",
-                "@id": self.get_full_url(),
+                "@id": self.get_full_url(request=request),
             },
         }
-        return cast(dict[str, object], extend(super().ld_entity(), properties))
 
     def get_canonical_url(self, request: HttpRequest) -> str:
         """Get the article page canonical URL for the given request.
@@ -712,7 +646,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
                 # Special case for sub-routes of latest article in a series
                 url = request.canonical_url  # type: ignore[attr-defined]
                 return cast(str, url)
-            return cast(str, canonical_page.get_parent().get_full_url(request=request))
+            return cast(str, canonical_page.get_parent().specific_deferred.get_full_url(request=request))
 
         return super().get_canonical_url(request=request)
 
@@ -748,23 +682,32 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
     @path("versions/<int:version>/")
     def previous_version(self, request: HttpRequest, version: int, **kwargs: Any) -> TemplateResponse | HttpResponse:
-        if version <= 0 or not self.corrections:
+        if version <= 0:
             raise Http404
 
+        chart_id = kwargs.pop("chart_id", None)
+        table_id = kwargs.pop("table_id", None)
+
+        is_requesting_download = bool(chart_id or table_id)
+
+        if not self.corrections or self.alias_of_id:
+            if is_requesting_download:
+                raise Http404
+            return redirect(self.get_url(request))
+
         # Find correction by version
-        for correction in self.corrections:
+        for correction in self.corrections:  # pylint: disable=not-an-iterable
             if correction.value["version_id"] == version:
                 break
         else:
-            raise Http404
+            if is_requesting_download:
+                raise Http404
+            return redirect(self.get_url(request))
 
         # NB: Little validation is done on previous_version, as it's assumed handled on save
         revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])
 
         page = revision.as_object()
-
-        chart_id = kwargs.pop("chart_id", None)
-        table_id = kwargs.pop("table_id", None)
 
         if chart_id:
             download_response: HttpResponse = page.download_chart(request, chart_id)
@@ -804,9 +747,8 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         canonical_page = self.alias_of.specific_deferred if self.alias_of_id else self
         if canonical_page.is_latest:
             request.canonical_url = (  # type: ignore[attr-defined]
-                canonical_page.get_parent().get_full_url(request=request) + "/related-data"
+                canonical_page.get_parent().specific_deferred.get_full_url(request) + "/related-data"
             )
-
         paginator = Paginator(self.dataset_document_list, per_page=settings.RELATED_DATASETS_PER_PAGE)
         try:
             paginated_datasets = paginator.page(request.GET.get("page", 1))
@@ -823,64 +765,6 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             template="templates/pages/statistical_article_page--related_data.html",
         )
         return response
-
-    @path("download-chart/<str:chart_id>/")
-    def download_chart(self, request: HttpRequest, chart_id: str) -> HttpResponse:
-        """Serves a chart download request for a specific chart in the article.
-
-        Args:
-            request: The HTTP request object.
-            chart_id: The unique block ID of the chart to download.
-
-        Returns:
-            An HTTP response with the chart download.
-        """
-        chart_data = self.get_chart(chart_id)
-        if not chart_data:
-            raise Http404
-        try:
-            data = json.loads(chart_data["table"]["table_data"])["data"]
-        except (KeyError, json.JSONDecodeError) as e:
-            logger.warning(
-                "Failed to parse chart data: %s",
-                e,
-                extra={
-                    "chart_id": chart_id,
-                    "page_id": self.id,
-                    "page_slug": self.slug,
-                },
-            )
-            raise Http404 from e
-
-        return create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))
-
-    @path("download-table/<str:table_id>/")
-    def download_table(self, request: HttpRequest, table_id: str) -> HttpResponse:
-        """Serves a table download request for a specific table in the article.
-
-        Args:
-            request: The HTTP request object.
-            table_id: The unique block ID of the table to download.
-
-        Returns:
-            An HTTP response with the table CSV download.
-        """
-        try:
-            csv_data = self.get_table_data_for_csv(table_id)
-        except ValueError as e:
-            logger.warning(
-                "Failed to extract table data: %s",
-                e,
-                extra={
-                    "table_id": table_id,
-                    "page_id": self.id,
-                    "page_slug": self.slug,
-                },
-            )
-            raise Http404 from e
-        table_data = self.get_table(table_id)
-        title = table_data.get("title") or table_data.get("caption") or "table"
-        return create_data_csv_download_response_from_data(csv_data, title=title)
 
     def get_url_parts(self, request: HttpRequest | None = None) -> tuple[int, str | None, str | None] | None:
         url_parts = super().get_url_parts(request=request)
@@ -957,7 +841,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         if self.is_latest and request.path == self.get_url(request):
             # If this is the latest release, but the request path is the full page URL, not the evergreen latest,
             # then include the evergreen latest URL (the parent series URL) in the analytics values.
-            values["pageURL"] = self.get_parent().get_full_url(request)
+            values["pageURL"] = self.get_parent().specific_deferred.get_full_url(request)
         return values
 
     @cached_property

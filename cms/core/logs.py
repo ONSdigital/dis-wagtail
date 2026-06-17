@@ -67,7 +67,7 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
             return ""
 
 
-class GunicornJsonFormatter(JSONFormatter):
+class GunicornAccessJSONFormatter(JSONFormatter):
     """A log formatter which extracts the required details from gunicorn's access logger."""
 
     DATE_FORMAT = "[%d/%b/%Y:%H:%M:%S %z]"
@@ -96,7 +96,7 @@ class GunicornJsonFormatter(JSONFormatter):
             "response_content_length": record_args["B"],
         }
 
-        if settings.IS_EXTERNAL_ENV:
+        if not settings.IS_EXTERNAL_ENV:
             record_data["http"]["ip_address"] = record_args["h"]  # This uses the overridden value by django-xff
 
         return record_data

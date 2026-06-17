@@ -1,18 +1,13 @@
 from typing import TYPE_CHECKING
 
-from django.http import HttpResponseRedirect
-from django.shortcuts import redirect
-from django.urls import include, path
 from wagtail import hooks
 from wagtail.admin import messages
 
-from cms.articles import admin_urls
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
+from cms.core.utils import redirect
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
-    from django.urls import URLPattern
-    from django.urls.resolvers import URLResolver
+    from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
     from wagtail.models import Page
 
 
@@ -31,7 +26,7 @@ def before_create_page(
 
 
 @hooks.register("before_delete_page")
-def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | None:
+def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | HttpResponsePermanentRedirect | None:
     if request.method == "POST":
         if page.specific_class is StatisticalArticlePage and page.specific.figures_used_by_ancestor_with_no_fallback:
             messages.warning(
@@ -40,7 +35,7 @@ def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect
             )
             # Redirect to the delete page (the same page) to prevent delete action
             # See: https://docs.wagtail.org/en/latest/reference/hooks.html#before-delete-page
-            return redirect("wagtailadmin_pages:delete", page.pk)
+            return redirect("wagtailadmin_pages:delete", page.pk, preserve_request=False)
         if (
             page.specific_class is ArticleSeriesPage
             and (latest := page.get_latest())
@@ -51,13 +46,15 @@ def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect
                 " that are referenced elsewhere."
             )
             messages.warning(request, message)
-            return redirect("wagtailadmin_pages:delete", page.pk)
+            return redirect("wagtailadmin_pages:delete", page.pk, preserve_request=False)
 
     return None
 
 
 @hooks.register("before_unpublish_page")
-def before_unpublish_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | None:
+def before_unpublish_page(
+    request: HttpRequest, page: Page
+) -> HttpResponseRedirect | HttpResponsePermanentRedirect | None:
     if request.method == "POST":
         if page.specific_class is StatisticalArticlePage and page.specific.figures_used_by_ancestor_with_no_fallback:
             messages.warning(
@@ -66,7 +63,7 @@ def before_unpublish_page(request: HttpRequest, page: Page) -> HttpResponseRedir
             )
             # Redirect to the unpublish page (the same page) to prevent unpublish action
             # See: https://docs.wagtail.org/en/latest/reference/hooks.html#before-delete-page
-            return redirect("wagtailadmin_pages:unpublish", page.pk)
+            return redirect("wagtailadmin_pages:unpublish", page.pk, preserve_request=False)
         if (
             page.specific_class is ArticleSeriesPage
             and (latest := page.get_latest())
@@ -77,15 +74,6 @@ def before_unpublish_page(request: HttpRequest, page: Page) -> HttpResponseRedir
                 " that are referenced elsewhere."
             )
             messages.warning(request, message)
-            return redirect("wagtailadmin_pages:unpublish", page.pk)
+            return redirect("wagtailadmin_pages:unpublish", page.pk, preserve_request=False)
 
     return None
-
-
-@hooks.register("register_admin_urls")
-def register_admin_urls() -> list[URLPattern | URLResolver]:
-    """Registers the admin urls for Articles.
-
-    @see https://docs.wagtail.org/en/stable/reference/hooks.html#register-admin-urls.
-    """
-    return [path("articles/", include(admin_urls))]

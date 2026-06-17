@@ -6,6 +6,7 @@ from django.utils.encoding import force_str
 from wagtail.coreutils import get_locales_display_names
 from wagtail.rich_text import get_text_for_indexing
 
+from cms.core.formatting_utils import to_rfc3339_datetime
 from cms.release_calendar.enums import ReleaseStatus
 
 if TYPE_CHECKING:
@@ -16,10 +17,12 @@ def build_standard_resource_dict(page: Page) -> dict:
     """Returns a dict with the standard resource fields.
     This covers the non-release case (and also forms the base of the release case).
     """
+    # Fallback to last_published_at if we don't have a release_date
+    release_date = getattr(page, "release_date", page.last_published_at)
     return {
         "uri": build_page_uri(page),
         "content_type": page.search_index_content_type,
-        "release_date": (page.release_date.isoformat() if getattr(page, "release_date", None) else None),
+        "release_date": to_rfc3339_datetime(release_date),
         "summary": get_text_for_indexing(force_str(page.summary)),
         "title": page.get_full_display_title() if hasattr(page, "get_full_display_title") else page.title,
         "topics": getattr(page, "topic_ids", []),
@@ -46,7 +49,7 @@ def build_release_specific_fields(page: Page) -> dict:
         data["date_changes"] = [
             {
                 "change_notice": change.value.get("reason_for_change"),
-                "previous_date": change.value.get("previous_date").isoformat(),
+                "previous_date": to_rfc3339_datetime(change.value.get("previous_date")),
             }
             for change in page.changes_to_release_date
         ]

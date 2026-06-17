@@ -73,8 +73,8 @@ class PublishBundlesCommandTestCase(TestCase):
         )
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_publish_bundle(self, mock_notify_end, mock_notify_start):
         """Test publishing a bundle."""
         # Sanity checks
@@ -82,17 +82,26 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertFalse(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
         self.assertFalse(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").exists())
 
+        unpublished_page = StatisticalArticlePageFactory(live=False)
+        unpublished_page.save_revision()
+
         # Add another page, but publish in the meantime.
         another_page = StatisticalArticlePageFactory(title="The Statistical Article", live=False)
         another_page.save_revision().publish()
+
         BundlePageFactory(parent=self.bundle, page=self.statistical_article)
         BundlePageFactory(parent=self.bundle, page=another_page)
+        BundlePageFactory(parent=self.bundle, page=unpublished_page)
+
+        self.assertEqual(self.bundle.get_bundled_pages().count(), 3)
+        self.assertEqual(self.bundle.get_bundled_pages().not_live().count(), 2)
 
         self.call_command()
 
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
 
+        self.assertEqual(self.bundle.get_bundled_pages().not_live().count(), 0)
         self.statistical_article.refresh_from_db()
         self.assertTrue(self.statistical_article.live)
 
@@ -102,11 +111,11 @@ class PublishBundlesCommandTestCase(TestCase):
 
         # Check that we have a log entry
         self.assertEqual(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
-        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 2)
+        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 3)
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_publish_bundle_with_page_in_workflow(self, mock_notify_end, mock_notify_start):
         """Test publishing a bundle."""
         # Sanity checks
@@ -143,6 +152,15 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertEqual(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
         self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 0)
         self.assertTrue(PageLogEntry.objects.filter(action="wagtail.publish", page=self.statistical_article).exists())
+
+    def test_publish_bundle_with_only_datasets(self):
+        """Test publishing a bundle that only contains datasets and no pages publishes succesfully."""
+        DatasetFactory()
+        BundleDatasetFactory(parent=self.bundle)
+        self.call_command()
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
 
     def test_publish_bundle_with_release_calendar(self):
         """Test publishing a bundle with an associated release calendar page."""
@@ -185,6 +203,67 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertEqual(release_page.datasets[1].value, bundle_dataset_b.dataset)
         self.assertEqual(release_page.datasets[2].value, bundle_dataset_c.dataset)
 
+    def test_publish_bundle_with_revisions_to_live_page(self):
+        """Test publishing a bundle containing a live page with unpublished revisions updates page."""
+        # Ensure the page is live
+        self.statistical_article.publish(self.statistical_article.get_latest_revision())
+        self.statistical_article.refresh_from_db()
+        self.assertTrue(self.statistical_article.live)
+
+        # Create a new revision (it will be in draft)
+        self.statistical_article.title = "Updated Title"
+        new_revision = self.statistical_article.save_revision()
+
+        # Assertions before call_command
+        self.statistical_article.refresh_from_db()
+        self.assertNotEqual(self.statistical_article.live_revision, new_revision)
+        self.assertEqual(self.statistical_article.get_latest_revision(), new_revision)
+        self.assertNotEqual(self.statistical_article.title, "Updated Title")
+
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+
+        self.call_command()
+
+        # Assertions after call_command
+        self.statistical_article.refresh_from_db()
+        self.assertEqual(self.statistical_article.live_revision, new_revision)
+        self.assertTrue(self.statistical_article.live)
+        self.assertEqual(self.statistical_article.title, "Updated Title")
+
+    @patch("cms.bundles.utils.logger")
+    def test_publish_bundle_with_no_successful_page_publishes(self, mock_utils_logger):
+        """Test that the bundle status is updated to FAILED if no pages were successfully published."""
+        # Create a page that will fail to publish (no revisions)
+        page_with_no_revisions = StatisticalArticlePageFactory(live=False)
+        page_with_no_revisions.revisions.all().delete()
+
+        BundlePageFactory(parent=self.bundle, page=page_with_no_revisions)
+
+        self.call_command()
+
+        # Check bundle status was updated to FAILED
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.FAILED)
+
+        # Check error was logged in utils
+        mock_utils_logger.error.assert_any_call(
+            "No pages were successfully published",
+            extra={
+                "bundle_id": self.bundle.pk,
+                "event": "publish_failed_no_success",
+            },
+        )
+
+    def test_publish_bundle_with_zero_pages(self):
+        """Test that a bundle with zero pages is not marked as published."""
+        self.assertEqual(self.bundle.bundled_pages.count(), 0)
+
+        self.call_command()
+
+        # Check bundle status wasn't changed
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
+
     def test_publish_bundle_with_welsh_release_calendar(self):
         """Test publishing a bundle with a Welsh release calendar page uses Welsh translations."""
         welsh_locale, _ = Locale.objects.get_or_create(language_code="cy")
@@ -221,7 +300,7 @@ class PublishBundlesCommandTestCase(TestCase):
 
         # Mock an error during publication
         with patch(
-            "cms.bundles.notifications.slack.notify_slack_of_publication_start",
+            "cms.bundles.utils.notify_slack_of_publication_start",
             side_effect=Exception("Test error"),
         ):
             self.call_command()
@@ -237,27 +316,29 @@ class PublishBundlesCommandTestCase(TestCase):
 
     @override_settings(WAGTAILADMIN_BASE_URL="https://test.ons.gov.uk")
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    def test_publish_bundle_with_base_url(self, mock_notify):
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    def test_publish_bundle_with_base_url(self, mock_notify_end, mock_notify_start):
         """Test publishing with a configured base URL."""
         self.call_command()
 
-        # Verify notification was called with correct URL
-        mock_notify.assert_called_once()
-        call_kwargs = mock_notify.call_args[1]
+        # Verify notifications were called with correct URL
+        for notif in [mock_notify_start, mock_notify_end]:
+            notif.assert_called_once()
+            call_kwargs = notif.call_args[1]
 
-        self.assertEqual(
-            call_kwargs["url"], "https://test.ons.gov.uk" + reverse("bundle:inspect", args=(self.bundle.pk,))
-        )
-        self.assertIn(str(self.bundle.pk), call_kwargs["url"])
+            self.assertEqual(
+                call_kwargs["url"], "https://test.ons.gov.uk" + reverse("bundle:inspect", args=(self.bundle.pk,))
+            )
+            self.assertIn(str(self.bundle.pk), call_kwargs["url"])
 
-    @patch("cms.bundles.management.commands.publish_bundles.Command.handle_bundle")
-    def test_publish_bundle_include_future(self, mock_handle_bundle):
+    @patch("cms.bundles.management.commands.publish_bundles.publish_bundle")
+    def test_publish_bundle_include_future(self, mock_publish_bundle):
         with time_machine.travel(self.publication_date - timedelta(seconds=2)):
             self.call_command(include_future=1)
 
             # 2 seconds before publish, there's nothing to do within 1 second, so nothing happens
-            mock_handle_bundle.assert_not_called()
+            mock_publish_bundle.assert_not_called()
             self.assertLess(timezone.now(), self.publication_date)
             self.assertIn("No bundles to go live.", self.stdout.getvalue())
             self.stdout.seek(0)
@@ -267,16 +348,16 @@ class PublishBundlesCommandTestCase(TestCase):
             self.assertGreater(timezone.now(), self.publication_date)
 
         # 2 seconds before publish, wait, then publish
-        mock_handle_bundle.assert_called_once_with(self.bundle)
+        mock_publish_bundle.assert_called_once_with(self.bundle)
         self.assertIn("Found 1 bundle(s) to publish", self.stdout.getvalue())
         self.assertIn(f"Publishing {self.bundle.name} in", self.stdout.getvalue())
 
-    @patch("cms.bundles.management.commands.publish_bundles.Command.handle_bundle")
-    def test_publish_bundle_include_future_with_bundle_in_past(self, mock_handle_bundle):
+    @patch("cms.bundles.management.commands.publish_bundles.publish_bundle")
+    def test_publish_bundle_include_future_with_bundle_in_past(self, mock_publish_bundle):
         with time_machine.travel(self.publication_date + timedelta(days=1)):
             self.call_command(include_future=1)
 
-        mock_handle_bundle.assert_called_once_with(self.bundle)
+        mock_publish_bundle.assert_called_once_with(self.bundle)
 
     def test_publish_with_no_bundles(self):
         self.bundle.publication_date = timezone.now() + timedelta(minutes=10)
@@ -289,12 +370,12 @@ class PublishBundlesCommandTestCase(TestCase):
 
         self.assertIn("No bundles to go live.", self.stdout.getvalue())
 
-    @patch("cms.bundles.management.commands.publish_bundles.Command.handle_bundle")
-    def test_publish_with_future_bundles(self, mock_handle_bundle):
+    @patch("cms.bundles.management.commands.publish_bundles.publish_bundle")
+    def test_publish_with_future_bundles(self, mock_publish_bundle):
         with time_machine.travel(self.publication_date - timedelta(days=1)):
             self.call_command()
 
-        mock_handle_bundle.assert_not_called()
+        mock_publish_bundle.assert_not_called()
         self.assertIn("No bundles to go live.", self.stdout.getvalue())
 
 
@@ -305,7 +386,7 @@ class PublishScheduledWithoutBundlesCommandTestCase(TestCase):
         cls.statistical_article = StatisticalArticlePageFactory(title="The Statistical Article", live=False)
         cls.bundle = BundleFactory(name="Test Bundle", bundled_pages=[cls.statistical_article])
 
-        cls.publication_date = timezone.now() - timedelta(minutes=1)
+        cls.publication_date = timezone.now().replace(second=0) - timedelta(minutes=1)
         cls.statistical_article.save_revision(approved_go_live_at=cls.publication_date)
 
     def setUp(self):
@@ -329,6 +410,7 @@ class PublishScheduledWithoutBundlesCommandTestCase(TestCase):
         output = self.stdout.getvalue()
         self.assertIn("Will do a dry run.", output)
         self.assertIn("No objects to go live.", output)
+        self.assertIn("No expired objects to be deactivated found.", output)
 
     def test_dry_run__with_a_scheduled_page(self):
         """Test dry run doesn't include our bundled page."""
@@ -351,3 +433,40 @@ class PublishScheduledWithoutBundlesCommandTestCase(TestCase):
         self.call_command()
 
         self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
+
+    def test_include_future(self):
+        """Checks only a scheduled non-bundled page has been published."""
+        self.home.save_revision(approved_go_live_at=self.publication_date)
+
+        with time_machine.travel(self.publication_date - timedelta(seconds=2)):
+            self.call_command(include_future=1)
+
+            # 2 seconds before publish, there's nothing to do within 1 second, so nothing happens
+            self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 0)
+            self.assertLess(timezone.now(), self.publication_date)
+            self.assertIn("No objects to go live.", self.stdout.getvalue())
+
+            self.stdout.seek(0)
+
+            self.call_command(include_future=2)
+
+            # 2 seconds before publish, wait, then publish
+            self.assertGreater(timezone.now(), self.publication_date)
+            self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
+            self.assertIn(str(self.home), self.stdout.getvalue())
+
+    def test_publish_include_future_with_page_in_past(self):
+        self.home.save_revision(approved_go_live_at=self.publication_date)
+
+        with time_machine.travel(self.publication_date + timedelta(days=1)):
+            self.call_command(include_future=1)
+
+        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
+
+    def test_publish_with_future_pages(self):
+        self.home.save_revision(approved_go_live_at=self.publication_date)
+
+        with time_machine.travel(self.publication_date - timedelta(days=1)):
+            self.call_command(include_future=1)
+
+        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 0)

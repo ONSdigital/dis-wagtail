@@ -12,14 +12,6 @@ from cms.private_media.models import AbstractPrivateRendition, PrivateImageMixin
 
 from .utils import PURGED_URLS
 
-# TODO: remove when Wagtail updates to django-tasks >= 0.11
-TASKS_ENQUEUE_ON_COMMIT = {
-    "default": {
-        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
-        "ENQUEUE_ON_COMMIT": False,
-    }
-}
-
 
 class TestModelConfiguration(SimpleTestCase):
     def test_image_model_using_private_image_mixin(self):
@@ -277,7 +269,6 @@ class TestPrivateImageManager(TestCase):
             self.public_images.append(public_image)
         PURGED_URLS.clear()
 
-    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
     def test_bulk_make_public(self):
         """Test the behaviour of PrivateImageManager.bulk_make_public()."""
         # Three image are already public, so only three should be updated
@@ -293,7 +284,7 @@ class TestPrivateImageManager(TestCase):
         # Serve URLs for private image renditions should have been purged as part of the update
         for obj in self.private_images:
             for rendition in obj.renditions.all():
-                self.assertIn("http://localhost" + rendition.url, PURGED_URLS)
+                self.assertIn("https://ons.localhost" + rendition.url, PURGED_URLS)
 
         # Verify all images are now public
         for obj in self.model.objects.only("_privacy", "file_permissions_last_set", "privacy_last_changed"):
@@ -306,7 +297,6 @@ class TestPrivateImageManager(TestCase):
             # 1. to fetch the images
             self.assertEqual(self.model.objects.bulk_make_public(self.model.objects.all()), 0)
 
-    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
     def test_bulk_make_private(self):
         """Test the behaviour of PrivateImageManager.bulk_make_private()."""
         # Three images are already private, so only three should be updated
@@ -322,7 +312,7 @@ class TestPrivateImageManager(TestCase):
         # Serve URLs for public image renditions should have been purged as part of the update
         for obj in self.public_images:
             for rendition in obj.renditions.all():
-                self.assertIn("http://localhost" + rendition.serve_url, PURGED_URLS)
+                self.assertIn("https://ons.localhost" + rendition.serve_url, PURGED_URLS)
 
         # Verify all images are now private
         for image in self.model.objects.only("_privacy", "file_permissions_last_set", "privacy_last_changed"):

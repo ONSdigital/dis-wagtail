@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 import factory
 import wagtail_factories
+from django.utils import timezone
 
 from cms.datasets.tests.factories import DatasetStoryBlockFactory
 from cms.home.models import HomePage
@@ -44,6 +47,12 @@ class TopicPageFactory(wagtail_factories.PageFactory):
         django_get_or_create = ("title", "parent")
 
     parent = factory.LazyFunction(lambda: HomePage.objects.first())  # pylint: disable=unnecessary-lambda
+    first_published_at = factory.LazyAttribute(
+        lambda o: timezone.now() - timedelta(days=10) if getattr(o, "live", True) else None
+    )
+    last_published_at = factory.LazyAttribute(
+        lambda o: timezone.now() - timedelta(days=1) if getattr(o, "live", True) else None
+    )
     title = factory.Faker("sentence", nb_words=4)
     summary = factory.Faker("text", max_nb_chars=100)
     topic = factory.SubFactory(TopicFactory)

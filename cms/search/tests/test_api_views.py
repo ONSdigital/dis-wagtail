@@ -30,7 +30,6 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
             HomePage(),
             ReleaseCalendarIndex(),
             ThemePageFactory(),
-            TopicPageFactory(),
             InformationPageFactory(parent=IndexPageFactory(slug="custom-slug-0"), live=False),  # Not live
         ]
 
@@ -42,6 +41,7 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
             StatisticalArticlePageFactory(),
             StatisticalArticlePageFactory(news_headline=""),
             IndexPageFactory(slug="custom-slug-1"),
+            TopicPageFactory(),
         ]
 
         cls.en = Locale.get_default()
@@ -140,7 +140,9 @@ class SearchResourcesViewTests(TestCase, ResourceDictAssertions, ExternalAPITest
 
     @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb", "cy"])
     def test_both_locales_when_en_gb_and_cy(self):
-        response = self.client.get(RESOURCE_ENDPOINT)
+        response = self.client.get(
+            RESOURCE_ENDPOINT, query_params={"limit": 1000}
+        )  # Ensure we get all items in one response
         self.assertEqual(response.status_code, 200)
         data = self.parse_json(response)
 

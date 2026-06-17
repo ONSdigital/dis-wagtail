@@ -13,6 +13,7 @@
 {%- set release_date_label = _("Release date:") -%}
 {%- set next_release_label = _("Next release:") -%}
 {%- set contact_label = _("Contact:") -%}
+{%- set save_or_print_label = _("Save or print this page") -%}
 
 {% block header_area %}
     {%- set hero_topic = _("Statistical article") -%}
@@ -113,7 +114,7 @@
             "topic": statistical_article_label,
             "title": page.display_title,
             "variants": 'grey',
-            "text": page.summary,
+            "richText": page.summary|richtext(),
             "officialStatisticsBadge": page.is_accredited,
             "officialStatisticsBadgeUrl": "https://uksa.statisticsauthority.gov.uk/about-the-authority/uk-statistical-system/types-of-official-statistics/",
             "informationPanel":{
@@ -215,7 +216,7 @@
                                 "itemsList": page.table_of_contents,
                                 "relatedLinks": related_links,
                                 "button": {
-                                    "text": _("Save or print this page")
+                                    "text": save_or_print_label
                                 }
                             })
                         }}

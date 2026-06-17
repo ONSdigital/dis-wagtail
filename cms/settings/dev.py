@@ -1,6 +1,9 @@
 import os
 
-from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import
+# Force logs to not be JSON in dev for easier debugging
+os.environ.setdefault("LOG_AS_JSON", "false")
+
+from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
 env = os.environ.copy()
 
@@ -17,7 +20,8 @@ ALLOWED_HOSTS = ["*"]
 INTERNAL_IPS = ("127.0.0.1", "10.0.2.2")
 
 # This is only to test Wagtail emails.
-WAGTAILADMIN_BASE_URL = "http://localhost:8000"
+WEB_PORT = env.get("WEB_PORT", "8000")
+WAGTAILADMIN_BASE_URL = f"http://localhost:{WEB_PORT}"
 
 # Display sent emails in via mailpit @ http://localhost:8025
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -136,6 +140,8 @@ MIGRATION_LINTER_OPTIONS = {
         "0003_topic_slug",  # Ignoring NOT NULL constraint
         "0007_rename_bundle_api_content_id_bundle_bundle_api_bundle_id",  # Ignoring RENAMING constraint
         "0010_rename_glossaryterm_to_definition",  # Ignoring RENAMING table (GlossaryTerm -> Definition)
+        "0005_remove_indexpage_content_and_more",  # Ignoring dropping fields
+        "0012_make_contactdetails_and_definition_revisionable_and_draftable",  # Ignoring NOT NULL
     ],
 }
 

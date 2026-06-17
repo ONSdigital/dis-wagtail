@@ -14,6 +14,7 @@ from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
 from cms.home.views import serve_localized_homepage
 from cms.private_media import views as private_media_views
+from cms.users.views import ONSAccountView
 
 # Internal URLs are not intended for public use.
 internal_urlpatterns = [
@@ -41,6 +42,7 @@ if not settings.IS_EXTERNAL_ENV:
 
     # Conditionally include Wagtail admin URLs
     wagtail_admin_patterns = [
+        path("account/", ONSAccountView.as_view(), name="wagtailadmin_account"),
         path(
             "logout/",
             ONSLogoutView.as_view(),
@@ -50,6 +52,7 @@ if not settings.IS_EXTERNAL_ENV:
     ]
     if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
         # Filter wagtail admin patterns to exclude /login and /password_reset
+        # These use a 301 as django RedirectView doesn't currently provide a preserve request option
         wagtail_admin_patterns += [
             path(
                 "login/",
@@ -63,7 +66,24 @@ if not settings.IS_EXTERNAL_ENV:
             ),
         ]
 
+    if not settings.ALLOW_TEAM_MANAGEMENT and settings.AWS_COGNITO_TEAM_SYNC_ENABLED:
+        # Redirect all preview teams pages to Florence groups when team sync is enabled
+        # These use a 301 as django RedirectView doesn't currently provide a preserve request option
+        wagtail_admin_patterns += [
+            re_path(
+                r"^teams/",
+                RedirectView.as_view(url=settings.FLORENCE_GROUPS_PATH, permanent=False),
+            ),
+        ]
+
     wagtail_admin_patterns += wagtailadmin_urls.urlpatterns
+    if settings.WAGTAILADMIN_HOME_PATH.endswith("/"):
+        private_urlpatterns.append(
+            path(
+                settings.WAGTAILADMIN_HOME_PATH.rstrip("/"),
+                RedirectView.as_view(pattern_name="wagtailadmin_home", permanent=False),
+            )
+        )
     private_urlpatterns.append(path(settings.WAGTAILADMIN_HOME_PATH, include(wagtail_admin_patterns)))
 
 if apps.is_installed("django.contrib.admin") and settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED:
@@ -170,11 +190,15 @@ urlpatterns = (
             name="wagtailimages_serve",
         ),
     ]
-    + i18n_patterns(
+)
+
+if settings.CMS_USE_SUBDOMAIN_LOCALES:
+    urlpatterns += [path("", include(wagtail_urls))]
+else:
+    urlpatterns += i18n_patterns(
         path("", include(wagtail_urls)),
         prefix_default_language=False,
     )
-)
 
 # Error handlers
 handler404 = "cms.core.views.page_not_found"

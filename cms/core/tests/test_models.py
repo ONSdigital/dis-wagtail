@@ -1,21 +1,35 @@
+from django.conf import settings
+from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.coreutils import get_dummy_request
+from wagtail.test.utils.form_data import rich_text
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
-from cms.core.models import ContactDetails
+from cms.core.models import ContactDetails, Definition
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.taxonomy.models import Topic
 from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
+from cms.users.tests.factories import UserFactory
 
 
 class ContactDetailsTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.contact = ContactDetails.objects.create(name="PSF", email="psf@ons.gov.uk")
+
+        cls.publishing_admin = UserFactory(username="publishing_admin", access_admin=True)
+        admin_group = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
+        admin_group.user_set.add(cls.publishing_admin)
+
+        cls.publishing_officer = UserFactory(username="publishing_officer", access_admin=True)
+        admin_group = Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME)
+        admin_group.user_set.add(cls.publishing_officer)
+
+        cls.add_url = reverse(ContactDetails.snippet_viewset.get_url_name("add"))  # pylint: disable=no-member
 
     def test_contactdetails__str(self):
         self.assertEqual(str(self.contact), "PSF")
@@ -33,14 +47,100 @@ class ContactDetailsTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(ContactDetails.objects.count(), 2)
 
     def test_contactdetails_add_via_ui(self):
-        self.login()
+        self.client.force_login(self.publishing_admin)
         response = self.client.post(
-            reverse(ContactDetails.snippet_viewset.get_url_name("add")),  # pylint: disable=no-member
+            self.add_url,
             data={"name": self.contact.name, "email": self.contact.email},
         )
 
         self.assertContains(response, "Contact details with this name and email combination already exists.")
         self.assertEqual(ContactDetails.objects.count(), 1)
+
+    def test_publishing_admins_can_publish(self):
+        self.client.force_login(self.publishing_admin)
+        response = self.client.post(
+            self.add_url,
+            data={"name": "New contact", "email": "new@example.com", "action-publish": "action-publish"},
+            follow=True,
+        )
+        self.assertContains(response, "Contact details &#x27;New contact&#x27; created and published.")
+        self.assertEqual(ContactDetails.objects.count(), 2)
+        self.assertTrue(ContactDetails.objects.last().live)
+
+    def test_publishing_officer_cannot_access_the_add_page(self):
+        self.client.force_login(self.publishing_officer)
+
+        response = self.client.get(self.add_url, follow=True)
+        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+    def test_publishing_officer_cannot_publish(self):
+        self.client.force_login(self.publishing_officer)
+        response = self.client.post(
+            self.add_url,
+            data={"name": "New contact", "email": "new@example.com", "action-publish": "action-publish"},
+            follow=True,
+        )
+        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+    def test_save_draft_without_required_fields_shows_errors(self):
+        self.assertEqual(ContactDetails.objects.count(), 1)
+        # No action-publish in POST data means Wagtail treats this as a draft save.
+        self.client.force_login(self.publishing_admin)
+        response = self.client.post(self.add_url, data={})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context["form"], "name", "This field is required.")
+        self.assertFormError(response.context["form"], "email", "This field is required.")
+        self.assertEqual(ContactDetails.objects.count(), 1)
+
+
+class DefinitionTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.publishing_admin = UserFactory(username="publishing_admin", access_admin=True)
+        admin_group = Group.objects.get(name=settings.PUBLISHING_ADMINS_GROUP_NAME)
+        admin_group.user_set.add(cls.publishing_admin)
+
+        cls.publishing_officer = UserFactory(username="publishing_officer", access_admin=True)
+        admin_group = Group.objects.get(name=settings.PUBLISHING_OFFICERS_GROUP_NAME)
+        admin_group.user_set.add(cls.publishing_officer)
+
+        cls.add_url = reverse(Definition.snippet_viewset.get_url_name("add"))  # pylint: disable=no-member
+
+    def test_publishing_officer_can_publish(self):
+        self.client.force_login(self.publishing_admin)
+        response = self.client.post(
+            self.add_url,
+            data={"name": "New definition", "definition": rich_text("definition"), "action-publish": "action-publish"},
+            follow=True,
+        )
+        self.assertContains(response, "Definition &#x27;New definition&#x27; created and published.")
+        self.assertEqual(Definition.objects.count(), 1)
+        self.assertTrue(Definition.objects.last().live)
+
+    def test_publishing_officer_cannot_access_the_add_page(self):
+        self.client.force_login(self.publishing_officer)
+
+        response = self.client.get(self.add_url, follow=True)
+        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+    def test_publishing_officer_cannot_publish(self):
+        self.client.force_login(self.publishing_officer)
+        response = self.client.post(
+            self.add_url,
+            data={"name": "New definition", "definition": rich_text("definition"), "action-publish": "action-publish"},
+            follow=True,
+        )
+        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+
+    def test_save_draft_without_required_fields_shows_errors(self):
+        self.assertEqual(Definition.objects.count(), 0)
+        # No action-publish in POST data means Wagtail treats this as a draft save.
+        self.client.force_login(self.publishing_admin)
+        response = self.client.post(self.add_url, data={})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context["form"], "name", "This field is required.")
+        self.assertFormError(response.context["form"], "definition", "This field is required.")
+        self.assertEqual(Definition.objects.count(), 0)
 
 
 class PageBreadcrumbsTestCase(TestCase):
@@ -56,25 +156,22 @@ class PageBreadcrumbsTestCase(TestCase):
         """Test that get_breadcrumbs correctly outputs the parent pages in the correct format."""
         breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
 
-        series_parent = self.series.get_parent()
+        # The articles index page is a non-navigable container, so it is excluded from the trail.
+        topic = self.series.get_parent().get_parent()
 
         expected_entries = [
             {
-                "url": series_parent.get_site().root_url,
+                "url": self.statistical_article.get_site().root_url,
                 "text": "Home",
             },
             {
-                "url": series_parent.get_parent().get_full_url(request=self.dummy_request),
-                "text": series_parent.get_parent().title,
-            },
-            {
-                "url": series_parent.get_full_url(request=self.dummy_request),
-                "text": series_parent.title,
+                "url": topic.get_full_url(request=self.dummy_request),
+                "text": topic.title,
             },
         ]
 
         self.assertIsInstance(breadcrumbs_output, list)
-        self.assertEqual(len(breadcrumbs_output), 3)
+        self.assertEqual(len(breadcrumbs_output), 2)
         self.assertListEqual(breadcrumbs_output, expected_entries)
 
     def test_breadcrumbs_include_self(self):
@@ -82,29 +179,26 @@ class PageBreadcrumbsTestCase(TestCase):
         self.dummy_request.is_for_subpage = True
         breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
 
-        series_parent = self.series.get_parent()
+        # The articles index page is a non-navigable container, so it is excluded from the trail.
+        topic = self.series.get_parent().get_parent()
 
         expected_entries = [
             {
-                "url": series_parent.get_site().root_url,
+                "url": self.statistical_article.get_site().root_url,
                 "text": "Home",
             },
             {
-                "url": series_parent.get_parent().get_full_url(request=self.dummy_request),
-                "text": series_parent.get_parent().title,
-            },
-            {
-                "url": series_parent.get_full_url(request=self.dummy_request),
-                "text": series_parent.title,
+                "url": topic.get_full_url(request=self.dummy_request),
+                "text": topic.title,
             },
             {
                 "url": self.statistical_article.get_full_url(request=self.dummy_request),
-                "text": self.statistical_article.title,
+                "text": self.statistical_article.breadcrumb_title,
             },
         ]
 
         self.assertIsInstance(breadcrumbs_output, list)
-        self.assertEqual(len(breadcrumbs_output), 4)
+        self.assertEqual(len(breadcrumbs_output), 3)
         self.assertListEqual(breadcrumbs_output, expected_entries)
 
 

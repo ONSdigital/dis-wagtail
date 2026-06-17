@@ -1,4 +1,8 @@
+from http import HTTPStatus
+
 from django.urls import reverse
+from wagtail.coreutils import get_dummy_request
+from wagtail.rich_text import RichText
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.home.models import HomePage
@@ -20,6 +24,16 @@ class MethodologyPageTest(WagtailPageTestCase):
         cls.topic_page = TopicPageFactory()
         cls.methodology_index_page = MethodologyIndexPageFactory(parent=cls.topic_page)
 
+    def test_page_content(self):
+        response = self.client.get(self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.page.title)
+        self.assertInHTML(str(RichText(self.page.summary)), response.content.decode(encoding="utf-8"))
+        self.assertContains(response, self.page.content)
+
+        self.assertContains(response, "Save or print this page")
+        self.assertContains(response, "Cite this methodology")
+
     def test_methodology_index_page_redirects_to_topic_listing(self):
         response = self.client.get(self.methodology_index_page.url)
         self.assertRedirects(
@@ -32,14 +46,27 @@ class MethodologyPageTest(WagtailPageTestCase):
     def test_default_route_rendering(self):
         self.assertPageIsRenderable(self.page)
 
-    def test_methodology_page_template(self):
-        """Test that the methodology page template is correct."""
+    def test_breadcrumb_excludes_methodology_index(self):
         response = self.client.get(self.page.url)
+        dummy_request = get_dummy_request()
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, self.page.title)
-        self.assertContains(response, "Save or print this page")
-        self.assertContains(response, "Cite this methodology")
+        # confirm the methodology index container page is not in the breadcrumb
+        methodology_index = self.page.get_parent()
+        methodology_index_url = methodology_index.get_full_url(request=dummy_request)
+        self.assertNotContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{methodology_index_url}">{methodology_index.title}</a>',
+            html=True,
+        )
+
+        # confirm the breadcrumb points to the topic page (the closest navigable ancestor)
+        topic_page = methodology_index.get_parent()
+        topic_url = topic_page.get_full_url(request=dummy_request)
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{topic_url}">{topic_page.title}</a>',
+            html=True,
+        )
 
     def test_methodology_page_uses_correct_toc_class(self):
         """Test that the methodology page uses the correct table of contents class."""
@@ -58,7 +85,7 @@ class MethodologyPageTest(WagtailPageTestCase):
         response = self.client.get(self.page.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Related publications")
-        self.assertContains(response, related.page.url)
+        self.assertContains(response, related.page.get_url(request=self.dummy_request))
         self.assertContains(response, related.page.display_title)
 
     def test_date_placeholder(self):

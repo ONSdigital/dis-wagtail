@@ -13,31 +13,6 @@ The Wagtail CMS for managing and publishing content for the Office for National 
 
 ---
 
-## Table of Contents
-
-- [Getting Started](#getting-started)
-    - [Pre-requisites](#pre-requisites)
-    - [Setup](#setup)
-        - [Using Docker](#using-docker)
-        - [Running locally with supporting services in Docker](#running-locally-with-supporting-services-in-docker)
-- [Development](#development)
-    - [Front-end tooling](#front-end-tooling)
-    - [Adding Python packages](#adding-python-packages)
-    - [Run Tests with Coverage](#run-tests-with-coverage)
-    - [Functional Tests](#functional-tests)
-    - [Linting and Formatting](#linting-and-formatting)
-        - [Python](#python)
-        - [Front-end](#front-end)
-        - [pre-commit](#pre-commit)
-        - [Megalinter](#megalinter-lintformat-non-python-files)
-    - [Mailpit (Email Testing)](#mailpit-email-testing)
-    - [Installing the Required LaTeX Packages for Local Development](#installing-the-required-latex-packages-for-local-development)
-    - [Django Migrations](#django-migrations)
-- [Contributing](#contributing)
-- [License](#license)
-
-For further developer documentation see [docs](docs/README.md)
-
 ## Getting Started
 
 To get a local copy up and running, follow the steps below.
@@ -58,7 +33,7 @@ Ensure you have the following installed:
    tooling.
 6. **[JQ](https://jqlang.github.io/jq/)** for the step in the build that installs the design system templates.
 7. `texlive-latex-extra` and `texlive-fonts-recommended`: Required by `matplotlib` to render LaTeX equations. See [below](#installing-the-required-latex-packages-for-local-development) for instructions on how to install on macOS.
-8. **Operation System**: Ubuntu/ MacOS.
+8. **Operating System**: Ubuntu/MacOS.
 
 ### Setup
 
@@ -123,7 +98,7 @@ Follow these steps to set up and run the project using Docker.
 
 3. **Compile translations**
 
-In order to see pages in different languages, you'll need to compile the translations. This is done by running:
+    In order to see pages in different languages, you'll need to compile the translations. This is done by running:
 
     ```bash
     make compilemessages
@@ -149,7 +124,7 @@ In order to see pages in different languages, you'll need to compile the transla
     make runserver
     ```
 
-You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localhost:8000/admin/`.
+    You can then access the admin at `http://0.0.0.0:8000/admin/` or `http://localhost:8000/admin/`.
 
 #### Running locally with supporting services in Docker
 
@@ -398,7 +373,7 @@ pip install pre-commit
 poetry install
 ```
 
-`pylint` also relies on the [libpq](https://www.postgresql.org/docs/16/libpq.html) library being installed as a global package on your local machine. The installation steps below are for Macs.
+`pylint` also relies on the [libpq](https://www.postgresql.org/docs/current/libpq.html) library being installed as a global package on your local machine. The installation steps below are for Macs.
 
 ```bash
 brew install libpq
@@ -441,6 +416,12 @@ To start the linter and automatically rectify fixable issues, run:
 
 ```bash
 make megalint
+```
+
+In order to run only a specific linter, you can set the `LINTER` variable:
+
+```bash
+make megalint LINTER=REPOSITORY_GRYPE
 ```
 
 ### Mailpit (Email Testing)
@@ -501,7 +482,14 @@ Translations are managed using .po files, which are compiled into .mo files for 
 The .po files are located in the `cms/locale` directory.
 
 If you add new text to the application, you will need to update the .po files to include the new text.
-You can do this by running the following command:
+
+```bash
+make makemessages-check
+```
+
+Will error if `.po` files will change that affect translation behaviour. It ignores non-functional changes such as headers, comments, source references, entry ordering, and line wrapping.
+
+You can update the files by running the following command:
 
 ```bash
 make makemessages
@@ -509,7 +497,7 @@ make makemessages
 
 This will scan the codebase for new text and update the .po files accordingly.
 
-Once you have updated the .po files, you will need to compile them into .mo files for use in the application.
+Once you have updated the .po files with translations, you will need to compile them into .mo files for use in the application.
 
 You can do this by running the following command:
 
@@ -518,6 +506,30 @@ make compilemessages
 ```
 
 This will compile the .po files into .mo files, which are used by Django to display the translated text.
+
+### Lighthouse Audits
+
+You can then run [Lighthouse](https://github.com/GoogleChrome/lighthouse) audits against the application with the following command:
+
+```bash
+npx lighthouse http://localhost:8000
+```
+
+This will run a Lighthouse audit against the application running at `http://localhost:8000` and output the
+results in a file in the current directory.
+
+In order to view the report straight away, you can add the `--view` flag to the command:
+
+```bash
+npx lighthouse http://localhost:8000 --view
+```
+
+The audits will contain four scores for the following categories: Performance, Accessibility, Best Practices and SEO.
+Each category will also contain a list of opportunities for improvement, which can be used to guide development work.
+
+## Further documentation
+
+For further developer documentation see [docs](docs/README.md).
 
 ## Contributing
 

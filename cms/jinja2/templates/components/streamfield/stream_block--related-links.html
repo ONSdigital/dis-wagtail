@@ -1,9 +1,11 @@
 <ol class="ons-list ons-list--bare">
     {% for block in value %}
-        <li class="ons-list__item">
-            {% if block.value.link %}
-                <a href="{{ block.value.link.url }}">{{ block.value.link.text }}</a>
+        {% with link=block.value.get_link(request) %}
+            {% if link %}
+                <li class="ons-list__item">
+                    <a href="{{ link.url }}">{{ link.text }}</a>
+                </li>
             {% endif %}
-        </li>
+        {% endwith %}
     {% endfor %}
 </ol>

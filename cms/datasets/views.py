@@ -2,12 +2,11 @@ from __future__ import annotations  # needed for unquoted forward references bec
 
 import logging
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django import forms
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.db import DEFAULT_DB_ALIAS
 from django.db.models import Q, QuerySet
 from django.views import View
 from wagtail.admin.forms.choosers import BaseFilterForm
@@ -23,35 +22,19 @@ from wagtail.admin.views.generic.chooser import (
 )
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 
+from cms.core.db_router import force_write_db_for
 from cms.datasets.models import Dataset, ONSDataset
 from cms.datasets.permissions import user_can_access_unpublished_datasets
-from cms.datasets.utils import deconstruct_chooser_dataset_compound_id, get_dataset_for_published_state
+from cms.datasets.utils import (
+    deconstruct_chooser_dataset_compound_id,
+    get_dataset_for_published_state,
+    update_dataset_metadata,
+)
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse
 
 logger = logging.getLogger(__name__)
-
-
-def _update_dataset_metadata(dataset: Dataset, *, title: str, description: str) -> list[str]:
-    """Apply API metadata to a Dataset instance and return the updated field names.
-
-    Args:
-        dataset: The Dataset instance to update
-        title: The new title from the API
-        description: The new description from the API
-
-    Returns:
-        List of field names that were updated
-    """
-    updated_fields: list[str] = []
-    if title and dataset.title != title:
-        dataset.title = title
-        updated_fields.append("title")
-    if description and dataset.description != description:
-        dataset.description = description
-        updated_fields.append("description")
-    return updated_fields
 
 
 class DatasetChooserPermissionMixin:
@@ -207,7 +190,7 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, DatasetRetrievalMi
         )
         if not created:
             # Dataset already existed, check if metadata needs updating
-            updated_fields = _update_dataset_metadata(
+            updated_fields = update_dataset_metadata(
                 dataset,
                 title=item_from_api.title,
                 description=item_from_api.description,
@@ -279,7 +262,7 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
                 )
             else:
                 # Dataset exists, check if metadata needs updating
-                updated_fields = _update_dataset_metadata(
+                updated_fields = update_dataset_metadata(
                     existing_dataset,
                     title=data["title"],
                     description=data["description"],
@@ -293,9 +276,13 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
         if datasets_to_update:
             Dataset.objects.bulk_update(datasets_to_update, all_updated_fields)
 
-        # Return the existing and newly created datasets, using the DEFAULT_DB_ALIAS to ensure we read from the default
-        # database instance, as the newly created datasets may not yet be replicated to read replicas.
-        return Dataset.objects.using(DEFAULT_DB_ALIAS).filter(existing_query)
+        if datasets_to_create or datasets_to_update:
+            # Because newly-created instances may not have synced to the DB replicas yet,
+            # force use of the write instance.
+            return force_write_db_for(Dataset.objects).filter(existing_query)
+
+        # Since no instances were created or updated, it's safe to use the default database handling.
+        return Dataset.objects.filter(existing_query)
 
 
 class DatasetChosenMultipleView(DatasetChosenMultipleViewMixin, ChosenResponseMixin, View): ...
@@ -304,6 +291,9 @@ class DatasetChosenMultipleView(DatasetChosenMultipleViewMixin, ChosenResponseMi
 class DatasetChooserViewSet(ChooserViewSet):
     model = Dataset
     icon = "tag"
+    # Carry `for_bundle=true` through search/pagination URLs so the bundle chooser
+    # keeps forcing published=false instead of falling back to the form default.
+    preserve_url_parameters: ClassVar[list[str]] = [*ChooserViewSet.preserve_url_parameters, "for_bundle"]
     choose_one_text = "Choose a dataset"
     choose_another_text = "Choose another dataset"
     choose_view_class = DatasetChooseView

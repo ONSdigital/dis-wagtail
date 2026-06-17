@@ -16,7 +16,6 @@ def global_vars(request: HttpRequest) -> dict[str, Any]:
         # Cookie banner settings
         "ONS_COOKIE_BANNER_SERVICE_NAME": settings.ONS_COOKIE_BANNER_SERVICE_NAME,
         "SEO_NOINDEX": settings.SEO_NOINDEX,
-        "LANGUAGE_CODE": settings.LANGUAGE_CODE,
         "IS_EXTERNAL_ENV": settings.IS_EXTERNAL_ENV,
         "AWS_COGNITO_LOGIN_ENABLED": settings.AWS_COGNITO_LOGIN_ENABLED,
         "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED": settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED,

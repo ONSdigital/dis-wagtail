@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
+from http import HTTPStatus
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -11,20 +12,24 @@ from django.utils import timezone
 from django.utils.formats import date_format
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
+from wagtail.rich_text import RichText
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 
 from cms.articles.enums import SortingChoices
+from cms.articles.models import StatisticalArticlePage
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.core.analytics_utils import format_date_for_gtm
+from cms.core.blocks.constants import CHART_BLOCK_TYPES
+from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.factories import ContactDetailsFactory
 from cms.core.tests.utils import extract_datalayer_pushed_values
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.datasets.tests.factories import DatasetFactory
-from cms.datavis.constants import CHART_BLOCK_TYPES
 from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
 from cms.topics.models import TopicPage
+from cms.users.tests.factories import UserFactory
 
 
 class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
@@ -32,10 +37,14 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.page = StatisticalArticlePageFactory(
             parent__title="PSF",
             title="November 2024",
+            summary="Summary of the article",
             news_headline="",
             contact_details=None,
             show_cite_this_page=False,
         )
+
+    def test_permission_tester_inherits_from_basepagepermissiontester(self):
+        self.assertIsInstance(self.page.permissions_for_user(UserFactory()), BasePagePermissionTester)
 
     def test_display_title(self):
         """Test display_title returns admin title when no news_headline."""
@@ -43,10 +52,19 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(self.page.display_title, "PSF: November 2024")
         self.assertEqual(self.page.display_title, f"{self.page.get_parent().title}: {self.page.title}")
 
+    def test_related_data_display_title(self):
+        self.assertEqual(self.page.related_data_display_title, "All data related to PSF: November 2024")
+
     def test_display_title_with_news_headline(self):
         """Test display_title returns news_headline when set."""
         self.page.news_headline = "Breaking News"
         self.assertEqual(self.page.display_title, "Breaking News")
+
+    def test_page_content(self):
+        response = self.client.get(self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.page.title)
+        self.assertInHTML(str(RichText(self.page.summary)), response.content.decode(encoding="utf-8"))
 
     def test_table_of_contents_with_content(self):
         """Test table_of_contents with content blocks."""
@@ -193,11 +211,28 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         request_factory = RequestFactory()
         request_factory_server_name = request_factory._base_environ()["SERVER_NAME"]  # pylint: disable=protected-access
 
+        page_path = self.page.get_relative_path()
+
         self.assertContains(
             response,
-            f'<link rel="canonical" href="http://{request_factory_server_name}{self.page.url}/related-data">',
+            f'<link rel="canonical" href="http://{request_factory_server_name}{page_path}/related-data">',
             html=True,
         )
+
+    def test_related_data_page_content(self):
+        self.page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[("dataset_lookup", DatasetFactory())],
+        )
+        self.page.save_revision().publish()
+
+        parent_article_series = self.page.get_parent()
+
+        response = self.client.get(f"{parent_article_series.url}/related-data")
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.page.title)
+        self.assertInHTML(str(RichText(self.page.summary)), response.content.decode(encoding="utf-8"))
 
     def test_has_equations(self):
         """Test has_equations property."""
@@ -630,21 +665,55 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.basic_page_url)
         self.assertNotContains(response, expected)
 
-    def test_breadcrumb_doesnt_contains_series_url(self):
+    def test_breadcrumb_excludes_container_pages(self):
         response = self.client.get(self.basic_page_url)
-        # confirm that current breadcrumb is there
+        dummy_request = get_dummy_request()
+        # confirm the series container page is not in the breadcrumb
         article_series = self.basic_page.get_parent()
+        series_url = article_series.get_full_url(request=dummy_request)
         self.assertNotContains(
             response,
-            f'<a class="ons-breadcrumbs__link" href="{article_series.full_url}">{article_series.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{series_url}">{article_series.title}</a>',
             html=True,
         )
 
-        # confirm that current breadcrumb points to the parent page
-        topics_page = article_series.get_parent()
+        # confirm the articles index container page is not in the breadcrumb
+        articles_index = article_series.get_parent()
+        articles_index_url = articles_index.get_full_url(request=dummy_request)
+        self.assertNotContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{articles_index_url}">{articles_index.title}</a>',
+            html=True,
+        )
+
+        # confirm the breadcrumb points to the topic page (the closest navigable ancestor)
+        topic_page = articles_index.get_parent()
+        topic_url = topic_page.get_full_url(request=dummy_request)
         self.assertContains(
             response,
-            f'<a class="ons-breadcrumbs__link" href="{topics_page.full_url}">{topics_page.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{topic_url}">{topic_page.title}</a>',
+            html=True,
+        )
+
+    def test_related_data_breadcrumb_shows_full_title(self):
+        self.basic_page.datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[("manual_link", {"title": "A dataset", "description": "", "url": "https://example.com"})],
+        )
+        self.basic_page.save_revision().publish()
+        response = self.client.get(f"{self.basic_page_url}/related-data")
+        self.assertContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{self.basic_page.full_url}">PSF: November 2024</a>',
+            html=True,
+        )
+
+        # confirm the articles index container page is not in the related data breadcrumb
+        articles_index = self.basic_page.get_parent().get_parent()
+        articles_index_url = articles_index.get_full_url(request=get_dummy_request())
+        self.assertNotContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{articles_index_url}">{articles_index.title}</a>',
             html=True,
         )
 
@@ -1034,59 +1103,6 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(self.page.figures_used_by_ancestor, ["figurexyz", "figureabc"])
 
-    def test_cannot_be_deleted_if_ancestor_uses_headline_figures(self):
-        """Test that the page cannot be deleted if an ancestor uses the headline figures."""
-        self.client.force_login(self.user)
-        self.page.release_date = self.basic_page.release_date + timedelta(days=1)
-        self.page.next_release_date = self.page.release_date + timedelta(days=1)
-        self.page.save_revision().publish()
-        topic = TopicPage.objects.ancestor_of(self.page).first()
-        topic.headline_figures.extend(
-            [
-                (
-                    "figure",
-                    {
-                        "series": self.page.get_parent(),
-                        "figure_id": "figurexyz",
-                    },
-                ),
-                (
-                    "figure",
-                    {
-                        "series": self.page.get_parent(),
-                        "figure_id": "figureabc",
-                    },
-                ),
-            ]
-        )
-        topic.save_revision().publish()
-
-        # Try deleting page
-        page_delete_url = reverse("wagtailadmin_pages:delete", args=[self.page.id])
-        response = self.client.post(page_delete_url)
-
-        self.assertRedirects(response, page_delete_url, 302)
-
-        response = self.client.post(page_delete_url, follow=True)
-
-        self.assertContains(
-            response,
-            "This page cannot be deleted because it contains headline figures that are referenced elsewhere.",
-        )
-
-        # Try deleting parent page
-        parent_page_delete_url = reverse("wagtailadmin_pages:delete", args=[self.page.get_parent().id])
-        response = self.client.post(parent_page_delete_url)
-
-        self.assertRedirects(response, parent_page_delete_url, 302)
-
-        response = self.client.post(parent_page_delete_url, follow=True)
-
-        self.assertContains(
-            response,
-            "This page cannot be deleted because one or more of its children contain headline figures",
-        )
-
     @override_settings(IS_EXTERNAL_ENV=True)
     def test_load_in_external_env(self):
         """Test the page loads in external env."""
@@ -1119,7 +1135,7 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
             contact_details=None,
             show_cite_this_page=False,
             release_date=datetime(2024, 11, 1),
-            main_points_summary="Test main points summary",
+            main_points_summary="<p>Test main points summary</p>",
         )
 
     def test_as_featured_article_macro_data(self):
@@ -1130,7 +1146,7 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
         self.assertIn("url", data["title"])
         parsed = urlparse(data["title"]["url"])
         self.assertEqual(parsed.netloc, "", "URL should be relative")
-        self.assertEqual(parsed.path, self.page.url)
+        self.assertEqual(parsed.path, self.page.get_url(request=get_dummy_request()))
 
         self.assertEqual(data["metadata"]["text"], "Article")
         self.assertEqual(data["metadata"]["date"]["prefix"], "Release date")
@@ -1138,7 +1154,7 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(data["metadata"]["date"]["short"], "1 November 2024")
         self.assertEqual(data["metadata"]["date"]["iso"], "2024-11-01")
 
-        self.assertEqual(data["description"], "Test main points summary")
+        self.assertInHTML("<p>Test main points summary</p>", data["description"])
 
     def test_as_featured_article_macro_data_with_chart(self):
         """Test that a chart is used when available."""
@@ -1194,20 +1210,34 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
     def setUpTestData(cls):
         cls.article_series = ArticleSeriesPageFactory(title="Article Series")
         cls.articles = StatisticalArticlePageFactory.create_batch(9, parent=cls.article_series)
-        cls.previous_releases_url = (
-            f"{cls.article_series.url}/{cls.article_series.reverse_subpage('previous_releases')}"
+        cls.previous_releases_url = "/".join(
+            [
+                cls.article_series.get_url(get_dummy_request()),
+                cls.article_series.reverse_subpage("previous_releases"),
+            ]
         )
 
-    def test_breadcrumb_does_contains_series_url(self):
-        response = self.client.get(self.previous_releases_url)
-        parent_page = self.article_series.get_parent()
-        # confirm that current breadcrumb is there and that current breadcrumb points to the parent page
-        # TODO currently this test points to the article page not to the series page
-        # f'<a class="ons-breadcrumbs__link" href="{self.article_series.url}">{self.article_series.title}</a>',
+    def setUp(self):
+        self.dummy_request = get_dummy_request()
 
+    def test_breadcrumb_excludes_articles_index(self):
+        response = self.client.get(self.previous_releases_url)
+
+        # confirm the articles index container page is not in the breadcrumb
+        articles_index = self.article_series.get_parent()
+        articles_index_url = articles_index.get_full_url(request=self.dummy_request)
+        self.assertNotContains(
+            response,
+            f'<a class="ons-breadcrumbs__link" href="{articles_index_url}">{articles_index.title}</a>',
+            html=True,
+        )
+
+        # confirm the breadcrumb points to the topic page (the closest navigable ancestor)
+        topic_page = articles_index.get_parent()
+        topic_url = topic_page.get_full_url(request=self.dummy_request)
         self.assertContains(
             response,
-            f'<a class="ons-breadcrumbs__link" href="{parent_page.full_url}">{parent_page.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{topic_url}">{topic_page.title}</a>',
             html=True,
         )
 
@@ -1216,9 +1246,17 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
         for article in self.articles:
             with self.subTest(article=article):
                 self.assertContains(response, article.get_admin_display_title())
-                self.assertContains(response, article.url)
+                self.assertContains(response, article.get_url(request=self.dummy_request))
+
+        # articles are all created with the same release date (timezone.now().date()), so the order we have
+        # by primary keys in self.articles might not be the same as is loaded by the call to previous_releases_url
+        first_child = (
+            StatisticalArticlePage.objects.live().child_of(self.article_series).order_by("-release_date").first()
+        )
+        self.assertInHTML(str(RichText(first_child.summary)), response.content.decode(encoding="utf-8"))
         self.assertContains(response, 'class="ons-document-list__item"', count=self.total_batch)
         self.assertContains(response, "Latest release", count=1)
+        self.assertContains(response, '<h2 class="ons-hero--topic">Previous releases</h2>', count=1)
 
     def test_pagination_is_not_shown(self):
         response = self.client.get(self.previous_releases_url)

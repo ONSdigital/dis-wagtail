@@ -76,27 +76,24 @@ def _validate_jwt(token: str, *, extra_fields: Iterable[str], token_type: str) -
     expected_audience = settings.AWS_COGNITO_APP_CLIENT_ID
     algorithms = ["RS256"]
 
-    claims: dict[str, Any] = cast(
-        dict[str, Any],
-        jwt_decode(
-            token,
-            key=_parse_der_public_key(public_key_b64),
-            algorithms=algorithms,
-            issuer=expected_issuer,
-            # aud is not present in access token
-            audience=expected_audience if token_type == "id" else None,  # noqa: S105
-            options={
-                "verify_signature": True,
-                "verify_exp": True,
-                "verify_iat": True,
-                "verify_aud": token_type == "id",  # noqa: S105  aud is not present in access token
-                "verify_iss": True,
-                "verify_sub": True,
-                "verify_jti": True,
-                "verify_nbf": False,  # AWS Cognito does not utilise 'nbf'
-                "require": ["token_use", *extra_fields],
-            },
-        ),
+    claims: dict[str, Any] = jwt_decode(
+        token,
+        key=_parse_der_public_key(public_key_b64),
+        algorithms=algorithms,
+        issuer=expected_issuer,
+        # aud is not present in access token
+        audience=expected_audience if token_type == "id" else None,  # noqa: S105
+        options={
+            "verify_signature": True,
+            "verify_exp": True,
+            "verify_iat": True,
+            "verify_aud": token_type == "id",  # noqa: S105  aud is not present in access token
+            "verify_iss": True,
+            "verify_sub": True,
+            "verify_jti": True,
+            "verify_nbf": False,  # AWS Cognito does not utilise 'nbf'
+            "require": ["token_use", *extra_fields],
+        },
     )
 
     if claims["token_use"] != token_type:

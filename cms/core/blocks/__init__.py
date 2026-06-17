@@ -6,13 +6,12 @@ from .embeddable import (
     VideoEmbedBlock,
 )
 from .markup import BasicTableBlock, HeadingBlock, ONSTableBlock, QuoteBlock
-from .panels import AnnouncementPanelBlock, InformationPanelBlock, WarningPanelBlock
+from .panels import InformationPanelBlock, WarningPanelBlock
 from .related import LinkBlock, LinkBlockWithDescription, RelatedContentBlock, RelatedLinksBlock
 
 __all__ = [
     "AccordionBlock",
     "AccordionSectionBlock",
-    "AnnouncementPanelBlock",
     "BasicTableBlock",
     "DocumentBlock",
     "DocumentsBlock",

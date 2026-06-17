@@ -1,6 +1,8 @@
 from typing import ClassVar
 
 from cms.core.models import BasePage
+from cms.core.permission_testers import StaticPagePermissionTester
+from cms.users.models import User
 
 
 class HomePage(BasePage):  # type: ignore[django-manager-missing]
@@ -8,7 +10,13 @@ class HomePage(BasePage):  # type: ignore[django-manager-missing]
 
     template = "templates/pages/home_page.html"
 
+    # Limit to one English and one Welsh home page, both created through migrations
+    max_count = 2
+
     # Only allow creating HomePages at the root level
     parent_page_types: ClassVar[list[str]] = ["wagtailcore.Page"]
 
     _analytics_content_type: ClassVar[str] = "homepage"
+
+    def permissions_for_user(self, user: User) -> StaticPagePermissionTester:
+        return StaticPagePermissionTester(user, self)
