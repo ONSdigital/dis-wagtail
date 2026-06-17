@@ -26,7 +26,7 @@ class ModelCreationConfig(BaseModel):
 
 class PageCreationConfig(ModelCreationConfig):
     published_probability: FractionalFloat = 0.5
-    revisions: NonNegativeInt | RangeConfig = 0
+    revisions: PositiveInt | RangeConfig = 1
 
 
 class TopicCreationConfig(PageCreationConfig):
