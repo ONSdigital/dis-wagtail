@@ -289,6 +289,7 @@ def get_preview_items_for_bundle(
             "selected": item.pk == current_id,
         }
         for item in pages_in_bundle
+        if item.specific_class.preview_modes != []  # Exclude pages with no preview modes
     ]
 
     if release_calendar_page := bundle.release_calendar_page:
