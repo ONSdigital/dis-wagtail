@@ -148,18 +148,22 @@ class BarColumnChartBlock(BaseChartBlock):
             ),
             (
                 "tick_interval_mobile",
-                TextInputFloatBlock(
+                TextInputIntegerBlock(
                     label="Tick interval (mobile)",
                     required=False,
-                    help_text="Category axis tick intervals are available for column charts only.",
+                    help_text="""
+                        Category axis tick intervals are available for column charts only, and must use whole numbers.
+                    """,
                 ),
             ),
             (
                 "tick_interval_desktop",
-                TextInputFloatBlock(
+                TextInputIntegerBlock(
                     label="Tick interval (desktop)",
                     required=False,
-                    help_text="Category axis tick intervals are available for column charts only.",
+                    help_text="""
+                        Category axis tick intervals are available for column charts only, and must use whole numbers.
+                    """,
                 ),
             ),
         ],
@@ -431,18 +435,22 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
             ("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT)),
             (
                 "tick_interval_mobile",
-                TextInputFloatBlock(
+                TextInputIntegerBlock(
                     label="Tick interval (mobile)",
                     required=False,
-                    help_text="Category axis tick intervals are available for column charts only.",
+                    help_text="""
+                        Category axis tick intervals are available for column charts only, and must use whole numbers.
+                    """,
                 ),
             ),
             (
                 "tick_interval_desktop",
-                TextInputFloatBlock(
+                TextInputIntegerBlock(
                     label="Tick interval (desktop)",
                     required=False,
-                    help_text="Category axis tick intervals are available for column charts only.",
+                    help_text="""
+                        Category axis tick intervals are available for column charts only, and must use whole numbers.
+                    """,
                 ),
             ),
         ],
