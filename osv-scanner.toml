@@ -5,3 +5,7 @@ reason = "Keeping dependencies in line with design system until further discussi
 [[IgnoredVulns]]
 id = "GHSA-h67p-54hq-rp68"
 reason = "Keeping dependencies in line with design system until further discussions"
+
+[[IgnoredVulns]]
+id = "GHSA-64mm-vxmg-q3vj"
+reason = "No valid upgrade path"
