@@ -183,7 +183,7 @@ def serialize_preview_page(page: Page, bundle_id: int, is_previewable: bool) -> 
         "type": "item",
         "value": {
             "page": None,
-            "title": f"{specific_page.title} ({state})",
+            "title": getattr(specific_page, "display_title", specific_page.title) + " (" + state + ")",
             "description": getattr(specific_page, "summary", ""),
             "external_url": (reverse("bundles:preview", args=[bundle_id, page.pk]) if is_previewable else "#"),
         },
@@ -289,6 +289,7 @@ def get_preview_items_for_bundle(
             "selected": item.pk == current_id,
         }
         for item in pages_in_bundle
+        if item.specific_class.preview_modes != []  # Exclude pages with no preview modes
     ]
 
     if release_calendar_page := bundle.release_calendar_page:

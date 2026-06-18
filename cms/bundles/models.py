@@ -14,6 +14,7 @@ from wagtail.admin.panels import FieldRowPanel
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
+from cms.articles.models import ArticleSeriesPage
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.home.models import HomePage
 from cms.topics.models import TopicPage
@@ -44,7 +45,7 @@ if TYPE_CHECKING:
 
     from cms.teams.models import Team
 
-PREVIEWER_EXCLUDED_PAGE_TYPES = (HomePage, TopicPage)
+PREVIEWER_EXCLUDED_PAGE_TYPES = (HomePage, TopicPage, ArticleSeriesPage)
 
 
 class BundlePage(Orderable):
