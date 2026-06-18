@@ -135,13 +135,14 @@ class Command(BaseCommand):
 
         self.stdout.write("Deleting data...", self.style.NOTICE)
 
-        with disable_signals(list(collector.data.keys())), transaction.atomic():
-            for model, instances in collector.data.items():
-                # Use queryset delete methods to use any customized behaviour
-                model._default_manager.filter(pk__in=[instance.pk for instance in instances]).delete()  # pylint: disable=protected-access
+        with transaction.atomic():
+            with disable_signals(list(collector.data.keys())):
+                for model, instances in collector.data.items():
+                    # Use queryset delete methods to use any customized behaviour
+                    model._default_manager.filter(pk__in=[instance.pk for instance in instances]).delete()  # pylint: disable=protected-access
 
-        # NB: Because the topic tree hides the root node in a number core method, it gets corrupted
-        # during deletion. Manually repair the tree afterwards.
-        Topic.fix_tree()
+            # NB: Because the root topic is hidden in get_queryset, the tree gets corrupted during deletion.
+            # Manually repair the tree afterwards.
+            Topic.fix_tree()
 
         self.stdout.write("Successfully deleted", self.style.SUCCESS)
