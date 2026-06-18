@@ -23,8 +23,7 @@ class Command(BaseCommand):
             - It is marked as failed.
         """
         return (
-            PostPublishAction.objects.unfinished()
-            .active()
+            PostPublishAction.objects.active()
             .filter(
                 enqueued_at__lte=timezone.now() - timedelta(seconds=settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS * 2),
                 status__in=[PostPublishActionStatus.RUNNING, PostPublishActionStatus.FAILED],
