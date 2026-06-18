@@ -235,6 +235,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
     def get_cached_paths(self) -> Generator[str]:
         yield "/"
+        yield "/related-data"
         yield "/editions"
         # ensure we always account for ?page=1
         pages = max(1, ceil(self.get_children().live().public().count() / settings.PREVIOUS_RELEASES_PER_PAGE))
