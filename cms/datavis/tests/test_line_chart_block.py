@@ -214,3 +214,10 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
                 "content": '<div class="rich-text">some notes</div>',
             },
         )
+
+    def test_footnotes_html_only_omitted(self):
+        for html in ("<p></p>", "<p> </p>"):
+            with self.subTest(html=html):
+                self.raw_data["footnotes"] = html
+                config = self.get_component_config()
+                self.assertEqual(config["footnotes"], {})

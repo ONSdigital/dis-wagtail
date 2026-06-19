@@ -698,6 +698,16 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertNotIn("source", context)
         self.assertNotIn("footnotes", context)
 
+    def test_footnotes_html_only_omitted(self):
+        for html in ("<p></p>", "<p> </p>"):
+            with self.subTest(html=html):
+                data = self.full_data.copy()
+                data["footnotes"] = html
+                context = self.block.get_context(data)
+                self.assertNotIn("footnotes", context)
+                rendered = self.block.render(data)
+                self.assertNotIn("Footnotes", rendered)
+
     def test_render_block__full(self):
         rendered = self.block.render(self.full_data)
         self.assertIn(self.full_data["title"], rendered)
