@@ -46,7 +46,7 @@ TODO: add details about the middleware, auth.js, ONSLogoutView and the team sync
 4. Install node dependencies by running `npm install`, then `npm run build:prod `
 5. OPTIONAL: Set the `WAGTAILADMIN_HOME_PATH = "wagtail-admin/"` in local.py if you want to mimic Florence redirect path name. However, for local development,, this is not important, and functionally, the auth stub has been updated to not care about the wagtail admin path. Note if you set this, make sure to update this string in any following instructions accordingly.
 6. Sync Teams by running: `poetry run python ./manage.py sync_teams --settings=cms.settings.dev` (This will load some dummy preview teams). These can be found in [groups.json](https://github.com/ONSdigital/dis-authentication-stub/blob/feature/fallback-to-wagtail/static/json/groups.json).
-7. Start Wagtail (`make compose dev-up`, `make run` - both from your host machine)
+7. Start Wagtail (`make compose-dev-up`, `make run` - both from your host machine)
 8. Go to http://localhost:29500/florence/login?redirect=http://localhost:29500/admin/ and log in as one of the users. You can see which roles/groups users have access to by looking at the [users.json](https://github.com/ONSdigital/dis-authentication-stub/blob/feature/fallback-to-wagtail/static/json/users.json).
 9. Test various login and log-out flows and ensure everything is as expected.
 10. Key things to test:
@@ -64,3 +64,8 @@ TODO: add details about the middleware, auth.js, ONSLogoutView and the team sync
     - Update the user’s group or team in [users.json](https://github.com/ONSdigital/dis-authentication-stub/blob/feature/fallback-to-wagtail/static/json/users.json), then log in again. The changes should be reflected in the user’s account on the next login.
     - Test session refresh behaviour near expiry. You can set `SESSION_RENEWAL_OFFSET_SECONDS` to `890` to force a refresh every 10 seconds and verify the logic works.
     - Check the console log to see that session management via JS is working as expected. (Read the https://github.com/ONSdigital/dis-authorisation-client-js README)
+
+## AutoSave
+
+Autosave has been tested in development alongside the auth stub and works as expected.
+The client side token renewal on interaction works correctly given the default debounce of 500ms.
