@@ -1,2 +1,11 @@
 [[IgnoredVulns]]
+id = "GHSA-8988-4f7v-96qf"
+reason = "Keeping dependencies in line with design system until further discussions"
 
+[[IgnoredVulns]]
+id = "GHSA-h67p-54hq-rp68"
+reason = "Keeping dependencies in line with design system until further discussions"
+
+[[IgnoredVulns]]
+id = "GHSA-64mm-vxmg-q3vj"
+reason = "No valid upgrade path"
