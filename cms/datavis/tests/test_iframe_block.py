@@ -212,3 +212,10 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
                 self.assertNotIn("footnotes", config)
                 rendered = self.block.render(self.raw_data)
                 self.assertNotIn("Footnotes", rendered)
+        content = "Valid content"
+        with self.subTest(content=content):
+            self.raw_data["footnotes"] = content
+            config = self.get_component_config()
+            self.assertIn("footnotes", config)
+            rendered = self.block.render(self.raw_data)
+            self.assertIn(content, rendered)

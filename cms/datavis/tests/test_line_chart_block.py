@@ -221,3 +221,14 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
                 self.raw_data["footnotes"] = html
                 config = self.get_component_config()
                 self.assertEqual(config["footnotes"], {})
+        html = "<p>Valid content</p>"
+        with self.subTest(html=html):
+            self.raw_data["footnotes"] = html
+            config = self.get_component_config()
+            self.assertEqual(
+                config["footnotes"],
+                {
+                    "title": "Footnotes",
+                    "content": f'<div class="rich-text">{html}</div>',
+                },
+            )

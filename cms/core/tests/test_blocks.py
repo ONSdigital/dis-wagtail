@@ -707,6 +707,14 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
                 self.assertNotIn("footnotes", context)
                 rendered = self.block.render(data)
                 self.assertNotIn("Footnotes", rendered)
+        content = "Valid content"
+        with self.subTest(content=content):
+            data = self.full_data.copy()
+            data["footnotes"] = content
+            context = self.block.get_context(data)
+            self.assertIn("footnotes", context)
+            rendered = self.block.render(data)
+            self.assertIn(content, rendered)
 
     def test_render_block__full(self):
         rendered = self.block.render(self.full_data)
