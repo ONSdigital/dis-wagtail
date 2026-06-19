@@ -2,7 +2,9 @@
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
+from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
+from django.urls import reverse
 
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -14,13 +16,14 @@ from cms.bundles.utils import (
     build_content_item_for_dataset,
     extract_content_id_from_bundle_response,
     get_bundleable_page_types,
-    get_data_admin_action_url,
     get_dataset_preview_key,
     get_language_code_from_page,
     get_pages_in_active_bundles,
+    get_preview_items_for_bundle,
     in_active_bundle,
     in_bundle_ready_to_be_published,
     publish_bundle,
+    serialize_bundle_content_for_preview_release_calendar_page,
     serialize_bundle_content_for_published_release_calendar_page,
 )
 from cms.core.tests.utils import rebuild_internal_search_index
@@ -78,26 +81,6 @@ class BundlesUtilsTestCase(TestCase):
         self.assertTrue(in_bundle_ready_to_be_published(page))
 
 
-class DatasetGetDataAdminActionUrlTests(TestCase):
-    """Tests for the get_data_admin_action_url function."""
-
-    def test_get_data_admin_action_url_with_different_actions(self):
-        """Test that different actions work correctly."""
-        dataset_id = "test-dataset"
-        edition_id = "time-series"
-        version_id = "2"
-
-        # Test multiple actions
-
-        url = get_data_admin_action_url("edit", dataset_id, edition_id, version_id)
-        expected = f"/data-admin/series/{dataset_id}/editions/{edition_id}/versions/{version_id}"
-        self.assertEqual(url, expected)
-
-        url = get_data_admin_action_url("preview", dataset_id, edition_id, version_id)
-        expected = f"/datasets/{dataset_id}/editions/{edition_id}/versions/{version_id}"
-        self.assertEqual(url, expected)
-
-
 class DatasetContentItemUtilityTests(TestCase):
     """Tests for content item utility functions."""
 
@@ -123,10 +106,6 @@ class DatasetContentItemUtilityTests(TestCase):
                 "dataset_id": "cpih",
                 "edition_id": "time-series",
                 "version_id": 1,
-            },
-            "links": {
-                "edit": "/data-admin/series/cpih/editions/time-series/versions/1",
-                "preview": "/datasets/cpih/editions/time-series/versions/1",
             },
         }
 
@@ -654,3 +633,65 @@ class PublishBundleFailureTests(TestCase):
 
         # Failure notification should still be sent when update_status=False
         mock_notify_failure.assert_called_once()
+
+
+class SerializePreviewBundleContentTests(TestCase):
+    """Tests for serialize_bundle_content_for_preview_release_calendar_page."""
+
+    def setUp(self):
+        series = ArticleSeriesPageFactory(title="Business demography, UK")
+        self.article = StatisticalArticlePageFactory(
+            parent=series,
+            title="2024",
+            news_headline="",
+        )
+        self.bundle = BundleFactory()
+        BundlePageFactory(parent=self.bundle, page=self.article)
+
+    def test_preview_publication_title_includes_series_name(self):
+        """Publication links in preview must show 'Series: Edition', not just 'Edition'."""
+        content = serialize_bundle_content_for_preview_release_calendar_page(self.bundle, AnonymousUser())
+
+        self.assertEqual(
+            content[0]["value"]["links"][0]["value"]["title"],
+            self.article.display_title + " (Draft)",
+        )
+
+
+class GetPreviewItemsForBundleTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.bundle = BundleFactory()
+        # StatisticalArticlePage defines preview modes and can be previewed.
+        cls.article_page = StatisticalArticlePageFactory(title="The article")
+        # ArticleSeriesPage sets preview_modes = [] and cannot be previewed.
+        cls.series_page = ArticleSeriesPageFactory(title="The series")
+
+    def test_includes_pages_with_preview_modes(self):
+        items = get_preview_items_for_bundle(
+            bundle=self.bundle,
+            current_id=self.article_page.pk,
+            pages_in_bundle=[self.article_page],
+        )
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["value"], reverse("bundles:preview", args=[self.bundle.id, self.article_page.pk]))
+
+    def test_excludes_pages_without_preview_modes(self):
+        items = get_preview_items_for_bundle(
+            bundle=self.bundle,
+            current_id=self.series_page.pk,
+            pages_in_bundle=[self.series_page],
+        )
+
+        self.assertEqual(items, [])
+
+    def test_excludes_only_pages_without_preview_modes_when_mixed(self):
+        items = get_preview_items_for_bundle(
+            bundle=self.bundle,
+            current_id=self.article_page.pk,
+            pages_in_bundle=[self.article_page, self.series_page],
+        )
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["value"], reverse("bundles:preview", args=[self.bundle.id, self.article_page.pk]))
