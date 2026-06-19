@@ -3,7 +3,7 @@ from __future__ import annotations  # needed for unquoted forward references bec
 import logging
 import textwrap
 import time
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -52,6 +52,8 @@ logger = logging.getLogger(__name__)
 
 # Fallback value for missing dataset metadata
 MISSING_VALUE = "Data missing"
+
+PREVIEW_BUTTON_LABEL = "Preview"
 
 
 def add_exception_cause_to_form(exception: Exception, *, form: BaseForm) -> None:
@@ -468,7 +470,20 @@ class BundleInspectView(InspectView):
                         page.pk,
                     ),
                 ),
-                "Preview",
+                PREVIEW_BUTTON_LABEL,
+            )
+
+        def get_button(page: Page) -> Literal[""] | SafeString:
+            url, label = get_action(page)
+
+            # Pages with no preview modes cannot be previewed
+            if label == PREVIEW_BUTTON_LABEL and page.specific_class.preview_modes == []:
+                return ""
+
+            return format_html(
+                '<a href="{}" class="button button-small button-secondary">{}</a>',
+                url,
+                label,
             )
 
         data = (
@@ -477,15 +492,14 @@ class BundleInspectView(InspectView):
                 page.get_admin_display_title(),
                 page.get_verbose_name(),
                 get_page_status(page),
-                *get_action(page),
+                get_button(page),
             )
             for page in pages
         )
 
         page_data = format_html_join(
             "\n",
-            '<tr><td class="title"><strong><a href="{}">{}</a></strong></td><td>{}</td><td>{}</td> '
-            '<td><a href="{}" class="button button-small button-secondary">{}</a></td></tr>',
+            '<tr><td class="title"><strong><a href="{}">{}</a></strong></td><td>{}</td><td>{}</td> <td>{}</td></tr>',
             data,
         )
 
