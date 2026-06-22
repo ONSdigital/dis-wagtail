@@ -12,7 +12,7 @@ Feature: Wagtail Autosave
         Given an information page exists
         When the user edits the information page
         And the unsaved controller gets it's initial snapshot
-        And the user types content into the information page editor
-        And the user waits the autosave interval
+        And the user types content into the information page title
+        And the user types content into the information page summary
         And the user refreshes the page
         Then the typed content is preserved in the editor
