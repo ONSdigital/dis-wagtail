@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.http import HttpRequest
 from django.utils.functional import cached_property
 from django.utils.text import slugify
@@ -280,19 +280,12 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return items
 
     @cached_property
-    def active_bundle(self) -> Bundle | None:
+    def active_bundles(self) -> QuerySet[Bundle]:  # type: ignore[override]
         if not self.pk:
-            return None
-        # self.bundles only finds bundles linked via the release_calendar_page FK,
-        # so pages added via BundlePage would be missed. Query both paths directly.
-        bundle: Bundle | None = (
-            Bundle.objects.filter(
-                Q(release_calendar_page=self) | Q(pk__in=self.bundlepage_set.values_list("parent", flat=True))
-            )
-            .active()
-            .first()
-        )
-        return bundle
+            return Bundle.objects.none()
+        return Bundle.objects.filter(
+            Q(release_calendar_page=self) | Q(pk__in=self.bundlepage_set.values_list("parent", flat=True))
+        ).active()
 
     @property
     def live_status(self) -> ReleaseStatus | None:
