@@ -74,6 +74,9 @@ class InformationPage(  # type: ignore[django-manager-missing]
         context["table_of_contents"] = self.table_of_contents
         return context
 
+    def get_cached_paths(self) -> list[str]:
+        return ["/", *self.get_downloadable_block_paths()]
+
 
 class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
