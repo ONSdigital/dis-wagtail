@@ -4,12 +4,13 @@ from django.urls import reverse
 from django.utils import timezone
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
-from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
+from cms.topics.tests.factories import TopicPageFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
@@ -85,6 +86,78 @@ class BundleModelTestCase(TestCase):
         """Test that full_inspect_url returns an empty string for unsaved bundles."""
         unsaved_bundle = BundleFactory.build()
         self.assertEqual(unsaved_bundle.full_inspect_url, "")
+
+    def test_is_ready_to_be_published(self):
+        """Test is_ready_to_be_published returns True for appropriate statuses."""
+        test_cases = [
+            (BundleStatus.DRAFT, False),
+            (BundleStatus.IN_REVIEW, False),
+            (BundleStatus.APPROVED, True),
+            (BundleStatus.PUBLISHED, False),
+            (BundleStatus.PARTIALLY_PUBLISHED, True),
+            (BundleStatus.FAILED, True),
+        ]
+
+        for status, expected in test_cases:
+            with self.subTest(status=status):
+                self.bundle.status = status
+                self.assertEqual(
+                    self.bundle.is_ready_to_be_published,
+                    expected,
+                    f"Expected is_ready_to_be_published={expected} for status {status}",
+                )
+
+    def test_live(self):
+        """Live is True only for statuses that mean the bundle has gone through publishing."""
+        test_cases = [
+            (BundleStatus.DRAFT, False),
+            (BundleStatus.IN_REVIEW, False),
+            (BundleStatus.APPROVED, False),
+            (BundleStatus.PUBLISHED, True),
+            (BundleStatus.PARTIALLY_PUBLISHED, True),
+            (BundleStatus.FAILED, True),
+        ]
+        for status, expected in test_cases:
+            with self.subTest(status=status):
+                self.bundle.status = status
+                self.assertEqual(self.bundle.live, expected)
+
+    def test_has_unpublished_changes(self):
+        """has_unpublished_changes is the inverse of live — True while the bundle is still in progress."""
+        test_cases = [
+            (BundleStatus.DRAFT, True),
+            (BundleStatus.IN_REVIEW, True),
+            (BundleStatus.APPROVED, True),
+            (BundleStatus.PUBLISHED, False),
+            (BundleStatus.PARTIALLY_PUBLISHED, False),
+            (BundleStatus.FAILED, False),
+        ]
+        for status, expected in test_cases:
+            with self.subTest(status=status):
+                self.bundle.status = status
+                self.assertEqual(self.bundle.has_unpublished_changes, expected)
+
+    def test_get_pages_for_previewers(self):
+        """Test that get_pages_for_previewers returns the correct pages."""
+        topic_page = TopicPageFactory()
+        article_series_page = ArticleSeriesPageFactory()
+
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+        BundlePageFactory(parent=self.bundle, page=topic_page)
+        BundlePageFactory(parent=self.bundle, page=article_series_page)
+
+        mark_page_as_ready_to_publish(self.statistical_article)
+        mark_page_as_ready_to_publish(topic_page)
+        mark_page_as_ready_to_publish(article_series_page)
+
+        pages_for_previewers = self.bundle.get_pages_for_previewers()
+
+        self.assertEqual(len(pages_for_previewers), 1)
+
+        self.assertIn(self.statistical_article, pages_for_previewers)
+
+        self.assertNotIn(topic_page, pages_for_previewers)
+        self.assertNotIn(article_series_page, pages_for_previewers)
 
 
 class BundledPageMixinTestCase(WagtailTestUtils, TestCase):

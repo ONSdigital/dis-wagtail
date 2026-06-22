@@ -87,7 +87,10 @@ class BundleAPISyncService:
             etag_stale = self._refresh_local_etag_if_stale()
 
             # 3. State-only path for immutable bundles
-            if self.bundle.status in {BundleStatus.APPROVED, BundleStatus.PUBLISHED}:
+            if self.bundle.status in {
+                BundleStatus.APPROVED,
+                BundleStatus.PUBLISHED,
+            }:
                 # Approved and Published bundles are locked - CMS disallows edits to their
                 # contents or metadata (beyond the status field itself). The Bundle API also
                 # rejects such updates, so only the bundle’s status is synced here.
@@ -100,10 +103,20 @@ class BundleAPISyncService:
                 self._sync_bundle_state()
                 return
 
-            # 4. Sync content items before any metadata changes
+            # 4. Skip failure statuses
+            if self.bundle.status in {
+                BundleStatus.PARTIALLY_PUBLISHED,
+                BundleStatus.FAILED,
+            }:
+                # Skip these immutable publishing failure states
+                # These states represent failures in the Wagtail bundle publish process so should not (currently) be
+                # synced to the dataset bundle
+                return
+
+            # 5. Sync content items before any metadata changes
             self._sync_contents(force_sync=etag_stale)
 
-            # 5. Sync bundle metadata
+            # 6. Sync bundle metadata
             self._sync_metadata()
         except Exception as e:
             msg = "Failed to sync bundle with Bundle API"

@@ -19,9 +19,9 @@ from wagtail.models import Locale, Page
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
-from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.clients.api import BundleAPIClientError
-from cms.bundles.enums import BundleStatus
+from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
@@ -88,6 +88,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         cls.another_in_review_bundle = BundleFactory(in_review=True, name="Another preview Bundle")
 
     def setUp(self):
+        super().setUp()
         self.bundle = BundleFactory(name="Original bundle", created_by=self.publishing_officer)
         self.statistical_article_page = StatisticalArticlePageFactory(
             title="The article", parent__title="PSF", live=False
@@ -251,8 +252,12 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
 
     def test_bundle_edit_view__redirects_to_index_for_published_bundles(self):
         """Released bundles should no longer be editable."""
-        response = self.client.get(self.published_bundle_edit_url)
-        self.assertRedirects(response, self.bundle_index_url)
+        for bundle_status in PUBLISHED_BUNDLE_STATUSES:
+            with self.subTest(status=bundle_status):
+                self.published_bundle.status = bundle_status
+                self.published_bundle.save(update_fields=["status"])
+                response = self.client.get(self.published_bundle_edit_url)
+                self.assertRedirects(response, self.bundle_index_url)
 
     def post_with_action_and_test(self, action: str, expected_status: BundleStatus, redirects_to: str):
         self.client.force_login(self.superuser)
@@ -335,8 +340,8 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_bundle_edit_view__manual_publish__happy_path__when_linked_with_past_release_calendar_entry(
         self, mock_notify_end, mock_notify_start
     ):
@@ -515,6 +520,23 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.client.cookies[settings.ACCESS_TOKEN_COOKIE_NAME] = "the-access-token"
         response = self.client.get(self.edit_url)
         self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
+
+    def test_edit_view_status_sidebar_reflects_bundle_status(self):
+        """The status side panel must reflect the bundle's actual status, not always show 'Live'."""
+        # Each BundleStatus label maps to a cautious-slugified aria ID in the sidebar heading.
+        # "Draft" -> status-sidebar-draft, "In Preview" -> status-sidebar-in-preview, etc.
+        status_cases = [
+            (BundleStatus.DRAFT, "status-sidebar-draft"),
+            (BundleStatus.IN_REVIEW, "status-sidebar-in-preview"),
+            (BundleStatus.APPROVED, "status-sidebar-ready-to-publish"),
+        ]
+        for status, expected_id in status_cases:
+            with self.subTest(status=status):
+                self.bundle.status = status
+                self.bundle.save(update_fields=["status"])
+                response = self.client.get(self.edit_url)
+                self.assertNotContains(response, "status-sidebar-live")
+                self.assertContains(response, expected_id)
 
 
 class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseBase):
@@ -713,6 +735,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         edition_b = "2023"
         version_a = 1
         version_b = 2
+        expected_edit_url_a = f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
+        expected_view_url_a = f"/retail-industry/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
+        expected_edit_url_b = f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}"
 
         # Create local datasets
         dataset_a = DatasetFactory(namespace=dataset_id_a, edition=edition_a, version=version_a, title="Dataset A")
@@ -737,8 +762,8 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                     },
                     "state": "PUBLISHED",
                     "links": {
-                        "edit": f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}",
-                        "preview": f"/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}",
+                        "edit": expected_edit_url_a,
+                        "preview": expected_view_url_a,
                     },
                 },
                 {
@@ -752,8 +777,10 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                     },
                     "state": "APPROVED",
                     "links": {
-                        "edit": f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}",
-                        "preview": f"/datasets/{dataset_id_b}/editions/{edition_b}/versions/{version_b}",
+                        "edit": expected_edit_url_b,
+                        "preview": (
+                            f"/retail-industry/datasets/{dataset_id_b}/editions/{edition_b}/versions/{version_b}"
+                        ),
                     },
                 },
             ]
@@ -769,8 +796,6 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, "Dataset A API Title")
         self.assertContains(response, str(version_a))
         self.assertContains(response, edition_a)
-        expected_edit_url_a = f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
-        expected_view_url_a = f"/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
         self.assertContains(response, f'href="{expected_edit_url_a}"')
         self.assertContains(response, f'href="{expected_view_url_a}"')
         self.assertContains(response, "View Live")
@@ -780,8 +805,53 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, "Dataset B API Title")
         self.assertContains(response, str(version_b))
         self.assertContains(response, edition_b)
-        expected_edit_url_b = f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}"
         self.assertContains(response, f'href="{expected_edit_url_b}"')
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__published_dataset_without_preview_url_has_no_action_button(self, mock_api_client):
+        """Checks that published datasets without a preview URL do not display a View Live button."""
+        self.bundle.bundle_api_bundle_id = "test-bundle-id"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        dataset_id = "dataset-123"
+        edition = "2024"
+        version = 1
+        expected_edit_url = f"/data-admin/series/{dataset_id}/editions/{edition}/versions/{version}"
+
+        dataset = DatasetFactory(namespace=dataset_id, edition=edition, version=version, title="Dataset A")
+        BundleDatasetFactory(parent=self.bundle, dataset=dataset, bundle_api_content_id="content-123")
+
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "items": [
+                {
+                    "id": "content-123",
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": dataset_id,
+                        "title": "Dataset A API Title",
+                        "edition_id": edition,
+                        "version_id": version,
+                    },
+                    "state": "PUBLISHED",
+                    "links": {
+                        "edit": expected_edit_url,
+                    },
+                },
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertContains(response, "Dataset A")
+        self.assertContains(response, "Published")
+        self.assertNotContains(response, "View Live")
+        self.assertInHTML(
+            f'<tr><td class="title"><strong><a href="{expected_edit_url}">Dataset A</a></strong></td>'
+            f"<td>{edition}</td><td>{version}</td><td>Published</td><td></td></tr>",
+            response.content.decode("utf-8"),
+        )
 
     @override_settings(  # Address race condition in tests caused when calling delete() on a page
         WAGTAILSEARCH_BACKENDS={
@@ -820,6 +890,61 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Foobar Release Calendar Page")
         self.assertContains(response, release_calendar_page.get_url(request=get_dummy_request()))
         self.assertNotContains(response, reverse("bundles:preview_release_calendar", args=[self.bundle.id]))
+
+    def test_inspect_view__labels_page_action_as_view_live_after_publication(self):
+        page = StatisticalArticlePageFactory(title="Published bundled page", live=True)
+        BundlePageFactory(parent=self.bundle, page=page)
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        expected_live_url = page.get_url(request=get_dummy_request())
+        self.assertContains(
+            response,
+            f'<a href="{expected_live_url}" class="button button-small button-secondary">View Live</a>',
+            html=True,
+        )
+
+    def test_inspect_view__labels_page_action_as_preview_before_publication(self):
+        page = StatisticalArticlePageFactory(title="Preview bundled page", live=False)
+        BundlePageFactory(parent=self.bundle, page=page)
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        expected_preview_url = reverse("bundles:preview", args=[self.bundle.pk, page.pk])
+        self.assertContains(
+            response,
+            f'<a href="{expected_preview_url}" class="button button-small button-secondary">Preview</a>',
+            html=True,
+        )
+
+    def test_inspect_view__no_preview_button_for_pages_without_preview_modes(self):
+        # ArticleSeriesPage sets preview_modes = [] and cannot be previewed.
+        page = ArticleSeriesPageFactory(title="Series without preview")
+        BundlePageFactory(parent=self.bundle, page=page)
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        preview_url = reverse("bundles:preview", args=[self.bundle.pk, page.pk])
+        self.assertContains(response, page.get_admin_display_title())
+        self.assertNotContains(response, f'<a href="{preview_url}"')
+
+    def test_inspect_view__shows_view_live_for_published_page_without_preview_modes(self):
+        # A page without preview modes should still get a "View Live" link once published.
+        page = ArticleSeriesPageFactory(title="Published series without preview", live=True)
+        BundlePageFactory(parent=self.bundle, page=page)
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        expected_live_url = page.get_url(request=get_dummy_request())
+        self.assertContains(
+            response,
+            f'<a href="{expected_live_url}" class="button button-small button-secondary">View Live</a>',
+            html=True,
+        )
 
     @time_machine.travel(datetime(2025, 7, 1, 12, 37), tick=False)
     def test_inspect_view__datetime_use_configured_timezone(self):
@@ -959,6 +1084,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                         "version_id": "2",
                     },
                     "state": "PUBLISHED",
+                    "links": {
+                        "preview": "/retail-industry/datasets/dataset-two/editions/2023/versions/2",
+                    },
                 },
             ]
         }
@@ -975,7 +1103,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Published")
         # Published dataset should have View Live link
         self.assertContains(response, "View Live")
-        self.assertContains(response, 'href="/datasets/dataset-two/editions/2023/versions/2"')
+        self.assertContains(response, 'href="/retail-industry/datasets/dataset-two/editions/2023/versions/2"')
 
     @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
@@ -1228,7 +1356,10 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
 
         self.assertContains(response, BundleStatus.DRAFT.label, 2)  # status + status filter
         self.assertContains(response, BundleStatus.APPROVED.label, 3)  # status + status filter + shortcut button
-        self.assertContains(response, BundleStatus.PUBLISHED.label, 1)  # status filter
+        # "\n " is to ensure we only match "Published" not "Partially Published"
+        self.assertContains(response, "\n " + BundleStatus.PUBLISHED.label, 1)  # status filter
+        self.assertContains(response, BundleStatus.PARTIALLY_PUBLISHED.label, 1)  # status filter
+        self.assertContains(response, BundleStatus.FAILED.label, 1)  # status filter
 
         self.assertContains(response, self.approved_bundle.name)
         self.assertContains(response, self.bundle.name)
@@ -1321,6 +1452,17 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
         self.assertEqual(response.context_data["object_list"][0].id, old_bundle.id)
         self.assertEqual(response.context_data["object_list"][1].id, new_bundle.id)
 
+    def test_published_bundles_excluded_from_index(self):
+        """Checks that published bundles are excluded from the bundle index by default."""
+        for bundle_status in PUBLISHED_BUNDLE_STATUSES:
+            with self.subTest(status=bundle_status):
+                self.published_bundle.status = bundle_status
+                self.published_bundle.save(update_fields=["status"])
+
+                response = self.client.get(self.bundle_index_url)
+                self.assertNotContains(response, self.published_bundle.name)
+                self.assertNotContains(response, self.published_bundle_edit_url)
+
 
 class BundleDeleteTestCase(WagtailTestUtils, TestCase):
     @classmethod
@@ -1333,6 +1475,7 @@ class BundleDeleteTestCase(WagtailTestUtils, TestCase):
         cls.inspect_url = reverse("bundle:inspect", args=[cls.bundle.id])
 
     def setUp(self):
+        super().setUp()
         self.client.force_login(self.superuser)
 
     def test_bundle_deletable_in_draft(self):
@@ -1444,6 +1587,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         cls.chooser_results_url = reverse(bundle_page_chooser_viewset.get_url_name("choose_results"))
 
     def setUp(self):
+        super().setUp()
         self.client.force_login(self.superuser)
 
     def test_bundle_form_uses_bundle_page_chooser_widget(self):

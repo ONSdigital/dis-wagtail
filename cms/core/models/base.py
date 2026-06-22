@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, ClassVar, Self, cast
 
 from django.conf import settings
 from django.http import HttpRequest
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -203,7 +204,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         - If the request is for a subpage (marked by setting the attribute `is_for_subpage=True` on the request object),
           then it will include the subpage route from the request.
         """
-        canonical_page = self.alias_of or self
+        canonical_page = self.alias_of if self.alias_of_id else self
         if getattr(request, "is_for_subpage", False) and getattr(request, "routable_resolver_match", None):
             return request.build_absolute_uri(request.get_full_path())
         return cast(str, canonical_page.get_full_url(request=request))
@@ -324,6 +325,14 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             cache_object._wagtail_cached_site_root_paths = paths  # type: ignore[union-attr]
             # pylint: enable=protected-access,attribute-defined-outside-init
             return paths
+
+    @property
+    def full_edit_url(self) -> str | None:
+        """Returns the absolute URL for the page edit view, or an empty string if the page is not saved yet."""
+        if not self.pk:
+            return ""
+
+        return f"{settings.WAGTAILADMIN_BASE_URL}{reverse('wagtailadmin_pages:edit', args=[self.pk])}"
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
