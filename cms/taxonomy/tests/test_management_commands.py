@@ -18,7 +18,8 @@ class SyncTopicsTests(TestCase):
         self.mock_requests = self.requests_patcher.start()
 
     def tearDown(self):
-        self.mock_requests.stop()
+        super().tearDown()
+        self.requests_patcher.stop()
 
     def test_sync_no_topics(self):
         # Given
