@@ -98,6 +98,7 @@ class BundleDatasetValidationTestCase(TestCase):
         self.mock_client = self.mock_client_class.return_value
 
     def tearDown(self):
+        super().tearDown()
         self.bundle_api_client_patcher.stop()
 
     def raw_form_data_with_dataset(self, dataset: DatasetFactory) -> dict[str, Any]:
