@@ -247,9 +247,10 @@ def purge_old_page_paths_from_cache_after_move(
         purge_urls_from_cache(urls)
 
 
-def purge_series_children_from_cache(page: ArticleSeriesPage) -> None:
-    # when an article series title changes, we want to purge all child articles too
-    # so they get the updated title
+def purge_descendants_from_cache(page: Page) -> None:
+    # when a page's title changes, we want to purge all descendant pages too, as they
+    # display the title in their breadcrumbs (e.g. an article series title on its editions,
+    # or a topic title on the articles and methodologies beneath it)
     urls = set()
     source_page_ids = set()
     for child in page.get_descendants().live().specific(defer=True).iterator():
