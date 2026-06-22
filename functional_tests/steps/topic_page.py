@@ -153,7 +153,7 @@ def the_time_series_page_link_is_displayed_on_the_page(context: Context) -> None
         page.locator("#time-series").get_by_role("heading", name="Time series", exact=True)
     ).to_be_visible()  # Section heading
     expect(page.locator("#time-series").get_by_role("link", name="Page title")).to_be_visible()
-    expect(page.locator("#time-series").get_by_text("Time series", exact=True)).to_be_visible()  # Content type label
+    expect(page.locator("#time-series").locator("span", has_text="Time series")).to_be_visible()  # Content type label
     expect(page.locator("#time-series").get_by_text("Summary")).to_be_visible()
 
 
