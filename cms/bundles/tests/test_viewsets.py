@@ -19,7 +19,7 @@ from wagtail.models import Locale, Page
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
-from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.clients.api import BundleAPIClientError
 from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
@@ -88,6 +88,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         cls.another_in_review_bundle = BundleFactory(in_review=True, name="Another preview Bundle")
 
     def setUp(self):
+        super().setUp()
         self.bundle = BundleFactory(name="Original bundle", created_by=self.publishing_officer)
         self.statistical_article_page = StatisticalArticlePageFactory(
             title="The article", parent__title="PSF", live=False
@@ -918,6 +919,33 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
             html=True,
         )
 
+    def test_inspect_view__no_preview_button_for_pages_without_preview_modes(self):
+        # ArticleSeriesPage sets preview_modes = [] and cannot be previewed.
+        page = ArticleSeriesPageFactory(title="Series without preview")
+        BundlePageFactory(parent=self.bundle, page=page)
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        preview_url = reverse("bundles:preview", args=[self.bundle.pk, page.pk])
+        self.assertContains(response, page.get_admin_display_title())
+        self.assertNotContains(response, f'<a href="{preview_url}"')
+
+    def test_inspect_view__shows_view_live_for_published_page_without_preview_modes(self):
+        # A page without preview modes should still get a "View Live" link once published.
+        page = ArticleSeriesPageFactory(title="Published series without preview", live=True)
+        BundlePageFactory(parent=self.bundle, page=page)
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        expected_live_url = page.get_url(request=get_dummy_request())
+        self.assertContains(
+            response,
+            f'<a href="{expected_live_url}" class="button button-small button-secondary">View Live</a>',
+            html=True,
+        )
+
     @time_machine.travel(datetime(2025, 7, 1, 12, 37), tick=False)
     def test_inspect_view__datetime_use_configured_timezone(self):
         bundle = BundleFactory(
@@ -1447,6 +1475,7 @@ class BundleDeleteTestCase(WagtailTestUtils, TestCase):
         cls.inspect_url = reverse("bundle:inspect", args=[cls.bundle.id])
 
     def setUp(self):
+        super().setUp()
         self.client.force_login(self.superuser)
 
     def test_bundle_deletable_in_draft(self):
@@ -1558,6 +1587,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         cls.chooser_results_url = reverse(bundle_page_chooser_viewset.get_url_name("choose_results"))
 
     def setUp(self):
+        super().setUp()
         self.client.force_login(self.superuser)
 
     def test_bundle_form_uses_bundle_page_chooser_widget(self):
