@@ -289,6 +289,48 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
             ]
         )
 
+    def _all_purged_urls(self, patched_purge_urls):
+        """Return the union of all URLs across every purge_urls_from_cache call."""
+        urls: set[str] = set()
+        for purge_call in patched_purge_urls.call_args_list:
+            urls |= purge_call.args[0]
+        return urls
+
+    def test_page_publish__topic_title_change_purges_descendants(self, patched_purge_urls):
+        # The topic title is shown in the breadcrumbs of all pages beneath it, so a title
+        # change must purge the whole descendant subtree (incl. Welsh aliases).
+        with self.captureOnCommitCallbacks(execute=True):
+            self.topic_page.title = "New topic title"
+            self.topic_page.save_revision().publish()
+
+        purged = self._all_purged_urls(patched_purge_urls)
+        self.assertIn(self.topic_page_url, purged)
+        self.assertIn(self.article_url, purged)
+        self.assertIn(self.article_related_data_url, purged)
+        self.assertIn(self.series_url, purged)
+        self.assertIn(self.methodology_page_url, purged)
+        # the Welsh alias of a descendant is purged too
+        self.assertIn(self.methodology_page_translation_url, purged)
+
+    def test_page_publish__topic_without_title_change_skips_descendants(self, patched_purge_urls):
+        # Republishing without a title change must not cascade to descendants.
+        with self.captureOnCommitCallbacks(execute=True):
+            self.topic_page.save_revision().publish()
+
+        purged = self._all_purged_urls(patched_purge_urls)
+        self.assertIn(self.topic_page_url, purged)
+        self.assertNotIn(self.article_url, purged)
+        self.assertNotIn(self.methodology_page_url, purged)
+
+    def test_page_publish__index_title_change_purges_descendants(self, patched_purge_urls):
+        with self.captureOnCommitCallbacks(execute=True):
+            self.index_page.title = "New index title"
+            self.index_page.save_revision().publish()
+
+        purged = self._all_purged_urls(patched_purge_urls)
+        self.assertIn(self.index_page_url, purged)
+        self.assertIn(self.information_page_url, purged)
+
     def test_page_publish__methodology(self, patched_purge_urls):
         self.methodology_page.save_revision().publish()
 
