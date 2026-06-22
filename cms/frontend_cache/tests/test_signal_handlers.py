@@ -85,6 +85,7 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
             self.article_url,
             self.article_related_data_url,
             self.series_url,
+            f"{self.series_url}/related-data",
             self.series_edition_url,
             f"{self.series_edition_url}?page=1",
             self.topic_page_url,
@@ -212,6 +213,7 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                 new_article_url,
                 f"{new_article_url}/related-data",
                 self.series_url,
+                f"{self.series_url}/related-data",
                 self.series_edition_url,
                 f"{self.series_edition_url}?page=1",
                 self.topic_page_url,
@@ -237,6 +239,7 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
         patched_purge_urls.assert_called_once_with(
             {
                 self.series_url,
+                f"{self.series_url}/related-data",
                 self.series_edition_url,
                 f"{self.series_edition_url}?page=1",
                 f"{self.series_edition_url}?page=2",
@@ -262,6 +265,7 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                 call(
                     {
                         self.series_url,
+                        f"{self.series_url}/related-data",
                         self.series_edition_url,
                         f"{self.series_edition_url}?page=1",
                     }
@@ -269,6 +273,7 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                 call(
                     {
                         series_translation_url,
+                        f"{series_translation_url}/related-data",
                         f"{series_translation_url}/editions",
                         f"{series_translation_url}/editions?page=1",
                     }
@@ -525,12 +530,14 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                 self.article_related_data_url,
                 # the old series and topic
                 self.series_url,
+                f"{self.series_url}/related-data",
                 self.series_edition_url,
                 f"{self.series_edition_url}?page=1",
                 self.topic_page_url,
                 self.topic_page_translation_url,
                 # the new series and topic
                 another_series_url,
+                f"{another_series_url}/related-data",
                 f"{another_series_url}/editions",
                 f"{another_series_url}/editions?page=1",
                 self.another_topic_page_url,
@@ -551,6 +558,7 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
         patched_purge_urls.assert_called_once_with(
             {
                 self.series_url,
+                f"{self.series_url}/related-data",
                 self.series_edition_url,
                 f"{self.series_edition_url}?page=1",
                 self.article_url,
@@ -767,7 +775,12 @@ class GetPageCachedUrlsTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(
             get_page_cached_urls(self.statistical_article.get_parent()),
-            [f"{series_url}/", f"{series_url}/editions/", f"{series_url}/editions/?page=1"],
+            [
+                f"{series_url}/",
+                f"{series_url}/related-data/",
+                f"{series_url}/editions/",
+                f"{series_url}/editions/?page=1",
+            ],
         )
 
     @override_settings(WAGTAIL_APPEND_SLASH=False)
@@ -776,5 +789,5 @@ class GetPageCachedUrlsTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(
             get_page_cached_urls(self.statistical_article.get_parent()),
-            [series_url, f"{series_url}/editions", f"{series_url}/editions?page=1"],
+            [series_url, f"{series_url}/related-data", f"{series_url}/editions", f"{series_url}/editions?page=1"],
         )
