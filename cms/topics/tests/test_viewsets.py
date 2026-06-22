@@ -90,28 +90,39 @@ class HighlightedPageChooserViewSetTest(WagtailTestUtils, TestCase):
         cls.article = StatisticalArticlePageFactory(
             parent=cls.article_series,
             title="Article 1",
+            summary="Summary 1",
+            news_headline="Headline 1",
             release_date=datetime(2024, 1, 1),
         )
         cls.second_article = StatisticalArticlePageFactory(
             parent=cls.article_series,
             title="Another Article",
+            summary="Another Summary",
+            news_headline="Another Headline",
             release_date=datetime(2024, 2, 1),
         )
 
-        cls.another_article = StatisticalArticlePageFactory(title="Article in another topic")
+        cls.another_article = StatisticalArticlePageFactory(
+            title="Article in another topic",
+            summary="Other Summary",
+            news_headline="Other Headline",
+        )
         cls.methodology = MethodologyPageFactory(
             parent=cls.topic_page,
             title="Methodology 1",
+            summary="Methodology Summary 1",
             publication_date=datetime(2024, 1, 1),
         )
         cls.second_methodology = MethodologyPageFactory(
             parent=cls.topic_page,
             title="Another Methodology",
+            summary="Another Methodology Summary 1",
             publication_date=datetime(2023, 1, 1),
         )
 
         cls.unused_methodology = MethodologyPageFactory(
             title="Unused Method",
+            summary="Unused Summary",
             publication_date=datetime(2024, 1, 1),
         )
 
