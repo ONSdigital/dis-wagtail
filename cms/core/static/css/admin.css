@@ -19,13 +19,3 @@
 .messages .lock .icon-lock {
     margin-inline-start: -2.4em;
 }
-
-/* Hide the inherited `caption` child of ONSTableBlock from editors. The class
-   `ons-table-block` is added via `Meta.form_classname` on the StructBlock, so
-   this rule only targets captions inside an ONS table block — other blocks
-   with a `caption` child (e.g. chart blocks) are unaffected. */
-
-/* stylelint-disable-next-line selector-attribute-name-disallowed-list */
-.ons-table-block [data-contentpath='caption'] {
-    display: none;
-}

@@ -659,7 +659,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         cls.full_data = {
             "title": "The table",
             "sub_heading": "The sub-heading",
-            "accessible_label": "The accessible label",
+            "caption": "The accessible label",
             "source": "https://ons.gov.uk",
             "footnotes": "footnotes",
             "data": cls.simple_table_data,
@@ -667,7 +667,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         cls.data_with_empty_table = {
             "title": "The table",
             "sub_heading": "The sub-heading",
-            "accessible_label": "The accessible label",
+            "caption": "The accessible label",
             "source": "https://ons.gov.uk",
             "footnotes": "footnotes",
             "data": {
@@ -683,7 +683,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         value = self.block.to_python(
             {
                 "sub_heading": "A sub-heading",
-                "accessible_label": "The accessible label",
+                "caption": "The accessible label",
                 "data": self.simple_table_data,
             }
         )
@@ -702,7 +702,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             {
                 "title": "The table",
                 "sub_heading": "A sub-heading",
-                "accessible_label": "The accessible label",
+                "caption": "The accessible label",
                 "data": self.simple_table_data,
             }
         )
@@ -713,7 +713,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         """A table with no sub-heading is allowed regardless of title."""
         value = self.block.to_python(
             {
-                "accessible_label": "The accessible label",
+                "caption": "The accessible label",
                 "data": self.simple_table_data,
             }
         )
@@ -725,7 +725,8 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertDictEqual(
             context["options"],
             {
-                "ariaLabel": "The accessible label",
+                "caption": "The accessible label",
+                "hideCaption": True,
                 "thList": [{"ths": [{"value": "header cell"}]}],
                 "trs": [{"tds": [{"value": "row cell"}]}],
             },
@@ -739,6 +740,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         context = self.block.get_context(self.data_with_empty_table)
         self.assertNotIn("title", context)
         self.assertNotIn("sub_heading", context)
+        self.assertNotIn("caption", context)
         self.assertNotIn("options", context)
         self.assertNotIn("source", context)
         self.assertNotIn("footnotes", context)
@@ -747,9 +749,11 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         rendered = self.block.render(self.full_data)
         self.assertIn(self.full_data["title"], rendered)
         self.assertIn(f"<h4>{self.full_data['sub_heading']}</h4>", rendered)
-        # Note that when a bug in the DS is fixed we can remove the '. ' prefix here.
-        # For now it is necessary for the test to pass.
-        self.assertIn(f'aria-label=". {self.full_data["accessible_label"]}"', rendered)
+        soup = BeautifulSoup(rendered, "html.parser")
+        caption_tag = soup.find("caption")
+        self.assertIsNotNone(caption_tag)
+        self.assertIn(self.full_data["caption"], caption_tag.get_text())
+        self.assertIn("ons-u-vh", caption_tag.get("class", []))
         self.assertIn("Footnotes", rendered)
         self.assertIn(self.full_data["footnotes"], rendered)
         self.assertIn("<table", rendered)
