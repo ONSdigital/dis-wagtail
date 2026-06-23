@@ -92,7 +92,8 @@ msgstr "Set ddata"
 msgid "Methodology"
 msgstr "Methodoleg"
 
-#: cms/core/enums.py:11 cms/topics/models.py:247
+#: cms/core/enums.py:11 cms/jinja2/templates/pages/topic_page.html:113
+#: cms/topics/models.py:247
 msgid "Time series"
 msgstr "Cyfres amser"
 
@@ -762,10 +763,6 @@ msgstr "Gweld yr holl erthyglau cysylltiedig"
 #: cms/jinja2/templates/pages/topic_page.html:105
 msgid "View all related data"
 msgstr "Gweld yr holl ddata cysylltiedig"
-
-#: cms/jinja2/templates/pages/topic_page.html:113
-msgid "Time Series"
-msgstr "Cyfres amser"
 
 #: cms/jinja2/templates/pages/topic_page.html:123
 msgid "View all related time series"
