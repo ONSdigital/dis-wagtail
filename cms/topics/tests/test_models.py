@@ -995,6 +995,6 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Time Series")
+        self.assertNotContains(response, "Time series")
         self.assertNotContains(response, "View all related time series")
         self.assertNotContains(response, f"/timeseriestool?topic={self.topic_tag.slug_path}")
