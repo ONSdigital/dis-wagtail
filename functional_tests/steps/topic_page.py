@@ -150,16 +150,16 @@ def the_time_series_page_link_is_displayed_on_the_page(context: Context) -> None
     page = context.page
 
     expect(
-        page.locator("#time-series").get_by_role("heading", name="Time Series", exact=True)
+        page.locator("#time-series").get_by_role("heading", name="Time series", exact=True)
     ).to_be_visible()  # Section heading
     expect(page.locator("#time-series").get_by_role("link", name="Page title")).to_be_visible()
-    expect(page.locator("#time-series").get_by_text("Time series", exact=True)).to_be_visible()  # Content type label
+    expect(page.locator("#time-series").locator("span", has_text="Time series")).to_be_visible()  # Content type label
     expect(page.locator("#time-series").get_by_text("Summary")).to_be_visible()
 
 
 @then("the time series item appears in the table of contents")
 def the_time_series_item_appears_in_the_table_of_contents(context: Context) -> None:
-    expect(context.page.get_by_role("heading", name="Time Series")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Time series")).to_be_visible()
 
 
 @then("the user sees the '{link_text}' link")
