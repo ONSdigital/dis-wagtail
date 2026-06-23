@@ -36,6 +36,34 @@ if TYPE_CHECKING:
     from wagtail.blocks.struct_block import StructValue
 
 
+def _validate_bar_chart_x_axis(
+    x_axis: StructValue,
+    *,
+    title_error_code: str,
+    tick_interval_error_code: str,
+) -> None:
+    """Validate that horizontal bar charts do not have x-axis titles or tick intervals."""
+    x_axis_errors: dict[str, ValidationError] = {}
+
+    if x_axis.get("title"):
+        x_axis_errors["title"] = ValidationError(
+            "Category axis title is not supported for horizontal bar charts.",
+            code=title_error_code,
+        )
+
+    for field_name in ("tick_interval_mobile", "tick_interval_desktop"):
+        if x_axis.get(field_name) is not None:
+            x_axis_errors[field_name] = ValidationError(
+                "Category axis tick interval is not supported for horizontal bar charts.",
+                code=tick_interval_error_code,
+            )
+
+    if x_axis_errors:
+        raise blocks.StructBlockValidationError(
+            {"x_axis": blocks.StructBlockValidationError(block_errors=x_axis_errors)}
+        )
+
+
 class LineChartBlock(BaseChartBlock):
     highcharts_chart_type = HighChartsChartType.LINE
     x_axis_type = AxisType.CATEGORICAL
@@ -282,26 +310,11 @@ class BarColumnChartBlock(BaseChartBlock):
         if value.get("select_chart_type") != BarColumnChartTypeChoices.BAR:
             return
 
-        x_axis = value.get("x_axis")
-        x_axis_errors = {}
-
-        if x_axis.get("title"):
-            x_axis_errors["title"] = ValidationError(
-                "Category axis title is not supported for horizontal bar charts.",
-                code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
-            )
-
-        for field_name in ("tick_interval_mobile", "tick_interval_desktop"):
-            if x_axis.get(field_name) is not None:
-                x_axis_errors[field_name] = ValidationError(
-                    "Category axis tick interval is not supported for horizontal bar charts.",
-                    code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TICK_INTERVAL,
-                )
-
-        if x_axis_errors:
-            raise blocks.StructBlockValidationError(
-                {"x_axis": blocks.StructBlockValidationError(block_errors=x_axis_errors)}
-            )
+        _validate_bar_chart_x_axis(
+            value.get("x_axis"),
+            title_error_code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+            tick_interval_error_code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TICK_INTERVAL,
+        )
 
     def validate_y_axis(self, value: StructValue) -> None:
         if value.get("y_axis").get("custom_reference_line"):
@@ -608,26 +621,11 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
         if value.get("select_chart_type") != BarColumnConfidenceIntervalChartTypeChoices.BAR:
             return
 
-        x_axis = value.get("x_axis")
-        x_axis_errors = {}
-
-        if x_axis.get("title"):
-            x_axis_errors["title"] = ValidationError(
-                "Category axis title is not supported for horizontal bar charts.",
-                code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
-            )
-
-        for field_name in ("tick_interval_mobile", "tick_interval_desktop"):
-            if x_axis.get(field_name) is not None:
-                x_axis_errors[field_name] = ValidationError(
-                    "Category axis tick interval is not supported for horizontal bar charts.",
-                    code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TICK_INTERVAL,
-                )
-
-        if x_axis_errors:
-            raise blocks.StructBlockValidationError(
-                {"x_axis": blocks.StructBlockValidationError(block_errors=x_axis_errors)}
-            )
+        _validate_bar_chart_x_axis(
+            value.get("x_axis"),
+            title_error_code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+            tick_interval_error_code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TICK_INTERVAL,
+        )
 
 
 class ScatterPlotBlock(BaseChartBlock):
