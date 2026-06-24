@@ -129,3 +129,19 @@ class GenericPageToTaxonomyTopic(models.Model):
         constraints: ClassVar[list[BaseConstraint]] = [
             UniqueConstraint(fields=["page", "topic"], name="unique_generic_taxonomy")
         ]
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """Override the save method to prevent duplicate entries for the same page and topic combination."""
+        # args[0] is the force_insert positional argument
+        force_insert = bool(kwargs.get("force_insert") or (args and args[0]))
+        if not force_insert and self._state.adding and self.page_id and self.topic_id:
+            existing_pk = (
+                GenericPageToTaxonomyTopic.objects.filter(page_id=self.page_id, topic_id=self.topic_id)
+                .values_list("pk", flat=True)
+                .first()
+            )
+            if existing_pk is not None:
+                self.pk = existing_pk
+                self._state.adding = False
+
+        super().save(*args, **kwargs)

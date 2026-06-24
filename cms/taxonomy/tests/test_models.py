@@ -214,3 +214,19 @@ class GenericPageToTaxonomyTopicModelTest(TestCase):
         link = GenericPageToTaxonomyTopic.objects.create(page=self.child_page, topic=self.topic_a)
         self.topic_a.delete()  # This should cascade-delete the link
         self.assertFalse(GenericPageToTaxonomyTopic.objects.filter(pk=link.pk).exists())
+
+    def test_committing_cluster_with_existing_and_idless_link_does_not_duplicate(self):
+        """Regression test: a page whose cluster contains both an existing link and a new,
+        id-less link for the same topic must not raise an IntegrityError on save.
+        """
+        existing = GenericPageToTaxonomyTopic.objects.create(page=self.child_page, topic=self.topic_a)
+
+        page = Page.objects.get(pk=self.child_page.pk)
+        # The id-less link is created by adding a new GenericPageToTaxonomyTopic instance to the page's topics.
+        page.topics.add(GenericPageToTaxonomyTopic(topic=self.topic_a))
+
+        page.save()  # Must not raise IntegrityError
+
+        links = GenericPageToTaxonomyTopic.objects.filter(page=page, topic=self.topic_a)
+        self.assertEqual(links.count(), 1)
+        self.assertTrue(links.filter(pk=existing.pk).exists())
