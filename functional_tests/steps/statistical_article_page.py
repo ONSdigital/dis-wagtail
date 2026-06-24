@@ -279,7 +279,7 @@ def check_populated_data(locator):
     expect(locator.get_by_role("heading", name="The article page")).to_be_visible()
     expect(locator.get_by_text("Page summary")).to_be_visible()
     expect(locator.get_by_text("11 January 2025", exact=True)).to_be_visible()
-    expect(locator.get_by_role("heading", name="Cite this analysis")).to_be_visible()
+    expect(locator.get_by_role("heading", name="Cite this page")).to_be_visible()
 
     expect(locator.get_by_role("heading", name="Heading")).to_be_visible()
     expect(locator.get_by_role("heading", name="Content")).to_be_visible()
