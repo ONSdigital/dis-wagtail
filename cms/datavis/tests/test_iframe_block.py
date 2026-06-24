@@ -203,3 +203,19 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         self.raw_data["footnotes"] = ""
         config = self.get_component_config()
         self.assertNotIn("footnotes", config)
+
+    def test_footnotes_html_only_omitted(self):
+        for html in ("<p></p>", "<p> </p>"):
+            with self.subTest(html=html):
+                self.raw_data["footnotes"] = html
+                config = self.get_component_config()
+                self.assertNotIn("footnotes", config)
+                rendered = self.block.render(self.raw_data)
+                self.assertNotIn("Footnotes", rendered)
+        content = "Valid content"
+        with self.subTest(content=content):
+            self.raw_data["footnotes"] = content
+            config = self.get_component_config()
+            self.assertIn("footnotes", config)
+            rendered = self.block.render(self.raw_data)
+            self.assertIn(content, rendered)
