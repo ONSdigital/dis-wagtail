@@ -132,7 +132,8 @@ class GenericPageToTaxonomyTopic(models.Model):
 
     def save(self, **kwargs: Any) -> None:
         """Silently deduplicates when modelcluster tries to INSERT a (page, topic) pair that was already
-        committed by a concurrent save/session."""
+        committed by a concurrent save/session.
+        """
         if not kwargs.get("force_insert") and self._state.adding and self.page_id and self.topic_id:
             existing_pk = (
                 GenericPageToTaxonomyTopic.objects.filter(page_id=self.page_id, topic_id=self.topic_id)
