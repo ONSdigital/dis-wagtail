@@ -8,5 +8,8 @@ SEARCH_INDEX_PUBLISHER_BACKEND = "kafka"
 
 KAFKA_SERVERS = ["localhost:19094"]
 
+# Disable wagtail autosave for functional tests
+WAGTAIL_AUTOSAVE_INTERVAL = 0
+
 # Default to false, override to true with tag
 BUNDLE_DATASET_METADATA_VALIDATION_ENABLED = False
