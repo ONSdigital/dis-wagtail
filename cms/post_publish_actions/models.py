@@ -78,7 +78,9 @@ class PostPublishAction(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.action_type} for {self.page_id} in bundle {self.bundle_id} (status: {self.status}) ({self.pk})"
+        return (
+            f"{self.action_type} for page {self.page_id} in bundle {self.bundle_id} (status: {self.status}) ({self.pk})"
+        )
 
     def enqueue(self) -> None:
         from .executor import run_action, run_in_executor  # pylint: disable=import-outside-toplevel

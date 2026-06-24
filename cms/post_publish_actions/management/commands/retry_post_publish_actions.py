@@ -22,12 +22,9 @@ class Command(BaseCommand):
             - It is marked as currently running (because of the above, it probably isn't).
             - It is marked as failed.
         """
-        return (
-            PostPublishAction.objects.active()
-            .filter(
-                enqueued_at__lte=timezone.now() - timedelta(seconds=settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS * 2),
-                status__in=[PostPublishActionStatus.RUNNING, PostPublishActionStatus.FAILED],
-            )
+        return PostPublishAction.objects.active().filter(
+            enqueued_at__lte=timezone.now() - timedelta(seconds=settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS * 2),
+            status__in=[PostPublishActionStatus.RUNNING, PostPublishActionStatus.FAILED],
         )
 
     def handle(self, *args: Any, **options: Any) -> None:
