@@ -148,15 +148,16 @@ def executor_stop_and_wait(progress: bool = False) -> None:
 
     # Give the threads time to terminate to avoid unnecessary printing.
     if progress:
-        time.sleep(0.01)
+        time.sleep(0.1)
 
     executor_threads = _executor._threads | _support_executor._threads  # pylint: disable=protected-access
 
-    last_running_threads = len(executor_threads)
+    # Add 1 to force a print the first time around
+    last_running_threads = len(executor_threads) + 1
 
     while running_threads := [t for t in executor_threads if t.is_alive()]:
         if progress and last_running_threads > len(running_threads):
-            logging.debug(
+            logger.debug(
                 "Waiting for %d threads",
                 len(running_threads),
                 extra={
