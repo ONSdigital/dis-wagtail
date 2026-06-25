@@ -219,7 +219,7 @@ class TestGenericTaxonomyMixin(TestCase, WagtailTestUtils):
 
 class TestGenericTaxonomyMixinIntegrityError(WagtailTestUtils, TestCase):
     """Regression tests for the duplicate (page, topic) IntegrityError.
-    ref https://github.com/wagtail/wagtail/issues/14359
+    Reference: https://github.com/wagtail/wagtail/issues/14359 (Wagtail issue).
     """
 
     @classmethod
