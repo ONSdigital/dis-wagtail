@@ -142,11 +142,12 @@ class ONSTableBlock(TinyTableBlock):
         # relabeled to match the publishing team's terminology
         self.child_blocks["caption"].label = "Accessible label"
         self.child_blocks["caption"].field.required = True
-        self.child_blocks["caption"].help_text = """
-            A short label to explain what this table is about for those
-            using a screen reader. This will not be visible on the page
-            but is important for accessibility.
-            Note that this is rendered as a hidden caption element."""
+        self.child_blocks["caption"].help_text = (
+            "A short label to explain what this table is about for those "
+            "using a screen reader. This will not be visible on the page "
+            "but is important for accessibility. "
+            "Note that this is rendered as a hidden caption element."
+        )
 
     def clean(self, value: dict) -> dict:
         """Validate that a sub-heading is only present when a title is also provided."""
