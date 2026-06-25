@@ -61,9 +61,8 @@ def user_clicks_to_add_headline_figures_to_the_topic_page(context: Context, *, b
     page = context.page
     panel = page.locator("#panel-child-content-headline_figures-content")
     panel.get_by_role("button", name="Insert a block").nth(button_index).click()
-    page.wait_for_timeout(100)
     panel.get_by_role("button", name="Choose Article Series page and headline figure").click()
-    page.wait_for_timeout(100)  # Wait for modal to open
+    context.page.locator(".modal-content").wait_for(state="visible")
 
 
 @step("the user adds two headline figures to the topic page")

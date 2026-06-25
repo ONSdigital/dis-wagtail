@@ -116,11 +116,19 @@ def get_bundleable_page_types() -> list[type[Page]]:
 
 def get_pages_in_active_bundles() -> list[int]:
     # using this rather than inline import to placate pyright complaining about cyclic imports
+    bundle_class = resolve_model_string("bundles.Bundle")
     bundle_page_class = resolve_model_string("bundles.BundlePage")
 
-    return list(
-        bundle_page_class.objects.filter(parent__status__in=ACTIVE_BUNDLE_STATUSES).values_list("page", flat=True)
+    bundled_page_ids = bundle_page_class.objects.filter(parent__status__in=ACTIVE_BUNDLE_STATUSES).values_list(
+        "page", flat=True
     )
+
+    rc_page_ids = bundle_class.objects.filter(
+        status__in=ACTIVE_BUNDLE_STATUSES,
+        release_calendar_page__isnull=False,
+    ).values_list("release_calendar_page", flat=True)
+
+    return list(set(bundled_page_ids) | set(rc_page_ids))
 
 
 def _create_content_dict_for_pages(

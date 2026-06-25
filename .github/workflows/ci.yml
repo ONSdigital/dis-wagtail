@@ -309,7 +309,7 @@ jobs:
 
       - name: Select feature subset
         run: |
-          SHARD_INDEX=${{ matrix.shard }} ./.github/split_functional_test_features.sh > features.txt
+          SHARD_INDEX=${{ matrix.shard }} poetry run python .github/split_functional_test_features.py
 
       - name: Run functional tests
         run: |

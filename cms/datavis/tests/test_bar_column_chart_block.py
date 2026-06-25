@@ -400,14 +400,35 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
             with self.subTest(key=key):
                 self.assertEqual(expected, self.get_value().block.get_component_config(self.get_value())["yAxis"][key])
 
-    def test_category_axis_has_no_tick_interval(self):
+    def test_column_chart_category_axis_tick_interval_supported(self):
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.COLUMN
         self.raw_data["x_axis"]["tick_interval_mobile"] = 5
         self.raw_data["x_axis"]["tick_interval_desktop"] = 6
-        self.block.clean(self.get_value())
         x_axis_config = self.get_value().block.get_component_config(self.get_value())["xAxis"]
-        for key in ["tickIntervalMobile", "tickIntervalDesktop"]:
-            with self.subTest(key=key):
-                self.assertNotIn(key, x_axis_config)
+        self.assertEqual(x_axis_config["tickIntervalMobile"], 5)
+        self.assertEqual(x_axis_config["tickIntervalDesktop"], 6)
+
+    def test_column_chart_category_axis_tick_interval_validation(self):
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.COLUMN
+        self.raw_data["x_axis"]["tick_interval_mobile"] = 5
+        self.raw_data["x_axis"]["tick_interval_desktop"] = 6
+        try:
+            self.block.clean(self.get_value())
+        except ValidationError:
+            self.fail("Expected no ValidationError for column chart category axis tick interval")
+
+    def test_bar_chart_category_axis_tick_interval_validation(self):
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.BAR
+        self.raw_data["x_axis"]["tick_interval_mobile"] = 5
+        self.raw_data["x_axis"]["tick_interval_desktop"] = 6
+        with self.assertRaises(blocks.StructBlockValidationError) as cm:
+            self.block.clean(self.get_value())
+        for field_name in ("tick_interval_mobile", "tick_interval_desktop"):
+            with self.subTest(field_name=field_name):
+                self.assertEqual(
+                    BarColumnChartBlock.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TICK_INTERVAL,
+                    cm.exception.block_errors["x_axis"].block_errors[field_name].code,
+                )
 
     def test_value_axis_min_max_configuration(self):
         """Test that min/max values are correctly configured for the value axis."""
