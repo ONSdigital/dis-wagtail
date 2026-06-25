@@ -162,10 +162,10 @@ def user_adds_internal_related_article_with_custom_title(context: Context, custo
 
     # Select an internal page - look for the "Choose a page" button
     context.page.get_by_role("button", name="Choose Article page").click()
-    context.page.wait_for_timeout(250)  # Wait for the modal to open
 
     # Click on the article in the chooser modal
     modal = context.page.locator("#search-results")
+    modal.wait_for(state="visible")
     article_link = modal.locator("[data-chooser-modal-choice]").nth(0)
     article_link.click()
 
