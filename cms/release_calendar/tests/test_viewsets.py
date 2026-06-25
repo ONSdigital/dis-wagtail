@@ -8,7 +8,7 @@ from django.utils import timezone
 from wagtail.models import GroupPagePermission, Locale
 from wagtail.test.utils import WagtailTestUtils
 
-from cms.bundles.tests.factories import BundleFactory
+from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.core.tests.utils import rebuild_internal_search_index
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
@@ -86,6 +86,17 @@ class TestFutureReleaseCalendarChooserViewSet(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.cancelled.title)
         self.assertNotContains(response, self.published.title)
         self.assertNotContains(response, self.past.title)
+
+    def test_chooser_excludes_rc_page_added_as_bundled_page_to_active_bundle(self):
+        """Chooser must exclude RC pages in an active bundle via BundlePage,
+        not only via the release_calendar_page FK.
+        """
+        BundlePageFactory(parent=BundleFactory(), page=self.provisional)
+
+        response = self.client.get(self.chooser_url)
+
+        self.assertNotContains(response, self.provisional.title)
+        self.assertContains(response, self.confirmed.title)
 
     def test_chooser_excludes_aliases(self):
         provisional_alias = self.provisional.copy_for_translation(self.welsh_locale, copy_parents=True, alias=True)

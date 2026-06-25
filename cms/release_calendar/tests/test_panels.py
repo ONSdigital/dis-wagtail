@@ -7,6 +7,8 @@ from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.bundles.enums import BundleStatus
+from cms.bundles.models import BundlePage
+from cms.bundles.panels import BundleNotePanel
 from cms.bundles.tests.factories import BundleFactory
 from cms.release_calendar.panels import ReleaseCalendarBundleNotePanel
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
@@ -75,3 +77,17 @@ class BundleNotePanelTestCase(WagtailTestUtils, TestCase):
                 self.bundle.save(update_fields=["status"])
                 self.assertEqual(self.get_bound_panel(self.page).status, panel_status)
                 del self.page.active_bundle
+
+    def test_bundle_note_panel_shows_bundle_info_when_added_via_bundle_page(self):
+        """Once a page is in a bundle, the panel should show the bundle name, not the 'Add to Bundle' prompt."""
+        page = ReleaseCalendarPageFactory()
+        bundle = BundleFactory(name="Via BundlePage Bundle", status=BundleStatus.DRAFT)
+
+        bundle.bundled_pages.add(BundlePage(page=page))
+        bundle.save()
+
+        panel = BundleNotePanel()
+        bound_panel = panel.bind_to_model(page._meta.model).get_bound_panel(instance=page, request=self.request)
+
+        self.assertNotIn("Add to Bundle", bound_panel.content)
+        self.assertIn("Via BundlePage Bundle", bound_panel.content)

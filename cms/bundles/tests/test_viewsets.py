@@ -1644,6 +1644,17 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
 
         self.assertContains(response, self.page_draft_in_bundle.get_admin_display_title())
 
+    def test_choose_view__excludes_release_calendar_page_of_active_bundle(self):
+        """An RC page that is the release_calendar_page for an active bundle must not appear in the chooser."""
+        rc_page = ReleaseCalendarPageFactory(title="RC page set as schedule for active bundle")
+        rc_page.save_revision()
+        BundleFactory(release_calendar_page=rc_page)  # DRAFT = active
+
+        response = self.client.get(self.chooser_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, rc_page.get_admin_display_title())
+
     def test_choose_view__excludes_aliases(self):
         # create an alias for one of the pages
         self.page_draft.copy_for_translation(
