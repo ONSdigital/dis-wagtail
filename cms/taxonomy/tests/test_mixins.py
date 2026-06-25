@@ -218,7 +218,9 @@ class TestGenericTaxonomyMixin(TestCase, WagtailTestUtils):
 
 
 class TestGenericTaxonomyMixinIntegrityError(WagtailTestUtils, TestCase):
-    """Regression tests for the duplicate (page, topic) IntegrityError."""
+    """Regression tests for the duplicate (page, topic) IntegrityError.
+    ref https://github.com/wagtail/wagtail/issues/14359
+    """
 
     @classmethod
     def setUpTestData(cls):
