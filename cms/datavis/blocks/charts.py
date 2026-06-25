@@ -27,6 +27,7 @@ from cms.datavis.blocks.table import SimpleTableBlock, TableDataType
 from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
 from cms.datavis.constants import (
     AXIS_TITLE_HELP_TEXT,
+    CATEGORY_AXIS_TICK_INTERVAL_HELP_TEXT,
     AxisType,
     BarColumnChartTypeChoices,
     BarColumnConfidenceIntervalChartTypeChoices,
@@ -180,9 +181,7 @@ class BarColumnChartBlock(BaseChartBlock):
                 TextInputIntegerBlock(
                     label="Tick interval (mobile)",
                     required=False,
-                    help_text=(
-                        "Category axis tick intervals are available for column charts only, and must use whole numbers."
-                    ),
+                    help_text=CATEGORY_AXIS_TICK_INTERVAL_HELP_TEXT,
                 ),
             ),
             (
@@ -190,9 +189,7 @@ class BarColumnChartBlock(BaseChartBlock):
                 TextInputIntegerBlock(
                     label="Tick interval (desktop)",
                     required=False,
-                    help_text=(
-                        "Category axis tick intervals are available for column charts only, and must use whole numbers."
-                    ),
+                    help_text=CATEGORY_AXIS_TICK_INTERVAL_HELP_TEXT,
                 ),
             ),
         ],
@@ -452,9 +449,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
                 TextInputIntegerBlock(
                     label="Tick interval (mobile)",
                     required=False,
-                    help_text=(
-                        "Category axis tick intervals are available for column charts only, and must use whole numbers."
-                    ),
+                    help_text=CATEGORY_AXIS_TICK_INTERVAL_HELP_TEXT,
                 ),
             ),
             (
@@ -462,9 +457,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
                 TextInputIntegerBlock(
                     label="Tick interval (desktop)",
                     required=False,
-                    help_text=(
-                        "Category axis tick intervals are available for column charts only, and must use whole numbers."
-                    ),
+                    help_text=CATEGORY_AXIS_TICK_INTERVAL_HELP_TEXT,
                 ),
             ),
         ],
