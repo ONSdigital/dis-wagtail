@@ -281,6 +281,8 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
 
     @cached_property
     def active_bundles(self) -> QuerySet[Bundle]:
+        # Release Calendar pages can be associated with an active bundle either as the bundle's
+        # release calendar page or through BundlePage; the two paths are mutually exclusive.
         queryset: QuerySet[Bundle] = Bundle.objects.none()
         if self.pk:
             queryset = Bundle.objects.filter(
