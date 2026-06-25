@@ -73,9 +73,6 @@ class PostPublishAction(models.Model):
             ),
             models.UniqueConstraint(fields=["page", "action_type"], condition=models.Q(bundle=None), name="page_type"),
         ]
-        indexes: ClassVar[list[models.Index]] = [
-            models.Index("bundle", "page", "action_type", name="publish_action_relation")
-        ]
 
     def __str__(self) -> str:
         return (
