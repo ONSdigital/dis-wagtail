@@ -6,6 +6,7 @@ from urllib.parse import ParseResult, urlparse
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import widgets
+from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 
@@ -882,7 +883,9 @@ class IframeBlock(BaseVisualisationBlock):
             "description": value.get("audio_description"),
             "iframeUrl": value.get("iframe_source_url"),
         }
-        if footnotes := value.get("footnotes"):
+
+        # Check for meaningful text before displaying footnotes
+        if (footnotes := value.get("footnotes")) and strip_tags(str(footnotes)).strip():
             config["footnotes"] = {
                 "title": _("Footnotes"),
                 "content": str(footnotes),

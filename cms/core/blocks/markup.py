@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.urls import reverse
+from django.utils.html import strip_tags
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
@@ -201,10 +202,13 @@ class ONSTableBlock(TinyTableBlock):
             "title": value.get("title"),
             "options": options,
             "source": value.get("source"),
-            "footnotes": value.get("footnotes"),
             "additional_sections_heading_level": additional_sections_heading_level,
             **context,
         }
+
+        # Check for meaningful text before displaying footnotes
+        if (footnotes := value.get("footnotes")) and strip_tags(str(footnotes)).strip():
+            table_context["footnotes"] = footnotes
 
         return table_context
 
