@@ -2,16 +2,20 @@ import base64
 import json
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from behave.runner import Context
 from django.conf import settings
+from django.contrib.sessions.backends.db import SessionStore
 
 from cms.auth import utils as auth_utils
 from cms.auth.tests.helpers import CognitoTokenTestCase, generate_rsa_keypair
 
+if TYPE_CHECKING:
+    from cms.users.models import User
 
-class AuthenticationTestHelper:
+
+class CognitoAuthenticationTestHelper:
     """Helper class for managing authentication test setup and assertions."""
 
     def __init__(self, context: Context) -> None:
@@ -209,3 +213,31 @@ def capture_request(context: Context) -> None:
             route.continue_()
 
     return _capture
+
+
+def force_login(context: Context, user: User):
+    session_key = get_session_key(user)
+
+    context.browser_context.add_cookies(
+        [
+            {
+                "name": settings.SESSION_COOKIE_NAME,
+                "value": session_key,
+                "path": "/",
+                "domain": "localhost",
+                "secure": settings.SESSION_COOKIE_SECURE,
+                "httponly": True,
+                "samesite": settings.SESSION_COOKIE_SAMESITE,
+            }
+        ]
+    )
+
+
+def get_session_key(user: User) -> str:
+    session = SessionStore()
+    session["_auth_user_id"] = user.id
+    session["_auth_user_backend"] = "django.contrib.auth.backends.ModelBackend"
+    session["_auth_user_hash"] = user.get_session_auth_hash()
+    session.create()
+
+    return session.session_key
