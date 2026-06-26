@@ -9,6 +9,8 @@ from treebeard.mp_tree import MP_Node
 from wagtail.admin.panels import FieldPanel
 from wagtail.search import index
 
+from cms.core.db_router import force_write_db_for
+
 BASE_TOPIC_DEPTH = 2
 
 if TYPE_CHECKING:
@@ -137,7 +139,8 @@ class GenericPageToTaxonomyTopic(models.Model):
         """
         if not kwargs.get("force_insert") and self._state.adding and self.page_id and self.topic_id:
             existing_pk = (
-                GenericPageToTaxonomyTopic.objects.filter(page_id=self.page_id, topic_id=self.topic_id)
+                force_write_db_for(GenericPageToTaxonomyTopic.objects)
+                .filter(page_id=self.page_id, topic_id=self.topic_id)
                 .values_list("pk", flat=True)
                 .first()
             )
