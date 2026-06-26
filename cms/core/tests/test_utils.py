@@ -127,7 +127,7 @@ class TestContentTypeForPage(TestCase):
 
     def test_get_content_type_for_page__suppressed_returns_none(self):
         """Page types with the label suppressed return None, so no label is shown."""
-        page = HomePage.objects().first()
+        page = HomePage.objects.first()
 
         self.assertIsNone(get_content_type_for_page(page))
 
