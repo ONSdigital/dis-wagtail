@@ -13,3 +13,5 @@ class RelatedContentType(models.TextChoices):
     INFORMATION = "INFORMATION", _("Information")
     REPORT = "REPORT", _("Report")
     WEBPAGE = "WEBPAGE", _("Webpage")
+    INDEX = "INDEX", _("Index")
+    THEME = "THEME", _("Theme")

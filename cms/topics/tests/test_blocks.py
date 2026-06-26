@@ -60,6 +60,16 @@ class ExploreMoreBlocksTestCase(TestCase):
         self.assertEqual(formatted["title"]["text"], "Custom Title")
         self.assertEqual(formatted["description"], "Custom Description")
         self.assertIn("smallSrc", formatted["thumbnail"])
+        self.assertNotIn("metadata", formatted)
+
+    def test_internal_link_block__get_formatted_value_adds_page_type_label(self):
+        block = ExploreMoreInternalLinkBlock()
+        value = block.to_python({"page": self.theme_page.pk})
+
+        formatted = block.get_formatted_value(value)
+
+        self.assertEqual(formatted["title"]["text"], self.theme_page.title)
+        self.assertEqual(formatted["metadata"], {"object": {"text": "Theme"}})
 
     def test_internal_link_block__get_formatted_value_without_overrides(self):
         block = ExploreMoreInternalLinkBlock()
@@ -75,6 +85,7 @@ class ExploreMoreBlocksTestCase(TestCase):
         self.assertEqual(formatted["title"]["text"], self.home_page.title)
         self.assertEqual(formatted["description"], "Page listing summary")
         self.assertIn("smallSrc", formatted["thumbnail"])
+        self.assertNotIn("metadata", formatted)
 
     def test_internal_link_block__get_formatted_value_with_unpublished_page_returns_empty(self):
         block = ExploreMoreInternalLinkBlock()
@@ -112,6 +123,7 @@ class ExploreMoreBlocksTestCase(TestCase):
 
         self.assertEqual(formatted_items[1]["title"]["text"], self.theme_page.title)
         self.assertEqual(formatted_items[1]["description"], self.theme_page.listing_summary)
+        self.assertEqual(formatted_items[1]["metadata"], {"object": {"text": "Theme"}})
 
 
 class TimeSeriesPageStoryBlockTestCase(TestCase):

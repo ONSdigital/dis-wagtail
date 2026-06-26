@@ -45,9 +45,9 @@ if TYPE_CHECKING:
     from django_stubs_ext import StrOrPromise
 
 
-def get_content_type_for_page(page: Page) -> StrOrPromise:
+def get_content_type_for_page(page: Page) -> StrOrPromise | None:
     """Returns the content type for a given page."""
-    label: StrOrPromise = page.specific_deferred.label
+    label: StrOrPromise | None = page.specific_deferred.label
     return label
 
 

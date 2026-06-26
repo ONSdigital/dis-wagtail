@@ -67,6 +67,8 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
     # disables the "Promote" tab as we control the slug, and the page redirects
     promote_panels: ClassVar[list[Panel]] = []
 
+    label = None
+
     def clean(self) -> None:
         self.slug = "articles"
         super().clean()
@@ -111,6 +113,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
             )
         ),
     ]
+
+    label = None
 
     @cached_property
     def summary(self) -> str:

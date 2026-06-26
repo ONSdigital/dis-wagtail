@@ -55,6 +55,8 @@ class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
     subpage_types: ClassVar[list[str]] = ["ReleaseCalendarPage"]
     max_count_per_parent = 1
 
+    label = None
+
     def serve(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         if not settings.CMS_RELEASES_INDEX_REDIRECT_ENABLED:
             return super().serve(request, *args, **kwargs)  # type: ignore[no-any-return]
@@ -73,6 +75,8 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     parent_page_types: ClassVar[list[str]] = ["ReleaseCalendarIndex"]
     subpage_types: ClassVar[list[str]] = []
     search_index_content_type: ClassVar[str] = "release"
+
+    label = _("Release calendar page")
 
     # Fields
     status = models.CharField(choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32)
