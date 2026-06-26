@@ -152,4 +152,4 @@ class CSPTestCase(TestCase):
 
                 self.assertIn(CSP.SELF, self._get_csp_expressions(csp, "frame-ancestors"))
 
-                self.assertNotIn("X-Frame-Origin", response.headers)
+                self.assertNotIn("X-Frame-Options", response.headers)
