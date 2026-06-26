@@ -96,6 +96,7 @@ else:
 CSRF_TRUSTED_ORIGINS = env.get("CSRF_TRUSTED_ORIGINS", AUTH_STUB_URL).split(",")
 
 SECURE_CSP.setdefault("connect-src", []).extend(["ws://localhost:3000"])  # noqa: F405
+WAGTAIL_CSP.setdefault("connect-src", []).extend(["ws://localhost:3000"])  # noqa: F405
 
 MIGRATION_LINTER_OPTIONS = {
     "exclude_apps": [
