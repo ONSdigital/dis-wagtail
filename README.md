@@ -537,4 +537,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 
-See [LICENSE](LICENSE) for details.
+Copyright © 2024 [Crown Copyright](https://www.nationalarchives.gov.uk/information-management/re-using-public-sector-information/uk-government-licensing-framework/crown-copyright/) (Office for National Statistics)
+
+Released under MIT license, see [LICENSE](LICENSE) for details.
