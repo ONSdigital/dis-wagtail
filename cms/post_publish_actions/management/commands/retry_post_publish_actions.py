@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import timedelta
 from typing import Any
 
@@ -42,7 +43,6 @@ class Command(BaseCommand):
             # Update after enqueue so the iteration works
             actions_to_retry.update(
                 status=PostPublishActionStatus.READY,
-                enqueued_at=start_time,
                 failed_reason="",
                 duration=None,
                 finished_at=None,
@@ -60,11 +60,15 @@ class Command(BaseCommand):
                 .values_list("id", flat=True)
             )
 
+            # Only wait if there are bundles to check
+            if actions_to_retry_ids:
+                time.sleep(settings.BUNDLE_POST_PUBLISH_POLL_FREQUENCY)
+
         if actions_to_retry_ids:
             PostPublishAction.objects.active().unfinished().filter(id__in=actions_to_retry_ids).mark_timed_out()
             logger.error(
                 "Post publish actions timeout",
                 extra={
-                    "outstanding_action_ids": actions_to_retry_ids,
+                    "outstanding_action_ids": list(actions_to_retry_ids),
                 },
             )

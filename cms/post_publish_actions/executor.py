@@ -44,6 +44,8 @@ def _executor_wrapper[**P](executor_fn: Callable[P, None], *args: P.args, **kwar
 
     try:
         executor_fn(*args, **kwargs)
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception("Unhandled exception in post publish actions")
     finally:
         close_old_connections()
 
