@@ -3,8 +3,7 @@
 {% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
 
-{% block header_area %}
-    {%- set hero_topic = _("Theme") -%}
+{% block breadcrumbs %}
     {# fmt:off #}
     {{
         onsBreadcrumbs({
@@ -13,6 +12,12 @@
             "variant": 'pale-blue'
         })
     }}
+    {# fmt:on #}
+{% endblock %}
+
+{% block hero %}
+    {%- set hero_topic = _("Theme") -%}
+    {# fmt:off #}
     {{
         onsHero({
             "topic": hero_topic,

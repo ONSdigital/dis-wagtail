@@ -2,19 +2,24 @@
 {% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 
-{% block header_area %}
-    {%- set hero_topic = _("Release") -%}
-    {%- set release_date_label = _("Release date:") -%}
-    {%- set release_date_description = _("Cancelled") -%}
-
+{% block breadcrumbs %}
     {# fmt:off #}
     {{
         onsBreadcrumbs({
             "ariaLabel": breadcrumbs_aria_label,
             "itemsList": page.get_breadcrumbs(request=request),
             "variant": 'grey'
-    })
+        })
     }}
+    {# fmt:on #}
+{% endblock %}
+
+{% block hero %}
+    {%- set hero_topic = _("Release") -%}
+    {%- set release_date_label = _("Release date:") -%}
+    {%- set release_date_description = _("Cancelled") -%}
+
+    {# fmt:off #}
     {{
         onsHero({
             "topic": hero_topic,
@@ -38,12 +43,12 @@
         })
     }}
     {# fmt:on #}
+{% endblock %}
 
-    {% block release_note %}
-        <div class="ons-container ons-u-mt-m">
-            {{ onsPanel({"body": page.notice|richtext }) }}
-        </div>
-    {% endblock %}
+{% block release_note %}
+    <div class="ons-container ons-u-mt-m">
+        {{ onsPanel({"body": page.notice|richtext }) }}
+    </div>
 {% endblock %}
 
 {% block release_content %}

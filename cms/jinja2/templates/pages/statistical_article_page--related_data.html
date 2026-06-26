@@ -5,8 +5,7 @@
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/pagination/_macro.njk" import onsPagination %}
 
-{% block header_area %}
-    {%- set hero_topic = _("Related data") -%}
+{% block breadcrumbs %}
     {# fmt:off #}
     {{
         onsBreadcrumbs({
@@ -15,6 +14,12 @@
             "variant": 'grey'
         })
     }}
+    {# fmt:on #}
+{% endblock %}
+
+{% block hero %}
+    {%- set hero_topic = _("Related data") -%}
+    {# fmt:off #}
     {{
         onsHero({
             "topic": hero_topic,
@@ -27,7 +32,7 @@
     {# fmt:on #}
 {% endblock %}
 
-{% block main %}
+{% block mainContent %}
     <div class="ons-grid ons-js-table-of-contents-container">
         <div class="ons-grid__col ons-col-8@m">
             {{ onsDocumentList({"documents": paginated_datasets}) }}

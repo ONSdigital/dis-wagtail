@@ -9,9 +9,7 @@
     {% trans trimmed title=page.title %}Previous releases for {{ title }}{% endtrans %}
 {%- endset -%}
 
-{%- block header_area %}
-    {%- set hero_topic = _("Previous releases") -%}
-    {%- set hero_title = page.title ~ " " ~ _("Statistical articles") -%}
+{% block breadcrumbs %}
     {# fmt:off #}
     {{
         onsBreadcrumbs({
@@ -20,6 +18,14 @@
             "variant": 'grey'
         })
     }}
+    {# fmt:on #}
+{% endblock %}
+
+{% block hero %}
+    {# fmt:off #}
+    {%- set hero_topic = _("Previous releases") -%}
+    {%- set hero_title = page.title ~ " " ~ _("Statistical articles") -%}
+
     {{-
         onsHero({
             "topic": hero_topic,
@@ -30,9 +36,9 @@
         })
     -}}
     {# fmt:on #}
-{% endblock -%}
+{% endblock %}
 
-{% block main %}
+{% block mainContent %}
     <div class="ons-grid ons-js-table-of-contents-container">
         <div class="ons-grid__col ons-col-8@m">
             {# using namespaced variable here so we can update previous_release_pages inside the pages loop #}

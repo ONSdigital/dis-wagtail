@@ -209,6 +209,7 @@ def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, sit
         "meta": {"hrefLangs": get_hreflangs(request), "canonicalUrl": canonical_url},
         "description": description,
         "absoluteUrl": absolute_url,
+        "mainColClasses": "ons-u-mb-5xl",
     }
 
     return page_config
