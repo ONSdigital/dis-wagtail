@@ -73,7 +73,9 @@ class CSPTestCase(TestCase):
 
                 self.assertIn("www.googletagmanager.com", self._get_csp_expressions(csp, "img-src"))
                 self.assertIn("www.googletagmanager.com", self._get_csp_expressions(csp, "connect-src"))
+                self.assertIn("www.googletagmanager.com", self._get_csp_expressions(csp, "script-src"))
                 self.assertIn("www.google.com", self._get_csp_expressions(csp, "connect-src"))
+                self.assertIn("www.googletagmanager.com", self._get_csp_expressions(csp, "connect-src"))
 
     def test_hotjar_csp(self):
         """https://help.hotjar.com/hc/en-us/articles/36820026388881-Content-Security-Policies."""

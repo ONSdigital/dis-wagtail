@@ -1130,7 +1130,7 @@ SECURE_CSP: dict[str, list] = {
     "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE, "*.hotjar.com"],
     "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com", "*.hotjar.com"],
     # UNSAFE_INLINE is required by hotjar
-    "script-src": [CSP.SELF, *static_sources, "*.hotjar.com", CSP.UNSAFE_INLINE],
+    "script-src": [CSP.SELF, *static_sources, "*.hotjar.com", "www.googletagmanager.com", CSP.UNSAFE_INLINE],
     "font-src": [CSP.SELF, *static_sources, "*.hotjar.com"],
     "connect-src": [
         CSP.SELF,
