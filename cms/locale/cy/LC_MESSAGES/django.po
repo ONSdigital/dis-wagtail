@@ -27,10 +27,9 @@ msgstr "Erthygl"
 #: cms/jinja2/templates/pages/methodology_page.html:113
 #: cms/jinja2/templates/pages/statistical_article_page.html:232
 #: cms/methodology/models.py:195
-#, fuzzy
 #| msgid "Cite this article"
 msgid "Cite this page"
-msgstr "Dyfynnwch yr erthygl hon"
+msgstr "Dyfynnwch y dudalen hon"
 
 #: cms/articles/models.py:461
 #: cms/jinja2/templates/components/contact_details/contact_details.html:6
