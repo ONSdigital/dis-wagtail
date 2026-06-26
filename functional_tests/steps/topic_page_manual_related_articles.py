@@ -8,18 +8,7 @@ from cms.articles.tests.factories import (
     ArticleSeriesPageFactory,
     StatisticalArticlePageFactory,
 )
-from functional_tests.step_helpers.users import create_user
 from functional_tests.steps.page_editor import click_the_given_button
-
-
-@given("a superuser logs into the admin site")
-def superuser_logs_into_admin_site(context: Context) -> None:
-    """Create a superuser and log them into the admin site."""
-    context.user_data = create_user(user_type="superuser")
-    context.page.goto(f"{context.base_url}/admin/login/")
-    context.page.get_by_placeholder("Enter your username").fill(context.user_data["username"])
-    context.page.get_by_placeholder("Enter password").fill(context.user_data["password"])
-    context.page.get_by_role("button", name="Sign in").click()
 
 
 @given("the topic page has at least 3 series with a statistical article")
@@ -165,10 +154,10 @@ def user_adds_internal_related_article_with_custom_title(context: Context, custo
 
     # Select an internal page - look for the "Choose a page" button
     context.page.get_by_role("button", name="Choose Article page").click()
-    context.page.wait_for_timeout(250)  # Wait for the modal to open
 
     # Click on the article in the chooser modal
     modal = context.page.locator("#search-results")
+    modal.wait_for(state="visible")
     article_link = modal.locator("[data-chooser-modal-choice]").nth(0)
     article_link.click()
 
