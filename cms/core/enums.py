@@ -15,3 +15,11 @@ class RelatedContentType(models.TextChoices):
     WEBPAGE = "WEBPAGE", _("Webpage")
     INDEX = "INDEX", _("Index")
     THEME = "THEME", _("Theme")
+
+
+class RelatedMethodologyType(models.TextChoices):
+    """Related methodology page types."""
+
+    ARTICLE = "ARTICLE", _("Article")
+    INFORMATION = "INFORMATION", _("Information")
+    METHODOLOGY = "METHODOLOGY", _("Methodology")
