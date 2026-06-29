@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("topics", "0008_topicpage_time_series"),
+        ("topics", "0009_topicpagerelatedmethodology_content_type_and_more"),
     ]
 
     operations = [
