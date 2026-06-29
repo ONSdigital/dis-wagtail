@@ -29,10 +29,11 @@ class BaseRelatedItem(Protocol):
     title: str
     description: str
     release_date: datetime.date | None
+    content_type: RelatedContentType | None
 
 
 class MethodologyRelatedItem(BaseRelatedItem, Protocol):
-    content_type: object | None
+    pass
 
 
 class BaseProcessor[T, R: BaseRelatedItem](ABC):
