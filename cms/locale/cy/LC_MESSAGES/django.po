@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-24 17:46+0100\n"
+"POT-Creation-Date: 2026-06-29 13:23+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,7 +19,6 @@ msgstr ""
 
 #: cms/articles/models.py:227 cms/core/enums.py:8
 #: cms/core/formatting_utils.py:45
-#: megalinter-reports/updated_sources/cms/core/formatting_utils.py:42
 msgid "Article"
 msgstr "Erthygl"
 
@@ -27,7 +26,6 @@ msgstr "Erthygl"
 #: cms/jinja2/templates/pages/methodology_page.html:113
 #: cms/jinja2/templates/pages/statistical_article_page.html:232
 #: cms/methodology/models.py:195
-#| msgid "Cite this article"
 msgid "Cite this page"
 msgstr "Dyfynnwch y dudalen hon"
 
@@ -99,13 +97,11 @@ msgstr "Methodoleg"
 
 #: cms/core/enums.py:11 cms/jinja2/templates/pages/topic_page.html:113
 #: cms/topics/models.py:247
-#: megalinter-reports/updated_sources/cms/topics/models.py:264
 msgid "Time series"
 msgstr "Cyfres amser"
 
 #: cms/core/enums.py:12 cms/jinja2/templates/pages/topic_page.html:9
 #: cms/topics/models.py:125
-#: megalinter-reports/updated_sources/cms/topics/models.py:142
 msgid "Topic"
 msgstr "Pwnc"
 
@@ -122,13 +118,11 @@ msgid "Webpage"
 msgstr "Tudalen we"
 
 #: cms/core/formatting_utils.py:57
-#: megalinter-reports/updated_sources/cms/core/formatting_utils.py:64
 msgid "Page"
 msgstr "Tudalen"
 
 #: cms/core/formatting_utils.py:103
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:40
-#: megalinter-reports/updated_sources/cms/core/formatting_utils.py:110
 msgid "Released"
 msgstr "Rhyddhawyd"
 
@@ -168,7 +162,7 @@ msgstr "Mae’r holl gynnwys ar gael o dan y"
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
-#: cms/datavis/blocks/base.py:161 cms/datavis/blocks/charts.py:830
+#: cms/datavis/blocks/base.py:161 cms/datavis/blocks/charts.py:883
 #: cms/jinja2/templates/components/streamfield/table_block.html:13
 msgid "Footnotes"
 msgstr "Troednodiadau"
@@ -177,7 +171,6 @@ msgstr "Troednodiadau"
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:94
 #: cms/jinja2/templates/pages/topic_page.html:95
 #: cms/release_calendar/models.py:254 cms/topics/models.py:245
-#: megalinter-reports/updated_sources/cms/topics/models.py:262
 msgid "Data"
 msgstr "Data"
 
@@ -750,12 +743,10 @@ msgid "Theme"
 msgstr "Thema"
 
 #: cms/jinja2/templates/pages/topic_page.html:67 cms/topics/models.py:241
-#: megalinter-reports/updated_sources/cms/topics/models.py:258
 msgid "Featured"
 msgstr "Dan Sylw"
 
 #: cms/jinja2/templates/pages/topic_page.html:77 cms/topics/models.py:243
-#: megalinter-reports/updated_sources/cms/topics/models.py:260
 msgid "Related articles"
 msgstr "Erthyglau cysylltiedig"
 
@@ -772,7 +763,6 @@ msgid "View all related time series"
 msgstr "Gweld yr holl gyfresi amser cysylltiedig"
 
 #: cms/jinja2/templates/pages/topic_page.html:131 cms/topics/models.py:249
-#: megalinter-reports/updated_sources/cms/topics/models.py:266
 msgid "Methods and quality information"
 msgstr "Dulliau a gwybodaeth o ansawdd"
 
@@ -781,7 +771,6 @@ msgid "View all related methodology"
 msgstr "Gweld yr holl fethodolegau cysylltiedig"
 
 #: cms/jinja2/templates/pages/topic_page.html:149 cms/topics/models.py:251
-#: megalinter-reports/updated_sources/cms/topics/models.py:268
 msgid "Explore more"
 msgstr "Archwilio mwy"
 
