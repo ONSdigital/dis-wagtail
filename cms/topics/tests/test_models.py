@@ -921,6 +921,40 @@ class TopicPageRelatedArticleValidationTests(TestCase):
         # Should not raise ValidationError
         related_article.clean()
 
+    def test_duplicate_internal_related_articles_are_deduplicated(self):
+        """TopicPageAdminForm.clean() should silently deduplicate the same internal page added more than once."""
+        data = nested_form_data(
+            {
+                "title": self.topic_page.title,
+                "slug": self.topic_page.slug,
+                "summary": rich_text("Summary"),
+                "featured_series": "",
+                "topic": self.topic_page.topic_id,
+                "related_articles": inline_formset(
+                    [
+                        {"page": self.article.pk, "external_url": "", "title": ""},
+                        {"page": self.article.pk, "external_url": "", "title": ""},
+                    ]
+                ),
+                "related_methodologies": inline_formset([]),
+                "explore_more": streamfield([]),
+                "headline_figures": streamfield([]),
+                "datasets": streamfield([]),
+                "time_series": streamfield([]),
+            }
+        )
+
+        form = self.topic_page.get_edit_handler().get_form_class()(
+            data,
+            instance=self.topic_page,
+            parent_page=self.topic_page.get_parent(),
+        )
+        self.assertTrue(form.is_valid())
+        active_articles = [
+            f for f in form.formsets["related_articles"].forms if f.cleaned_data and not f.cleaned_data.get("DELETE")
+        ]
+        self.assertEqual(len(active_articles), 1)
+
 
 class TopicPageRelatedMethodologyDeduplicationTests(TestCase):
     @classmethod
