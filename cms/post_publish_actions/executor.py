@@ -160,7 +160,7 @@ def executor_stop_and_wait(progress: bool = False) -> None:
     while running_threads := [t for t in executor_threads if t.is_alive()]:
         if progress and last_running_threads > len(running_threads):
             logger.debug(
-                "Waiting for %d threads",
+                "Waiting for %d threads running post-publish actions",
                 len(running_threads),
                 extra={
                     "thread_ids": [t.native_id for t in running_threads],
