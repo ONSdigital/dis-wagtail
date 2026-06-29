@@ -61,9 +61,8 @@ def user_clicks_to_add_headline_figures_to_the_topic_page(context: Context, *, b
     page = context.page
     panel = page.locator("#panel-child-content-headline_figures-content")
     panel.get_by_role("button", name="Insert a block").nth(button_index).click()
-    page.wait_for_timeout(100)
     panel.get_by_role("button", name="Choose Article Series page and headline figure").click()
-    page.wait_for_timeout(100)  # Wait for modal to open
+    context.page.locator(".modal-content").wait_for(state="visible")
 
 
 @step("the user adds two headline figures to the topic page")
@@ -232,7 +231,7 @@ def user_edits_topic_page(context: Context, topic_page_title: str) -> None:
 def user_manually_adds_item(context: Context, item_title: str, item_type: str) -> None:
     button_map = {
         "articles": ("Add topic page related article", "Choose Article page"),
-        "methodologies": ("Add topic page related methodology", "Choose Methodology page"),
+        "methodologies": ("Add topic page supporting information", "Choose Methodology page"),
     }
 
     if item_type not in button_map:
@@ -249,7 +248,7 @@ def highlighted_section_visible(context: Context, section_type: str) -> None:
     """Check if the highlighted articles or methodologies section is visible."""
     section_map = {
         "articles": ("#related-articles", "Related articles"),
-        "methodologies": ("#related-methods", "Methods and quality information"),
+        "methodologies": ("#related-methods", "Quality, methods and supporting information"),
     }
 
     if section_type not in section_map:
