@@ -2,15 +2,21 @@ import logging
 import time
 from collections.abc import Generator
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.utils import timezone
+from wagtail.models import Page
 
-from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import notify_slack_of_post_publish_end
 from cms.core.utils import GeneratorCollector
 
-from .models import PostPublishAction
+from .models import PostPublishAction, PostPublishActionStatus
+from .registry import get_post_publish_actions
+
+if TYPE_CHECKING:
+    from cms.bundles.models import Bundle
+
 
 logger = logging.getLogger(__name__)
 
@@ -68,3 +74,27 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle) -> None:
         )
 
     notify_slack_of_post_publish_end(bundle, start_time, timezone.now())
+
+
+def run_post_publish_actions_for(page: Page, bundle: Bundle | None) -> None:
+    registry = get_post_publish_actions()
+
+    # TODO: Handle pages not in bundle.
+    # For now, run synchronously.
+    if bundle is None:
+        for handler in registry.values():
+            handler(page, bundle)
+        return
+
+    for action_type in registry:
+        action, _created = PostPublishAction.objects.update_or_create(
+            page=page,
+            bundle=bundle,
+            action_type=action_type,
+            defaults={
+                "status": PostPublishActionStatus.READY,
+                "finished_at": None,
+            },
+        )
+
+        action.enqueue()

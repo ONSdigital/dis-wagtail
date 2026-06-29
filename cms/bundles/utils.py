@@ -24,6 +24,8 @@ from cms.bundles.notifications.slack import (
 from cms.core.fields import StreamField
 from cms.post_publish_actions.executor import run_in_support_executor
 from cms.post_publish_actions.models import PostPublishAction
+from cms.post_publish_actions.signal_handlers import suppress_post_publish_actions_signal
+from cms.post_publish_actions.utils import run_post_publish_actions_for
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.utils import get_translated_string
 
@@ -429,12 +431,22 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
             with transaction.atomic(durable=True):
                 PostPublishAction.objects.filter(bundle=bundle, page=page).delete()
                 if workflow_state := page.current_workflow_state:
-                    # finish the workflow
-                    workflow_state.current_task_state.approve()
+                    with suppress_post_publish_actions_signal():
+                        # finish the workflow
+                        workflow_state.current_task_state.approve()
+
+                        # Run post-publish actions manually to sure the correct bundle is detected.
+                        run_post_publish_actions_for(page, bundle)
+
                     pages_published += 1
                 elif page.latest_revision:
-                    # just run publish
-                    page.latest_revision.publish(log_action="wagtail.publish.scheduled")
+                    with suppress_post_publish_actions_signal():
+                        # just run publish
+                        page.latest_revision.publish(log_action="wagtail.publish.scheduled")
+
+                        # Run post-publish actions manually to sure the correct bundle is detected.
+                        run_post_publish_actions_for(page, bundle)
+
                     pages_published += 1
                 else:
                     failed_pages.append(page.pk)

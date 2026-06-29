@@ -1,39 +1,41 @@
+from collections.abc import Generator
+from contextlib import contextmanager
 from typing import Any
 
+from asgiref.local import Local
 from wagtail.models import Page, Revision
 from wagtail.signals import page_published
 
-from cms.bundles.utils import get_active_bundle_for_page
+from .utils import run_post_publish_actions_for
 
-from .models import PostPublishAction, PostPublishActionStatus
-from .registry import get_post_publish_actions
+_suppress_post_publish_actions_signal = Local()
 
 
-def run_post_publish_actions(sender: type[Page], instance: Page, revision: Revision, **kwargs: Any) -> None:  # pylint: disable=unused-argument
-    bundle = get_active_bundle_for_page(instance)
+@contextmanager
+def suppress_post_publish_actions_signal() -> Generator[None]:
+    previous_value = getattr(_suppress_post_publish_actions_signal, "value", None)
 
-    registry = get_post_publish_actions()
+    try:
+        _suppress_post_publish_actions_signal.value = True
+        yield
+    finally:
+        if previous_value is None:
+            del _suppress_post_publish_actions_signal.value
+        else:
+            _suppress_post_publish_actions_signal.value = previous_value
 
-    # TODO: Handle pages not in bundle.
-    # For now, run synchronously.
-    if bundle is None:
-        for handler in registry.values():
-            handler(instance, bundle)
+
+def run_post_publish_actions_handler(sender: type[Page], instance: Page, revision: Revision, **kwargs: Any) -> None:  # pylint: disable=unused-argument
+    from cms.bundles.utils import get_active_bundle_for_page  # pylint: disable=import-outside-toplevel
+
+    if getattr(_suppress_post_publish_actions_signal, "value", None):
         return
 
-    for action_type in registry:
-        action, _created = PostPublishAction.objects.update_or_create(
-            page=instance,
-            bundle=bundle,
-            action_type=action_type,
-            defaults={
-                "status": PostPublishActionStatus.READY,
-                "finished_at": None,
-            },
-        )
+    # NB: If the bundle is already marked "published", this may return None.
+    bundle = get_active_bundle_for_page(instance)
 
-        action.enqueue()
+    run_post_publish_actions_for(instance, bundle)
 
 
 def register_signal_handlers() -> None:
-    page_published.connect(run_post_publish_actions)
+    page_published.connect(run_post_publish_actions_handler)
