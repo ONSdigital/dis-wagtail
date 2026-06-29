@@ -2,6 +2,7 @@ from datetime import date
 from typing import NotRequired, TypedDict, TypeVar
 
 from cms.articles.models import StatisticalArticlePage
+from cms.core.enums import RelatedContentType
 from cms.methodology.models import MethodologyPage
 
 T = TypeVar("T")
@@ -17,12 +18,14 @@ class ExternalArticleDict(TypedDict):
     title: str
     description: str
     is_external: bool
-    content_type: NotRequired[str]
+    content_type: NotRequired[RelatedContentType]
     release_date: NotRequired[date | None]
 
 
-class MethodologyDict(TypedDict):
+class InternalMethodologyDict(TypedDict, total=False):
     internal_page: MethodologyPage
+    title: str
 
 
 ArticleDict = InternalArticleDict | ExternalArticleDict
+MethodologyDict = InternalMethodologyDict | ExternalArticleDict

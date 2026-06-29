@@ -142,6 +142,7 @@ MIGRATION_LINTER_OPTIONS = {
         "0010_rename_glossaryterm_to_definition",  # Ignoring RENAMING table (GlossaryTerm -> Definition)
         "0005_remove_indexpage_content_and_more",  # Ignoring dropping fields
         "0012_make_contactdetails_and_definition_revisionable_and_draftable",  # Ignoring NOT NULL
+        "0009_topicpagerelatedmethodology_content_type_and_more",  # Ignoring NOT NULL
     ],
 }
 

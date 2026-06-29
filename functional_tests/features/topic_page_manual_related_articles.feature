@@ -20,7 +20,7 @@ Feature: A CMS user can manually manage related articles on a Topic Page
         And the user adds an external related article with title "Manual Link" and a short description
         And the user clicks the "Save draft" button
         And the user views the topic page draft
-        Then the related article "Manual Link" appears at the top of the list
+        Then the related article "Manual Link" is the first in the list
         And the related article "Manual Link" displays the description "This is a short description for Manual Link"
         And the related article "Manual Link" displays content type "Article"
         And the related article "Manual Link" displays release year "2025"
