@@ -2,10 +2,13 @@
 from http import HTTPStatus
 
 from django.test import RequestFactory, TestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 from wagtail.blocks import StreamValue
+from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
+from wagtail.test.utils.form_data import nested_form_data
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.mixins import BundledPageMixin
@@ -72,6 +75,68 @@ class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
             series_response = self.client.get(self.series.url)
 
         self.assertEqual(series_response.status_code, 200)
+
+
+class ArticleSeriesPreviewTestCase(WagtailTestUtils, TestCase):
+    """Test the 'Previous releases' preview mode for ArticleSeriesPage."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser("admin")
+        cls.series = ArticleSeriesPageFactory(title="The Article Series")
+
+    def test_preview_modes(self):
+        """The series should expose a single 'Previous releases' preview mode."""
+        self.assertEqual(self.series.preview_modes, [("default", "Previous releases")])
+
+    def test_serve_preview_renders_previous_releases_template(self):
+        """serve_preview should render the previous releases template."""
+        response = self.series.serve_preview(get_dummy_request(), "default").render()
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertIn(
+            "templates/pages/statistical_article_page--previous-releases.html",
+            response.template_name,
+        )
+
+    def test_serve_preview_includes_draft_editions(self):
+        """The preview should list draft editions that the public route hides."""
+        live_article = StatisticalArticlePageFactory(parent=self.series, title="Live edition")
+        draft_article = StatisticalArticlePageFactory(parent=self.series, title="Draft edition", live=False)
+
+        # The public route only shows live editions.
+        public_response = self.client.get(f"{self.series.url}/editions")
+        self.assertContains(public_response, live_article.title)
+        self.assertNotContains(public_response, draft_article.title)
+
+        # The preview shows both live and draft editions.
+        preview_response = self.series.serve_preview(get_dummy_request(), "default").render()
+        self.assertContains(preview_response, live_article.title)
+        self.assertContains(preview_response, draft_article.title)
+
+    def test_preview_on_edit_endpoint(self):
+        """The admin preview endpoint should render the previous releases preview."""
+        article = StatisticalArticlePageFactory(parent=self.series, title="Live edition")
+
+        self.client.force_login(self.superuser)
+        preview_url = reverse("wagtailadmin_pages:preview_on_edit", args=[self.series.pk])
+        post_data = nested_form_data(
+            {
+                "title": self.series.title,
+                "slug": self.series.slug,
+                "topics-TOTAL_FORMS": "0",
+                "topics-INITIAL_FORMS": "0",
+                "topics-MIN_NUM_FORMS": "0",
+                "topics-MAX_NUM_FORMS": "1000",
+            }
+        )
+
+        response = self.client.post(preview_url, post_data)
+        self.assertJSONEqual(response.content.decode(), {"is_valid": True, "is_available": True})
+
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, article.title)
 
 
 class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils, TestCase):
