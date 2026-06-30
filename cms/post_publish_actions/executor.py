@@ -169,5 +169,4 @@ def executor_stop_and_wait(progress: bool = False) -> None:
             )
             last_running_threads = len(running_threads)
 
-        # 1 second is long enough for the other threads to do work, but not so long as to delay unnecessarily.
-        time.sleep(1)
+        time.sleep(0.1)
