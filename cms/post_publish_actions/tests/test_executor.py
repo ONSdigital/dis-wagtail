@@ -36,7 +36,9 @@ class ExecutorTestCase(TestCase):
             executor.executor_stop_and_wait(progress=True)
 
         self.assertGreater(time.time() - start_time, 0.5)
-        self.assertEqual(logs.output, ["DEBUG:cms.post_publish_actions.executor:Waiting for 1 threads running post-publish actions"])
+        self.assertEqual(
+            logs.output, ["DEBUG:cms.post_publish_actions.executor:Waiting for 1 threads running post-publish actions"]
+        )
 
         self.assertTrue(executor._executor._shutdown)
         self.assertTrue(executor._support_executor._shutdown)

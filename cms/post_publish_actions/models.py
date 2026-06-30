@@ -4,19 +4,18 @@ from typing import ClassVar, Self
 from django.conf import settings
 from django.db import models, transaction
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
 
 
 class PostPublishActionType(models.TextChoices):
-    S3_ACL = "S3_ACL", _("Private Media ACLs")
-    SEARCH_UPDATED = "SEARCH_UPDATED", _("Search updated")
+    S3_ACL = "S3_ACL", "Private Media ACLs"
+    SEARCH_UPDATED = "SEARCH_UPDATED", "Search updated"
 
 
 class PostPublishActionStatus(models.TextChoices):
-    READY = ("READY", _("Ready"))
-    RUNNING = ("RUNNING", _("Running"))
-    FAILED = ("FAILED", _("Failed"))
-    SUCCESSFUL = ("SUCCESSFUL", _("Successful"))
+    READY = "READY", "Ready"
+    RUNNING = "RUNNING", "Running"
+    FAILED = "FAILED", "Failed"
+    SUCCESSFUL = "SUCCESSFUL", "Successful"
 
 
 class PostPublishActionQuerySet(models.QuerySet):
@@ -45,13 +44,13 @@ class PostPublishActionQuerySet(models.QuerySet):
 
 class PostPublishAction(models.Model):
     action_type = models.CharField(
-        choices=PostPublishActionType,
+        choices=PostPublishActionType.choices,
         max_length=max(len(value) for value in PostPublishActionType.values),
     )
     bundle = models.ForeignKey("bundles.Bundle", null=True, on_delete=models.CASCADE)
     page = models.ForeignKey("wagtailcore.Page", on_delete=models.CASCADE)
     status = models.CharField(
-        choices=PostPublishActionStatus,
+        choices=PostPublishActionStatus.choices,
         max_length=max(len(value) for value in PostPublishActionStatus.values),
         default=PostPublishActionStatus.READY,
     )
