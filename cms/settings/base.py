@@ -985,6 +985,7 @@ SLACK_ALARM_CHANNEL = env.get("SLACK_ALARM_CHANNEL", "")
 # Feature flag for sending slack messages on bundle status changes (before pre-publish, e.g. entering review)
 SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE = env.get("SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE", "false").lower() == "true"
 
+# 110 seconds is comfortably under the 2 minute cron interval
 BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS = float(env.get("BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS", 110))
 BUNDLE_POST_PUBLISH_CONCURRENCY = int(env.get("BUNDLE_POST_PUBLISH_CONCURRENCY", 4))
 BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT = True
