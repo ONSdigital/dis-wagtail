@@ -27,7 +27,7 @@ class RangeConfig(BaseConfigModel):
 
 
 class ModelCreationConfig(BaseConfigModel):
-    count: NonNegativeInt | RangeConfig = 1
+    count: PositiveInt | RangeConfig = 1
 
 
 class PageCreationConfig(ModelCreationConfig):
