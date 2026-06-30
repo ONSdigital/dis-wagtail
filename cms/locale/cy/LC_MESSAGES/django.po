@@ -802,8 +802,3 @@ msgstr "Cymraeg"
 #: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:13
 msgid "Not started"
 msgstr "Heb ei ddechrau"
-
-#, fuzzy
-#~| msgid "Quality, methods and supporting information"
-#~ msgid "Methods and quality information"
-#~ msgstr "Dulliau a gwybodaeth o ansawdd"
