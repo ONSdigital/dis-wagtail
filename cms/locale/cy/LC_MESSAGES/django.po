@@ -796,9 +796,3 @@ msgstr "Cymraeg"
 #: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:13
 msgid "Not started"
 msgstr "Heb ei ddechrau"
-
-#~ msgid "Cite this methodology"
-#~ msgstr "Dyfynnwch y fethodoleg hon"
-
-#~ msgid "Cite this analysis"
-#~ msgstr "Dyfynnwch y dadansoddiad hwn"
