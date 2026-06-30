@@ -47,7 +47,7 @@ wagtailtables = "^0.2.2"
 pyjwt = "^2.13.0"
 cryptography = "^48.0.1"
 django-pglock = "^1.8.0"
-wagtail-factories = "^4.2.1"
+wagtail-factories = "^4.5.0"
 pydantic = "^2.12.5"
 wagtail-schema-org = "5.0.0"
 
@@ -61,7 +61,6 @@ pylint = "^4.0.4"
 pylint-django = "^2.7.0"
 ruff = "0.14.14"  # keep version in sync with .pre-commit-config.yaml
 
-wagtail-factories = "^4.3.0"
 coverage = "^7.13.3"
 responses = "^0.25.8"
 

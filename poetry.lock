@@ -18,7 +18,7 @@ version = "0.3.3"
 description = "Unicode to ASCII transliteration"
 optional = false
 python-versions = ">=3.3"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "anyascii-0.3.3-py3-none-any.whl", hash = "sha256:f5ab5e53c8781a36b5a40e1296a0eeda2f48c649ef10c3921c1381b1d00dee7a"},
     {file = "anyascii-0.3.3.tar.gz", hash = "sha256:c94e9dd9d47b3d9494eca305fef9447d00b4bf1a32aff85aa746fa3ec7fb95c3"},
@@ -117,7 +117,7 @@ version = "4.14.3"
 description = "Screen-scraping library"
 optional = false
 python-versions = ">=3.7.0"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "beautifulsoup4-4.14.3-py3-none-any.whl", hash = "sha256:0918bfe44902e6ad8d57732ba310582e98da931428d231a5ecb9e7c703a735bb"},
     {file = "beautifulsoup4-4.14.3.tar.gz", hash = "sha256:6292b1c5186d356bba669ef9f7f051757099565ad9ada5dd630bd9de5fa7fb86"},
@@ -799,7 +799,7 @@ version = "0.7.1"
 description = "XML bomb protection for Python stdlib modules"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"},
     {file = "defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69"},
@@ -967,7 +967,7 @@ version = "25.2"
 description = "Django-filter is a reusable Django application for allowing users to filter querysets dynamically."
 optional = false
 python-versions = ">=3.10"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "django_filter-25.2-py3-none-any.whl", hash = "sha256:9c0f8609057309bba611062fe1b720b4a873652541192d232dd28970383633e3"},
     {file = "django_filter-25.2.tar.gz", hash = "sha256:760e984a931f4468d096f5541787efb8998c61217b73006163bf2f9523fe8f23"},
@@ -1038,7 +1038,7 @@ version = "6.4.1"
 description = "Django extension to allow working with 'clusters' of models as a single unit, independently of the database"
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "django_modelcluster-6.4.1-py2.py3-none-any.whl", hash = "sha256:ccc190cd9e22c24900ea2410bff64d444d48f43f0f4aedeed0f6cd94e2536698"},
     {file = "django_modelcluster-6.4.1.tar.gz", hash = "sha256:e736fcee925f83b63218dbf9c869ab50618b0f5e98869a5aa497f7a5331aa263"},
@@ -1056,7 +1056,7 @@ version = "0.1"
 description = "Django extension for creating forms that vary according to user permissions"
 optional = false
 python-versions = ">=3.7"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "django-permissionedforms-0.1.tar.gz", hash = "sha256:4340bb20c4477fffb13b4cc5cccf9f1b1010b64f79956c291c72d2ad2ed243f8"},
     {file = "django_permissionedforms-0.1-py2.py3-none-any.whl", hash = "sha256:d341a961a27cc77fde8cc42141c6ab55cc1f0cb886963cc2d6967b9674fa47d6"},
@@ -1209,7 +1209,7 @@ version = "6.1.0"
 description = "django-taggit is a reusable Django application for simple tagging."
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "django_taggit-6.1.0-py3-none-any.whl", hash = "sha256:ab776264bbc76cb3d7e49e1bf9054962457831bd21c3a42db9138b41956e4cf0"},
     {file = "django_taggit-6.1.0.tar.gz", hash = "sha256:c4d1199e6df34125dd36db5eb0efe545b254dec3980ce5dd80e6bab3e78757c3"},
@@ -1224,7 +1224,7 @@ version = "0.11.0"
 description = "An implementation and backport of background workers and tasks in Django"
 optional = false
 python-versions = ">=3.10"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "django_tasks-0.11.0-py3-none-any.whl", hash = "sha256:28f00fcda4e2cc8fe09ca685fbe54d52602ab42077543f9164890781c7e58599"},
     {file = "django_tasks-0.11.0.tar.gz", hash = "sha256:923bf4ac444daee5d879393daf09c7cdf4575c8b0e12726c9d9fceafdea5187f"},
@@ -1244,7 +1244,7 @@ version = "4.8.0"
 description = "Efficient tree implementations for Django"
 optional = false
 python-versions = ">=3.10"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "django_treebeard-4.8.0-py3-none-any.whl", hash = "sha256:ecaa7a0bbfa86a48fc91ff335513e83c841cdfe1add6229d04ac7096198d5d51"},
     {file = "django_treebeard-4.8.0.tar.gz", hash = "sha256:61b8076b576107da21f6f6040774c0d17025200c2efdb70dd1f14b18c9206c3a"},
@@ -1277,7 +1277,7 @@ version = "3.17.1"
 description = "Web APIs for Django, made easy."
 optional = false
 python-versions = ">=3.10"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "djangorestframework-3.17.1-py3-none-any.whl", hash = "sha256:c3c74dd3e83a5a3efc37b3c18d92bd6f86a6791c7b7d4dff62bb068500e76457"},
     {file = "djangorestframework-3.17.1.tar.gz", hash = "sha256:a6def5f447fe78ff853bff1d47a3c59bf38f5434b031780b351b0c73a62db1a5"},
@@ -1328,7 +1328,7 @@ version = "5.2.0"
 description = "Library to convert rich text from Draft.js raw ContentState to HTML"
 optional = false
 python-versions = "*"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "draftjs_exporter-5.2.0-py3-none-any.whl", hash = "sha256:f5255510a9c1de60807c1ba4be9666fb44ba263841b63329c8ce70d66146764c"},
     {file = "draftjs_exporter-5.2.0.tar.gz", hash = "sha256:4d665f8c75fd173d2c99326405300e8defcf4961b9b2f16ff117486489c6760b"},
@@ -1367,7 +1367,7 @@ version = "2.0.0"
 description = "An implementation of lxml.xmlfile for the standard library"
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "et_xmlfile-2.0.0-py3-none-any.whl", hash = "sha256:7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa"},
     {file = "et_xmlfile-2.0.0.tar.gz", hash = "sha256:dab3f4764309081ce75662649be815c4c9081e88f0837825f90fd28317d4da54"},
@@ -1379,7 +1379,7 @@ version = "3.3.3"
 description = "A versatile test fixtures replacement based on thoughtbot's factory_bot for Ruby."
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "factory_boy-3.3.3-py2.py3-none-any.whl", hash = "sha256:1c39e3289f7e667c4285433f305f8d506efc2fe9c73aaea4151ebd5cdea394fc"},
     {file = "factory_boy-3.3.3.tar.gz", hash = "sha256:866862d226128dfac7f2b4160287e899daf54f2612778327dd03d0e2cb1e3d03"},
@@ -1398,7 +1398,7 @@ version = "40.13.0"
 description = "Faker is a Python package that generates fake data for you."
 optional = false
 python-versions = ">=3.10"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "faker-40.13.0-py3-none-any.whl", hash = "sha256:c1298fd0d819b3688fb5fd358c4ba8f56c7c8c740b411fd3dbd8e30bf2c05019"},
     {file = "faker-40.13.0.tar.gz", hash = "sha256:a0751c84c3abac17327d7bb4c98e8afe70ebf7821e01dd7d0b15cd8856415525"},
@@ -1440,7 +1440,7 @@ version = "1.2.0"
 description = "Infer file type and MIME type of any file/buffer. No external dependencies."
 optional = false
 python-versions = "*"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "filetype-1.2.0-py2.py3-none-any.whl", hash = "sha256:7ce71b6880181241cf7ac8697a2f1eb6a8bd9b429f7ad6d27b8db9ba5f1c2d25"},
     {file = "filetype-1.2.0.tar.gz", hash = "sha256:66b56cd6474bf41d8c54660347d37afcc3f7d1970648de365c102ef77548aadb"},
@@ -1879,7 +1879,7 @@ version = "0.1.2"
 description = "Django components that know how to render themselves."
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "laces-0.1.2-py3-none-any.whl", hash = "sha256:980cdaf9a31e883a2b8198132e2388931a4eb8814f5bfa5d8bba13ff9f657b7c"},
     {file = "laces-0.1.2.tar.gz", hash = "sha256:3218e09c1889ae5cf3fc7a82f5bb63ec0c7879889b6a9760bfc42323c694b84d"},
@@ -2225,7 +2225,7 @@ version = "1.2"
 description = "A library for indexing Django models with Elasicsearch, OpenSearch or database and searching them with the Django ORM."
 optional = false
 python-versions = ">=3.10"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "modelsearch-1.2-py3-none-any.whl", hash = "sha256:b4421c134175224e67f1aae9b4f26265347dfa617c2d433520cf379ca37c71f2"},
     {file = "modelsearch-1.2.tar.gz", hash = "sha256:c150eb8bc0317fd5e656eb54f3b6809da313588a9998796a4e59a1cfed273ee7"},
@@ -2486,7 +2486,7 @@ version = "3.1.5"
 description = "A Python library to read/write Excel 2010 xlsx/xlsm files"
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "openpyxl-3.1.5-py2.py3-none-any.whl", hash = "sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2"},
     {file = "openpyxl-3.1.5.tar.gz", hash = "sha256:cf0e3cf56142039133628b5acffe8ef0c12bc902d2aadd3e0fe5878dc08d1050"},
@@ -2580,7 +2580,7 @@ version = "12.2.0"
 description = "Python Imaging Library (fork)"
 optional = false
 python-versions = ">=3.10"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "pillow-12.2.0-cp310-cp310-macosx_10_10_x86_64.whl", hash = "sha256:a4e8f36e677d3336f35089648c8955c51c6d386a13cf6ee9c189c5f5bd713a9f"},
     {file = "pillow-12.2.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:2e589959f10d9824d39b350472b92f0ce3b443c0a3442ebf41c40cb8361c5b97"},
@@ -2689,7 +2689,7 @@ version = "1.3.0"
 description = "Python interface for libheif library"
 optional = false
 python-versions = ">=3.10"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "pillow_heif-1.3.0-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:0addc7d25133a2abd0149d1f1b8063808268c9ed75dc228c2196c90d56639a25"},
     {file = "pillow_heif-1.3.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:e557b7082e785ff4505b2be258409fc3983162a3802f5438aa3177201d0e5a41"},
@@ -3460,7 +3460,7 @@ version = "2.8.3"
 description = "A modern CSS selector implementation for Beautiful Soup."
 optional = false
 python-versions = ">=3.9"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "soupsieve-2.8.3-py3-none-any.whl", hash = "sha256:ed64f2ba4eebeab06cc4962affce381647455978ffc1e36bb79a545b91f45a95"},
     {file = "soupsieve-2.8.3.tar.gz", hash = "sha256:3267f1eeea4251fb42728b6dfb746edc9acaffc4a45b27e19450b676586e8349"},
@@ -3500,7 +3500,7 @@ version = "0.3.1"
 description = "A library for exchanging data between Python and JavaScript"
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "telepath-0.3.1-py38-none-any.whl", hash = "sha256:c280aa8e77ad71ce80e96500a4e4d4a32f35b7e0b52e896bb5fde9a5bcf0699a"},
     {file = "telepath-0.3.1.tar.gz", hash = "sha256:925c0609e0a8a6488ec4a55b19d485882cf72223b2b19fe2359a50fddd813c9c"},
@@ -3754,11 +3754,11 @@ description = "Provider of IANA time zone data"
 optional = false
 python-versions = ">=2"
 groups = ["main", "dev"]
-markers = "sys_platform == \"win32\" or platform_system == \"Windows\""
 files = [
     {file = "tzdata-2026.1-py2.py3-none-any.whl", hash = "sha256:4b1d2be7ac37ceafd7327b961aa3a54e467efbdb563a23655fbfe0d39cfc42a9"},
     {file = "tzdata-2026.1.tar.gz", hash = "sha256:67658a1903c75917309e753fdc349ac0efd8c27db7a0cb406a25be4840f87f98"},
 ]
+markers = {main = "sys_platform == \"win32\" or platform_system == \"Windows\"", dev = "sys_platform == \"win32\""}
 
 [[package]]
 name = "tzlocal"
@@ -3844,7 +3844,7 @@ version = "7.3.2"
 description = "A Django content management system."
 optional = false
 python-versions = ">=3.10"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "wagtail-7.3.2-py3-none-any.whl", hash = "sha256:cf19b5c6df2f36781f73b311b6f690250da7da1e2f8bc6bf8dff83483980b91a"},
     {file = "wagtail-7.3.2.tar.gz", hash = "sha256:d7114887402d878860b5427697e8ab47832198bc1aaf1467e2ac1f182cb13860"},
@@ -3876,23 +3876,23 @@ testing = ["Jinja2 (>=3.0,<3.2)", "azure-mgmt-cdn (>=12.0,<13.0)", "azure-mgmt-f
 
 [[package]]
 name = "wagtail-factories"
-version = "4.4.0"
+version = "4.5.0"
 description = "Factory boy classes for wagtail"
 optional = false
-python-versions = "*"
-groups = ["main", "dev"]
+python-versions = ">=3.10"
+groups = ["main"]
 files = [
-    {file = "wagtail_factories-4.4.0-py2.py3-none-any.whl", hash = "sha256:be0abb96d36bf0e3c733d7520fc1944441a379ab06d93af447fc4e71b67e2a01"},
-    {file = "wagtail_factories-4.4.0.tar.gz", hash = "sha256:c77c13d438a2e999a9220ff1829f060116013aa519a81944577353f460ba8cba"},
+    {file = "wagtail_factories-4.5.0-py3-none-any.whl", hash = "sha256:4ad0e9f396fca7f7d349a8752c49f68e18deeffee9c857897b849ff08c6c33a6"},
+    {file = "wagtail_factories-4.5.0.tar.gz", hash = "sha256:d981ceaaf7715b2325f9debb1be1ffc07e338ae8957e9527f4f9175fcdff2c56"},
 ]
 
 [package.dependencies]
 factory-boy = ">=3.2,<4"
-wagtail = ">=6.3"
+wagtail = ">=7.0"
 
 [package.extras]
 docs = ["sphinx (>=8.2.3)"]
-test = ["coverage (==7.11.3)", "pytest (==9.0.0)", "pytest-cov (==7.0.0)", "pytest-django (==4.11.1)", "ruff (==0.14.4)", "tox (==4.32.0)"]
+test = ["coverage (==7.13.5)", "pytest (==9.0.3)", "pytest-cov (==7.1.0)", "pytest-django (==4.12.0)", "ruff (==0.15.12)", "tox (==4.32.0)"]
 
 [[package]]
 name = "wagtail-font-awesome-svg"
@@ -4034,7 +4034,7 @@ version = "1.12.0"
 description = "A Python image library that sits on top of Pillow, Wand and OpenCV"
 optional = false
 python-versions = ">=3.10"
-groups = ["main", "dev"]
+groups = ["main"]
 files = [
     {file = "willow-1.12.0-py3-none-any.whl", hash = "sha256:d3541690b6726a4f6f4654f80507d81bacfa0c686ab065eb5c90159f1b9cee38"},
     {file = "willow-1.12.0.tar.gz", hash = "sha256:db29c8d2f19b9d91f4ce22881521055aa2f6070131d64b4098cb86a98e851a70"},
@@ -4070,4 +4070,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "0ed935882949e4dd5f105308aedc80fd0df4c60d1e3cf32c13b93e4e1baffbc1"
+content-hash = "9923929c7c6bf5b9fdb14356cbc5f61c129e0a57686eab20789475ad51609d8c"
