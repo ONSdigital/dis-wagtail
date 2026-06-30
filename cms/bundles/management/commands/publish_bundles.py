@@ -51,17 +51,21 @@ class Command(BaseCommand):
             # Refresh the bundle immediately before publishing, in case it's changed.
             bundle.refresh_from_db()
 
+            self.bundle_start_times[bundle] = timezone.now()
+
             # Confirm the bundle is still approved
             if bundle.status != BundleStatus.APPROVED:
                 logger.error("Bundle no longer approved", extra={"bundle_id": bundle.pk})
                 return
 
-            self.bundle_start_times[bundle] = timezone.now()
             publish_bundle(bundle)
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("Publish failed", extra={"bundle_id": bundle.pk, "event": "publish_failed"})
 
     def _await_bundle_post_publish_actions(self, bundles: list[Bundle]) -> None:
+        # If there are no start times, no bundles successfully published
+        if not self.bundle_start_times:
+            return
         start_time = min(self.bundle_start_times.values())
         as_completed_collector = GeneratorCollector(as_completed_actions_by_bundle(bundles, start_time))
 
