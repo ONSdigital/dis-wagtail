@@ -120,11 +120,19 @@ def get_bundleable_page_types() -> list[type[Page]]:
 
 def get_pages_in_active_bundles() -> list[int]:
     # using this rather than inline import to placate pyright complaining about cyclic imports
+    bundle_class = resolve_model_string("bundles.Bundle")
     bundle_page_class = resolve_model_string("bundles.BundlePage")
 
-    return list(
-        bundle_page_class.objects.filter(parent__status__in=ACTIVE_BUNDLE_STATUSES).values_list("page", flat=True)
+    bundled_page_ids = bundle_page_class.objects.filter(parent__status__in=ACTIVE_BUNDLE_STATUSES).values_list(
+        "page", flat=True
     )
+
+    rc_page_ids = bundle_class.objects.filter(
+        status__in=ACTIVE_BUNDLE_STATUSES,
+        release_calendar_page__isnull=False,
+    ).values_list("release_calendar_page", flat=True)
+
+    return list(set(bundled_page_ids) | set(rc_page_ids))
 
 
 def _create_content_dict_for_pages(
@@ -187,7 +195,7 @@ def serialize_preview_page(page: Page, bundle_id: int, is_previewable: bool) -> 
         "type": "item",
         "value": {
             "page": None,
-            "title": f"{specific_page.title} ({state})",
+            "title": getattr(specific_page, "display_title", specific_page.title) + " (" + state + ")",
             "description": getattr(specific_page, "summary", ""),
             "external_url": (reverse("bundles:preview", args=[bundle_id, page.pk]) if is_previewable else "#"),
         },
@@ -293,6 +301,7 @@ def get_preview_items_for_bundle(
             "selected": item.pk == current_id,
         }
         for item in pages_in_bundle
+        if item.specific_class.preview_modes != []  # Exclude pages with no preview modes
     ]
 
     if release_calendar_page := bundle.release_calendar_page:
@@ -568,10 +577,6 @@ def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
             "edition_id": dataset.edition,
             "version_id": dataset.version,
         },
-        "links": {
-            "edit": get_data_admin_action_url("edit", dataset.namespace, dataset.edition, dataset.version),
-            "preview": get_data_admin_action_url("preview", dataset.namespace, dataset.edition, dataset.version),
-        },
     }
 
 
@@ -595,34 +600,6 @@ def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: A
         return content_id if content_id is not None else None
 
     return None
-
-
-def get_data_admin_action_url(
-    action: Literal["edit", "preview"],
-    dataset_id: str,
-    edition_id: str,
-    version_id: str,
-) -> str:
-    """Generate a relative URL for dataset actions in the ONS Data Admin interface.
-
-    This function constructs relative URLs for dataset operations in the ONS Data Admin
-    system, which is used for editing and previewing datasets.
-
-    Args:
-        action: The action to perform ("edit", "preview")
-        dataset_id: The unique identifier for the dataset
-        edition_id: The edition identifier for the dataset
-        version_id: The version identifier for the dataset
-
-    Returns:
-        A relative URL string for the specified dataset action
-
-    Example:
-        >>> get_data_admin_action_url("edit", "cpih", "time-series", "1")
-        "/data-admin/series/cpih/editions/time-series/versions/1"
-    """
-    prefix = "data-admin/series" if action == "edit" else "datasets"
-    return f"/{prefix}/{dataset_id}/editions/{edition_id}/versions/{version_id}"
 
 
 def in_active_bundle(item: Model) -> bool:

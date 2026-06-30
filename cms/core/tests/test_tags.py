@@ -355,6 +355,13 @@ class PageConfigTestCase(TestCase):
         config = get_page_config({"page": self.page, "request": self.request, "page_title": "custom title"})
         self.assertEqual(config["title"], "Office for National Statistics - custom title")
 
+    def test_page_meta_description(self):
+        self.page.search_description = "This is a search description."
+        self.page.save(update_fields=["search_description"])
+
+        config = get_page_config({"page": self.page, "request": self.request})
+        self.assertEqual(config["description"], "This is a search description.")
+
     def test_config_no_page(self):
         with self.assertNumQueries(6):
             config = get_page_config({"request": self.request, "page_title": "not found"})

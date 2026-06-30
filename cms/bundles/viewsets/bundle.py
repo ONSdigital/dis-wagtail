@@ -3,7 +3,7 @@ from __future__ import annotations  # needed for unquoted forward references bec
 import logging
 import textwrap
 import time
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -30,10 +30,11 @@ from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleContentItemState,
 from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import notify_slack_of_status_change
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
-from cms.bundles.utils import get_data_admin_action_url, publish_bundle
+from cms.bundles.utils import publish_bundle
 from cms.core.custom_date_format import ons_date_format
 from cms.core.db_router import force_write_db
 from cms.core.utils import redirect
+from cms.datasets.models import Dataset
 from cms.post_publish_actions.executor import run_in_support_executor
 from cms.post_publish_actions.utils import post_publish_notify_slack
 
@@ -47,12 +48,13 @@ if TYPE_CHECKING:
 
     from cms.bundles.forms import BundleAdminForm
     from cms.bundles.models import BundlesQuerySet
-    from cms.datasets.models import Dataset
 
 logger = logging.getLogger(__name__)
 
 # Fallback value for missing dataset metadata
 MISSING_VALUE = "Data missing"
+
+PREVIEW_BUTTON_LABEL = "Preview"
 
 
 def add_exception_cause_to_form(exception: Exception, *, form: BaseForm) -> None:
@@ -464,15 +466,31 @@ class BundleInspectView(InspectView):
                 return "Published"
             return page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"
 
-        def get_action(page: Page) -> str:
+        def get_action(page: Page) -> tuple[str, str]:
             if self.object.status == BundleStatus.PUBLISHED and page.live:
-                return str(page.get_url(request=self.request))
-            return reverse(
-                "bundles:preview",
-                args=(
-                    self.object.pk,
-                    page.pk,
+                return str(page.get_url(request=self.request)), "View Live"
+            return (
+                reverse(
+                    "bundles:preview",
+                    args=(
+                        self.object.pk,
+                        page.pk,
+                    ),
                 ),
+                PREVIEW_BUTTON_LABEL,
+            )
+
+        def get_button(page: Page) -> Literal[""] | SafeString:
+            url, label = get_action(page)
+
+            # Pages with no preview modes cannot be previewed
+            if label == PREVIEW_BUTTON_LABEL and page.specific_class.preview_modes == []:
+                return ""
+
+            return format_html(
+                '<a href="{}" class="button button-small button-secondary">{}</a>',
+                url,
+                label,
             )
 
         data = (
@@ -481,15 +499,14 @@ class BundleInspectView(InspectView):
                 page.get_admin_display_title(),
                 page.get_verbose_name(),
                 get_page_status(page),
-                get_action(page),
+                get_button(page),
             )
             for page in pages
         )
 
         page_data = format_html_join(
             "\n",
-            '<tr><td class="title"><strong><a href="{}">{}</a></strong></td><td>{}</td><td>{}</td> '
-            '<td><a href="{}" class="button button-small button-secondary">Preview</a></td></tr>',
+            '<tr><td class="title"><strong><a href="{}">{}</a></strong></td><td>{}</td><td>{}</td> <td>{}</td></tr>',
             data,
         )
 
@@ -594,10 +611,11 @@ class BundleInspectView(InspectView):
     def _build_action_button(self, state: str, preview_url: str | None, dataset: Dataset) -> SafeString | str:
         """Build the action button HTML based on dataset state."""
         if state == BundleContentItemState.PUBLISHED:
-            view_url = get_data_admin_action_url("preview", dataset.namespace, dataset.edition, str(dataset.version))
+            if not preview_url:
+                return ""
             return format_html(
                 '<a href="{}" class="button button-small button-secondary">View Live</a>',
-                view_url,
+                preview_url,
             )
         if preview_url:
             cms_preview_url = reverse(

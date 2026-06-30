@@ -99,8 +99,12 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
 def redirect(
     to: str, *args: Any, permanent: bool = False, preserve_request: bool = True, **kwargs: Any
 ) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
-    """Wrapper for Django's redirect that defaults preserve_request=True."""
+    """Wrapper for Django's redirect that defaults preserve_request=True.
+
+    User-provided redirect targets must be validated before calling this helper.
+    """
     return _redirect(
+        # codeql[py/url-redirection] This intentionally preserves Django's redirect helper contract.
         to,
         *args,
         permanent=permanent,

@@ -1005,6 +1005,11 @@ BUNDLE_DATASET_STATUS_VALIDATION_ENABLED = (
     env.get("BUNDLE_DATASET_STATUS_VALIDATION_ENABLED", "false").lower() == "true"
 )
 
+# Feature flag to enable/disable validation of bundled datasets metadata on bundle approval
+BUNDLE_DATASET_METADATA_VALIDATION_ENABLED = (
+    env.get("BUNDLE_DATASET_METADATA_VALIDATION_ENABLED", "true").lower() == "true"
+)
+
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
 
@@ -1157,5 +1162,5 @@ WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_pu
 
 CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
 
-# Disable Wagtail's auto-saving feature
-WAGTAIL_AUTOSAVE_INTERVAL = 0
+# Use default autosave value if not specified. Set to 0 to disable
+WAGTAIL_AUTOSAVE_INTERVAL = int(env.get("WAGTAIL_AUTOSAVE_INTERVAL", 500))
