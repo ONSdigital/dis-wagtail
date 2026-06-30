@@ -295,7 +295,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return None
 
         parent_theme = page_topic.get_base_parent()
-        return parent_theme.title
+        return cast(str, parent_theme.title)
 
     def get_referenced_asset_ids(self, asset_model: type[models.Model]) -> set[str]:
         stream_value = getattr(self, self.content_field_name)

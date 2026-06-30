@@ -64,7 +64,7 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         self.generic_target_models: set[type[Model]] = set()
         for model in apps.get_models():
             for field in model._meta.get_fields():
-                if isinstance(field, GenericRelation):
+                if isinstance(field, GenericRelation) and field.related_model != "self":
                     self.generic_target_models.add(field.related_model)
 
     def db_for_read(self, model: type[Model], **hints: Any) -> str | None:

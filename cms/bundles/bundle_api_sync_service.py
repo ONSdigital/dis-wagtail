@@ -188,7 +188,7 @@ class BundleAPISyncService:
             return
 
         # Build desired CMS view
-        cms_items: dict[str, BundleDataset] = {d.dataset.compound_id: d for d in self.bundled_datasets if d.dataset}
+        cms_items: dict[str, BundleDataset] = {d.dataset.compound_id: d for d in self.bundled_datasets}
 
         # Fetch and index remote state
         api_contents = self.api_client.get_bundle_contents(self.api_id)
@@ -281,10 +281,7 @@ class BundleAPISyncService:
 
         etag = None
         for item in items:
-            dataset = item.dataset
-            if dataset is None:
-                continue
-            content_item = build_content_item_for_dataset(dataset)
+            content_item = build_content_item_for_dataset(item.dataset)
             try:
                 # Client handles If-Match internally. We only read the returned ETag.
                 response = self.api_client.add_content_to_bundle(
@@ -293,14 +290,14 @@ class BundleAPISyncService:
                 )
                 etag = response["etag_header"]
 
-                content_id = extract_content_id_from_bundle_response(response, dataset)
+                content_id = extract_content_id_from_bundle_response(response, item.dataset)
                 if not content_id:
                     msg = (
                         f"Failed to add dataset to bundle in Bundle API. "
-                        f"Bundle API did not return a content ID for the added dataset - {dataset}"
+                        f"Bundle API did not return a content ID for the added dataset - {item.dataset}"
                     )
                     logger.error(
-                        msg, extra={"id": self.bundle.pk, "api_id": self.api_id, "dataset": dataset.compound_id}
+                        msg, extra={"id": self.bundle.pk, "api_id": self.api_id, "dataset": item.dataset.compound_id}
                     )
                     raise ValidationError(msg)
 
@@ -313,13 +310,13 @@ class BundleAPISyncService:
                         "id": self.bundle.pk,
                         "api_id": self.api_id,
                         "content_id": content_id,
-                        "dataset": dataset.compound_id,
+                        "dataset": item.dataset.compound_id,
                     },
                 )
             except BundleAPIClientError as e:
-                msg = f"Failed to add dataset to bundle in Bundle API - {dataset}"
+                msg = f"Failed to add dataset to bundle in Bundle API - {item.dataset}"
                 logger.exception(
-                    msg, extra={"id": self.bundle.pk, "api_id": self.api_id, "dataset": dataset.compound_id}
+                    msg, extra={"id": self.bundle.pk, "api_id": self.api_id, "dataset": item.dataset.compound_id}
                 )
                 raise ValidationError(msg) from e
 

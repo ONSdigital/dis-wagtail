@@ -45,11 +45,11 @@ class Topic(index.Indexed, MP_Node):
 
     objects: TopicManager = TopicManager()  # Override the default manager
 
-    id = models.CharField(max_length=100, primary_key=True)
-    title = models.CharField(max_length=100)
-    slug = models.SlugField(max_length=100)
-    description = models.TextField(blank=True, null=True)
-    removed = models.BooleanField(default=False)
+    id = models.CharField(max_length=100, primary_key=True)  # type: ignore[var-annotated]
+    title = models.CharField(max_length=100)  # type: ignore[var-annotated]
+    slug = models.SlugField(max_length=100)  # type: ignore[var-annotated]
+    description = models.TextField(blank=True, null=True)  # type: ignore[var-annotated]
+    removed = models.BooleanField(default=False)  # type: ignore[var-annotated]
 
     node_order_by: ClassVar[list[str]] = ["title"]
 

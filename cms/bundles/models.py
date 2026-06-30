@@ -50,7 +50,9 @@ PREVIEWER_EXCLUDED_PAGE_TYPES = (HomePage, TopicPage, ArticleSeriesPage)
 
 class BundlePage(Orderable):
     parent = ParentalKey("Bundle", related_name="bundled_pages", on_delete=models.CASCADE)
-    page = models.ForeignKey("wagtailcore.Page", blank=True, null=True, on_delete=models.SET_NULL)
+    page = models.ForeignKey(  # type: ignore[var-annotated]
+        "wagtailcore.Page", blank=True, null=True, on_delete=models.SET_NULL
+    )
 
     panels: ClassVar[list[Panel]] = [
         PageChooserWithStatusPanel("page", accessor="parent"),
@@ -62,7 +64,9 @@ class BundlePage(Orderable):
 
 class BundleDataset(Orderable):
     parent = ParentalKey("Bundle", related_name="bundled_datasets", on_delete=models.CASCADE)
-    dataset = models.ForeignKey("datasets.Dataset", blank=True, null=True, on_delete=models.SET_NULL)
+    dataset = models.ForeignKey(  # type: ignore[var-annotated]
+        "datasets.Dataset", blank=True, null=True, on_delete=models.SET_NULL
+    )
     bundle_api_content_id: models.CharField = models.CharField(max_length=255, blank=True, editable=False)
 
     panels: ClassVar[list[Panel]] = [BundleFieldPanel("dataset", accessor="parent")]
@@ -74,7 +78,7 @@ class BundleDataset(Orderable):
 class BundleTeam(Orderable):
     parent = ParentalKey("Bundle", on_delete=models.CASCADE, related_name="teams")
     team: models.ForeignKey[Team] = models.ForeignKey("teams.Team", on_delete=models.CASCADE)
-    preview_notification_sent = models.BooleanField(default=False, editable=False)
+    preview_notification_sent = models.BooleanField(default=False, editable=False)  # type: ignore[var-annotated]
 
     panels: ClassVar[list[Panel]] = [BundleFieldPanel("team", accessor="parent")]
 
@@ -95,11 +99,11 @@ class BundlesQuerySet(QuerySet):
         return self.filter(status__in=PREVIEWABLE_BUNDLE_STATUSES)
 
     def annotate_release_date(self) -> BundlesQuerySet:
-        return self.annotate(release_date=models.F("release_date"))
+        return self.annotate(release_date=models.F("release_date"))  # type: ignore[no-any-return]
 
     def annotate_status_label(self) -> BundlesQuerySet:
         """Annotates the queryset with the status label, rather than the value saved in the db."""
-        return self.annotate(
+        return self.annotate(  # type: ignore[no-any-return]
             status_label=Case(
                 *[When(status=choice[0], then=Value(choice[1])) for choice in BundleStatus.choices],
                 output_field=CharField(),
