@@ -326,7 +326,7 @@ def notify_slack_of_post_publish_end(
         end_time: The time publishing ended.
         url: The URL to link to the bundle (optional).
     """
-    failed_post_publish_actions = (
+    failed_post_publish_actions_count = (
         PostPublishAction.objects.finished()
         .active()
         .filter(bundle=bundle, status=PostPublishActionStatus.FAILED)
@@ -383,7 +383,7 @@ def notify_slack_of_post_publish_end(
             },
             {
                 "title": "Post-Publish Actions Failed",
-                "value": str(failed_post_publish_actions),
+                "value": str(failed_post_publish_actions_count),
                 "short": True,
             },
         ]
@@ -395,7 +395,7 @@ def notify_slack_of_post_publish_end(
     send_bundle_notification(
         bundle=bundle,
         text="Publishing the bundle has ended.",
-        color="danger" if failed_post_publish_actions else "good",
+        color="danger" if failed_post_publish_actions_count else "good",
         fields=fields,
     )
 
