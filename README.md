@@ -537,7 +537,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 
-Copyright © 2024 [Crown Copyright](http://www.nationalarchives.gov.uk/information-management/re-using-public-sector-information/copyright-and-re-use/crown-copyright/) (Office for National Statistics)
+Copyright © 2024 [Crown Copyright](https://www.nationalarchives.gov.uk/information-management/re-using-public-sector-information/copyright-and-re-use/crown-copyright/) (Office for National Statistics)
 
 Unless stated otherwise, the codebase is released under the [MIT License](LICENCE). This covers both the codebase and any sample code in the documentation.
 
