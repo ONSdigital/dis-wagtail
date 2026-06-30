@@ -88,6 +88,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         cls.another_in_review_bundle = BundleFactory(in_review=True, name="Another preview Bundle")
 
     def setUp(self):
+        super().setUp()
         self.bundle = BundleFactory(name="Original bundle", created_by=self.publishing_officer)
         self.statistical_article_page = StatisticalArticlePageFactory(
             title="The article", parent__title="PSF", live=False
@@ -1474,6 +1475,7 @@ class BundleDeleteTestCase(WagtailTestUtils, TestCase):
         cls.inspect_url = reverse("bundle:inspect", args=[cls.bundle.id])
 
     def setUp(self):
+        super().setUp()
         self.client.force_login(self.superuser)
 
     def test_bundle_deletable_in_draft(self):
@@ -1585,6 +1587,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         cls.chooser_results_url = reverse(bundle_page_chooser_viewset.get_url_name("choose_results"))
 
     def setUp(self):
+        super().setUp()
         self.client.force_login(self.superuser)
 
     def test_bundle_form_uses_bundle_page_chooser_widget(self):
@@ -1640,6 +1643,17 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertTemplateUsed(response, "wagtailadmin/generic/chooser/chooser.html")
 
         self.assertContains(response, self.page_draft_in_bundle.get_admin_display_title())
+
+    def test_choose_view__excludes_release_calendar_page_of_active_bundle(self):
+        """An RC page that is the release_calendar_page for an active bundle must not appear in the chooser."""
+        rc_page = ReleaseCalendarPageFactory(title="RC page set as schedule for active bundle")
+        rc_page.save_revision()
+        BundleFactory(release_calendar_page=rc_page)  # DRAFT = active
+
+        response = self.client.get(self.chooser_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, rc_page.get_admin_display_title())
 
     def test_choose_view__excludes_aliases(self):
         # create an alias for one of the pages

@@ -62,15 +62,14 @@ def the_user_goes_to_the_bundle_creation_page(context: Context) -> None:
 @step("the user opens the release calendar page chooser")
 def the_user_selects_a_release_calendar(context: Context) -> None:
     context.page.get_by_role("button", name="Choose Release Calendar page").click()
-    context.page.wait_for_timeout(250)  # Wait for the modal to open
+    context.page.locator(".modal-body").wait_for(state="visible")
 
 
 @step("the user opens the page chooser")
 def the_user_opens_page_chooser(context: Context) -> None:
     context.page.get_by_role("button", name="Add page").click()
-    context.page.wait_for_timeout(100)
     context.page.get_by_role("button", name="Choose a page").click()
-    context.page.wait_for_timeout(250)  # Wait for the modal to open
+    context.page.locator(".modal-body").wait_for(state="visible")
 
 
 @step("the locale column is displayed in the chooser")

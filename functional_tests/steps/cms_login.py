@@ -3,8 +3,9 @@ from behave import given, step, then, when
 from behave.runner import Context
 from playwright.sync_api import expect
 
+from functional_tests.step_helpers.auth_utils import force_login
 from functional_tests.step_helpers.users import create_user, get_user_data
-from functional_tests.steps.auth import step_click_logout
+from functional_tests.steps.cognito_auth import step_click_logout
 
 
 @given("the user is a CMS admin")
@@ -33,16 +34,14 @@ def user_sees_admin_homepage(context: Context) -> None:
 
 @step("the user is logged in")
 def the_user_logs_in(context: Context) -> None:
-    context.page.goto(f"{context.base_url}/admin/login/")
-    context.page.get_by_placeholder("Enter your username").fill(context.user_data["username"])
-    context.page.get_by_placeholder("Enter password").fill(context.user_data["password"])
-    context.page.get_by_role("button", name="Sign in").click()
+    force_login(context, context.user_data["user"])
+    context.page.goto(f"{context.base_url}/admin/")
 
 
 @step("a {user_type} logs into the admin site")
 def a_user_logs_in(context: Context, user_type: str) -> None:
     context_attr = user_type.lower().replace(" ", "_")
-    if user := getattr(context, context_attr, None):
+    if (user := getattr(context, context_attr, None)) and user.groups.filter(name=user_type).exists():
         context.user_data = get_user_data(user)
     else:
         context.user_data = create_user(user_type)
