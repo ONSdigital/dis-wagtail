@@ -109,7 +109,7 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict, BaseRelatedItem]):
             return None
 
         # Handle internal pages
-        page = related.page.specific_deferred
+        page = related.page.specific_deferred  # type: ignore[attr-defined]
 
         # Skip non-live or restricted pages
         if not page.live or page.get_view_restrictions().exists():
