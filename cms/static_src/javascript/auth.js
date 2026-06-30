@@ -11,6 +11,9 @@ import SessionManagement from 'dis-authorisation-client-js';
 let authConfig = {};
 const configEl = document.getElementById('auth-config');
 
+// CSRF cookie is httpOnly, so retrieve the value from the DOM.
+const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
 if (configEl) {
   try {
     authConfig = JSON.parse(configEl.textContent);
@@ -24,6 +27,7 @@ const {
   sessionRenewalOffsetSeconds,
   authTokenRefreshUrl,
   idTokenCookieName,
+  csrfHeaderName,
 } = authConfig;
 
 const { origin } = window.location;
@@ -48,7 +52,7 @@ function getCookieByName(name) {
 const fetchWithCsrf = async (url, method = 'POST', body = null, additionalHeaders = {}) => {
   const headers = {
     'Content-Type': 'application/json',
-    [window.wagtailConfig.CSRF_HEADER_NAME]: window.wagtailConfig.CSRF_TOKEN,
+    [csrfHeaderName]: csrftoken,
     ...additionalHeaders,
   };
 
@@ -56,6 +60,7 @@ const fetchWithCsrf = async (url, method = 'POST', body = null, additionalHeader
     method,
     headers,
     credentials: 'include',
+    mode: 'same-origin',
     ...(body && { body: JSON.stringify(body) }),
   };
 

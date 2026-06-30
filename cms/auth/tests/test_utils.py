@@ -311,6 +311,7 @@ class GetAuthConfigTests(SimpleTestCase):
                 "wagtailAdminHomePath": "/admin/",
                 "sessionRenewalOffsetSeconds": 30,
                 "idTokenCookieName": "id",
+                "csrfHeaderName": "X-CSRFTOKEN",
             },
         )
 
