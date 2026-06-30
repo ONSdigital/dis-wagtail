@@ -1,0 +1,8 @@
+{# Charts render the figure at the top level here - DS image component renders it at a lower level. Need some rationalising of how this works in the DS. #}
+<figure>
+    {% if title %}
+        <h3>{{ title }}</h3>
+    {% endif %}
+    {% if subtitle %}
+        <h4>{{ subtitle }}</h4>
+    {% endif %}

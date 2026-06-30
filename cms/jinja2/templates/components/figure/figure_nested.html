@@ -1,0 +1,5 @@
+{% from "templates/components/figure/_macro.html" import figure %}
+
+{% call figure(title=title, subtitle=subtitle, download_title=download_title, download_list=download_list) %}
+    <img src="https://placecats.com/300/200" alt="A cat" />
+{% endcall %}
