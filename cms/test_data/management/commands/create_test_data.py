@@ -140,7 +140,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
-            "--seed", nargs="?", default=4, type=int, help="Random seed to produce deterministic output"
+            "--seed", default=4, type=int, help="Random seed to produce deterministic output"
         )
         parser.add_argument("--config", type=validate_config_file, default=TestDataConfig(), help="Config file")
         parser.add_argument(
