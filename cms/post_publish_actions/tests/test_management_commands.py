@@ -70,6 +70,25 @@ class RetryPostPublishActionsTestCase(TransactionTestCase):
         self.assertEqual(action.status, PostPublishActionStatus.SUCCESSFUL)
         self.assertIsNotNone(action.finished_at)
 
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_runs_ready(self, mock_get_publisher):
+        action = PostPublishAction.objects.create(
+            bundle=self.bundle,
+            page=self.page,
+            action_type=PostPublishActionType.SEARCH_UPDATED,
+            status=PostPublishActionStatus.READY,
+        )
+        action.enqueued_at = timezone.now() - timedelta(days=1)
+        action.save()
+
+        self._call_command()
+
+        action.refresh_from_db()
+        mock_get_publisher.assert_called()
+
+        self.assertEqual(action.status, PostPublishActionStatus.SUCCESSFUL)
+        self.assertIsNotNone(action.finished_at)
+
     @override_settings(BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS=1)
     @patch("cms.search.signal_handlers.get_publisher")
     def test_action_time_out(self, mock_get_publisher):
