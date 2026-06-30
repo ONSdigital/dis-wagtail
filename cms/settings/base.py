@@ -283,7 +283,7 @@ if "read_replica" not in DATABASES:
 # The numbers are intentionally low, as contention on connections shouldn't be high.
 db_pool_options = {
     "min_size": 1,
-    "max_size": 3,
+    "max_size": int(env.get("DB_POOL_MAX_SIZE", 3)),
 }
 
 DATABASES["default"].setdefault("OPTIONS", {})["pool"] = deepcopy(db_pool_options)
