@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-26 10:50+0100\n"
+"POT-Creation-Date: 2026-06-30 10:18+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -52,11 +52,11 @@ msgstr "Hysbysiad"
 msgid "View superseded version"
 msgstr "Gweld fersiwn wedi’i disodli"
 
-#: cms/bundles/utils.py:35
+#: cms/bundles/utils.py:39
 msgid "Publications"
 msgstr "Cyhoeddiadau"
 
-#: cms/bundles/utils.py:36
+#: cms/bundles/utils.py:40
 msgid "Quality and methodology"
 msgstr "Ansawdd a methodoleg"
 
@@ -787,15 +787,41 @@ msgstr "Parhau"
 msgid "Related publications"
 msgstr "Cyhoeddiadau cysylltiedig"
 
+#: cms/post_publish_actions/models.py:11
+msgid "Private Media ACLs"
+msgstr ""
+
+#: cms/post_publish_actions/models.py:12
+#, fuzzy
+#| msgid "Last updated:"
+msgid "Search updated"
+msgstr "Diweddarwyd Diwethaf:"
+
+#: cms/post_publish_actions/models.py:16
+msgid "Ready"
+msgstr ""
+
+#: cms/post_publish_actions/models.py:17
+msgid "Running"
+msgstr ""
+
+#: cms/post_publish_actions/models.py:18
+msgid "Failed"
+msgstr ""
+
+#: cms/post_publish_actions/models.py:19
+msgid "Successful"
+msgstr ""
+
 #: cms/release_calendar/forms.py:223
 msgid "To be confirmed"
 msgstr "I’w gadarnhau"
 
-#: cms/settings/base.py:410
+#: cms/settings/base.py:412
 msgid "English"
 msgstr "Saesneg"
 
-#: cms/settings/base.py:411
+#: cms/settings/base.py:413
 msgid "Welsh"
 msgstr "Cymraeg"
 
