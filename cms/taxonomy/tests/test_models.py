@@ -1,7 +1,10 @@
+from unittest import mock
+
 from django.db import IntegrityError
 from django.test import TestCase
 from wagtail.models import Page
 
+from cms.core.db_router import force_write_db_for
 from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
 from cms.taxonomy.tests.factories import TopicFactory
 
@@ -230,3 +233,12 @@ class GenericPageToTaxonomyTopicModelTest(TestCase):
         links = GenericPageToTaxonomyTopic.objects.filter(page=page, topic=self.topic_a)
         self.assertEqual(links.count(), 1)
         self.assertTrue(links.filter(pk=existing.pk).exists())
+
+    def test_dedup_check_uses_write_db(self):
+        """The dedup existence check must run against the write DB (via force_write_db_for)."""
+        with mock.patch(
+            "cms.taxonomy.models.force_write_db_for", side_effect=force_write_db_for
+        ) as mock_force_write_db_for:
+            GenericPageToTaxonomyTopic(page=self.child_page, topic=self.topic_a).save()
+
+        mock_force_write_db_for.assert_called_once_with(GenericPageToTaxonomyTopic.objects)
