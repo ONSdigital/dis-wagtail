@@ -165,8 +165,9 @@ if not IS_EXTERNAL_ENV:
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
 
+CSP_ENABLED = env.get("CMS_CSP_ENABLED", "true").lower().strip() == "true"
 
-if env.get("CMS_CSP_ENABLED", "true").lower().strip() == "true":
+if CSP_ENABLED:
     MIDDLEWARE.append("django.middleware.csp.ContentSecurityPolicyMiddleware")
 
 
@@ -175,12 +176,14 @@ ROOT_URLCONF = "cms.urls"
 context_processors = [
     "django.template.context_processors.debug",
     "django.template.context_processors.request",
-    "django.template.context_processors.csp",
     "wagtail.contrib.settings.context_processors.settings",
     # This is a custom context processor that lets us add custom
     # global variables to all the templates.
     "cms.core.context_processors.global_vars",
 ]
+
+if CSP_ENABLED:
+    context_processors.append("django.template.context_processors.csp")
 
 jinja2_extensions = [
     *DEFAULT_EXTENSIONS,
