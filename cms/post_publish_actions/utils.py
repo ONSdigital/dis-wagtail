@@ -9,6 +9,7 @@ from django.utils import timezone
 from wagtail.models import Page
 
 from cms.bundles.notifications.slack import notify_slack_of_post_publish_end
+from cms.core.db_router import force_write_db
 from cms.core.utils import GeneratorCollector
 
 from .models import PostPublishAction, PostPublishActionStatus
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@force_write_db()
 def as_completed_actions_by_bundle(
     bundles: list[Bundle], start_time: datetime
 ) -> Generator[Bundle, None, list[Bundle]]:
@@ -56,6 +58,7 @@ def as_completed_actions_by_bundle(
     return bundles_to_check
 
 
+@force_write_db()
 def post_publish_notify_slack(start_time: datetime, bundle: Bundle) -> None:
     as_completed_collector = GeneratorCollector(as_completed_actions_by_bundle([bundle], start_time))
 
