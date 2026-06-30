@@ -33,7 +33,7 @@ jobs:
         uses: ./.github/actions/setup-cache-flag
 
       - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.2.0 # zizmor: ignore[cache-poisoning]
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version-file: .python-version
           cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
@@ -179,7 +179,7 @@ jobs:
         uses: ./.github/actions/setup-cache-flag
 
       - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.2.0 # zizmor: ignore[cache-poisoning]
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version-file: .python-version
           cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
@@ -272,7 +272,7 @@ jobs:
         uses: ./.github/actions/setup-cache-flag
 
       - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.2.0 # zizmor: ignore[cache-poisoning]
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version-file: .python-version
           cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
