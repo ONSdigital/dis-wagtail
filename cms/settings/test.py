@@ -59,6 +59,10 @@ DATABASES["read_replica"].setdefault("TEST", {"MIRROR": "default"})  # noqa: F40
 if "postgres" in DATABASES["read_replica"]["ENGINE"]:  # noqa: F405
     DATABASES["read_replica"]["ENGINE"] = "cms.core.database_backends.postgres_readonly"  # noqa: F405
 
+# Disable connection pool in tests
+DATABASES["default"]["OPTIONS"]["pool"] = False  # noqa: F405
+DATABASES["read_replica"]["OPTIONS"]["pool"] = False  # noqa: F405
+
 # Disable caches in tests
 CACHES["default"] = {  # noqa: F405
     "BACKEND": "django.core.cache.backends.dummy.DummyCache",
