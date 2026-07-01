@@ -452,6 +452,13 @@ brew install pinact
 
 Then Run pinact against the workflow files
 
+```bash
+pinact run .github/workflows/ci.yml \
+           .github/workflows/mega-linter.yml \
+           .github/workflows/codeql.yml \
+           .github/workflows/lychee.yml
+```
+
 This will update each `uses:` reference in-place with the resolved SHA, keeping the tag as a trailing comment.
 
 > **Note:** Re-run pinact whenever you upgrade an action to a new version (e.g. `@v5`), or as part of your regular dependency update process.
