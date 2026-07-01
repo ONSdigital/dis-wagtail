@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
-from wagtail.models import Locale
+from wagtail.models import Locale, PageViewRestriction
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import nested_form_data
 
@@ -113,6 +113,22 @@ class ArticleSeriesPreviewTestCase(WagtailTestUtils, TestCase):
         preview_response = self.series.serve_preview(get_dummy_request(), "default").render()
         self.assertContains(preview_response, live_article.title)
         self.assertContains(preview_response, draft_article.title)
+
+    def test_public_route_excludes_private_editions(self):
+        """The public route should hide editions with view restrictions."""
+        public_article = StatisticalArticlePageFactory(parent=self.series, title="Public edition")
+        private_article = StatisticalArticlePageFactory(parent=self.series, title="Private edition")
+        PageViewRestriction.objects.create(page=private_article, restriction_type=PageViewRestriction.LOGIN)
+
+        # The public route only shows public editions.
+        public_response = self.client.get(f"{self.series.url}/editions")
+        self.assertContains(public_response, public_article.title)
+        self.assertNotContains(public_response, private_article.title)
+
+        # The preview shows both public and private editions.
+        preview_response = self.series.serve_preview(get_dummy_request(), "default").render()
+        self.assertContains(preview_response, public_article.title)
+        self.assertContains(preview_response, private_article.title)
 
     def test_preview_on_edit_endpoint(self):
         """The admin preview endpoint should render the previous releases preview."""
