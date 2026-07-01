@@ -1,8 +1,12 @@
 import json
+from collections.abc import Sequence
 from contextlib import ExitStack, contextmanager
+from typing import ClassVar
 
 from django.db import DEFAULT_DB_ALIAS, connections
+from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase as _TransactionTestCase
+from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
 from django.utils.functional import partition
 
@@ -75,3 +79,31 @@ class TransactionTestCase(_TransactionTestCase):
             CaptureQueriesContext(connections[READ_REPLICA_DB_ALIAS]) as replica_queries,
         ):
             yield default_queries, replica_queries
+
+
+@override_settings(DATABASE_ROUTERS=[])
+class MigrationTestCase(_TransactionTestCase):
+    """A base test case for testing migrations, which provides helpers for migrating to specific states."""
+
+    app = None
+    previous_migration = None
+    next_migration = None
+
+    databases: ClassVar[set] = {"default"}
+    serialized_rollback = True
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.executor = MigrationExecutor(connections[DEFAULT_DB_ALIAS])
+        cls.executor.migrate(cls.next_migration)
+        cls.apps = cls.executor.loader.project_state(cls.next_migration).apps
+
+    def migrate_to(self, target: Sequence[tuple[str, str]] | None = None):
+        """Helper to migrate to a specific target state."""
+        self.executor.migrate(target)
+        self.apps = self.executor.loader.project_state(target).apps
+
+    def get_model(self, app_label, model_name):
+        """Helper to get a model from the historical version of the app registry."""
+        return self.apps.get_model(app_label, model_name)

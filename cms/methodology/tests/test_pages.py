@@ -32,7 +32,7 @@ class MethodologyPageTest(WagtailPageTestCase):
         self.assertContains(response, self.page.content)
 
         self.assertContains(response, "Save or print this page")
-        self.assertContains(response, "Cite this methodology")
+        self.assertContains(response, "Cite this page")
 
     def test_methodology_index_page_redirects_to_topic_listing(self):
         response = self.client.get(self.methodology_index_page.url)
