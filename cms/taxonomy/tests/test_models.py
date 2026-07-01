@@ -1,7 +1,10 @@
+from unittest import mock
+
 from django.db import IntegrityError
 from django.test import TestCase
 from wagtail.models import Page
 
+from cms.core.db_router import force_write_db_for
 from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
 from cms.taxonomy.tests.factories import TopicFactory
 
@@ -214,3 +217,28 @@ class GenericPageToTaxonomyTopicModelTest(TestCase):
         link = GenericPageToTaxonomyTopic.objects.create(page=self.child_page, topic=self.topic_a)
         self.topic_a.delete()  # This should cascade-delete the link
         self.assertFalse(GenericPageToTaxonomyTopic.objects.filter(pk=link.pk).exists())
+
+    def test_committing_cluster_with_existing_and_idless_link_does_not_duplicate(self):
+        """Regression test: a page whose cluster contains both an existing link and a new,
+        id-less link for the same topic must not raise an IntegrityError on save.
+        """
+        existing = GenericPageToTaxonomyTopic.objects.create(page=self.child_page, topic=self.topic_a)
+
+        page = Page.objects.get(pk=self.child_page.pk)
+        # The id-less link is created by adding a new GenericPageToTaxonomyTopic instance to the page's topics.
+        page.topics.add(GenericPageToTaxonomyTopic(topic=self.topic_a))
+
+        page.save()  # Must not raise IntegrityError
+
+        links = GenericPageToTaxonomyTopic.objects.filter(page=page, topic=self.topic_a)
+        self.assertEqual(links.count(), 1)
+        self.assertTrue(links.filter(pk=existing.pk).exists())
+
+    def test_dedup_check_uses_write_db(self):
+        """The dedup existence check must run against the write DB (via force_write_db_for)."""
+        with mock.patch(
+            "cms.taxonomy.models.force_write_db_for", side_effect=force_write_db_for
+        ) as mock_force_write_db_for:
+            GenericPageToTaxonomyTopic(page=self.child_page, topic=self.topic_a).save()
+
+        mock_force_write_db_for.assert_called_once_with(GenericPageToTaxonomyTopic.objects)
