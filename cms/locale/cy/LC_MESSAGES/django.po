@@ -763,8 +763,6 @@ msgid "View all related time series"
 msgstr "Gweld yr holl gyfresi amser cysylltiedig"
 
 #: cms/jinja2/templates/pages/topic_page.html:131 cms/topics/models.py:313
-#, fuzzy
-#| msgid "Methods and quality information"
 msgid "Quality, methods and supporting information"
 msgstr "Dulliau a gwybodaeth o ansawdd"
 
@@ -789,8 +787,6 @@ msgid "To be confirmed"
 msgstr "I’w gadarnhau"
 
 #: cms/release_calendar/models.py:79
-#, fuzzy
-#| msgid "Release date"
 msgid "Release calendar page"
 msgstr "Dyddiad y datganiad"
 
