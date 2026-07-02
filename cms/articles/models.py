@@ -93,7 +93,6 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
     parent_page_types: ClassVar[list[str]] = ["ArticlesIndexPage"]
     subpage_types: ClassVar[list[str]] = ["StatisticalArticlePage"]
-    preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
     page_description = "A container for statistical articles in a series."
     exclude_from_breadcrumbs = True
 
@@ -124,6 +123,16 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         )
         return latest
 
+    @property
+    def preview_modes(self) -> list[tuple[str, str]]:
+        return [
+            ("default", "Previous releases"),
+        ]
+
+    def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        response: TemplateResponse = self.previous_releases(request, for_preview=True)
+        return response
+
     @path("")
     def latest_article(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         """Serves the latest statistical article page in the series."""
@@ -143,8 +152,13 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         return response
 
     @path("editions/")
-    def previous_releases(self, request: HttpRequest) -> TemplateResponse:
-        children = StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")
+    def previous_releases(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
+        for_preview = kwargs.pop("for_preview", False)
+        objects = StatisticalArticlePage.objects
+        if not for_preview:
+            # only show live pages if not in preview mode
+            objects = objects.live().public()
+        children = objects.child_of(self).order_by("-release_date")
         paginator = Paginator(children, per_page=settings.PREVIOUS_RELEASES_PER_PAGE)
 
         try:
