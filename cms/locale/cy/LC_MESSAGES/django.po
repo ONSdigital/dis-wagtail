@@ -95,12 +95,12 @@ msgid "Methodology"
 msgstr "Methodoleg"
 
 #: cms/core/enums.py:11 cms/jinja2/templates/pages/topic_page.html:113
-#: cms/topics/models.py:311
+#: cms/topics/models.py:330
 msgid "Time series"
 msgstr "Cyfres amser"
 
 #: cms/core/enums.py:12 cms/jinja2/templates/pages/topic_page.html:9
-#: cms/topics/models.py:188
+#: cms/topics/models.py:207
 msgid "Topic"
 msgstr "Pwnc"
 
@@ -116,11 +116,11 @@ msgstr "Adrodd"
 msgid "Webpage"
 msgstr "Tudalen we"
 
-#: cms/core/formatting_utils.py:62
+#: cms/core/formatting_utils.py:71
 msgid "Page"
 msgstr "Tudalen"
 
-#: cms/core/formatting_utils.py:108
+#: cms/core/formatting_utils.py:117
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:40
 msgid "Released"
 msgstr "Rhyddhawyd"
@@ -169,7 +169,7 @@ msgstr "Troednodiadau"
 #: cms/datavis/blocks/table.py:58
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:94
 #: cms/jinja2/templates/pages/topic_page.html:95
-#: cms/release_calendar/models.py:254 cms/topics/models.py:309
+#: cms/release_calendar/models.py:254 cms/topics/models.py:328
 msgid "Data"
 msgstr "Data"
 
@@ -741,11 +741,11 @@ msgstr "Pori"
 msgid "Theme"
 msgstr "Thema"
 
-#: cms/jinja2/templates/pages/topic_page.html:67 cms/topics/models.py:305
+#: cms/jinja2/templates/pages/topic_page.html:67 cms/topics/models.py:324
 msgid "Featured"
 msgstr "Dan Sylw"
 
-#: cms/jinja2/templates/pages/topic_page.html:77 cms/topics/models.py:307
+#: cms/jinja2/templates/pages/topic_page.html:77 cms/topics/models.py:326
 msgid "Related articles"
 msgstr "Erthyglau cysylltiedig"
 
@@ -761,7 +761,7 @@ msgstr "Gweld yr holl ddata cysylltiedig"
 msgid "View all related time series"
 msgstr "Gweld yr holl gyfresi amser cysylltiedig"
 
-#: cms/jinja2/templates/pages/topic_page.html:131 cms/topics/models.py:313
+#: cms/jinja2/templates/pages/topic_page.html:131 cms/topics/models.py:332
 msgid "Quality, methods and supporting information"
 msgstr "Dulliau a gwybodaeth o ansawdd"
 
@@ -769,7 +769,7 @@ msgstr "Dulliau a gwybodaeth o ansawdd"
 msgid "View all related methodology"
 msgstr "Gweld yr holl fethodolegau cysylltiedig"
 
-#: cms/jinja2/templates/pages/topic_page.html:149 cms/topics/models.py:315
+#: cms/jinja2/templates/pages/topic_page.html:149 cms/topics/models.py:334
 msgid "Explore more"
 msgstr "Archwilio mwy"
 
