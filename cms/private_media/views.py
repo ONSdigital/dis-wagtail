@@ -1,10 +1,14 @@
+import os
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
+from django.conf import settings
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.cache import add_never_cache_headers, patch_cache_control
+from django.utils.http import content_disposition_header
+from django.utils.text import slugify
 from django.views.generic import View
 from wagtail.documents import get_document_model
 from wagtail.documents.models import document_served
@@ -67,9 +71,11 @@ class ImageServeView(View):
                 status=400,
             )
 
+        force_download = not settings.IS_EXTERNAL_ENV and request.GET.get("force_download") == "true"
+
         # If there's no reason (within our control) for the file not to be served by
         # media infrastructure, redirect
-        if image.is_public and not image.has_outdated_file_permissions():
+        if not force_download and image.is_public and not image.has_outdated_file_permissions():
             try:
                 file_url = rendition.file.url
             except NotImplementedError:
@@ -77,6 +83,14 @@ class ImageServeView(View):
             return self.redirect_to_file(file_url)
 
         # Serve file contents
+        if force_download:
+            response = self.serve_private_rendition(rendition)
+            _, ext = os.path.splitext(rendition.file.name)
+            response["Content-Disposition"] = cast(
+                str, content_disposition_header(as_attachment=True, filename=f"{slugify(image.title)}{ext}")
+            )
+            return response
+
         if image.is_public:
             return self.serve_public_rendition(rendition)
         return self.serve_private_rendition(rendition)
