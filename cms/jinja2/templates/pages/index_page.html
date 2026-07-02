@@ -4,7 +4,7 @@
 {% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
 
-{% block header_area %}
+{% block breadcrumbs %}
     {# fmt:off #}
     {{
         onsBreadcrumbs({
@@ -13,6 +13,11 @@
             "variant": 'grey'
         })
     }}
+    {# fmt:on #}
+{% endblock %}
+
+{% block hero %}
+    {# fmt:off #}
     {{
         onsHero({
             "title": page.title,
@@ -23,7 +28,7 @@
     {# fmt:on #}
 {% endblock %}
 
-{% block main %}
+{% block mainContent %}
 
     {% if formatted_items %}
         {{ onsDocumentList({"documents": formatted_items}) }}
