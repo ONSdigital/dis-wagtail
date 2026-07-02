@@ -9,7 +9,7 @@ from wagtail import urls as wagtail_urls
 from wagtail.documents.views.serve import authenticate_with_password
 from wagtail.utils.urlpatterns import decorate_urlpatterns
 
-from cms.auth.views import ONSLogoutView, extend_session
+from cms.auth.views import ONSLogoutView, extend_session, frontend_login_redirect
 from cms.core import views as core_views
 from cms.core.cache import get_default_cache_control_decorator
 from cms.home.views import serve_localized_homepage
@@ -33,6 +33,7 @@ private_urlpatterns = [
         authenticate_with_password,
         name="wagtaildocs_authenticate_with_password",
     ),
+    path("auth/frontend-login", frontend_login_redirect, name="frontend_login_redirect"),
 ]
 
 # `wagtail.admin` must always be installed,
