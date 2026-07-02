@@ -151,6 +151,17 @@ class AddToBundleViewTestCase(WagtailTestUtils, TestCase):
         self.assertRedirects(response, "/admin/")
         self.assertContains(response, "Page &#x27;PSF: November 2024&#x27; is already in a bundle")
 
+    def test_dispatch__warning_includes_bundle_name_for_rc_page_added_via_bundlepage(self):
+        """Warning message must name the bundle when an RC page is in a bundle via the BundlePage path."""
+        rc_page = ReleaseCalendarPageFactory()
+        bundle = BundleFactory(name="RC Bundle", bundled_pages=[rc_page])
+        add_url = reverse("bundles:add_to_bundle", args=[rc_page.id])
+
+        response = self.client.get(add_url, follow=True)
+
+        self.assertRedirects(response, "/admin/")
+        self.assertContains(response, f"is already in a bundle (&#x27;{bundle.name}&#x27;)")
+
     def test_post__successful(self):
         """Checks that on successful post, the page is added to the bundle and
         we get redirected to the valid next URL.

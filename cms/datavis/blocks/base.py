@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 from django.conf import settings
 from django.forms.widgets import RadioSelect
 from django.urls import reverse
+from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
@@ -16,7 +17,6 @@ from cms.datavis.constants import AxisType, HighChartsChartType, HighchartsTheme
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
-    from django.utils.functional import _StrOrPromise
 
     from cms.core.models import BasePage
 
@@ -153,8 +153,14 @@ class BaseChartBlock(BaseVisualisationBlock):
                 block_id=block_id,
                 rows=rows,
             ),
-            "footnotes": self.get_footnotes_config(value),
         }
+
+        # Check for meaningful text before displaying footnotes
+        if (footnotes := value.get("footnotes")) and strip_tags(str(footnotes)).strip():
+            config["footnotes"] = {
+                "title": _("Footnotes"),
+                "content": str(footnotes),
+            }
 
         point_annotations, range_annotations, line_annotations = self.get_annotations_config(value)
         if point_annotations:
@@ -410,8 +416,3 @@ class BaseChartBlock(BaseVisualisationBlock):
             "data_downloads:revision_chart_download",
             kwargs={"page_id": page.pk, "revision_id": revision_id, "chart_id": block_id},
         )
-
-    def get_footnotes_config(self, value: StructValue) -> dict[_StrOrPromise, Any]:
-        if footnotes := value.get("footnotes"):
-            return {"title": _("Footnotes"), "content": str(footnotes)}
-        return {}

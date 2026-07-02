@@ -192,7 +192,7 @@ class MethodologyPage(  # type: ignore[django-manager-missing]
         if self.related_publications:
             items += [{"url": "#related-publications", "text": _("Related publications")}]
         if self.show_cite_this_page:
-            items += [{"url": "#cite-this-page", "text": _("Cite this methodology")}]
+            items += [{"url": "#cite-this-page", "text": _("Cite this page")}]
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
         add_table_of_contents_gtm_attributes(items)
