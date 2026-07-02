@@ -83,6 +83,10 @@
     {% endif %}
 {% endblock %}
 
+{% block breadcrumbs %}
+    {% include "templates/components/navigation/breadcrumbs.html" %}
+{% endblock %}
+
 {% block scripts %}
     {{ super() }}
     {% include "templates/partials/content_scripts.html" %}
