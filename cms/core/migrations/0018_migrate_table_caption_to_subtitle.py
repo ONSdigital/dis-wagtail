@@ -1,4 +1,4 @@
-# Data migration to move ONSTableBlock `caption` data into the new `sub_heading` field, and back again on reverse.
+# Data migration to move ONSTableBlock `caption` data into the new `subtitle` field, and back again on reverse.
 
 import json
 
@@ -12,23 +12,23 @@ MODELS_WITH_ONS_TABLE_BLOCK = [
 ]
 
 
-def caption_to_sub_heading(block):
+def caption_to_subtitle(block):
     value = block["value"]
     caption = value.get("caption", "")
     if not caption:
         return False
-    value["sub_heading"] = caption
+    value["subtitle"] = caption
     value["caption"] = ""
     return True
 
 
-def sub_heading_to_caption(block):
+def subtitle_to_caption(block):
     value = block["value"]
-    sub_heading = value.get("sub_heading", "")
-    if not sub_heading:
+    subtitle = value.get("subtitle", "")
+    if not subtitle:
         return False
-    value["caption"] = sub_heading
-    value["sub_heading"] = ""
+    value["caption"] = subtitle
+    value["subtitle"] = ""
     return True
 
 
@@ -99,11 +99,11 @@ def _migrate(apps, mapper):
 
 
 def forwards(apps, schema_editor):
-    _migrate(apps, caption_to_sub_heading)
+    _migrate(apps, caption_to_subtitle)
 
 
 def backwards(apps, schema_editor):
-    _migrate(apps, sub_heading_to_caption)
+    _migrate(apps, subtitle_to_caption)
 
 
 class Migration(migrations.Migration):

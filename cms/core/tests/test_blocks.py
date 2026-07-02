@@ -658,7 +658,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         }
         cls.full_data = {
             "title": "The table",
-            "sub_heading": "The sub-heading",
+            "subtitle": "The subtitle",
             "caption": "The accessible label",
             "source": "https://ons.gov.uk",
             "footnotes": "footnotes",
@@ -666,7 +666,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         }
         cls.data_with_empty_table = {
             "title": "The table",
-            "sub_heading": "The sub-heading",
+            "subtitle": "The subtitle",
             "caption": "The accessible label",
             "source": "https://ons.gov.uk",
             "footnotes": "footnotes",
@@ -678,11 +678,11 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         cls.block = ONSTableBlock()
 
-    def test_clean__sub_heading_without_title_raises(self):
-        """A sub-heading cannot be saved without a title."""
+    def test_clean__subtitle_without_title_raises(self):
+        """A subtitle cannot be saved without a title."""
         value = self.block.to_python(
             {
-                "sub_heading": "A sub-heading",
+                "subtitle": "A subtitle",
                 "caption": "The accessible label",
                 "data": self.simple_table_data,
             }
@@ -692,16 +692,16 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             self.block.clean(value)
 
         self.assertEqual(
-            info.exception.block_errors["sub_heading"].message,
-            "Please add a title if you want to add a sub-heading.",
+            info.exception.block_errors["subtitle"].message,
+            "Please add a title if you want to add a subtitle.",
         )
 
-    def test_clean__sub_heading_with_title(self):
-        """A sub-heading paired with a title is allowed."""
+    def test_clean__subtitle_with_title(self):
+        """A subtitle paired with a title is allowed."""
         value = self.block.to_python(
             {
                 "title": "The table",
-                "sub_heading": "A sub-heading",
+                "subtitle": "A subtitle",
                 "caption": "The accessible label",
                 "data": self.simple_table_data,
             }
@@ -709,8 +709,8 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         # Should not raise a validation error
         self.block.clean(value)
 
-    def test_clean__no_sub_heading(self):
-        """A table with no sub-heading is allowed regardless of title."""
+    def test_clean__no_subtitle(self):
+        """A table with no subtitle is allowed regardless of title."""
         value = self.block.to_python(
             {
                 "caption": "The accessible label",
@@ -732,14 +732,14 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             },
         )
         self.assertEqual(context["title"], "The table")
-        self.assertEqual(context["sub_heading"], "The sub-heading")
+        self.assertEqual(context["subtitle"], "The subtitle")
         self.assertEqual(context["source"], "https://ons.gov.uk")
         self.assertEqual(context["footnotes"], "footnotes")
 
     def test_get_context__with_empty_table(self):
         context = self.block.get_context(self.data_with_empty_table)
         self.assertNotIn("title", context)
-        self.assertNotIn("sub_heading", context)
+        self.assertNotIn("subtitle", context)
         self.assertNotIn("caption", context)
         self.assertNotIn("options", context)
         self.assertNotIn("source", context)
@@ -748,7 +748,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
     def test_render_block__full(self):
         rendered = self.block.render(self.full_data)
         self.assertIn(self.full_data["title"], rendered)
-        self.assertIn(f"<h4>{self.full_data['sub_heading']}</h4>", rendered)
+        self.assertIn(f"<h4>{self.full_data['subtitle']}</h4>", rendered)
         soup = BeautifulSoup(rendered, "html.parser")
         caption_tag = soup.find("caption")
         self.assertIsNotNone(caption_tag)
@@ -764,7 +764,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
     def test_render_block__no_table(self):
         rendered = self.block.render(self.data_with_empty_table)
         self.assertNotIn(self.full_data["title"], rendered)
-        self.assertNotIn(self.full_data["sub_heading"], rendered)
+        self.assertNotIn(self.full_data["subtitle"], rendered)
         self.assertNotIn("Footnotes", rendered)
         self.assertNotIn("<table ", rendered)
         self.assertNotIn("header cell", rendered)
@@ -775,17 +775,17 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         data = {
             "title": "The table",
-            "sub_heading": "The sub-heading",
+            "subtitle": "The subtitle",
             "source": "https://ons.gov.uk",
             "footnotes": "footnotes",
         }
 
         cases = [
             # field with value, fields not rendered
-            ("title", ["sub_heading", "source", "footnotes"]),
-            ("sub_heading", ["title", "source", "footnotes"]),
-            ("source", ["title", "sub_heading", "footnotes"]),
-            ("footnotes", ["title", "sub_heading", "source"]),
+            ("title", ["subtitle", "source", "footnotes"]),
+            ("subtitle", ["title", "source", "footnotes"]),
+            ("source", ["title", "subtitle", "footnotes"]),
+            ("footnotes", ["title", "subtitle", "source"]),
         ]
 
         for field_name, not_present in cases:
@@ -1018,7 +1018,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         download_url = result["options"]["download"]["itemsList"][0]["url"]
         self.assertEqual(download_url, "/economy/articles/test-article/download-table/test-block-id")
 
-    def test_additional_sections_heading_level_with_title_and_no_sub_heading(self):
+    def test_additional_sections_heading_level_with_title_and_no_subtitle(self):
         """Test that footnotes and downloads headings render at h4 when table title is present."""
         page = StatisticalArticlePageFactory()
         parent_context = {
@@ -1026,7 +1026,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             "page": page,
             "request": None,
         }
-        data = {**self.full_data, "sub_heading": ""}
+        data = {**self.full_data, "subtitle": ""}
         context = self.block.get_context(data, parent_context=parent_context)
         self.assertEqual(context["additional_sections_heading_level"], 4)
 
@@ -1036,7 +1036,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertTrue(any("Footnotes" in tag.get_text() for tag in h4_tags))
         self.assertTrue(any("Download this table" in tag.get_text() for tag in h4_tags))
 
-    def test_additional_sections_heading_level_without_title_or_sub_heading(self):
+    def test_additional_sections_heading_level_without_title_or_subtitle(self):
         """Test that footnotes and downloads headings render at h3 when table title is not present."""
         data_without_title = {
             "source": "https://ons.gov.uk",
@@ -1058,11 +1058,11 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertTrue(any("Footnotes" in tag.get_text() for tag in h3_tags))
         self.assertTrue(any("Download this table" in tag.get_text() for tag in h3_tags))
 
-    def test_additional_sections_heading_level_with_title_and_sub_heading(self):
-        """Test that footnotes and downloads headings render at h5 when both title and sub-heading are present."""
-        data_with_title_and_sub_heading = {
+    def test_additional_sections_heading_level_with_title_and_subtitle(self):
+        """Test that footnotes and downloads headings render at h5 when both title and subtitle are present."""
+        data_with_title_and_subtitle = {
             "title": "The table",
-            "sub_heading": "A sub-heading",
+            "subtitle": "A subtitle",
             "source": "https://ons.gov.uk",
             "footnotes": "footnotes",
             "data": self.simple_table_data,
@@ -1073,10 +1073,10 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             "page": page,
             "request": None,
         }
-        context = self.block.get_context(data_with_title_and_sub_heading, parent_context=parent_context)
+        context = self.block.get_context(data_with_title_and_subtitle, parent_context=parent_context)
         self.assertEqual(context["additional_sections_heading_level"], 5)
 
-        rendered = self.block.render(data_with_title_and_sub_heading, context=parent_context)
+        rendered = self.block.render(data_with_title_and_subtitle, context=parent_context)
         soup = BeautifulSoup(rendered, "html.parser")
         h5_tags = soup.find_all("h5")
         self.assertTrue(any("Footnotes" in tag.get_text() for tag in h5_tags))

@@ -131,7 +131,7 @@ class BasicTableBlock(WagtailTableBlock):
 class ONSTableBlock(TinyTableBlock):
     """The ONS table block."""
 
-    sub_heading = blocks.CharBlock(label="Sub-heading", required=False)
+    subtitle = blocks.CharBlock(required=False)
     source = blocks.CharBlock(label="Source", required=False)
     footnotes = blocks.RichTextBlock(label="Footnotes", features=settings.RICH_TEXT_BASIC, required=False)
 
@@ -150,12 +150,12 @@ class ONSTableBlock(TinyTableBlock):
         )
 
     def clean(self, value: dict) -> dict:
-        """Validate that a sub-heading is only present when a title is also provided."""
+        """Validate that a subtitle is only present when a title is also provided."""
         cleaned_value: dict = super().clean(value)
 
-        if cleaned_value.get("sub_heading") and not cleaned_value.get("title"):
+        if cleaned_value.get("subtitle") and not cleaned_value.get("title"):
             raise StructBlockValidationError(
-                block_errors={"sub_heading": ValidationError("Please add a title if you want to add a sub-heading.")}
+                block_errors={"subtitle": ValidationError("Please add a title if you want to add a subtitle.")}
             )
 
         return cleaned_value
@@ -216,7 +216,7 @@ class ONSTableBlock(TinyTableBlock):
             options["download"] = self._get_download_config(parent_context=parent_context, block_id=block_id, data=data)
 
         # Used by footnotes and downloads sections
-        if value.get("title") and value.get("sub_heading"):
+        if value.get("title") and value.get("subtitle"):
             additional_sections_heading_level = 5
         elif value.get("title"):
             additional_sections_heading_level = 4
@@ -225,7 +225,7 @@ class ONSTableBlock(TinyTableBlock):
 
         table_context = {
             "title": value.get("title"),
-            "sub_heading": value.get("sub_heading"),
+            "subtitle": value.get("subtitle"),
             "options": options,
             "source": value.get("source"),
             "footnotes": value.get("footnotes"),
