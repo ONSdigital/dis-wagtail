@@ -94,6 +94,7 @@ INSTALLED_APPS = [
     "cms.taxonomy",
     "cms.search",
     "cms.workflows",
+    "cms.post_publish_actions",
     "wagtail.sites",
     "wagtail.users",
     "wagtail.snippets",
@@ -233,13 +234,7 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 AWS_REGION = env.get("AWS_REGION")
 
-
 # Database
-
-# None allows connections to be reused for longer, since opening them is expensive.
-# CONN_HEALTH_CHECK ensures they're still healthy before attempting to use them.
-db_conn_max_age = int(env["PG_CONN_MAX_AGE"]) if "PG_CONN_MAX_AGE" in env else None
-db_read_conn_max_age = int(env["PG_READ_CONN_MAX_AGE"]) if "PG_READ_CONN_MAX_AGE" in env else None
 
 if "PG_DB_ADDR" in env:
     # Use IAM authentication to connect to the Database
@@ -252,7 +247,7 @@ if "PG_DB_ADDR" in env:
                 "USER": env["PG_DB_USER"],
                 "HOST": env["PG_DB_ADDR"],
                 "PORT": env["PG_DB_PORT"],
-                "CONN_MAX_AGE": db_conn_max_age,
+                "CONN_MAX_AGE": 0,
                 "CONN_HEALTH_CHECK": True,
                 "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": AWS_REGION},
             },
@@ -264,14 +259,13 @@ if "PG_DB_ADDR" in env:
         DATABASES["read_replica"] = {
             **deepcopy(DATABASES["default"]),
             "HOST": env["PG_DB_READ_ADDR"],
-            "CONN_MAX_AGE": db_read_conn_max_age,
         }
 
 else:
     # note: dj_database_url.config() expects an int, while dj_database_url.DBConfig accepts None
     DATABASES = {
         "default": dj_database_url.config(
-            conn_max_age=db_conn_max_age or 0, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
+            conn_max_age=0, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
         ),
     }
 
@@ -280,12 +274,20 @@ else:
         DATABASES["default"]["PORT"] = env["DB_PORT"]
 
     if "READ_REPLICA_DATABASE_URL" in env:
-        DATABASES["read_replica"] = dj_database_url.config(
-            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age or 0
-        )
+        DATABASES["read_replica"] = dj_database_url.config(env="READ_REPLICA_DATABASE_URL", conn_max_age=0)
 
 if "read_replica" not in DATABASES:
     DATABASES["read_replica"] = deepcopy(DATABASES["default"])
+
+# Configure a connection pool to reduce connections when using threads.
+# The numbers are intentionally low, as contention on connections shouldn't be high.
+db_pool_options = {
+    "min_size": 1,
+    "max_size": int(env.get("DB_POOL_MAX_SIZE", 3)),
+}
+
+DATABASES["default"].setdefault("OPTIONS", {})["pool"] = deepcopy(db_pool_options)
+DATABASES["read_replica"].setdefault("OPTIONS", {})["pool"] = deepcopy(db_pool_options)
 
 DATABASE_ROUTERS = [
     "cms.core.db_router.ExternalEnvRouter",
@@ -983,6 +985,11 @@ SLACK_ALARM_CHANNEL = env.get("SLACK_ALARM_CHANNEL", "")
 # Feature flag for sending slack messages on bundle status changes (before pre-publish, e.g. entering review)
 SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE = env.get("SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE", "false").lower() == "true"
 
+# 110 seconds is comfortably under the 2 minute cron interval
+BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS = float(env.get("BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS", 110))
+BUNDLE_POST_PUBLISH_CONCURRENCY = int(env.get("BUNDLE_POST_PUBLISH_CONCURRENCY", 4))
+BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT = True
+BUNDLE_POST_PUBLISH_POLL_FREQUENCY = float(env.get("BUNDLE_POST_PUBLISH_POLL_FREQUENCY", 5))
 
 # API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")

@@ -21,6 +21,7 @@ from cms.bundles.notifications.slack import (
     alert_slack_of_bundle_content_failure,
     notify_slack_of_bundle_failure,
     notify_slack_of_bundle_pre_publish,
+    notify_slack_of_post_publish_end,
     notify_slack_of_publication_start,
     notify_slack_of_publish_end,
     notify_slack_of_status_change,
@@ -207,16 +208,57 @@ class BundleStatusNotificationsTestCase(TestCase):
         """Test publication end message includes required fields."""
         start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
         end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
-        pages_published = 1
         message_timestamp = "1503435956.000247"
         mock_send.return_value = message_timestamp
 
-        notify_slack_of_publish_end(self.bundle, start_time, end_time, pages_published, self.inspect_url)
+        notify_slack_of_publish_end(self.bundle, start_time, end_time, self.inspect_url)
 
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended")
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended. Post-publish actions have started.")
+        self.assertEqual(call_kwargs["color"], "warning")  # Amber
+
+        fields = call_kwargs["fields"]
+        self.assertEqual(fields[0]["title"], "Bundle Name")
+        self.assertIn("First Bundle", fields[0]["value"])
+        self.assertIn(self.inspect_url, fields[0]["value"])
+
+        self.assertIn({"title": "Publish Type", "value": "Manual", "short": False}, fields)
+        self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00.000", "short": True}, fields)
+        self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01.234", "short": True}, fields)
+        self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": False}, fields)
+        self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
+        self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
+        self.assertIn({"title": "Post-Publish Actions Successful", "value": "0", "short": True}, fields)
+        self.assertIn({"title": "Post-Publish Actions Failed", "value": "0", "short": True}, fields)
+        self.assertIn(
+            {
+                "title": "Example Page",
+                "value": self.bundle.get_bundled_pages()[0].specific_deferred.full_url,
+                "short": False,
+            },
+            fields,
+        )
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(message_timestamp, self.bundle.slack_notification_ts)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_post_publish_end(self, mock_send):
+        """Test publication end message includes required fields."""
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
+        message_timestamp = "1503435956.000247"
+        mock_send.return_value = message_timestamp
+
+        notify_slack_of_post_publish_end(self.bundle, start_time, end_time, self.inspect_url)
+
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args[1]
+
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended.")
         self.assertEqual(call_kwargs["color"], "good")  # Green
 
         fields = call_kwargs["fields"]
@@ -228,10 +270,12 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Publish Start", "value": "17/02/2026 - 10:00:00.000", "short": True}, fields)
         self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01.234", "short": True}, fields)
         self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": False}, fields)
-
         self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
         self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
         self.assertIn({"title": "Dataset Count", "value": "0", "short": False}, fields)
+        self.assertIn({"title": "Post-Publish Actions Successful", "value": "0", "short": True}, fields)
+        self.assertIn({"title": "Post-Publish Actions Failed", "value": "0", "short": True}, fields)
+
         self.assertIn(
             {
                 "title": "Example Page",
@@ -252,16 +296,15 @@ class BundleStatusNotificationsTestCase(TestCase):
         end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
         # create new bundle with no pages
         no_pages_bundle = BundleFactory(name="Test Bundle", bundled_pages=[])
-        pages_published = 0
         message_timestamp = "1503435956.000247"
         mock_send.return_value = message_timestamp
 
-        notify_slack_of_publish_end(no_pages_bundle, start_time, end_time, pages_published, self.inspect_url)
+        notify_slack_of_publish_end(no_pages_bundle, start_time, end_time, self.inspect_url)
 
         call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended")
-        self.assertEqual(call_kwargs["color"], "good")  # Green
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended. Post-publish actions have started.")
+        self.assertEqual(call_kwargs["color"], "warning")  # Amber
 
         fields = call_kwargs["fields"]
 
@@ -275,16 +318,15 @@ class BundleStatusNotificationsTestCase(TestCase):
         end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
         # add dataset to bundle
         BundleDatasetFactory(parent=self.bundle)
-        pages_published = 0
         message_timestamp = "1503435956.000247"
         mock_send.return_value = message_timestamp
 
-        notify_slack_of_publish_end(self.bundle, start_time, end_time, pages_published, self.inspect_url)
+        notify_slack_of_publish_end(self.bundle, start_time, end_time, self.inspect_url)
 
         call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended")
-        self.assertEqual(call_kwargs["color"], "good")  # Green
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended. Post-publish actions have started.")
+        self.assertEqual(call_kwargs["color"], "warning")  # Amber
 
         fields = call_kwargs["fields"]
 
@@ -298,16 +340,15 @@ class BundleStatusNotificationsTestCase(TestCase):
         end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
         # create new bundle with zero pages
         no_pages_bundle = BundleFactory(name="Test Bundle", bundled_pages=[])
-        pages_published = 0
         message_timestamp = "1503435956.000247"
         mock_send.return_value = message_timestamp
 
-        notify_slack_of_publish_end(no_pages_bundle, start_time, end_time, pages_published, self.inspect_url)
+        notify_slack_of_publish_end(no_pages_bundle, start_time, end_time, self.inspect_url)
 
         call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended")
-        self.assertEqual(call_kwargs["color"], "good")  # Green
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended. Post-publish actions have started.")
+        self.assertEqual(call_kwargs["color"], "warning")  # Amber
 
         fields = call_kwargs["fields"]
 
@@ -380,7 +421,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         end_time = datetime(2026, 2, 17, 9, 0, 1, 234000, tzinfo=UTC)
         mock_send.return_value = "1503435956.000247"
 
-        notify_slack_of_publish_end(scheduled_bundle, start_time, end_time, 1, self.inspect_url)
+        notify_slack_of_publish_end(scheduled_bundle, start_time, end_time, self.inspect_url)
 
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
@@ -409,13 +450,11 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_get_client.return_value = mock_client
         start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
         end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
-        pages_published = 0
 
         notify_slack_of_bundle_failure(
             bundle=self.bundle,
             start_time=start_time,
             end_time=end_time,
-            pages_published=pages_published,
             exception_message="1 of 1 page(s) failed to publish",
             alert_type=BundleAlertType.CRITICAL,
         )
@@ -434,7 +473,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01.234", "short": True}, fields)
         self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": True}, fields)
         self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
-        self.assertIn({"title": "Pages Published", "value": "0", "short": True}, fields)
+        self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
@@ -445,7 +484,6 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_get_client.return_value = mock_client
         start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
         end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
-        pages_published = 1
         partially_failed_bundle = BundleFactory(
             name="Partially Failed Bundle",
             bundled_pages=[StatisticalArticlePageFactory(), StatisticalArticlePageFactory()],
@@ -455,7 +493,6 @@ class BundleStatusNotificationsTestCase(TestCase):
             bundle=partially_failed_bundle,
             start_time=start_time,
             end_time=end_time,
-            pages_published=pages_published,
             exception_message="1 of 2 page(s) failed to publish",
             alert_type=BundleAlertType.FAIL,
         )
@@ -471,7 +508,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Publish End", "value": "17/02/2026 - 10:00:01.234", "short": True}, fields)
         self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": True}, fields)
         self.assertIn({"title": "Page Count", "value": "2", "short": True}, fields)
-        self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
+        self.assertIn({"title": "Pages Published", "value": "2", "short": True}, fields)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
@@ -487,13 +524,11 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_get_client.return_value = mock_client
         start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
         end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
-        pages_published = 0
 
         notify_slack_of_bundle_failure(
             bundle=bundle,
             start_time=start_time,
             end_time=end_time,
-            pages_published=pages_published,
             exception_message="Test error",
             alert_type=BundleAlertType.CRITICAL,
         )
@@ -512,7 +547,6 @@ class BundleStatusNotificationsTestCase(TestCase):
                 bundle=self.bundle,
                 start_time=datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC),
                 end_time=datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC),
-                pages_published=0,
                 exception_message="Test error",
                 alert_type=BundleAlertType.CRITICAL,
             )
@@ -526,7 +560,6 @@ class BundleStatusNotificationsTestCase(TestCase):
                 bundle=self.bundle,
                 start_time=datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC),
                 end_time=datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC),
-                pages_published=0,
                 exception_message="Test error",
                 alert_type=BundleAlertType.CRITICAL,
             )
@@ -545,7 +578,6 @@ class BundleStatusNotificationsTestCase(TestCase):
                 bundle=self.bundle,
                 start_time=datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC),
                 end_time=datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC),
-                pages_published=0,
                 exception_message="Test error",
                 alert_type=BundleAlertType.CRITICAL,
             )

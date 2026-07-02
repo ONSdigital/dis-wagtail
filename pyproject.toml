@@ -22,7 +22,7 @@ django-jinja = "^2.11.0"
 django-redis = "~6.0.0"
 django-storages = { version = "~1.14.6", extras = ["s3"] }
 gunicorn = "~25.3.0"
-psycopg = "~3.3.2"
+psycopg = {extras = ["pool"], version = "^3.3.4"}
 wagtail-font-awesome-svg = "^2.0"
 apscheduler = "^3.11.2"
 wagtailmath = "~1.3.1"

@@ -28,14 +28,15 @@ from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError, Bundl
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleContentItemState, BundleStatus
 from cms.bundles.models import Bundle
-from cms.bundles.notifications.slack import (
-    notify_slack_of_status_change,
-)
+from cms.bundles.notifications.slack import notify_slack_of_status_change
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 from cms.bundles.utils import publish_bundle
 from cms.core.custom_date_format import ons_date_format
+from cms.core.db_router import force_write_db
 from cms.core.utils import redirect
 from cms.datasets.models import Dataset
+from cms.post_publish_actions.executor import run_in_support_executor
+from cms.post_publish_actions.utils import post_publish_notify_slack
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
@@ -248,13 +249,19 @@ class BundleEditView(EditView):
 
         return instance
 
+    @force_write_db()
     def run_after_hook(self) -> HttpResponseBase | None:
         """This method allows calling hooks or additional logic after an action has been executed.
 
         In our case, we want to replicate the scheduled publication (send Slack notification, publish pages, update RC).
         """
         if self.action == "publish" or (self.action == "edit" and self.object.status == BundleStatus.PUBLISHED):
+            start_date = timezone.now()
             publish_bundle(self.object, update_status=False)
+
+            # NB: Wait for the post-publish actions to complete in a background thread,
+            # to prevent blocking the request (and the user).
+            run_in_support_executor(post_publish_notify_slack, start_date, self.object)
 
     def get_action(self, request: HttpRequest) -> str:
         """Determine the POST action."""

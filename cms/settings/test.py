@@ -59,6 +59,10 @@ DATABASES["read_replica"].setdefault("TEST", {"MIRROR": "default"})  # noqa: F40
 if "postgres" in DATABASES["read_replica"]["ENGINE"]:  # noqa: F405
     DATABASES["read_replica"]["ENGINE"] = "cms.core.database_backends.postgres_readonly"  # noqa: F405
 
+# Disable connection pool in tests
+DATABASES["default"]["OPTIONS"]["pool"] = False  # noqa: F405
+DATABASES["read_replica"]["OPTIONS"]["pool"] = False  # noqa: F405
+
 # Disable caches in tests
 CACHES["default"] = {  # noqa: F405
     "BACKEND": "django.core.cache.backends.dummy.DummyCache",
@@ -143,3 +147,7 @@ def _reset_url_caches_on_setting_changed_signal_handler(*, setting: str, **_: An
 
 
 setting_changed.connect(_reset_url_caches_on_setting_changed_signal_handler)
+
+BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS = 10
+BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT = False
+BUNDLE_POST_PUBLISH_POLL_FREQUENCY = 0.5

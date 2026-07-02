@@ -9,6 +9,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from cms.core.slack import send_or_update_slack_message
+from cms.post_publish_actions.models import PostPublishAction, PostPublishActionStatus
 
 if TYPE_CHECKING:
     from django.utils.functional import _StrOrPromise
@@ -221,7 +222,6 @@ def notify_slack_of_publish_end(
     bundle: Bundle,
     start_time: datetime,
     end_time: datetime,
-    pages_published: int,
     url: str | None = None,
 ) -> None:
     """Send notification when bundle publishing ends successfully.
@@ -233,7 +233,6 @@ def notify_slack_of_publish_end(
         bundle: The bundle that was published.
         start_time: The time publishing started.
         end_time: The time publishing ended.
-        pages_published: Number of pages successfully published.
         url: The URL to link to the bundle (optional).
     """
     bundle_page_count = bundle.get_bundled_pages().count()
@@ -263,10 +262,38 @@ def notify_slack_of_publish_end(
     )
 
     if bundle_page_count > 0:
-        fields.append({"title": "Pages Published", "value": str(pages_published), "short": True})
+        fields.append(
+            {
+                "title": "Pages Published",
+                "value": str(bundle.get_bundled_pages().filter(has_unpublished_changes=False).count()),
+                "short": True,
+            }
+        )
 
-    fields.append(
-        {"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False},
+    fields.extend(
+        [
+            {"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False},
+            {
+                "title": "Post-Publish Actions Successful",
+                "value": str(
+                    PostPublishAction.objects.finished()
+                    .active()
+                    .filter(bundle=bundle, status=PostPublishActionStatus.SUCCESSFUL)
+                    .count()
+                ),
+                "short": True,
+            },
+            {
+                "title": "Post-Publish Actions Failed",
+                "value": str(
+                    PostPublishAction.objects.finished()
+                    .active()
+                    .filter(bundle=bundle, status=PostPublishActionStatus.FAILED)
+                    .count()
+                ),
+                "short": True,
+            },
+        ]
     )
 
     if example_page_url := _get_example_page_url(bundle):
@@ -274,8 +301,101 @@ def notify_slack_of_publish_end(
 
     send_bundle_notification(
         bundle=bundle,
-        text="Publishing the bundle has ended",
-        color="good",
+        text="Publishing the bundle has ended. Post-publish actions have started.",
+        color="warning",  # Amber
+        fields=fields,
+    )
+
+
+def notify_slack_of_post_publish_end(
+    bundle: Bundle,
+    start_time: datetime,
+    end_time: datetime,
+    url: str | None = None,
+) -> None:
+    """Send notification when bundle publishing and post-publishing ends successfully.
+
+    Includes bundle name, publish type, start/end times, duration, page counts,
+    and example page URL. Uses green color to indicate successful completion.
+
+    This is called after all pages are published, and all post-publish actions have finished.
+
+    Args:
+        bundle: The bundle that was published.
+        start_time: The time publishing started.
+        end_time: The time publishing ended.
+        url: The URL to link to the bundle (optional).
+    """
+    failed_post_publish_actions_count = (
+        PostPublishAction.objects.finished()
+        .active()
+        .filter(bundle=bundle, status=PostPublishActionStatus.FAILED)
+        .count()
+    )
+
+    bundle_page_count = bundle.get_bundled_pages().count()
+    bundle_dataset_count = bundle.bundled_datasets.count()
+    fields: list[dict[str, Any]] = [
+        {"title": "Bundle Name", "value": f"<{url or bundle.full_inspect_url}|{bundle.name}>", "short": False},
+        # If there is a scheduled date make short to show both on same line, otherwise span full line.
+        {"title": "Publish Type", "value": _get_publish_type(bundle), "short": bool(bundle.scheduled_publication_date)},
+    ]
+    if bundle.scheduled_publication_date:
+        fields.append(
+            {
+                "title": "Scheduled Date",
+                "value": _format_publish_datetime(bundle.scheduled_publication_date),
+                "short": True,
+            }
+        )
+
+    fields.extend(
+        [
+            {"title": "Publish Start", "value": _format_publish_datetime(start_time), "short": True},
+            {"title": "Publish End", "value": _format_publish_datetime(end_time), "short": True},
+            {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": False},
+            # If there are pages, make short to show "Pages Published" on the same line. Otherwise span full line.
+            {"title": "Page Count", "value": str(bundle_page_count), "short": bundle_page_count > 0},
+        ]
+    )
+
+    if bundle_page_count > 0:
+        fields.append(
+            {
+                "title": "Pages Published",
+                "value": str(bundle.get_bundled_pages().filter(has_unpublished_changes=False).count()),
+                "short": True,
+            }
+        )
+
+    fields.extend(
+        [
+            {"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False},
+            {
+                "title": "Post-Publish Actions Successful",
+                "value": str(
+                    PostPublishAction.objects.finished()
+                    .active()
+                    .filter(bundle=bundle, status=PostPublishActionStatus.SUCCESSFUL)
+                    .count()
+                ),
+                "short": True,
+            },
+            {
+                "title": "Post-Publish Actions Failed",
+                "value": str(failed_post_publish_actions_count),
+                "short": True,
+            },
+        ]
+    )
+
+    if example_page_url := _get_example_page_url(bundle):
+        fields.append({"title": "Example Page", "value": example_page_url, "short": False})
+
+    send_bundle_notification(
+        bundle=bundle,
+        text="Publishing the bundle has ended.",
+        color="danger" if failed_post_publish_actions_count else "good",
         fields=fields,
     )
 
@@ -285,7 +405,6 @@ def notify_slack_of_bundle_failure(  # pylint: disable=too-many-arguments  # noq
     bundle: Bundle,
     start_time: datetime,
     end_time: datetime,
-    pages_published: int,
     exception_message: str,
     alert_type: BundleAlertType = BundleAlertType.CRITICAL,
     url: str | None = None,
@@ -299,7 +418,6 @@ def notify_slack_of_bundle_failure(  # pylint: disable=too-many-arguments  # noq
         bundle: The bundle that failed.
         start_time: The time publishing started.
         end_time: The time publishing ended.
-        pages_published: Number of pages successfully published.
         exception_message: Brief description of the error.
         alert_type: Alert severity.
         url: The URL to link to the bundle (optional).
@@ -311,7 +429,11 @@ def notify_slack_of_bundle_failure(  # pylint: disable=too-many-arguments  # noq
         {"title": "Publish End", "value": _format_publish_datetime(end_time), "short": True},
         {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": True},
         {"title": "Page Count", "value": str(bundle.get_bundled_pages().count()), "short": True},
-        {"title": "Pages Published", "value": str(pages_published), "short": True},
+        {
+            "title": "Pages Published",
+            "value": str(bundle.get_bundled_pages().filter(has_unpublished_changes=False).count()),
+            "short": True,
+        },
         {"title": "Alert Type", "value": alert_type, "short": True},
         {"title": "Exception", "value": exception_message, "short": False},
     ]

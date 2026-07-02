@@ -1,3 +1,4 @@
+import time
 from datetime import timedelta
 from io import StringIO
 from unittest.mock import patch
@@ -12,16 +13,20 @@ from wagtail.models import Locale, ModelLogEntry, PageLogEntry
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
+from cms.core.tests import TransactionTestCase
 from cms.datasets.tests.factories import DatasetFactory
 from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.post_publish_actions.executor import executor_stop_and_wait, flush_executor
+from cms.post_publish_actions.models import PostPublishAction, PostPublishActionStatus, PostPublishActionType
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.workflows.models import ReadyToPublishGroupTask
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
 
-class PublishBundlesCommandTestCase(TestCase):
+@override_settings(BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT=True)
+class PublishBundlesCommandTestCase(TransactionTestCase):
     def setUp(self):
         self.stdout = StringIO()
         self.stderr = StringIO()
@@ -34,6 +39,9 @@ class PublishBundlesCommandTestCase(TestCase):
         self.methodology_article.save_revision()
 
         self.bundle = BundleFactory(approved=True, name="Test Bundle", publication_date=self.publication_date)
+
+    def tearDown(self):
+        flush_executor()
 
     def call_command(self, *args, **kwargs):
         """Helper to call the management command."""
@@ -75,7 +83,8 @@ class PublishBundlesCommandTestCase(TestCase):
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
-    def test_publish_bundle(self, mock_notify_end, mock_notify_start):
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    def test_publish_bundle(self, mock_notify_post_publish_end, mock_notify_end, mock_notify_start):
         """Test publishing a bundle."""
         # Sanity checks
         self.assertFalse(self.statistical_article.live)
@@ -108,6 +117,7 @@ class PublishBundlesCommandTestCase(TestCase):
         # Check notifications were sent
         self.assertTrue(mock_notify_start.called)
         self.assertTrue(mock_notify_end.called)
+        self.assertTrue(mock_notify_post_publish_end.called)
 
         # Check that we have a log entry
         self.assertEqual(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
@@ -116,7 +126,156 @@ class PublishBundlesCommandTestCase(TestCase):
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
-    def test_publish_bundle_with_page_in_workflow(self, mock_notify_end, mock_notify_start):
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_publish_bundle_waits_for_action(
+        self, mock_get_publisher, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
+    ):
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+
+        mock_get_publisher.return_value.publish_created_or_updated.side_effect = lambda *args, **kwargs: time.sleep(3)
+
+        mark_page_as_ready_to_publish(self.statistical_article)
+
+        start_time = time.time()
+        self.call_command()
+
+        # Make sure the sleep happened
+        self.assertGreater(time.time() - start_time, 3)
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
+
+        # Check notifications were sent
+        self.assertTrue(mock_notify_start.called)
+        self.assertTrue(mock_notify_end.called)
+        self.assertTrue(mock_notify_post_publish_end.called)
+
+        mock_get_publisher.return_value.publish_created_or_updated.assert_called()
+
+        self.assertEqual(PostPublishAction.objects.unfinished().count(), 0)
+
+    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_publish_bundle_action_error(
+        self, mock_get_publisher, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
+    ):
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+
+        mock_get_publisher.return_value.publish_created_or_updated.side_effect = ValueError("Something went wrong")
+
+        mark_page_as_ready_to_publish(self.statistical_article)
+
+        self.call_command()
+
+        mock_get_publisher.return_value.publish_created_or_updated.assert_called()
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
+
+        # Check notifications were sent
+        self.assertTrue(mock_notify_start.called)
+        self.assertTrue(mock_notify_end.called)
+        self.assertTrue(mock_notify_post_publish_end.called)
+
+        self.assertEqual(PostPublishAction.objects.unfinished().count(), 0)
+        self.assertEqual(PostPublishAction.objects.finished().count(), 2)
+
+        failed_action = PostPublishAction.objects.finished().filter(status=PostPublishActionStatus.FAILED).get()
+
+        self.assertEqual(failed_action.failed_reason, "ValueError: Something went wrong")
+
+    @override_settings(
+        SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com", BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS=1
+    )
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_publish_bundle_action_timeout_then_finish(
+        self, mock_get_publisher, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
+    ):
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+
+        mock_get_publisher.return_value.publish_created_or_updated.side_effect = lambda *args, **kwargs: time.sleep(3)
+
+        mark_page_as_ready_to_publish(self.statistical_article)
+
+        start_time = time.time()
+        self.call_command()
+
+        # Check the sleep didn't run
+        self.assertLessEqual(time.time() - start_time, 3)
+        mock_get_publisher.return_value.publish_created_or_updated.assert_called()
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
+
+        executor_stop_and_wait()
+
+        # Check notifications were sent
+        self.assertTrue(mock_notify_start.called)
+        self.assertTrue(mock_notify_end.called)
+        self.assertTrue(mock_notify_post_publish_end.called)
+
+        self.assertEqual(PostPublishAction.objects.unfinished().count(), 0)
+        self.assertEqual(PostPublishAction.objects.finished().count(), 2)
+
+        action = PostPublishAction.objects.get(action_type=PostPublishActionType.SEARCH_UPDATED)
+
+        self.assertEqual(action.status, PostPublishActionStatus.SUCCESSFUL)
+        self.assertIsNotNone(action.timed_out_at)
+
+    @override_settings(
+        SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com", BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS=1
+    )
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_publish_bundle_action_timeout(
+        self, mock_get_publisher, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
+    ):
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+
+        mock_get_publisher.return_value.publish_created_or_updated.side_effect = lambda *args, **kwargs: time.sleep(3)
+
+        mark_page_as_ready_to_publish(self.statistical_article)
+
+        start_time = time.time()
+        self.call_command()
+
+        # Check the sleep didn't run
+        self.assertLessEqual(time.time() - start_time, 3)
+        mock_get_publisher.return_value.publish_created_or_updated.assert_called()
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
+
+        # Check notifications were sent
+        self.assertTrue(mock_notify_start.called)
+        self.assertTrue(mock_notify_end.called)
+        self.assertTrue(mock_notify_post_publish_end.called)
+
+        self.assertEqual(PostPublishAction.objects.unfinished().count(), 0)
+        self.assertEqual(PostPublishAction.objects.finished().count(), 2)
+
+        action = PostPublishAction.objects.get(action_type=PostPublishActionType.SEARCH_UPDATED)
+
+        # Check timed_out_at was set.
+        # Other attributes can't be reliably checked, in case the thread stopped before the assertion runs.
+        self.assertIsNotNone(action.timed_out_at)
+
+    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    def test_publish_bundle_with_page_in_workflow(
+        self, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
+    ):
         """Test publishing a bundle."""
         # Sanity checks
         self.assertFalse(self.statistical_article.live)
@@ -147,6 +306,7 @@ class PublishBundlesCommandTestCase(TestCase):
         # Check notifications were sent
         self.assertTrue(mock_notify_start.called)
         self.assertTrue(mock_notify_end.called)
+        self.assertTrue(mock_notify_post_publish_end.called)
 
         # Check that we have a log entry
         self.assertEqual(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
@@ -318,7 +478,8 @@ class PublishBundlesCommandTestCase(TestCase):
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
-    def test_publish_bundle_with_base_url(self, mock_notify_end, mock_notify_start):
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    def test_publish_bundle_with_base_url(self, mock_notify_post_publish_end, mock_notify_end, mock_notify_start):
         """Test publishing with a configured base URL."""
         self.call_command()
 
@@ -331,6 +492,8 @@ class PublishBundlesCommandTestCase(TestCase):
                 call_kwargs["url"], "https://test.ons.gov.uk" + reverse("bundle:inspect", args=(self.bundle.pk,))
             )
             self.assertIn(str(self.bundle.pk), call_kwargs["url"])
+
+        self.assertTrue(mock_notify_post_publish_end.called)
 
     @patch("cms.bundles.management.commands.publish_bundles.publish_bundle")
     def test_publish_bundle_include_future(self, mock_publish_bundle):
