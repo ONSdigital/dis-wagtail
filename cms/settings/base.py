@@ -1146,6 +1146,9 @@ SECURE_CSP: dict[str, list] = {
     "manifest-src": [CSP.SELF, ONS_CDN_URL],
     "frame-ancestors": [CSP.NONE if IS_EXTERNAL_ENV else CSP.SELF],
 }
+# Google Fonts are only needed for the Wagtail admin.
+# The external site loads fonts directly from the ONS CDN, so these CSP sources
+# should not be allowed there.
 if not IS_EXTERNAL_ENV:
     SECURE_CSP["style-src"].append("fonts.googleapis.com")
     SECURE_CSP["font-src"].append("fonts.gstatic.com")
