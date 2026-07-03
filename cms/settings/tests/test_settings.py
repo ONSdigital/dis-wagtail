@@ -35,6 +35,24 @@ class SettingsTestCase(TestCase):
             self.assertEqual(reloaded_base.WAGTAILADMIN_HOME_PATH, "cms-admin/")
             self.assertEqual(reloaded_base.WAGTAILADMIN_LOGIN_URL, "/cms-admin/login/")
 
+    def test_internal_env_csp_settings(self):
+        self.addCleanup(importlib.reload, base)
+
+        with mock.patch.dict(os.environ, {"IS_EXTERNAL_ENV": "false"}, clear=False):
+            reloaded_base = importlib.reload(base)
+            self.assertIn("fonts.googleapis.com", reloaded_base.SECURE_CSP["style-src"])
+            self.assertIn("fonts.gstatic.com", reloaded_base.SECURE_CSP["font-src"])
+            self.assertEqual(reloaded_base.SECURE_CSP["frame-ancestors"], [CSP.SELF])
+
+    def test_external_env_csp_settings(self):
+        self.addCleanup(importlib.reload, base)
+
+        with mock.patch.dict(os.environ, {"IS_EXTERNAL_ENV": "true"}, clear=False):
+            reloaded_base = importlib.reload(base)
+            self.assertNotIn("fonts.googleapis.com", reloaded_base.SECURE_CSP["style-src"])
+            self.assertNotIn("fonts.gstatic.com", reloaded_base.SECURE_CSP["font-src"])
+            self.assertEqual(reloaded_base.SECURE_CSP["frame-ancestors"], [CSP.NONE])
+
 
 class CSPTestCase(TestCase):
     urls = frozenset(["/", "/test404", reverse_lazy("wagtailadmin_login")])

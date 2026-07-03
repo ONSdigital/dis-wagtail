@@ -1146,6 +1146,10 @@ SECURE_CSP: dict[str, list] = {
     "manifest-src": [CSP.SELF, ONS_CDN_URL],
     "frame-ancestors": [CSP.NONE if IS_EXTERNAL_ENV else CSP.SELF],
 }
+if not IS_EXTERNAL_ENV:
+    SECURE_CSP["style-src"].append("fonts.googleapis.com")
+    SECURE_CSP["font-src"].append("fonts.gstatic.com")
+
 if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
     SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")
 
