@@ -881,28 +881,6 @@ files = [
 dev = ["black", "flake8", "therapist", "tox", "twine"]
 
 [[package]]
-name = "django-csp"
-version = "4.0"
-description = "Django Content Security Policy support."
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "django_csp-4.0-py3-none-any.whl", hash = "sha256:d5a0a05463a6b75a4f1fc1828c58c89af8db9364d09fc6e12f122b4d7f3d00dc"},
-    {file = "django_csp-4.0.tar.gz", hash = "sha256:b27010bb702eb20a3dad329178df2b61a2b82d338b70fbdc13c3a3bd28712833"},
-]
-
-[package.dependencies]
-django = ">=4.2"
-packaging = "*"
-
-[package.extras]
-dev = ["django-stubs[compatible-mypy]", "jinja2 (>=2.9.6)", "mypy", "pre-commit", "pytest", "pytest-cov", "pytest-django", "pytest-ruff", "sphinx", "sphinx-rtd-theme", "tox", "tox-gh-actions", "types-setuptools"]
-jinja2 = ["jinja2 (>=2.9.6)"]
-tests = ["jinja2 (>=2.9.6)", "pytest", "pytest-cov", "pytest-django", "pytest-ruff"]
-typing = ["django-stubs[compatible-mypy]", "jinja2 (>=2.9.6)", "mypy", "pytest", "pytest-django", "types-setuptools"]
-
-[[package]]
 name = "django-debug-toolbar"
 version = "6.3.0"
 description = "A configurable set of panels that display various debug information about the current request/response."
@@ -1055,6 +1033,22 @@ Django = "*"
 
 [package.extras]
 testing = ["django-modelcluster"]
+
+[[package]]
+name = "django-permissions-policy"
+version = "4.32.0"
+description = "Set the Permissions-Policy HTTP header on your Django app."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "django_permissions_policy-4.32.0-py3-none-any.whl", hash = "sha256:8debc44843e096ffaff60a6c8553b2b4163f9a613d3993148002c673ed28e6d3"},
+    {file = "django_permissions_policy-4.32.0.tar.gz", hash = "sha256:a43a465990b36f130f0b61719cdeb1fcedb1b51789ce7c3893179fc53f7e4a4a"},
+]
+
+[package.dependencies]
+asgiref = ">=3.6"
+django = ">=5.2"
 
 [[package]]
 name = "django-pgactivity"
@@ -3887,4 +3881,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "4972c07ce111651c2fce81d9172c5d5580a27695d0440ffa5be296ea3908aaa3"
+content-hash = "2aae77f3ed455bd6dbe8fb93eba465c861f2f33c1db677e58b4928482649c312"
