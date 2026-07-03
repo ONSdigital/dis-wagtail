@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  POETRY_VERSION: '2.2.1' # keep in sync with pyproject.toml, Dockerfile
+  POETRY_VERSION: '2.4.1' # keep in sync with pyproject.toml, Dockerfile
   COVERAGE_CORE: 'sysmon'
 
 permissions:
