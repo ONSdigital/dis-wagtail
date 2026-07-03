@@ -44,8 +44,7 @@ def format_as_document_list_item(
 
 def _format_external_link(page_dict: ExternalArticleDict) -> DocumentListItem:
     """Format external link dictionary into DocumentListItem."""
-    page_type = page_dict.get("content_type", RelatedContentType.ARTICLE)
-    print(f"Formatting external link with content type: {page_type}")  # Debugging statement
+    page_type = page_dict.get("content_type") or RelatedContentType.ARTICLE
     content_type = get_related_content_type_label(page_type)
 
     page_datum: DocumentListItem = format_as_document_list_item(
