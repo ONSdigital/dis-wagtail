@@ -52,7 +52,7 @@ def _format_external_link(page_dict: ExternalArticleDict) -> DocumentListItem:
         url=page_dict["url"],
         content_type=content_type,
         description=page_dict.get("description", ""),
-        release_date=page_dict.get("release_date", None),
+        release_date=page_dict.get("release_date"),
     )
 
     if release_date := page_dict.get("release_date"):
