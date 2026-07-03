@@ -435,7 +435,7 @@ A pinned reference looks like this:
 - uses: actions/checkout@v4
 
 # After
-- uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+- uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 ```
 
 The version tag is preserved as a comment for human readability.
