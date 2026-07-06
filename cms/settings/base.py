@@ -582,6 +582,11 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "cms.audit": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
         "wagtail": {
             "handlers": ["console"],
             "level": "INFO",
@@ -1130,6 +1135,8 @@ CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED",
 
 # Use default autosave value if not specified. Set to 0 to disable
 WAGTAIL_AUTOSAVE_INTERVAL = int(env.get("WAGTAIL_AUTOSAVE_INTERVAL", 500))
+
+CMS_AUDIT_LOG_COOLDOWN_SECONDS = int(env.get("CMS_AUDIT_LOG_COOLDOWN_SECONDS", 30))
 
 # Content Security policy settings
 # https://docs.djangoproject.com/en/6.0/ref/csp/
