@@ -23,6 +23,7 @@ from wagtail.images.blocks import ImageChooserBlock
 from cms.articles.models import ArticleSeriesPage
 from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
 from cms.core.url_utils import extract_url_path, validate_ons_url_struct_block
+from cms.core.utils import get_content_type_for_page
 
 from .viewsets import series_with_headline_figures_chooser_viewset
 
@@ -86,6 +87,8 @@ class ExploreMoreInternalLinkBlock(StructBlock):
             },
             "description": value["description"] or getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
         }
+        if content_type := get_content_type_for_page(page):
+            formatted_value["metadata"] = {"object": {"text": content_type}}
         if image := (value["thumbnail"] or getattr(page, "listing_image", None)):
             renditions = image.get_renditions("fill-144x100", "fill-288x200")
             formatted_value["thumbnail"] = {
