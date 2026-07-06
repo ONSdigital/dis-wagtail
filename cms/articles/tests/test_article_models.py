@@ -84,7 +84,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         toc = self.page.table_of_contents
         self.assertEqual(len(toc), 1)
         self.assertEqual(toc[0]["url"], "#cite-this-page")
-        self.assertEqual(toc[0]["text"], "Cite this article")
+        self.assertEqual(toc[0]["text"], "Cite this page")
 
     def test_table_of_contents_with_contact_details(self):
         """Test table_of_contents includes contact details when present."""
@@ -127,7 +127,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
         toc = self.page.table_of_contents
         self.assertEqual(len(toc), 4)
-        expected_attribute_labels = ["Section 1", "Section 2", "Cite this article", "Contact details"]
+        expected_attribute_labels = ["Section 1", "Section 2", "Cite this page", "Contact details"]
         for idx, toc_item in enumerate(toc):
             self.assertEqual(toc_item["attributes"]["data-ga-section-title"], expected_attribute_labels[idx])
             self.assertEqual(toc_item["attributes"]["data-ga-event"], "navigation-onpage")

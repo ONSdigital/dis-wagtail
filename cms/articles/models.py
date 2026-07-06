@@ -470,7 +470,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             if hasattr(block.block, "to_table_of_contents_items"):
                 items += block.block.to_table_of_contents_items(block.value)
         if self.show_cite_this_page:
-            items += [{"url": "#cite-this-page", "text": _("Cite this article")}]
+            items += [{"url": "#cite-this-page", "text": _("Cite this page")}]
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
         add_table_of_contents_gtm_attributes(items)
