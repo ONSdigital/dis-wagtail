@@ -1,12 +1,11 @@
 import logging
 from typing import Any, Protocol, cast
-from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import redirect_to_login
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import redirect
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
@@ -60,24 +59,25 @@ def extend_session(request: HttpRequest) -> JsonResponse:
 
 
 def frontend_login_redirect(request: HttpRequest) -> HttpResponse:
-    """Redirect Wagtail frontend private-page login requests to SSO."""
+    """Redirect Wagtail frontend private-page login requests to the appropriate login page.
+
+    With Cognito enabled, users are sent to the Florence SSO login, which expects the
+    absolute post-login target in a `redirect` query parameter. Otherwise, users fall
+    back to Wagtail's built-in frontend login view, which reads `next`.
+    """
     next_url = request.GET.get("next", "")
-    safe_next = "/"
 
     # Only allow local relative paths for post-login redirect targets.
     # Reject absolute/protocol-relative URLs.
-    if (
-        isinstance(next_url, str)
-        and next_url.startswith("/")
-        and url_has_allowed_host_and_scheme(
-            next_url,
-            allowed_hosts=None,
-            require_https=False,
-        )
-    ):
+    safe_next = "/"
+    if next_url.startswith("/") and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
         safe_next = next_url
 
-    absolute_next = request.build_absolute_uri(safe_next)
-    query = urlencode({"redirect": absolute_next})
-    separator = "&" if "?" in settings.WAGTAILADMIN_LOGIN_URL else "?"
-    return redirect(f"{settings.WAGTAILADMIN_LOGIN_URL}{separator}{query}")
+    if settings.AWS_COGNITO_LOGIN_ENABLED:
+        return redirect_to_login(
+            request.build_absolute_uri(safe_next),
+            login_url=settings.WAGTAILADMIN_LOGIN_URL,
+            redirect_field_name="redirect",
+        )
+
+    return redirect_to_login(safe_next, login_url="wagtailcore_login")
