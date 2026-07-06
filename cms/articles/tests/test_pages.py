@@ -148,7 +148,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertContains(response, "Save or print this page")
         self.assertContains(response, "Sections in this page")
         self.assertContains(response, "Contents")
-        self.assertContains(response, "Cite this article")
+        self.assertContains(response, "Cite this page")
 
     def test_correction_routes(self):
         self.assertPageIsRoutable(self.page, "versions/1")
