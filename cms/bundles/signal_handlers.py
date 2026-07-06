@@ -25,7 +25,7 @@ def handle_bundle_in_preview(instance: Bundle, **kwargs: Any) -> None:
         active_unnotified_bundle_teams = [
             bundle_team
             for bundle_team in instance.teams.get_object_list()  # type: ignore[attr-defined]
-            if bundle_team.team.is_active and not bundle_team.preview_notification_sent
+            if bundle_team.pk is not None and bundle_team.team.is_active and not bundle_team.preview_notification_sent
         ]
         for bundle_team in active_unnotified_bundle_teams:
             send_bundle_in_review_email(bundle_team=bundle_team)

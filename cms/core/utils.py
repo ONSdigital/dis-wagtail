@@ -82,7 +82,8 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
     import matplotlib as mpl  # pylint: disable=import-outside-toplevel
     from matplotlib.figure import Figure  # pylint: disable=import-outside-toplevel
 
-    with matplotlib_lock, mpl.rc_context(MATPLOTLIB_CONTEXT):
+    # Type ignore: Matplotlib's stub expects rcParam keys as specific Literals; our shared dict is valid at runtime.
+    with matplotlib_lock, mpl.rc_context(MATPLOTLIB_CONTEXT):  # type: ignore[arg-type]
         fig = Figure()
 
         with io.StringIO() as svg_buffer:
