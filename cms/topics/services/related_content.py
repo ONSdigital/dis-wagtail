@@ -29,10 +29,11 @@ class BaseRelatedItem(Protocol):
     title: str
     description: str
     release_date: datetime.date | None
+    content_type: RelatedContentType | None
 
 
 class MethodologyRelatedItem(BaseRelatedItem, Protocol):
-    content_type: object | None
+    pass
 
 
 class BaseProcessor[T, R: BaseRelatedItem](ABC):
@@ -100,11 +101,13 @@ class RelatedArticleProcessor(BaseProcessor[ArticleDict, BaseRelatedItem]):
                 external_article: ExternalArticleDict = {
                     "url": related.external_url,
                     "title": related.title,
-                    "description": "",
-                    "content_type": RelatedContentType.ARTICLE,
-                    "release_date": None,
+                    "description": related.description,
                     "is_external": True,
                 }
+                if related.content_type:
+                    external_article["content_type"] = related.content_type
+                if related.release_date:
+                    external_article["release_date"] = related.release_date
                 return external_article
             return None
 

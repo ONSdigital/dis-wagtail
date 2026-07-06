@@ -912,7 +912,11 @@ class TopicPageRelatedArticleValidationTests(TestCase):
     def test_validation_passes_with_external_url_and_title(self):
         """Test that validation passes with an external_url and title."""
         related_article = TopicPageRelatedArticleFactory.build(
-            parent=self.topic_page, page=None, external_url="https://example.com", title="External Article Title"
+            parent=self.topic_page,
+            page=None,
+            external_url="https://example.com",
+            title="External Article Title",
+            description="External article summary",
         )
         # Should not raise ValidationError
         related_article.clean()
