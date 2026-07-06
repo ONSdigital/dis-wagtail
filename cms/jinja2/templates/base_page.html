@@ -1,4 +1,5 @@
 {% extends "templates/base.html" %}
+{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/back-to-top/_macro.njk" import onsBackToTop %}
 
 {%- set back_to_top = _('Back to top') -%}
@@ -83,8 +84,28 @@
     {% endif %}
 {% endblock %}
 
+{# This block should be overridden on individual page templates and include the breadcrumbs #}
 {% block breadcrumbs %}
     {% include "templates/components/navigation/breadcrumbs.html" %}
+{% endblock %}
+
+{# Default heading if hero not used #}
+{% block hero %}
+    {% if not render_heading_in_content %}
+        <div class="ons-container">
+            <h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">
+                {{ page_heading or page.title }}
+            </h1>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block mainContent %}
+    {% if render_heading_in_content %}
+        <h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">
+            {{ page_heading or page.title }}
+        </h1>
+    {% endif %}
 {% endblock %}
 
 {% block scripts %}
