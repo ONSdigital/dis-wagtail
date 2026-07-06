@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django_stubs_ext import StrOrPromise
 from wagtail.admin.panels import ObjectList, TabbedInterface
 from wagtail.log_actions import log
 from wagtail.models import Page
@@ -63,7 +64,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     content_field_name: str = "content"
 
     # used a page type label in the front-end
-    label = "Page"
+    label: ClassVar[StrOrPromise | None] = None
 
     # The default schema.org type for pages
     schema_org_type = "WebPage"

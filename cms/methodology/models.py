@@ -50,6 +50,8 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
     # disables the "Promote" tab as we control the slug, and the page redirects
     promote_panels: ClassVar[list[Panel]] = []
 
+    label = None
+
     def clean(self) -> None:
         self.slug = "methodologies"
         super().clean()
@@ -90,7 +92,7 @@ class MethodologyPage(  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["MethodologyIndexPage"]
     search_index_content_type: ClassVar[str] = "static_methodology"
     template = "templates/pages/methodology_page.html"
-    label = _("Methodology")  # type: ignore[assignment]
+    label = _("Methodology")
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     publication_date = models.DateField()
