@@ -2,7 +2,6 @@ from unittest import skip
 
 from django.conf import settings
 from django.test import RequestFactory, override_settings
-from django.utils import translation
 from wagtail.models import Site
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -20,10 +19,6 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
         cls.welsh_home = cls.welsh_cookies_page.get_parent().specific
         cls.english_site = Site.objects.get(is_default_site=True)
         cls.welsh_site = Site.objects.get(root_page=cls.welsh_home)
-
-    def tearDown(self):
-        # Clear translation caches
-        translation.deactivate()
 
     def test_welsh_cookies_page_shows_localised_version_notice_by_default(self):
         request = RequestFactory().get(self.welsh_cookies_page.url)

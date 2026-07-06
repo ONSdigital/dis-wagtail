@@ -51,7 +51,7 @@ def the_methodology_page_is_displayed_with_the_populated_data(context: Context) 
     expect(context.page.get_by_role("heading", name="Methodology page")).to_be_visible()
     expect(context.page.get_by_text("Page summary")).to_be_visible()
     expect(context.page.get_by_text("Published: 1 January 1950")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Cite this methodology")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Cite this page")).to_be_visible()
 
     expect(context.page.get_by_role("heading", name="Heading")).to_be_visible()
     expect(context.page.get_by_role("heading", name="Content")).to_be_visible()
@@ -66,7 +66,7 @@ def the_user_selects_statistical_articles_as_related_publications(
     context.page.get_by_role(
         "cell",
         name=f"{context.article_series_page.title}: {context.statistical_article_page.title}",
-    ).click()
+    ).get_by_role("link").first.click()
 
 
 @then("the article is displayed correctly under the Related publication section")
@@ -125,7 +125,7 @@ def preview_is_visible(context: Context) -> None:
     expect(iframe_locator.get_by_role("heading", name="Methodology page")).to_be_visible()
     expect(iframe_locator.get_by_text("Page summary")).to_be_visible()
     expect(iframe_locator.get_by_text("1 January 1950", exact=True)).to_be_visible()
-    expect(iframe_locator.get_by_role("heading", name="Cite this methodology")).to_be_visible()
+    expect(iframe_locator.get_by_role("heading", name="Cite this page")).to_be_visible()
     expect(iframe_locator.get_by_role("heading", name="Heading")).to_be_visible()
     expect(iframe_locator.get_by_role("heading", name="Content")).to_be_visible()
 

@@ -27,11 +27,13 @@ repos: # Python linting and formatting
           - '--reports=n' # only display messages
           - '--output-format=colorized'
           - '--rcfile=.pylintrc'
+          # add project root to sys.path to prevent django setting import errors in .github dir
+          - '--init-hook=import sys; sys.path.insert(0, ".")'
           - '--django-settings-module=cms.settings.production'
           - '-j 0' # detect number of processors available to use
 
   - repo: https://github.com/python-poetry/poetry
-    rev: '2.2.1' # keep version in sync with version installed in the Dockerfile
+    rev: '2.4.1' # keep version in sync with version installed in the Dockerfile
     hooks:
       - id: poetry-check
       - id: poetry-lock

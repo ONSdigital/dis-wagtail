@@ -3,9 +3,11 @@ from typing import TYPE_CHECKING, Any
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.urls import reverse
+from django.utils.html import strip_tags
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
+from wagtail.blocks import StructBlockValidationError
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
 
@@ -130,15 +132,31 @@ class BasicTableBlock(WagtailTableBlock):
 class ONSTableBlock(TinyTableBlock):
     """The ONS table block."""
 
+    subtitle = blocks.CharBlock(required=False)
     source = blocks.CharBlock(label="Source", required=False)
     footnotes = blocks.RichTextBlock(label="Footnotes", features=settings.RICH_TEXT_BASIC, required=False)
+    # Redeclare the inherited caption field
+    caption = blocks.CharBlock(
+        required=True,
+        label="Accessible label",
+        help_text=(
+            "A short label to explain what this table is about for those "
+            "using a screen reader. This will not be visible on the page "
+            "but is important for accessibility. "
+            "Note that this is rendered as a hidden caption element."
+        ),
+    )
 
-    def __init__(
-        self, *, local_blocks: list[blocks.Block] | None = None, search_index: bool = True, **kwargs: Any
-    ) -> None:
-        super().__init__(local_blocks=local_blocks, search_index=search_index, **kwargs)
-        # relabeled to match the publishing team's terminology
-        self.child_blocks["caption"].label = "Sub-heading"
+    def clean(self, value: dict) -> dict:
+        """Validate that a subtitle is only present when a title is also provided."""
+        cleaned_value: dict = super().clean(value)
+
+        if cleaned_value.get("subtitle") and not cleaned_value.get("title"):
+            raise StructBlockValidationError(
+                block_errors={"subtitle": ValidationError("Please add a title if you want to add a subtitle.")}
+            )
+
+        return cleaned_value
 
     def _align_to_ons_classname(self, alignment: str) -> str:
         match alignment:
@@ -185,6 +203,7 @@ class ONSTableBlock(TinyTableBlock):
 
         options = {
             "caption": value.get("caption"),
+            "hideCaption": True,
             "thList": [{"ths": self._prepare_header_cells(header_row)} for header_row in data.get("headers", [])],
             "trs": [{"tds": self._prepare_body_cells(row)} for row in data.get("rows", [])],
         }
@@ -195,16 +214,25 @@ class ONSTableBlock(TinyTableBlock):
             options["download"] = self._get_download_config(parent_context=parent_context, block_id=block_id, data=data)
 
         # Used by footnotes and downloads sections
-        additional_sections_heading_level = 4 if value.get("title") else 3
+        if value.get("title") and value.get("subtitle"):
+            additional_sections_heading_level = 5
+        elif value.get("title"):
+            additional_sections_heading_level = 4
+        else:
+            additional_sections_heading_level = 3
 
         table_context = {
             "title": value.get("title"),
+            "subtitle": value.get("subtitle"),
             "options": options,
             "source": value.get("source"),
-            "footnotes": value.get("footnotes"),
             "additional_sections_heading_level": additional_sections_heading_level,
             **context,
         }
+
+        # Check for meaningful text before displaying footnotes
+        if (footnotes := value.get("footnotes")) and strip_tags(str(footnotes)).strip():
+            table_context["footnotes"] = footnotes
 
         return table_context
 
