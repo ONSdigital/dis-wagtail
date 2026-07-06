@@ -1,10 +1,11 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
-from django.shortcuts import redirect
 from wagtail import hooks
 from wagtail.admin import messages
+from wagtail.log_actions import LogFormatter
 
+from cms.core.utils import redirect
 from cms.themes.models import ThemePage
 
 from .models import TopicPage
@@ -17,7 +18,8 @@ from .viewsets import (
 
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse
-    from wagtail.models import Page
+    from wagtail.log_actions import LogActionRegistry
+    from wagtail.models import ModelLogEntry, Page
 
     from .viewsets import (
         FeaturedSeriesPageChooserViewSet,
@@ -54,5 +56,20 @@ def before_create_page(request: HttpRequest, page: Page) -> HttpResponse | None:
             request,
             "Topic and theme pages cannot be duplicated as selected taxonomy needs to be unique for each page.",
         )
-        return redirect("wagtailadmin_explore", page.get_parent().id)
+        return redirect("wagtailadmin_explore", page.get_parent().id, preserve_request=False)
     return None
+
+
+@hooks.register("register_log_actions")
+def register_topics_log_actions(actions: LogActionRegistry) -> None:
+    @actions.register_action("topics.headline_figures_chooser.view")
+    class ViewHeadlineFiguresChooser(LogFormatter):  # pylint: disable=unused-variable
+        label = "View headline figures chooser"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            base_message = "Viewed headline figures in chooser"
+            try:
+                figure_ids = log_entry.data["figure_ids"]
+                return f"{base_message}: {', '.join(figure_ids)}"
+            except KeyError:
+                return base_message

@@ -12,7 +12,7 @@ Feature: A general use information page
         Then the new information page with the added content is displayed
         And  the user can see the breadcrumbs
 
-    Scenario: A CMS user can add an equation an information page
+    Scenario: A CMS user can add an equation to an information page
         Given an information page exists
         When the user edits the information page
         And  the user adds an equation

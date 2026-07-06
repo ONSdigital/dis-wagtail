@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth.models import Group
+from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -206,7 +207,7 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.post(self.edit_url, data, follow=True)
 
         self.assertContains(
-            response, "Cannot self-approve your changes. Please ask another Publishing team member to do so."
+            response, "You cannot review your own changes. Please ask another Publishing team member to do so."
         )
         self.page.refresh_from_db()
         self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)
@@ -216,12 +217,31 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
 
         response = self.client.post(self.edit_url, data, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Cannot self-approve your changes")
+        self.assertNotContains(response, "You cannot review your own changes")
 
         self.assertTrue(is_page_ready_to_publish(self.page))
         self.page.refresh_from_db()
         self.assertEqual(self.page.latest_revision.user_id, self.publishing_officer.id)
         self.assertNotEqual(self.page.latest_revision.pk, latest_revision.pk)
+
+    def test_before_edit_page__prevents_self_reject(self):
+        """Test that the last editor cannot request changes on their own submission."""
+        self.client.force_login(self.publishing_admin)
+
+        workflow_state = mark_page_as_ready_for_review(self.page, self.publishing_admin)
+        latest_revision = self.page.latest_revision
+
+        data = self.get_simple_post_data(self.page)
+        data["workflow-action-name"] = "reject"
+        response = self.client.post(self.edit_url, data, follow=True)
+
+        self.assertContains(
+            response, "You cannot review your own changes. Please ask another Publishing team member to do so."
+        )
+        self.page.refresh_from_db()
+        self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)
+        workflow_state.refresh_from_db()
+        self.assertEqual(workflow_state.status, workflow_state.STATUS_IN_PROGRESS)
 
     def test_before_edit_page__prevents_schedule_mechanism_when_in_bundle(self):
         """Test that users cannot set individual page publishing schedule while in a bundle."""
@@ -416,15 +436,15 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         self.client.force_login(self.publishing_officer)
         mark_page_as_ready_for_review(self.page, self.publishing_officer)
 
-        # check task actions
+        # self-approver should see no task actions at all
         self.assertEqual(
             self.page.current_workflow_task.get_actions(self.page, self.publishing_officer),
-            [("reject", "Request changes", True)],
+            [],
         )
 
         # check the dashboard
         response = self.client.get(self.dashboard_url)
-        self.assertContains(response, "Request changes")
+        self.assertNotContains(response, "Request changes")
         self.assertNotContains(response, "Approve")
         self.assertNotContains(response, "Approve with comment")
 
@@ -432,13 +452,24 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
 
-        self.assertEqual(len(menu_items), 3)
+        self.assertEqual(len(menu_items), 1)
 
-        self.assertItemWithPropertyIn("name", "action-unpublish", menu_items)
         self.assertItemWithPropertyIn("name", "action-cancel-workflow", menu_items)
-        self.assertItemWithPropertyIn("name", "reject", menu_items)
+        self.assertItemWithPropertyNotIn("name", "reject", menu_items)
         self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
         self.assertItemWithPropertyNotIn("name", "approve", menu_items)
+
+    def test_reject_action__sends_email_notification_to_submitter(self):
+        """Rejection email is sent to the page submitter when a different user requests changes."""
+        workflow_state = mark_page_as_ready_for_review(self.page, self.publishing_officer)
+        mail.outbox = []
+
+        task_state = workflow_state.current_task_state
+        task_state.task.on_action(task_state, user=self.publishing_admin, action_name="reject")
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(self.publishing_officer.email, mail.outbox[0].to)
+        self.assertIn("rejected", mail.outbox[0].subject)
 
     def test_ready_to_publish_task__get_actions__user_can_publish__non_bundle_page(self):
         non_bundle_page = StatisticalArticlePageFactory()
@@ -690,7 +721,7 @@ class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.post(self.edit_url, data, follow=True)
 
         self.assertContains(
-            response, "Cannot self-approve your changes. Please ask another Publishing team member to do so."
+            response, "You cannot review your own changes. Please ask another Publishing team member to do so."
         )
         self.page.refresh_from_db()
         self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)

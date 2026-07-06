@@ -20,7 +20,6 @@ class ContextProcessorTestCase(TestCase):
             "GOOGLE_TAG_MANAGER_CONTAINER_ID": settings.GOOGLE_TAG_MANAGER_CONTAINER_ID,
             "ONS_COOKIE_BANNER_SERVICE_NAME": settings.ONS_COOKIE_BANNER_SERVICE_NAME,
             "SEO_NOINDEX": False,
-            "LANGUAGE_CODE": "en-gb",
             "IS_EXTERNAL_ENV": False,
             "AWS_COGNITO_LOGIN_ENABLED": settings.AWS_COGNITO_LOGIN_ENABLED,
             "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED": settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED,
@@ -28,7 +27,6 @@ class ContextProcessorTestCase(TestCase):
             "DEFAULT_OG_IMAGE_URL": settings.DEFAULT_OG_IMAGE_URL,
             "CONTACT_US_URL": settings.CONTACT_US_URL,
             "BACKUP_SITE_URL": settings.BACKUP_SITE_URL,
-            "ONS_WEBSITE_SEARCH_PATH": settings.ONS_WEBSITE_SEARCH_PATH,
             "COOKIES_PAGE_URL": f"/{settings.ONS_COOKIES_PAGE_SLUG}",
         }
         self.assertEqual(global_vars(self.request), expected)

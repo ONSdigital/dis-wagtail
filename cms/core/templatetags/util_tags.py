@@ -1,14 +1,13 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any
 
 import jinja2
 from django import template
-from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import json_script as _json_script
 from django_jinja import library
 from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
-from wagtail.models import Locale, Page
+from wagtail.models import Page
 
 from cms.core.custom_date_format import ons_date_format
 
@@ -16,23 +15,6 @@ register = template.Library()
 
 if TYPE_CHECKING:
     from django.utils.safestring import SafeString
-
-
-class LocaleURLsDict(TypedDict):
-    locale: Locale
-    url: str
-
-
-class TranslationURLDict(TypedDict):
-    url: str
-    isoCode: str
-    text: str
-    current: bool
-
-
-class HreflangDict(TypedDict):
-    url: str
-    lang: str
 
 
 @library.global_function
@@ -51,88 +33,6 @@ def set_attributes_filter(attributes: dict, new_attributes: dict) -> dict:
     """
     attributes.update(new_attributes)
     return attributes
-
-
-def _build_locale_urls(context: jinja2.runtime.Context) -> list[LocaleURLsDict]:
-    """Internal helper to build a list of dicts that map each locale to:
-    - its variant (or fallback to default_page if missing)
-    - the final URL to use
-    - the locale object itself.
-    """
-    page = context.get("page")
-    if not page:
-        return []
-
-    # TODO: if request.is_preview -> use view_draft URLs
-    if prebuilt_locale_urls := getattr(page, "_locale_urls", None):
-        return prebuilt_locale_urls  # type: ignore[no-any-return]
-
-    default_locale = Locale.get_default()
-
-    variants = {variant.locale_id: variant for variant in page.get_translations(inclusive=True).defer_streamfields()}
-    default_page = variants.get(default_locale.pk)
-
-    use_subdomain_locale = settings.CMS_USE_SUBDOMAIN_LOCALES
-    results: list[LocaleURLsDict] = []
-    for locale in Locale.objects.all().order_by("pk"):
-        variant = variants.get(locale.pk, default_page)
-        if not variant:
-            # In case a preview of a non-existent page is requested
-            continue
-
-        # If there's no real translation in this locale, prepend
-        # the locale code to the default page's URL so that strings in
-        # templates can be localized:
-        if use_subdomain_locale:
-            # Use the full URL to handle locale subdomains
-            url = variant.get_full_url(request=context["request"])
-        elif variant == default_page and locale.pk != variant.locale_id:
-            # Handle the specific case for the default page with a different locale
-            url = f"/{locale.language_code}{variant.get_url(request=context['request'])}"
-        else:
-            url = variant.get_url(request=context["request"])
-
-        results.append(
-            {
-                "locale": locale,
-                "url": url,
-            }
-        )
-
-    page._locale_urls = results  # pylint: disable=protected-access
-
-    return results
-
-
-@jinja2.pass_context
-def get_translation_urls(context: jinja2.runtime.Context) -> list[TranslationURLDict]:
-    """Returns a list of dictionaries containing URL, ISO code, language name,
-    and whether it is the current locale.
-    """
-    base_urls = _build_locale_urls(context)
-    urls: list[TranslationURLDict] = []
-    for item in base_urls:
-        locale = item["locale"]
-        urls.append(
-            {
-                "url": item["url"],
-                "isoCode": locale.language_code.split("-", 1)[0],
-                "text": ("English" if locale.language_name_local == "British English" else locale.language_name_local),
-                "current": locale.is_active,
-            }
-        )
-    return urls
-
-
-@jinja2.pass_context
-def get_hreflangs(context: jinja2.runtime.Context) -> list[HreflangDict]:
-    """Returns a list of dictionaries containing URL and the full locale code.
-    Typically used for HTML 'hreflang' tags.
-    """
-    # TODO make aware of subpage routing!
-    base_urls = _build_locale_urls(context)
-    hreflangs: list[HreflangDict] = [{"url": item["url"], "lang": item["locale"].language_code} for item in base_urls]
-    return hreflangs
 
 
 @register.filter(name="ons_date")

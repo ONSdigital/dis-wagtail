@@ -81,6 +81,9 @@ class TestNotifications(TestCase):
         # NB: Scheduled bundles are published using the management command.
 
         bundle = BundleFactory(approved=True, name="Approved Bundle")
+        page = StatisticalArticlePageFactory()
+        page.save_revision()
+        BundlePageFactory(parent=bundle, page=page)
         bundle.publication_date = timezone.now() - timedelta(days=1)
         bundle.save()
 

@@ -5,6 +5,7 @@ from django.utils import timezone
 from wagtail.models import Locale
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.core.formatting_utils import to_rfc3339_datetime
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
@@ -289,7 +290,7 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
         result = build_resource_dict(page)
 
         # Then
-        self.assertEqual(result["release_date"], page.release_date.isoformat())
+        self.assertEqual(result["release_date"], to_rfc3339_datetime(page.release_date))
 
     def test_standard_page_release_date_falls_back_to_last_published_at(self):
         """If a page has no release_date, build_resource_dict should use last_published_at."""
@@ -301,4 +302,4 @@ class ResourceBuildersTestCase(TestCase, ResourceDictAssertions):
         self.assertIsNone(getattr(page, "release_date", None))
 
         # Then
-        self.assertEqual(result["release_date"], page.last_published_at.isoformat())
+        self.assertEqual(result["release_date"], to_rfc3339_datetime(page.last_published_at))

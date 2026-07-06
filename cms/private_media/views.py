@@ -3,8 +3,11 @@ from typing import TYPE_CHECKING
 
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import FileResponse, Http404, HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.utils.cache import add_never_cache_headers, patch_cache_control
+from django.utils.csp import CSP
+from django.utils.decorators import method_decorator
+from django.views.decorators.csp import csp_override
 from django.views.generic import View
 from wagtail.documents import get_document_model
 from wagtail.documents.models import document_served
@@ -15,8 +18,11 @@ from wagtail.images.models import SourceImageIOError
 from wagtail.images.permissions import permission_policy as image_permission_policy
 from wagtail.images.utils import verify_signature
 
+from cms.core.utils import redirect
+from cms.private_media.utils import user_can_access_asset
+
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponseBase, HttpResponseRedirect
+    from django.http import HttpRequest, HttpResponseBase, HttpResponsePermanentRedirect, HttpResponseRedirect
     from wagtail.documents.models import AbstractDocument
     from wagtail.images.models import AbstractImage, AbstractRendition
 
@@ -25,7 +31,8 @@ class ImageServeView(View):
     http_method_names: Sequence[str] = ["get"]
     key = None
 
-    def get(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    @method_decorator(csp_override({"default-src": [CSP.NONE]}))
+    def get(
         self,
         request: HttpRequest,
         signature: str,
@@ -47,12 +54,8 @@ class ImageServeView(View):
         image = self.get_image(image_id)
 
         # Block access to private image if the user has insufficient permissions
-        user = self.request.user
-        if image.is_private and (
-            not user.is_authenticated
-            or not image_permission_policy.user_has_any_permission_for_instance(
-                user, ["choose", "add", "change"], image
-            )
+        if not user_can_access_asset(
+            request=self.request, user=self.request.user, asset=image, permission_policy=image_permission_policy
         ):
             raise PermissionDenied
 
@@ -92,7 +95,7 @@ class ImageServeView(View):
         """
         return get_object_or_404(get_image_model(), id=image_id)
 
-    def redirect_to_file(self, url: str) -> HttpResponseRedirect:
+    def redirect_to_file(self, url: str) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
         """Return a cachable temporary redirect to the requested file URL.
 
         The response is cached for 1 hour to reduce load on the web server.
@@ -100,7 +103,7 @@ class ImageServeView(View):
         URL (and other rendition URLs) will be submitted to the active
         edge-cache provider.
         """
-        response = redirect(url)
+        response = redirect(url, preserve_request=False)
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
@@ -134,9 +137,6 @@ class ImageServeView(View):
         rendition.file.open("rb")
         response = FileResponse(rendition.file, content_type=mime_type)
 
-        # Add a CSP header to prevent inline execution
-        response["Content-Security-Policy"] = "default-src 'none'"
-
         # Prevent browsers from auto-detecting the content-type
         response["X-Content-Type-Options"] = "nosniff"
 
@@ -146,6 +146,7 @@ class ImageServeView(View):
 class DocumentServeView(View):
     http_method_names: Sequence[str] = ["get"]
 
+    @method_decorator(csp_override({"default-src": [CSP.NONE]}))
     def get(self, request: HttpRequest, document_id: int, document_filename: str) -> HttpResponseBase:
         """This method immitates `wagtail.documents.views.serve.serve()`, but introduces an
         additional permission check for private documents, and returns responses with varied
@@ -158,12 +159,8 @@ class DocumentServeView(View):
         document = self.get_document(document_id, document_filename)
 
         # Block access to private documents if the user has insufficient permissions
-        user = self.request.user
-        if document.is_private and (
-            not user.is_authenticated
-            or not document_permission_policy.user_has_any_permission_for_instance(
-                user, ["choose", "add", "change"], document
-            )
+        if not user_can_access_asset(
+            request=self.request, user=self.request.user, asset=document, permission_policy=document_permission_policy
         ):
             raise PermissionDenied
 
@@ -198,7 +195,7 @@ class DocumentServeView(View):
             raise Http404
         return obj
 
-    def redirect_to_file(self, url: str) -> HttpResponseRedirect:
+    def redirect_to_file(self, url: str) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
         """Return a cachable temporary redirect to the file URL.
 
         The redirect response is cached for 1 hour to alleviate load on the
@@ -206,7 +203,7 @@ class DocumentServeView(View):
         purge request for this URL will be submitted to the active edge-cache
         provider.
         """
-        response = redirect(url, permanent=False)
+        response = redirect(url, preserve_request=False)
         patch_cache_control(response, max_age=3600, public=True)
         return response
 
@@ -240,9 +237,6 @@ class DocumentServeView(View):
         response["Content-Disposition"] = document.content_disposition
 
         response["Content-Length"] = document.file.size
-
-        # Add a CSP header to prevent inline execution
-        response["Content-Security-Policy"] = "default-src 'none'"
 
         # Prevent browsers from auto-detecting the content-type of a document
         response["X-Content-Type-Options"] = "nosniff"

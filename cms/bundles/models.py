@@ -10,21 +10,29 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
-from wagtail.admin.panels import FieldPanel, FieldRowPanel
+from wagtail.admin.panels import FieldRowPanel
 from wagtail.models import Orderable, Page
 from wagtail.search import index
 
+from cms.articles.models import ArticleSeriesPage
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.home.models import HomePage
 from cms.topics.models import TopicPage
 from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
 
-from .enums import ACTIVE_BUNDLE_STATUSES, EDITABLE_BUNDLE_STATUSES, PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
+from .enums import (
+    ACTIVE_BUNDLE_STATUSES,
+    EDITABLE_BUNDLE_STATUSES,
+    PREVIEWABLE_BUNDLE_STATUSES,
+    PUBLISHED_BUNDLE_STATUSES,
+    BundleStatus,
+)
 from .forms import BundleAdminForm
 from .panels import (
     BundleFieldPanel,
     BundleMultipleChooserPanel,
     BundleStatusPanel,
+    HiddenFieldPanel,
     PageChooserWithStatusPanel,
     ReleaseChooserWithDetailsPanel,
 )
@@ -37,14 +45,12 @@ if TYPE_CHECKING:
 
     from cms.teams.models import Team
 
-PREVIEWER_EXCLUDED_PAGE_TYPES = (HomePage, TopicPage)
+PREVIEWER_EXCLUDED_PAGE_TYPES = (HomePage, TopicPage, ArticleSeriesPage)
 
 
 class BundlePage(Orderable):
     parent = ParentalKey("Bundle", related_name="bundled_pages", on_delete=models.CASCADE)
-    page = models.ForeignKey(  # type: ignore[var-annotated]
-        "wagtailcore.Page", blank=True, null=True, on_delete=models.SET_NULL
-    )
+    page = models.ForeignKey("wagtailcore.Page", blank=True, null=True, on_delete=models.SET_NULL)
 
     panels: ClassVar[list[Panel]] = [
         PageChooserWithStatusPanel("page", accessor="parent"),
@@ -56,9 +62,7 @@ class BundlePage(Orderable):
 
 class BundleDataset(Orderable):
     parent = ParentalKey("Bundle", related_name="bundled_datasets", on_delete=models.CASCADE)
-    dataset = models.ForeignKey(  # type: ignore[var-annotated]
-        "datasets.Dataset", blank=True, null=True, on_delete=models.SET_NULL
-    )
+    dataset = models.ForeignKey("datasets.Dataset", blank=True, null=True, on_delete=models.SET_NULL)
     bundle_api_content_id: models.CharField = models.CharField(max_length=255, blank=True, editable=False)
 
     panels: ClassVar[list[Panel]] = [BundleFieldPanel("dataset", accessor="parent")]
@@ -70,7 +74,7 @@ class BundleDataset(Orderable):
 class BundleTeam(Orderable):
     parent = ParentalKey("Bundle", on_delete=models.CASCADE, related_name="teams")
     team: models.ForeignKey[Team] = models.ForeignKey("teams.Team", on_delete=models.CASCADE)
-    preview_notification_sent = models.BooleanField(default=False, editable=False)  # type: ignore[var-annotated]
+    preview_notification_sent = models.BooleanField(default=False, editable=False)
 
     panels: ClassVar[list[Panel]] = [BundleFieldPanel("team", accessor="parent")]
 
@@ -91,11 +95,11 @@ class BundlesQuerySet(QuerySet):
         return self.filter(status__in=PREVIEWABLE_BUNDLE_STATUSES)
 
     def annotate_release_date(self) -> BundlesQuerySet:
-        return self.annotate(release_date=models.F("release_date"))  # type: ignore[no-any-return]
+        return self.annotate(release_date=models.F("release_date"))
 
     def annotate_status_label(self) -> BundlesQuerySet:
         """Annotates the queryset with the status label, rather than the value saved in the db."""
-        return self.annotate(  # type: ignore[no-any-return]
+        return self.annotate(
             status_label=Case(
                 *[When(status=choice[0], then=Value(choice[1])) for choice in BundleStatus.choices],
                 output_field=CharField(),
@@ -156,6 +160,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     # note: it looks like etag is SHA-1, so 40 chars, but using 255 for safety
     # https://github.com/ONSdigital/dp-net/blob/a17216881f99417aefa7aa256a337e2ad635866d/handlers/response/etag.go#L13
     bundle_api_etag = models.CharField(max_length=255, blank=True, editable=False)
+    slack_notification_ts = models.CharField(max_length=32, blank=True, editable=False, db_default="")
 
     objects = BundleManager()
 
@@ -191,9 +196,9 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
             chooser_field_name="team",
         ),
         # these are handled by the form
-        FieldPanel("status", classname="hidden w-hidden"),
-        FieldPanel("approved_by", classname="hidden w-hidden"),
-        FieldPanel("approved_at", classname="hidden w-hidden"),
+        HiddenFieldPanel("status"),
+        HiddenFieldPanel("approved_by"),
+        HiddenFieldPanel("approved_at"),
     ]
 
     search_fields: ClassVar[list[index.BaseField]] = [
@@ -226,6 +231,14 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         return self.active_team_ids
 
     @property
+    def live(self) -> bool:
+        return self.status in PUBLISHED_BUNDLE_STATUSES
+
+    @property
+    def has_unpublished_changes(self) -> bool:
+        return self.status not in PUBLISHED_BUNDLE_STATUSES
+
+    @property
     def can_be_approved(self) -> bool:
         """Determines whether the bundle can be approved.
 
@@ -238,7 +251,14 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
 
     @property
     def is_ready_to_be_published(self) -> bool:
-        return self.status == BundleStatus.APPROVED
+        """Check if bundle is ready to be published.
+
+        Returns True for statuses that allow (re)publishing:
+        - APPROVED: Initial approval, ready for first publish
+        - PARTIALLY_PUBLISHED: Some content published, can retry failed items
+        - FAILED: Publication failed, can retry
+        """
+        return self.status in (BundleStatus.APPROVED, BundleStatus.PARTIALLY_PUBLISHED, BundleStatus.FAILED)
 
     @property
     def can_be_manually_published(self) -> bool:

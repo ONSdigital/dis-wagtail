@@ -27,13 +27,6 @@ class WarningPanelBlock(BasePanelBlock):
         label = "Warning Panel"
 
 
-class AnnouncementPanelBlock(BasePanelBlock):
-    class Meta:
-        template = "templates/components/streamfield/announcement_panel.html"
-        icon = "pick"
-        label = "Announcement Panel"
-
-
 class InformationPanelBlock(BasePanelBlock):
     class Meta:
         template = "templates/components/streamfield/information_panel.html"

@@ -1,0 +1,8 @@
+{% load wagtailadmin_tags %}
+{% block content %}
+    <div class="w-avatar-panel w-flex w-flex-wrap w-items-center">
+        <div class="w-avatar-panel__image w-mr-9 w-mb-5">
+            {% avatar user=request.user classname="avatar-span w-block w-mt-3" size="large" %}
+        </div>
+    </div>
+{% endblock %}

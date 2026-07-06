@@ -1,10 +1,10 @@
-from datetime import datetime
+# pylint: disable=too-many-lines
+from datetime import date, datetime
 from http import HTTPStatus
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.utils.translation import gettext_lazy as _
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale
@@ -16,6 +16,7 @@ from cms.articles.tests.factories import (
     ArticleSeriesPageFactory,
     StatisticalArticlePageFactory,
 )
+from cms.core.enums import RelatedMethodologyType
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.home.models import HomePage
@@ -216,6 +217,90 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         # Third should be auto-populated (not self.article since older_article was manually selected)
         self.assertEqual(processed[2], {"internal_page": article_in_other_series})
 
+    def test_processed_methodologies_with_one_external_link(self):
+        """Test that external link appears first, followed by auto-populated articles."""
+        # Create additional article for auto-population
+        TopicPageRelatedMethodologyFactory(
+            parent=self.topic_page,
+            page=None,
+            external_url="https://ons.gov.uk",
+            title="External Methodology",
+            description="desc",
+            release_date=date.today(),
+        )
+
+        processed = self.topic_page.processed_methodologies
+        self.assertEqual(len(processed), 3)
+
+        # First item should be the external link
+        self.assertIsInstance(processed[0], dict)
+        self.assertEqual(processed[0]["url"], "https://ons.gov.uk")
+        self.assertEqual(processed[0]["title"], "External Methodology")
+        self.assertEqual(processed[0]["description"], "desc")
+        self.assertEqual(processed[0]["release_date"], date.today())
+        self.assertTrue(processed[0]["is_external"])
+
+        # Remaining should be auto-populated articles
+        self.assertEqual(processed[1], {"internal_page": self.another_methodology})
+        self.assertEqual(processed[2], {"internal_page": self.methodology})
+
+    def test_processed_methodologies_with_three_external_links(self):
+        """Test that only the three external links are returned."""
+        # Create additional article for auto-population
+        for i in range(3):
+            TopicPageRelatedMethodologyFactory(
+                parent=self.topic_page,
+                page=None,
+                external_url=f"https://ons.gov.uk/{i}",
+                title=f"External Methodology {i}",
+            )
+
+        processed = self.topic_page.processed_methodologies
+
+        self.assertEqual(len(processed), 3)
+
+        for i, item in enumerate(processed):
+            self.assertIsInstance(item, dict)
+            self.assertEqual(item["url"], f"https://ons.gov.uk/{i}")
+            self.assertEqual(item["title"], f"External Methodology {i}")
+            self.assertTrue(item["is_external"])
+
+    def test_processed_methodologies_with_mixed_manual_links(self):
+        """Test mix of internal page and external link appear first, followed by auto-populated."""
+        # Create additional methodology for auto-population
+        manual_methodology = MethodologyPageFactory(
+            parent__parent=self.topic_page, publication_date=datetime(2025, 6, 1)
+        )
+
+        # Add a new internal page manually
+        TopicPageRelatedMethodologyFactory(
+            parent=self.topic_page,
+            page=self.methodology,
+        )
+
+        # Add an external link
+        TopicPageRelatedMethodologyFactory(
+            parent=self.topic_page,
+            page=None,
+            external_url="https://ons.gov.uk",
+            title="External Methodology",
+        )
+
+        processed = self.topic_page.processed_methodologies
+        self.assertEqual(len(processed), 3)
+
+        # First should be internal page
+        self.assertEqual(processed[0], {"internal_page": self.methodology})
+
+        # second should be external link
+        self.assertIsInstance(processed[1], dict)
+        self.assertEqual(processed[1]["url"], "https://ons.gov.uk")
+        self.assertEqual(processed[1]["title"], "External Methodology")
+        self.assertTrue(processed[1]["is_external"])
+
+        # third should be auto-populated
+        self.assertEqual(processed[2], {"internal_page": manual_methodology})
+
     def test_processed_articles_with_custom_title(self):
         """Test that custom title is included when provided for internal pages."""
         TopicPageRelatedArticleFactory(parent=self.topic_page, page=self.older_article, title="Custom Article Title")
@@ -229,6 +314,18 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
 
         # Second should be auto-populated without custom title
         self.assertEqual(processed[1], {"internal_page": self.article})
+
+    def test_processed_methodologies_with_custom_title(self):
+        """Test that custom title is included when provided for internal pages."""
+        TopicPageRelatedMethodologyFactory(
+            parent=self.topic_page, page=self.methodology, title="Custom Methodology Title"
+        )
+        processed = self.topic_page.processed_methodologies
+        self.assertEqual(len(processed), 2)
+
+        expected_first = {"internal_page": self.methodology, "title": "Custom Methodology Title"}
+        self.assertEqual(processed[0], expected_first)
+        self.assertEqual(processed[1], {"internal_page": self.another_methodology})
 
     def test_processed_methodologies_combines_highlighted_and_child_pages(self):
         expected = [{"internal_page": self.another_methodology}, {"internal_page": self.methodology}]
@@ -489,10 +586,32 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
         ]
         self.assertListEqual(self.cross_pollination_topic_page.processed_methodologies, expected)
 
+    def test_methodology_external_url_must_be_approved_domain(self):
+        external_link_methodology = TopicPageRelatedMethodology(
+            parent=self.topic_page,
+            page=None,
+            external_url="https://example.com",
+            title="Unapproved domain external url",
+            content_type=RelatedMethodologyType.METHODOLOGY,
+        )
+        with self.assertRaises(ValidationError):
+            external_link_methodology.clean()
+
+    def test_default_content_type_for_related_methodology_pages(self):
+        related_methodology = TopicPageRelatedMethodology(parent=self.topic_page, page=self.methodology)
+        related_methodology.clean()
+
+        self.assertEqual(related_methodology.content_type, RelatedMethodologyType.METHODOLOGY)
+
     def test_table_of_contents_includes_all_sections(self):
         manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+        time_series_data = {"title": "Test TS", "url": "https://example.com/ts", "description": "TS description"}
 
         self.topic_page.datasets = StreamValue(DatasetStoryBlock(), stream_data=[("manual_link", manual_dataset)])
+        self.topic_page.time_series = StreamValue(
+            TimeSeriesPageStoryBlock(), stream_data=[("time_series_page_link", time_series_data)]
+        )
+        self.topic_page.explore_more = [("external_link", {"url": "https://example.com"})]
 
         self.assertListEqual(
             self.topic_page.table_of_contents,
@@ -516,15 +635,6 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                     },
                 },
                 {
-                    "url": "#related-methods",
-                    "text": "Methods and quality information",
-                    "attributes": {
-                        "data-ga-event": "navigation-onpage",
-                        "data-ga-navigation-type": "table-of-contents",
-                        "data-ga-section-title": "Methods and quality information",
-                    },
-                },
-                {
                     "url": "#data",
                     "text": "Data",
                     "attributes": {
@@ -533,35 +643,43 @@ class TopicPageTestCase(WagtailTestUtils, TestCase):
                         "data-ga-section-title": "Data",
                     },
                 },
+                {
+                    "url": "#time-series",
+                    "text": "Time series",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Time series",
+                    },
+                },
+                {
+                    "url": "#related-methods",
+                    "text": "Quality, methods and supporting information",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Quality, methods and supporting information",
+                    },
+                },
+                {
+                    "url": "#explore-more",
+                    "text": "Explore more",
+                    "attributes": {
+                        "data-ga-event": "navigation-onpage",
+                        "data-ga-navigation-type": "table-of-contents",
+                        "data-ga-section-title": "Explore more",
+                    },
+                },
             ],
         )
 
     def test_table_of_contents_without_features(self):
         self.topic_page.featured_series = None
-
         self.assertNotIn({"url": "#featured", "text": "Featured"}, self.topic_page.table_of_contents)
 
     def test_table_of_contents_without_datasets(self):
         self.topic_page.datasets = None
-
         self.assertNotIn({"url": "#data", "text": "Data"}, self.topic_page.table_of_contents)
-
-    def test_table_of_contents_includes_explore_more(self):
-        self.topic_page.explore_more = [("external_link", {"url": "https://example.com"})]
-
-        toc = self.topic_page.table_of_contents
-        self.assertIn(
-            {
-                "url": "#explore-more",
-                "text": _("Explore more"),
-                "attributes": {
-                    "data-ga-event": "navigation-onpage",
-                    "data-ga-navigation-type": "table-of-contents",
-                    "data-ga-section-title": _("Explore more"),
-                },
-            },
-            toc,
-        )
 
     def test_get_context(self):
         context = self.topic_page.get_context(get_dummy_request())
@@ -799,6 +917,125 @@ class TopicPageRelatedArticleValidationTests(TestCase):
         # Should not raise ValidationError
         related_article.clean()
 
+    def test_duplicate_internal_related_articles_are_deduplicated(self):
+        """TopicPageAdminForm.clean() should silently deduplicate the same internal page added more than once."""
+        data = nested_form_data(
+            {
+                "title": self.topic_page.title,
+                "slug": self.topic_page.slug,
+                "summary": rich_text("Summary"),
+                "featured_series": "",
+                "topic": self.topic_page.topic_id,
+                "related_articles": inline_formset(
+                    [
+                        {"page": self.article.pk, "external_url": "", "title": ""},
+                        {"page": self.article.pk, "external_url": "", "title": ""},
+                    ]
+                ),
+                "related_methodologies": inline_formset([]),
+                "explore_more": streamfield([]),
+                "headline_figures": streamfield([]),
+                "datasets": streamfield([]),
+                "time_series": streamfield([]),
+            }
+        )
+
+        form = self.topic_page.get_edit_handler().get_form_class()(
+            data,
+            instance=self.topic_page,
+            parent_page=self.topic_page.get_parent(),
+        )
+        self.assertTrue(form.is_valid())
+        active_articles = [
+            f for f in form.formsets["related_articles"].forms if f.cleaned_data and not f.cleaned_data.get("DELETE")
+        ]
+        self.assertEqual(len(active_articles), 1)
+
+
+class TopicPageRelatedMethodologyDeduplicationTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.topic_page = TopicPageFactory(title="Test Topic")
+        cls.methodology = MethodologyPageFactory(parent__parent=cls.topic_page)
+
+    def test_duplicate_related_methodologies_are_deduplicated(self):
+        """TopicPageAdminForm.clean() should silently deduplicate the same methodology added more than once."""
+        data = nested_form_data(
+            {
+                "title": self.topic_page.title,
+                "slug": self.topic_page.slug,
+                "summary": rich_text("Summary"),
+                "featured_series": "",
+                "topic": self.topic_page.topic_id,
+                "related_articles": inline_formset([]),
+                "related_methodologies": inline_formset(
+                    [
+                        {"page": self.methodology.pk},
+                        {"page": self.methodology.pk},
+                    ]
+                ),
+                "explore_more": streamfield([]),
+                "headline_figures": streamfield([]),
+                "datasets": streamfield([]),
+                "time_series": streamfield([]),
+            }
+        )
+
+        form = self.topic_page.get_edit_handler().get_form_class()(
+            data,
+            instance=self.topic_page,
+            parent_page=self.topic_page.get_parent(),
+        )
+        self.assertTrue(form.is_valid())
+        active_methodologies = [
+            f
+            for f in form.formsets["related_methodologies"].forms
+            if f.cleaned_data and not f.cleaned_data.get("DELETE")
+        ]
+        self.assertEqual(len(active_methodologies), 1)
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["ons.gov.uk"])
+    def test_external_link_methodology_is_not_deleted_by_deduplication(self):
+        """External-link methodology rows (page=None) must survive deduplication."""
+        data = nested_form_data(
+            {
+                "title": self.topic_page.title,
+                "slug": self.topic_page.slug,
+                "summary": rich_text("Summary"),
+                "featured_series": "",
+                "topic": self.topic_page.topic_id,
+                "related_articles": inline_formset([]),
+                "related_methodologies": inline_formset(
+                    [
+                        {"page": self.methodology.pk},
+                        {
+                            "page": "",
+                            "external_url": "https://ons.gov.uk/methodology/external",
+                            "title": "External Methodology",
+                            "content_type": RelatedMethodologyType.METHODOLOGY,
+                        },
+                    ]
+                ),
+                "explore_more": streamfield([]),
+                "headline_figures": streamfield([]),
+                "datasets": streamfield([]),
+                "time_series": streamfield([]),
+            }
+        )
+
+        form = self.topic_page.get_edit_handler().get_form_class()(
+            data,
+            instance=self.topic_page,
+            parent_page=self.topic_page.get_parent(),
+        )
+        self.assertTrue(form.is_valid())
+        active_methodologies = [
+            f
+            for f in form.formsets["related_methodologies"].forms
+            if f.cleaned_data and not f.cleaned_data.get("DELETE")
+        ]
+        self.assertEqual(len(active_methodologies), 2)
+
 
 class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
     @classmethod
@@ -865,7 +1102,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Methods and quality information")
+        self.assertContains(response, "Quality, methods and supporting information")
         self.assertContains(response, methodology_page.title)
         self.assertContains(response, "View all related methodology")
         self.assertContains(response, f"/{self.topic_tag.slug}/topicspecificmethodology")
@@ -880,7 +1117,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Methods and quality information")
+        self.assertContains(response, "Quality, methods and supporting information")
         self.assertContains(response, methodology_page.title)
         self.assertContains(response, "View all related methodology")
         self.assertContains(response, f"/{self.topic_tag.slug}/topicspecificmethodology")
@@ -896,7 +1133,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Methods and quality information")
+        self.assertNotContains(response, "Quality, methods and supporting information")
         self.assertNotContains(response, "View all related methodology")
         self.assertNotContains(response, f"/{self.topic_tag.slug}/topicspecificmethodology")
 
@@ -992,6 +1229,6 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Time Series")
+        self.assertNotContains(response, "Time series")
         self.assertNotContains(response, "View all related time series")
         self.assertNotContains(response, f"/timeseriestool?topic={self.topic_tag.slug_path}")

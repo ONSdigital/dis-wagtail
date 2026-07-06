@@ -1,4 +1,9 @@
 import os
+from typing import Any
+
+from django.conf.urls.i18n import is_language_prefix_patterns_used
+from django.core.signals import setting_changed
+from django.urls import clear_url_caches
 
 # Force logs to JSON in tests, to match production behaviour
 os.environ.setdefault("LOG_AS_JSON", "true")
@@ -15,17 +20,10 @@ SECRET_KEY = "fake_secret_key_to_run_tests"  # noqa: S105
 
 ALLOWED_HOSTS = ["*"]
 
-SILENCED_SYSTEM_CHECKS = [
-    # It doesn't matter that STATICFILES_DIRS don't exist in tests
-    "staticfiles.W004",
-]
+# It doesn't matter that STATICFILES_DIRS don't exist in tests
+SILENCED_SYSTEM_CHECKS.append("staticfiles.W004")  # noqa: F405
 
 TEST_RUNNER = "cms.core.tests.runner.OldConnectionsCleanupDiscoveryRunner"
-
-# Don't redirect to HTTPS in tests or send the HSTS header
-SECURE_SSL_REDIRECT = False
-SECURE_HSTS_SECONDS = 0
-
 
 # Quieten down the logging in tests
 LOGGING["handlers"]["console"]["class"] = "logging.NullHandler"  # type: ignore[index] # noqa: F405
@@ -66,6 +64,11 @@ TASKS = {
     }
 }
 
+# Explicitly set some settings used for convenience in development, that some tests assume a default for
+ALLOW_TEAM_MANAGEMENT = False
+ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT = False
+
+
 # Silence Slack notifications by default
 SLACK_NOTIFICATIONS_WEBHOOK_URL = None
 
@@ -79,6 +82,8 @@ XFF_STRICT = False
 # turn on the real Wagtail login form
 WAGTAIL_CORE_ADMIN_LOGIN_ENABLED = True
 
+# Don't send slack notifications from tests if env vars are set
+SLACK_NOTIFICATIONS_WEBHOOK_URL = None
 
 # Setting dummy environment variables for credentials and region in our test setup for the S3 storage tests.
 AWS_STORAGE_BUCKET_NAME = "test-bucket"
@@ -97,3 +102,37 @@ CMS_HOSTNAME_LOCALE_MAP = {
     "cy.pub.ons.localhost": "cy",
 }
 CMS_HOSTNAME_ALTERNATIVES = {"ons.localhost": "pub.ons.localhost", "cy.ons.localhost": "cy.pub.ons.localhost"}
+
+URL_CONFIG_SETTINGS = {
+    "IS_EXTERNAL_ENV",
+    "CMS_USE_SUBDOMAIN_LOCALES",
+    "LANGUAGE",
+    "LANGUAGE_CODES_PATTERN",
+    "ALLOW_TEAM_MANAGEMENT",
+    "AWS_COGNITO_TEAM_SYNC_ENABLED",
+    "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED",
+    "WAGTAILADMIN_HOME_PATH",
+    "WAGTAILADMIN_LOGIN_URL",
+}
+
+
+def _reset_url_caches_on_setting_changed_signal_handler(*, setting: str, **_: Any) -> None:
+    """Resets the url cache if `setting` is any of URL_CONFIG_SETTINGS.
+
+    Extends django's own approach to settings being changed during test runs to CMS
+    specific settings that affect url config.
+    """
+    if setting not in URL_CONFIG_SETTINGS:
+        return
+    clear_url_caches()
+    if ROOT_URLCONF and ROOT_URLCONF in sys.modules:  # noqa: F405
+        del sys.modules[ROOT_URLCONF]  # noqa: F405
+        # Also delete any submodules
+        modules_to_delete = [mod for mod in sys.modules if mod.startswith(ROOT_URLCONF + ".")]  # noqa: F405
+        for mod in modules_to_delete:
+            del sys.modules[mod]  # noqa: F405
+
+    is_language_prefix_patterns_used.cache_clear()  # type: ignore
+
+
+setting_changed.connect(_reset_url_caches_on_setting_changed_signal_handler)

@@ -82,6 +82,16 @@ class ContactDetailsTestCase(WagtailTestUtils, TestCase):
         )
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
+    def test_save_draft_without_required_fields_shows_errors(self):
+        self.assertEqual(ContactDetails.objects.count(), 1)
+        # No action-publish in POST data means Wagtail treats this as a draft save.
+        self.client.force_login(self.publishing_admin)
+        response = self.client.post(self.add_url, data={})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context["form"], "name", "This field is required.")
+        self.assertFormError(response.context["form"], "email", "This field is required.")
+        self.assertEqual(ContactDetails.objects.count(), 1)
+
 
 class DefinitionTestCase(WagtailTestUtils, TestCase):
     @classmethod
@@ -122,6 +132,16 @@ class DefinitionTestCase(WagtailTestUtils, TestCase):
         )
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
+    def test_save_draft_without_required_fields_shows_errors(self):
+        self.assertEqual(Definition.objects.count(), 0)
+        # No action-publish in POST data means Wagtail treats this as a draft save.
+        self.client.force_login(self.publishing_admin)
+        response = self.client.post(self.add_url, data={})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context["form"], "name", "This field is required.")
+        self.assertFormError(response.context["form"], "definition", "This field is required.")
+        self.assertEqual(Definition.objects.count(), 0)
+
 
 class PageBreadcrumbsTestCase(TestCase):
     @classmethod
@@ -136,25 +156,22 @@ class PageBreadcrumbsTestCase(TestCase):
         """Test that get_breadcrumbs correctly outputs the parent pages in the correct format."""
         breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
 
-        series_parent = self.series.get_parent()
+        # The articles index page is a non-navigable container, so it is excluded from the trail.
+        topic = self.series.get_parent().get_parent()
 
         expected_entries = [
             {
-                "url": series_parent.get_site().root_url,
+                "url": self.statistical_article.get_site().root_url,
                 "text": "Home",
             },
             {
-                "url": series_parent.get_parent().get_full_url(request=self.dummy_request),
-                "text": series_parent.get_parent().title,
-            },
-            {
-                "url": series_parent.get_full_url(request=self.dummy_request),
-                "text": series_parent.title,
+                "url": topic.get_full_url(request=self.dummy_request),
+                "text": topic.title,
             },
         ]
 
         self.assertIsInstance(breadcrumbs_output, list)
-        self.assertEqual(len(breadcrumbs_output), 3)
+        self.assertEqual(len(breadcrumbs_output), 2)
         self.assertListEqual(breadcrumbs_output, expected_entries)
 
     def test_breadcrumbs_include_self(self):
@@ -162,29 +179,26 @@ class PageBreadcrumbsTestCase(TestCase):
         self.dummy_request.is_for_subpage = True
         breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
 
-        series_parent = self.series.get_parent()
+        # The articles index page is a non-navigable container, so it is excluded from the trail.
+        topic = self.series.get_parent().get_parent()
 
         expected_entries = [
             {
-                "url": series_parent.get_site().root_url,
+                "url": self.statistical_article.get_site().root_url,
                 "text": "Home",
             },
             {
-                "url": series_parent.get_parent().get_full_url(request=self.dummy_request),
-                "text": series_parent.get_parent().title,
-            },
-            {
-                "url": series_parent.get_full_url(request=self.dummy_request),
-                "text": series_parent.title,
+                "url": topic.get_full_url(request=self.dummy_request),
+                "text": topic.title,
             },
             {
                 "url": self.statistical_article.get_full_url(request=self.dummy_request),
-                "text": self.statistical_article.title,
+                "text": self.statistical_article.breadcrumb_title,
             },
         ]
 
         self.assertIsInstance(breadcrumbs_output, list)
-        self.assertEqual(len(breadcrumbs_output), 4)
+        self.assertEqual(len(breadcrumbs_output), 3)
         self.assertListEqual(breadcrumbs_output, expected_entries)
 
 

@@ -42,7 +42,7 @@ class BundleAPISyncServiceTests(TestCase):
             "scheduled_at": kwargs.get("scheduled_at"),
         }
 
-    def _mock_api_content_item(self, *, content_id, dataset_id, edition_id, version_id, etag="etag-123"):  # pylint: disable=too-many-arguments
+    def _mock_api_content_item(self, *, content_id, dataset_id, edition_id, version_id, etag="etag-123"):
         """Helper to create a standard API content item."""
         return {
             "etag_header": etag,
@@ -244,12 +244,16 @@ class BundleAPISyncServiceTests(TestCase):
                 self.api_client.reset_mock()
 
     def test_state_sync_for_immutable_bundles(self):
-        """Test sync handles state for APPROVED/PUBLISHED bundles based on API state."""
+        """Test sync handles state for immutable bundles based on API state."""
         test_cases = [
             (BundleStatus.APPROVED, "DRAFT", True),  # API is stale - sync state
             (BundleStatus.APPROVED, "APPROVED", False),  # API is current - skip sync
             (BundleStatus.PUBLISHED, "DRAFT", True),  # API is stale - sync state
             (BundleStatus.PUBLISHED, "PUBLISHED", False),  # API is current - skip sync
+            (BundleStatus.PARTIALLY_PUBLISHED, "APPROVED", False),  # Wagtail publishing failure - skip sync
+            (BundleStatus.PARTIALLY_PUBLISHED, "PUBLISHED", False),  # Wagtail publishing failure - skip sync
+            (BundleStatus.FAILED, "PUBLISHED", False),  # Wagtail publishing failure - skip sync
+            (BundleStatus.FAILED, "APPROVE", False),  # Wagtail publishing failure - skip sync
         ]
 
         for local_status, api_state, should_sync_state in test_cases:

@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import time_machine
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db.models import F, OrderBy
 from django.test import TestCase, override_settings
@@ -15,13 +16,13 @@ from django.urls import reverse
 from django.utils import timezone
 from wagtail.admin.panels import get_edit_handler
 from wagtail.coreutils import get_dummy_request
-from wagtail.models import Locale, Page
+from wagtail.models import Locale, ModelLogEntry, Page
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.clients.api import BundleAPIClientError
-from cms.bundles.enums import BundleStatus
+from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
@@ -43,14 +44,6 @@ from cms.workflows.tests.utils import (
     mark_page_as_ready_to_publish,
     progress_page_workflow,
 )
-
-# TODO: remove when Wagtail updates to django-tasks >= 0.11
-TASKS_ENQUEUE_ON_COMMIT = {
-    "default": {
-        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
-        "ENQUEUE_ON_COMMIT": False,
-    }
-}
 
 
 class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
@@ -96,6 +89,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         cls.another_in_review_bundle = BundleFactory(in_review=True, name="Another preview Bundle")
 
     def setUp(self):
+        super().setUp()
         self.bundle = BundleFactory(name="Original bundle", created_by=self.publishing_officer)
         self.statistical_article_page = StatisticalArticlePageFactory(
             title="The article", parent__title="PSF", live=False
@@ -257,10 +251,35 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.name, "Updated Bundle")
 
+    def test_bundle_edit_view__logs_schedule_change_on_publication_date_update(self):
+        """Test that changing the publication date via form submission creates a schedule_changed log entry."""
+        original_date = timezone.now() + timedelta(days=1)
+        self.bundle.publication_date = original_date
+        self.bundle.save(update_fields=["publication_date"])
+
+        new_date = timezone.now() + timedelta(days=5)
+        data = self.get_base_form_data()
+        data["publication_date"] = new_date.strftime("%Y-%m-%d %H:%M")
+        data["action-edit"] = "action-edit"
+
+        response = self.client.post(self.edit_url, data)
+        self.assertEqual(response.status_code, 302)
+
+        log_entry = ModelLogEntry.objects.filter(
+            object_id=str(self.bundle.pk), action="bundles.schedule_changed"
+        ).first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.data["old"], original_date.strftime("%Y-%m-%d %H:%M"))
+        self.assertEqual(log_entry.data["new"], new_date.strftime("%Y-%m-%d %H:%M"))
+
     def test_bundle_edit_view__redirects_to_index_for_published_bundles(self):
         """Released bundles should no longer be editable."""
-        response = self.client.get(self.published_bundle_edit_url)
-        self.assertRedirects(response, self.bundle_index_url)
+        for bundle_status in PUBLISHED_BUNDLE_STATUSES:
+            with self.subTest(status=bundle_status):
+                self.published_bundle.status = bundle_status
+                self.published_bundle.save(update_fields=["status"])
+                response = self.client.get(self.published_bundle_edit_url)
+                self.assertRedirects(response, self.bundle_index_url)
 
     def post_with_action_and_test(self, action: str, expected_status: BundleStatus, redirects_to: str):
         self.client.force_login(self.superuser)
@@ -343,8 +362,8 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_bundle_edit_view__manual_publish__happy_path__when_linked_with_past_release_calendar_entry(
         self, mock_notify_end, mock_notify_start
     ):
@@ -373,6 +392,16 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+    def test_bundle_edit_view__manual_publish__sets_approved_by_and_approved_at(self):
+        """Publishing directly should populate approved_by and approved_at."""
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        self.bundle.refresh_from_db()
+        self.assertIsNotNone(self.bundle.approved_at)
+        self.assertIsNotNone(self.bundle.approved_by)
 
     def test_bundle_edit_view__shows_release_calendar_page_details(self):
         """Release calendar page's title, status and release date are displayed when selected in bundles."""
@@ -514,6 +543,117 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         response = self.client.get(self.edit_url)
         self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
 
+    def test_edit_view_status_sidebar_reflects_bundle_status(self):
+        """The status side panel must reflect the bundle's actual status, not always show 'Live'."""
+        # Each BundleStatus label maps to a cautious-slugified aria ID in the sidebar heading.
+        # "Draft" -> status-sidebar-draft, "In Preview" -> status-sidebar-in-preview, etc.
+        status_cases = [
+            (BundleStatus.DRAFT, "status-sidebar-draft"),
+            (BundleStatus.IN_REVIEW, "status-sidebar-in-preview"),
+            (BundleStatus.APPROVED, "status-sidebar-ready-to-publish"),
+        ]
+        for status, expected_id in status_cases:
+            with self.subTest(status=status):
+                self.bundle.status = status
+                self.bundle.save(update_fields=["status"])
+                response = self.client.get(self.edit_url)
+                self.assertNotContains(response, "status-sidebar-live")
+                self.assertContains(response, expected_id)
+
+    def test_edit_view__creates_audit_log_entry(self):
+        """Test that viewing the edit page creates an audit log entry."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+
+        response = self.client.get(self.edit_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        log_entry = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.user, self.publishing_officer)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_cooldown_prevents_duplicate_entries(self):
+        """Test that viewing the edit page multiple times within the cooldown period
+        only creates one audit log entry.
+        """
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+        cache.clear()
+
+        # First visit - should create a log entry
+        self.client.get(self.edit_url)
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(first_count, 1)
+
+        # Second visit within cooldown - should NOT create another log entry
+        self.client.get(self.edit_url)
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(second_count, 1)
+
+        # Third visit within cooldown - still no new entry
+        self.client.get(self.edit_url)
+        third_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(third_count, 1)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_cooldown_allows_new_entry_after_expiry(self):
+        """Test that a new audit log entry is created after the cooldown expires."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+        cache.clear()
+
+        # First visit
+        self.client.get(self.edit_url)
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(first_count, 1)
+
+        # Clear cache to simulate cooldown expiry
+        cache.clear()
+
+        # Second visit after cooldown expiry - should create a new log entry
+        self.client.get(self.edit_url)
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(second_count, 2)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_different_users_get_separate_cooldowns(self):
+        """Test that different users have separate cooldown periods."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+        cache.clear()
+
+        # First user views the page
+        self.client.force_login(self.publishing_officer)
+        self.client.get(self.edit_url)
+
+        # Second user views the same page - should also create a log entry
+        self.client.force_login(self.superuser)
+        self.client.get(self.edit_url)
+
+        log_entries = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view")
+        self.assertEqual(log_entries.count(), 2)
+
+        users = set(log_entries.values_list("user_id", flat=True))
+        self.assertEqual(users, {self.publishing_officer.pk, self.superuser.pk})
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_different_bundles_get_separate_cooldowns(self):
+        """Test that different bundles have separate cooldown periods for the same user."""
+        ModelLogEntry.objects.filter(action="bundles.edit_view").delete()
+        cache.clear()
+
+        # View first bundle
+        self.client.get(self.edit_url)
+
+        # View second bundle - should also create a log entry
+        another_bundle = BundleFactory(name="Another Bundle")
+        another_edit_url = reverse("bundle:edit", args=[another_bundle.id])
+        self.client.get(another_edit_url)
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.edit_view")
+        self.assertEqual(log_entries.count(), 2)
+
+        bundle_ids = set(log_entries.values_list("object_id", flat=True))
+        self.assertEqual(bundle_ids, {str(self.bundle.pk), str(another_bundle.pk)})
+
 
 class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseBase):
     LONG_TEXT = "Some long description to test truncation. " * 500
@@ -621,7 +761,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Created by")
         self.assertContains(response, "Scheduled publication")
         self.assertContains(response, "Associated release calendar")
-        self.assertContains(response, "Approval status")
+        self.assertContains(response, "Approved by")
         self.assertContains(response, "Status")
 
     def test_inspect_view__previewers__contains_only_relevant_fields(self):
@@ -634,7 +774,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Created by")
         self.assertContains(response, "Scheduled publication")
         self.assertContains(response, "Associated release calendar")
-        self.assertNotContains(response, "Approval status")
+        self.assertNotContains(response, "Approved by")
         self.assertNotContains(response, "Status")
 
     def test_inspect_view__previewers__contains_only_relevant_pages(self):
@@ -711,6 +851,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         edition_b = "2023"
         version_a = 1
         version_b = 2
+        expected_edit_url_a = f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
+        expected_view_url_a = f"/retail-industry/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
+        expected_edit_url_b = f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}"
 
         # Create local datasets
         dataset_a = DatasetFactory(namespace=dataset_id_a, edition=edition_a, version=version_a, title="Dataset A")
@@ -735,8 +878,8 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                     },
                     "state": "PUBLISHED",
                     "links": {
-                        "edit": f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}",
-                        "preview": f"/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}",
+                        "edit": expected_edit_url_a,
+                        "preview": expected_view_url_a,
                     },
                 },
                 {
@@ -750,8 +893,10 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                     },
                     "state": "APPROVED",
                     "links": {
-                        "edit": f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}",
-                        "preview": f"/datasets/{dataset_id_b}/editions/{edition_b}/versions/{version_b}",
+                        "edit": expected_edit_url_b,
+                        "preview": (
+                            f"/retail-industry/datasets/{dataset_id_b}/editions/{edition_b}/versions/{version_b}"
+                        ),
                     },
                 },
             ]
@@ -767,8 +912,6 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, "Dataset A API Title")
         self.assertContains(response, str(version_a))
         self.assertContains(response, edition_a)
-        expected_edit_url_a = f"/data-admin/series/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
-        expected_view_url_a = f"/datasets/{dataset_id_a}/editions/{edition_a}/versions/{version_a}"
         self.assertContains(response, f'href="{expected_edit_url_a}"')
         self.assertContains(response, f'href="{expected_view_url_a}"')
         self.assertContains(response, "View Live")
@@ -778,8 +921,53 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, "Dataset B API Title")
         self.assertContains(response, str(version_b))
         self.assertContains(response, edition_b)
-        expected_edit_url_b = f"/data-admin/series/{dataset_id_b}/editions/{edition_b}/versions/{version_b}"
         self.assertContains(response, f'href="{expected_edit_url_b}"')
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
+    def test_inspect_view__published_dataset_without_preview_url_has_no_action_button(self, mock_api_client):
+        """Checks that published datasets without a preview URL do not display a View Live button."""
+        self.bundle.bundle_api_bundle_id = "test-bundle-id"
+        self.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+        dataset_id = "dataset-123"
+        edition = "2024"
+        version = 1
+        expected_edit_url = f"/data-admin/series/{dataset_id}/editions/{edition}/versions/{version}"
+
+        dataset = DatasetFactory(namespace=dataset_id, edition=edition, version=version, title="Dataset A")
+        BundleDatasetFactory(parent=self.bundle, dataset=dataset, bundle_api_content_id="content-123")
+
+        mock_client_instance = mock_api_client.return_value
+        mock_client_instance.get_bundle_contents.return_value = {
+            "items": [
+                {
+                    "id": "content-123",
+                    "content_type": "DATASET",
+                    "metadata": {
+                        "dataset_id": dataset_id,
+                        "title": "Dataset A API Title",
+                        "edition_id": edition,
+                        "version_id": version,
+                    },
+                    "state": "PUBLISHED",
+                    "links": {
+                        "edit": expected_edit_url,
+                    },
+                },
+            ]
+        }
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertContains(response, "Dataset A")
+        self.assertContains(response, "Published")
+        self.assertNotContains(response, "View Live")
+        self.assertInHTML(
+            f'<tr><td class="title"><strong><a href="{expected_edit_url}">Dataset A</a></strong></td>'
+            f"<td>{edition}</td><td>{version}</td><td>Published</td><td></td></tr>",
+            response.content.decode("utf-8"),
+        )
 
     @override_settings(  # Address race condition in tests caused when calling delete() on a page
         WAGTAILSEARCH_BACKENDS={
@@ -818,6 +1006,34 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Foobar Release Calendar Page")
         self.assertContains(response, release_calendar_page.get_url(request=get_dummy_request()))
         self.assertNotContains(response, reverse("bundles:preview_release_calendar", args=[self.bundle.id]))
+
+    def test_inspect_view__labels_page_action_as_view_live_after_publication(self):
+        page = StatisticalArticlePageFactory(title="Published bundled page", live=True)
+        BundlePageFactory(parent=self.bundle, page=page)
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status"])
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        expected_live_url = page.get_url(request=get_dummy_request())
+        self.assertContains(
+            response,
+            f'<a href="{expected_live_url}" class="button button-small button-secondary">View Live</a>',
+            html=True,
+        )
+
+    def test_inspect_view__labels_page_action_as_preview_before_publication(self):
+        page = StatisticalArticlePageFactory(title="Preview bundled page", live=False)
+        BundlePageFactory(parent=self.bundle, page=page)
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        expected_preview_url = reverse("bundles:preview", args=[self.bundle.pk, page.pk])
+        self.assertContains(
+            response,
+            f'<a href="{expected_preview_url}" class="button button-small button-secondary">Preview</a>',
+            html=True,
+        )
 
     @time_machine.travel(datetime(2025, 7, 1, 12, 37), tick=False)
     def test_inspect_view__datetime_use_configured_timezone(self):
@@ -957,6 +1173,9 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                         "version_id": "2",
                     },
                     "state": "PUBLISHED",
+                    "links": {
+                        "preview": "/retail-industry/datasets/dataset-two/editions/2023/versions/2",
+                    },
                 },
             ]
         }
@@ -973,7 +1192,7 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         self.assertContains(response, "Published")
         # Published dataset should have View Live link
         self.assertContains(response, "View Live")
-        self.assertContains(response, 'href="/datasets/dataset-two/editions/2023/versions/2"')
+        self.assertContains(response, 'href="/retail-industry/datasets/dataset-two/editions/2023/versions/2"')
 
     @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
     @patch("cms.bundles.viewsets.bundle.BundleAPIClient")
@@ -1195,6 +1414,98 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         # Make sure there's NO hyperlink to data-admin with this title
         self.assertNotContains(response, '<a href="/data-admin/series/test-456')
 
+    def test_inspect_view__creates_audit_log_entry(self):
+        """Test that viewing the inspect page creates an audit log entry."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").delete()
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        log_entry = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.user, self.publishing_officer)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_inspect_view__audit_log_cooldown_prevents_duplicate_entries(self):
+        """Test that viewing the inspect page multiple times within the cooldown period
+        only creates one audit log entry.
+        """
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").delete()
+        cache.clear()
+
+        # First visit - should create a log entry
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(first_count, 1)
+
+        # Second visit within cooldown - should NOT create another log entry
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(second_count, 1)
+
+        # Third visit within cooldown - still no new entry
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        third_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(third_count, 1)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_inspect_view__audit_log_cooldown_allows_new_entry_after_expiry(self):
+        """Test that a new audit log entry is created after the cooldown expires."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").delete()
+        cache.clear()
+
+        # First visit
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(first_count, 1)
+
+        # Clear cache to simulate cooldown expiry
+        cache.clear()
+
+        # Second visit after cooldown expiry - should create a new log entry
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(second_count, 2)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_inspect_view__audit_log_different_users_get_separate_cooldowns(self):
+        """Test that different users have separate cooldown periods."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").delete()
+        cache.clear()
+
+        # First user views the page
+        self.client.force_login(self.publishing_officer)
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Second user views the same page - should also create a log entry
+        self.client.force_login(self.superuser)
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        log_entries = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect")
+        self.assertEqual(log_entries.count(), 2)
+
+        users = set(log_entries.values_list("user_id", flat=True))
+        self.assertEqual(users, {self.publishing_officer.pk, self.superuser.pk})
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_inspect_view__audit_log_different_bundles_get_separate_cooldowns(self):
+        """Test that different bundles have separate cooldown periods for the same user."""
+        ModelLogEntry.objects.filter(action="bundles.inspect").delete()
+        cache.clear()
+
+        # View first bundle
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # View second bundle - should also create a log entry
+        self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.inspect")
+        self.assertEqual(log_entries.count(), 2)
+
+        bundle_ids = set(log_entries.values_list("object_id", flat=True))
+        self.assertEqual(bundle_ids, {str(self.bundle.pk), str(self.in_review_bundle.pk)})
+
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
     def test_bundle_index__unhappy_paths(self):
@@ -1226,7 +1537,10 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
 
         self.assertContains(response, BundleStatus.DRAFT.label, 2)  # status + status filter
         self.assertContains(response, BundleStatus.APPROVED.label, 3)  # status + status filter + shortcut button
-        self.assertContains(response, BundleStatus.PUBLISHED.label, 1)  # status filter
+        # "\n " is to ensure we only match "Published" not "Partially Published"
+        self.assertContains(response, "\n " + BundleStatus.PUBLISHED.label, 1)  # status filter
+        self.assertContains(response, BundleStatus.PARTIALLY_PUBLISHED.label, 1)  # status filter
+        self.assertContains(response, BundleStatus.FAILED.label, 1)  # status filter
 
         self.assertContains(response, self.approved_bundle.name)
         self.assertContains(response, self.bundle.name)
@@ -1286,14 +1600,14 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
     def test_ordering(self):
         """Checks that the correct ordering is applied."""
         cases = {
-            "": ("name",),
+            "": ("-updated_at",),
             "name": ("name",),
             "-name": ("-name",),
             "scheduled_publication_date": (OrderBy(F("release_date"), descending=False, nulls_last=True),),
             "-scheduled_publication_date": (OrderBy(F("release_date"), descending=True, nulls_last=True),),
             "status": (OrderBy(F("status_label"), descending=False),),
             "-status": (OrderBy(F("status_label"), descending=True),),
-            "invalid_ordering": ("name",),
+            "invalid_ordering": ("-updated_at",),
         }
         for param, order_by in cases.items():
             with self.subTest(param=param):
@@ -1302,6 +1616,33 @@ class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
                     response.context_data["object_list"].query.order_by,
                     order_by,
                 )
+
+    def test_index_view_default_bundle_ordering_is_most_recently_updated(self):
+        old_bundle = BundleFactory(name="1 Day Old Bundle", updated_at=timezone.now() - timedelta(days=1))
+        new_bundle = BundleFactory(updated_at=timezone.now())
+        response = self.client.get(self.bundle_index_url)
+
+        self.assertEqual(response.context_data["object_list"][0].id, new_bundle.id)
+        self.assertEqual(response.context_data["object_list"][1].id, old_bundle.id)
+
+        # Ensure the old bundle moves to the top of the list when updated
+        old_bundle.updated_at = timezone.now() + timedelta(days=1)
+        old_bundle.save(update_fields=["updated_at"])
+        response = self.client.get(self.bundle_index_url)
+
+        self.assertEqual(response.context_data["object_list"][0].id, old_bundle.id)
+        self.assertEqual(response.context_data["object_list"][1].id, new_bundle.id)
+
+    def test_published_bundles_excluded_from_index(self):
+        """Checks that published bundles are excluded from the bundle index by default."""
+        for bundle_status in PUBLISHED_BUNDLE_STATUSES:
+            with self.subTest(status=bundle_status):
+                self.published_bundle.status = bundle_status
+                self.published_bundle.save(update_fields=["status"])
+
+                response = self.client.get(self.bundle_index_url)
+                self.assertNotContains(response, self.published_bundle.name)
+                self.assertNotContains(response, self.published_bundle_edit_url)
 
 
 class BundleDeleteTestCase(WagtailTestUtils, TestCase):
@@ -1315,6 +1656,7 @@ class BundleDeleteTestCase(WagtailTestUtils, TestCase):
         cls.inspect_url = reverse("bundle:inspect", args=[cls.bundle.id])
 
     def setUp(self):
+        super().setUp()
         self.client.force_login(self.superuser)
 
     def test_bundle_deletable_in_draft(self):
@@ -1386,7 +1728,6 @@ class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):
         self.assertNotContains(response, self.published_bundle.name)
         self.assertNotContains(response, self.approved_bundle.name)
 
-    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
     def test_chooser_search(self):
         draft_bundle = BundleFactory(name="Draft")
         chooser_results_url = reverse(bundle_chooser_viewset.get_url_name("choose_results"))
@@ -1427,6 +1768,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         cls.chooser_results_url = reverse(bundle_page_chooser_viewset.get_url_name("choose_results"))
 
     def setUp(self):
+        super().setUp()
         self.client.force_login(self.superuser)
 
     def test_bundle_form_uses_bundle_page_chooser_widget(self):
@@ -1482,6 +1824,17 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertTemplateUsed(response, "wagtailadmin/generic/chooser/chooser.html")
 
         self.assertContains(response, self.page_draft_in_bundle.get_admin_display_title())
+
+    def test_choose_view__excludes_release_calendar_page_of_active_bundle(self):
+        """An RC page that is the release_calendar_page for an active bundle must not appear in the chooser."""
+        rc_page = ReleaseCalendarPageFactory(title="RC page set as schedule for active bundle")
+        rc_page.save_revision()
+        BundleFactory(release_calendar_page=rc_page)  # DRAFT = active
+
+        response = self.client.get(self.chooser_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, rc_page.get_admin_display_title())
 
     def test_choose_view__excludes_aliases(self):
         # create an alias for one of the pages

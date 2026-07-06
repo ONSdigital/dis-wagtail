@@ -1,4 +1,4 @@
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -21,6 +21,11 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
     def setUp(self):
         super().setUp()
         self.raw_data["iframe_source_url"] = "https://www.example.com/visualisations/dvc/1234567890"
+
+    def get_component_config(self, raw_data: dict[str, Any] | None = None):
+        """Helper method to get component config, following the pattern from BaseChartBlockTestCase."""
+        value = self.get_value(raw_data)
+        return self.block.get_component_config(value)
 
     def test_generic_properties(self):
         self._test_generic_properties()
@@ -180,3 +185,37 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         self.assertEqual(
             errors["iframe_source_url"].message, "The URL hostname is not in the list of allowed domains: example.com"
         )
+
+    def test_footnotes_configuration(self):
+        """Test that footnotes are configured correctly in the component config when set."""
+        self.raw_data["footnotes"] = "Important note: This is test footnote text"
+        config = self.get_component_config()
+        self.assertEqual(
+            config["footnotes"],
+            {
+                "title": "Footnotes",
+                "content": '<div class="rich-text">Important note: This is test footnote text</div>',
+            },
+        )
+
+    def test_footnotes_not_in_config_when_not_set(self):
+        """Footnotes should be omitted from the component config when no footnotes have been entered."""
+        self.raw_data["footnotes"] = ""
+        config = self.get_component_config()
+        self.assertNotIn("footnotes", config)
+
+    def test_footnotes_html_only_omitted(self):
+        for html in ("<p></p>", "<p> </p>"):
+            with self.subTest(html=html):
+                self.raw_data["footnotes"] = html
+                config = self.get_component_config()
+                self.assertNotIn("footnotes", config)
+                rendered = self.block.render(self.raw_data)
+                self.assertNotIn("Footnotes", rendered)
+        content = "Valid content"
+        with self.subTest(content=content):
+            self.raw_data["footnotes"] = content
+            config = self.get_component_config()
+            self.assertIn("footnotes", config)
+            rendered = self.block.render(self.raw_data)
+            self.assertIn(content, rendered)

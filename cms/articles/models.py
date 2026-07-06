@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models
 from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
@@ -17,6 +17,7 @@ from wagtail.coreutils import WAGTAIL_APPEND_SLASH, resolve_model_string
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.search import index
+from wagtail.templatetags.wagtailcore_tags import richtext
 
 from cms.articles.enums import SortingChoices
 from cms.articles.forms import StatisticalArticlePageAdminForm
@@ -31,7 +32,7 @@ from cms.core.custom_date_format import ons_date_format
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
 from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
-from cms.core.utils import redirect_to_parent_listing
+from cms.core.utils import redirect, redirect_to_parent_listing
 from cms.core.widgets import date_widget
 from cms.data_downloads.mixins import DataDownloadMixin
 from cms.datasets.blocks import DatasetStoryBlock
@@ -56,6 +57,8 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["topics.TopicPage"]
     page_description = "A container for statistical article series. Used for URL structure purposes."
     preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode as this redirects away
+    # The index page is a container that cannot be navigated to, so omit it from breadcrumbs.
+    exclude_from_breadcrumbs = True
 
     content_panels: ClassVar[list[Panel]] = [
         *Page.content_panels,
@@ -63,6 +66,8 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
     ]
     # disables the "Promote" tab as we control the slug, and the page redirects
     promote_panels: ClassVar[list[Panel]] = []
+
+    label = None
 
     def clean(self) -> None:
         self.slug = "articles"
@@ -79,19 +84,22 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
 
 
 class ArticleSeriesPage(  # type: ignore[django-manager-missing]
+    BundledPageMixin,
     NoTrailingSlashRoutablePageMixin,
     GenericTaxonomyMixin,
     BasePage,
 ):
     """The article series model."""
 
+    _analytics_content_type = "previous-releases"
+
     parent_page_types: ClassVar[list[str]] = ["ArticlesIndexPage"]
     subpage_types: ClassVar[list[str]] = ["StatisticalArticlePage"]
-    preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
     page_description = "A container for statistical articles in a series."
     exclude_from_breadcrumbs = True
 
     content_panels: ClassVar[list[Panel]] = [
+        *BundledPageMixin.panels,
         *Page.content_panels,
         HelpPanel(
             content=(
@@ -105,6 +113,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         ),
     ]
 
+    label = None
+
     @cached_property
     def summary(self) -> str:
         """Returns the summary of the latest article in the series."""
@@ -116,6 +126,16 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
             StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date").first()
         )
         return latest
+
+    @property
+    def preview_modes(self) -> list[tuple[str, str]]:
+        return [
+            ("default", "Previous releases"),
+        ]
+
+    def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        response: TemplateResponse = self.previous_releases(request, for_preview=True)
+        return response
 
     @path("")
     def latest_article(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
@@ -136,8 +156,13 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         return response
 
     @path("editions/")
-    def previous_releases(self, request: HttpRequest) -> TemplateResponse:
-        children = StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")
+    def previous_releases(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
+        for_preview = kwargs.pop("for_preview", False)
+        objects = StatisticalArticlePage.objects
+        if not for_preview:
+            # only show live pages if not in preview mode
+            objects = objects.live().public()
+        children = objects.child_of(self).order_by("-release_date", "-first_published_at")
         paginator = Paginator(children, per_page=settings.PREVIOUS_RELEASES_PER_PAGE)
 
         try:
@@ -217,7 +242,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
     subpage_types: ClassVar[list[str]] = []
     search_index_content_type: ClassVar[str] = "statistical_article"
     template = "templates/pages/statistical_article_page.html"
-    label = _("Article")  # type: ignore[assignment]
+    label = _("Article")
 
     # Fields
     news_headline = models.CharField(max_length=255, blank=True)
@@ -449,7 +474,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             if hasattr(block.block, "to_table_of_contents_items"):
                 items += block.block.to_table_of_contents_items(block.value)
         if self.show_cite_this_page:
-            items += [{"url": "#cite-this-page", "text": _("Cite this article")}]
+            items += [{"url": "#cite-this-page", "text": _("Cite this page")}]
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
         add_table_of_contents_gtm_attributes(items)
@@ -516,9 +541,14 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         previous_figure_ids = {figure.value["figure_id"] for figure in previous_to_latest_figures}
         return figures_in_use - previous_figure_ids
 
+    @property
+    def breadcrumb_title(self) -> str:
+        # The series page is excluded from breadcrumbs, so include it here for context.
+        return self.get_full_display_title()
+
     @cached_property
     def related_data_display_title(self) -> str:
-        return _("All data related to %(article_title)s") % {"article_title": self.title}
+        return _("All data related to %(article_title)s") % {"article_title": self.get_full_display_title()}
 
     @cached_property
     def dataset_document_list(self) -> list[dict[str, Any]]:
@@ -572,7 +602,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             "metadata": {
                 "text": self.label,
             },
-            "description": self.main_points_summary,
+            "description": richtext(self.main_points_summary),
         }
 
         if self.release_date:
@@ -658,6 +688,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         ]
 
     def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        self._log_preview(request, mode_name)
         match mode_name:
             case "related_data":
                 return cast("TemplateResponse", self.related_data(request))
@@ -666,27 +697,36 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
                 topic_page_class = resolve_model_string("topics.TopicPage")
                 topic_page = topic_page_class.objects.ancestor_of(self).first()
                 return cast("TemplateResponse", topic_page.serve(request, featured_item=self))
-        return cast("TemplateResponse", super().serve_preview(request, mode_name))
+        return super().serve_preview(request, mode_name)
 
     @path("versions/<int:version>/")
     def previous_version(self, request: HttpRequest, version: int, **kwargs: Any) -> TemplateResponse | HttpResponse:
-        if version <= 0 or not self.corrections:
+        if version <= 0:
             raise Http404
 
+        chart_id = kwargs.pop("chart_id", None)
+        table_id = kwargs.pop("table_id", None)
+
+        is_requesting_download = bool(chart_id or table_id)
+
+        if not self.corrections or self.alias_of_id:
+            if is_requesting_download:
+                raise Http404
+            return redirect(self.get_url(request))
+
         # Find correction by version
-        for correction in self.corrections:
+        for correction in self.corrections:  # pylint: disable=not-an-iterable
             if correction.value["version_id"] == version:
                 break
         else:
-            raise Http404
+            if is_requesting_download:
+                raise Http404
+            return redirect(self.get_url(request))
 
         # NB: Little validation is done on previous_version, as it's assumed handled on save
         revision = get_object_or_404(self.revisions, pk=correction.value["previous_version"])
 
         page = revision.as_object()
-
-        chart_id = kwargs.pop("chart_id", None)
-        table_id = kwargs.pop("table_id", None)
 
         if chart_id:
             download_response: HttpResponse = page.download_chart(request, chart_id)

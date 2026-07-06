@@ -1,3 +1,4 @@
+import codecs
 from unittest.mock import patch
 
 from django.test import SimpleTestCase
@@ -305,6 +306,13 @@ class CleanCellValueTestCase(SimpleTestCase):
         self.assertEqual(clean_cell_value("  hello  "), "hello")
         self.assertEqual(clean_cell_value("\t\ntext\n\t"), "text")
 
+    def test_html_entities_unescaped(self):
+        """Test that HTML entites are unescaped to unicode characters."""
+        # Ensure HTML entities that represent spaces are stripped from the ends
+        self.assertEqual(clean_cell_value("&nbsp;hello&nbsp;"), "hello")
+        self.assertEqual(clean_cell_value("&amp;"), "&")
+        self.assertEqual(clean_cell_value("&pound;"), "£")
+
     def test_converts_br_tags_to_newlines(self):
         """Test that <br> tag variations are converted to newlines."""
         self.assertEqual(clean_cell_value("line1<br/>line2"), "line1\nline2")
@@ -410,15 +418,27 @@ class SanitizeDataForCsvTests(SimpleTestCase):
 
     def test_prepends_quote_to_string_starting_with_plus(self):
         """Test that strings starting with + are prefixed with a single quote."""
+        data = [["+1A2B3C4D", "normal"]]
+        result = sanitize_data_for_csv(data)
+        self.assertEqual(result, [["'+1A2B3C4D", "normal"]])
+
+    def test_not_prepends_quote_to_numbers_starting_with_plus(self):
+        """Test that safe expressions like +1234 are not modified, as they are valid numbers."""
         data = [["+1234", "normal"]]
         result = sanitize_data_for_csv(data)
-        self.assertEqual(result, [["'+1234", "normal"]])
+        self.assertEqual(result, [["+1234", "normal"]])
 
     def test_prepends_quote_to_string_starting_with_minus(self):
         """Test that strings starting with - are prefixed with a single quote."""
         data = [["-cmd|'/c calc'!A1", "normal"]]
         result = sanitize_data_for_csv(data)
         self.assertEqual(result, [["'-cmd|'/c calc'!A1", "normal"]])
+
+    def test_negative_numbers_as_strings_are_not_modified(self):
+        """Test that negative numbers represented as strings are not modified."""
+        data = [["-5", "-3.14"]]
+        result = sanitize_data_for_csv(data)
+        self.assertEqual(result, [["-5", "-3.14"]])
 
     def test_prepends_quote_to_string_starting_with_at(self):
         """Test that strings starting with @ are prefixed with a single quote."""
@@ -542,6 +562,10 @@ class CreateDataCsvDownloadResponseFromDataTests(SimpleTestCase):
         response = create_data_csv_download_response_from_data([["a", "b"]], title="test")
         self.assertEqual(response["Content-Type"], "text/csv")
 
+    def test_content_starts_with_bom(self):
+        response = create_data_csv_download_response_from_data([["a", "b"]], title="test")
+        self.assertStartsWith(response.content, codecs.BOM_UTF8)
+
     def test_sets_content_disposition_with_slugified_filename(self):
         response = create_data_csv_download_response_from_data([["a", "b"]], title="My Chart")
         self.assertEqual(response["Content-Disposition"], 'attachment; filename="my-chart.csv"')
@@ -581,5 +605,6 @@ class CreateDataCsvDownloadResponseFromDataTests(SimpleTestCase):
 
     def test_handles_empty_data(self):
         # This is an edge case as all charts will have some data
+        # Responses should start with a BOM regardless of any content
         response = create_data_csv_download_response_from_data([], title="empty")
-        self.assertEqual(response.content.decode("utf-8"), "")
+        self.assertEqual(response.content, codecs.BOM_UTF8)

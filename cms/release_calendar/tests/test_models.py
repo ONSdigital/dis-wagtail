@@ -342,6 +342,11 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
         BundleFactory(release_calendar_page=self.page, status=BundleStatus.APPROVED)
         self.assertIsInstance(self.page.get_lock(), ReleasePageInBundleReadyToBePublishedLock)
 
+    def test_active_bundles__includes_bundle_when_added_as_bundled_page(self):
+        """active_bundles must cover the BundlePage path, not only the release_calendar_page FK."""
+        bundle = BundleFactory(bundled_pages=[self.page])
+        self.assertIn(bundle, self.page.active_bundles)
+
 
 class ReleaseCalendarPageAdminTests(WagtailTestUtils, TestCase):
     @classmethod
@@ -444,18 +449,33 @@ class ReleaseCalendarPageAdminTests(WagtailTestUtils, TestCase):
                 self.assertContains(response, lookup)
 
     def test_delete_redirects_back_to_edit(self):
-        """Test that we get redirected back to edit when trying to delete a release calendar page."""
+        """Test that we get redirected back to edit when trying to delete a previously
+        published release calendar page.
+        """
+        self.release_calendar_page.first_published_at = timezone.now()
+        self.release_calendar_page.save(update_fields=["first_published_at"])
+
         delete_url = reverse("wagtailadmin_pages:delete", args=(self.release_calendar_page.id,))
         response = self.client.post(delete_url, follow=True)
 
         self.assertRedirects(response, self.edit_url)
         self.assertIn(
-            "Release Calendar pages cannot be deleted. You can mark them as cancelled instead.",
+            "Release Calendar pages cannot be deleted when published. You can mark them as cancelled instead.",
             [msg.message.strip() for msg in response.context["messages"]],
         )
 
         response = self.client.get(delete_url, follow=True)
         self.assertRedirects(response, self.edit_url)
+
+    def test_never_published_release_calendar_page_can_be_deleted(self):
+        """A never-published Release Calendar page should reach the normal delete flow."""
+        self.release_calendar_page.first_published_at = None
+        self.release_calendar_page.live = False
+        self.release_calendar_page.save(update_fields=["first_published_at", "live"])
+
+        delete_url = reverse("wagtailadmin_pages:delete", args=(self.release_calendar_page.id,))
+        response = self.client.get(delete_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_add_view_does_not_contain_the_bundle_note_panel(self):
         self.client.force_login(self.superuser)
@@ -552,6 +572,22 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
                 response = self.client.get(self.page.url)
 
                 self.assertEqual("The reason" in str(response.content), is_shown)
+
+    def test_rendered_notice_renders_on_cancelled_page(self):
+        """Notice content should appear on the cancelled page."""
+        self.page.status = ReleaseStatus.CANCELLED
+        self.page.notice = "<p>Cancelled due to unforeseen circumstances</p>"
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(
+            response,
+            '<div class="ons-panel__body">'
+            '<div class="rich-text"><p>Cancelled due to unforeseen circumstances</p></div>'
+            "</div>",
+            html=True,
+        )
 
     def test_release_date_text_overrides_release_datetime(self):
         """Check that if both release date and release date text are present,
@@ -773,15 +809,33 @@ class ReleaseCalendarIndexTestCase(WagtailTestUtils, TestCase):
         )
         self.assertRedirects(response, edit_url)
 
-    def test_render(self):
-        """Test that the index page renders."""
+    def test_render_redirects_to_releasecalendar(self):
+        """Test that the index page redirects to /releasecalendar by default."""
         response = self.client.get(self.page.url)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.TEMPORARY_REDIRECT)
+        self.assertEqual(response["Location"], "/releasecalendar")
 
-    @override_settings(IS_EXTERNAL_ENV=True)
-    def test_render_in_external_env(self):
-        """Test that the index page renders in external environment."""
+    @override_settings(CMS_RELEASES_INDEX_REDIRECT_ENABLED=False)
+    def test_render_without_redirect(self):
+        """Test that the index page renders when redirect is disabled."""
         response = self.client.get(self.page.url)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @override_settings(WAGTAIL_APPEND_SLASH=True)
+    def test_render_redirect_with_trailing_slash(self):
+        """Test that the redirect respects WAGTAIL_APPEND_SLASH."""
+        response = self.client.get(self.page.url)
+
+        self.assertEqual(response.status_code, HTTPStatus.TEMPORARY_REDIRECT)
+        self.assertEqual(response["Location"], "/releasecalendar/")
+
+    def test_child_page_serves_normally(self):
+        """Test that child pages are not affected by the redirect."""
+        child_page = ReleaseCalendarPageFactory(parent=self.page)
+        child_page.save_revision().publish()
+
+        response = self.client.get(child_page.url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)

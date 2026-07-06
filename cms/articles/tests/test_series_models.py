@@ -2,12 +2,16 @@
 from http import HTTPStatus
 
 from django.test import RequestFactory, TestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 from wagtail.blocks import StreamValue
-from wagtail.models import Locale
+from wagtail.coreutils import get_dummy_request
+from wagtail.models import Locale, PageViewRestriction
 from wagtail.test.utils import WagtailTestUtils
+from wagtail.test.utils.form_data import nested_form_data
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.bundles.mixins import BundledPageMixin
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.utils import TranslationResetMixin
 from cms.datasets.blocks import DatasetStoryBlock
@@ -24,6 +28,10 @@ class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
 
     def test_permission_tester_inherits_from_basepagepermissiontester(self):
         self.assertIsInstance(self.series.permissions_for_user(UserFactory()), BasePagePermissionTester)
+
+    def test_is_bundleable(self):
+        """Article Series pages should be bundleable so they can be published with related content."""
+        self.assertIsInstance(self.series, BundledPageMixin)
 
     def test_index_redirect_404_with_no_subpages(self):
         """Test index path redirects to latest."""
@@ -69,6 +77,84 @@ class ArticleSeriesTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(series_response.status_code, 200)
 
 
+class ArticleSeriesPreviewTestCase(WagtailTestUtils, TestCase):
+    """Test the 'Previous releases' preview mode for ArticleSeriesPage."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser("admin")
+        cls.series = ArticleSeriesPageFactory(title="The Article Series")
+
+    def test_preview_modes(self):
+        """The series should expose a single 'Previous releases' preview mode."""
+        self.assertEqual(self.series.preview_modes, [("default", "Previous releases")])
+
+    def test_serve_preview_renders_previous_releases_template(self):
+        """serve_preview should render the previous releases template."""
+        response = self.series.serve_preview(get_dummy_request(), "default").render()
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertIn(
+            "templates/pages/statistical_article_page--previous-releases.html",
+            response.template_name,
+        )
+
+    def test_serve_preview_includes_draft_editions(self):
+        """The preview should list draft editions that the public route hides."""
+        live_article = StatisticalArticlePageFactory(parent=self.series, title="Live edition")
+        draft_article = StatisticalArticlePageFactory(parent=self.series, title="Draft edition", live=False)
+
+        # The public route only shows live editions.
+        public_response = self.client.get(f"{self.series.url}/editions")
+        self.assertContains(public_response, live_article.title)
+        self.assertNotContains(public_response, draft_article.title)
+
+        # The preview shows both live and draft editions.
+        preview_response = self.series.serve_preview(get_dummy_request(), "default").render()
+        self.assertContains(preview_response, live_article.title)
+        self.assertContains(preview_response, draft_article.title)
+
+    def test_public_route_excludes_private_editions(self):
+        """The public route should hide editions with view restrictions."""
+        public_article = StatisticalArticlePageFactory(parent=self.series, title="Public edition")
+        private_article = StatisticalArticlePageFactory(parent=self.series, title="Private edition")
+        PageViewRestriction.objects.create(page=private_article, restriction_type=PageViewRestriction.LOGIN)
+
+        # The public route only shows public editions.
+        public_response = self.client.get(f"{self.series.url}/editions")
+        self.assertContains(public_response, public_article.title)
+        self.assertNotContains(public_response, private_article.title)
+
+        # The preview shows both public and private editions.
+        preview_response = self.series.serve_preview(get_dummy_request(), "default").render()
+        self.assertContains(preview_response, public_article.title)
+        self.assertContains(preview_response, private_article.title)
+
+    def test_preview_on_edit_endpoint(self):
+        """The admin preview endpoint should render the previous releases preview."""
+        article = StatisticalArticlePageFactory(parent=self.series, title="Live edition")
+
+        self.client.force_login(self.superuser)
+        preview_url = reverse("wagtailadmin_pages:preview_on_edit", args=[self.series.pk])
+        post_data = nested_form_data(
+            {
+                "title": self.series.title,
+                "slug": self.series.slug,
+                "topics-TOTAL_FORMS": "0",
+                "topics-INITIAL_FORMS": "0",
+                "topics-MIN_NUM_FORMS": "0",
+                "topics-MAX_NUM_FORMS": "1000",
+            }
+        )
+
+        response = self.client.post(preview_url, post_data)
+        self.assertJSONEqual(response.content.decode(), {"is_valid": True, "is_available": True})
+
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, article.title)
+
+
 class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils, TestCase):
     def setUp(self):
         self.article_series_page = ArticleSeriesPageFactory()
@@ -105,7 +191,10 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
         response = self.client.get(f"{self.article_series_page.url}/related-data")
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        self.assertContains(response, f"All data related to {self.article_with_datasets.title}")
+        self.assertContains(
+            response,
+            f"All data related to {self.article_series_page.title}: {self.article_with_datasets.title}",
+        )
         self.assertContains(response, "Test dataset")
 
     def test_evergreen_route_related_data_canonical_url(self):
@@ -211,25 +300,21 @@ class ArticleSeriesEvergreenUrlTestCase(TranslationResetMixin, WagtailTestUtils,
 
     def test_evergreen_route_related_data_alternate_urls(self):
         """Test that the related data page has correct hreflang alternate URLs."""
-        # TODO: Update tests once bug CMS-765 is resolved.
-        # For now, always use the article URL and not the series URL for hreflang links,
-        # nor the /related-data suffix.
         welsh_article = self.article_with_datasets.copy_for_translation(
             locale=Locale.objects.get(language_code="cy"), copy_parents=True
         )
         welsh_article.save_revision().publish()
         response = self.client.get(f"{self.article_series_page.url}/related-data", headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        # TODO: Change to {self.article_series_page.url}/related-data once CMS-765 is resolved.
         self.assertContains(
             response,
-            f'<link rel="alternate" href="{self.article_with_datasets.url}" hreflang="en-gb" />',
+            f'<link rel="alternate" href="{self.article_series_page.get_full_url()}/related-data" hreflang="en-gb" />',
             html=True,
         )
-        # TODO: Change to {welsh_series_url}/related-data once CMS-765 is resolved.
+        welsh_series_url = welsh_article.get_parent().get_full_url()
         self.assertContains(
             response,
-            f'<link rel="alternate" href="{welsh_article.url}" hreflang="cy" />',
+            f'<link rel="alternate" href="{welsh_series_url}/related-data" hreflang="cy" />',
             html=True,
         )
 
@@ -802,6 +887,51 @@ class ArticleSeriesChartDownloadWithVersionTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(f"{self.series.url}/editions/{article.slug}/versions/1/download-chart/new-chart-id")
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
+    def test_download_chart_with_version_404_version_not_in_corrections(self):
+        """Test 404 when the requested version does not match any existing correction."""
+        article = StatisticalArticlePageFactory(parent=self.series)
+        article.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "value": {
+                                "title": "Original Chart",
+                                "subtitle": "",
+                                "theme": "primary",
+                                "table": self.original_table_data,
+                            },
+                            "id": "chart-to-download",
+                        }
+                    ],
+                },
+            }
+        ]
+        article.save_revision().publish()
+        original_revision_id = article.latest_revision_id
+
+        article.corrections = [
+            {
+                "type": "correction",
+                "value": {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "date": "2024-01-15",
+                    "text": "Minor correction",
+                },
+            }
+        ]
+        article.save_revision().publish()
+
+        # Version 2 does not exist among the corrections
+        response = self.client.get(
+            f"{self.series.url}/editions/{article.slug}/versions/2/download-chart/chart-to-download"
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
     def test_download_with_version_zero_returns_404(self):
         """Test that requesting version 0 returns 404."""
         article = StatisticalArticlePageFactory(parent=self.series)
@@ -888,6 +1018,35 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
         self.assertIn("Category", content)
         self.assertIn("2020", content)
         self.assertIn("100", content)
+
+    def test_download_chart_with_version_on_alias_returns_404(self):
+        """Corrections live on the canonical page, so versioned downloads on an alias return 404."""
+        original_revision_id = self.article.latest_revision_id
+        self.article.corrections = [
+            {
+                "type": "correction",
+                "value": {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "date": "2024-01-15",
+                    "text": "Minor correction",
+                },
+            }
+        ]
+        self.article.save_revision().publish()
+
+        welsh_article_alias = self.article.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"),
+            copy_parents=True,
+            alias=True,
+        )
+        welsh_series = welsh_article_alias.get_parent().specific
+
+        response = self.client.get(
+            f"{welsh_series.url}/editions/{welsh_article_alias.slug}/versions/1/download-chart/test-chart-id",
+            headers={"host": "cy.ons.localhost"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_download_chart_from_welsh_translation(self):
         """Test that chart download works from fully translated Welsh article."""

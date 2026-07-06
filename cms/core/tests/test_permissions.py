@@ -20,7 +20,7 @@ WAGTAIL_PERMISSION_TYPES = ["add", "change", "delete"]
 
 WAGTAIL_PAGE_PERMISSION_TYPES = {"add", "change", "bulk_delete", "lock", "publish", "unlock"}
 
-PUBLISHING_OFFICERS_PERMISSIONS = {"add", "change", "lock", "publish"}
+PUBLISHING_OFFICERS_PERMISSIONS = {"add", "change", "bulk_delete", "lock", "publish"}
 PUBLISHING_ADMINS_PERMISSIONS = WAGTAIL_PAGE_PERMISSION_TYPES
 
 
@@ -308,7 +308,7 @@ class PublishingOfficerPermissionsTestCase(BaseGroupPermissionTestCase):
             self.page_permission_check_helper(permission_type, has_permission=True)
 
         for permission_type in WAGTAIL_PAGE_PERMISSION_TYPES - PUBLISHING_OFFICERS_PERMISSIONS:
-            # Publishing Officers should not have bulk_delete, lock or unlock permissions
+            # Publishing Officers should not have unlock permissions
             self.page_permission_check_helper(permission_type, has_permission=False)
 
     def test_publishing_officer_cannot_manage_images(self):

@@ -1,11 +1,10 @@
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 from django.utils.text import slugify
 from wagtail.blocks import RichTextBlock, StreamBlock, StructBlock
 
 from cms.core.blocks import (
     AccordionBlock,
-    AnnouncementPanelBlock,
     DocumentsBlock,
     HeadingBlock,
     InformationPanelBlock,
@@ -38,7 +37,6 @@ class SectionContentBlock(StreamBlock):
     quote = QuoteBlock()
     warning_panel = WarningPanelBlock()
     information_panel = InformationPanelBlock()
-    announcement_panel = AnnouncementPanelBlock()
     accordion = AccordionBlock()
     image = ImageBlock(group="Media")
     documents = DocumentsBlock(group="Media")
@@ -59,7 +57,6 @@ class SectionContentBlock(StreamBlock):
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
-        block_counts: ClassVar[dict[str, dict]] = {"related_links": {"max_num": 1}}
 
 
 class SectionBlock(StructBlock):

@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from datetime import timedelta
 from http import HTTPStatus
 
@@ -8,6 +9,7 @@ from django.urls import reverse
 from django.utils.html import strip_tags
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
+from wagtail.models import Locale
 from wagtail.rich_text import RichText
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -87,6 +89,10 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
             html=True,
         )
 
+    def test_analytics_content_type(self):
+        """Test that the GTM content type is 'previous-releases'."""
+        self.assertEqual(self.article_series_page.analytics_content_type, "previous-releases")
+
 
 class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
     @classmethod
@@ -127,6 +133,12 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
     def test_default_route_rendering(self):
         self.assertPageIsRenderable(self.page)
 
+    def test_serve_redirects_non_editions_path_to_editions_url_with_correct_code(self):
+        raw_url = f"{self.page.get_parent().url}/{self.page.slug}"
+        response = self.client.get(raw_url)
+        _, _, editions_path = self.page.get_url_parts()
+        self.assertRedirects(response, editions_path, status_code=307, fetch_redirect_response=False)
+
     def test_page_content(self):
         response = self.client.get(self.page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -136,12 +148,49 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertContains(response, "Save or print this page")
         self.assertContains(response, "Sections in this page")
         self.assertContains(response, "Contents")
-        self.assertContains(response, "Cite this article")
+        self.assertContains(response, "Cite this page")
 
     def test_correction_routes(self):
         self.assertPageIsRoutable(self.page, "versions/1")
         self.assertPageIsRoutable(self.page, "versions/2")
         self.assertPageIsRoutable(self.page, "versions/3")
+
+    def test_nonexistent_correction_redirects_to_article(self):
+        """Requesting a correction version that doesn't exist redirects to the article."""
+        # No corrections exist on this page
+        response = self.client.get(f"{self.page.url}/versions/1")
+        _, _, page_path = self.page.get_url_parts()
+        self.assertRedirects(response, page_path, status_code=HTTPStatus.TEMPORARY_REDIRECT)
+
+    def test_correction_on_alias_redirects_to_alias(self):
+        """Corrections live on the canonical page's revisions, so alias pages cannot serve them
+        and should redirect to the alias URL instead of returning 404.
+        """
+        self.page.save_revision().publish()
+        original_revision_id = self.page.get_latest_revision().id
+
+        self.page.summary = "Corrected summary"
+        self.page.corrections = [
+            (
+                "correction",
+                {
+                    "version_id": 1,
+                    "previous_version": original_revision_id,
+                    "when": "2025-01-11",
+                    "frozen": True,
+                    "text": "First correction text",
+                },
+            )
+        ]
+        self.page.save_revision().publish()
+
+        welsh_alias = self.page.copy_for_translation(
+            locale=Locale.objects.get(language_code="cy"), copy_parents=True, alias=True
+        )
+
+        response = self.client.get(f"{welsh_alias.url}/versions/1", headers={"host": "cy.ons.localhost"})
+        _, _, page_path = welsh_alias.get_url_parts()
+        self.assertRedirects(response, page_path, status_code=HTTPStatus.TEMPORARY_REDIRECT)
 
     def test_can_add_correction(self):  # pylint: disable=too-many-statements # noqa
         response = self.client.get(self.page.url)
@@ -192,9 +241,9 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertNotContains(v1_response, "View superseded version")
         self.assertContains(v1_response, original_summary)
 
-        # V2 doesn't exist yet, should return 404
+        # V2 doesn't exist yet, should redirect to the main article
         v2_response = self.client.get(f"{self.page.url}/versions/2")
-        self.assertEqual(v2_response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(v2_response.status_code, HTTPStatus.TEMPORARY_REDIRECT)
 
         second_correction = {
             "version_id": 2,
@@ -236,9 +285,9 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertContains(v2_response, "First correction text")
         self.assertNotContains(v2_response, "Second correction text")
 
-        # V3 doesn't exist yet, should return 404
+        # V3 doesn't exist yet, should redirect to the main article
         v3_response = self.client.get(f"{self.page.url}/versions/3")
-        self.assertEqual(v3_response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(v3_response.status_code, HTTPStatus.TEMPORARY_REDIRECT)
 
         third_correction = {
             "version_id": 3,
@@ -411,18 +460,19 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         # Breadcrumbs
         content = response.content.decode(encoding="utf-8")
 
-        topic = self.page.get_parent().get_parent()
+        articles_index = self.page.get_parent().get_parent()
+        articles_index_full_url = articles_index.get_full_url(request=request)
+        topic = articles_index.get_parent()
         topic_full_url = topic.get_full_url(request=request)
-        theme = topic.get_parent()
-        theme_full_url = theme.get_full_url(request=request)
 
-        self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{topic_full_url}">{topic.title}</a>',
+        # The articles index is a non-navigable container, so it is excluded from the breadcrumb.
+        self.assertNotIn(
+            f'<a class="ons-breadcrumbs__link" href="{articles_index_full_url}">{articles_index.title}</a>',
             content,
         )
 
         self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{theme_full_url}">{theme.title}</a>',
+            f'<a class="ons-breadcrumbs__link" href="{topic_full_url}">{topic.title}</a>',
             content,
         )
 

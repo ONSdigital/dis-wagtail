@@ -424,6 +424,42 @@ In order to run only a specific linter, you can set the `LINTER` variable:
 make megalint LINTER=REPOSITORY_GRYPE
 ```
 
+### Pinning GitHub Actions to a SHA hash
+
+This project enforces that all GitHub Actions workflow references are pinned to a full SHA commit hash rather than a mutable tag (e.g. `@v4.2.2`). This is required by [zizmor](https://docs.zizmor.sh/audits/#unpinned-uses), which runs as part of MegaLinter, and is a security best practice to prevent supply chain attacks via tag mutation.
+
+A pinned reference looks like this:
+
+```yaml
+# Before
+- uses: actions/checkout@v4
+
+# After
+- uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+```
+
+The version tag is preserved as a comment for human readability.
+
+#### Updating pinned hashes
+
+To update or re-pin all action references across the workflow files, use [pinact](https://github.com/suzuki-shunsuke/pinact), a CLI tool that resolves the SHA hash for each action reference automatically.
+
+**Install pinact via Homebrew:**
+
+```bash
+brew install pinact
+```
+
+Then Run pinact against the workflow files
+
+```bash
+pinact run
+```
+
+This will update each `uses:` reference in-place with the resolved SHA, keeping the tag as a trailing comment.
+
+> **Note:** Re-run pinact whenever you upgrade an action to a new version (e.g. `@v5`), or as part of your regular dependency update process.
+
 ### Mailpit (Email Testing)
 
 Mailpit is a lightweight, local SMTP server and web interface that captures all outgoing email from our application without actually delivering it.
@@ -482,7 +518,14 @@ Translations are managed using .po files, which are compiled into .mo files for 
 The .po files are located in the `cms/locale` directory.
 
 If you add new text to the application, you will need to update the .po files to include the new text.
-You can do this by running the following command:
+
+```bash
+make makemessages-check
+```
+
+Will error if `.po` files will change that affect translation behaviour. It ignores non-functional changes such as headers, comments, source references, entry ordering, and line wrapping.
+
+You can update the files by running the following command:
 
 ```bash
 make makemessages
@@ -490,7 +533,7 @@ make makemessages
 
 This will scan the codebase for new text and update the .po files accordingly.
 
-Once you have updated the .po files, you will need to compile them into .mo files for use in the application.
+Once you have updated the .po files with translations, you will need to compile them into .mo files for use in the application.
 
 You can do this by running the following command:
 
@@ -530,4 +573,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 
-See [LICENSE](LICENSE) for details.
+Copyright © 2024 [Crown Copyright](https://www.nationalarchives.gov.uk/information-management/re-using-public-sector-information/uk-government-licensing-framework/crown-copyright/) (Office for National Statistics)
+
+Unless stated otherwise, the codebase is released under the [MIT License](LICENSE). This covers both the codebase and any sample code in the documentation.
+
+The documentation in this repo are released under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).

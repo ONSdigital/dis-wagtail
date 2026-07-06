@@ -4,10 +4,12 @@ from unittest.mock import Mock
 
 from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.utils.datastructures import CaseInsensitiveMapping
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.utils import (
     UNWANTED_CONTROL_CHARACTERS,
+    deep_merge_mapping,
     get_client_ip,
     get_content_type_for_page,
     latex_formula_to_svg,
@@ -15,7 +17,9 @@ from cms.core.utils import (
     redirect_to_parent_listing,
     strip_unwanted_control_chars_from_json,
 )
+from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -113,6 +117,20 @@ class TestContentTypeForPage(TestCase):
         content_type = get_content_type_for_page(page)
         self.assertEqual(content_type, "Methodology")
 
+        page = InformationPageFactory(title="Test Information")
+        content_type = get_content_type_for_page(page)
+        self.assertEqual(content_type, "Information")
+
+        page = IndexPageFactory(title="Text Index")
+        content_type = get_content_type_for_page(page)
+        self.assertEqual(content_type, "Index")
+
+    def test_get_content_type_for_page__suppressed_returns_none(self):
+        """Page types with the label suppressed return None, so no label is shown."""
+        page = HomePage.objects.first()
+
+        self.assertIsNone(get_content_type_for_page(page))
+
 
 class RedirectToParentListingTestCase(SimpleTestCase):
     def setUp(self):
@@ -206,3 +224,27 @@ class ControlCharactersTestCase(SimpleTestCase):
                     json.loads(strip_unwanted_control_chars_from_json(json.dumps(f"The character is {char}"))),
                     "The character is ",
                 )
+
+
+class DeepMergeMappingTestCase(SimpleTestCase):
+    def test_deep_merge(self):
+        for in_1, in_2, result in [
+            ({}, {}, {}),
+            ({"a": 1}, {"b": 2}, {"a": 1, "b": 2}),
+            (
+                {"a": 1, "b": {"x": 10, "y": 20}},
+                {"b": {"y": 30, "z": 40}, "c": 3},
+                {"a": 1, "b": {"x": 10, "y": 30, "z": 40}, "c": 3},
+            ),
+        ]:
+            with self.subTest(in_1=in_1, in_2=in_2):
+                self.assertEqual(deep_merge_mapping(in_1, in_2), result)
+
+    def test_precedence(self):
+        self.assertEqual(deep_merge_mapping({"a": 1}, {"a": 2}), {"a": 2})
+
+    def test_mappings(self):
+        self.assertEqual(
+            deep_merge_mapping(CaseInsensitiveMapping({"a": 1}), CaseInsensitiveMapping({"a": 2})),
+            CaseInsensitiveMapping({"a": 2}),
+        )

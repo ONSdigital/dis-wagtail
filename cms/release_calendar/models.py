@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q, QuerySet
+from django.http import HttpRequest
 from django.utils.functional import cached_property
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -12,13 +14,17 @@ from wagtail.models import Page
 from wagtail.search import index
 
 from cms.bundles.mixins import BundledPageMixin
+from cms.bundles.models import Bundle
 from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, format_date_for_gtm
 from cms.core.custom_date_format import ons_date_format, ons_default_datetime
 from cms.core.fields import StreamField
 from cms.core.models import BasePage
+from cms.core.utils import redirect
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
+from cms.release_calendar.permission_testers import ReleaseCalendarPagePermissionTester
+from cms.users.models import User
 
 from .blocks import (
     ReleaseCalendarChangesStoryBlock,
@@ -32,11 +38,12 @@ from .locks import ReleasePageInBundleReadyToBePublishedLock
 from .panels import ChangesToReleaseDateFieldPanel, ReleaseCalendarBundleNotePanel
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
+    from django.http import HttpResponse
     from django.template.response import TemplateResponse
     from wagtail.locks import BaseLock
 
-    from cms.bundles.models import Bundle
+
+RELEASE_CALENDAR_REDIRECT_PATH = "/releasecalendar"
 
 
 class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
@@ -48,6 +55,17 @@ class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
     subpage_types: ClassVar[list[str]] = ["ReleaseCalendarPage"]
     max_count_per_parent = 1
 
+    label = None
+
+    def serve(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if not settings.CMS_RELEASES_INDEX_REDIRECT_ENABLED:
+            return super().serve(request, *args, **kwargs)  # type: ignore[no-any-return]
+
+        location = RELEASE_CALENDAR_REDIRECT_PATH
+        if settings.WAGTAIL_APPEND_SLASH:
+            location += "/"
+        return redirect(location)
+
 
 class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     """The calendar release page model."""
@@ -57,6 +75,8 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     parent_page_types: ClassVar[list[str]] = ["ReleaseCalendarIndex"]
     subpage_types: ClassVar[list[str]] = []
     search_index_content_type: ClassVar[str] = "release"
+
+    label = _("Release calendar page")
 
     # Fields
     status = models.CharField(choices=ReleaseStatus.choices, default=ReleaseStatus.PROVISIONAL, max_length=32)
@@ -184,6 +204,9 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
 
     _analytics_content_type: ClassVar[str] = "release-calendars"  # TODO agree in spec
 
+    def permissions_for_user(self, user: User) -> ReleaseCalendarPagePermissionTester:
+        return ReleaseCalendarPagePermissionTester(user, self)
+
     def get_template(self, request: HttpRequest, *args: Any, **kwargs: Any) -> str:
         """Select the correct template based on status."""
         template_by_status = {
@@ -261,11 +284,15 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         return items
 
     @cached_property
-    def active_bundle(self) -> Bundle | None:
-        if not self.pk:
-            return None
-        bundle: Bundle | None = self.bundles.active().first()
-        return bundle
+    def active_bundles(self) -> QuerySet[Bundle]:
+        # Release Calendar pages can be associated with an active bundle either as the bundle's
+        # release calendar page or through BundlePage; the two paths are mutually exclusive.
+        queryset: QuerySet[Bundle] = Bundle.objects.none()
+        if self.pk:
+            queryset = Bundle.objects.filter(
+                Q(release_calendar_page=self) | Q(pk__in=self.bundlepage_set.values_list("parent", flat=True))
+            ).active()
+        return queryset
 
     @property
     def live_status(self) -> ReleaseStatus | None:

@@ -2,21 +2,24 @@ from typing import TYPE_CHECKING
 
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from wagtail.admin import messages
 from wagtail.models import Page
 
+from cms.core.utils import redirect
 from cms.users.models import User
 from cms.workflows.models import ReadyToPublishGroupTask
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
-    from django.http.response import HttpResponseRedirect
+    from django.http.response import HttpResponsePermanentRedirect, HttpResponseRedirect
 
 
-def unlock(request: HttpRequest, page_id: int) -> TemplateResponse | HttpResponseRedirect:
+def unlock(
+    request: HttpRequest, page_id: int
+) -> TemplateResponse | HttpResponseRedirect | HttpResponsePermanentRedirect:
     page = get_object_or_404(Page, id=page_id)
     if not page.permissions_for_user(request.user).can_edit():
         raise PermissionDenied
@@ -39,7 +42,7 @@ def unlock(request: HttpRequest, page_id: int) -> TemplateResponse | HttpRespons
             page.current_workflow_task.on_action(page.current_workflow_task_state, user, "unlock")
             messages.success(request, "Page editing unlocked.")
 
-            return redirect(next_url)
+            return redirect(next_url, preserve_request=False)
 
     return TemplateResponse(
         request,

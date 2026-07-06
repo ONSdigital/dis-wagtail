@@ -1,5 +1,4 @@
 import logging
-import time
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -8,12 +7,20 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 from django.db import transaction
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
 from wagtail.coreutils import resolve_model_string
 from wagtail.log_actions import log
 from wagtail.models import Page, get_page_models
 
+from cms.bundles.notifications.slack import (
+    BundleAlertType,
+    alert_slack_of_bundle_content_failure,
+    notify_slack_of_bundle_failure,
+    notify_slack_of_publication_start,
+    notify_slack_of_publish_end,
+)
 from cms.core.fields import StreamField
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.utils import get_translated_string
@@ -109,11 +116,19 @@ def get_bundleable_page_types() -> list[type[Page]]:
 
 def get_pages_in_active_bundles() -> list[int]:
     # using this rather than inline import to placate pyright complaining about cyclic imports
+    bundle_class = resolve_model_string("bundles.Bundle")
     bundle_page_class = resolve_model_string("bundles.BundlePage")
 
-    return list(
-        bundle_page_class.objects.filter(parent__status__in=ACTIVE_BUNDLE_STATUSES).values_list("page", flat=True)
+    bundled_page_ids = bundle_page_class.objects.filter(parent__status__in=ACTIVE_BUNDLE_STATUSES).values_list(
+        "page", flat=True
     )
+
+    rc_page_ids = bundle_class.objects.filter(
+        status__in=ACTIVE_BUNDLE_STATUSES,
+        release_calendar_page__isnull=False,
+    ).values_list("release_calendar_page", flat=True)
+
+    return list(set(bundled_page_ids) | set(rc_page_ids))
 
 
 def _create_content_dict_for_pages(
@@ -138,11 +153,21 @@ def _create_content_dict_for_pages(
     if article_pages:
         # NB: This string needs to match the one at the top of the file
         title = get_translated_string("Publications", language_code)
-        content.append({"type": "release_content", "value": {"title": title, "links": article_pages}})
+        content.append(
+            {
+                "type": "release_content",
+                "value": {"title": title, "links": article_pages},
+            }
+        )
     if methodology_pages:
         # NB: This string needs to match the one at the top of the file
         title = get_translated_string("Quality and methodology", language_code)
-        content.append({"type": "release_content", "value": {"title": title, "links": methodology_pages}})
+        content.append(
+            {
+                "type": "release_content",
+                "value": {"title": title, "links": methodology_pages},
+            }
+        )
     return content
 
 
@@ -166,9 +191,9 @@ def serialize_preview_page(page: Page, bundle_id: int, is_previewable: bool) -> 
         "type": "item",
         "value": {
             "page": None,
-            "title": f"{specific_page.title} ({state})",
+            "title": getattr(specific_page, "display_title", specific_page.title) + " (" + state + ")",
             "description": getattr(specific_page, "summary", ""),
-            "external_url": reverse("bundles:preview", args=[bundle_id, page.pk]) if is_previewable else "#",
+            "external_url": (reverse("bundles:preview", args=[bundle_id, page.pk]) if is_previewable else "#"),
         },
     }
 
@@ -223,7 +248,9 @@ def serialize_bundle_content_for_preview_release_calendar_page(
     return _create_content_dict_for_pages(all_pages, language_code)
 
 
-def serialize_datasets_for_release_calendar_page(bundle: Bundle) -> list[dict[str, Any]]:
+def serialize_datasets_for_release_calendar_page(
+    bundle: Bundle,
+) -> list[dict[str, Any]]:
     """Serializes the datasets of a bundle for a release calendar page."""
     return [
         {"type": "dataset_lookup", "id": uuid.uuid4(), "value": dataset["dataset"]}
@@ -270,6 +297,7 @@ def get_preview_items_for_bundle(
             "selected": item.pk == current_id,
         }
         for item in pages_in_bundle
+        if item.specific_class.preview_modes != []  # Exclude pages with no preview modes
     ]
 
     if release_calendar_page := bundle.release_calendar_page:
@@ -378,12 +406,10 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     """Publishes a given bundle.
 
     This means it publishes the related pages, as well as updates the linked release calendar.
-    """
-    # using this rather than inline import to placate pyright complaining about cyclic imports
-    notifications = __import__(
-        "cms.bundles.notifications.slack", fromlist=["notify_slack_of_publication_start", "notify_slack_of_publish_end"]
-    )
 
+    Returns:
+        True if all pages published successfully, False if any pages failed.
+    """
     logger.info(
         "Publishing Bundle",
         extra={
@@ -391,22 +417,33 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
             "event": "publishing_bundle",
         },
     )
-    start_time = time.time()
-    notifications.notify_slack_of_publication_start(bundle, url=bundle.full_inspect_url)
+    start_time = timezone.now()
 
-    failed_page_publishes: list[int] = []
+    # Send publishing started notification
+    notify_slack_of_publication_start(
+        bundle=bundle,
+        start_time=bundle.scheduled_publication_date or start_time,
+        url=bundle.full_inspect_url,
+    )
+    # Track successful and failed page publications
+    pages_published = 0
+    failed_pages: list[int] = []
+    total_pages = bundle.get_bundled_pages().count()
 
-    for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision").not_live():
+    for page in bundle.get_bundled_pages().specific(defer=True).select_related("latest_revision"):
         try:
             # Durable ensures no other savepoint will roll back the publish
             with transaction.atomic(durable=True):
                 if workflow_state := page.current_workflow_state:
                     # finish the workflow
                     workflow_state.current_task_state.approve()
+                    pages_published += 1
                 elif page.latest_revision:
                     # just run publish
                     page.latest_revision.publish(log_action="wagtail.publish.scheduled")
+                    pages_published += 1
                 else:
+                    failed_pages.append(page.pk)
                     logger.error(
                         "Did not publish page as it is not in a workflow or has no revisions",
                         extra={
@@ -415,48 +452,96 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                             "event": "publish_page_failed",
                         },
                     )
+                    alert_slack_of_bundle_content_failure(
+                        bundle=bundle,
+                        exception_message=f"<{page.full_edit_url}|Page (ID: {page.pk})> in the bundle did not "
+                        "publish because it is not in a workflow or has no revisions",
+                    )
         except Exception:  # pylint: disable=broad-exception-caught
             # Log exception, but don't raise it so publishing can continue
-            logger.exception("Page publish failed", extra={"bundle_id": bundle.pk, "page_id": page.pk})
-            failed_page_publishes.append(page.pk)
+            failed_pages.append(page.pk)
+            logger.exception(
+                "Failed to publish page",
+                extra={
+                    "bundle_id": bundle.pk,
+                    "page_id": page.pk,
+                    "event": "publish_page_failed",
+                },
+            )
+            alert_slack_of_bundle_content_failure(
+                bundle=bundle,
+                exception_message=f"<{page.full_edit_url}|Page (ID: {page.pk})> in the bundle failed to publish",
+            )
 
     # update and publish related release calendar
     if bundle.release_calendar_page_id:
         update_bundle_linked_release_calendar_page(bundle)
 
-    if not failed_page_publishes:
-        if update_status:
-            bundle.status = BundleStatus.PUBLISHED
-            bundle.save(update_fields=["status"])
+    # Handle failures
+    if failed_pages:
+        # Determine severity and status
+        if pages_published == 0:
+            # Total failure - no pages published
+            failure_status = BundleStatus.FAILED
+            alert_type = BundleAlertType.CRITICAL
+
+            logger.error(
+                "No pages were successfully published",
+                extra={
+                    "bundle_id": bundle.pk,
+                    "event": "publish_failed_no_success",
+                },
+            )
+        else:
+            # Partial failure - some pages published
+            failure_status = BundleStatus.PARTIALLY_PUBLISHED
+            alert_type = BundleAlertType.FAIL
+
+        # Always update status on failures
+        bundle.status = failure_status
+        bundle.save(update_fields=["status"])
+
+        # Send failure notification
+        end_time = timezone.now()
+        notify_slack_of_bundle_failure(
+            bundle=bundle,
+            start_time=start_time,
+            end_time=end_time,
+            pages_published=pages_published,
+            exception_message=f"{len(failed_pages)} of {total_pages} page(s) failed to publish",
+            alert_type=alert_type,
+        )
 
         log(action="wagtail.publish.scheduled", instance=bundle)
 
-        publish_duration = time.time() - start_time
-        logger.info(
-            "Published bundle",
-            extra={
-                "bundle_id": bundle.pk,
-                "duration": round(publish_duration * 1000, 3),
-                "event": "published_bundle",
-            },
-        )
-    else:
-        publish_duration = time.time() - start_time
+        publish_duration = (end_time - start_time).total_seconds()
         logger.error(
             "Bundle publish failed",
             extra={
                 "bundle_id": bundle.pk,
                 "duration": round(publish_duration * 1000, 3),
                 "event": "publish_failed",
-                "failed_pages": failed_page_publishes,
+                "failed_pages": failed_pages,
             },
         )
+        return False
 
-    notifications.notify_slack_of_publish_end(
-        bundle, publish_duration, url=bundle.full_inspect_url, successful=not failed_page_publishes
+    # we already handle failed pages, if the bundle only has datasets it still needs to be published successfully
+    if update_status and (pages_published > 0 or bundle.has_datasets):
+        bundle.status = BundleStatus.PUBLISHED
+        bundle.save(update_fields=["status"])
+
+    # Send publishing ended notification
+    notify_slack_of_publish_end(
+        bundle=bundle,
+        start_time=start_time,
+        end_time=timezone.now(),
+        pages_published=pages_published,
+        url=bundle.full_inspect_url,
     )
 
-    return bool(failed_page_publishes)
+    log(action="wagtail.publish.scheduled", instance=bundle)
+    return True
 
 
 def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
@@ -474,10 +559,6 @@ def build_content_item_for_dataset(dataset: Any) -> dict[str, Any]:
             "dataset_id": dataset.namespace,
             "edition_id": dataset.edition,
             "version_id": dataset.version,
-        },
-        "links": {
-            "edit": get_data_admin_action_url("edit", dataset.namespace, dataset.edition, dataset.version),
-            "preview": get_data_admin_action_url("preview", dataset.namespace, dataset.edition, dataset.version),
         },
     }
 
@@ -502,31 +583,6 @@ def extract_content_id_from_bundle_response(response: dict[str, Any], dataset: A
         return content_id if content_id is not None else None
 
     return None
-
-
-def get_data_admin_action_url(
-    action: Literal["edit", "preview"], dataset_id: str, edition_id: str, version_id: str
-) -> str:
-    """Generate a relative URL for dataset actions in the ONS Data Admin interface.
-
-    This function constructs relative URLs for dataset operations in the ONS Data Admin
-    system, which is used for editing and previewing datasets.
-
-    Args:
-        action: The action to perform ("edit", "preview")
-        dataset_id: The unique identifier for the dataset
-        edition_id: The edition identifier for the dataset
-        version_id: The version identifier for the dataset
-
-    Returns:
-        A relative URL string for the specified dataset action
-
-    Example:
-        >>> get_data_admin_action_url("edit", "cpih", "time-series", "1")
-        "/data-admin/series/cpih/editions/time-series/versions/1"
-    """
-    prefix = "data-admin/series" if action == "edit" else "datasets"
-    return f"/{prefix}/{dataset_id}/editions/{edition_id}/versions/{version_id}"
 
 
 def in_active_bundle(item: Model) -> bool:

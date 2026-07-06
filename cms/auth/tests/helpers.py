@@ -37,7 +37,7 @@ def build_jwt(pair: RSAKeyPair, *, token_use: str, **extra) -> str:
     now = datetime.now(tz=UTC)
     payload = {
         "iss": "https://cognito-idp.eu-west-2.amazonaws.com/test-pool",
-        "exp": int((now + timedelta(seconds=15)).timestamp()),
+        "exp": int((now + timedelta(minutes=5)).timestamp()),
         "iat": int(now.timestamp()),
         "jti": f"jti-{token_use}",
         "token_use": token_use,
@@ -79,7 +79,6 @@ class DummyResponse:
     ACCESS_TOKEN_COOKIE_NAME="access",
     ID_TOKEN_COOKIE_NAME="id",
     WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True,
-    WAGTAILADMIN_HOME_PATH="/admin/",
     SESSION_RENEWAL_OFFSET_SECONDS=300,
 )
 class CognitoTokenTestCase(TestCase):
@@ -145,13 +144,13 @@ class CognitoTokenTestCase(TestCase):
         self.set_jwt_cookies(access, id_token)
 
     def assertLoggedOut(self, redirect="/admin/login/") -> None:  # pylint: disable=invalid-name
-        response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        response = self.client.get(f"/{settings.WAGTAILADMIN_HOME_PATH}")
         self.assertEqual(response.status_code, 302)
         self.assertIn(redirect, response["Location"])
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
     def assertLoggedIn(self) -> None:  # pylint: disable=invalid-name
-        response = self.client.get(settings.WAGTAILADMIN_HOME_PATH)
+        response = self.client.get(f"/{settings.WAGTAILADMIN_HOME_PATH}")
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.wsgi_request.user.is_authenticated)
         # User should now exist after login

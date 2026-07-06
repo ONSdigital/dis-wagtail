@@ -1,4 +1,6 @@
+import codecs
 import csv
+import html
 import re
 from collections.abc import Mapping
 
@@ -19,10 +21,10 @@ def clean_cell_value(value: str | int | float) -> str | int | float:
     if not isinstance(value, str):
         return value
 
-    value = value.strip()
-
     # Replace <br> tags (all variations) with newlines
     value = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
+
+    value = html.unescape(value).strip()
 
     if "<" not in value:
         # Return early if there are no HTML tags to process
@@ -103,10 +105,22 @@ def sanitize_data_for_csv(data: list[list[str | int | float]]) -> list[list[str 
     """
     triggers = ("=", "+", "-", "@", "\t")
 
-    return [
-        [f"'{value}" if isinstance(value, str) and value.startswith(triggers) else value for value in row]
-        for row in data
-    ]
+    sanitized_rows: list[list[str | int | float]] = []
+    for row in data:
+        new_row: list[str | int | float] = []
+        for value in row:
+            if isinstance(value, str) and value.startswith(triggers):
+                # If it's a number string (e.g. "-5"), do not prepend the quote
+                try:
+                    float(value)  # Check if it can be converted to a number
+                    new_row.append(value)
+                except ValueError:
+                    new_row.append(f"'{value}")
+            else:
+                new_row.append(value)
+        sanitized_rows.append(new_row)
+
+    return sanitized_rows
 
 
 def create_data_csv_download_response_from_data(data: list[list[str | int | float]], *, title: str) -> HttpResponse:
@@ -126,6 +140,7 @@ def create_data_csv_download_response_from_data(data: list[list[str | int | floa
             "Content-Disposition": f'attachment; filename="{filename}.csv"',
         },
     )
+    response.write(codecs.BOM_UTF8)
     writer = csv.writer(response)
     writer.writerows(sanitize_data_for_csv(data))
     return response

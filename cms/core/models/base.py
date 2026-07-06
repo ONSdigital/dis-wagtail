@@ -1,11 +1,15 @@
 from typing import TYPE_CHECKING, ClassVar, Self, cast
 
 from django.conf import settings
+from django.core.cache import cache
 from django.http import HttpRequest
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django_stubs_ext import StrOrPromise
 from wagtail.admin.panels import ObjectList, TabbedInterface
+from wagtail.log_actions import log
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
 from wagtail.utils.decorators import cached_classmethod
@@ -25,9 +29,11 @@ if TYPE_CHECKING:
     from datetime import date, datetime
 
     from django.db import models
+    from django.template.response import TemplateResponse
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import BaseGenericSetting as _WagtailBaseGenericSetting
     from wagtail.contrib.settings.models import BaseSiteSetting as _WagtailBaseSiteSetting
+    from wagtail.models import Revision
     from wagtail.models.sites import Site, SiteRootPath
 
     class WagtailBaseSiteSetting(_WagtailBaseSiteSetting, models.Model):
@@ -58,10 +64,12 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     content_field_name: str = "content"
 
     # used a page type label in the front-end
-    label = "Page"
+    label: ClassVar[StrOrPromise | None] = None
 
     # The default schema.org type for pages
     schema_org_type = "WebPage"
+
+    audit_log_cooldown_seconds = settings.CMS_AUDIT_LOG_COOLDOWN_SECONDS
 
     class Meta:
         abstract = True
@@ -137,6 +145,11 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         # Use the release_date field if available, otherwise return last_published_at.
         return getattr(self, "release_date", self.last_published_at)
 
+    @property
+    def breadcrumb_title(self) -> str:
+        # Override in subclasses where the breadcrumb label should differ from the page title.
+        return str(self.title)
+
     def get_breadcrumbs(self, request: HttpRequest) -> list[dict[str, object]]:
         """Returns the breadcrumbs for the page as a list of dictionaries compatible with the ONS design system
         breadcrumbs component.
@@ -154,7 +167,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
                 breadcrumbs.append({"url": ancestor_page.get_full_url(request=request), "text": ancestor_page.title})
         if getattr(request, "is_for_subpage", False):
-            breadcrumbs.append({"url": self.get_full_url(request=request), "text": self.title})
+            breadcrumbs.append({"url": self.get_full_url(request=request), "text": self.breadcrumb_title})
         self._breadcrumbs = breadcrumbs  # pylint: disable=attribute-defined-outside-init
         return breadcrumbs
 
@@ -198,10 +211,14 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         - If the request is for a subpage (marked by setting the attribute `is_for_subpage=True` on the request object),
           then it will include the subpage route from the request.
         """
-        canonical_page = self.alias_of or self
+        canonical_page = self.alias_of if self.alias_of_id else self
         if getattr(request, "is_for_subpage", False) and getattr(request, "routable_resolver_match", None):
             return request.build_absolute_uri(request.get_full_path())
         return cast(str, canonical_page.get_full_url(request=request))
+
+    def show_localised_version_not_available_notice(self, request: HttpRequest) -> bool:
+        """Return whether to show a notice that this page is not available in the active language."""
+        return bool(self.alias_of and self.alias_of.locale.language_code != request.LANGUAGE_CODE)
 
     def get_url_parts(self, request: HttpRequest | None = None) -> tuple[int, str | None, str | None] | None:
         """Override get_url_parts to generate URLs without trailing slashes."""
@@ -285,7 +302,14 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return None
 
         parent_theme = page_topic.get_base_parent()
-        return cast(str, parent_theme.title)
+        return parent_theme.title
+
+    def get_referenced_asset_ids(self, asset_model: type[models.Model]) -> set[str]:
+        stream_value = getattr(self, self.content_field_name)
+        # note: extract_references() is also used to populate the ReferenceIndex
+        references = stream_value.stream_block.extract_references(stream_value)
+
+        return {object_id for model, object_id, _, _ in references if model == asset_model}
 
     def _get_site_root_paths(self, request: HttpRequest | models.Model | None = None) -> list[SiteRootPath]:
         """Extends the core Page._get_site_root_paths to account for alternative domains.
@@ -308,6 +332,67 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             cache_object._wagtail_cached_site_root_paths = paths  # type: ignore[union-attr]
             # pylint: enable=protected-access,attribute-defined-outside-init
             return paths
+
+    @property
+    def full_edit_url(self) -> str | None:
+        """Returns the absolute URL for the page edit view, or an empty string if the page is not saved yet."""
+        if not self.pk:
+            return ""
+
+        return f"{settings.WAGTAILADMIN_BASE_URL}{reverse('wagtailadmin_pages:edit', args=[self.pk])}"
+
+    def _log_preview(self, request: HttpRequest, mode_name: str) -> None:
+        """Log when a user previews a page in a specific preview mode."""
+        mode_name = mode_name or "default"
+        if not self.pk:
+            # Don't log if the page hasn't been saved yet (i.e. doesn't have a primary key)
+            return
+        cache_key = f"preview_page_log:{self.pk}:{request.user.pk}:{mode_name}"
+
+        if cache.get(cache_key):
+            return
+
+        log(
+            action="pages.preview_mode_used",
+            instance=self,
+            data={"preview_mode": mode_name},
+            user=request.user if request.user.is_authenticated else None,
+        )
+        cache.set(cache_key, True, timeout=self.audit_log_cooldown_seconds)
+
+    def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        self._log_preview(request, mode_name)
+        response: TemplateResponse = super().serve_preview(request, mode_name)
+        return response
+
+    def save_revision(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913
+        self,
+        user: User | None = None,
+        approved_go_live_at: datetime | None = None,
+        changed: bool = True,
+        log_action: bool | str = False,
+        previous_revision: Revision | None = None,
+        clean: bool = True,
+        overwrite_revision: Revision | None = None,
+    ) -> Revision:
+        """Suppress repeated "page edited" audit log entries (e.g. from autosave) within a cooldown window."""
+        if log_action and not previous_revision and self.pk:
+            cache_key = f"page_edit_save_log:{self.pk}:{user.pk if user else 'none'}"
+            if cache.get(cache_key):
+                log_action = False
+            else:
+                cache.set(cache_key, True, timeout=self.audit_log_cooldown_seconds)
+
+        revision: Revision = super().save_revision(
+            user=user,
+            approved_go_live_at=approved_go_live_at,
+            changed=changed,
+            log_action=log_action,
+            previous_revision=previous_revision,
+            clean=clean,
+            overwrite_revision=overwrite_revision,
+        )
+        return revision
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

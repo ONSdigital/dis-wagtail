@@ -262,7 +262,6 @@ class CoreBlocksTestCase(TestCase):
                 "url": "/",
                 "text": "Example",
                 "description": "A link",
-                "metadata": {"object": {"text": "Page"}},
             },
         )
 
@@ -278,7 +277,6 @@ class CoreBlocksTestCase(TestCase):
                 "url": "/",
                 "text": self.home_page.title,
                 "description": "",
-                "metadata": {"object": {"text": "Page"}},
             },
         )
 
@@ -658,14 +656,16 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         }
         cls.full_data = {
             "title": "The table",
-            "caption": "The caption",
+            "subtitle": "The subtitle",
+            "caption": "The accessible label",
             "source": "https://ons.gov.uk",
             "footnotes": "footnotes",
             "data": cls.simple_table_data,
         }
         cls.data_with_empty_table = {
             "title": "The table",
-            "caption": "The caption",
+            "subtitle": "The subtitle",
+            "caption": "The accessible label",
             "source": "https://ons.gov.uk",
             "footnotes": "footnotes",
             "data": {
@@ -676,32 +676,100 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         cls.block = ONSTableBlock()
 
+    def test_clean__subtitle_without_title_raises(self):
+        """A subtitle cannot be saved without a title."""
+        value = self.block.to_python(
+            {
+                "subtitle": "A subtitle",
+                "caption": "The accessible label",
+                "data": self.simple_table_data,
+            }
+        )
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            self.block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["subtitle"].message,
+            "Please add a title if you want to add a subtitle.",
+        )
+
+    def test_clean__subtitle_with_title(self):
+        """A subtitle paired with a title is allowed."""
+        value = self.block.to_python(
+            {
+                "title": "The table",
+                "subtitle": "A subtitle",
+                "caption": "The accessible label",
+                "data": self.simple_table_data,
+            }
+        )
+        # Should not raise a validation error
+        self.block.clean(value)
+
+    def test_clean__no_subtitle(self):
+        """A table with no subtitle is allowed regardless of title."""
+        value = self.block.to_python(
+            {
+                "caption": "The accessible label",
+                "data": self.simple_table_data,
+            }
+        )
+        # Should not raise a validation error
+        self.block.clean(value)
+
     def test_get_context(self):
         context = self.block.get_context(self.full_data)
         self.assertDictEqual(
             context["options"],
             {
-                "caption": "The caption",
+                "caption": "The accessible label",
+                "hideCaption": True,
                 "thList": [{"ths": [{"value": "header cell"}]}],
                 "trs": [{"tds": [{"value": "row cell"}]}],
             },
         )
         self.assertEqual(context["title"], "The table")
+        self.assertEqual(context["subtitle"], "The subtitle")
         self.assertEqual(context["source"], "https://ons.gov.uk")
         self.assertEqual(context["footnotes"], "footnotes")
 
     def test_get_context__with_empty_table(self):
         context = self.block.get_context(self.data_with_empty_table)
         self.assertNotIn("title", context)
+        self.assertNotIn("subtitle", context)
         self.assertNotIn("caption", context)
         self.assertNotIn("options", context)
         self.assertNotIn("source", context)
         self.assertNotIn("footnotes", context)
 
+    def test_footnotes_html_only_omitted(self):
+        for html in ("<p></p>", "<p> </p>"):
+            with self.subTest(html=html):
+                data = self.full_data.copy()
+                data["footnotes"] = html
+                context = self.block.get_context(data)
+                self.assertNotIn("footnotes", context)
+                rendered = self.block.render(data)
+                self.assertNotIn("Footnotes", rendered)
+        content = "Valid content"
+        with self.subTest(content=content):
+            data = self.full_data.copy()
+            data["footnotes"] = content
+            context = self.block.get_context(data)
+            self.assertIn("footnotes", context)
+            rendered = self.block.render(data)
+            self.assertIn(content, rendered)
+
     def test_render_block__full(self):
         rendered = self.block.render(self.full_data)
         self.assertIn(self.full_data["title"], rendered)
-        self.assertIn(self.full_data["caption"], rendered)
+        self.assertIn(f"<h4>{self.full_data['subtitle']}</h4>", rendered)
+        soup = BeautifulSoup(rendered, "html.parser")
+        caption_tag = soup.find("caption")
+        self.assertIsNotNone(caption_tag)
+        self.assertIn(self.full_data["caption"], caption_tag.get_text())
+        self.assertIn("ons-u-vh", caption_tag.get("class", []))
         self.assertIn("Footnotes", rendered)
         self.assertIn(self.full_data["footnotes"], rendered)
         self.assertIn("<table", rendered)
@@ -712,7 +780,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
     def test_render_block__no_table(self):
         rendered = self.block.render(self.data_with_empty_table)
         self.assertNotIn(self.full_data["title"], rendered)
-        self.assertNotIn(self.full_data["caption"], rendered)
+        self.assertNotIn(self.full_data["subtitle"], rendered)
         self.assertNotIn("Footnotes", rendered)
         self.assertNotIn("<table ", rendered)
         self.assertNotIn("header cell", rendered)
@@ -723,17 +791,17 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         data = {
             "title": "The table",
-            "caption": "The caption",
+            "subtitle": "The subtitle",
             "source": "https://ons.gov.uk",
             "footnotes": "footnotes",
         }
 
         cases = [
             # field with value, fields not rendered
-            ("title", ["caption", "source", "footnotes"]),
-            ("caption", ["title", "source", "footnotes"]),
-            ("source", ["title", "caption", "footnotes"]),
-            ("footnotes", ["title", "caption", "source"]),
+            ("title", ["subtitle", "source", "footnotes"]),
+            ("subtitle", ["title", "source", "footnotes"]),
+            ("source", ["title", "subtitle", "footnotes"]),
+            ("footnotes", ["title", "subtitle", "source"]),
         ]
 
         for field_name, not_present in cases:
@@ -966,6 +1034,70 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         download_url = result["options"]["download"]["itemsList"][0]["url"]
         self.assertEqual(download_url, "/economy/articles/test-article/download-table/test-block-id")
 
+    def test_additional_sections_heading_level_with_title_and_no_subtitle(self):
+        """Test that footnotes and downloads headings render at h4 when table title is present."""
+        page = StatisticalArticlePageFactory()
+        parent_context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": None,
+        }
+        data = {**self.full_data, "subtitle": ""}
+        context = self.block.get_context(data, parent_context=parent_context)
+        self.assertEqual(context["additional_sections_heading_level"], 4)
+
+        rendered = self.block.render(data, context=parent_context)
+        soup = BeautifulSoup(rendered, "html.parser")
+        h4_tags = soup.find_all("h4")
+        self.assertTrue(any("Footnotes" in tag.get_text() for tag in h4_tags))
+        self.assertTrue(any("Download this table" in tag.get_text() for tag in h4_tags))
+
+    def test_additional_sections_heading_level_without_title_or_subtitle(self):
+        """Test that footnotes and downloads headings render at h3 when table title is not present."""
+        data_without_title = {
+            "source": "https://ons.gov.uk",
+            "footnotes": "footnotes",
+            "data": self.simple_table_data,
+        }
+        page = StatisticalArticlePageFactory()
+        parent_context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": None,
+        }
+        context = self.block.get_context(data_without_title, parent_context=parent_context)
+        self.assertEqual(context["additional_sections_heading_level"], 3)
+
+        rendered = self.block.render(data_without_title, context=parent_context)
+        soup = BeautifulSoup(rendered, "html.parser")
+        h3_tags = soup.find_all("h3")
+        self.assertTrue(any("Footnotes" in tag.get_text() for tag in h3_tags))
+        self.assertTrue(any("Download this table" in tag.get_text() for tag in h3_tags))
+
+    def test_additional_sections_heading_level_with_title_and_subtitle(self):
+        """Test that footnotes and downloads headings render at h5 when both title and subtitle are present."""
+        data_with_title_and_subtitle = {
+            "title": "The table",
+            "subtitle": "A subtitle",
+            "source": "https://ons.gov.uk",
+            "footnotes": "footnotes",
+            "data": self.simple_table_data,
+        }
+        page = StatisticalArticlePageFactory()
+        parent_context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": None,
+        }
+        context = self.block.get_context(data_with_title_and_subtitle, parent_context=parent_context)
+        self.assertEqual(context["additional_sections_heading_level"], 5)
+
+        rendered = self.block.render(data_with_title_and_subtitle, context=parent_context)
+        soup = BeautifulSoup(rendered, "html.parser")
+        h5_tags = soup.find_all("h5")
+        self.assertTrue(any("Footnotes" in tag.get_text() for tag in h5_tags))
+        self.assertTrue(any("Download this table" in tag.get_text() for tag in h5_tags))
+
     def test_ons_table_block_download_config_missing_without_page(self):
         """Test that download is empty when page is missing from context."""
         context = {
@@ -1130,8 +1262,8 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
 
         # onsImage macro outputs src/srcset with both specific rendition URLs
         # Use the underlying file URLs to be agnostic of serve method
-        self.assertContains(response, self.small.url)
-        self.assertContains(response, self.large.url)
+        self.assertContains(response, self.small.file.url)
+        self.assertContains(response, self.large.file.url)
 
     def test_renders_download_link_with_file_type_and_size_when_enabled(self):
         page = self._make_information_page(download=True)
@@ -1147,8 +1279,8 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
 
         # Large rendition used for download (assert exact URL appears twice in the response)
         # Assert exact downloadable rendition file URL appears twice: once in href, once in onsImage srcset
-        self.assertContains(response, self.large.url, count=2)
-        self.assertContains(response, self.small.url, count=2)
+        self.assertContains(response, self.large.file.url, count=2)
+        self.assertContains(response, self.small.file.url, count=2)
 
         # Assert the actual download anchor exists and targets the large rendition URL
         html = response.content.decode(response.charset or "utf-8", errors="replace")
@@ -1156,7 +1288,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         download_link = soup.select_one("a[download]")
 
         self.assertIsNotNone(download_link)
-        self.assertEqual(download_link.get("href"), self.large.url)
+        self.assertEqual(download_link.get("href"), self.large.file.url)
 
         expected = filesizeformat(self.large.file.size)
         self.assertIn(f"({expected})", download_link.get_text(strip=True))

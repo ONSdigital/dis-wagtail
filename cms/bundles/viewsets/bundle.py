@@ -1,73 +1,61 @@
+# pylint: disable=too-many-lines
 from __future__ import annotations  # needed for unquoted forward references because of Django Views
 
 import logging
-import textwrap
 import time
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import F
 from django.http import HttpRequest
-from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.html import format_html, format_html_join
 from wagtail.admin import messages
+from wagtail.admin.ui.components import MediaContainer
+from wagtail.admin.ui.side_panels import StatusSidePanel
 from wagtail.admin.ui.tables import Column, DateColumn
 from wagtail.admin.views.generic import CreateView, DeleteView, EditView, IndexView, InspectView
 from wagtail.admin.viewsets.model import ModelViewSet
 from wagtail.admin.widgets import HeaderButton, ListingButton
 from wagtail.log_actions import log
+from wagtail.models import Page
 
 from cms.bundles.action_menu import BundleActionMenu
 from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError, BundleAPIClientError404
 from cms.bundles.decorators import datasets_bundle_api_enabled
-from cms.bundles.enums import BundleContentItemState, BundleStatus
+from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleContentItemState, BundleStatus
 from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import (
     notify_slack_of_status_change,
 )
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
-from cms.bundles.utils import get_data_admin_action_url, publish_bundle
+from cms.bundles.utils import publish_bundle
+from cms.bundles.viewsets.utils import add_exception_cause_to_form
 from cms.core.custom_date_format import ons_date_format
+from cms.core.utils import redirect
+from cms.datasets.models import Dataset
+from cms.teams.models import Team
 
 if TYPE_CHECKING:
     from django.db.models.fields import Field
-    from django.forms import BaseForm
     from django.http import HttpResponseBase
     from django.template.response import TemplateResponse
     from django.utils.safestring import SafeString
-    from wagtail.models import Page
 
     from cms.bundles.forms import BundleAdminForm
     from cms.bundles.models import BundlesQuerySet
-    from cms.datasets.models import Dataset
 
 logger = logging.getLogger(__name__)
 
 # Fallback value for missing dataset metadata
 MISSING_VALUE = "Data missing"
 
-
-def add_exception_cause_to_form(exception: Exception, *, form: BaseForm) -> None:
-    """Adds errors from a BundleAPIClientError exception cause to the form errors."""
-    cause = getattr(exception, "__cause__", None)
-    if not cause:
-        return
-
-    # Currently only handle BundleAPIClientError causes
-    if not isinstance(cause, BundleAPIClientError):
-        return
-
-    for error in cause.errors:
-        desc = error.get("description") or "Unknown API Error"
-        form.add_error(
-            field=None,
-            error=textwrap.shorten(desc, width=250, placeholder="..."),  # limit chars to avoid overly long errors
-        )
+PREVIEW_BUTTON_LABEL = "Preview"
 
 
 class BundleCreateView(CreateView):
@@ -127,20 +115,37 @@ class BundleCreateView(CreateView):
         return context
 
 
+class BundleStatusSidePanel(StatusSidePanel):
+    """Status side panel that shows the bundle's own status label.
+
+    Wagtail's default StatusSidePanel renders workflow.html which shows "Live" unconditionally
+    for models without DraftStateMixin (draftstate_enabled=False). Bundles have a custom status
+    workflow, so we swap in a bundle-specific template that reads get_status_display() instead.
+    """
+
+    def get_status_templates(self, context: dict) -> list[str]:
+        templates: list[str] = super().get_status_templates(context)
+        templates[0] = "bundles/wagtailadmin/side_panels/bundle_status.html"
+        return templates
+
+
 class BundleEditView(EditView):
     """The Bundle edit view class."""
 
     template_name = "bundles/wagtailadmin/edit.html"
     has_content_changes: bool = False
     start_time: float | None = None
+    audit_log_cooldown_seconds = settings.CMS_AUDIT_LOG_COOLDOWN_SECONDS
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
-        if (instance := self.get_object()) and instance.status == BundleStatus.PUBLISHED:
-            return redirect(self.index_url_name)
+        if (instance := self.get_object()) and instance.status in PUBLISHED_BUNDLE_STATUSES:
+            return redirect(self.index_url_name, preserve_request=False)
 
         if request.method == "POST" and self.get_action(request) not in self.get_available_actions():
             # someone's trying to POST with an action that is not available, so bail out early
             raise PermissionDenied
+
+        self._log_bundle_view(request)
 
         response: HttpResponseBase = super().dispatch(request, *args, **kwargs)
         return response
@@ -191,6 +196,17 @@ class BundleEditView(EditView):
         return response
 
     def save_instance(self) -> Bundle:
+        # Capture before state for comparison.
+        # Note: publication_date is fetched from the DB because Django's ModelForm._post_clean()
+        # updates instance fields from cleaned_data during is_valid(), before save_instance() runs.
+        # M2M fields (teams, pages, datasets) are unaffected as inline formsets save later.
+        original_state = {
+            "teams": set(self.object.teams.values_list("team_id", flat=True)),
+            "pages": set(self.object.bundled_pages.values_list("page_id", flat=True)),
+            "datasets": set(self.object.bundled_datasets.values_list("dataset_id", flat=True)),
+            "pub_date": Bundle.objects.values_list("publication_date", flat=True).get(pk=self.object.pk),
+        }
+
         instance: Bundle = self.form.save()
         self.has_content_changes = self.form.has_changed()
 
@@ -198,6 +214,9 @@ class BundleEditView(EditView):
             return instance
 
         log(action="wagtail.edit", instance=instance, content_changed=True, data={"fields": self.form.changed_data})
+
+        # Log content changes
+        self._log_content_changes(instance, original_state)
 
         if "status" not in self.form.changed_data:
             return instance
@@ -209,7 +228,7 @@ class BundleEditView(EditView):
         if instance.status == BundleStatus.APPROVED:
             action = "bundles.approve"
             kwargs["data"] = {"old": original_status}
-            notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+            notify_slack_of_status_change(instance, timezone.now(), original_status, user=self.request.user, url=url)
         elif instance.status == BundleStatus.PUBLISHED.value:
             action = "wagtail.publish"
             self.start_time = time.time()
@@ -219,7 +238,7 @@ class BundleEditView(EditView):
                 "old": original_status,
                 "new": instance.get_status_display(),
             }
-            notify_slack_of_status_change(instance, original_status, user=self.request.user, url=url)
+            notify_slack_of_status_change(instance, timezone.now(), original_status, user=self.request.user, url=url)
 
         # now log the status change
         log(
@@ -229,6 +248,103 @@ class BundleEditView(EditView):
         )
 
         return instance
+
+    def _log_bundle_view(self, request: HttpRequest) -> None:
+        """Log the bundle view with a cooldown to prevent duplicate entries."""
+        instance = self.get_object()
+
+        if not instance or not instance.pk:
+            return
+
+        cache_key = f"bundle_edit_log:{instance.pk}:{request.user.pk}"
+
+        if cache.get(cache_key):
+            return
+
+        log(action="bundles.edit_view", instance=instance)
+        cache.set(cache_key, True, timeout=self.audit_log_cooldown_seconds)
+
+    def _log_content_changes(self, instance: Bundle, original_state: dict[str, Any]) -> None:
+        """Log changes to bundle content (teams, pages, datasets, schedule)."""
+        self._log_team_changes(instance, original_state["teams"])
+        self._log_page_changes(instance, original_state["pages"])
+        self._log_dataset_changes(instance, original_state["datasets"])
+        self._log_schedule_changes(instance, original_state["pub_date"])
+
+    def _log_team_changes(self, instance: Bundle, original_teams: set[int]) -> None:
+        """Log team additions and removals."""
+        new_teams = set(instance.teams.values_list("team_id", flat=True))
+        added = new_teams - original_teams
+        removed = original_teams - new_teams
+
+        if not added and not removed:
+            return
+
+        # Fetch team names in bulk
+        added_teams = list(Team.objects.filter(id__in=added).values_list("name", flat=True)) if added else []
+        removed_teams = list(Team.objects.filter(id__in=removed).values_list("name", flat=True)) if removed else []
+
+        log(
+            action="bundles.teams_changed",
+            instance=instance,
+            data={
+                "added_teams": added_teams,
+                "removed_teams": removed_teams,
+            },
+        )
+
+    def _log_page_changes(self, instance: Bundle, original_pages: set[int]) -> None:
+        """Log page additions and removals."""
+        new_pages = set(instance.bundled_pages.values_list("page_id", flat=True))
+        added = new_pages - original_pages
+        removed = original_pages - new_pages
+
+        if not added and not removed:
+            return
+
+        # Fetch page titles in bulk
+        added_pages = list(Page.objects.filter(id__in=added).values_list("title", flat=True)) if added else []
+        removed_pages = list(Page.objects.filter(id__in=removed).values_list("title", flat=True)) if removed else []
+
+        log(
+            action="bundles.pages_changed",
+            instance=instance,
+            data={
+                "added_pages": added_pages,
+                "removed_pages": removed_pages,
+            },
+        )
+
+    def _log_dataset_changes(self, instance: Bundle, original_datasets: set[int]) -> None:
+        """Log dataset additions and removals."""
+        new_datasets = set(instance.bundled_datasets.values_list("dataset_id", flat=True))
+        added = new_datasets - original_datasets
+        removed = original_datasets - new_datasets
+
+        if not added and not removed:
+            return
+
+        # Fetch dataset titles in bulk
+        added_datasets = list(Dataset.objects.filter(id__in=added).values_list("title", flat=True)) if added else []
+        removed_datasets = (
+            list(Dataset.objects.filter(id__in=removed).values_list("title", flat=True)) if removed else []
+        )
+
+        log(
+            action="bundles.datasets_changed",
+            instance=instance,
+            data={
+                "added_datasets": added_datasets,
+                "removed_datasets": removed_datasets,
+            },
+        )
+
+    def _log_schedule_changes(self, instance: Bundle, original_pub_date: Any) -> None:
+        """Log publication date changes."""
+        if instance.publication_date != original_pub_date:
+            old_date = original_pub_date.strftime("%Y-%m-%d %H:%M") if original_pub_date else None
+            new_date = instance.publication_date.strftime("%Y-%m-%d %H:%M") if instance.publication_date else None
+            log(action="bundles.schedule_changed", instance=instance, data={"old": old_date, "new": new_date})
 
     def run_after_hook(self) -> HttpResponseBase | None:
         """This method allows calling hooks or additional logic after an action has been executed.
@@ -286,6 +402,22 @@ class BundleEditView(EditView):
 
         return []
 
+    def get_side_panels(self) -> MediaContainer:
+        side_panels = []
+        usage_url = self.get_usage_url()
+        history_url = self.get_history_url()
+        if usage_url or history_url:
+            side_panels.append(
+                BundleStatusSidePanel(
+                    self.object,
+                    self.request,
+                    usage_url=usage_url,
+                    history_url=history_url,
+                    last_updated_info=self.get_last_updated_info(),
+                )
+            )
+        return MediaContainer(side_panels)
+
     def get_context_data(self, **kwargs: Any) -> dict:
         """Updates the template context.
 
@@ -310,11 +442,25 @@ class BundleInspectView(InspectView):
     """The Bundle inspect view class."""
 
     template_name = "bundles/wagtailadmin/inspect.html"
+    audit_log_cooldown_seconds = settings.CMS_AUDIT_LOG_COOLDOWN_SECONDS
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
         if not user_can_preview_bundle(self.request.user, self.object):
             raise PermissionDenied
+
+        self._log_bundle_view(request)
+
         return super().dispatch(request, *args, **kwargs)  # type: ignore[no-any-return]
+
+    def _log_bundle_view(self, request: HttpRequest) -> None:
+        """Log the bundle view with a cooldown to prevent duplicate entries."""
+        cache_key = f"bundle_inspect_log:{self.object.pk}:{request.user.pk}"
+
+        if cache.get(cache_key):
+            return
+
+        log(action="bundles.inspect", instance=self.object)
+        cache.set(cache_key, True, timeout=self.audit_log_cooldown_seconds)
 
     @cached_property
     def can_manage(self) -> bool:
@@ -360,7 +506,7 @@ class BundleInspectView(InspectView):
     def get_field_label(self, field_name: str, field: Field) -> str:
         match field_name:
             case "approved":
-                label = "Approval status"
+                label = "Approved by"
             case "scheduled_publication":
                 label = "Scheduled publication"
             case "pages":
@@ -384,7 +530,7 @@ class BundleInspectView(InspectView):
         return ons_date_format(self.object.approved_at, settings.DATETIME_FORMAT) if self.object.approved_at else ""
 
     def get_approved_display_value(self) -> str:
-        """Custom approved by formatting. Varies based on status, and approver/time of approval."""
+        """Custom approved by formatting. Varies based on status and approver/time of approval."""
         if self.object.status in [BundleStatus.APPROVED, BundleStatus.PUBLISHED]:
             if self.object.approved_by_id and self.object.approved_at:
                 return (
@@ -425,15 +571,31 @@ class BundleInspectView(InspectView):
                 return "Published"
             return page.current_workflow_state.current_task_state.task.name if page.current_workflow_state else "Draft"
 
-        def get_action(page: Page) -> str:
+        def get_action(page: Page) -> tuple[str, str]:
             if self.object.status == BundleStatus.PUBLISHED and page.live:
-                return str(page.get_url(request=self.request))
-            return reverse(
-                "bundles:preview",
-                args=(
-                    self.object.pk,
-                    page.pk,
+                return str(page.get_url(request=self.request)), "View Live"
+            return (
+                reverse(
+                    "bundles:preview",
+                    args=(
+                        self.object.pk,
+                        page.pk,
+                    ),
                 ),
+                PREVIEW_BUTTON_LABEL,
+            )
+
+        def get_button(page: Page) -> Literal[""] | SafeString:
+            url, label = get_action(page)
+
+            # Pages with no preview modes cannot be previewed
+            if label == PREVIEW_BUTTON_LABEL and page.specific_class.preview_modes == []:
+                return ""
+
+            return format_html(
+                '<a href="{}" class="button button-small button-secondary">{}</a>',
+                url,
+                label,
             )
 
         data = (
@@ -442,15 +604,14 @@ class BundleInspectView(InspectView):
                 page.get_admin_display_title(),
                 page.get_verbose_name(),
                 get_page_status(page),
-                get_action(page),
+                get_button(page),
             )
             for page in pages
         )
 
         page_data = format_html_join(
             "\n",
-            '<tr><td class="title"><strong><a href="{}">{}</a></strong></td><td>{}</td><td>{}</td> '
-            '<td><a href="{}" class="button button-small button-secondary">Preview</a></td></tr>',
+            '<tr><td class="title"><strong><a href="{}">{}</a></strong></td><td>{}</td><td>{}</td> <td>{}</td></tr>',
             data,
         )
 
@@ -555,10 +716,11 @@ class BundleInspectView(InspectView):
     def _build_action_button(self, state: str, preview_url: str | None, dataset: Dataset) -> SafeString | str:
         """Build the action button HTML based on dataset state."""
         if state == BundleContentItemState.PUBLISHED:
-            view_url = get_data_admin_action_url("preview", dataset.namespace, dataset.edition, str(dataset.version))
+            if not preview_url:
+                return ""
             return format_html(
                 '<a href="{}" class="button button-small button-secondary">View Live</a>',
-                view_url,
+                preview_url,
             )
         if preview_url:
             cms_preview_url = reverse(
@@ -691,10 +853,6 @@ class BundleDeleteView(DeleteView):
 
         try:
             client.delete_bundle(instance.bundle_api_bundle_id)
-            logger.info(
-                "Deleted bundle from Bundle API",
-                extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id},
-            )
         except BundleAPIClientError404:
             logger.warning(
                 "Bundle not found in Bundle API when deleting CMS bundle",
@@ -721,7 +879,7 @@ class BundleDeleteView(DeleteView):
             error = getattr(e, "message", str(e))
             error_message = f"The bundle could not be deleted due to errors. {error}."
             messages.error(self.request, error_message)
-            return redirect(reverse(self.index_url_name))
+            return redirect(reverse(self.index_url_name), preserve_request=False)
 
 
 class BundleIndexView(IndexView):
@@ -745,7 +903,7 @@ class BundleIndexView(IndexView):
     def filter_queryset(self, queryset: BundlesQuerySet) -> BundlesQuerySet:
         # automatically filter out published bundles if the status filter is not applied
         if not self.request.GET.get("status"):
-            queryset = queryset.exclude(status=BundleStatus.PUBLISHED)
+            queryset = queryset.exclude(status__in=PUBLISHED_BUNDLE_STATUSES)
 
         return cast("BundlesQuerySet", super().filter_queryset(queryset))
 
@@ -765,10 +923,10 @@ class BundleIndexView(IndexView):
 
     def get_edit_url(self, instance: Bundle) -> str | None:
         """Override the default edit url to disable the edit URL for released bundles."""
-        if instance.status != BundleStatus.PUBLISHED:
-            edit_url: str | None = super().get_edit_url(instance)
-            return edit_url
-        return None
+        if instance.status in PUBLISHED_BUNDLE_STATUSES:
+            return None
+        edit_url: str | None = super().get_edit_url(instance)
+        return edit_url
 
     def get_copy_url(self, instance: Bundle) -> str | None:
         """Disables the bundle copy."""
@@ -852,6 +1010,7 @@ class BundleViewSet(ModelViewSet):
     add_to_admin_menu = True
     inspect_view_enabled = True
     menu_order = 150
+    ordering = "-updated_at"
 
 
 bundle_viewset = BundleViewSet("bundle")

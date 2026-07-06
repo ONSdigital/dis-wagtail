@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from playwright.sync_api import Page as PlaywrightPage
 
 
-def create_information_page(context: Context) -> None:
+def create_information_page(context: Context, title: str = "Test Info Page") -> None:
     home_page = HomePage.objects.get(locale__language_code=settings.LANGUAGE_CODE)
     content = [
         {"type": "rich_text", "value": "<p>Some example rich text content</p>"},
@@ -36,7 +36,7 @@ def create_information_page(context: Context) -> None:
     ]
 
     kwargs = {
-        "title": "Test Info Page",
+        "title": title,
         "summary": "<p>My test information page</p>",
         "content": [{"type": "section", "value": {"content": content, "title": "Section 1"}}],
         "live": False,
@@ -151,7 +151,7 @@ def user_adds_info_page_contents(context: Context) -> None:
     context.page.get_by_role("region", name="Rich text *").get_by_role("textbox").fill("Some example rich text content")
 
     context.page.get_by_role("button", name="Insert a block").nth(2).click()
-    context.page.get_by_text("Related links", exact=True).click()
+    context.page.get_by_text("Related links", exact=True).last.click()
     context.page.get_by_role("button", name="Choose a page").click()
     context.page.get_by_role("cell", name="Home English", exact=True).get_by_role("link").click()
     context.page.get_by_role("textbox", name="Title", exact=True).fill("Test Home")
@@ -328,4 +328,4 @@ def preview_index_page_lists_live_and_draft_information_pages(context: Context) 
 
 @then("the equation is rendered")
 def the_equation_is_rendered(context: Context) -> None:
-    expect(context.page.get_by_text("n∑i=0i2=(n2+n)(2n+1)")).to_be_visible()
+    expect(context.page.get_by_text("n∑i=0i2=(n2+n)(2n+1)").last).to_be_visible()

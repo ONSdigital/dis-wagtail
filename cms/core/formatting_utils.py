@@ -1,12 +1,14 @@
 from collections.abc import Iterable
-from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, TypedDict, Union
+from datetime import UTC, date, datetime
+from typing import TYPE_CHECKING, Any, TypedDict, Union, overload
 
 from django.utils.formats import date_format
+from django.utils.timezone import is_aware, make_aware
 from django.utils.translation import gettext_lazy as _
 from wagtail.models import Page
 
 from cms.core.custom_date_format import ons_date_format
+from cms.core.utils import get_related_content_type_label
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -26,14 +28,17 @@ PageDataCollection = Iterable[Union["ArticleDict", "MethodologyDict"]]
 
 
 def format_as_document_list_item(
-    title: str, url: str, content_type: StrOrPromise, description: str
+    title: str, url: str, content_type: StrOrPromise | None, description: str, release_date: date | None = None
 ) -> DocumentListItem:
     """Formats an object as a list element to be used in the ONS DocumentList design system component."""
-    return {
+    document_list_item: DocumentListItem = {
         "title": {"text": title, "url": url},
-        "metadata": {"object": {"text": content_type}},
+        "metadata": {"object": {"text": content_type}} if content_type else {},
         "description": f"<p>{description}</p>",
     }
+    if release_date is not None:
+        document_list_item["metadata"]["date"] = get_document_metadata_date(release_date)
+    return document_list_item
 
 
 def _format_external_link(page_dict: ExternalArticleDict) -> DocumentListItem:
@@ -41,8 +46,9 @@ def _format_external_link(page_dict: ExternalArticleDict) -> DocumentListItem:
     return format_as_document_list_item(
         title=page_dict["title"],
         url=page_dict["url"],
-        content_type=_("Article"),
+        content_type=get_related_content_type_label(page_dict["content_type"]),
         description=page_dict.get("description", ""),
+        release_date=page_dict["release_date"],
     )
 
 
@@ -53,7 +59,7 @@ def _format_page_object(
     page_datum: DocumentListItem = format_as_document_list_item(
         title=custom_title or getattr(page, "display_title", page.title),
         url=page.get_url(request=request),
-        content_type=getattr(page, "label", _("Page")),
+        content_type=page.label,
         description=getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
     )
 
@@ -89,7 +95,7 @@ def get_formatted_pages_list(
 
             # mypy: custom_title will always be str or None for internal articles,
             # but mypy can't guarantee this due to TypedDict union, so type: ignore is required.
-            datum = _format_page_object(internal_page, request, custom_title)  # type: ignore
+            datum = _format_page_object(internal_page, request, custom_title)
 
         data.append(datum)
 
@@ -122,3 +128,24 @@ def get_document_metadata(
         metadata["date"] = get_document_metadata_date(date_value, prefix=prefix)
 
     return metadata
+
+
+@overload
+def to_rfc3339_datetime(value: None) -> None: ...
+@overload
+def to_rfc3339_datetime(value: date | datetime) -> str: ...
+def to_rfc3339_datetime(value: date | datetime | None) -> str | None:
+    """Converts a date or datetime to an RFC3339 date-time compliant string."""
+    if value is None:
+        return None
+
+    if not isinstance(value, datetime):
+        # set time to midnight for dates
+        value = datetime.combine(value, datetime.min.time())
+
+    if not is_aware(value):
+        value = make_aware(value, timezone=UTC)
+
+    formatted = value.replace(microsecond=0).isoformat(sep="T")
+
+    return formatted

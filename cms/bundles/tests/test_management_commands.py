@@ -73,8 +73,8 @@ class PublishBundlesCommandTestCase(TestCase):
         )
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_publish_bundle(self, mock_notify_end, mock_notify_start):
         """Test publishing a bundle."""
         # Sanity checks
@@ -111,11 +111,11 @@ class PublishBundlesCommandTestCase(TestCase):
 
         # Check that we have a log entry
         self.assertEqual(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
-        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 2)
+        self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 3)
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_publish_bundle_with_page_in_workflow(self, mock_notify_end, mock_notify_start):
         """Test publishing a bundle."""
         # Sanity checks
@@ -152,6 +152,15 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertEqual(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
         self.assertEqual(PageLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 0)
         self.assertTrue(PageLogEntry.objects.filter(action="wagtail.publish", page=self.statistical_article).exists())
+
+    def test_publish_bundle_with_only_datasets(self):
+        """Test publishing a bundle that only contains datasets and no pages publishes succesfully."""
+        DatasetFactory()
+        BundleDatasetFactory(parent=self.bundle)
+        self.call_command()
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.PUBLISHED)
 
     def test_publish_bundle_with_release_calendar(self):
         """Test publishing a bundle with an associated release calendar page."""
@@ -194,6 +203,67 @@ class PublishBundlesCommandTestCase(TestCase):
         self.assertEqual(release_page.datasets[1].value, bundle_dataset_b.dataset)
         self.assertEqual(release_page.datasets[2].value, bundle_dataset_c.dataset)
 
+    def test_publish_bundle_with_revisions_to_live_page(self):
+        """Test publishing a bundle containing a live page with unpublished revisions updates page."""
+        # Ensure the page is live
+        self.statistical_article.publish(self.statistical_article.get_latest_revision())
+        self.statistical_article.refresh_from_db()
+        self.assertTrue(self.statistical_article.live)
+
+        # Create a new revision (it will be in draft)
+        self.statistical_article.title = "Updated Title"
+        new_revision = self.statistical_article.save_revision()
+
+        # Assertions before call_command
+        self.statistical_article.refresh_from_db()
+        self.assertNotEqual(self.statistical_article.live_revision, new_revision)
+        self.assertEqual(self.statistical_article.get_latest_revision(), new_revision)
+        self.assertNotEqual(self.statistical_article.title, "Updated Title")
+
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+
+        self.call_command()
+
+        # Assertions after call_command
+        self.statistical_article.refresh_from_db()
+        self.assertEqual(self.statistical_article.live_revision, new_revision)
+        self.assertTrue(self.statistical_article.live)
+        self.assertEqual(self.statistical_article.title, "Updated Title")
+
+    @patch("cms.bundles.utils.logger")
+    def test_publish_bundle_with_no_successful_page_publishes(self, mock_utils_logger):
+        """Test that the bundle status is updated to FAILED if no pages were successfully published."""
+        # Create a page that will fail to publish (no revisions)
+        page_with_no_revisions = StatisticalArticlePageFactory(live=False)
+        page_with_no_revisions.revisions.all().delete()
+
+        BundlePageFactory(parent=self.bundle, page=page_with_no_revisions)
+
+        self.call_command()
+
+        # Check bundle status was updated to FAILED
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.FAILED)
+
+        # Check error was logged in utils
+        mock_utils_logger.error.assert_any_call(
+            "No pages were successfully published",
+            extra={
+                "bundle_id": self.bundle.pk,
+                "event": "publish_failed_no_success",
+            },
+        )
+
+    def test_publish_bundle_with_zero_pages(self):
+        """Test that a bundle with zero pages is not marked as published."""
+        self.assertEqual(self.bundle.bundled_pages.count(), 0)
+
+        self.call_command()
+
+        # Check bundle status wasn't changed
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
+
     def test_publish_bundle_with_welsh_release_calendar(self):
         """Test publishing a bundle with a Welsh release calendar page uses Welsh translations."""
         welsh_locale, _ = Locale.objects.get_or_create(language_code="cy")
@@ -230,7 +300,7 @@ class PublishBundlesCommandTestCase(TestCase):
 
         # Mock an error during publication
         with patch(
-            "cms.bundles.notifications.slack.notify_slack_of_publication_start",
+            "cms.bundles.utils.notify_slack_of_publication_start",
             side_effect=Exception("Test error"),
         ):
             self.call_command()
@@ -246,8 +316,8 @@ class PublishBundlesCommandTestCase(TestCase):
 
     @override_settings(WAGTAILADMIN_BASE_URL="https://test.ons.gov.uk")
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publication_start")
-    @patch("cms.bundles.notifications.slack.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
     def test_publish_bundle_with_base_url(self, mock_notify_end, mock_notify_start):
         """Test publishing with a configured base URL."""
         self.call_command()

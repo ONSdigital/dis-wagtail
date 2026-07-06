@@ -12,14 +12,6 @@ from cms.private_media.models import PrivateDocumentMixin
 
 from .utils import PURGED_URLS
 
-# TODO: remove when Wagtail updates to django-tasks >= 0.11
-TASKS_ENQUEUE_ON_COMMIT = {
-    "default": {
-        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
-        "ENQUEUE_ON_COMMIT": False,
-    }
-}
-
 
 class TestModelConfiguration(SimpleTestCase):
     def test_document_model_using_private_document_mixin(self):
@@ -236,6 +228,7 @@ class TestPrivateDocumentManager(TestCase):
 
     def setUp(self):
         # Create six documents (a mix of private and public)
+        super().setUp()
         self.private_documents = []
         self.public_documents = []
         for _ in range(3):
@@ -243,7 +236,10 @@ class TestPrivateDocumentManager(TestCase):
             self.public_documents.append(DocumentFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection))
         PURGED_URLS.clear()
 
-    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
+    def tearDown(self):
+        PURGED_URLS.clear()
+        super().tearDown()
+
     def test_bulk_make_public(self):
         """Test the behaviour of PrivateDocumentManager.bulk_make_public()."""
         # Three documents are already public, so only three should be updated
@@ -269,7 +265,6 @@ class TestPrivateDocumentManager(TestCase):
         with self.assertNumQueries(1):
             self.assertEqual(self.model.objects.bulk_make_public(self.model.objects.all()), 0)
 
-    @override_settings(TASKS=TASKS_ENQUEUE_ON_COMMIT)
     def test_bulk_make_private(self):
         """Test the behaviour of PrivateDocumentManager.bulk_make_private()."""
         # Three images are already private, so only three should be updated

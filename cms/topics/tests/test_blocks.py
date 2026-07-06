@@ -60,6 +60,16 @@ class ExploreMoreBlocksTestCase(TestCase):
         self.assertEqual(formatted["title"]["text"], "Custom Title")
         self.assertEqual(formatted["description"], "Custom Description")
         self.assertIn("smallSrc", formatted["thumbnail"])
+        self.assertNotIn("metadata", formatted)
+
+    def test_internal_link_block__get_formatted_value_adds_page_type_label(self):
+        block = ExploreMoreInternalLinkBlock()
+        value = block.to_python({"page": self.theme_page.pk})
+
+        formatted = block.get_formatted_value(value)
+
+        self.assertEqual(formatted["title"]["text"], self.theme_page.title)
+        self.assertEqual(formatted["metadata"], {"object": {"text": "Theme"}})
 
     def test_internal_link_block__get_formatted_value_without_overrides(self):
         block = ExploreMoreInternalLinkBlock()
@@ -75,6 +85,7 @@ class ExploreMoreBlocksTestCase(TestCase):
         self.assertEqual(formatted["title"]["text"], self.home_page.title)
         self.assertEqual(formatted["description"], "Page listing summary")
         self.assertIn("smallSrc", formatted["thumbnail"])
+        self.assertNotIn("metadata", formatted)
 
     def test_internal_link_block__get_formatted_value_with_unpublished_page_returns_empty(self):
         block = ExploreMoreInternalLinkBlock()
@@ -112,6 +123,7 @@ class ExploreMoreBlocksTestCase(TestCase):
 
         self.assertEqual(formatted_items[1]["title"]["text"], self.theme_page.title)
         self.assertEqual(formatted_items[1]["description"], self.theme_page.listing_summary)
+        self.assertEqual(formatted_items[1]["metadata"], {"object": {"text": "Theme"}})
 
 
 class TimeSeriesPageStoryBlockTestCase(TestCase):
@@ -181,6 +193,46 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
 
             self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
 
+    def test_relative_and_absolute_urls_with_same_path_are_considered_duplicates(self):
+        block = TimeSeriesPageStoryBlock()
+        stream_value = StreamValue(
+            block,
+            [
+                (
+                    "time_series_page_link",
+                    {"title": "Link 1", "url": "https://example.com/1", "description": "Summary 1"},
+                ),
+                (
+                    "time_series_page_link",
+                    {"title": "Link 2", "url": "/1", "description": "Summary 2"},
+                ),
+            ],
+        )
+
+        with self.assertRaises(StreamBlockValidationError) as error_context:
+            block.clean(stream_value)
+            self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
+
+    def test_relative_urls_with_same_path_but_different_slash_suffixes_are_considered_duplicates(self):
+        block = TimeSeriesPageStoryBlock()
+        stream_value = StreamValue(
+            block,
+            [
+                (
+                    "time_series_page_link",
+                    {"title": "Link 1", "url": "/abc", "description": "Summary 1"},
+                ),
+                (
+                    "time_series_page_link",
+                    {"title": "Link 2", "url": "/abc/", "description": "Summary 2"},
+                ),
+            ],
+        )
+
+        with self.assertRaises(StreamBlockValidationError) as error_context:
+            block.clean(stream_value)
+            self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
+
     def test_identical_links_with_uppercase_and_lowercase_are_considered_duplicates(self):
         block = TimeSeriesPageStoryBlock()
         stream_value = StreamValue(
@@ -234,6 +286,30 @@ class TimeSeriesPageLinkBlockTestCase(TestCase):
         self.assertEqual(info.exception.block_errors["title"].message, "This field is required.")
         self.assertEqual(info.exception.block_errors["description"].message, "This field is required.")
         self.assertEqual(info.exception.block_errors["url"].message, "This field is required.")
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["domain1.com"])
+    def test_relative_url_passes_without_domain_check(self):
+        block = TimeSeriesPageLinkBlock()
+        value = {
+            "title": "Internal link",
+            "description": "Relative URLs should bypass the ONS domain check",
+            "url": "/timeseries/foo",
+        }
+
+        block.clean(value)
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=[])
+    def test_relative_url_passes_without_domain_check_when_no_domains_allowed(self):
+        # Even when no allowed domains are configured, relative URLs should still
+        # pass validation as they don't have a domain to check
+        block = TimeSeriesPageLinkBlock()
+        value = {
+            "title": "Internal link",
+            "description": "Relative URLs should bypass the ONS domain check with no domains",
+            "url": "/timeseries/foo",
+        }
+
+        block.clean(value)
 
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["domain1.com", "domain2.example.com"])
     def test_raises_error_even_when_only_some_mandatory_fields_are_absent(self):

@@ -9,6 +9,7 @@ from django.test import SimpleTestCase, override_settings
 from django.utils.html import strip_tags
 from wagtail.models import Page
 
+from cms.core.formatting_utils import to_rfc3339_datetime
 from cms.search.utils import build_page_uri
 
 EXPECTED_CONTENT_TYPES = {
@@ -49,7 +50,7 @@ class ResourceDictAssertions(SimpleTestCase):
         self.assertEqual(payload["language"], page.locale.get_display_name())
 
         release_date = getattr(page, "release_date", page.last_published_at)
-        self.assertEqual(payload["release_date"], release_date.isoformat())
+        self.assertEqual(payload["release_date"], to_rfc3339_datetime(release_date))
 
     def assert_release_fields_present(self, payload: dict) -> None:
         for key in ("release_date", "finalised", "cancelled", "published", "date_changes"):

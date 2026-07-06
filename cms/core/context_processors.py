@@ -16,7 +16,6 @@ def global_vars(request: HttpRequest) -> dict[str, Any]:
         # Cookie banner settings
         "ONS_COOKIE_BANNER_SERVICE_NAME": settings.ONS_COOKIE_BANNER_SERVICE_NAME,
         "SEO_NOINDEX": settings.SEO_NOINDEX,
-        "LANGUAGE_CODE": settings.LANGUAGE_CODE,
         "IS_EXTERNAL_ENV": settings.IS_EXTERNAL_ENV,
         "AWS_COGNITO_LOGIN_ENABLED": settings.AWS_COGNITO_LOGIN_ENABLED,
         "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED": settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED,
@@ -24,6 +23,5 @@ def global_vars(request: HttpRequest) -> dict[str, Any]:
         "DEFAULT_OG_IMAGE_URL": settings.DEFAULT_OG_IMAGE_URL,
         "CONTACT_US_URL": settings.CONTACT_US_URL,
         "BACKUP_SITE_URL": settings.BACKUP_SITE_URL,
-        "ONS_WEBSITE_SEARCH_PATH": settings.ONS_WEBSITE_SEARCH_PATH,
         "COOKIES_PAGE_URL": get_cookies_page_url(getattr(request, "LANGUAGE_CODE", settings.LANGUAGE_CODE)),
     }

@@ -74,6 +74,8 @@ def ready(request: HttpRequest) -> HttpResponse:
 
     Readiness should reflect whether this instance can currently serve traffic,
     including access to required dependencies.
+
+    The cache is intentionally absent as an unavailable cache just results in cache misses.
     """
     for connection in connections.all():
         try:
@@ -90,13 +92,6 @@ def ready(request: HttpRequest) -> HttpResponse:
             )
             return HttpResponseServerError(f"Database {connection.alias} reported an error")
 
-    if isinstance(caches["default"], RedisCache):
-        try:
-            get_redis_connection().ping()
-        except Exception:  # pylint: disable=broad-exception-caught
-            logger.exception("Unable to ping Redis")
-            return HttpResponseServerError("Unable to ping Redis")
-
     return HttpResponse(status=200)
 
 
@@ -108,7 +103,7 @@ def liveness(request: HttpRequest) -> HttpResponse:
     If this fails, the container will be restarted.
 
     This should be shallow and only indicate whether the process is alive and
-    responsive; dependency issues (e.g. DB/Redis) belong in readiness.
+    responsive; dependency issues (e.g. DB) belong in readiness.
     """
     return HttpResponse(status=200)
 
@@ -157,25 +152,28 @@ def health(request: HttpRequest) -> HttpResponse:
             if isinstance(e, DatabaseError):
                 message = "Backend failed"
             else:
-                logger.exception("Unexpected error connection to backend %s", connection.alias)
+                logger.exception("Unexpected error connecting to backend %s", connection.alias)
                 message = "Unexpected error"
 
         checks.append(build_check(f"{connection.alias} database", message, failed))
 
-    if isinstance(caches["default"], RedisCache):
+    for cache_alias in caches:
+        cache = caches[cache_alias]
+        if not isinstance(cache, RedisCache):
+            continue
         failed = False
         message = "Cache is ok"
         try:
-            get_redis_connection().ping()
+            get_redis_connection(cache_alias).ping()
         except Exception as e:  # pylint: disable=broad-exception-caught
             failed = True
             if isinstance(e, redis.exceptions.ConnectionError):
                 message = "Ping failed"
             else:
-                logger.exception("Unexpected error connection to Redis")
+                logger.exception("Unexpected error connecting to Redis")
                 message = "Unexpected error"
 
-        checks.append(build_check("cache", message, failed))
+        checks.append(build_check(f"{cache_alias} cache", message, failed))
 
     checks_failed = any(check["status"] != "OK" for check in checks)
 

@@ -11,6 +11,7 @@ from typing import cast
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.csp import CSP
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 from wagtail.utils.deprecation import RemovedInWagtail80Warning
@@ -114,6 +115,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "django.contrib.auth",  # Wagtail requires the auth app be installed, even if it's not used.
     "django.contrib.contenttypes",
+    "django.contrib.postgres",
     "whitenoise.runserver_nostatic",  # Must be before `django.contrib.staticfiles`
     "django.contrib.staticfiles",
     "django_jinja",
@@ -144,10 +146,10 @@ MIDDLEWARE = [
     # SecurityMiddleware.
     # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
     "cms.core.whitenoise.CMSWhiteNoiseMiddleware",
+    "django_permissions_policy.PermissionsPolicyMiddleware",
     "cms.locale.middleware.SubdomainLocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Custom middleware to redirect trailing slash URLs to non-trailing-slash equivalent
     # which needs to be placed after CommonMiddleware to avoid double redirects.
     "cms.core.middleware.NonTrailingSlashRedirectMiddleware",
@@ -163,6 +165,12 @@ if not IS_EXTERNAL_ENV:
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
 
+CSP_ENABLED = env.get("CMS_CSP_ENABLED", "true").lower().strip() == "true"
+
+if CSP_ENABLED:
+    MIDDLEWARE.append("django.middleware.csp.ContentSecurityPolicyMiddleware")
+
+
 ROOT_URLCONF = "cms.urls"
 
 context_processors = [
@@ -174,13 +182,15 @@ context_processors = [
     "cms.core.context_processors.global_vars",
 ]
 
+if CSP_ENABLED:
+    context_processors.append("django.template.context_processors.csp")
+
 jinja2_extensions = [
     *DEFAULT_EXTENSIONS,
     "wagtail.jinja2tags.core",
     "wagtail.images.jinja2tags.images",
     "wagtail.contrib.settings.jinja2tags.settings",
     "cms.core.jinja2tags.CoreExtension",
-    "cms.navigation.jinja2tags.NavigationExtension",
     "wagtailschemaorg.jinja2tags.WagtailSchemaOrgExtension",
 ]
 
@@ -310,6 +320,8 @@ CACHES: dict = {
 }
 
 redis_options = {
+    # IGNORE_EXCEPTIONS must be True to ensure an unavailable cache results in a
+    # miss rather than an error.
     "IGNORE_EXCEPTIONS": True,
     "SOCKET_CONNECT_TIMEOUT": 2,  # seconds
     "SOCKET_TIMEOUT": 2,  # seconds
@@ -570,6 +582,11 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "cms.audit": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
         "wagtail": {
             "handlers": ["console"],
             "level": "INFO",
@@ -741,34 +758,16 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = int(env.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 10_
 # Enabling this doesn't have any benefits but will make it harder to make
 # requests from javascript because the csrf cookie won't be easily accessible.
 # https://docs.djangoproject.com/en/stable/ref/settings/#csrf-cookie-httponly
-# CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_HTTPONLY = True
 
 # Custom view to handle CSRF failures.
 CSRF_FAILURE_VIEW = "cms.core.views.csrf_failure"
-
-# Force HTTPS redirect (enabled by default!)
-# https://docs.djangoproject.com/en/stable/ref/settings/#secure-ssl-redirect
-SECURE_SSL_REDIRECT = env.get("SECURE_SSL_REDIRECT", "true").lower().strip() == "true"
-
 
 # This will allow the cache to swallow the fact that the website is behind TLS
 # and inform the Django using "X-Forwarded-Proto" HTTP header.
 # https://docs.djangoproject.com/en/stable/ref/settings/#secure-proxy-ssl-header
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-
-# This is a setting activating the HSTS header. This will enforce the visitors to use
-# HTTPS for an amount of time specified in the header. Since we are expecting our apps
-# to run via TLS by default, this header is activated by default.
-# The header can be deactivated by setting this setting to 0, as it is done in the
-# dev and testing settings.
-# https://docs.djangoproject.com/en/stable/ref/settings/#secure-hsts-seconds
-DEFAULT_HSTS_SECONDS = 30 * 24 * 60 * 60  # 30 days
-SECURE_HSTS_SECONDS = int(env.get("SECURE_HSTS_SECONDS", DEFAULT_HSTS_SECONDS))
-
-# We don't enforce HSTS on subdomains as anything at subdomains is likely outside our control.
-# https://docs.djangoproject.com/en/3.2/ref/settings/#secure-hsts-include-subdomains
-SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#secure-content-type-nosniff
@@ -779,45 +778,14 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = env.get("SECURE_REFERRER_POLICY", "no-referrer-when-downgrade").strip()
 
 
-# Content Security policy settings
-# Most modern browsers don't honor the X-XSS-Protection HTTP header.
-# You can use Content-Security-Policy without allowing 'unsafe-inline' scripts instead.
-# https://django-csp.readthedocs.io/en/latest/configuration.html
-if "CSP_DEFAULT_SRC" in env:
-    MIDDLEWARE.append("csp.middleware.CSPMiddleware")
-
-    # The “special” source values of 'self', 'unsafe-inline', 'unsafe-eval', and 'none' must be quoted!
-    # e.g.: CSP_DEFAULT_SRC = "'self'" Without quotes they will not work as intended.
-    CSP_DEFAULT_SRC = env.get("CSP_DEFAULT_SRC", "").split(",")
-    CSP_DIRECTIVES = {
-        "default-src": CSP_DEFAULT_SRC,
-    }
-
-    if "CSP_SCRIPT_SRC" in env:
-        CSP_DIRECTIVES["script-src"] = env.get("CSP_SCRIPT_SRC", "").split(",")
-    if "CSP_STYLE_SRC" in env:
-        CSP_DIRECTIVES["style-src"] = env.get("CSP_STYLE_SRC", "").split(",")
-    if "CSP_IMG_SRC" in env:
-        CSP_DIRECTIVES["img-src"] = env.get("CSP_IMG_SRC", "").split(",")
-    if "CSP_CONNECT_SRC" in env:
-        CSP_DIRECTIVES["connect-src"] = env.get("CSP_CONNECT_SRC", "").split(",")
-    if "CSP_FONT_SRC" in env:
-        CSP_DIRECTIVES["font-src"] = env.get("CSP_FONT_SRC", "").split(",")
-    if "CSP_BASE_URI" in env:
-        CSP_DIRECTIVES["base-uri"] = env.get("CSP_BASE_URI", "").split(",")
-    if "CSP_OBJECT_SRC" in env:
-        CSP_DIRECTIVES["object-src"] = env.get("CSP_OBJECT_SRC", "").split(",")
-
-    if env.get("CSP_REPORT_ONLY", "false").lower() == "true":
-        CONTENT_SECURITY_POLICY_REPORT_ONLY = {"DIRECTIVES": CSP_DIRECTIVES}
-    else:
-        CONTENT_SECURITY_POLICY = {"DIRECTIVES": CSP_DIRECTIVES}
-
-
 # Django REST framework settings
 # Change default settings that enable basic auth.
 REST_FRAMEWORK = {"DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication",)}
 
+SILENCED_SYSTEM_CHECKS = [
+    "security.W004",  # Set HSTS at infrastructure level
+    "security.W008",  # Redirect to HTTPS at infrastructure level
+]
 
 AUTH_USER_MODEL = "users.User"
 
@@ -862,8 +830,11 @@ WAGTAIL_APPEND_SLASH = False
 if "WAGTAILADMIN_BASE_URL" in env:
     WAGTAILADMIN_BASE_URL = env["WAGTAILADMIN_BASE_URL"]
 
+WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
+DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
+
 # https://docs.wagtail.org/en/latest/reference/settings.html#wagtailadmin-login-url
-WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", "/admin/login/")
+WAGTAILADMIN_LOGIN_URL = env.get("WAGTAILADMIN_LOGIN_URL", f"/{WAGTAILADMIN_HOME_PATH}login/")
 
 # Custom image model
 # https://docs.wagtail.io/en/stable/advanced_topics/images/custom_image_model.html
@@ -912,6 +883,7 @@ WAGTAIL_PASSWORD_REQUIRED_TEMPLATE = "templates/pages/wagtail/password_required.
 # Default size of the pagination used on the front-end.
 DEFAULT_PER_PAGE = 20
 PREVIOUS_RELEASES_PER_PAGE = int(env.get("PREVIOUS_RELEASES_PER_PAGE", 10))
+CMS_RELEASES_INDEX_REDIRECT_ENABLED = env.get("CMS_RELEASES_INDEX_REDIRECT_ENABLED", "true").lower() == "true"
 RELATED_DATASETS_PER_PAGE = int(env.get("RELATED_DATASETS_PER_PAGE", DEFAULT_PER_PAGE))
 
 # Google Tag Manager ID from env
@@ -956,6 +928,11 @@ DATETIME_FORMAT = "j F Y g:ia"  # 1 November 2024, 1 p.m.
 ONS_COOKIE_BANNER_SERVICE_NAME = env.get("ONS_COOKIE_BANNER_SERVICE_NAME", "ons.gov.uk")
 ONS_COOKIES_PAGE_SLUG = "cookies"
 
+# Feature flag to suppress the untranslated-page notice on CookiesPage aliases.
+CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED = (
+    env.get("CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED", "true").lower() == "true"
+)
+
 # Search redirect path
 ONS_WEBSITE_SEARCH_PATH = env.get("ONS_WEBSITE_SEARCH_PATH", "/search")
 
@@ -965,6 +942,13 @@ GIT_COMMIT = env.get("GIT_COMMIT") or None
 START_TIME = datetime.datetime.now(tz=datetime.UTC)
 
 SLACK_NOTIFICATIONS_WEBHOOK_URL = env.get("SLACK_NOTIFICATIONS_WEBHOOK_URL")
+SLACK_BOT_TOKEN = env.get("SLACK_BOT_TOKEN")
+SLACK_PUBLISH_LOG_CHANNEL = env.get("SLACK_PUBLISH_LOG_CHANNEL", "")
+SLACK_ALARM_CHANNEL = env.get("SLACK_ALARM_CHANNEL", "")
+
+# Feature flag for sending slack messages on bundle status changes (before pre-publish, e.g. entering review)
+SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE = env.get("SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE", "false").lower() == "true"
+
 
 # API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
@@ -981,10 +965,18 @@ BUNDLE_DATASET_STATUS_VALIDATION_ENABLED = (
     env.get("BUNDLE_DATASET_STATUS_VALIDATION_ENABLED", "false").lower() == "true"
 )
 
+# Feature flag to enable/disable validation of bundled datasets metadata on bundle approval
+BUNDLE_DATASET_METADATA_VALIDATION_ENABLED = (
+    env.get("BUNDLE_DATASET_METADATA_VALIDATION_ENABLED", "true").lower() == "true"
+)
+
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
 
-DEFAULT_OG_IMAGE_URL = env.get("DEFAULT_OG_IMAGE_URL", "https://cdn.ons.gov.uk/assets/images/ons-logo/v2/ons-logo.png")
+ONS_CDN_URL = "https://cdn.ons.gov.uk"
+
+DEFAULT_OG_IMAGE_URL = env.get("DEFAULT_OG_IMAGE_URL", f"{ONS_CDN_URL}/assets/images/ons-logo/v2/ons-logo.png")
+WAGTAIL_GRAVATAR_PROVIDER_URL = None
 
 WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 
@@ -1016,6 +1008,14 @@ if "IFRAME_VISUALISATION_ALLOWED_DOMAINS" in env:
     IFRAME_VISUALISATION_ALLOWED_DOMAINS = env["IFRAME_VISUALISATION_ALLOWED_DOMAINS"].split(",")
 else:  # Default to ONS allowed link domains if not set
     IFRAME_VISUALISATION_ALLOWED_DOMAINS = ONS_ALLOWED_LINK_DOMAINS
+
+# CSP wildcards do not match the apex domain, so include both `example.com`
+# and `*.example.com` to mirror iframe URL validation.
+IFRAME_VISUALISATION_CSP_SOURCES = [
+    host
+    for domain in IFRAME_VISUALISATION_ALLOWED_DOMAINS
+    for host in (domain, f"*.{domain}" if not domain.startswith(("www.", "*.", "http://", "https://")) else domain)
+]
 
 
 # Allowed path prefixes for iframe visualisations
@@ -1074,9 +1074,16 @@ ACCESS_TOKEN_COOKIE_NAME = "access_token"  # noqa: S105
 REFRESH_TOKEN_COOKIE_NAME = "refresh_token"  # noqa: S105
 ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
 
-WAGTAILADMIN_HOME_PATH = env.get("WAGTAILADMIN_HOME_PATH", "admin/")
-DJANGO_ADMIN_HOME_PATH = env.get("DJANGO_ADMIN_HOME_PATH", "django-admin/")
 SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 5)  # 5 minutes
+
+# note: 30 seconds is a fairly arbitrary value. Long enough to allow for a slow preview generation,
+# but short enough that we don't have stale session data.
+BUNDLE_PREVIEW_COOKIE_NAME = "bundle-preview"
+BUNDLE_PREVIEW_COOKIE_MAX_AGE = 30  # seconds
+# Cap on the number of active preview grants held in the signed cookie. Prevents
+# a user from accumulating an unbounded list of simultaneous grants (and the
+# cookie growing past the ~4KB browser limit).
+CMS_BUNDLE_PREVIEW_MAX_COOKIE_ENTRIES = 20
 
 # Contact Us URL for error pages
 CONTACT_US_URL = env.get("CONTACT_US_URL", "/aboutus/contactus/generalandstatisticalenquiries")
@@ -1126,5 +1133,63 @@ HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS = int(env.get("HTTP_REQUEST_DEFAULT_TIMEOUT
 
 DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "100"))
 
-
 WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_publish"
+
+CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
+
+# Use default autosave value if not specified. Set to 0 to disable
+WAGTAIL_AUTOSAVE_INTERVAL = int(env.get("WAGTAIL_AUTOSAVE_INTERVAL", 500))
+
+CMS_AUDIT_LOG_COOLDOWN_SECONDS = int(env.get("CMS_AUDIT_LOG_COOLDOWN_SECONDS", 30))
+
+# Content Security policy settings
+# https://docs.djangoproject.com/en/6.0/ref/csp/
+static_sources = [ONS_CDN_URL, "cdnjs.cloudflare.com"]
+SECURE_CSP: dict[str, list] = {
+    "default-src": [CSP.SELF],
+    "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_CSP_SOURCES],
+    # UNSAFE_INLINE is required by mathjax
+    "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE, "*.hotjar.com"],
+    "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com", "*.hotjar.com"],
+    # UNSAFE_INLINE is required by hotjar
+    "script-src": [CSP.SELF, *static_sources, "*.hotjar.com", "www.googletagmanager.com", CSP.UNSAFE_INLINE],
+    "font-src": [CSP.SELF, *static_sources, "*.hotjar.com"],
+    "connect-src": [
+        CSP.SELF,
+        "www.googletagmanager.com",
+        "www.google.com",
+        "*.hotjar.com",
+        "*.hotjar.io",
+        "wss://*.hotjar.com",
+    ],
+    "manifest-src": [CSP.SELF, ONS_CDN_URL],
+    "frame-ancestors": [CSP.NONE if IS_EXTERNAL_ENV else CSP.SELF],
+}
+# Google Fonts are only needed for the Wagtail admin.
+# The external site loads fonts directly from the ONS CDN, so these CSP sources
+# should not be allowed there.
+if not IS_EXTERNAL_ENV:
+    SECURE_CSP["style-src"].append("fonts.googleapis.com")
+    SECURE_CSP["font-src"].append("fonts.gstatic.com")
+
+if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
+    SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")
+
+WAGTAIL_CSP = deepcopy(SECURE_CSP)
+
+# Set a sensible permissions policy to disable privacy-invading or annoying features
+PERMISSIONS_POLICY: dict = {
+    "accelerometer": [],
+    "autoplay": [],
+    "camera": [],
+    "display-capture": [],
+    "encrypted-media": [],
+    "fullscreen": [],
+    "geolocation": [],
+    "gyroscope": [],
+    "interest-cohort": [],
+    "microphone": [],
+    "midi": [],
+    "payment": [],
+    "usb": [],
+}

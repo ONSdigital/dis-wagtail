@@ -10,12 +10,12 @@ from wagtail.models import Locale, Site
 from wagtail.test.utils import WagtailPageTestCase
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
-from cms.core.tests.utils import reset_url_caches
+from cms.core.tests.utils import TranslationResetMixin
 from cms.standard_pages.tests.factories import InformationPageFactory
 
 
 @override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
-class PathBasedLocalisationTests(WagtailPageTestCase):
+class PathBasedLocalisationTests(TranslationResetMixin, WagtailPageTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = cls.create_superuser("admin")
@@ -39,14 +39,6 @@ class PathBasedLocalisationTests(WagtailPageTestCase):
 
     def setUp(self):
         self.dummy_request = get_dummy_request()
-
-        reset_url_caches()
-
-    def tearDown(self):
-        # Clear translation caches
-        translation.deactivate()
-
-        reset_url_caches()
 
     def get_template_side_effect(self, template_name, *args, **kwargs):
         """Side effect function to simulate template loading failures."""

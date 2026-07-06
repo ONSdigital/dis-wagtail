@@ -61,9 +61,8 @@ def user_clicks_to_add_headline_figures_to_the_topic_page(context: Context, *, b
     page = context.page
     panel = page.locator("#panel-child-content-headline_figures-content")
     panel.get_by_role("button", name="Insert a block").nth(button_index).click()
-    page.wait_for_timeout(100)
     panel.get_by_role("button", name="Choose Article Series page and headline figure").click()
-    page.wait_for_timeout(100)  # Wait for modal to open
+    context.page.locator(".modal-content").wait_for(state="visible")
 
 
 @step("the user adds two headline figures to the topic page")
@@ -150,16 +149,16 @@ def the_time_series_page_link_is_displayed_on_the_page(context: Context) -> None
     page = context.page
 
     expect(
-        page.locator("#time-series").get_by_role("heading", name="Time Series", exact=True)
+        page.locator("#time-series").get_by_role("heading", name="Time series", exact=True)
     ).to_be_visible()  # Section heading
     expect(page.locator("#time-series").get_by_role("link", name="Page title")).to_be_visible()
-    expect(page.locator("#time-series").get_by_text("Time series", exact=True)).to_be_visible()  # Content type label
+    expect(page.locator("#time-series").locator("span", has_text="Time series")).to_be_visible()  # Content type label
     expect(page.locator("#time-series").get_by_text("Summary")).to_be_visible()
 
 
 @then("the time series item appears in the table of contents")
 def the_time_series_item_appears_in_the_table_of_contents(context: Context) -> None:
-    expect(context.page.get_by_role("heading", name="Time Series")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Time series")).to_be_visible()
 
 
 @then("the user sees the '{link_text}' link")
@@ -232,7 +231,7 @@ def user_edits_topic_page(context: Context, topic_page_title: str) -> None:
 def user_manually_adds_item(context: Context, item_title: str, item_type: str) -> None:
     button_map = {
         "articles": ("Add topic page related article", "Choose Article page"),
-        "methodologies": ("Add topic page related methodology", "Choose Methodology page"),
+        "methodologies": ("Add topic page supporting information", "Choose Methodology page"),
     }
 
     if item_type not in button_map:
@@ -249,7 +248,7 @@ def highlighted_section_visible(context: Context, section_type: str) -> None:
     """Check if the highlighted articles or methodologies section is visible."""
     section_map = {
         "articles": ("#related-articles", "Related articles"),
-        "methodologies": ("#related-methods", "Methods and quality information"),
+        "methodologies": ("#related-methods", "Quality, methods and supporting information"),
     }
 
     if section_type not in section_map:

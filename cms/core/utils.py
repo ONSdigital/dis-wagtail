@@ -2,6 +2,7 @@ import io
 import json
 import re
 import string
+from collections.abc import Mapping
 from itertools import chain
 from threading import Lock
 from typing import TYPE_CHECKING, Any
@@ -44,9 +45,9 @@ if TYPE_CHECKING:
     from django_stubs_ext import StrOrPromise
 
 
-def get_content_type_for_page(page: Page) -> StrOrPromise:
+def get_content_type_for_page(page: Page) -> StrOrPromise | None:
     """Returns the content type for a given page."""
-    label: StrOrPromise = page.specific_deferred.label
+    label: StrOrPromise | None = page.specific_deferred.label
     return label
 
 
@@ -81,7 +82,8 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
     import matplotlib as mpl  # pylint: disable=import-outside-toplevel
     from matplotlib.figure import Figure  # pylint: disable=import-outside-toplevel
 
-    with matplotlib_lock, mpl.rc_context(MATPLOTLIB_CONTEXT):
+    # Type ignore: Matplotlib's stub expects rcParam keys as specific Literals; our shared dict is valid at runtime.
+    with matplotlib_lock, mpl.rc_context(MATPLOTLIB_CONTEXT):  # type: ignore[arg-type]
         fig = Figure()
 
         with io.StringIO() as svg_buffer:
@@ -98,8 +100,12 @@ def latex_formula_to_svg(latex: str, *, fontsize: int = 18, transparent: bool = 
 def redirect(
     to: str, *args: Any, permanent: bool = False, preserve_request: bool = True, **kwargs: Any
 ) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
-    """Wrapper for Django's redirect that defaults preserve_request=True."""
+    """Wrapper for Django's redirect that defaults preserve_request=True.
+
+    User-provided redirect targets must be validated before calling this helper.
+    """
     return _redirect(
+        # codeql[py/url-redirection] This intentionally preserves Django's redirect helper contract.
         to,
         *args,
         permanent=permanent,
@@ -124,3 +130,20 @@ def redirect_to_parent_listing(
 def strip_unwanted_control_chars_from_json(data: str) -> str:
     """Remove control characters (C0 and C1) from JSON string (without decoding)."""
     return JSON_ENCODED_UNWANTED_CONTROL_CHARS_RE.sub("", data)
+
+
+def deep_merge_mapping(dict1: Mapping, dict2: Mapping) -> dict:
+    """Deep merge mapping keys.
+    Non-mapping values are referenced in the new dict, rather than copied.
+    If there are conflicting keys, dict2 takes precedence.
+    """
+    # Must be a dict to allow internal mutation
+    result = dict(dict1)
+
+    for key, value in dict2.items():
+        if key in result and isinstance(result[key], Mapping) and isinstance(value, Mapping):
+            result[key] = deep_merge_mapping(result[key], value)
+        else:
+            result[key] = value
+
+    return result
