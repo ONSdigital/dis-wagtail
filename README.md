@@ -426,7 +426,7 @@ make megalint LINTER=REPOSITORY_GRYPE
 
 ### Pinning GitHub Actions to a SHA hash
 
-This project enforces that all GitHub Actions workflow references are pinned to a full SHA commit hash rather than a mutable tag (e.g. `@v4`). This is required by [zizmor](https://docs.zizmor.sh/audits/#unpinned-uses), which runs as part of MegaLinter, and is a security best practice to prevent supply chain attacks via tag mutation.
+This project enforces that all GitHub Actions workflow references are pinned to a full SHA commit hash rather than a mutable tag (e.g. `@v4.2.2`). This is required by [zizmor](https://docs.zizmor.sh/audits/#unpinned-uses), which runs as part of MegaLinter, and is a security best practice to prevent supply chain attacks via tag mutation.
 
 A pinned reference looks like this:
 
