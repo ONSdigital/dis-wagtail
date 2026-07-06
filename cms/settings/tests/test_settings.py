@@ -53,6 +53,16 @@ class SettingsTestCase(TestCase):
             self.assertNotIn("fonts.gstatic.com", reloaded_base.SECURE_CSP["font-src"])
             self.assertEqual(reloaded_base.SECURE_CSP["frame-ancestors"], [CSP.NONE])
 
+    def test_iframe_visualisation_csp_sources_include_subdomains(self):
+        self.addCleanup(importlib.reload, base)
+
+        with mock.patch.dict(os.environ, {"IFRAME_VISUALISATION_ALLOWED_DOMAINS": "example.com"}, clear=False):
+            reloaded_base = importlib.reload(base)
+            self.assertEqual(
+                reloaded_base.IFRAME_VISUALISATION_CSP_SOURCES,
+                ["example.com", "*.example.com"],
+            )
+
 
 class CSPTestCase(TestCase):
     urls = frozenset(["/", "/test404", reverse_lazy("wagtailadmin_login")])
@@ -142,9 +152,9 @@ class CSPTestCase(TestCase):
 
                 csp = self._parse_csp(response.headers["Content-Security-Policy"])
 
-                for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS:
-                    with self.subTest(allowed_domain):
-                        self.assertIn(allowed_domain, self._get_csp_expressions(csp, "frame-src"))
+                for allowed_source in settings.IFRAME_VISUALISATION_CSP_SOURCES:
+                    with self.subTest(allowed_source):
+                        self.assertIn(allowed_source, self._get_csp_expressions(csp, "frame-src"))
 
     def test_wagtail_csp(self):
         """https://github.com/wagtail/wagtail/issues?q=is%3Aissue%20state%3Aopen%20csp."""
