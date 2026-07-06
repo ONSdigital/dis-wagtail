@@ -158,7 +158,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         if not for_preview:
             # only show live pages if not in preview mode
             objects = objects.live().public()
-        children = objects.child_of(self).order_by("-release_date")
+        children = objects.child_of(self).order_by("-release_date", "-first_published_at")
         paginator = Paginator(children, per_page=settings.PREVIOUS_RELEASES_PER_PAGE)
 
         try:
