@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-29 13:31+0100\n"
+"POT-Creation-Date: 2026-07-06 17:07+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,29 +17,29 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
 "11) ? 2 : 3;\n"
 
-#: cms/articles/models.py:231 cms/core/enums.py:8 cms/core/enums.py:23
+#: cms/articles/models.py:245 cms/core/enums.py:8 cms/core/enums.py:23
 msgid "Article"
 msgstr "Erthygl"
 
-#: cms/articles/models.py:459
+#: cms/articles/models.py:477
 #: cms/jinja2/templates/pages/methodology_page.html:113
 #: cms/jinja2/templates/pages/statistical_article_page.html:232
-#: cms/methodology/models.py:195
+#: cms/methodology/models.py:198
 msgid "Cite this page"
 msgstr "Dyfynnwch y dudalen hon"
 
-#: cms/articles/models.py:465
+#: cms/articles/models.py:479
 #: cms/jinja2/templates/components/contact_details/contact_details.html:6
-#: cms/methodology/models.py:199 cms/release_calendar/models.py:269
+#: cms/methodology/models.py:200 cms/release_calendar/models.py:269
 msgid "Contact details"
 msgstr "Manylion cyswllt"
 
-#: cms/articles/models.py:537
+#: cms/articles/models.py:551
 #, python-format
 msgid "All data related to %(article_title)s"
 msgstr "Yr holl ddata sy'n gysylltiedig â %(article_title)s"
 
-#: cms/articles/models.py:596
+#: cms/articles/models.py:610
 msgid "Release date"
 msgstr "Dyddiad y datganiad"
 
@@ -73,11 +73,11 @@ msgstr "Dangos popeth"
 msgid "Hide all"
 msgstr "Cuddio popeth"
 
-#: cms/core/blocks/markup.py:236
+#: cms/core/blocks/markup.py:260
 msgid "Download this table"
 msgstr "Lawrlwythwch y tabl hwn"
 
-#: cms/core/blocks/markup.py:237
+#: cms/core/blocks/markup.py:261
 #, python-format
 msgid "Download CSV %(size)s"
 msgstr "Lawrlwythwch CSV %(size)s"
@@ -90,21 +90,21 @@ msgstr "Dolenni cysylltiedig"
 msgid "Dataset"
 msgstr "Set ddata"
 
-#: cms/core/enums.py:10 cms/core/enums.py:25 cms/methodology/models.py:94
+#: cms/core/enums.py:10 cms/core/enums.py:25 cms/methodology/models.py:95
 msgid "Methodology"
 msgstr "Methodoleg"
 
 #: cms/core/enums.py:11 cms/jinja2/templates/pages/topic_page.html:113
-#: cms/topics/models.py:311
+#: cms/topics/models.py:330
 msgid "Time series"
 msgstr "Cyfres amser"
 
 #: cms/core/enums.py:12 cms/jinja2/templates/pages/topic_page.html:9
-#: cms/topics/models.py:188
+#: cms/topics/models.py:207
 msgid "Topic"
 msgstr "Pwnc"
 
-#: cms/core/enums.py:13 cms/core/enums.py:24 cms/standard_pages/models.py:42
+#: cms/core/enums.py:13 cms/core/enums.py:24 cms/standard_pages/models.py:43
 msgid "Information"
 msgstr "Gwybodaeth"
 
@@ -116,7 +116,7 @@ msgstr "Adrodd"
 msgid "Webpage"
 msgstr "Tudalen we"
 
-#: cms/core/enums.py:16 cms/standard_pages/models.py:108
+#: cms/core/enums.py:16 cms/standard_pages/models.py:113
 msgid "Index"
 msgstr ""
 
@@ -125,12 +125,12 @@ msgstr ""
 msgid "Theme"
 msgstr "Thema"
 
-#: cms/core/formatting_utils.py:108
+#: cms/core/formatting_utils.py:117
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:40
 msgid "Released"
 msgstr "Rhyddhawyd"
 
-#: cms/core/models/base.py:160
+#: cms/core/models/base.py:166
 msgid "Home"
 msgstr "Cartref"
 
@@ -167,14 +167,14 @@ msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
 #: cms/datavis/blocks/base.py:161 cms/datavis/blocks/charts.py:883
-#: cms/jinja2/templates/components/streamfield/table_block.html:13
+#: cms/jinja2/templates/components/streamfield/table_block.html:15
 msgid "Footnotes"
 msgstr "Troednodiadau"
 
 #: cms/datavis/blocks/table.py:58
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:94
 #: cms/jinja2/templates/pages/topic_page.html:95
-#: cms/release_calendar/models.py:258 cms/topics/models.py:309
+#: cms/release_calendar/models.py:258 cms/topics/models.py:328
 msgid "Data"
 msgstr "Data"
 
@@ -244,7 +244,7 @@ msgid "Hide all definitions"
 msgstr "Cuddio pob diffiniad"
 
 #: cms/jinja2/templates/components/streamfield/image_block.html:19
-#: cms/jinja2/templates/components/streamfield/table_block.html:9
+#: cms/jinja2/templates/components/streamfield/table_block.html:11
 msgid "Source"
 msgstr "Ffynhonnell"
 
@@ -742,11 +742,11 @@ msgstr ""
 msgid "Browse"
 msgstr "Pori"
 
-#: cms/jinja2/templates/pages/topic_page.html:67 cms/topics/models.py:305
+#: cms/jinja2/templates/pages/topic_page.html:67 cms/topics/models.py:324
 msgid "Featured"
 msgstr "Dan Sylw"
 
-#: cms/jinja2/templates/pages/topic_page.html:77 cms/topics/models.py:307
+#: cms/jinja2/templates/pages/topic_page.html:77 cms/topics/models.py:326
 msgid "Related articles"
 msgstr "Erthyglau cysylltiedig"
 
@@ -762,7 +762,7 @@ msgstr "Gweld yr holl ddata cysylltiedig"
 msgid "View all related time series"
 msgstr "Gweld yr holl gyfresi amser cysylltiedig"
 
-#: cms/jinja2/templates/pages/topic_page.html:131 cms/topics/models.py:313
+#: cms/jinja2/templates/pages/topic_page.html:131 cms/topics/models.py:332
 msgid "Quality, methods and supporting information"
 msgstr "Dulliau a gwybodaeth o ansawdd"
 
@@ -770,7 +770,7 @@ msgstr "Dulliau a gwybodaeth o ansawdd"
 msgid "View all related methodology"
 msgstr "Gweld yr holl fethodolegau cysylltiedig"
 
-#: cms/jinja2/templates/pages/topic_page.html:149 cms/topics/models.py:315
+#: cms/jinja2/templates/pages/topic_page.html:149 cms/topics/models.py:334
 msgid "Explore more"
 msgstr "Archwilio mwy"
 
@@ -778,7 +778,7 @@ msgstr "Archwilio mwy"
 msgid "Continue"
 msgstr "Parhau"
 
-#: cms/methodology/models.py:185 cms/methodology/models.py:195
+#: cms/methodology/models.py:186 cms/methodology/models.py:196
 msgid "Related publications"
 msgstr "Cyhoeddiadau cysylltiedig"
 
@@ -790,11 +790,11 @@ msgstr "I’w gadarnhau"
 msgid "Release calendar page"
 msgstr "Dyddiad y datganiad"
 
-#: cms/settings/base.py:410
+#: cms/settings/base.py:420
 msgid "English"
 msgstr "Saesneg"
 
-#: cms/settings/base.py:411
+#: cms/settings/base.py:421
 msgid "Welsh"
 msgstr "Cymraeg"
 
