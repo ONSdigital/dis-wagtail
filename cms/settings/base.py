@@ -1009,6 +1009,14 @@ if "IFRAME_VISUALISATION_ALLOWED_DOMAINS" in env:
 else:  # Default to ONS allowed link domains if not set
     IFRAME_VISUALISATION_ALLOWED_DOMAINS = ONS_ALLOWED_LINK_DOMAINS
 
+# CSP wildcards do not match the apex domain, so include both `example.com`
+# and `*.example.com` to mirror iframe URL validation.
+IFRAME_VISUALISATION_CSP_SOURCES = [
+    host
+    for domain in IFRAME_VISUALISATION_ALLOWED_DOMAINS
+    for host in (domain, f"*.{domain}" if not domain.startswith(("www.", "*.", "http://", "https://")) else domain)
+]
+
 
 # Allowed path prefixes for iframe visualisations
 IFRAME_VISUALISATION_PATH_PREFIXES = env.get(
@@ -1135,7 +1143,7 @@ CMS_AUDIT_LOG_COOLDOWN_SECONDS = int(env.get("CMS_AUDIT_LOG_COOLDOWN_SECONDS", 3
 static_sources = [ONS_CDN_URL, "cdnjs.cloudflare.com"]
 SECURE_CSP: dict[str, list] = {
     "default-src": [CSP.SELF],
-    "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_ALLOWED_DOMAINS],
+    "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_CSP_SOURCES],
     # UNSAFE_INLINE is required by mathjax
     "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE, "*.hotjar.com"],
     "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com", "*.hotjar.com"],
