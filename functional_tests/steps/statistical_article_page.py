@@ -259,9 +259,10 @@ def user_adds_table_with_pasted_content(context: Context) -> None:
     page.locator("#panel-child-content-content-content").get_by_role("button", name="Insert a block").nth(2).click()
     page.get_by_text("Table").last.click()
     page.locator('[data-contentpath="footnotes"] [role="textbox"]').fill("some footnotes")
-    page.get_by_role("region", name="Table", exact=True).get_by_label("Title").fill("The table title")
-    page.get_by_role("region", name="Table", exact=True).get_by_label("Sub-heading").fill("The caption")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Title", exact=True).fill("The table title")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Subtitle").fill("The subtitle")
     page.get_by_role("region", name="Table", exact=True).get_by_label("Source").fill("The source")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Accessible label").fill("The accessible label")
 
     tinymce = (
         page.get_by_role("region", name="Table", exact=True).locator('iframe[title="Rich Text Area"]').content_frame
