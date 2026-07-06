@@ -69,25 +69,46 @@ class SyncTopicsTests(TestCase):
         topic = create_topic("1234", include_description=False)
         self.template_test_sync_one_valid_topic(topic)
 
-    def test_sync_valid_topic_no_slug(self):
-        """Check that when we attempt to sync a Topic without a slug from the API,
-        then an IntegrityError is raised and a warning is logged.
-        """
+    def test_sync_raises_when_api_topic_missing_slug(self):
+        """The sync should fail fast if the API omits a required slug."""
         topic = create_topic(topic_id="123", include_slug=False)
 
-        with self.assertLogs("cms.taxonomy", level="WARNING") as logs:
-            # Given
-            mock_response = mock_successful_json_response([build_topic_api_json(topic)])
-            self.mock_requests.get.return_value = mock_response
+        mock_response = mock_successful_json_response([build_topic_api_json(topic)])
+        self.mock_requests.get.return_value = mock_response
 
-            # When
+        with self.assertRaisesRegex(RuntimeError, "missing required field\\(s\\) slug"):
             call_command("sync_topics")
 
-            # Then
-            self.assertEqual(logs.records[0].message, "Cannot create or update topic: missing slug.")
-            self.assertEqual(logs.records[0].topic, topic.id)
+        self.assertListEqual(list(Topic.objects.all()), [])
 
-            self.assertListEqual(list(Topic.objects.all()), [])
+    def test_sync_raises_when_api_topic_missing_title(self):
+        """The sync should fail fast if the API omits a required title."""
+        topic = create_topic(topic_id="123")
+        topic.title = ""
+
+        mock_response = mock_successful_json_response([build_topic_api_json(topic)])
+        self.mock_requests.get.return_value = mock_response
+
+        with self.assertRaisesRegex(RuntimeError, "missing required field\\(s\\) title"):
+            call_command("sync_topics")
+
+        self.assertListEqual(list(Topic.objects.all()), [])
+
+    def test_sync_updates_valid_topics_before_later_missing_slug_error(self):
+        """A malformed topic should fail when processed, after earlier valid topics have synced."""
+        valid_topic = create_topic("123")
+        invalid_topic = create_topic("456", include_slug=False)
+
+        mock_response = mock_successful_json_response(
+            [build_topic_api_json(valid_topic), build_topic_api_json(invalid_topic)]
+        )
+        self.mock_requests.get.return_value = mock_response
+
+        with self.assertRaisesRegex(RuntimeError, "missing required field\\(s\\) slug"):
+            call_command("sync_topics")
+
+        self.assertEqual(Topic.objects.count(), 1)
+        self.assertEqual(Topic.objects.get(id=valid_topic.id).slug, valid_topic.slug)
 
     def test_sync_valid_topic_empty_description(self):
         topic = TopicFactory(id="1234", title="Test Empty Description", description="")
