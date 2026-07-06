@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, ClassVar, Self, cast
 
 from django.conf import settings
+from django.core.cache import cache
 from django.http import HttpRequest
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -8,6 +9,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django_stubs_ext import StrOrPromise
 from wagtail.admin.panels import ObjectList, TabbedInterface
+from wagtail.log_actions import log
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
 from wagtail.utils.decorators import cached_classmethod
@@ -27,9 +29,11 @@ if TYPE_CHECKING:
     from datetime import date, datetime
 
     from django.db import models
+    from django.template.response import TemplateResponse
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import BaseGenericSetting as _WagtailBaseGenericSetting
     from wagtail.contrib.settings.models import BaseSiteSetting as _WagtailBaseSiteSetting
+    from wagtail.models import Revision
     from wagtail.models.sites import Site, SiteRootPath
 
     class WagtailBaseSiteSetting(_WagtailBaseSiteSetting, models.Model):
@@ -64,6 +68,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
     # The default schema.org type for pages
     schema_org_type = "WebPage"
+
+    audit_log_cooldown_seconds = settings.CMS_AUDIT_LOG_COOLDOWN_SECONDS
 
     class Meta:
         abstract = True
@@ -296,7 +302,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return None
 
         parent_theme = page_topic.get_base_parent()
-        return cast(str, parent_theme.title)
+        return parent_theme.title
 
     def get_referenced_asset_ids(self, asset_model: type[models.Model]) -> set[str]:
         stream_value = getattr(self, self.content_field_name)
@@ -334,6 +340,59 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return ""
 
         return f"{settings.WAGTAILADMIN_BASE_URL}{reverse('wagtailadmin_pages:edit', args=[self.pk])}"
+
+    def _log_preview(self, request: HttpRequest, mode_name: str) -> None:
+        """Log when a user previews a page in a specific preview mode."""
+        mode_name = mode_name or "default"
+        if not self.pk:
+            # Don't log if the page hasn't been saved yet (i.e. doesn't have a primary key)
+            return
+        cache_key = f"preview_page_log:{self.pk}:{request.user.pk}:{mode_name}"
+
+        if cache.get(cache_key):
+            return
+
+        log(
+            action="pages.preview_mode_used",
+            instance=self,
+            data={"preview_mode": mode_name},
+            user=request.user if request.user.is_authenticated else None,
+        )
+        cache.set(cache_key, True, timeout=self.audit_log_cooldown_seconds)
+
+    def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        self._log_preview(request, mode_name)
+        response: TemplateResponse = super().serve_preview(request, mode_name)
+        return response
+
+    def save_revision(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913
+        self,
+        user: User | None = None,
+        approved_go_live_at: datetime | None = None,
+        changed: bool = True,
+        log_action: bool | str = False,
+        previous_revision: Revision | None = None,
+        clean: bool = True,
+        overwrite_revision: Revision | None = None,
+    ) -> Revision:
+        """Suppress repeated "page edited" audit log entries (e.g. from autosave) within a cooldown window."""
+        if log_action and not previous_revision and self.pk:
+            cache_key = f"page_edit_save_log:{self.pk}:{user.pk if user else 'none'}"
+            if cache.get(cache_key):
+                log_action = False
+            else:
+                cache.set(cache_key, True, timeout=self.audit_log_cooldown_seconds)
+
+        revision: Revision = super().save_revision(
+            user=user,
+            approved_go_live_at=approved_go_live_at,
+            changed=changed,
+            log_action=log_action,
+            previous_revision=previous_revision,
+            clean=clean,
+            overwrite_revision=overwrite_revision,
+        )
+        return revision
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

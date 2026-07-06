@@ -32,7 +32,7 @@ class ImageServeView(View):
     key = None
 
     @method_decorator(csp_override({"default-src": [CSP.NONE]}))
-    def get(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def get(
         self,
         request: HttpRequest,
         signature: str,

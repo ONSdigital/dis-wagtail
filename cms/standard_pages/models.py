@@ -19,6 +19,7 @@ from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
 
 
@@ -76,6 +77,10 @@ class InformationPage(  # type: ignore[django-manager-missing]
         context: dict = super().get_context(request, *args, **kwargs)
         context["table_of_contents"] = self.table_of_contents
         return context
+
+    def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        self._log_preview(request, mode_name)
+        return super().serve_preview(request, mode_name)
 
 
 class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
