@@ -135,20 +135,17 @@ class ONSTableBlock(TinyTableBlock):
     subtitle = blocks.CharBlock(required=False)
     source = blocks.CharBlock(label="Source", required=False)
     footnotes = blocks.RichTextBlock(label="Footnotes", features=settings.RICH_TEXT_BASIC, required=False)
-
-    def __init__(
-        self, *, local_blocks: list[blocks.Block] | None = None, search_index: bool = True, **kwargs: Any
-    ) -> None:
-        super().__init__(local_blocks=local_blocks, search_index=search_index, **kwargs)
-        # relabeled to match the publishing team's terminology
-        self.child_blocks["caption"].label = "Accessible label"
-        self.child_blocks["caption"].field.required = True
-        self.child_blocks["caption"].help_text = (
+    # Redeclare the inherited caption field
+    caption = blocks.CharBlock(
+        required=True,
+        label="Accessible label",
+        help_text=(
             "A short label to explain what this table is about for those "
             "using a screen reader. This will not be visible on the page "
             "but is important for accessibility. "
             "Note that this is rendered as a hidden caption element."
-        )
+        ),
+    )
 
     def clean(self, value: dict) -> dict:
         """Validate that a subtitle is only present when a title is also provided."""
