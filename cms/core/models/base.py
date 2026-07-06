@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import BaseGenericSetting as _WagtailBaseGenericSetting
     from wagtail.contrib.settings.models import BaseSiteSetting as _WagtailBaseSiteSetting
+    from wagtail.models import Revision
     from wagtail.models.sites import Site, SiteRootPath
 
     class WagtailBaseSiteSetting(_WagtailBaseSiteSetting, models.Model):
@@ -67,7 +68,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     # The default schema.org type for pages
     schema_org_type = "WebPage"
 
-    audit_log_cooldown_seconds = 30
+    audit_log_cooldown_seconds = settings.CMS_AUDIT_LOG_COOLDOWN_SECONDS
 
     class Meta:
         abstract = True
@@ -362,6 +363,35 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         self._log_preview(request, mode_name)
         response: TemplateResponse = super().serve_preview(request, mode_name)
         return response
+
+    def save_revision(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913
+        self,
+        user: User | None = None,
+        approved_go_live_at: datetime | None = None,
+        changed: bool = True,
+        log_action: bool | str = False,
+        previous_revision: Revision | None = None,
+        clean: bool = True,
+        overwrite_revision: Revision | None = None,
+    ) -> Revision:
+        """Suppress repeated "page edited" audit log entries (e.g. from autosave) within a cooldown window."""
+        if log_action and not previous_revision and self.pk:
+            cache_key = f"page_edit_save_log:{self.pk}:{user.pk if user else 'none'}"
+            if cache.get(cache_key):
+                log_action = False
+            else:
+                cache.set(cache_key, True, timeout=self.audit_log_cooldown_seconds)
+
+        revision: Revision = super().save_revision(
+            user=user,
+            approved_go_live_at=approved_go_live_at,
+            changed=changed,
+            log_action=log_action,
+            previous_revision=previous_revision,
+            clean=clean,
+            overwrite_revision=overwrite_revision,
+        )
+        return revision
 
 
 class BaseSiteSetting(WagtailBaseSiteSetting):

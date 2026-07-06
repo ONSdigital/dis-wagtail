@@ -24,8 +24,6 @@ if TYPE_CHECKING:
     from wagtail.admin.views.bulk_action import BulkAction, ModelLogEntry
     from wagtail.log_actions import LogActionRegistry
 
-PAGE_EDIT_VIEW_AUDIT_LOG_COOLDOWN_SECONDS = 30
-
 
 @hooks.register("register_icons")
 def register_icons(icons: list[str]) -> list[str]:
@@ -74,7 +72,7 @@ def log_page_edit_view(request: HttpRequest, page: Page) -> None:
         return
 
     log(action="pages.edit_view", instance=page)
-    cache.set(cache_key, True, timeout=PAGE_EDIT_VIEW_AUDIT_LOG_COOLDOWN_SECONDS)
+    cache.set(cache_key, True, timeout=settings.CMS_AUDIT_LOG_COOLDOWN_SECONDS)
 
 
 _BLOCKED_TITLES_PREVIEW_COUNT = 5

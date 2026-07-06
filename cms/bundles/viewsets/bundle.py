@@ -135,7 +135,7 @@ class BundleEditView(EditView):
     template_name = "bundles/wagtailadmin/edit.html"
     has_content_changes: bool = False
     start_time: float | None = None
-    audit_log_cooldown_seconds = 30
+    audit_log_cooldown_seconds = settings.CMS_AUDIT_LOG_COOLDOWN_SECONDS
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
         if (instance := self.get_object()) and instance.status in PUBLISHED_BUNDLE_STATUSES:
@@ -442,7 +442,7 @@ class BundleInspectView(InspectView):
     """The Bundle inspect view class."""
 
     template_name = "bundles/wagtailadmin/inspect.html"
-    audit_log_cooldown_seconds = 30
+    audit_log_cooldown_seconds = settings.CMS_AUDIT_LOG_COOLDOWN_SECONDS
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
         if not user_can_preview_bundle(self.request.user, self.object):
