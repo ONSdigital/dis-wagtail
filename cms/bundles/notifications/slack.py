@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from django.conf import settings
 from django.utils import timezone
 
+from cms.core.db_router import force_write_db
 from cms.core.slack import send_or_update_slack_message
 from cms.post_publish_actions.models import PostPublishAction, PostPublishActionStatus
 
@@ -28,6 +29,7 @@ class BundleAlertType(str, Enum):
     WARNING = "Warning"
 
 
+@force_write_db()
 def send_bundle_notification(  # pylint: disable=too-many-arguments  # noqa: PLR0913
     bundle: Bundle,
     text: str,
@@ -51,16 +53,20 @@ def send_bundle_notification(  # pylint: disable=too-many-arguments  # noqa: PLR
         force_new: If True, always create a new message (default: False)
         save_timestamp: If True, save the message timestamp to the bundle to allow future updates (default: True)
     """
+    bundle_cls = bundle.__class__
+    current_ts = bundle_cls.objects.values_list("slack_notification_ts", flat=True).get(pk=bundle.pk)
     message_ts = send_or_update_slack_message(
         text=text,
         color=color,
         fields=fields,
-        update_message_ts=bundle.slack_notification_ts if not force_new else None,
         channel=settings.SLACK_PUBLISH_LOG_CHANNEL,
+        update_message_ts=current_ts if not force_new else None,
     )
-    if message_ts and save_timestamp:
-        bundle.slack_notification_ts = message_ts
-        bundle.save(update_fields=["slack_notification_ts"])
+    if message_ts and save_timestamp and message_ts != current_ts:
+        # Only a created message changes the ts so a concurrent creator isn't clobbered
+        bundle_cls.objects.filter(pk=bundle.pk, slack_notification_ts=current_ts).update(
+            slack_notification_ts=message_ts
+        )
 
 
 def _get_publish_type(bundle: Bundle) -> str:
