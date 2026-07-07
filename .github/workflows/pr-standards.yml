@@ -1,0 +1,53 @@
+name: PR standards
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  branch-name:
+    name: Validate branch name
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const branchName = context.payload.pull_request?.head?.ref ?? "";
+            const prAuthor = context.actor;
+            const bypassLabel = "no-jira";
+            const labels = (context.payload.pull_request?.labels ?? [])
+              .map((label) => label.name?.toLowerCase())
+              .filter(Boolean);
+
+            const hasBypassLabel = labels.includes(bypassLabel);
+            const isBotBypass = prAuthor === "dependabot[bot]";
+            const jiraIssueKeyPattern = /(CMS|DPD)-\d+/;
+
+            if (hasBypassLabel || isBotBypass) {
+              core.info("Skipping Jira issue key validation.");
+              return;
+            }
+
+            if (!jiraIssueKeyPattern.test(branchName)) {
+              core.setFailed(
+                `Branch name must contain a Jira issue key in the form CMS-<number> or DPD-<number>, or the PR must have the '${bypassLabel}' label. Got '${branchName}'.`,
+              );
+              return;
+            }
+
+            core.info("Branch name contains a valid Jira issue key.");
+
+  pr-title:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
