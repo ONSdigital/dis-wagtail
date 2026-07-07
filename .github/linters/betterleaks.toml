@@ -1,0 +1,19 @@
+title = "betterleaks config"
+
+[extend]
+# Extend the built-in default ruleset
+# https://github.com/betterleaks/betterleaks/blob/main/config/betterleaks.toml
+useDefault = true
+
+# Skip files whose path matches any of the patterns below, before regex matching runs.
+prefilter = '''
+filter.matchesAny(get(attributes, "path", ""), [
+    `(?i)^.*\.env$`,
+    `(?i)^.*\.env\..*$`,
+    `\.secrets\.baseline`,
+    `cms/settings/local\.py`,
+    `megalinter-reports`,
+    `\.mypy_cache`
+])
+'''
+
