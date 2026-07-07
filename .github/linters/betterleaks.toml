@@ -2,18 +2,16 @@ title = "betterleaks config"
 
 [extend]
 # Extend the built-in default ruleset
-# https://github.com/betterleaks/betterleaks/blob/main/config/betterleaks.toml
 useDefault = true
 
-# Skip files whose path matches any of the patterns below, before regex matching runs.
-prefilter = '''
-filter.matchesAny(get(attributes, "path", ""), [
-    `(?i)^.*\.env$`,
-    `(?i)^.*\.env\..*$`,
-    `\.secrets\.baseline`,
-    `cms/settings/local\.py`,
-    `megalinter-reports`,
-    `\.mypy_cache`
-])
-'''
-
+[allowlist]
+description = "Global allowlists (skip conditions)"
+paths = [
+    '''(?i)^.*\.env$''',  # Matches any file ending in .env (case-insensitive)
+    '''(?i)^.*\.env\..*$''',  # Matches files like .env.test, .env.local, .env.production, etc.
+    ".secrets.baseline",  # Ignore the detect-secrets baseline file
+    "cms/settings/local.py",  # Ignore local.py in the cms/settings directory
+    "megalinter-reports",  # Ignore megalinter-reports directory
+    ".mypy_cache",  # Ignore mypy cache directory
+    ".idea" # ignore .idea directory during local testing (used by JetBrains IDEs)
+]
