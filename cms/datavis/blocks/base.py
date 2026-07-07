@@ -360,6 +360,12 @@ class BaseChartBlock(BaseVisualisationBlock):
         }
 
     @staticmethod
+    def _build_download_path_fragment(block_id: str, superseded_version: int | None = None) -> str:
+        """Build the chart download URL path portion for published pages."""
+        version_part = f"/versions/{superseded_version}" if superseded_version is not None else ""
+        return f"{version_part}/download-chart/{block_id}"
+
+    @staticmethod
     def _build_chart_download_url(page: BasePage, block_id: str, superseded_version: int | None = None) -> str:
         """Build the chart download URL, handling versioned pages.
 
@@ -372,12 +378,8 @@ class BaseChartBlock(BaseVisualisationBlock):
             The URL to download the chart data as CSV.
         """
         base_url = page.url.rstrip("/")
-        version_part = ""
-
-        if superseded_version is not None:
-            version_part = f"/versions/{superseded_version}"
-
-        return f"{base_url}{version_part}/download-chart/{block_id}"
+        download_fragment = BaseChartBlock._build_download_path_fragment(block_id, superseded_version)
+        return f"{base_url}{download_fragment}"
 
     @staticmethod
     def _build_preview_chart_download_url(page: BasePage, block_id: str, request: HttpRequest | None = None) -> str:
