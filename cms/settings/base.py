@@ -6,6 +6,7 @@ import os
 import sys
 import warnings
 from copy import deepcopy
+from functools import partial
 from pathlib import Path
 from typing import cast
 
@@ -16,8 +17,10 @@ from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 from wagtail.utils.deprecation import RemovedInWagtail80Warning
 
+from cms.core.db_iam_config import get_conninfo
 from cms.core.elasticache import ElastiCacheIAMCredentialProvider
 from cms.core.jinja2 import custom_json_dumps
+from cms.core.rds_client import create_rds_client
 
 # TODO: Remove once wagtailtables updates telepath import
 # https://github.com/overcastsoftware/wagtailtables/issues/7
@@ -252,14 +255,23 @@ if "PG_DB_ADDR" in env:
         "default": cast(
             dj_database_url.DBConfig,
             {
-                "ENGINE": "django_iam_dbauth.aws.postgresql",
+                "ENGINE": "django.db.backends.postgresql",
                 "NAME": env["PG_DB_DATABASE"],
                 "USER": env["PG_DB_USER"],
                 "HOST": env["PG_DB_ADDR"],
                 "PORT": env["PG_DB_PORT"],
                 "CONN_MAX_AGE": 0,
                 "CONN_HEALTH_CHECK": True,
-                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": AWS_REGION},
+                "OPTIONS": {
+                    "sslmode": "require",
+                    "pool": partial(
+                        get_conninfo,
+                        create_rds_client(AWS_REGION),
+                        host=env["PG_DB_ADDR"],
+                        port=env["PG_DB_PORT"],
+                        user=env["PG_DB_USER"],
+                    ),
+                },
             },
         )
     }
