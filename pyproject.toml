@@ -53,7 +53,7 @@ django-permissions-policy = "^4.32.0"
 djhtml = "3.0.11"  # keep version in sync with .pre-commit-config.yaml
 mypy = "^1.20.2"
 types-requests = "^2.33.0.20260518"
-django-stubs = { version="^6.0.6", extras=["compatible-mypy", "rds"]}
+django-stubs = { version="^6.0.6", extras=["compatible-mypy"]}
 pylint = "^4.0.6"
 pylint-django = "^2.7.0"
 ruff = "0.14.14"  # keep version in sync with .pre-commit-config.yaml
@@ -77,7 +77,7 @@ moto = {extras = ["iam","s3"], version = "^5.2.2"}
 django-migration-linter = "^5.2.0"
 fakeredis = "^2.36.2"
 time-machine = "^3.2.0"
-boto3-stubs = "^1.43.41"
+boto3-stubs = { version="^1.43.41", extras=['rds'] }
 
 [tool.ruff]
 target-version = "py314"

@@ -182,6 +182,7 @@ files = [
 
 [package.dependencies]
 botocore-stubs = "*"
+mypy-boto3-rds = {version = ">=1.43.0,<1.44.0", optional = true, markers = "extra == \"rds\""}
 types-s3transfer = "*"
 
 [package.extras]
@@ -2759,6 +2760,18 @@ native-parser = ["ast-serialize (>=0.1.1,<1.0.0)"]
 reports = ["lxml"]
 
 [[package]]
+name = "mypy-boto3-rds"
+version = "1.43.30"
+description = "Type annotations for boto3 RDS 1.43.30 service generated with mypy-boto3-builder 8.12.0"
+optional = false
+python-versions = ">=3.9"
+groups = ["dev"]
+files = [
+    {file = "mypy_boto3_rds-1.43.30-py3-none-any.whl", hash = "sha256:38c5c97839953a145b56b5c942250fce5941ebb2aeeb13a7731499b030ec442d"},
+    {file = "mypy_boto3_rds-1.43.30.tar.gz", hash = "sha256:5445ad363b1b77360a758b9f1b43eb74c8bdfa46f82712efcec3e8f43a266d87"},
+]
+
+[[package]]
 name = "mypy-extensions"
 version = "1.1.0"
 description = "Type system extensions for programs checked with the mypy type checker."
@@ -4320,4 +4333,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "c9fadfae3e7134ddeedd4ba4fe8afddb010039b98993a2de6c368507f7c3de4b"
+content-hash = "5befca5020a555bf583af6c7cfe0059bd0a75d51710b928df5f1ebb9ffab7c3d"
