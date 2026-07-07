@@ -1,8 +1,7 @@
-title = "gitleaks config"
+title = "betterleaks config"
 
 [extend]
-# useDefault will extend the base configuration with the default gitleaks config:
-# https://github.com/zricethezav/gitleaks/blob/master/config/gitleaks.toml
+# Extend the built-in default ruleset
 useDefault = true
 
 [allowlist]
@@ -13,5 +12,6 @@ paths = [
     ".secrets.baseline",  # Ignore the detect-secrets baseline file
     "cms/settings/local.py",  # Ignore local.py in the cms/settings directory
     "megalinter-reports",  # Ignore megalinter-reports directory
-    ".mypy_cache"  # Ignore mypy cache directory
+    ".mypy_cache",  # Ignore mypy cache directory
+    ".idea" # ignore .idea directory during local testing (used by JetBrains IDEs)
 ]
