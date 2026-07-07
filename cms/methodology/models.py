@@ -151,6 +151,9 @@ class MethodologyPage(  # type: ignore[django-manager-missing]
         context["related_publications"] = self.get_formatted_related_publications_list(request=request)
         return context
 
+    def get_cached_paths(self) -> list[str]:
+        return ["/", *self.get_downloadable_block_paths()]
+
     @property
     def release_date(self) -> datetime.date:
         return self.publication_date
