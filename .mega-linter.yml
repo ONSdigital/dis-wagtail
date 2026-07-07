@@ -53,7 +53,7 @@ MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdown-lint.yml
 # Dependabot is validated on push by GitHub by default.
 YAML_V8R_FILTER_REGEX_EXCLUDE: 'dependabot.yml'
 
-# BetterLeaks: only scan the files in this commit, not the entire history
+# BetterLeaks: specify config file
 REPOSITORY_BETTERLEAKS_CONFIG_FILE: betterleaks.toml
 
 # .gitignore files are excluded by default
