@@ -423,11 +423,10 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
 
-        self.assertEqual(len(menu_items), 4)
+        self.assertEqual(len(menu_items), 5)
 
         self.assertItemWithPropertyIn("name", "action-unpublish", menu_items)
-        # TODO: uncomment when https://github.com/wagtail/wagtail/pull/13948 is fixed
-        # self.assertItemWithPropertyIn("name", "action-cancel-workflow", menu_items)
+        self.assertItemWithPropertyIn("name", "action-cancel-workflow", menu_items)
         self.assertItemWithPropertyIn("name", "reject", menu_items)
         self.assertItemWithPropertyIn("name", "approve", menu_items)
         self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
@@ -541,12 +540,13 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
 
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
-        # unpublish, approve, approve with comment, reject
-        self.assertEqual(len(menu_items), 4)
+        # unpublish, approve, approve with comment, reject, cancel-workflow
+        self.assertEqual(len(menu_items), 5)
 
         self.assertItemWithPropertyIn("name", "approve", menu_items)
         self.assertItemWithPropertyIn("name", "reject", menu_items)
         self.assertItemWithPropertyIn("name", "action-unpublish", menu_items)
+        self.assertItemWithPropertyIn("name", "action-cancel-workflow", menu_items)
         self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
         self.assertItemWithPropertyNotIn("name", "locked-approve", menu_items)
         self.assertItemWithPropertyNotIn("name", "unlock", menu_items)
