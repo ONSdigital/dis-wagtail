@@ -266,9 +266,9 @@ if "PG_DB_ADDR" in env:
                     "sslmode": "require",
                     "pool": partial(
                         get_conninfo,
-                        create_rds_client(AWS_REGION),
+                        create_rds_client(str(AWS_REGION)),
                         host=env["PG_DB_ADDR"],
-                        port=env["PG_DB_PORT"],
+                        port=int(env["PG_DB_PORT"]),
                         user=env["PG_DB_USER"],
                     ),
                 },

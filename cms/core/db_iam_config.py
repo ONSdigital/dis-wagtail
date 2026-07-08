@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from mypy_boto3_rds import RDSClient
 
 
-def get_conninfo(client: RDSClient, host: str, port: int, user: str):
+def get_conninfo(client: RDSClient, host: str, port: int, user: str) -> str:
     """Generate an RDS connection string with a fresh IAM auth token.
 
     When using connection pool the standard config object gets frozen at pool init time,
