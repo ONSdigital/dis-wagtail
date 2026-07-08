@@ -96,8 +96,16 @@ class MigrationTestCase(_TransactionTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.executor = MigrationExecutor(connections[DEFAULT_DB_ALIAS])
+        if cls.next_migration is None:
+            cls.next_migration = cls.executor.loader.graph.leaf_nodes()
         cls.executor.migrate(cls.next_migration)
         cls.apps = cls.executor.loader.project_state(cls.next_migration).apps
+
+    def tearDown(self):
+        """Restore the migration state to the latest migration after each test."""
+        self.executor.loader.build_graph()
+        self.migrate_to(self.executor.loader.graph.leaf_nodes())
+        super().tearDown()
 
     def migrate_to(self, target: Sequence[tuple[str, str]] | None = None):
         """Helper to migrate to a specific target state."""
