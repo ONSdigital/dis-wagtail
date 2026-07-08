@@ -67,7 +67,9 @@ def run_action(
     action.status = PostPublishActionStatus.RUNNING
     action.save(update_fields=["status"])
 
-    page = Page.objects.get(id=page_id)
+    # use `specific` to ensure pages are cast to their subclass
+    # guarantees class attributes are available in post publish actions
+    page = Page.objects.get(id=page_id).specific
     bundle = Bundle.objects.get(id=bundle_id)
 
     logger.info(
