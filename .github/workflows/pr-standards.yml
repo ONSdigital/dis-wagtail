@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
     env:
       BYPASS_LABEL: 'no-jira'
     steps:
@@ -46,6 +47,45 @@ jobs:
         env:
           BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         run: ./scripts/validate-branch-name.sh
+
+      - name: Update PR body with JIRA link
+        if: steps.branch-validation-bypass.outputs.should_skip != 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const branchName = context.payload.pull_request?.head?.ref ?? "";
+
+            // Extract JIRA issue key
+            const jiraPattern = /\b(CMS|DPD)-(\d+)\b/;
+            const match = branchName.match(jiraPattern);
+
+            if (!match) {
+              core.info('No JIRA issue key found in branch name. Skipping JIRA link update.');
+              return;
+            }
+
+            const issueKey = match[0];
+            const prBody = context.payload.pull_request?.body ?? "";
+
+            // Check if PR body already contains the issue key
+            if (prBody.includes(issueKey)) {
+              core.info('PR body already contains the JIRA issue key. Skipping JIRA link update.');
+              return;
+            }
+
+            const jiraUrl = `https://officefornationalstatistics.atlassian.net/browse/${issueKey}`;
+            const ticketLink = `Ticket: [${issueKey}](${jiraUrl})`;
+
+            const updatedBody = prBody ? `${prBody}\n\n---\n${ticketLink}` : ticketLink;
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              body: updatedBody
+            });
+
+            core.info(`Added JIRA link: ${ticketLink}`);
 
   pr-title:
     name: Validate PR title
