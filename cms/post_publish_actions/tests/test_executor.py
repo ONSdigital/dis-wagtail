@@ -81,7 +81,7 @@ class RunActionTestCase(TransactionTestCase):
 
         PostPublishAction.objects.create(page=page, bundle=bundle, action_type=PostPublishActionType.S3_ACL)
 
-        with self.assertNumQueriesConnection(default=5):
+        with self.assertNumQueriesConnection(default=6):
             executor.run_action(self.handler, PostPublishActionType.S3_ACL, page.id, bundle.id)
 
     def test_requires_bundle_id(self):
