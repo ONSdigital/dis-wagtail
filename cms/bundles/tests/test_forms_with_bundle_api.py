@@ -6,13 +6,15 @@ from django.test import TestCase, override_settings
 from wagtail.admin.panels import get_edit_handler
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
-from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory
+from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.datasets.models import Dataset, ONSDatasetApiQuerySet
 from cms.datasets.tests.factories import DatasetFactory
 from cms.users.tests.factories import UserFactory
+from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
 
 @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
@@ -572,6 +574,25 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             form.non_field_errors(),
         )
         self.mock_ons_dataset_class.objects.with_token.assert_not_called()
+
+    def test_no_datasets_skips_metadata_validation_and_token_check(self):
+        """A pages-only bundle can be approved without an access token, as there is no dataset metadata to
+        validate.
+        """
+        page = StatisticalArticlePageFactory(title="Statistical Article Page for Bundle")
+        mark_page_as_ready_to_publish(page, self.approver)
+        bundle_page = BundlePageFactory(parent=self.bundle, page=page)
+
+        raw_data = {
+            "name": self.bundle.name,
+            "status": BundleStatus.APPROVED,
+            "bundled_pages": inline_formset([{"id": bundle_page.id, "page": page.id, "ORDER": "1"}], initial=1),
+            "bundled_datasets": inline_formset([]),
+            "teams": inline_formset([]),
+        }
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid(), form.errors)
 
     def test_other_exceptions_raised_during_metadata_validation_are_not_caught(self):
         """Test that unexpected exceptions during metadata validation are not caught and handled gracefully,
