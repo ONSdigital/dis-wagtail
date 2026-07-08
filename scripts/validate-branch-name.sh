@@ -24,4 +24,3 @@ if [[ ! "${branch_name}" =~ ${jira_issue_key_pattern} ]]; then
 fi
 
 echo "Branch name contains a valid Jira issue key."
-
