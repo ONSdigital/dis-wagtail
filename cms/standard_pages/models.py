@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel
 from wagtail.fields import RichTextField
 from wagtail.search import index
@@ -18,6 +19,7 @@ from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from django.template.response import TemplateResponse
     from wagtail.admin.panels import Panel
 
 
@@ -37,6 +39,8 @@ class InformationPage(  # type: ignore[django-manager-missing]
     content = StreamField(CoreStoryBlock())
 
     _analytics_content_type: ClassVar[str] = "information"
+
+    label = _("Information")
 
     content_panels: ClassVar[list[Panel]] = [
         *BundledPageMixin.panels,
@@ -74,6 +78,10 @@ class InformationPage(  # type: ignore[django-manager-missing]
         context["table_of_contents"] = self.table_of_contents
         return context
 
+    def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        self._log_preview(request, mode_name)
+        return super().serve_preview(request, mode_name)
+
 
 class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
     template = "templates/pages/index_page.html"
@@ -101,6 +109,8 @@ class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-miss
     ]
 
     _analytics_content_type: ClassVar[str] = "index-pages"
+
+    label = _("Index")
 
     def get_formatted_items(self, request: HttpRequest) -> list[dict[str, str | dict[str, str]]]:
         """Returns a formatted list of Featured items

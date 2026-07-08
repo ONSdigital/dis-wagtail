@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 import time_machine
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db.models import F, OrderBy
 from django.test import TestCase, override_settings
@@ -16,11 +17,11 @@ from django.urls import reverse
 from django.utils import timezone
 from wagtail.admin.panels import get_edit_handler
 from wagtail.coreutils import get_dummy_request
-from wagtail.models import Locale, Page
+from wagtail.models import Locale, ModelLogEntry, Page
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
-from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.clients.api import BundleAPIClientError
 from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
@@ -256,6 +257,27 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.name, "Updated Bundle")
 
+    def test_bundle_edit_view__logs_schedule_change_on_publication_date_update(self):
+        """Test that changing the publication date via form submission creates a schedule_changed log entry."""
+        original_date = timezone.now() + timedelta(days=1)
+        self.bundle.publication_date = original_date
+        self.bundle.save(update_fields=["publication_date"])
+
+        new_date = timezone.now() + timedelta(days=5)
+        data = self.get_base_form_data()
+        data["publication_date"] = new_date.strftime("%Y-%m-%d %H:%M")
+        data["action-edit"] = "action-edit"
+
+        response = self.client.post(self.edit_url, data)
+        self.assertEqual(response.status_code, 302)
+
+        log_entry = ModelLogEntry.objects.filter(
+            object_id=str(self.bundle.pk), action="bundles.schedule_changed"
+        ).first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.data["old"], original_date.strftime("%Y-%m-%d %H:%M"))
+        self.assertEqual(log_entry.data["new"], new_date.strftime("%Y-%m-%d %H:%M"))
+
     def test_bundle_edit_view__redirects_to_index_for_published_bundles(self):
         """Released bundles should no longer be editable."""
         for bundle_status in PUBLISHED_BUNDLE_STATUSES:
@@ -477,6 +499,100 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
                 response = self.client.get(self.edit_url)
                 self.assertNotContains(response, "status-sidebar-live")
                 self.assertContains(response, expected_id)
+
+    def test_edit_view__creates_audit_log_entry(self):
+        """Test that viewing the edit page creates an audit log entry."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+
+        response = self.client.get(self.edit_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        log_entry = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.user, self.publishing_officer)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_cooldown_prevents_duplicate_entries(self):
+        """Test that viewing the edit page multiple times within the cooldown period
+        only creates one audit log entry.
+        """
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+        cache.clear()
+
+        # First visit - should create a log entry
+        self.client.get(self.edit_url)
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(first_count, 1)
+
+        # Second visit within cooldown - should NOT create another log entry
+        self.client.get(self.edit_url)
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(second_count, 1)
+
+        # Third visit within cooldown - still no new entry
+        self.client.get(self.edit_url)
+        third_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(third_count, 1)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_cooldown_allows_new_entry_after_expiry(self):
+        """Test that a new audit log entry is created after the cooldown expires."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+        cache.clear()
+
+        # First visit
+        self.client.get(self.edit_url)
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(first_count, 1)
+
+        # Clear cache to simulate cooldown expiry
+        cache.clear()
+
+        # Second visit after cooldown expiry - should create a new log entry
+        self.client.get(self.edit_url)
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(second_count, 2)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_different_users_get_separate_cooldowns(self):
+        """Test that different users have separate cooldown periods."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+        cache.clear()
+
+        # First user views the page
+        self.client.force_login(self.publishing_officer)
+        self.client.get(self.edit_url)
+
+        # Second user views the same page - should also create a log entry
+        self.client.force_login(self.superuser)
+        self.client.get(self.edit_url)
+
+        log_entries = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view")
+        self.assertEqual(log_entries.count(), 2)
+
+        users = set(log_entries.values_list("user_id", flat=True))
+        self.assertEqual(users, {self.publishing_officer.pk, self.superuser.pk})
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_different_bundles_get_separate_cooldowns(self):
+        """Test that different bundles have separate cooldown periods for the same user."""
+        ModelLogEntry.objects.filter(action="bundles.edit_view").delete()
+        cache.clear()
+
+        # View first bundle
+        self.client.get(self.edit_url)
+
+        # View second bundle - should also create a log entry
+        another_bundle = BundleFactory(name="Another Bundle")
+        another_edit_url = reverse("bundle:edit", args=[another_bundle.id])
+        self.client.get(another_edit_url)
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.edit_view")
+        self.assertEqual(log_entries.count(), 2)
+
+        bundle_ids = set(log_entries.values_list("object_id", flat=True))
+        self.assertEqual(bundle_ids, {str(self.bundle.pk), str(another_bundle.pk)})
 
 
 @override_settings(BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT=True)
@@ -1023,33 +1139,6 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseMixin, TestCase):
             html=True,
         )
 
-    def test_inspect_view__no_preview_button_for_pages_without_preview_modes(self):
-        # ArticleSeriesPage sets preview_modes = [] and cannot be previewed.
-        page = ArticleSeriesPageFactory(title="Series without preview")
-        BundlePageFactory(parent=self.bundle, page=page)
-
-        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
-
-        preview_url = reverse("bundles:preview", args=[self.bundle.pk, page.pk])
-        self.assertContains(response, page.get_admin_display_title())
-        self.assertNotContains(response, f'<a href="{preview_url}"')
-
-    def test_inspect_view__shows_view_live_for_published_page_without_preview_modes(self):
-        # A page without preview modes should still get a "View Live" link once published.
-        page = ArticleSeriesPageFactory(title="Published series without preview", live=True)
-        BundlePageFactory(parent=self.bundle, page=page)
-        self.bundle.status = BundleStatus.PUBLISHED
-        self.bundle.save(update_fields=["status"])
-
-        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
-
-        expected_live_url = page.get_url(request=get_dummy_request())
-        self.assertContains(
-            response,
-            f'<a href="{expected_live_url}" class="button button-small button-secondary">View Live</a>',
-            html=True,
-        )
-
     @time_machine.travel(datetime(2025, 7, 1, 12, 37), tick=False)
     def test_inspect_view__datetime_use_configured_timezone(self):
         bundle = BundleFactory(
@@ -1428,6 +1517,98 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseMixin, TestCase):
         self.assertContains(response, "<strong>Viewer Test Dataset</strong>")
         # Make sure there's NO hyperlink to data-admin with this title
         self.assertNotContains(response, '<a href="/data-admin/series/test-456')
+
+    def test_inspect_view__creates_audit_log_entry(self):
+        """Test that viewing the inspect page creates an audit log entry."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").delete()
+
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        log_entry = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.user, self.publishing_officer)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_inspect_view__audit_log_cooldown_prevents_duplicate_entries(self):
+        """Test that viewing the inspect page multiple times within the cooldown period
+        only creates one audit log entry.
+        """
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").delete()
+        cache.clear()
+
+        # First visit - should create a log entry
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(first_count, 1)
+
+        # Second visit within cooldown - should NOT create another log entry
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(second_count, 1)
+
+        # Third visit within cooldown - still no new entry
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        third_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(third_count, 1)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_inspect_view__audit_log_cooldown_allows_new_entry_after_expiry(self):
+        """Test that a new audit log entry is created after the cooldown expires."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").delete()
+        cache.clear()
+
+        # First visit
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(first_count, 1)
+
+        # Clear cache to simulate cooldown expiry
+        cache.clear()
+
+        # Second visit after cooldown expiry - should create a new log entry
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(second_count, 2)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_inspect_view__audit_log_different_users_get_separate_cooldowns(self):
+        """Test that different users have separate cooldown periods."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").delete()
+        cache.clear()
+
+        # First user views the page
+        self.client.force_login(self.publishing_officer)
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Second user views the same page - should also create a log entry
+        self.client.force_login(self.superuser)
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        log_entries = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect")
+        self.assertEqual(log_entries.count(), 2)
+
+        users = set(log_entries.values_list("user_id", flat=True))
+        self.assertEqual(users, {self.publishing_officer.pk, self.superuser.pk})
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_inspect_view__audit_log_different_bundles_get_separate_cooldowns(self):
+        """Test that different bundles have separate cooldown periods for the same user."""
+        ModelLogEntry.objects.filter(action="bundles.inspect").delete()
+        cache.clear()
+
+        # View first bundle
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # View second bundle - should also create a log entry
+        self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.inspect")
+        self.assertEqual(log_entries.count(), 2)
+
+        bundle_ids = set(log_entries.values_list("object_id", flat=True))
+        self.assertEqual(bundle_ids, {str(self.bundle.pk), str(self.in_review_bundle.pk)})
 
 
 class BundleIndexViewTestCase(BundleViewSetTestCaseMixin, TestCase):

@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     import datetime
 
     from django.http import HttpResponse
+    from django.template.response import TemplateResponse
     from django_stubs_ext import StrPromise
     from wagtail.admin.panels import Panel
     from wagtail.query import PageQuerySet
@@ -48,6 +49,8 @@ class MethodologyIndexPage(BasePage):  # type: ignore[django-manager-missing]
     ]
     # disables the "Promote" tab as we control the slug, and the page redirects
     promote_panels: ClassVar[list[Panel]] = []
+
+    label = None
 
     def clean(self) -> None:
         self.slug = "methodologies"
@@ -89,7 +92,7 @@ class MethodologyPage(  # type: ignore[django-manager-missing]
     parent_page_types: ClassVar[list[str]] = ["MethodologyIndexPage"]
     search_index_content_type: ClassVar[str] = "static_methodology"
     template = "templates/pages/methodology_page.html"
-    label = _("Methodology")  # type: ignore[assignment]
+    label = _("Methodology")
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     publication_date = models.DateField()
@@ -204,3 +207,7 @@ class MethodologyPage(  # type: ignore[django-manager-missing]
         if self.last_revised_date:
             values["lastUpdatedDate"] = format_date_for_gtm(self.last_revised_date)
         return values
+
+    def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        self._log_preview(request, mode_name)
+        return super().serve_preview(request, mode_name)

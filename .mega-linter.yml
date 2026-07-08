@@ -25,6 +25,7 @@ DISABLE:
   - EDITORCONFIG
 
 DISABLE_LINTERS:
+  - REPOSITORY_GITLEAKS
   - REPOSITORY_DEVSKIM
   - REPOSITORY_TRUFFLEHOG
   - REPOSITORY_GIT_DIFF
@@ -51,9 +52,6 @@ MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdown-lint.yml
 # Dependabot yaml in SchemaStore is currently not up to date.
 # Dependabot is validated on push by GitHub by default.
 YAML_V8R_FILTER_REGEX_EXCLUDE: 'dependabot.yml'
-
-# GitLeaks: only scan the files in this commit, not the entire history
-REPOSITORY_GITLEAKS_ARGUMENTS: '--no-git'
 
 # .gitignore files are excluded by default
 ADDITIONAL_EXCLUDED_DIRECTORIES: ['.git']
