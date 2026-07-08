@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, ClassVar, Self, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
 
 from django.conf import settings
 from django.core.cache import cache
@@ -150,6 +150,27 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         # Override in subclasses where the breadcrumb label should differ from the page title.
         return str(self.title)
 
+    @staticmethod
+    def get_gtm_attributes_for_breadcrumbs(
+        page: BasePage, request: HttpRequest, link_text: str, position: int
+    ) -> dict[str, Any]:
+        attributes = {
+            "data-ga-event": "navigation-click",
+            "data-ga-navigation-type": "breadcrumb",
+            "data-ga-link-text": link_text,
+            "data-ga-click-content-type": page.analytics_content_type,
+            "data-ga-click-path": page.get_url(request=request),
+            "data-ga-click-position": position,
+        }
+
+        if content_group := page.analytics_content_group:
+            attributes["data-ga-click-content-group"] = content_group
+
+        if content_theme := page.analytics_content_theme:
+            attributes["data-ga-click-content-theme"] = content_theme
+
+        return attributes
+
     def get_breadcrumbs(self, request: HttpRequest) -> list[dict[str, object]]:
         """Returns the breadcrumbs for the page as a list of dictionaries compatible with the ONS design system
         breadcrumbs component.
@@ -163,11 +184,39 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             if ancestor_page.is_root():
                 continue
             if ancestor_page.depth <= homepage_depth:
-                breadcrumbs.append({"url": self.get_site().root_url, "text": _("Home")})
+                breadcrumb_url = self.get_site().root_url
+                breadcrumb_text = _("Home")
+
             elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
-                breadcrumbs.append({"url": ancestor_page.get_full_url(request=request), "text": ancestor_page.title})
+                breadcrumb_url = ancestor_page.get_full_url(request=request)
+                breadcrumb_text = ancestor_page.title
+
+            else:
+                continue
+
+            breadcrumb_position = len(breadcrumbs) + 1
+            breadcrumbs.append(
+                {
+                    "url": breadcrumb_url,
+                    "text": breadcrumb_text,
+                    "attributes": self.get_gtm_attributes_for_breadcrumbs(
+                        ancestor_page, request, breadcrumb_text, breadcrumb_position
+                    ),
+                }
+            )
+
         if getattr(request, "is_for_subpage", False):
-            breadcrumbs.append({"url": self.get_full_url(request=request), "text": self.breadcrumb_title})
+            breadcrumb_position = len(breadcrumbs) + 1
+            breadcrumbs.append(
+                {
+                    "url": self.get_full_url(request=request),
+                    "text": self.breadcrumb_title,
+                    "attributes": self.get_gtm_attributes_for_breadcrumbs(
+                        self, request, self.breadcrumb_title, breadcrumb_position
+                    ),
+                }
+            )
+
         self._breadcrumbs = breadcrumbs  # pylint: disable=attribute-defined-outside-init
         return breadcrumbs
 
