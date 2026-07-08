@@ -184,7 +184,7 @@ class ExtendSessionTests(WagtailTestUtils, TestCase):
         self.assertEqual(res.status_code, 403)
 
 
-@override_settings(ROOT_URLCONF="cms.urls")
+@override_settings(ROOT_URLCONF="cms.urls", CMS_PAGE_PRIVACY_CONTROLS_ENABLED=True)
 class FrontendLoginRedirectTests(TestCase):
     """Tests for frontend_login_redirect, the login target for Wagtail page privacy settings."""
 

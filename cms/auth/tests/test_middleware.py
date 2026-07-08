@@ -1,6 +1,7 @@
 import uuid
 from unittest import mock
 
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import RequestFactory, TestCase, override_settings
 
@@ -79,6 +80,28 @@ class ONSAuthMiddlewareTests(TestCase):
             m_unauth.assert_called_once_with(req)
             # logout executed
             m_logout.assert_called_once_with(req)
+
+    # Missing cookies but anonymous visitor -> session must NOT be flushed
+    @override_settings(
+        AWS_COGNITO_LOGIN_ENABLED=True,
+        WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False,
+    )
+    def test_cognito_enabled_no_tokens_anonymous_session_preserved(self):
+        """Anonymous public visitors carry session state unrelated to authentication
+        (e.g. passed page view restrictions); logging them out would flush it on every request.
+        """
+        req = self._request()
+        req.COOKIES = {}  # no JWT cookies
+        req.session["passed_page_view_restrictions"] = [1]
+
+        with (
+            mock.patch("django.contrib.auth.get_user", return_value=AnonymousUser()),
+            mock.patch("cms.auth.middleware.logout") as m_logout,
+        ):
+            self.middleware.process_request(req)
+
+            m_logout.assert_not_called()
+            self.assertEqual(req.session["passed_page_view_restrictions"], [1])
 
     # Cognito disabled and user has a local password -> should not logout
     @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)

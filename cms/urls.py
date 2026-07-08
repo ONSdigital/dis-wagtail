@@ -7,7 +7,6 @@ from django.views.decorators.csp import csp_override
 from django.views.decorators.vary import vary_on_headers
 from django.views.generic import RedirectView, TemplateView
 from wagtail import urls as wagtail_urls
-from wagtail.documents.views.serve import authenticate_with_password
 from wagtail.utils.urlpatterns import decorate_urlpatterns
 
 from cms.auth.views import ONSLogoutView, extend_session, frontend_login_redirect
@@ -29,18 +28,28 @@ internal_urlpatterns = [
 private_urlpatterns = [
     path("-/", include((internal_urlpatterns, "internal"))),
     path("health", core_views.health, name="health"),
-    path(
-        "documents/authenticate_with_password/<int:restriction_id>",
-        authenticate_with_password,
-        name="wagtaildocs_authenticate_with_password",
-    ),
-    path("auth/frontend-login", frontend_login_redirect, name="frontend_login_redirect"),
 ]
+
+if settings.CMS_COLLECTION_PRIVACY_CONTROLS_ENABLED:
+    from wagtail.documents.views.serve import authenticate_with_password  # pylint: disable=ungrouped-imports
+
+    # Password form target for wagtail CollectionViewRestrictions on documents.
+    private_urlpatterns.append(
+        path(
+            "documents/authenticate_with_password/<int:restriction_id>",
+            authenticate_with_password,
+            name="wagtaildocs_authenticate_with_password",
+        )
+    )
+
+if settings.CMS_PAGE_PRIVACY_CONTROLS_ENABLED:
+    # Login entry point for page view restrictions (see WAGTAIL_FRONTEND_LOGIN_URL).
+    private_urlpatterns.append(path("auth/frontend-login", frontend_login_redirect, name="frontend_login_redirect"))
 
 # `wagtail.admin` must always be installed,
 # so check `IS_EXTERNAL_ENV` directly.
 if not settings.IS_EXTERNAL_ENV:
-    from wagtail.admin import urls as wagtailadmin_urls  # pylint: disable=ungrouped-imports
+    from wagtail.admin import urls as wagtailadmin_urls
 
     # Conditionally include Wagtail admin URLs
     wagtail_admin_patterns = [

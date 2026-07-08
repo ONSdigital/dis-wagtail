@@ -2,7 +2,7 @@ import io
 import json
 import re
 import string
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from itertools import chain
 from threading import Lock
 from typing import TYPE_CHECKING, Any
@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from django.conf import settings
 from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import redirect as _redirect
+from wagtail import hooks
 
 from cms.core.enums import RelatedContentType
 
@@ -41,7 +42,7 @@ MATPLOTLIB_CONTEXT = {
 }
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
+    from django.http import HttpRequest, HttpResponse
     from django_stubs_ext import StrOrPromise
 
 
@@ -125,6 +126,34 @@ def redirect_to_parent_listing(
     if callable(method) and (redirect_url := method()):
         return redirect(redirect_url)
     return redirect(parent.get_url(request=request))
+
+
+def serve_page_with_view_restrictions(
+    page: Page,
+    request: HttpRequest,
+    *,
+    serve_callable: Callable[..., HttpResponse] | None = None,
+    args: tuple[Any, ...] = (),
+    kwargs: dict[str, Any] | None = None,
+) -> HttpResponse:
+    """Serve the given page (or a bound view method of it) through Wagtail's
+    "on_serve_page" hook chain so the page's own view restrictions are enforced.
+
+    Wagtail only checks view restrictions for the page matched by URL routing. When a
+    routable page serves the content of a different page (e.g. ArticleSeriesPage serving
+    StatisticalArticlePage editions), the rendered page's restrictions are never checked
+    unless it is served through the hook chain, mirroring wagtail.views.serve.
+    """
+
+    def _serve(inner_page: Page, inner_request: HttpRequest, serve_args: Any, serve_kwargs: Any) -> HttpResponse:
+        target = serve_callable if serve_callable is not None else inner_page.serve
+        response: HttpResponse = target(inner_request, *serve_args, **serve_kwargs)
+        return response
+
+    serve_chain: Callable[..., HttpResponse] = _serve
+    for fn in reversed(hooks.get_hooks("on_serve_page")):
+        serve_chain = fn(serve_chain)
+    return serve_chain(page, request, args, kwargs or {})
 
 
 def strip_unwanted_control_chars_from_json(data: str) -> str:
