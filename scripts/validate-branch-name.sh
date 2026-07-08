@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-bypass_label="no-jira"
+bypass_label="${BYPASS_LABEL:-no-jira}"
 jira_issue_key_pattern='(^|[^[:alnum:]_])(CMS|DPD)-[0-9]+([^[:alnum:]_]|$)'
 branch_name="${BRANCH_NAME:-$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)}"
 
@@ -19,7 +19,7 @@ fi
 shopt -u nocasematch
 
 if [[ ! "${branch_name}" =~ ${jira_issue_key_pattern} ]]; then
-    echo "Branch name must contain a Jira issue key in the form CMS-<number> or DPD-<number>. Optionally, use '${bypass_label}' in the branch name or on the PR. Got '${branch_name}'." >&2
+    echo "Branch name must contain a Jira issue key in the form CMS-<number> or DPD-<number>. Got '${branch_name}'. To bypass this check, include '${bypass_label}' in the branch name, or add the '${bypass_label}' label to the PR. " >&2
     exit 1
 fi
 
