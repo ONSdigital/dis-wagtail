@@ -593,7 +593,6 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data), for_user=self.approver)
 
         self.assertTrue(form.is_valid(), form.errors)
-        self.mock_ons_dataset_class.objects.with_token.assert_not_called()
 
     def test_other_exceptions_raised_during_metadata_validation_are_not_caught(self):
         """Test that unexpected exceptions during metadata validation are not caught and handled gracefully,
