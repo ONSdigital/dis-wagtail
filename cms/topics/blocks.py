@@ -217,7 +217,7 @@ class TimeSeriesPageLinkBlock(StructBlock):
 class TimeSeriesPageStoryBlock(StreamBlock):
     time_series_page_link = TimeSeriesPageLinkBlock()
 
-    def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
+    def clean(self, value: StreamValue) -> StreamValue:
         cleaned_value = super().clean(value)
 
         # For each time series URL, record the indices of the blocks it appears in
