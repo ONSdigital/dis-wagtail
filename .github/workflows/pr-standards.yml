@@ -18,33 +18,30 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - uses: actions/checkout@v4
+      - name: Check if branch validation should be skipped
+        id: branch-validation-bypass
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            const branchName = context.payload.pull_request?.head?.ref ?? "";
-            const prAuthor = context.actor;
             const bypassLabel = "no-jira";
             const labels = (context.payload.pull_request?.labels ?? [])
               .map((label) => label.name?.toLowerCase())
               .filter(Boolean);
 
-            const hasBypassLabel = labels.includes(bypassLabel);
-            const isBotBypass = prAuthor === "dependabot[bot]";
-            const jiraIssueKeyPattern = /(CMS|DPD)-\d+/;
+            const shouldSkip = labels.includes(bypassLabel);
 
-            if (hasBypassLabel || isBotBypass) {
-              core.info("Skipping Jira issue key validation.");
-              return;
+            core.setOutput("should_skip", shouldSkip ? "true" : "false");
+
+            if (shouldSkip) {
+              core.info(`Skipping branch name validation because the PR has the '${bypassLabel}' label.`);
             }
 
-            if (!jiraIssueKeyPattern.test(branchName)) {
-              core.setFailed(
-                `Branch name must contain a Jira issue key in the form CMS-<number> or DPD-<number>, or the PR must have the '${bypassLabel}' label. Got '${branchName}'.`,
-              );
-              return;
-            }
-
-            core.info("Branch name contains a valid Jira issue key.");
+      - name: Validate branch name
+        if: steps.branch-validation-bypass.outputs.should_skip != 'true'
+        env:
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+        run: ./scripts/validate-branch-name.sh
 
   pr-title:
     name: Validate PR title
