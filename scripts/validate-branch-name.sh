@@ -19,7 +19,7 @@ fi
 shopt -u nocasematch
 
 if [[ ! "${branch_name}" =~ ${jira_issue_key_pattern} ]]; then
-    echo "Branch name must contain a Jira issue key in the form CMS-<number> or DPD-<number>. Optionally, use '${bypass_label}' in the branch name. Got '${branch_name}'." >&2
+    echo "Branch name must contain a Jira issue key in the form CMS-<number> or DPD-<number>. Optionally, use '${bypass_label}' in the branch name or on the PR. Got '${branch_name}'." >&2
     exit 1
 fi
 
