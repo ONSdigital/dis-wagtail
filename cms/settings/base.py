@@ -264,13 +264,15 @@ if "PG_DB_ADDR" in env:
                 "CONN_HEALTH_CHECK": True,
                 "OPTIONS": {
                     "sslmode": "require",
-                    "pool": partial(
-                        get_conninfo,
-                        create_rds_client(str(AWS_REGION)),
-                        host=env["PG_DB_ADDR"],
-                        port=int(env["PG_DB_PORT"]),
-                        user=env["PG_DB_USER"],
-                    ),
+                    "pool": {
+                        "conninfo": partial(
+                            get_conninfo,
+                            create_rds_client(str(AWS_REGION)),
+                            host=env["PG_DB_ADDR"],
+                            port=int(env["PG_DB_PORT"]),
+                            user=env["PG_DB_USER"],
+                        )
+                    },
                 },
             },
         )
