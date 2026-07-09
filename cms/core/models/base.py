@@ -180,7 +180,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         if prebuilt_breadcrumbs := getattr(self, "_breadcrumbs", None):
             return prebuilt_breadcrumbs  # type: ignore[no-any-return]
 
-        breadcrumbs = []
+        breadcrumbs: list[dict[str, object]] = []
         homepage_depth = 2
         for ancestor_page in self.get_ancestors().specific(defer=True):
             if ancestor_page.is_root():
@@ -202,7 +202,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
                     "url": breadcrumb_url,
                     "text": breadcrumb_text,
                     "attributes": self.get_gtm_attributes_for_breadcrumbs(
-                        ancestor_page, request, breadcrumb_text, breadcrumb_position
+                        ancestor_page, request, str(breadcrumb_text), breadcrumb_position
                     ),
                 }
             )
