@@ -158,10 +158,12 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             "data-ga-event": "navigation-click",
             "data-ga-navigation-type": "breadcrumb",
             "data-ga-link-text": link_text,
-            "data-ga-click-content-type": page.analytics_content_type,
             "data-ga-click-path": page.get_url(request=request),
             "data-ga-click-position": position,
         }
+
+        if content_type := page.analytics_content_type:
+            attributes["data-ga-click-content-type"] = content_type
 
         if content_group := page.analytics_content_group:
             attributes["data-ga-click-content-group"] = content_group
