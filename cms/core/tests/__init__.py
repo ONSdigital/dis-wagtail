@@ -96,31 +96,32 @@ class MigrationTestCase(_TransactionTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.executor = MigrationExecutor(connections[DEFAULT_DB_ALIAS])
+        # register class cleanup to ensure it runs even if setUpClass fails
+        cls.addClassCleanup(cls._restore_latest_state)
         if cls.next_migration is None:
             cls.next_migration = cls.executor.loader.graph.leaf_nodes()
         cls.executor.migrate(cls.next_migration)
         cls.apps = cls.executor.loader.project_state(cls.next_migration).apps
 
-    def tearDown(self):
-        """Restore the migration state to the next_migration after each test."""
-        self.migrate_to(self.next_migration)
-        super().tearDown()
+    def setUp(self):
+        """Restore the migration state to the next_migration before each test."""
+        super().setUp()
 
-    @classmethod
-    def tearDownClass(cls):
-        """Restore the migration state to the latest migration after test cases run.
-
-        Ensures that if anything in the test class fails we still restore correct state for other tests.
-        """
-        cls.executor.loader.build_graph()
-        cls.executor.migrate(cls.executor.loader.graph.leaf_nodes())
-        super().tearDownClass()
+        # Use addCleanup to ensure it runs even if a previous test fails.
+        self.addCleanup(self.migrate_to, self.next_migration)
 
     def migrate_to(self, target: Sequence[tuple[str, str]] | None = None):
         """Helper to migrate to a specific target state."""
+        self.executor.loader.build_graph()
         self.executor.migrate(target)
         self.apps = self.executor.loader.project_state(target).apps
 
     def get_model(self, app_label, model_name):
         """Helper to get a model from the historical version of the app registry."""
         return self.apps.get_model(app_label, model_name)
+
+    @classmethod
+    def _restore_latest_state(cls):
+        """Restore the latest migration state."""
+        cls.executor.loader.build_graph()
+        cls.executor.migrate(cls.executor.loader.graph.leaf_nodes())
