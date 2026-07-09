@@ -261,7 +261,7 @@ if "PG_DB_ADDR" in env:
                 "HOST": env["PG_DB_ADDR"],
                 "PORT": env["PG_DB_PORT"],
                 "CONN_MAX_AGE": 0,
-                "CONN_HEALTH_CHECK": True,
+                "CONN_HEALTH_CHECKS": True,
                 "OPTIONS": {
                     "sslmode": "require",
                     "pool": {
