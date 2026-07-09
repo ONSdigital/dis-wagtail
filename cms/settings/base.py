@@ -250,9 +250,11 @@ AWS_REGION = env.get("AWS_REGION")
 # Database
 
 if "PG_DB_ADDR" in env:
+    rds_client = create_rds_client(str(AWS_REGION))
+
     # Use IAM authentication to connect to the Database
-    DATABASES = {
-        "default": cast(
+    def _iam_database_config(host: str) -> dj_database_url.DBConfig:
+        return cast(
             dj_database_url.DBConfig,
             {
                 "ENGINE": "django.db.backends.postgresql",
@@ -267,8 +269,8 @@ if "PG_DB_ADDR" in env:
                     "pool": {
                         "conninfo": partial(
                             get_conninfo,
-                            create_rds_client(str(AWS_REGION)),
-                            host=env["PG_DB_ADDR"],
+                            rds_client,
+                            host=host,
                             port=int(env["PG_DB_PORT"]),
                             user=env["PG_DB_USER"],
                         )
@@ -276,15 +278,11 @@ if "PG_DB_ADDR" in env:
                 },
             },
         )
+
+    DATABASES = {
+        "default": _iam_database_config(env["PG_DB_ADDR"]),
+        "read_replica": _iam_database_config(env.get("PG_DB_READ_ADDR", env["PG_DB_ADDR"])),
     }
-
-    # Additionally configure a read-replica
-    if "PG_DB_READ_ADDR" in env:
-        DATABASES["read_replica"] = {
-            **deepcopy(DATABASES["default"]),
-            "HOST": env["PG_DB_READ_ADDR"],
-        }
-
 else:
     # note: dj_database_url.config() expects an int, while dj_database_url.DBConfig accepts None
     DATABASES = {
@@ -310,8 +308,8 @@ db_pool_options = {
     "max_size": int(env.get("DB_POOL_MAX_SIZE", 3)),
 }
 
-DATABASES["default"].setdefault("OPTIONS", {})["pool"] = deepcopy(db_pool_options)
-DATABASES["read_replica"].setdefault("OPTIONS", {})["pool"] = deepcopy(db_pool_options)
+for db_config in DATABASES.values():
+    db_config.setdefault("OPTIONS", {}).setdefault("pool", {}).update(db_pool_options)
 
 DATABASE_ROUTERS = [
     "cms.core.db_router.ExternalEnvRouter",
