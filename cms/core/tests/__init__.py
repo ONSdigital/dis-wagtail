@@ -101,12 +101,21 @@ class MigrationTestCase(_TransactionTestCase):
         cls.executor.migrate(cls.next_migration)
         cls.apps = cls.executor.loader.project_state(cls.next_migration).apps
 
+    def tearDown(self):
+        """Restore the migration state to the latest migration after each test."""
+        self.executor.loader.build_graph()
+        self.migrate_to(self.executor.loader.graph.leaf_nodes())
+        super().tearDown()
+
     @classmethod
     def tearDownClass(cls):
-        """Restore the migration state to the latest migration after test cases run."""
+        """Restore the migration state to the latest migration after test cases run.
+
+        Ensures that if anything in the test class fails we still restore correct state for other tests.
+        """
         cls.executor.loader.build_graph()
         cls.migrate_to(cls.executor.loader.graph.leaf_nodes())
-        super().tearDown()
+        super().tearDownClass()
 
     def migrate_to(self, target: Sequence[tuple[str, str]] | None = None):
         """Helper to migrate to a specific target state."""
