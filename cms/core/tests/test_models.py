@@ -7,7 +7,7 @@ from wagtail.test.utils.form_data import rich_text
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
-from cms.core.models import ContactDetails, Definition
+from cms.core.models import BasePage, ContactDetails, Definition
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.taxonomy.models import Topic
@@ -246,6 +246,36 @@ class PageBreadcrumbsTestCase(TestCase):
         self.assertIsInstance(breadcrumbs_output, list)
         self.assertEqual(len(breadcrumbs_output), 3)
         self.assertListEqual(breadcrumbs_output, expected_entries)
+
+    def test_get_gtm_attributes_for_breadcrumbs_excludes_data_attributes_when_none(self):
+        """Test that data attributes are not included in GTM attributes when the page has no value for them."""
+
+        class DummyPage:
+            analytics_content_type = None
+            analytics_content_group = None
+            analytics_content_theme = None
+
+            @staticmethod
+            def get_url(request):
+                return "/dummy-path"
+
+        attributes = BasePage.get_gtm_attributes_for_breadcrumbs(
+            page=DummyPage(),
+            request=self.dummy_request,
+            link_text="Dummy",
+            position=1,
+        )
+
+        self.assertDictEqual(
+            attributes,
+            {
+                "data-ga-event": "navigation-click",
+                "data-ga-navigation-type": "breadcrumb",
+                "data-ga-link-text": "Dummy",
+                "data-ga-click-path": "/dummy-path",
+                "data-ga-click-position": 1,
+            },
+        )
 
 
 class CanonicalFullUrlsTestCase(TestCase):
