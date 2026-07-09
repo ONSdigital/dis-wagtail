@@ -14,9 +14,6 @@ from cms.topics.tests.factories import (
 class TestMigration0009Rollback(MigrationTestCase):
     app = "topics"
     previous_migration: ClassVar[Sequence[tuple[str, str]]] = [("topics", "0008_topicpage_time_series")]
-    next_migration: ClassVar[Sequence[tuple[str, str]]] = [
-        ("topics", "0010_topicpagerelatedarticle_content_type_and_more")
-    ]
 
     def test_rollback(self):
         # Setup on latest version

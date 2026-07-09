@@ -1,0 +1,101 @@
+name: PR standards
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.head_ref || github.ref }}-${{ github.workflow }}'
+  cancel-in-progress: true
+
+jobs:
+  branch-name:
+    name: Validate branch name
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      BYPASS_LABEL: 'no-jira'
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: 'false'
+      - name: Check if branch validation should be skipped based on label
+        id: branch-validation-bypass
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const bypassLabel = process.env.BYPASS_LABEL;
+            const labels = (context.payload.pull_request?.labels ?? [])
+              .map((label) => label.name?.toLowerCase())
+              .filter(Boolean);
+
+            const shouldSkip = labels.includes(bypassLabel);
+
+            core.setOutput("should_skip", shouldSkip ? "true" : "false");
+
+            if (shouldSkip) {
+              core.info(`Skipping branch name validation because the PR has the '${bypassLabel}' label.`);
+            }
+
+      - name: Validate branch name
+        if: steps.branch-validation-bypass.outputs.should_skip != 'true'
+        env:
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+        run: ./scripts/validate-branch-name.sh
+
+      - name: Update PR body with JIRA link
+        if: steps.branch-validation-bypass.outputs.should_skip != 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const branchName = context.payload.pull_request?.head?.ref ?? "";
+
+            // Extract JIRA issue key
+            const jiraPattern = /\b(CMS|DPD)-(\d+)\b/;
+            const match = branchName.match(jiraPattern);
+
+            if (!match) {
+              core.info('No JIRA issue key found in branch name. Skipping JIRA link update.');
+              return;
+            }
+
+            const issueKey = match[0];
+            const jiraUrl = `https://officefornationalstatistics.atlassian.net/browse/${issueKey}`;
+            const prBody = context.payload.pull_request?.body ?? "";
+
+            // Check if PR body already contains the Jira issue link
+            if (prBody.includes(jiraUrl)) {
+              core.info('PR body already contains the JIRA issue link. Skipping JIRA link update.');
+              return;
+            }
+
+            const ticketLink = `Ticket: [${issueKey}](${jiraUrl})`;
+            const updatedBody = prBody ? `${prBody}\n\n---\n${ticketLink}` : ticketLink;
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              body: updatedBody
+            });
+
+            core.info(`Added JIRA link: ${ticketLink}`);
+
+  pr-title:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          subjectPattern: ^[a-z].*
+          subjectPatternError: |
+            The subject must start with a lowercase letter, for example 'feat: add search filters'.

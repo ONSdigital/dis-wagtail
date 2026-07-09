@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, labeled, unlabeled, edited]
 
+concurrency:
+  group: '${{ github.head_ref || github.ref }}-${{ github.workflow }}'
+  cancel-in-progress: true
+
 jobs:
   label-check:
     name: label-check
