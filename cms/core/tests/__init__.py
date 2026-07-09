@@ -102,9 +102,8 @@ class MigrationTestCase(_TransactionTestCase):
         cls.apps = cls.executor.loader.project_state(cls.next_migration).apps
 
     def tearDown(self):
-        """Restore the migration state to the latest migration after each test."""
-        self.executor.loader.build_graph()
-        self.migrate_to(self.executor.loader.graph.leaf_nodes())
+        """Restore the migration state to the next_migration after each test."""
+        self.migrate_to(self.next_migration)
         super().tearDown()
 
     @classmethod
