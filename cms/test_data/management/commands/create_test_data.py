@@ -86,6 +86,9 @@ class TestDataFactory:
         )
 
     def _create_topics(self) -> None:
+        # Topic loading fixture leaves `num_children` in an incorrect state and breaks the tree,
+        # so we need to fix it before creating new topics
+        Topic.fix_tree()
         root_topic = Topic.objects.root_topic()
 
         for _ in range(self.get_config_count(self.config.topics.count)):
