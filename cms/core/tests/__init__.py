@@ -113,7 +113,7 @@ class MigrationTestCase(_TransactionTestCase):
         Ensures that if anything in the test class fails we still restore correct state for other tests.
         """
         cls.executor.loader.build_graph()
-        cls.migrate_to(cls.executor.loader.graph.leaf_nodes())
+        cls.executor.migrate(cls.executor.loader.graph.leaf_nodes())
         super().tearDownClass()
 
     def migrate_to(self, target: Sequence[tuple[str, str]] | None = None):
