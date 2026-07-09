@@ -103,7 +103,7 @@ class MigrationTestCase(_TransactionTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        """Restore the migration state to the latest migration after each test."""
+        """Restore the migration state to the latest migration after test cases run."""
         cls.executor.loader.build_graph()
         cls.migrate_to(cls.executor.loader.graph.leaf_nodes())
         super().tearDown()
