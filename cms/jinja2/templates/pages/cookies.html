@@ -6,7 +6,7 @@
 {% from "components/table/_macro.njk" import onsTable %}
 
 {%- set page_heading -%}
-    {% trans service_name=ONS_COOKIE_BANNER_SERVICE_NAME %}Cookies on {{ service_name }}{% endtrans %}
+    {% trans %}Change your cookies choices{% endtrans %}
 {%- endset -%}
 
 {%- set page_title -%}
@@ -72,8 +72,8 @@
                 <p>{{ _("We do not allow Google or Hotjar to use or share this data for their own purposes.") }}</p>
 
                 {% set usage_legend = _("Do you want to allow cookies that measure website use?") %}
-                {% set radio_true = _("Yes") %}
-                {% set radio_false = _("No") %}
+                {% set radio_measure_website_use_true = _("Use cookies that measure my website use") %}
+                {% set radio_measure_website_use_false = _("Do not use cookies that measure my website use") %}
                 {# fmt:off #}
                 <div class="ons-u-mb-s">
                     {{ onsRadios({
@@ -84,14 +84,14 @@
                                 {
                                     "id": "on-1",
                                     "label": {
-                                        "text": radio_true
+                                        "text": radio_measure_website_use_true
                                     },
                                     "value": "on"
                                 },
                                 {
                                     "id": "off-1",
                                     "label": {
-                                        "text": radio_false
+                                        "text": radio_measure_website_use_false
                                     },
                                     "value": "off"
                                 }
@@ -105,7 +105,9 @@
                     {{ _("These cookies may be set by third-party websites, like YouTube and Vimeo. They do things like measure how you view YouTube videos that are on the ONS website.") }}
                 </p>
 
-                {% set campaigns_legend = _("Do you want to allow cookies that help with our communications and marketing?") %}
+                {% set campaigns_legend = _("Do you want to allow cookies that help with communications and marketing?") %}
+                {% set radio_campaigns_true = _("Use cookies that help with communications and marketing") %}
+                {% set radio_campaigns_false = _("Do not use cookies that help with communications and marketing") %}
                 {# fmt:off #}
                 <div class="ons-u-mb-s">
                     {{ onsRadios({
@@ -116,14 +118,14 @@
                                 {
                                     "id": "on-2",
                                     "label": {
-                                        "text": radio_true
+                                        "text": radio_campaigns_true
                                     },
                                     "value": "on"
                                 },
                                 {
                                     "id": "off-2",
                                     "label": {
-                                        "text": radio_false
+                                        "text": radio_campaigns_false
                                     },
                                     "value": "off"
                                 }
@@ -141,6 +143,8 @@
                 </p>
 
                 {% set settings_legend = _("Do you want to allow cookies that remember your settings?") %}
+                {% set radio_settings_true = _("Use cookies that remember my settings on the site") %}
+                {% set radio_settings_false = _("Do not use cookies that remember my settings on the site") %}
                 {# fmt:off #}
                 <div class="ons-u-mb-s">
                     {{ onsRadios({
@@ -151,14 +155,14 @@
                             {
                                 "id": "on-3",
                                 "label": {
-                                    "text": radio_true
+                                    "text": radio_settings_true
                                 },
                                 "value": "on"
                             },
                             {
                                 "id": "off-3",
                                 "label": {
-                                    "text": radio_false
+                                    "text": radio_settings_false
                                 },
                                 "value": "off"
                             }
@@ -170,7 +174,7 @@
                 <h3>{{ _("Strictly necessary cookies") }}</h3>
                 <p>{{ _("These essential cookies do things like:") }}</p>
                 <ul>
-                    <li>{{ _("remember your cookies settings and the notifications you’ve seen so we do not show them to you again") }}</li>
+                    <li>{{ _("remember your cookie settings and the notifications you’ve seen so we do not show them to you again") }}</li>
                     <li>{{ _("remember your progress through a form (for example, an ONS study)") }}</li>
                     <li>{{ _("improve performance and identify potential security threats") }}</li>
                 </ul>
