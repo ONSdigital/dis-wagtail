@@ -260,7 +260,7 @@ if "PG_DB_ADDR" in env:
                 "ENGINE": "django.db.backends.postgresql",
                 "NAME": env["PG_DB_DATABASE"],
                 "USER": env["PG_DB_USER"],
-                "HOST": env["PG_DB_ADDR"],
+                "HOST": host,
                 "PORT": env["PG_DB_PORT"],
                 "CONN_MAX_AGE": 0,
                 "CONN_HEALTH_CHECKS": True,
