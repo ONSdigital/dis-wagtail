@@ -235,12 +235,12 @@ class HealthProbeTestCase(TestCase):
         CACHES={
             "default": {
                 "BACKEND": "django_redis.cache.RedisCache",
-                "LOCATION": "redis:///does-not-exist",
+                "LOCATION": "redis://127.0.0.1:1",
                 "OPTIONS": {},
             },
             "other": {
                 "BACKEND": "django_redis.cache.RedisCache",
-                "LOCATION": "redis:///also-does-not-exist",
+                "LOCATION": "redis://127.0.0.1:2",
                 "OPTIONS": {},
             },
         }
