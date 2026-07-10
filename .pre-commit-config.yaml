@@ -3,7 +3,17 @@ default_language_version:
   node: system
   python: python3.14
 
-repos: # Python linting and formatting
+repos:
+  # Git Etiquette
+  - repo: local
+    hooks:
+      - id: branch-name-check
+        name: branch-name-check
+        language: system
+        entry: ./scripts/validate-branch-name.sh
+        pass_filenames: false
+
+  # Python linting and formatting
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: 'v0.14.14' # keep version in sync with pyproject.toml
     hooks:
