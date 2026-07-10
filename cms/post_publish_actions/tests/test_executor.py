@@ -13,8 +13,13 @@ from cms.post_publish_actions.models import PostPublishAction, PostPublishAction
 
 
 class ExecutorTestCase(TestCase):
-    def tearDown(self):
+    def setUp(self):
+        """Ensure any other tests that run haven't left threads behind.
+
+        Add a cleanup to ensure executor is flushed even if tests fail.
+        """
         executor.flush_executor()
+        self.addCleanup(executor.flush_executor)
 
     def test_flush(self):
         original_executor = executor._executor

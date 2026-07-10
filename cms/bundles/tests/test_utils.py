@@ -27,6 +27,7 @@ from cms.bundles.utils import (
 from cms.core.tests.utils import rebuild_internal_search_index
 from cms.methodology.models import MethodologyPage
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.post_publish_actions.executor import flush_executor
 from cms.post_publish_actions.models import PostPublishAction, PostPublishActionType
 from cms.release_calendar.models import ReleaseCalendarPage
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
@@ -453,6 +454,10 @@ class SerializeBundleContentTranslationTests(TestCase):
 
 class PublishBundleFailureTests(TestCase):
     """Tests for publish_bundle failure handling."""
+
+    def setUp(self):
+        """Ensure executor threads don't outlive test lifetime."""
+        self.addCleanup(flush_executor)
 
     @patch("cms.bundles.utils.logger")
     @patch("cms.bundles.utils.notify_slack_of_bundle_failure")

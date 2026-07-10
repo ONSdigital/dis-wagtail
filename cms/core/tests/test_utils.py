@@ -274,12 +274,14 @@ class GeneratorCollectorTestCase(SimpleTestCase):
     def test_consume(self):
         def test_gen():
             yield from range(5)
+            return "five"
 
         gen = test_gen()
         collector = GeneratorCollector(gen)
 
         collector.consume()
 
+        self.assertEqual(collector.value, "five")
         self.assertEqual(list(collector), [])
 
         with self.assertRaises(StopIteration):
