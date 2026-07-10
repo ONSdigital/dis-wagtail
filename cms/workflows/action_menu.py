@@ -7,13 +7,15 @@ if TYPE_CHECKING:
     from laces.typing import RenderContext
 
 
-class UnlockWorkflowMenuItem(ActionMenuItem):
+class ReturnToDraftMenuItem(ActionMenuItem):
+    """A menu item that links to the 'Return to draft' confirmation view."""
+
     item_url: str = ""
 
     def __init__(self, name: str, label: str, *args: Any, **kwargs: Any) -> None:
         self.name = name
         self.label = label
-        self.icon_name = kwargs.pop("icon_name", "")
+        self.icon_name = kwargs.pop("icon_name", "draft")
         self.item_url = kwargs.pop("item_url", "")
 
         super().__init__(*args, **kwargs)

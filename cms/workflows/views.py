@@ -8,9 +8,10 @@ from django.urls import reverse
 from wagtail.admin import messages
 from wagtail.models import Page
 
+from cms.bundles.utils import in_bundle_ready_to_be_published
 from cms.core.utils import redirect
 from cms.users.models import User
-from cms.workflows.models import ReadyToPublishGroupTask
+from cms.workflows.models import GroupReviewTask, ReadyToPublishGroupTask
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -20,27 +21,43 @@ if TYPE_CHECKING:
 def unlock(
     request: HttpRequest, page_id: int
 ) -> TemplateResponse | HttpResponseRedirect | HttpResponsePermanentRedirect:
+    """Return to draft view.
+
+    Cancels the active workflow on the page, unlocking it for editing.
+    Works for both the 'In Preview' (GroupReviewTask) and 'Ready to publish'
+    (ReadyToPublishGroupTask) stages.
+    """
     page = get_object_or_404(Page, id=page_id)
     if not page.permissions_for_user(request.user).can_edit():
         raise PermissionDenied
 
     page = page.specific_deferred
 
-    if not isinstance(page.current_workflow_task, ReadyToPublishGroupTask):
+    if not isinstance(page.current_workflow_task, (GroupReviewTask, ReadyToPublishGroupTask)):
         raise PermissionDenied
 
     # Type ignore: request.user is guaranteed to be User by this point.
-    user: User = request.user  # type: ignore
-    if not page.current_workflow_task.user_can_unlock_for_edits(page, user):
-        # the user must be able to action ReadyToPublishGroupTask, and the page must not be in a bundle that
-        # is ready to be published
+    user: User = request.user  # type: ignore[assignment]
+
+    # Must be able to access the editor (i.e. be in the task groups or superuser)
+    if not page.current_workflow_task.user_can_access_editor(page, user):
         raise PermissionDenied
 
     next_url = reverse("wagtailadmin_pages:edit", args=(page_id,))
+
+    # Cannot return to draft if the page is in a bundle that is approved/ready to be published
+    if in_bundle_ready_to_be_published(page):
+        messages.error(
+            request,
+            f"Page '{page.get_admin_display_title()}' cannot be returned to draft as it "
+            f"is included in a bundle that is ready to be published.",
+        )
+        return redirect(next_url, preserve_request=False)
+
     if request.method == "POST":
         with transaction.atomic():
-            page.current_workflow_task.on_action(page.current_workflow_task_state, user, "unlock")
-            messages.success(request, "Page editing unlocked.")
+            page.current_workflow_state.cancel(user=user)
+            messages.success(request, f"Page '{page.get_admin_display_title()}' has been returned to draft.")
 
             return redirect(next_url, preserve_request=False)
 
@@ -50,8 +67,8 @@ def unlock(
         {
             "page": page,
             "next": next_url,
-            "header_icon": "lock-open",
-            "page_title": "Unlock",
+            "header_icon": "draft",
+            "page_title": "Return to draft",
             "page_subtitle": page.get_admin_display_title(),
         },
     )

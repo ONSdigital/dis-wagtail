@@ -14,10 +14,10 @@ from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 from cms.core.utils import redirect
 
 from . import admin_urls
-from .action_menu import SubmitForModerationMenuItem, UnlockWorkflowMenuItem
+from .action_menu import ReturnToDraftMenuItem, SubmitForModerationMenuItem
 from .admin_urls import path
 from .models import get_final_approve_label
-from .utils import is_page_ready_to_publish
+from .utils import is_page_in_workflow, is_page_ready_to_publish
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -32,8 +32,8 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
     """Modifies the action menu items depending on the page state.
 
     - if the page is in a bundle that is ready to be published, remove all actions regardless of permissions
-    - when the page is ready to be published, it is locked for editing, so inject the ReadyToPublishTask actions
-    - hide the "approve" tasks for the last editor
+    - when the page is in a workflow task (In Preview or Ready to Publish), it is locked for editing,
+      so inject the task actions (Approve, Publish) and the 'Return to draft' link
     - and finally tidy up the "approve" labels
     """
     updated_menu_items = menu_items
@@ -43,23 +43,32 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
         # as we want to prevent all actions.
         return [PageLockedMenuItem()]
 
-    if is_page_ready_to_publish(page):
-        # The lock kicks in when we're in ReadyToPublishGroupTask, which marks the page as locked for editing.
-        # this means none of the task actions are added to the menu, so we're adding them here.
+    if is_page_in_workflow(page):
+        # Both GroupReviewTask and ReadyToPublishGroupTask lock the page via locked_for_user=True.
+        # This means Wagtail won't add the task's workflow actions to the menu automatically,
+        # so we inject them here.
+
+        # Inject workflow actions (approve, locked-approve)
         for name, label, launch_modal in page.current_workflow_task.get_actions(page, request.user):
-            item_label = label
-            if name == "unlock":
-                url = reverse("workflows:unlock", args=(page.pk,))
-                updated_menu_items.append(UnlockWorkflowMenuItem(name, label, icon_name="lock-open", item_url=url))
-            else:
-                icon_name = "success" if name in ["approve", "locked-approve"] else "edit"
-                updated_menu_items.append(WorkflowMenuItem(name, item_label, launch_modal, icon_name=icon_name))
+            icon_name = "success" if name in ["approve", "locked-approve"] else "edit"
+            updated_menu_items.append(WorkflowMenuItem(name, label, launch_modal, icon_name=icon_name))
+
+        # Inject 'Return to draft' link (available to anyone who can access the editor)
+        if page.current_workflow_task.user_can_access_editor(page, request.user):
+            url = reverse("workflows:unlock", args=(page.pk,))
+            updated_menu_items.append(
+                ReturnToDraftMenuItem("return-to-draft", "Return to draft", icon_name="draft", item_url=url)
+            )
 
     # Do a final relabel for the "approve" actions to prevent any inconsistencies.
     final_menu_items = []
     for item in updated_menu_items:
         match item.name:
             case "action-restart-workflow":
+                continue
+
+            case "action-cancel-workflow":
+                # Hide the default cancel workflow item — we use our own 'Return to draft' view instead
                 continue
 
             case "action-submit":
@@ -123,29 +132,40 @@ def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
     if request.POST.get("action-workflow-action") == "true":
         action_name = request.POST.get("workflow-action-name", "")
 
-        if (
-            action_name in ("approve", "reject")
-            and page.latest_revision
-            and page.latest_revision.user_id == request.user.pk
-        ):
+        # Self-approval prevention: the last editor cannot approve their own work.
+        if action_name == "approve" and page.latest_revision and page.latest_revision.user_id == request.user.pk:
             messages.error(
-                request, "You cannot review your own changes. Please ask another Publishing team member to do so."
+                request, "You cannot approve your own changes. Please ask another Publishing team member to do so."
             )
             return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
 
-        if action_name == "locked-approve" and is_page_ready_to_publish(page) and not in_active_bundle(page):
-            # The page is "Ready to publish" and the edit form was POSTed with the ReadyToPublishGroupTask
-            # "locked-approve" action. Perform the required workflow action without saving the form.
-            # Note: this follows the logic from the Wagtail core page edit view
-            # https://github.com/wagtail/wagtail/blob/40c9b1fdff19bad5b9997c0366ed5cb642edd557/wagtail/admin/views/pages/edit.py#L854
-            page.current_workflow_task.on_action(page.current_workflow_task_state, request.user, action_name)
+        # Handle 'approve' on the GroupReviewTask (In Preview) — page is locked so Wagtail
+        # won't reach perform_workflow_action. We intercept and perform it without saving the form.
+        if action_name == "approve" and is_page_in_workflow(page):
+            import json
 
-            # run the after_edit_page hook
+            extra_workflow_data_json = request.POST.get("workflow-action-extra-data", "{}")
+            extra_workflow_data = json.loads(extra_workflow_data_json)
+            page.current_workflow_task.on_action(
+                page.current_workflow_task_state, request.user, action_name, **extra_workflow_data
+            )
+
             for fn in hooks.get_hooks("after_edit_page"):
                 result = fn(request, page)
                 if hasattr(result, "status_code"):
-                    typed_result: HttpResponse = result  # placate mypy
-                    return typed_result
+                    return result
+
+            messages.success(request, f"Page '{page.get_admin_display_title()}' has been approved.")
+            return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
+
+        # Handle 'locked-approve' on the ReadyToPublishGroupTask — same pattern.
+        if action_name == "locked-approve" and is_page_ready_to_publish(page) and not in_active_bundle(page):
+            page.current_workflow_task.on_action(page.current_workflow_task_state, request.user, action_name)
+
+            for fn in hooks.get_hooks("after_edit_page"):
+                result = fn(request, page)
+                if hasattr(result, "status_code"):
+                    return result
 
             if page.go_live_at and page.go_live_at > timezone.now():
                 message = f"Page '{page.get_admin_display_title()}' has been scheduled for publishing."

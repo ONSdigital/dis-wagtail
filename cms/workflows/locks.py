@@ -13,13 +13,12 @@ if TYPE_CHECKING:
     from cms.users.models import User
 
 
-class PageReadyToBePublishedLock(WorkflowLock):
-    """A page workflow lock.
+class PageWorkflowLock(WorkflowLock):
+    """A page workflow lock used by both the 'In Preview' and 'Ready to publish' workflow steps.
 
-    It comes in effect when the page enters the "Ready to be published" workflow step.
-    The page can be "unlocked" by moving back to the previous workflow step.
-    If the page is in a bundle that is ready to be published, then the bundle must be taken out of
-    "Ready to be published" first.
+    When active, the page cannot be edited. Users must use "Return to draft" to unlock the page
+    for further editing. If the page is in a bundle that is ready to be published, the bundle
+    must be reverted first.
     """
 
     def get_message(self, user: User) -> str | SafeString:
@@ -36,10 +35,20 @@ class PageReadyToBePublishedLock(WorkflowLock):
 
         return self.get_generic_message(user)
 
+    def get_stage_label(self) -> str:
+        """Returns the human-readable label for the current workflow stage."""
+        from .models import ReadyToPublishGroupTask
+
+        if isinstance(self.task, ReadyToPublishGroupTask):
+            return "Ready to be published"
+        return "In preview"
+
     def get_generic_message(self, user: User) -> str | SafeString:
         if self.for_user(user):
             return format_html(
-                "This page cannot be edited as it is <strong>{status}</strong>.", status="Ready to be published"
+                "This page cannot be edited as it is <strong>{status}</strong>."
+                ' Use "Return to draft" to unlock editing.',
+                status=self.get_stage_label(),
             )
 
         return ""
@@ -73,3 +82,7 @@ class PageReadyToBePublishedLock(WorkflowLock):
             'This page cannot be changed as it included in the "{bundle_title}" bundle which is ready to be published.',
             bundle_title=self.object.active_bundle.name,
         )
+
+
+# Backwards-compatible alias
+PageReadyToBePublishedLock = PageWorkflowLock

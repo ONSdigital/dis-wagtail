@@ -3,14 +3,15 @@
 {% block titletag %}{{ page_title }}: {{ page_subtitle }}{% endblock %}
 
 {% block main_content %}
-    <p>This page is currently ready to be published. Are you sure you want to unlock editing for this page?</p>
+    <p>This will cancel the current workflow and return the page to draft, allowing it to be edited again.</p>
+    <p>Are you sure you want to return this page to draft?</p>
 
-    <form action="{{ unlock_url }}" method="post">
+    <form method="post">
         {% csrf_token %}
 
         <div>
-            <button class="button" type="submit">Yes, unlock it</button>
-            <a href="{{ next }}" class="button button-secondary">No, don’t unlock</a>
+            <button class="button button--primary" type="submit">Yes, return to draft</button>
+            <a href="{{ next }}" class="button button-secondary">No, keep in workflow</a>
         </div>
     </form>
 {% endblock %}
