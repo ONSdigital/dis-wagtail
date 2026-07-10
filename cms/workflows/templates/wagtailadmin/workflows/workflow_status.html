@@ -19,9 +19,9 @@
                             <div class="w-flex w-flex-col">
                                 <strong>{{ task.name }}</strong>
                                 {% if task.task_state.finished_by %}
-                                    Changes requested by {{ task.task_state.finished_by|user_display_name }}
+                                    Editing unlocked by {{ task.task_state.finished_by|user_display_name }}
                                 {% else %}
-                                    Changes requested
+                                    Editing unlocked
                                 {% endif %}
                             </div>
                         </div>

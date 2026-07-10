@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any
 
 from django.db import transaction
 from django.utils import timezone
@@ -7,7 +7,7 @@ from wagtail.models import AbstractGroupApprovalTask, TaskState, WorkflowMixin
 
 from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 
-from .locks import PageReadyToBePublishedLock
+from .locks import PageWorkflowLock
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -42,33 +42,58 @@ def get_final_approve_label(obj: WorkflowMixin, label: str) -> str:
 
 
 class GroupReviewTask(AbstractGroupApprovalTask):
-    """A special workflow task model aimed to prevent the last editor from approving their own work."""
+    """The 'In Preview' workflow task.
+
+    Locks the page so it cannot be edited while in review. The submitter (or a reviewer)
+    can use 'Unlock editing' (reject) to unlock editing. Reviewers can approve to move
+    to the next stage.
+
+    Self-approval prevention: the last editor cannot approve their own work.
+    """
+
+    lock_class = PageWorkflowLock
 
     @classmethod
     def get_description(cls) -> str:
-        return "A workflow review task that requires the approver to be different than the last editor."
+        return (
+            "A workflow review task that locks the page and requires the approver to be different than the last editor."
+        )
+
+    def locked_for_user(self, obj: Model, user: User) -> bool:
+        """Page is locked for all users while in preview."""
+        return True
 
     def user_can_lock(self, obj: Model, user: User) -> bool:
-        return self._user_in_groups(user) or user.is_superuser
+        """Disable manual locks as the workflow lock handles this."""
+        return False
 
     def user_can_unlock(self, obj: Model, user: User) -> bool:
         """Used for manual locks."""
         return user.has_perm("wagtailadmin.unlock_workflow_tasks")
 
     def get_actions(self, obj: Model, user: User) -> list[tuple[str, str, bool]]:
-        # The user must be in the selected groups, or a superuser
+        """Actions available on the locked page.
+
+        - All users with access: 'Unlock editing' (reject with comment)
+        - Reviewers (not the last editor): 'Approve', 'Approve with comment'
+        """
         if not self.user_can_access_editor(obj, user):
             return []
 
-        is_self_approver = obj.latest_revision and obj.latest_revision.user_id == user.pk  # type: ignore[attr-defined]
-        if is_self_approver:
-            return []
-
-        return [
-            ("reject", "Request changes", True),
-            ("approve", "Approve", False),
-            ("approve", "Approve with comment", True),
+        actions: list[tuple[str, str, bool]] = [
+            ("reject", "Unlock editing", True),
         ]
+
+        is_self_approver = obj.latest_revision and obj.latest_revision.user_id == user.pk  # type: ignore[attr-defined]
+        if not is_self_approver:
+            actions.extend(
+                [
+                    ("approve", "Approve", False),
+                    ("approve", "Approve with comment", True),
+                ]
+            )
+
+        return actions
 
     class Meta:
         verbose_name = "Group review task"
@@ -76,61 +101,93 @@ class GroupReviewTask(AbstractGroupApprovalTask):
 
 
 class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
-    """Placeholder task model to use in the Bundle approval logic."""
+    """The 'Ready to publish' workflow task.
 
-    lock_class = PageReadyToBePublishedLock
+    Locks the page so it cannot be edited. The user can 'Unlock editing' (reject)
+    to unlock editing, or publish/approve to complete the workflow.
+    """
+
+    lock_class = PageWorkflowLock
 
     @classmethod
     def get_description(cls) -> str:
         return "Marks a page as ready to be published. Used by bundles."
 
     def get_actions(self, obj: Model, user: User) -> list[tuple[str, str, bool]]:
-        # The user must be in the selected groups, or a superuser
+        """Actions available on the locked page.
+
+        - Not in a bundle: 'Unlock editing' + 'Publish'
+        - In a bundle not ready to publish: 'Unlock editing' only
+        - In a bundle ready to publish: no actions (fully locked via bundle)
+        """
         if not self.user_can_access_editor(obj, user):
             return []
 
-        # if not in a bundle -> unlock/approve (acts as publish when last task)
-        # if locked, but not in bundle ready to be published -> unlock only
-        # if lock and in bundle ready to be published -> []
+        if in_bundle_ready_to_be_published(obj):
+            # Fully locked via bundle — no actions until bundle is reverted.
+            return []
+
+        actions: list[tuple[str, str, bool]] = [
+            ("reject", "Unlock editing", True),
+        ]
+
         if not in_active_bundle(obj):
-            actions = [("unlock", "Unlock editing", False)]
             if hasattr(obj, "permissions_for_user") and obj.permissions_for_user(user).can_publish():
                 actions.append(("locked-approve", get_final_approve_label(obj, "Approve"), False))
-            return actions
-        if not in_bundle_ready_to_be_published(obj):
-            # we're in a bundle which is not yet ready to be published,
-            # so the only available option is to unlock.
-            return [("unlock", "Unlock editing", False)]
 
-        # we're in a bundle that is ready to be published. Cannot perform any action
-        # until the bundle is back in draft or in preview.
-        return []
+        return actions
 
-    @transaction.atomic
-    def unlock(self, task_state: TaskState, user: User) -> Self:
-        workflow_state = task_state.workflow_state
-
-        # Cancel the current state and switch to a new task
-        # note: not calling workflow_state.current_task_state.cancel() as that calls workflow_state.update() without
-        # next_step, which then results in a call to workflow_state.next_step() thus creating a task state for
-        # Ready to publish, which we don't want
-        workflow_state.current_task_state.status = task_state.STATUS_CANCELLED
-        workflow_state.current_task_state.finished_at = timezone.now()
-        workflow_state.current_task_state.finished_by = user
-        workflow_state.current_task_state.save()
-
-        workflow_state.current_task_state.log_state_change_action(user, "cancel")
-        workflow_state.update(user=user, next_task=workflow_state.workflow.tasks.exclude(pk=task_state.task_id).first())
-        return self
-
-    @transaction.atomic
     def on_action(self, task_state: TaskState, user: User, action_name: str, **kwargs: Any) -> None:
-        if action_name == "unlock":
-            self.unlock(task_state, user)
-        elif action_name == "locked-approve":
+        if action_name == "locked-approve":
             super().on_action(task_state, user, "approve", **kwargs)
+        elif action_name == "reject":
+            self._unlock_and_revert_to_review(task_state, user, **kwargs)
         else:
             super().on_action(task_state, user, action_name, **kwargs)
+
+    @transaction.atomic
+    def _unlock_and_revert_to_review(self, task_state: TaskState, user: User, **kwargs: Any) -> None:
+        """Cancel this task and reject the In Preview task state, unlocking the page for editing.
+
+        On resubmit, Wagtail's resume() reads current_task_state.task and restarts the workflow
+        at In Preview, requiring re-approval before reaching Ready to Publish again.
+        """
+        workflow_state = task_state.workflow_state
+
+        # Cancel the Ready to Publish task state manually rather than calling
+        # task_state.cancel() because cancel() triggers workflow_state.update() which
+        # would attempt to progress the workflow (finding the next task or finishing it).
+        # We need to control the workflow state ourselves to point it at In Preview.
+        task_state.status = TaskState.STATUS_CANCELLED
+        task_state.finished_at = timezone.now()
+        task_state.finished_by = user
+        task_state.comment = kwargs.get("comment", "")
+        task_state.save()
+        task_state.log_state_change_action(user, "cancel")
+
+        # Find the In Preview task state so resume() will restart there
+        in_preview_task = workflow_state.workflow.tasks.exclude(pk=self.pk).first()
+        in_preview_task_state = (
+            workflow_state.task_states.filter(task=in_preview_task).order_by("-finished_at").first()
+            if in_preview_task
+            else None
+        )
+
+        if not in_preview_task_state:
+            # Unexpected state — cancel the workflow entirely as a safe fallback.
+            workflow_state.cancel(user=user)
+            return
+
+        # Point the workflow at the In Preview task state before rejecting it.
+        # This ensures resume() will restart at In Preview on resubmit.
+        workflow_state.current_task_state = in_preview_task_state
+        workflow_state.save(update_fields=["current_task_state"])
+
+        # Set to IN_PROGRESS so reject() accepts it — reject() guards against
+        # rejecting non-in-progress states. This keeps us aligned with core's reject
+        # behaviour (signals, logging, future additions).
+        in_preview_task_state.status = TaskState.STATUS_IN_PROGRESS
+        in_preview_task_state.reject(user=user, comment=kwargs.get("comment", ""))
 
     def locked_for_user(self, obj: Model, user: User) -> bool:
         """Marked as locked regardless of user, or bundle."""
@@ -143,12 +200,6 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
     def user_can_unlock(self, obj: Model, user: User) -> bool:
         """Used for when the page is manually locked."""
         return user.has_perm("wagtailadmin.unlock_workflow_tasks")
-
-    def user_can_unlock_for_edits(self, obj: Model, user: User) -> bool:
-        """A page that is 'ready to be published' in our workflow can be unlocked for edits
-        if it is not in a bundle that is ready to be published.
-        """
-        return self.user_can_access_editor(obj, user) and not in_bundle_ready_to_be_published(obj)
 
     class Meta:
         verbose_name = "Ready to publish task"
