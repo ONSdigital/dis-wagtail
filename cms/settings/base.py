@@ -1054,8 +1054,8 @@ AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
 
 # Privacy feature flags. Page privacy gates the page view-restriction controls and routes;
 # collection privacy gates the document view-restriction password route.
-CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "true").lower() == "true"
-CMS_COLLECTION_PRIVACY_CONTROLS_ENABLED = env.get("CMS_COLLECTION_PRIVACY_CONTROLS_ENABLED", "true").lower() == "true"
+CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
+CMS_COLLECTION_PRIVACY_CONTROLS_ENABLED = env.get("CMS_COLLECTION_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
 
 # Wagtail redirects visitors of private pages here. The view routes them to Florence SSO
 # when Cognito is enabled, or to Wagtail's built-in frontend login otherwise.
