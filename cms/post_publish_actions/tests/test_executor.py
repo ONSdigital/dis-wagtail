@@ -75,6 +75,21 @@ class ExecutorTestCase(TestCase):
         executor.run_in_executor(lambda: None)
         self.assertEqual(mock_close_old_connections.call_count, 2)
 
+    def test_swallows_exceptions(self):
+        """Test exceptions don't escape worker boundary and are logged."""
+
+        def raises():
+            raise ValueError("Failed")
+
+        with self.assertLogs("cms.post_publish_actions.executor", level=logging.ERROR) as logs:
+            executor.run_in_executor(raises).result(timeout=10)
+
+        self.assertIn("Unhandled exception in post publish actions", logs.output[0])
+        self.assertIn("ValueError: Failed", logs.output[0])
+
+        # executor still works
+        executor.run_in_executor(lambda: None).result(timeout=10)
+
 
 class RunActionTestCase(TransactionTestCase):
     def setUp(self):

@@ -1,5 +1,6 @@
 # secretlint-disable
 from datetime import UTC, datetime
+from unittest import expectedFailure
 from unittest.mock import Mock, patch
 
 from django.test import RequestFactory, TestCase, override_settings
@@ -509,6 +510,36 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": True}, fields)
         self.assertIn({"title": "Page Count", "value": "2", "short": True}, fields)
         self.assertIn({"title": "Pages Published", "value": "2", "short": True}, fields)
+
+    # TODO: remove when behaviour fixed
+    @expectedFailure
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.core.slack.get_slack_client")
+    def test_notify_bundle_failure__pages_published_excludes_page_that_never_published(self, mock_get_client):
+        """Test 'Pages Published' does not include pages that didn't publish successfully."""
+        mock_client = Mock()
+        mock_client.chat_postMessage.return_value = {"ok": True, "ts": "1503435956.000247"}
+        mock_get_client.return_value = mock_client
+
+        published_page = StatisticalArticlePageFactory()
+        never_published_page = StatisticalArticlePageFactory(live=False)
+        never_published_page.revisions.all().delete()
+
+        bundle = BundleFactory(name="Mixed Bundle", bundled_pages=[published_page, never_published_page])
+
+        notify_slack_of_bundle_failure(
+            bundle=bundle,
+            start_time=datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC),
+            end_time=datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC),
+            exception_message="1 of 2 page(s) failed to publish",
+            alert_type=BundleAlertType.FAIL,
+        )
+
+        fields = mock_client.chat_postMessage.call_args[1]["attachments"][0]["fields"]
+
+        self.assertFalse(never_published_page.live)
+        self.assertIn({"title": "Page Count", "value": "2", "short": True}, fields)
+        self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")

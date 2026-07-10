@@ -1,6 +1,7 @@
 import time
 from datetime import timedelta
 from io import StringIO
+from unittest import expectedFailure
 from unittest.mock import patch
 
 import time_machine
@@ -12,6 +13,7 @@ from wagtail.models import Locale, ModelLogEntry, PageLogEntry
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
+from cms.bundles.management.commands.publish_bundles import Command as PublishBundlesCommand
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.core.tests import TransactionTestCase
 from cms.datasets.tests.factories import DatasetFactory
@@ -413,6 +415,63 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
                 "event": "publish_failed_no_success",
             },
         )
+
+    # TODO: remove when no longer gets success notification
+    @expectedFailure
+    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.alert_slack_of_bundle_content_failure")
+    @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.managememt.commands.publish_bundles.notify_slack_of_post_publish_end")
+    def test_failed_bundle_does_not_send_post_publish_notification(
+        self,
+        mock_notify_post_publish_end,
+        mock_notify_end,  # pylint: disable=unused-argument
+        mock_notify_start,  # pylint: disable=unused-argument
+    ):
+        """Test a bnundle that failed to publish doesn't get a green 'publishing has ended' message."""
+        page_with_no_revisions = StatisticalArticlePageFactory(live=False)
+
+        # easiest way to force a failure in test
+        page_with_no_revisions.revisions.all().delete()
+
+        BundlePageFactory(parent=self.bundle, page=page_with_no_revisions)
+
+        self.call_command()
+
+        # join executor before assert
+        executor_stop_and_wait()
+
+        mock_notify_post_publish_end.assert_not_called()
+
+    @patch("cms.bundles.management.commands.publish_bundles.publish_bundle")
+    @patch("cms.bundles.management.commands.publish_bundles.logger")
+    def test_bundle_no_longer_approved_is_not_published(self, mock_logger, mock_publish_bundle):
+        """Test a bundle that was initially approved but moved out of that status isn't published."""
+        self.bundle.status = BundleStatus.DRAFT
+        self.bundle.save(update_fields=["status"])
+
+        command = PublishBundlesCommand()
+        command.bundle_start_times = {}
+        command._handle_bundle_action(self.bundle)  # pylint: disable=protected-access
+
+        mock_publish_bundle.assert_not_called()
+        mock_logger.error.assert_called_once_with("Bundle no longer approved", extra={"bundle_id": self.bundle.pk})
+
+    # TODO: remove when skipped bundles don't send message
+    @expectedFailure
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    def test_bundle_no_longer_approved_does_not_send_success_notification(self, mock_notify_post_publish_end):
+        """Test a bundle that was initially approved but moved out of that status isn't published."""
+        self.bundle.status = BundleStatus.DRAFT
+        self.bundle.save(update_fields=["status"])
+
+        command = PublishBundlesCommand()
+        command.bundle_start_times = {}
+        command._handle_bundle_action(self.bundle)  # pylint: disable=protected-access
+        command._await_bundle_post_publish_actions([self.bundle])  # pylint: disable=protected-access
+
+        mock_notify_post_publish_end.assert_not_called()
 
     def test_publish_bundle_with_zero_pages(self):
         """Test that a bundle with zero pages is not marked as published."""
