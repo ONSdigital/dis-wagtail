@@ -10,6 +10,8 @@ from wagtail.admin.panels import FieldPanel
 from wagtail.query import TreeQuerySet
 from wagtail.search import index
 
+from cms.core.db_router import force_write_db_for
+
 BASE_TOPIC_DEPTH = 2
 
 if TYPE_CHECKING:
@@ -47,11 +49,11 @@ class Topic(index.Indexed, MP_Node):
 
     objects: TopicManager = TopicManager.from_queryset(TreeQuerySet)()
 
-    id = models.CharField(max_length=100, primary_key=True)  # type: ignore[var-annotated]
-    title = models.CharField(max_length=100)  # type: ignore[var-annotated]
-    slug = models.SlugField(max_length=100)  # type: ignore[var-annotated]
-    description = models.TextField(blank=True, null=True)  # type: ignore[var-annotated]
-    removed = models.BooleanField(default=False)  # type: ignore[var-annotated]
+    id = models.CharField(max_length=100, primary_key=True)
+    title = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    removed = models.BooleanField(default=False)
 
     node_order_by: ClassVar[list[str]] = ["title"]
 
@@ -131,3 +133,21 @@ class GenericPageToTaxonomyTopic(models.Model):
         constraints: ClassVar[list[BaseConstraint]] = [
             UniqueConstraint(fields=["page", "topic"], name="unique_generic_taxonomy")
         ]
+
+    def save(self, **kwargs: Any) -> None:
+        """Silently deduplicates when modelcluster tries to INSERT a (page, topic) pair that was already
+        committed by a concurrent save/session.
+        Revisit when https://github.com/wagtail/wagtail/issues/14359 is addressed.
+        """
+        if not kwargs.get("force_insert") and self._state.adding and self.page_id and self.topic_id:
+            existing_pk = (
+                force_write_db_for(GenericPageToTaxonomyTopic.objects)
+                .filter(page_id=self.page_id, topic_id=self.topic_id)
+                .values_list("pk", flat=True)
+                .first()
+            )
+            if existing_pk is not None:
+                self.pk = existing_pk
+                self._state.adding = False
+
+        super().save(**kwargs)

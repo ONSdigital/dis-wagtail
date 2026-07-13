@@ -15,7 +15,7 @@ from wagtail.search import index
 from cms.articles.models import StatisticalArticlePage
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.analytics_utils import add_table_of_contents_gtm_attributes
-from cms.core.enums import RelatedMethodologyType
+from cms.core.enums import RelatedContentType, RelatedMethodologyType
 from cms.core.fields import StreamField
 from cms.core.formatting_utils import get_formatted_pages_list
 from cms.core.models import BasePage
@@ -71,7 +71,23 @@ class TopicPageRelatedArticle(Orderable):
             "When choosing a page, you can leave it blank to use the page’s own title."
         ),
     )
-
+    description: models.TextField = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Description or summary for the external link.",
+    )
+    content_type: models.CharField = models.CharField(
+        max_length=20,
+        choices=RelatedContentType.choices,
+        blank=True,
+        null=True,
+        help_text="Content type of the external content, e.g. Article (default), Dataset, Methodology.",
+    )
+    release_date: models.DateField = models.DateField(
+        blank=True,
+        null=True,
+        help_text="Release date of the external content.",
+    )
     panels: ClassVar[list[Panel]] = [
         MultiFieldPanel(
             [
@@ -86,6 +102,9 @@ class TopicPageRelatedArticle(Orderable):
             [
                 FieldPanel("external_url"),
                 FieldPanel("title"),
+                FieldPanel("description"),
+                FieldPanel("content_type"),
+                FieldPanel("release_date"),
             ],
             heading="External Link",
         ),
@@ -185,7 +204,7 @@ class TopicPage(BundledPageMixin, ExclusiveTaxonomyMixin, BasePage):  # type: ig
     parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
     subpage_types: ClassVar[list[str]] = ["articles.ArticlesIndexPage", "methodology.MethodologyIndexPage"]
     page_description = "A specific topic page. e.g. 'Public sector finance' or 'Inflation and price indices'."
-    label = _("Topic")  # type: ignore[assignment]
+    label = _("Topic")
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
     featured_series = models.ForeignKey(

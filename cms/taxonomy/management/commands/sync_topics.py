@@ -97,6 +97,16 @@ def _extract_subtopic_links(raw_topics: Iterable[Mapping[str, Any]]) -> list[tup
     ]
 
 
+def _validate_required_topic_fields(fetched_topic: Mapping[str, str]) -> None:
+    """Fail fast if a fetched topic omits fields required for sync."""
+    required_fields = ("id", "title", "slug")
+    missing_fields = [field for field in required_fields if not fetched_topic.get(field)]
+    if missing_fields:
+        raise RuntimeError(
+            f"Topic API response is missing required field(s) {', '.join(missing_fields)}: {fetched_topic}"
+        )
+
+
 def _sync_with_fetched_topics(fetched_topics: Iterable[Mapping[str, str]]) -> None:
     """For each fetched topic, decide if it needs to be created, updated, or left as is."""
     _check_for_duplicate_topics(fetched_topics)
@@ -104,9 +114,7 @@ def _sync_with_fetched_topics(fetched_topics: Iterable[Mapping[str, str]]) -> No
     updated_count = 0
     created_count = 0
     for fetched_topic in fetched_topics:
-        if not fetched_topic.get("slug"):
-            logger.warning("Cannot create or update topic: missing slug.", extra={"topic": fetched_topic["id"]})
-            continue
+        _validate_required_topic_fields(fetched_topic)
         if existing_topic := _get_topic(fetched_topic["id"]):
             if not _topic_matches(existing_topic, fetched_topic):
                 _update_topic(existing_topic, fetched_topic)
@@ -156,9 +164,9 @@ def _update_topic(existing_topic: Topic, fetched_topic: Mapping[str, str]) -> No
     - Logs changes and warnings when moving topics.
     """
     logger.info("Updating existing topic", extra={"topic": existing_topic.id, "fetched_topic": fetched_topic})
-    existing_topic.title = fetched_topic.get("title")
+    existing_topic.title = fetched_topic["title"]
     existing_topic.description = fetched_topic.get("description")
-    existing_topic.slug = fetched_topic.get("slug")
+    existing_topic.slug = fetched_topic["slug"]
     existing_topic.removed = False
     existing_topic.save()
 
@@ -188,7 +196,7 @@ def _create_topic(fetched_topic: Mapping[str, str]) -> None:
     new_topic = Topic(
         id=fetched_topic["id"],
         title=fetched_topic["title"],
-        slug=fetched_topic.get("slug"),
+        slug=fetched_topic["slug"],
         description=fetched_topic.get("description"),
     )
     if parent_id := fetched_topic.get("parent_id"):

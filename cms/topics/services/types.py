@@ -1,5 +1,5 @@
-import datetime
-from typing import TypedDict, TypeVar
+from datetime import date
+from typing import NotRequired, TypedDict, TypeVar
 
 from cms.articles.models import StatisticalArticlePage
 from cms.core.enums import RelatedContentType
@@ -17,9 +17,9 @@ class ExternalArticleDict(TypedDict):
     url: str
     title: str
     description: str
-    content_type: RelatedContentType
-    release_date: datetime.date | None
     is_external: bool
+    content_type: NotRequired[RelatedContentType]
+    release_date: NotRequired[date | None]
 
 
 class InternalMethodologyDict(TypedDict, total=False):

@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import HelpPanel
 from wagtail.fields import RichTextField
 from wagtail.models import PanelPlaceholder
@@ -25,7 +26,7 @@ class ThemeIndexPage(BasePage):  # type: ignore[django-manager-missing]
     # parent_page_types: ClassVar[list[str]] = ["home.HomePage"]
     # subpage_types: ClassVar[list[str]] = ["ThemePage"]
     page_description = "A container for the list of themes."
-    label = "Themes"
+    label = None
 
     content_panels: ClassVar[list[Panel]] = [
         *BasePage.content_panels,
@@ -88,7 +89,7 @@ class ThemePage(ExclusiveTaxonomyMixin, BasePage):  # type: ignore[django-manage
     parent_page_types: ClassVar[list[str]] = ["ThemeIndexPage", "ThemePage"]
     subpage_types: ClassVar[list[str]] = ["ThemePage"]
     page_description = "A theme page, such as 'Economy'."
-    label = "Theme"
+    label = _("Theme")
 
     summary = RichTextField(features=settings.RICH_TEXT_BASIC)
 
