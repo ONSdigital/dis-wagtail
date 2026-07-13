@@ -694,6 +694,25 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             "Please add a title if you want to add a subtitle.",
         )
 
+    def test_clean__missing_accessible_label_and_subtitle_without_title_raises_both(self):
+        """Both errors are reported when accessible label is missing and subtitle has no title."""
+        value = self.block.to_python(
+            {
+                "subtitle": "A subtitle",
+                "data": self.simple_table_data,
+            }
+        )
+
+        with self.assertRaises(StructBlockValidationError) as info:
+            self.block.clean(value)
+
+        self.assertIn("caption", info.exception.block_errors)
+        self.assertIn("subtitle", info.exception.block_errors)
+        self.assertEqual(
+            info.exception.block_errors["subtitle"].message,
+            "Please add a title if you want to add a subtitle.",
+        )
+
     def test_clean__subtitle_with_title(self):
         """A subtitle paired with a title is allowed."""
         value = self.block.to_python(
