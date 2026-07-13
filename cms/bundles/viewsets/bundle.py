@@ -472,6 +472,12 @@ class BundleInspectView(InspectView):
             return delete_url
         return ""
 
+    def get_edit_url(self) -> str | None:
+        if self.object.status not in PUBLISHED_BUNDLE_STATUSES:
+            edit_url: str | None = super().get_edit_url()
+            return edit_url
+        return ""
+
     def get_fields(self) -> list[str]:
         """Returns the list of fields to include in the inspect view.
 
