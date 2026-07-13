@@ -95,7 +95,6 @@ INSTALLED_APPS = [
     "cms.taxonomy",
     "cms.search",
     "cms.workflows",
-    "cms.test_data",
     "wagtail.sites",
     "wagtail.users",
     "wagtail.snippets",
@@ -135,6 +134,11 @@ if not IS_EXTERNAL_ENV:
             "django.contrib.messages",
         ]
     )
+
+CMS_TEST_DATA_ENABLED = env.get("CMS_TEST_DATA_ENABLED", "false").lower() == "true"
+
+if CMS_TEST_DATA_ENABLED:
+    INSTALLED_APPS.append("cms.test_data")
 
 
 # Middleware classes
