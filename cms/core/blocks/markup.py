@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -218,7 +219,13 @@ class ONSTableBlock(TinyTableBlock):
         # Add download config if block_id and page context available
         block_id = context.get("block_id")
         if block_id and parent_context:
-            options["download"] = self._get_download_config(parent_context=parent_context, block_id=block_id, data=data)
+            options["download"] = self._get_download_config(
+                parent_context=parent_context,
+                block_id=block_id,
+                data=data,
+                table_title=value.get("title"),
+                table_caption=value.get("caption"),
+            )
 
         # Used by footnotes and downloads sections
         if value.get("title") and value.get("subtitle"):
@@ -243,7 +250,15 @@ class ONSTableBlock(TinyTableBlock):
 
         return table_context
 
-    def _get_download_config(self, *, parent_context: dict, block_id: str, data: dict) -> dict[str, Any]:
+    def _get_download_config(
+        self,
+        *,
+        parent_context: dict,
+        block_id: str,
+        data: dict,
+        table_title: str | None,
+        table_caption: str,
+    ) -> dict[str, Any]:
         """Build download config for ONS Downloads component."""
         page = parent_context.get("page")
         if not page:
@@ -252,7 +267,10 @@ class ONSTableBlock(TinyTableBlock):
         # Flatten table data for size calculation
         csv_rows = flatten_table_data(data)
 
-        size_suffix = f" ({get_approximate_file_size_in_kb(csv_rows)})"
+        size_suffix = get_approximate_file_size_in_kb(csv_rows)
+        file_size = size_suffix.removesuffix("KB").strip()
+        size_suffix = f" ({size_suffix})"
+        download_text = _("Download CSV %(size)s") % {"size": size_suffix}
 
         # Build URL (preview vs published)
         request = parent_context.get("request")
@@ -263,9 +281,13 @@ class ONSTableBlock(TinyTableBlock):
             else self._build_table_download_url(page, block_id, parent_context.get("superseded_version"))
         )
 
+        data_attributes = self._get_gtm_attributes_table_download(
+            download_text, csv_url, file_size, table_title, table_caption
+        )
+
         return {
             "title": _("Download this table"),
-            "itemsList": [{"text": _("Download CSV %(size)s") % {"size": size_suffix}, "url": csv_url}],
+            "itemsList": [{"text": download_text, "url": csv_url, "attributes": data_attributes}],
         }
 
     @staticmethod
@@ -290,6 +312,21 @@ class ONSTableBlock(TinyTableBlock):
             "data_downloads:revision_table_download",
             kwargs={"page_id": page.pk, "revision_id": revision_id, "table_id": block_id},
         )
+
+    @staticmethod
+    def _get_gtm_attributes_table_download(
+        text: str, url: str, file_size: str, title: str, caption: str
+    ) -> dict[str, str]:
+        parsed_url = urlparse(url)
+        return {
+            "data-ga-event": "file-download",
+            "data-ga-file-extension": "csv",
+            "data-ga-file-name": title or caption,
+            "data-ga-link-text": text,
+            "data-ga-link-url": parsed_url.path,
+            "data-ga-link-domain": parsed_url.hostname,
+            "data-ga-file-size": file_size,
+        }
 
     class Meta:
         icon = "table"
