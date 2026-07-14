@@ -9,6 +9,7 @@ import factory.random
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Model
+from django.utils.text import slugify
 from factory.base import Factory
 from faker import Faker
 from pydantic import ValidationError
@@ -22,6 +23,8 @@ from cms.taxonomy.tests.factories import SimpleTopicFactory
 from cms.test_data.config import TestDataConfig
 from cms.test_data.constants import SEEDED_DATA_PREFIX
 from cms.test_data.factories import ImageFactory
+from cms.test_data.random import seeded_randomness
+from cms.test_data.signals import disconnect_receivers, search_publisher_receivers
 from cms.topics.models import TopicPage
 from cms.topics.tests.factories import TopicPageFactory
 
@@ -29,16 +32,15 @@ from cms.topics.tests.factories import TopicPageFactory
 class TestDataFactory:
     def __init__(self, config: TestDataConfig, seed: int) -> None:
         self.config = config
+        self.seed = seed
 
         # Seed randomness
         self.faker = Faker(locale="en_GB")
         self.faker.seed_instance(seed)
 
         # NB: These modify global state
-        factory.Faker._DEFAULT_LOCALE = "en_GB"
-        factory.random.reseed_random(seed)  # type: ignore[no-untyped-call]
 
-        self.title_factory = factory.LazyFunction(lambda: SEEDED_DATA_PREFIX + self.faker.sentence(nb_words=3))  # type: ignore[no-untyped-call]
+        self.title_factory = factory.LazyFunction(self.random_title)  # type: ignore[no-untyped-call]
 
         self.root_page = Site.objects.get(is_default_site=True).root_page
 
@@ -46,34 +48,41 @@ class TestDataFactory:
 
         self.get_config_count = partial(self.config.get_count, faker=self.faker)
 
+    def random_title(self) -> str:
+        return SEEDED_DATA_PREFIX + self.faker.sentence(nb_words=3)
+
     def create_batch_from_factory(
         self, factory_class: type[Factory], instance_count: int, factory_kwargs: dict
     ) -> list[Model]:
         """Create model instances from a given factory."""
         created = factory_class.create_batch(instance_count, **factory_kwargs)
-        if factory_class._meta.model not in self.model_registry:
-            # Do a copy just in case anything external tries to mutate it
-            self.model_registry[factory_class._meta.model] = created.copy()
-        else:
-            self.model_registry[factory_class._meta.model].extend(created)
+
+        self.model_registry.setdefault(factory_class._meta.model, []).extend(created)
+
         return created
 
     def create_from_factory(self, factory_class: type[Factory], factory_kwargs: dict) -> Model:
         """Create a model instance from a given factory."""
         return self.create_batch_from_factory(factory_class, 1, factory_kwargs)[0]
 
+    def random_models(self, model: type[Model], count: int) -> list[Model]:
+        instances = self.model_registry.get(model, [])
+
+        if count > len(instances):
+            raise RuntimeError(f"Cannot select {count} instances of {model!r}, only {len(instances)} were created")
+
+        return list(self.faker.random_elements(instances, length=count, unique=True))
+
     def random_model(self, model: type[Model]) -> Model:
         """Select a random previously-generated model."""
-        try:
-            return self.faker.random_element(self.model_registry[model])
-        except KeyError:
-            raise RuntimeError(f"{model!r} has not been created yet") from None
+        return self.random_models(model, 1)[0]
 
     @transaction.atomic
     def run(self) -> None:
-        self._create_images()
-        self._create_datasets()
-        self._create_topics()
+        with seeded_randomness(self.seed, "en_GB"), disconnect_receivers(search_publisher_receivers()):
+            self._create_images()
+            self._create_datasets()
+            self._create_topics()
 
     def _create_images(self) -> None:
         self.create_batch_from_factory(
@@ -81,9 +90,11 @@ class TestDataFactory:
         )
 
     def _create_datasets(self) -> None:
-        self.create_batch_from_factory(
-            DatasetFactory, self.get_config_count(self.config.datasets.count), {"title": self.title_factory}
-        )
+        for index in range(self.get_config_count(self.config.datasets.count)):
+            self.create_from_factory(
+                DatasetFactory,
+                {"title": self.title_factory, "edition": f"{SEEDED_DATA_PREFIX}edition-{index}", "version": index},
+            )
 
     def _create_topics(self) -> None:
         # Topic loading fixture leaves `num_children` in an incorrect state and breaks the tree,
@@ -103,13 +114,15 @@ class TestDataFactory:
             }
 
             topic_datasets_counter = itertools.count()
-            for _ in range(self.get_config_count(self.config.topics.datasets)):
-                topic_kwargs[f"datasets__{next(topic_datasets_counter)}__dataset_lookup__dataset"] = self.random_model(
-                    Dataset
-                )
+            for dataset in self.random_models(Dataset, self.get_config_count(self.config.topics.datasets)):
+                topic_kwargs[f"datasets__{next(topic_datasets_counter)}__dataset_lookup__dataset"] = dataset
 
             for _ in range(self.config.topics.dataset_manual_links):
-                topic_kwargs[f"datasets__{next(topic_datasets_counter)}"] = "manual_link"
+                index = next(topic_datasets_counter)
+                topic_kwargs[f"datasets__{index}__manual_link__title"] = self.random_title()
+                topic_kwargs[f"datasets__{index}__manual_link__url"] = (
+                    f"/datasets/{slugify(SEEDED_DATA_PREFIX)}-manual-{index}"
+                )
 
             for i in range(self.get_config_count(self.config.topics.explore_more)):
                 if i % 2 == 0:
@@ -121,10 +134,10 @@ class TestDataFactory:
             topic_page: TopicPage = self.create_from_factory(TopicPageFactory, topic_kwargs)  # type: ignore[assignment]
 
             for _ in range(self.get_config_count(self.config.topics.revisions)):
-                topic_page.specific.save_revision()
+                topic_page.save_revision()
 
             if topic_page.live:
-                topic_page.specific.latest_revision.publish()
+                topic_page.latest_revision.publish()
 
 
 def validate_config_file(val: str) -> TestDataConfig:
@@ -133,7 +146,7 @@ def validate_config_file(val: str) -> TestDataConfig:
     if not config_path.is_file() or config_path.suffix != ".json":
         raise ArgumentTypeError(f"{val} does not exist or is not a valid JSON file")
     try:
-        return TestDataConfig.model_validate_json(config_path.read_text())
+        return TestDataConfig.model_validate_json(config_path.read_text(encoding="utf-8"))
     except ValidationError as e:
         raise ArgumentTypeError(str(e)) from e
 

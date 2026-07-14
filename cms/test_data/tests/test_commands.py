@@ -8,29 +8,44 @@ from django.db.models.signals import post_save
 from django.test import TestCase
 from django.test.testcases import SimpleTestCase
 from modelsearch.index import class_is_indexed
-from wagtail.models import ReferenceIndex
+from wagtail.models import Collection, ReferenceIndex
 
 from cms.datasets.models import Dataset
+from cms.datasets.tests.factories import DatasetFactory
 from cms.images.models import CustomImage
 from cms.taxonomy.models import Topic
 from cms.test_data.config import TestDataConfig
 from cms.test_data.constants import SEEDED_DATA_PREFIX
+from cms.test_data.factories import ImageFactory
+from cms.test_data.random import get_default_locale
 from cms.topics.models import TopicPage
+from cms.topics.tests.factories import TopicPageFactory
 
 AFFECTED_MODELS = [TopicPage, Topic, CustomImage, Dataset]
 
 
 class CreateTestDataTestCase(TestCase):
-    def tearDown(self) -> None:
-        # Clear random seed after tests
-        factory.random.reseed_random(None)  # type: ignore[no-untyped-call]
-
     def _call_with_config(self, config: dict | None = None) -> str:
         output = StringIO()
         call_command(
             "create_test_data", interactive=False, stdout=output, config=TestDataConfig.model_validate(config or {})
         )
         return output.getvalue()
+
+    def test_streamfield_content_is_valid(self) -> None:
+        """Generated blocks should be valid in case they are accessed in admin panel."""
+        self._call_with_config(
+            {
+                "datasets": {"count": 2},
+                "topics": {"count": 2, "datasets": 2, "dataset_manual_links": 1, "explore_more": 2},
+            }
+        )
+
+        for topic_page in TopicPage.objects.filter(alias_of_id=None):
+            for field_name in ("datasets", "explore_more"):
+                with self.subTest(topic_page=topic_page, field=field_name):
+                    stream_block = TopicPage._meta.get_field(field_name).stream_block
+                    stream_block.clean(getattr(topic_page, field_name))
 
     def test_creates_data(self) -> None:
         original_counts = {model: model.objects.count() for model in AFFECTED_MODELS}
@@ -77,11 +92,31 @@ class CreateTestDataTestCase(TestCase):
 
         topic_titles = set(TopicPage.objects.values_list("title", flat=True))
 
-        self.assertEqual(TopicPage.objects.count(), 6)
+        original_counts = {model: model.objects.count() for model in [*AFFECTED_MODELS, Collection]}
 
         self._call_with_config()
-        self.assertEqual(TopicPage.objects.count(), 6)
+
+        for model, original_count in original_counts.items():
+            with self.subTest(model):
+                self.assertEqual(model.objects.count(), original_count, model)
         self.assertEqual(set(TopicPage.objects.values_list("title", flat=True)), topic_titles)
+
+    def test_does_not_leak_ollections(self) -> None:
+        """Seeded images must reuse root collection instead of creating their own."""
+        original_count = Collection.objects.count()
+
+        self._call_with_config({"images": {"count": 3}})
+
+        self.assertEqual(Collection.objects.count(), original_count)
+
+    def test_restores_global_factory_state(self):
+        original_locale = get_default_locale()
+        original_state = factory.random.get_random_state()
+
+        self._call_with_config()
+
+        self.assertEqual(get_default_locale(), original_locale)
+        self.assertEqual(factory.random.get_random_state(), original_state)
 
     def test_seeded(self) -> None:
         self._call_with_config()
@@ -105,14 +140,26 @@ class CreateTestDataTestCase(TestCase):
 
 
 class DeleteTestDataTestCase(TestCase):
-    def tearDown(self) -> None:
-        # Clear random seed after tests
-        factory.random.reseed_random(None)  # type: ignore[no-untyped-call]
-
     def test_no_existing_data(self) -> None:
         output = StringIO()
         call_command("delete_test_data", stdout=output, no_color=True)
         self.assertIn("No data to delete", output.getvalue())
+
+    def test_leaves_real_content_alone(self) -> None:
+        real_page = TopicPageFactory(title="A real topic page")
+        real_dataset = DatasetFactory(title="A real dataset")
+        real_image = ImageFactory(title="A real image")
+
+        call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
+        call_command("delete_test_data", interactive=False, stdout=StringIO())
+
+        self.assertTrue(TopicPage.objects.filter(pk=real_page.pk).exists())
+        self.assertTrue(Topic.objects.filter(pk=real_page.topic.pk).exists())
+        self.assertTrue(Dataset.objects.filter(pk=real_dataset.pk).exists())
+        self.assertTrue(CustomImage.objects.filter(pk=real_image.pk).exists())
+
+        self.assertFalse(TopicPage.objects.filter(title__istartswith=SEEDED_DATA_PREFIX).exists())
+        self.assertFalse(Topic.objects.filter(title__istartswith=SEEDED_DATA_PREFIX).exists())
 
     def test_dry_run(self) -> None:
         call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
@@ -185,11 +232,11 @@ class DeleteTestDataTestCase(TestCase):
     def test_signals_reconnected(self):
         call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
 
-        post_save_receivers = len(post_save.receivers)
+        post_save_receivers = sorted(str(receiver[0]) for receiver in post_save.receivers)
 
         call_command("delete_test_data", interactive=False, stdout=StringIO())
 
-        self.assertEqual(len(post_save.receivers), post_save_receivers)
+        self.assertEqual(sorted(str(receiver[0]) for receiver in post_save.receivers), post_save_receivers)
 
 
 class ShowDefaultTestDataConfigTestCase(SimpleTestCase):

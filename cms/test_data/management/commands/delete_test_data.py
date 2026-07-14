@@ -1,49 +1,16 @@
 from argparse import ArgumentParser
-from collections.abc import Generator
-from contextlib import contextmanager
 from typing import Any
 
 from django.apps import apps
 from django.contrib.admin.utils import NestedObjects
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.db.models import Model, Q
-from django.db.models.signals import post_save
-from modelsearch.index import class_is_indexed
-from modelsearch.signal_handlers import post_save_signal_handler
+from django.db.models import CharField, Model, Q, TextField
 from treebeard.mp_tree import MP_Node
-from wagtail.models import ReferenceIndex
-from wagtail.signal_handlers import update_reference_index_on_save
 
 from cms.taxonomy.models import Topic
 from cms.test_data.constants import SEEDED_DATA_PREFIX
-
-
-@contextmanager
-def disable_signals(models: list[type[Model]]) -> Generator[None]:
-    """Disable certain signals when saving models.
-
-    This is part for performance reasons, but mostly because the tasks
-    these signals enqueue will fail as the objects no longer exist.
-    """
-    for model in models:
-        # Don't rebuild search index when saving instances
-        post_save.disconnect(post_save_signal_handler, sender=model)
-
-        # Don't rebuild reference index when saving models
-        post_save.disconnect(update_reference_index_on_save, sender=model)
-
-    try:
-        yield
-    finally:
-        # Reconnect signals (based on logic in packages).
-        # This mostly matters for tests.
-        for model in models:
-            if class_is_indexed(model):
-                post_save.connect(post_save_signal_handler, sender=model)
-
-            if ReferenceIndex.model_is_indexable(model):
-                post_save.connect(update_reference_index_on_save, sender=model)
+from cms.test_data.signals import disconnect_receivers, index_receivers, search_publisher_receivers
 
 
 class Command(BaseCommand):
@@ -67,12 +34,20 @@ class Command(BaseCommand):
         """Query any field which might contain the prefix."""
         lookups = Q()
         for field in model._meta.fields:
-            supported_lookups = field.get_lookups().keys()
+            if field.is_relation or not isinstance(field, CharField | TextField):
+                continue
 
-            if "istartswith" in supported_lookups:
-                lookups |= Q(**{field.attname + "__istartswith": SEEDED_DATA_PREFIX})
+            lookups |= Q(**{f"{field.name}__startswith": SEEDED_DATA_PREFIX})
 
         return lookups
+
+    def _report_field_updates(self, collector: NestedObjects) -> None:
+        for (field, value), instances_list in collector.field_updates.items():
+            for instances in instances_list:
+                for instance in instances:
+                    self.stdout.write(
+                        f"\t{instance!s} ({instance.pk}): {self.style.WARNING(f'{field.name} will be set to {value}')}"
+                    )
 
     def _build_collector(self) -> NestedObjects:
         collector = NestedObjects(using="default")
@@ -114,6 +89,10 @@ class Command(BaseCommand):
             for instance in sorted(instances, key=str):
                 self.stdout.write(f"\t{instance!s} ({instance.pk})")
 
+        if collector.field_updates:
+            self.stdout.write("The following objects will be modified, not deleted", self.style.NOTICE)
+            self._report_field_updates(collector)
+
         if options["dry_run"]:
             return
 
@@ -135,8 +114,10 @@ class Command(BaseCommand):
 
         self.stdout.write("Deleting data...", self.style.NOTICE)
 
+        receivers = index_receivers(collector.data.keys()) + search_publisher_receivers()
+
         with transaction.atomic():
-            with disable_signals(list(collector.data.keys())):
+            with disconnect_receivers(receivers):
                 for model, instances in collector.data.items():
                     # Use queryset delete methods to use any customized behaviour
                     model._default_manager.filter(pk__in=[instance.pk for instance in instances]).delete()  # pylint: disable=protected-access
