@@ -44,7 +44,7 @@ class Command(BaseCommand):
     def _report_field_updates(self, collector: NestedObjects) -> None:
         for (field, value), instances_list in collector.field_updates.items():
             for instances in instances_list:
-                for instance in instances:
+                for instance in instances:  # type: ignore[attr-defined]
                     self.stdout.write(
                         f"\t{instance!s} ({instance.pk}): {self.style.WARNING(f'{field.name} will be set to {value}')}"
                     )

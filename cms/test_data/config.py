@@ -58,7 +58,7 @@ class TestDataConfig(BaseConfigModel):
     topics: TopicCreationConfig = TopicCreationConfig(count=3)
 
     @model_validator(mode="after")
-    def check_topic_datasets(self):
+    def check_topic_datasets(self) -> Self:
         # Import here to avoid module level model imports
         from cms.topics.models import MAX_ITEMS_PER_SECTION  # pylint: disable=import-outside-toplevel
 
