@@ -160,9 +160,9 @@ class SnippetEditViewAuditLogTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(log_entry.user, self.superuser)
         self.assertEqual(log_entry.message, "Viewed snippet editor for contact details")
 
-        reponse = self.client.get(self.definition_edit_url)
+        response = self.client.get(self.definition_edit_url)
 
-        self.assertEqual(reponse.status_code, HTTPStatus.OK)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
         log_entry = ModelLogEntry.objects.filter(object_id=self.definition.pk, action="snippets.edit_view").first()
         self.assertIsNotNone(log_entry)
