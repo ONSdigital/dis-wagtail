@@ -149,12 +149,19 @@ class ONSTableBlock(TinyTableBlock):
 
     def clean(self, value: dict) -> dict:
         """Validate that a subtitle is only present when a title is also provided."""
-        cleaned_value: dict = super().clean(value)
+        block_errors: dict = {}
+
+        try:
+            cleaned_value: dict = super().clean(value)
+        except StructBlockValidationError as e:
+            block_errors = dict(e.block_errors)
+            cleaned_value = value
 
         if cleaned_value.get("subtitle") and not cleaned_value.get("title"):
-            raise StructBlockValidationError(
-                block_errors={"subtitle": ValidationError("Please add a title if you want to add a subtitle.")}
-            )
+            block_errors["subtitle"] = ValidationError("Please add a title if you want to add a subtitle.")
+
+        if block_errors:
+            raise StructBlockValidationError(block_errors=block_errors)
 
         return cleaned_value
 
