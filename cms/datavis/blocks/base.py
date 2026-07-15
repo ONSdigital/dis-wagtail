@@ -1,11 +1,13 @@
 from collections.abc import Sequence
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, ClassVar, cast
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.forms.widgets import RadioSelect
 from django.urls import reverse
 from django.utils.html import strip_tags
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
@@ -321,10 +323,11 @@ class BaseChartBlock(BaseVisualisationBlock):
     def _get_csv_download_item(
         self,
         *,
+        value: StructValue,
         parent_context: dict[str, Any] | None = None,
         block_id: str | None = None,
         rows: list[list[str | int | float]] | None = None,
-    ) -> dict[str, str] | None:
+    ) -> dict[str, Any] | None:
         # CSV download - only include if we have a valid URL
         if not (parent_context and block_id):
             # Check separately to placate mypy
@@ -332,7 +335,10 @@ class BaseChartBlock(BaseVisualisationBlock):
         page: BasePage | None = parent_context.get("page")
         if not page:
             return None
-        suffix = f" ({get_approximate_file_size_in_kb(rows or [])})"
+        file_size_with_unit = get_approximate_file_size_in_kb(rows or [])
+        file_size = file_size_with_unit.removesuffix("KB").strip()
+        suffix = f" ({file_size_with_unit})"
+
         request: HttpRequest | None = parent_context.get("request")
         is_preview = getattr(request, "is_preview", False) if request else False
 
@@ -342,9 +348,28 @@ class BaseChartBlock(BaseVisualisationBlock):
             superseded_version: int | None = parent_context.get("superseded_version")
             csv_url = self._build_chart_download_url(page, block_id, superseded_version)
 
+        link_text = f"Download CSV{suffix}"
+
         return {
-            "text": f"Download CSV{suffix}",
+            "text": link_text,
             "url": csv_url,
+            "attributes": self._get_gtm_attributes_csv_download(link_text, csv_url, file_size, value),
+        }
+
+    def _get_gtm_attributes_csv_download(
+        self, text: str, url: str, file_size: str, value: StructValue
+    ) -> dict[str, str]:
+        parsed_url = urlparse(url)
+        return {
+            "data-ga-event": "file-download",
+            "data-ga-file-extension": "csv",
+            "data-ga-file-name": slugify(value.get("title")),
+            "data-ga-link-text": text,
+            "data-ga-link-url": parsed_url.path,
+            "data-ga-link-domain": parsed_url.hostname,
+            "data-ga-chart-title": value.get("title"),
+            "data-ga-chart-type": self.get_highcharts_chart_type(value),
+            "data-ga-file-size": file_size,
         }
 
     def get_download_config(
@@ -355,9 +380,14 @@ class BaseChartBlock(BaseVisualisationBlock):
         block_id: str | None = None,
         rows: list[list[str | int | float]] | None = None,
     ) -> dict[str, Any]:
-        items_list: list[dict[str, str]] = []
+        items_list: list[dict[str, Any]] = []
         items_list.append(self._get_image_download_item())
-        if csv_item := self._get_csv_download_item(parent_context=parent_context, block_id=block_id, rows=rows):
+        if csv_item := self._get_csv_download_item(
+            value=value,
+            parent_context=parent_context,
+            block_id=block_id,
+            rows=rows,
+        ):
             items_list.append(csv_item)
 
         return {
