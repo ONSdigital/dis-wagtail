@@ -875,6 +875,24 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseMixin, TestCase):
                         response.context["message"], "Sorry, you do not have permission to access this area."
                     )
 
+    def test_inspect_view__edit_link__shown_for_non_published_bundles(self):
+        scenarios = [self.in_review_bundle, self.approved_bundle]
+        for bundle in scenarios:
+            with self.subTest(bundle=bundle):
+                response = self.client.get(reverse("bundle:inspect", args=[bundle.pk]))
+                edit_url = reverse("bundle:edit", args=[bundle.pk])
+                self.assertContains(response, edit_url)
+
+    def test_inspect_view__edit_link__hidden_for_published_bundles(self):
+        partially_published_bundle = BundleFactory(status=BundleStatus.PARTIALLY_PUBLISHED)
+        failed_bundle = BundleFactory(status=BundleStatus.FAILED)
+        scenarios = [self.published_bundle, partially_published_bundle, failed_bundle]
+        for bundle in scenarios:
+            with self.subTest(bundle_status=bundle.status):
+                response = self.client.get(reverse("bundle:inspect", args=[bundle.pk]))
+                edit_url = reverse("bundle:edit", args=[bundle.pk])
+                self.assertNotContains(response, edit_url)
+
     def test_inspect_view__managers__contains_all_fields(self):
         response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
 
