@@ -340,6 +340,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return cast(str, parent_topic_or_theme.slug)
         return None
 
+    # TODO: Revisit once the theme/page relationship is defined and the attribute's requirements are finalised.
     @cached_property
     def analytics_content_theme(self) -> str | None:
         """Returns the title of the top ancestor taxonomic topic for the pages parent topic or theme page,
