@@ -69,6 +69,12 @@ def send_bundle_notification(  # pylint: disable=too-many-arguments  # noqa: PLR
         )
 
 
+def _get_published_page_count(bundle: Bundle) -> int:
+    """Get count of bundle's pages that are live without any draft changes."""
+    # cast to int because mypy can't figure out `count` return type
+    return int(bundle.get_bundled_pages().filter(live=True, has_unpublished_changes=False).count())
+
+
 def _get_publish_type(bundle: Bundle) -> str:
     """Determine the publish type for a bundle.
 
@@ -271,7 +277,7 @@ def notify_slack_of_publish_end(
         fields.append(
             {
                 "title": "Pages Published",
-                "value": str(bundle.get_bundled_pages().filter(has_unpublished_changes=False).count()),
+                "value": str(_get_published_page_count(bundle)),
                 "short": True,
             }
         )
@@ -318,6 +324,8 @@ def notify_slack_of_post_publish_end(
     start_time: datetime,
     end_time: datetime,
     url: str | None = None,
+    *,
+    publish_failed: bool = False,
 ) -> None:
     """Send notification when bundle publishing and post-publishing ends successfully.
 
@@ -331,6 +339,7 @@ def notify_slack_of_post_publish_end(
         start_time: The time publishing started.
         end_time: The time publishing ended.
         url: The URL to link to the bundle (optional).
+        publish_failed: True if the bundle did not publish successfully.
     """
     failed_post_publish_actions_count = (
         PostPublishAction.objects.finished()
@@ -365,12 +374,26 @@ def notify_slack_of_post_publish_end(
         ]
     )
 
+    published_page_count = _get_published_page_count(bundle)
+
     if bundle_page_count > 0:
         fields.append(
             {
                 "title": "Pages Published",
-                "value": str(bundle.get_bundled_pages().filter(has_unpublished_changes=False).count()),
+                "value": str(published_page_count),
                 "short": True,
+            }
+        )
+
+    if publish_failed:
+        failed_page_count = bundle_page_count - published_page_count
+        fields.append(
+            {
+                "title": "Publish Failure",
+                "value": f"{failed_page_count} of {bundle_page_count} page(s) failed to publish"
+                if failed_page_count > 0
+                else "Publishing did not complete; check the application logs",
+                "short": False,
             }
         )
 
@@ -398,10 +421,12 @@ def notify_slack_of_post_publish_end(
     if example_page_url := _get_example_page_url(bundle):
         fields.append({"title": "Example Page", "value": example_page_url, "short": False})
 
+    has_errors = publish_failed or failed_post_publish_actions_count > 0
+
     send_bundle_notification(
         bundle=bundle,
-        text="Publishing the bundle has ended.",
-        color="danger" if failed_post_publish_actions_count else "good",
+        text="Publishing the bundle has ended with errors." if has_errors else "Publishing the bundle has ended.",
+        color="danger" if has_errors else "good",
         fields=fields,
     )
 
@@ -437,7 +462,7 @@ def notify_slack_of_bundle_failure(  # pylint: disable=too-many-arguments  # noq
         {"title": "Page Count", "value": str(bundle.get_bundled_pages().count()), "short": True},
         {
             "title": "Pages Published",
-            "value": str(bundle.get_bundled_pages().filter(has_unpublished_changes=False).count()),
+            "value": str(_get_published_page_count(bundle)),
             "short": True,
         },
         {"title": "Alert Type", "value": alert_type, "short": True},

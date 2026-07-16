@@ -1,6 +1,6 @@
+# pylint: disable=too-many-lines
 # secretlint-disable
 from datetime import UTC, datetime
-from unittest import expectedFailure
 from unittest.mock import Mock, patch
 
 from django.test import RequestFactory, TestCase, override_settings
@@ -29,6 +29,7 @@ from cms.bundles.notifications.slack import (
     send_bundle_notification,
 )
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory
+from cms.post_publish_actions.models import PostPublishAction, PostPublishActionStatus, PostPublishActionType
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.users.tests.factories import UserFactory
 
@@ -291,6 +292,92 @@ class BundleStatusNotificationsTestCase(TestCase):
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_post_publish_end__publish_failed(self, mock_send):
+        """A failed publish must keep the final message red and report failed page count."""
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
+        message_timestamp = "1503435956.000247"
+        mock_send.return_value = message_timestamp
+
+        published_page = StatisticalArticlePageFactory()
+        never_published_page = StatisticalArticlePageFactory(live=False)
+        never_published_page.revisions.all().delete()
+        bundle = BundleFactory(name="Partial Failure Bundle", bundled_pages=[published_page, never_published_page])
+
+        notify_slack_of_post_publish_end(bundle, start_time, end_time, self.inspect_url, publish_failed=True)
+
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args[1]
+
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended with errors.")
+        self.assertEqual(call_kwargs["color"], "danger")
+
+        fields = call_kwargs["fields"]
+        self.assertIn({"title": "Page Count", "value": "2", "short": True}, fields)
+        self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
+        self.assertIn({"title": "Publish Failure", "value": "1 of 2 page(s) failed to publish", "short": False}, fields)
+        self.assertIn({"title": "Post-Publish Actions Successful", "value": "0", "short": True}, fields)
+        self.assertIn({"title": "Post-Publish Actions Failed", "value": "0", "short": True}, fields)
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_post_publish_end__publish_failed_without_failed_pages(self, mock_send):
+        """A failed publish that errors after pages publish doesn't show wrong page counts."""
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
+        message_timestamp = "1503435956.000247"
+        mock_send.return_value = message_timestamp
+
+        notify_slack_of_post_publish_end(self.bundle, start_time, end_time, self.inspect_url, publish_failed=True)
+
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args[1]
+
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended with errors.")
+        self.assertEqual(call_kwargs["color"], "danger")
+
+        fields = call_kwargs["fields"]
+        self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
+        self.assertIn(
+            {
+                "title": "Publish Failure",
+                "value": "Publishing did not complete; check the application logs",
+                "short": False,
+            },
+            fields,
+        )
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_post_publish_end__failed_post_publish_actions(self, mock_send):
+        """A failed publish that errors on post publish actions must show red even if publish succeeds."""
+        start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+        end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
+        message_timestamp = "1503435956.000247"
+        mock_send.return_value = message_timestamp
+
+        PostPublishAction.objects.create(
+            bundle=self.bundle,
+            page=self.bundle.get_bundled_pages().first(),
+            action_type=PostPublishActionType.SEARCH_UPDATED,
+            status=PostPublishActionStatus.FAILED,
+            finished_at=timezone.now(),
+        )
+
+        notify_slack_of_post_publish_end(self.bundle, start_time, end_time, self.inspect_url)
+
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args[1]
+
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended with errors.")
+        self.assertEqual(call_kwargs["color"], "danger")
+
+        fields = call_kwargs["fields"]
+        self.assertIn({"title": "Post-Publish Actions Failed", "value": "1", "short": True}, fields)
+        self.assertFalse(any(field.get("title") == "Publish Failure" for field in fields))
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
     def test_notify_slack_of_publish_end_does_not_contain_pages_published_if_no_pages(self, mock_send):
         """Test publication end message doesn't include pages published if no pages in bundle."""
         start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
@@ -511,8 +598,6 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Page Count", "value": "2", "short": True}, fields)
         self.assertIn({"title": "Pages Published", "value": "2", "short": True}, fields)
 
-    # TODO: remove when behaviour fixed
-    @expectedFailure
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
     def test_notify_bundle_failure__pages_published_excludes_page_that_never_published(self, mock_get_client):

@@ -51,19 +51,21 @@ class Command(BaseCommand):
             # Refresh the bundle immediately before publishing, in case it's changed.
             bundle.refresh_from_db()
 
-            self.bundle_start_times[bundle] = timezone.now()
-
             # Confirm the bundle is still approved
             if bundle.status != BundleStatus.APPROVED:
                 logger.error("Bundle no longer approved", extra={"bundle_id": bundle.pk})
                 return
 
-            publish_bundle(bundle)
+            self.bundle_start_times[bundle] = timezone.now()
+
+            if publish_bundle(bundle):
+                self.published_bundle_ids.add(bundle.pk)
+
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("Publish failed", extra={"bundle_id": bundle.pk, "event": "publish_failed"})
 
     def _await_bundle_post_publish_actions(self, bundles: list[Bundle]) -> None:
-        # If there are no start times, no bundles successfully published
+        # If there are no start times, no bundles were published
         if not self.bundle_start_times:
             return
         start_time = min(self.bundle_start_times.values())
@@ -107,7 +109,12 @@ class Command(BaseCommand):
 
     @force_write_db()
     def _handle_bundle_post_publish_complete(self, bundle: Bundle) -> None:
-        notify_slack_of_post_publish_end(bundle, self.bundle_start_times[bundle], timezone.now())
+        notify_slack_of_post_publish_end(
+            bundle,
+            self.bundle_start_times[bundle],
+            timezone.now(),
+            publish_failed=bundle.pk not in self.published_bundle_ids,
+        )
 
     @force_write_db()
     def handle(self, *args: Any, **options: Any) -> None:
@@ -128,6 +135,7 @@ class Command(BaseCommand):
         )
 
         self.bundle_start_times: dict[Bundle, datetime] = {}  # pylint: disable=attribute-defined-outside-init
+        self.published_bundle_ids: set[int] = set()  # pylint: disable=attribute-defined-outside-init
 
         if not bundles_to_publish:
             self.stdout.write("No bundles to go live.")
@@ -159,4 +167,4 @@ class Command(BaseCommand):
 
             bundle_scheduler.run()
 
-            self._await_bundle_post_publish_actions(bundles_to_publish.copy())
+            self._await_bundle_post_publish_actions(list(self.bundle_start_times))

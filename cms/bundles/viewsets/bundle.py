@@ -355,11 +355,12 @@ class BundleEditView(EditView):
         """
         if self.action == "publish" or (self.action == "edit" and self.object.status == BundleStatus.PUBLISHED):
             start_date = timezone.now()
-            publish_bundle(self.object, update_status=False)
 
-            # NB: Wait for the post-publish actions to complete in a background thread,
-            # to prevent blocking the request (and the user).
-            run_in_support_executor(post_publish_notify_slack, start_date, self.object)
+            publish_succeeded = publish_bundle(self.object, update_status=False)
+
+            run_in_support_executor(
+                post_publish_notify_slack, start_date, self.object, publish_failed=not publish_succeeded
+            )
 
     def get_action(self, request: HttpRequest) -> str:
         """Determine the POST action."""

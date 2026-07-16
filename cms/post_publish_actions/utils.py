@@ -59,7 +59,7 @@ def as_completed_actions_by_bundle(
 
 
 @force_write_db()
-def post_publish_notify_slack(start_time: datetime, bundle: Bundle) -> None:
+def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_failed: bool = False) -> None:
     as_completed_collector = GeneratorCollector(as_completed_actions_by_bundle([bundle], start_time))
 
     # Consume the generator
@@ -76,7 +76,7 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle) -> None:
             },
         )
 
-    notify_slack_of_post_publish_end(bundle, start_time, timezone.now())
+    notify_slack_of_post_publish_end(bundle, start_time, timezone.now(), publish_failed=publish_failed)
 
 
 def run_post_publish_actions_for(page: Page, bundle: Bundle | None) -> None:

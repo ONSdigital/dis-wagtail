@@ -1,7 +1,6 @@
 import time
 from datetime import timedelta
 from io import StringIO
-from unittest import expectedFailure
 from unittest.mock import patch
 
 import time_machine
@@ -120,6 +119,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
         self.assertTrue(mock_notify_start.called)
         self.assertTrue(mock_notify_end.called)
         self.assertTrue(mock_notify_post_publish_end.called)
+        self.assertFalse(mock_notify_post_publish_end.call_args.kwargs["publish_failed"])
 
         # Check that we have a log entry
         self.assertEqual(ModelLogEntry.objects.filter(action="wagtail.publish.scheduled").count(), 1)
@@ -416,18 +416,17 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
             },
         )
 
-    # TODO: remove when no longer gets success notification
-    @expectedFailure
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.alert_slack_of_bundle_content_failure")
     @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
-    @patch("cms.bundles.managememt.commands.publish_bundles.notify_slack_of_post_publish_end")
-    def test_failed_bundle_does_not_send_post_publish_notification(
+    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    def test_failed_bundle_gets_post_publish_end_notification_flagged_as_failed(
         self,
         mock_notify_post_publish_end,
-        mock_notify_end,  # pylint: disable=unused-argument
-        mock_notify_start,  # pylint: disable=unused-argument
+        _mock_notify_failure,
+        _mock_alert_content_failure,
+        _mock_notify_start,
     ):
         """Test a bnundle that failed to publish doesn't get a green 'publishing has ended' message."""
         page_with_no_revisions = StatisticalArticlePageFactory(live=False)
@@ -442,7 +441,8 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
         # join executor before assert
         executor_stop_and_wait()
 
-        mock_notify_post_publish_end.assert_not_called()
+        mock_notify_post_publish_end.assert_called_once()
+        self.assertTrue(mock_notify_post_publish_end.call_args.kwargs["publish_failed"])
 
     @patch("cms.bundles.management.commands.publish_bundles.publish_bundle")
     @patch("cms.bundles.management.commands.publish_bundles.logger")
@@ -458,8 +458,6 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
         mock_publish_bundle.assert_not_called()
         mock_logger.error.assert_called_once_with("Bundle no longer approved", extra={"bundle_id": self.bundle.pk})
 
-    # TODO: remove when skipped bundles don't send message
-    @expectedFailure
     @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
     def test_bundle_no_longer_approved_does_not_send_success_notification(self, mock_notify_post_publish_end):
         """Test a bundle that was initially approved but moved out of that status isn't published."""

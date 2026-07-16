@@ -662,9 +662,12 @@ class BundleViewSetPublishTestCase(BundleViewSetTestCaseMixin, TransactionTestCa
 
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
+        executor_stop_and_wait()
+
         self.assertTrue(mock_notify_start.called)
         self.assertTrue(mock_notify_end.called)
-        self.assertTrue(mock_post_publish_notify_slack.called)
+        mock_post_publish_notify_slack.assert_called_once()
+        self.assertFalse(mock_post_publish_notify_slack.call_args.kwargs["publish_failed"])
 
         response = self.client.get(release_calendar_page.url)
         self.assertContains(response, self.statistical_article_page.display_title)
@@ -687,6 +690,22 @@ class BundleViewSetPublishTestCase(BundleViewSetTestCaseMixin, TransactionTestCa
         self.bundle.refresh_from_db()
         self.assertIsNotNone(self.bundle.approved_at)
         self.assertIsNotNone(self.bundle.approved_by)
+
+    @patch("cms.bundles.viewsets.bundle.publish_bundle", return_value=False)
+    @patch("cms.bundles.viewsets.bundle.post_publish_notify_slack")
+    def test_bundle_edit_view__manual_publish__failed_publish_still_notifies(
+        self, mock_post_publish_notify_slack, mock_publish_bundle
+    ):
+        """A failed publish must still send the final notification, with colour red."""
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        executor_stop_and_wait()
+
+        mock_publish_bundle.assert_called_once()
+        mock_post_publish_notify_slack.assert_called_once()
+        self.assertTrue(mock_post_publish_notify_slack.call_args.kwargs["publish_failed"])
 
     @override_settings(BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS=1)
     @patch("cms.search.signal_handlers.get_publisher")
