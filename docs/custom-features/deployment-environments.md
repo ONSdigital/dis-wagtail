@@ -23,3 +23,5 @@ The URLs and apps required for the Wagtail admin are disabled. This includes the
 Only a subset of media stored in S3 are accessible to the external env. Notably the `images/*` prefix needed for Wagtail's rendition generation.
 
 Certain static files (for example those related to the Wagtail admin) are inaccessible in the external environment. This is configured using `cms.core.whitenoise.CMSWhiteNoiseMiddleware`.
+
+External responses carry a Cloudflare Cache-Tag header (default wagtail, configurable via the `WAGTAIL_CLOUDFLARE_CACHE_TAG` env var) so they can be purged from Cloudflare as a group; purge invocation itself is manual/operational, not application-driven.
