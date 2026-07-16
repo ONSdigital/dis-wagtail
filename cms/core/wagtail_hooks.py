@@ -67,6 +67,9 @@ register_snippet(DefinitionViewSet)
 @hooks.register("before_edit_page")
 def log_page_edit_view(request: HttpRequest, page: Page) -> None:
     """Log when a user views the page edit view, with a cooldown to prevent duplicate entries."""
+    if request.method != "GET":
+        return
+
     cache_key = f"page_edit_view_log:{page.pk}:{request.user.pk}"
 
     if cache.get(cache_key):
@@ -79,6 +82,9 @@ def log_page_edit_view(request: HttpRequest, page: Page) -> None:
 @hooks.register("before_edit_snippet")
 def log_snippet_edit_view(request: HttpRequest, instance: Model) -> None:
     """Log when a user views the snippet edit view, with a cooldown to prevent duplicate entries."""
+    if request.method != "GET":
+        return
+
     cache_key = f"snippet_edit_view_log:{instance._meta.label}:{instance.pk}:{request.user.pk}"
 
     if cache.get(cache_key):
