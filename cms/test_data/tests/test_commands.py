@@ -3,6 +3,7 @@ import json
 from io import StringIO
 
 import factory.random
+from django.conf import settings
 from django.core.management import call_command
 from django.db.models.signals import post_save
 from django.test import TestCase
@@ -15,7 +16,6 @@ from cms.datasets.tests.factories import DatasetFactory
 from cms.images.models import CustomImage
 from cms.taxonomy.models import Topic
 from cms.test_data.config import TestDataConfig
-from cms.test_data.constants import SEEDED_DATA_PREFIX
 from cms.test_data.factories import ImageFactory
 from cms.test_data.random import get_default_locale
 from cms.topics.models import TopicPage
@@ -80,7 +80,7 @@ class CreateTestDataTestCase(TestCase):
                     [child.block_type for child in topic_page.explore_more], ["internal_link", "external_link"]
                 )
                 for block in topic_page.explore_more:
-                    self.assertIn(SEEDED_DATA_PREFIX, block.value["thumbnail"].title)
+                    self.assertIn(settings.CMS_TEST_DATA_PREFIX, block.value["thumbnail"].title)
 
                 self.assertLessEqual(topic_page.revisions.count(), 3)
                 self.assertGreaterEqual(topic_page.revisions.count(), 2)
@@ -158,8 +158,8 @@ class DeleteTestDataTestCase(TestCase):
         self.assertTrue(Dataset.objects.filter(pk=real_dataset.pk).exists())
         self.assertTrue(CustomImage.objects.filter(pk=real_image.pk).exists())
 
-        self.assertFalse(TopicPage.objects.filter(title__istartswith=SEEDED_DATA_PREFIX).exists())
-        self.assertFalse(Topic.objects.filter(title__istartswith=SEEDED_DATA_PREFIX).exists())
+        self.assertFalse(TopicPage.objects.filter(title__istartswith=settings.CMS_TEST_DATA_PREFIX).exists())
+        self.assertFalse(Topic.objects.filter(title__istartswith=settings.CMS_TEST_DATA_PREFIX).exists())
 
     def test_dry_run(self) -> None:
         call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())

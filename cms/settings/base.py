@@ -136,6 +136,7 @@ if not IS_EXTERNAL_ENV:
     )
 
 CMS_TEST_DATA_ENABLED = env.get("CMS_TEST_DATA_ENABLED", "false").lower() == "true"
+CMS_TEST_DATA_PREFIX = env.get("CMS_TEST_DATA_PREFIX", "Z-RANDOM ")
 
 if CMS_TEST_DATA_ENABLED:
     INSTALLED_APPS.append("cms.test_data")

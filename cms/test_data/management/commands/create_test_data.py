@@ -6,6 +6,7 @@ from typing import Any
 
 import factory
 import factory.random
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Model
@@ -21,7 +22,6 @@ from cms.images.models import CustomImage
 from cms.taxonomy.models import Topic
 from cms.taxonomy.tests.factories import SimpleTopicFactory
 from cms.test_data.config import TestDataConfig
-from cms.test_data.constants import SEEDED_DATA_PREFIX
 from cms.test_data.factories import ImageFactory
 from cms.test_data.random import seeded_randomness
 from cms.test_data.signals import disconnect_receivers, search_publisher_receivers
@@ -49,7 +49,7 @@ class TestDataFactory:
         self.get_config_count = partial(self.config.get_count, faker=self.faker)
 
     def random_title(self) -> str:
-        return SEEDED_DATA_PREFIX + self.faker.sentence(nb_words=3)
+        return settings.CMS_TEST_DATA_PREFIX + self.faker.sentence(nb_words=3)
 
     def create_batch_from_factory(
         self, factory_class: type[Factory], instance_count: int, factory_kwargs: dict
@@ -93,7 +93,11 @@ class TestDataFactory:
         for index in range(self.get_config_count(self.config.datasets.count)):
             self.create_from_factory(
                 DatasetFactory,
-                {"title": self.title_factory, "edition": f"{SEEDED_DATA_PREFIX}edition-{index}", "version": index},
+                {
+                    "title": self.title_factory,
+                    "edition": f"{settings.CMS_TEST_DATA_PREFIX}edition-{index}",
+                    "version": index,
+                },
             )
 
     def _create_topics(self) -> None:
@@ -121,7 +125,7 @@ class TestDataFactory:
                 index = next(topic_datasets_counter)
                 topic_kwargs[f"datasets__{index}__manual_link__title"] = self.random_title()
                 topic_kwargs[f"datasets__{index}__manual_link__url"] = (
-                    f"/datasets/{slugify(SEEDED_DATA_PREFIX)}-manual-{index}"
+                    f"/datasets/{slugify(settings.CMS_TEST_DATA_PREFIX)}-manual-{index}"
                 )
 
             for i in range(self.get_config_count(self.config.topics.explore_more)):

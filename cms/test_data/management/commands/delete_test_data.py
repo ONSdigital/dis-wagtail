@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from typing import Any
 
 from django.apps import apps
+from django.conf import settings
 from django.contrib.admin.utils import NestedObjects
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -9,7 +10,6 @@ from django.db.models import CharField, Model, Q, TextField
 from treebeard.mp_tree import MP_Node
 
 from cms.taxonomy.models import Topic
-from cms.test_data.constants import SEEDED_DATA_PREFIX
 from cms.test_data.signals import disconnect_receivers, index_receivers, search_publisher_receivers
 
 
@@ -37,7 +37,7 @@ class Command(BaseCommand):
             if field.is_relation or not isinstance(field, CharField | TextField):
                 continue
 
-            lookups |= Q(**{f"{field.name}__startswith": SEEDED_DATA_PREFIX})
+            lookups |= Q(**{f"{field.name}__startswith": settings.CMS_TEST_DATA_PREFIX})
 
         return lookups
 
