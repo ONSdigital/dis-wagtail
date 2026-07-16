@@ -1,9 +1,12 @@
 from functools import partial
-from typing import ClassVar, Self
+from typing import TYPE_CHECKING, ClassVar, Self
 
 from django.conf import settings
 from django.db import models, transaction
 from django.utils import timezone
+
+if TYPE_CHECKING:
+    from bundles.models import Bundle
 
 
 class PostPublishActionType(models.TextChoices):
@@ -42,6 +45,9 @@ class PostPublishActionQuerySet(models.QuerySet):
 
     def failed(self) -> Self:
         return self.completed().filter(status=PostPublishActionStatus.FAILED)
+
+    def count_for_bundle(self, bundle_id: int | Bundle) -> int:
+        return self.filter(bundle=bundle_id).count()
 
     def mark_timed_out(self) -> int:
         now = timezone.now()

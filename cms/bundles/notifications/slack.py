@@ -287,12 +287,12 @@ def notify_slack_of_publish_end(
             {"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False},
             {
                 "title": "Post-Publish Actions Successful",
-                "value": str(PostPublishAction.objects.successful().filter(bundle=bundle).count()),
+                "value": str(PostPublishAction.objects.successful().count_for_bundle(bundle)),
                 "short": True,
             },
             {
                 "title": "Post-Publish Actions Failed",
-                "value": str(PostPublishAction.objects.failed().filter(bundle=bundle).count()),
+                "value": str(PostPublishAction.objects.failed().count_for_bundle(bundle)),
                 "short": True,
             },
         ]
@@ -331,7 +331,7 @@ def notify_slack_of_post_publish_end(
         url: The URL to link to the bundle (optional).
         publish_failed: True if the bundle did not publish successfully.
     """
-    failed_post_publish_actions_count = PostPublishAction.objects.failed().filter(bundle=bundle).count()
+    failed_post_publish_actions_count = PostPublishAction.objects.failed().count_for_bundle(bundle)
 
     bundle_page_count = bundle.get_bundled_pages().count()
     bundle_dataset_count = bundle.bundled_datasets.count()
@@ -387,7 +387,7 @@ def notify_slack_of_post_publish_end(
             {"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False},
             {
                 "title": "Post-Publish Actions Successful",
-                "value": str(PostPublishAction.objects.successful().filter(bundle=bundle).count()),
+                "value": str(PostPublishAction.objects.successful().count_for_bundle(bundle)),
                 "short": True,
             },
             {
