@@ -80,10 +80,7 @@ class Command(BaseCommand):
 
         if as_completed_collector.value:
             outstanding_actions = (
-                PostPublishAction.objects.unfinished()
-                .active()
-                .filter(bundle__in=as_completed_collector.value)
-                .mark_timed_out()
+                PostPublishAction.objects.pending().filter(bundle__in=as_completed_collector.value).mark_timed_out()
             )
             logger.error(
                 "Post publish actions timeout",

@@ -31,6 +31,18 @@ class PostPublishActionQuerySet(models.QuerySet):
     def unfinished(self) -> Self:
         return self.filter(finished_at=None)
 
+    def pending(self) -> Self:
+        return self.active().unfinished()
+
+    def completed(self) -> Self:
+        return self.active().finished()
+
+    def successful(self) -> Self:
+        return self.completed().filter(status=PostPublishActionStatus.SUCCESSFUL)
+
+    def failed(self) -> Self:
+        return self.completed().filter(status=PostPublishActionStatus.FAILED)
+
     def mark_timed_out(self) -> int:
         now = timezone.now()
         return self.update(

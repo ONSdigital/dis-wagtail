@@ -38,8 +38,7 @@ def as_completed_actions_by_bundle(
         and (timezone.now() - start_time).total_seconds() <= settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS
     ):
         unfinished_bundles: set[int] = set(
-            PostPublishAction.objects.unfinished()
-            .active()
+            PostPublishAction.objects.pending()
             .filter(bundle__in=bundles_to_check)
             .values_list("bundle_id", flat=True)
             .distinct()
@@ -67,7 +66,7 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_f
 
     # If the generator returned a value, it means the bundle timed out
     if as_completed_collector.value:
-        outstanding_actions = PostPublishAction.objects.active().unfinished().filter(bundle=bundle).mark_timed_out()
+        outstanding_actions = PostPublishAction.objects.pending().filter(bundle=bundle).mark_timed_out()
         logger.error(
             "Post publish actions timeout",
             extra={

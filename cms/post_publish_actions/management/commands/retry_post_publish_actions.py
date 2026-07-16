@@ -55,10 +55,7 @@ class Command(BaseCommand):
             and (timezone.now() - start_time).total_seconds() <= settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS
         ):
             actions_to_retry_ids -= set(
-                PostPublishAction.objects.finished()
-                .active()
-                .filter(id__in=actions_to_retry_ids)
-                .values_list("id", flat=True)
+                PostPublishAction.objects.completed().filter(id__in=actions_to_retry_ids).values_list("id", flat=True)
             )
 
             # Only wait if there are bundles to check
@@ -66,7 +63,7 @@ class Command(BaseCommand):
                 time.sleep(settings.BUNDLE_POST_PUBLISH_POLL_FREQUENCY)
 
         if actions_to_retry_ids:
-            PostPublishAction.objects.active().unfinished().filter(id__in=actions_to_retry_ids).mark_timed_out()
+            PostPublishAction.objects.pending().filter(id__in=actions_to_retry_ids).mark_timed_out()
             logger.error(
                 "Post publish actions timeout",
                 extra={
