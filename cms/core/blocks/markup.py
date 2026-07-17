@@ -271,10 +271,9 @@ class ONSTableBlock(TinyTableBlock):
         # Flatten table data for size calculation
         csv_rows = flatten_table_data(data)
 
-        size_suffix = get_approximate_file_size_in_kb(csv_rows)
-        file_size = size_suffix.removesuffix("KB").strip()
-        size_suffix = f" ({size_suffix})"
-        link_text = _("Download CSV %(size)s") % {"size": size_suffix}
+        file_size_with_unit = get_approximate_file_size_in_kb(csv_rows)
+        file_size_kb = file_size_with_unit.removesuffix("KB")
+        link_text = _("Download CSV (%(size)s)") % {"size": file_size_with_unit}
 
         # Build URL (preview vs published)
         request = parent_context.get("request")
@@ -286,7 +285,7 @@ class ONSTableBlock(TinyTableBlock):
         )
 
         data_attributes = self._get_gtm_attributes_table_download(
-            link_text, csv_url, file_size, table_title, table_caption
+            link_text, csv_url, file_size_kb, table_title, table_caption
         )
 
         return {

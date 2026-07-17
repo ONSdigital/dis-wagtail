@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-06 17:07+0100\n"
+"POT-Creation-Date: 2026-07-17 14:53+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -73,14 +73,14 @@ msgstr "Dangos popeth"
 msgid "Hide all"
 msgstr "Cuddio popeth"
 
-#: cms/core/blocks/markup.py:260
+#: cms/core/blocks/markup.py:276
+#, python-format
+msgid "Download CSV (%(size)s)"
+msgstr "Lawrlwythwch CSV (%(size)s)"
+
+#: cms/core/blocks/markup.py:292
 msgid "Download this table"
 msgstr "Lawrlwythwch y tabl hwn"
-
-#: cms/core/blocks/markup.py:261
-#, python-format
-msgid "Download CSV %(size)s"
-msgstr "Lawrlwythwch CSV %(size)s"
 
 #: cms/core/blocks/related.py:60
 msgid "Related links"
@@ -166,7 +166,7 @@ msgstr "Mae’r holl gynnwys ar gael o dan y"
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
-#: cms/datavis/blocks/base.py:161 cms/datavis/blocks/charts.py:883
+#: cms/datavis/blocks/base.py:163 cms/datavis/blocks/charts.py:883
 #: cms/jinja2/templates/components/streamfield/table_block.html:15
 msgid "Footnotes"
 msgstr "Troednodiadau"
