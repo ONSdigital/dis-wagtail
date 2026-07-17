@@ -7,6 +7,8 @@ from cms.data_downloads.utils import (
     clean_cell_value,
     create_data_csv_download_response_from_data,
     flatten_table_data,
+    get_csv_download_filename,
+    get_table_csv_download_title,
     sanitize_data_for_csv,
 )
 
@@ -559,36 +561,16 @@ class SanitizeDataForCsvTests(SimpleTestCase):
 
 class CreateDataCsvDownloadResponseFromDataTests(SimpleTestCase):
     def test_returns_csv_content_type(self):
-        response = create_data_csv_download_response_from_data([["a", "b"]], title="test")
+        response = create_data_csv_download_response_from_data([["a", "b"]], filename="test.csv")
         self.assertEqual(response["Content-Type"], "text/csv")
 
     def test_content_starts_with_bom(self):
-        response = create_data_csv_download_response_from_data([["a", "b"]], title="test")
+        response = create_data_csv_download_response_from_data([["a", "b"]], filename="test.csv")
         self.assertStartsWith(response.content, codecs.BOM_UTF8)
 
-    def test_sets_content_disposition_with_slugified_filename(self):
-        response = create_data_csv_download_response_from_data([["a", "b"]], title="My Chart")
+    def test_sets_content_disposition_with_filename(self):
+        response = create_data_csv_download_response_from_data([["a", "b"]], filename="my-chart.csv")
         self.assertEqual(response["Content-Disposition"], 'attachment; filename="my-chart.csv"')
-
-    def test_slugifies_title_with_special_characters(self):
-        response = create_data_csv_download_response_from_data([["a", "b"]], title="Population Growth (2020-2024)!")
-        self.assertEqual(response["Content-Disposition"], 'attachment; filename="population-growth-2020-2024.csv"')
-
-    def test_uses_fallback_for_empty_title(self):
-        response = create_data_csv_download_response_from_data([["a", "b"]], title="")
-        self.assertEqual(response["Content-Disposition"], 'attachment; filename="chart.csv"')
-
-    def test_slugifies_long_complex_title(self):
-        title = (
-            "Figure 4: Output per worker using RTI data grew by 1.7%, while output per worker using LFS data "
-            "grew by 1.4% in January to March 2025, compared with 2019 (average level)"
-        )
-        expected_filename = (
-            "figure-4-output-per-worker-using-rti-data-grew-by-17-while-output-per-worker-using-lfs-data-"
-            "grew-by-14-in-january-to-march-2025-compared-with-2019-average-level"
-        )
-        response = create_data_csv_download_response_from_data([["a", "b"]], title=title)
-        self.assertEqual(response["Content-Disposition"], f'attachment; filename="{expected_filename}.csv"')
 
     def test_writes_data_rows_to_csv(self):
         data = [
@@ -596,7 +578,7 @@ class CreateDataCsvDownloadResponseFromDataTests(SimpleTestCase):
             ["2020", "100", "150"],
             ["2021", "120", "180"],
         ]
-        response = create_data_csv_download_response_from_data(data, title="test")
+        response = create_data_csv_download_response_from_data(data, filename="test.csv")
         content = response.content.decode("utf-8")
 
         self.assertIn("Category,Value 1,Value 2", content)
@@ -606,5 +588,57 @@ class CreateDataCsvDownloadResponseFromDataTests(SimpleTestCase):
     def test_handles_empty_data(self):
         # This is an edge case as all charts will have some data
         # Responses should start with a BOM regardless of any content
-        response = create_data_csv_download_response_from_data([], title="empty")
+        response = create_data_csv_download_response_from_data([], filename="empty.csv")
         self.assertEqual(response.content, codecs.BOM_UTF8)
+
+
+class GetCsvDownloadFilenameTests(SimpleTestCase):
+    def test_returns_slugified_title(self):
+        filename = get_csv_download_filename(title="My Chart", fallback_stem="chart")
+        self.assertEqual(filename, "my-chart.csv")
+
+    def test_slugifies_title_with_special_characters(self):
+        filename = get_csv_download_filename(title="Population Growth (2020-2024)!", fallback_stem="chart")
+        self.assertEqual(filename, "population-growth-2020-2024.csv")
+
+    def test_slugifies_long_complex_filename(self):
+        title = (
+            "Figure 4: Output per worker using RTI data grew by 1.7%, while output per worker using LFS data "
+            "grew by 1.4% in January to March 2025, compared with 2019 (average level)"
+        )
+        filename = get_csv_download_filename(title=title, fallback_stem="chart")
+        expected_filename = (
+            "figure-4-output-per-worker-using-rti-data-grew-by-17-while-output-per-worker-using-lfs-data-"
+            "grew-by-14-in-january-to-march-2025-compared-with-2019-average-level.csv"
+        )
+        self.assertEqual(filename, expected_filename)
+
+    def test_uses_fallback_filename_when_title_is_empty(self):
+        filename = get_csv_download_filename(title="", fallback_stem="chart")
+        self.assertEqual(filename, "chart.csv")
+
+    def test_uses_fallback_filename_when_title_is_none(self):
+        filename = get_csv_download_filename(title=None, fallback_stem="chart")
+        self.assertEqual(filename, "chart.csv")
+
+    def test_uses_fallback_filename_when_title_is_not_slugifiable(self):
+        filename = get_csv_download_filename(title="!!!", fallback_stem="chart")
+        self.assertEqual(filename, "chart.csv")
+
+    def test_uses_fallback_filename_when_title_is_whitespace(self):
+        filename = get_csv_download_filename(title="  ", fallback_stem="chart")
+        self.assertEqual(filename, "chart.csv")
+
+
+class GetTableCsvDownloadTitleTests(SimpleTestCase):
+    def test_returns_title_when_present(self):
+        result = get_table_csv_download_title(title="Table title", caption="Table caption")
+        self.assertEqual(result, "Table title")
+
+    def test_returns_caption_when_title_is_none(self):
+        result = get_table_csv_download_title(title=None, caption="Table caption")
+        self.assertEqual(result, "Table caption")
+
+    def test_returns_caption_when_title_is_empty(self):
+        result = get_table_csv_download_title(title="", caption="Table caption")
+        self.assertEqual(result, "Table caption")
