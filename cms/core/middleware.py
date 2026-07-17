@@ -75,6 +75,10 @@ class CloudflareWagtailCacheTagMiddleware(MiddlewareMixin):
 
         return view_module.startswith("wagtail.")
 
+    def _parse_cache_tags(self, header: str) -> list[str]:
+        """Parse the Cache-Tag header into a list of tags."""
+        return [tag.strip() for tag in header.split(",") if tag.strip()] if header else []
+
     def process_response(self, request: HttpRequest, response: HttpResponse) -> HttpResponse:
         """Add the Cloudflare cache tag header to the response."""
         # Only tag successful responses, not client or server errors
@@ -94,10 +98,9 @@ class CloudflareWagtailCacheTagMiddleware(MiddlewareMixin):
 
         # Add tag if header already exists and tag is not present
         existing_header = response.get(CLOUDFLARE_CACHE_TAG_HEADER, "")
-        existing_tags = [t.strip() for t in existing_header.split(",") if t.strip()] if existing_header else []
+        existing_tags = self._parse_cache_tags(existing_header)
         if cache_tag not in existing_tags:
             updated_tags = [*existing_tags, cache_tag]
             response[CLOUDFLARE_CACHE_TAG_HEADER] = ",".join(updated_tags)
-        print(response[CLOUDFLARE_CACHE_TAG_HEADER])
 
         return response
