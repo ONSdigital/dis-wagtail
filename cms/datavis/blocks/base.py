@@ -347,7 +347,7 @@ class BaseChartBlock(BaseVisualisationBlock):
             superseded_version: int | None = parent_context.get("superseded_version")
             csv_url = self._build_chart_download_url(page, block_id, superseded_version)
 
-        link_text = f"Download CSV ({file_size_with_unit})"
+        link_text = _("Download CSV (%(size)s)") % {"size": file_size_with_unit}
 
         return {
             "text": link_text,
