@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.core.cache import cache
+from django.db.models import Model
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.html import format_html
@@ -66,12 +67,30 @@ register_snippet(DefinitionViewSet)
 @hooks.register("before_edit_page")
 def log_page_edit_view(request: HttpRequest, page: Page) -> None:
     """Log when a user views the page edit view, with a cooldown to prevent duplicate entries."""
+    if request.method != "GET":
+        return
+
     cache_key = f"page_edit_view_log:{page.pk}:{request.user.pk}"
 
     if cache.get(cache_key):
         return
 
     log(action="pages.edit_view", instance=page)
+    cache.set(cache_key, True, timeout=settings.CMS_AUDIT_LOG_COOLDOWN_SECONDS)
+
+
+@hooks.register("before_edit_snippet")
+def log_snippet_edit_view(request: HttpRequest, instance: Model) -> None:
+    """Log when a user views the snippet edit view, with a cooldown to prevent duplicate entries."""
+    if request.method != "GET":
+        return
+
+    cache_key = f"snippet_edit_view_log:{instance._meta.label}:{instance.pk}:{request.user.pk}"
+
+    if cache.get(cache_key):
+        return
+
+    log(action="snippets.edit_view", instance=instance)
     cache.set(cache_key, True, timeout=settings.CMS_AUDIT_LOG_COOLDOWN_SECONDS)
 
 
@@ -237,6 +256,21 @@ def register_core_log_actions(actions: LogActionRegistry) -> None:
         def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
             return "Viewed page editor"
+
+    @actions.register_action("snippets.edit_view")
+    class SnippetEditView(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for viewing the snippet edit view."""
+
+        label = "View snippet editor"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            msg = "Viewed snippet editor"
+            try:
+                model_name = log_entry.content_type.model_class()._meta.verbose_name
+                return f"{msg} for {model_name}"
+            except AttributeError:
+                return msg
 
     @actions.register_action("pages.preview_mode_used")
     class PreviewModeUse(LogFormatter):  # pylint: disable=unused-variable
