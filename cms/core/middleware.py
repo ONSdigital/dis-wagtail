@@ -9,7 +9,6 @@ from cms.core.utils import redirect
 
 NON_TRAILING_SLASH_METHODS = {"GET", "HEAD"}
 CLOUDFLARE_CACHE_TAG_HEADER = "Cache-Tag"
-DEFAULT_WAGTAIL_CLOUDFLARE_CACHE_TAG = "wagtail"
 
 ALLOWED_REQUEST_PATHS = {
     settings.DJANGO_ADMIN_HOME_PATH,
@@ -85,13 +84,8 @@ class CloudflareWagtailCacheTagMiddleware(MiddlewareMixin):
         if not self._is_wagtail_route(request):
             return response
 
-        cache_tag = getattr(
-            settings,
-            "WAGTAIL_CLOUDFLARE_CACHE_TAG",
-            DEFAULT_WAGTAIL_CLOUDFLARE_CACHE_TAG,
-        )
-
-        if not cache_tag:
+        cache_tag = getattr(settings, "WAGTAIL_CLOUDFLARE_CACHE_TAG", None)
+        if cache_tag is None:
             return response
 
         # TODO rework, ensure exact match of cache tag not substring, check logic is solid

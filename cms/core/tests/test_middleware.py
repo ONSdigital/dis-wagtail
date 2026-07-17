@@ -143,6 +143,7 @@ class TestNonTrailingSlashRedirectMiddleware(TestCase):
                 self.assertEqual(result, expected)
 
 
+@override_settings(WAGTAIL_CLOUDFLARE_CACHE_TAG="wagtail")
 class TestCloudflareWagtailCacheTagMiddleware(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
