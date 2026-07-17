@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from django.template.defaultfilters import filesizeformat
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
+from wagtail.coreutils import get_dummy_request
 from wagtail.images import get_image_model
 from wagtail.images.tests.utils import get_test_image_file
 from wagtail.rich_text import RichText
@@ -31,6 +32,8 @@ from cms.core.blocks.definitions import DefinitionsBlock
 from cms.core.tests.factories import DefinitionFactory
 from cms.core.tests.utils import get_test_document
 from cms.core.utils import UNWANTED_CONTROL_CHARACTERS
+from cms.data_downloads.utils import flatten_table_data, get_csv_download_filename
+from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 from cms.home.models import HomePage
 from cms.standard_pages.models import InformationPage
 
@@ -1052,6 +1055,66 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         download_url = result["options"]["download"]["itemsList"][0]["url"]
         self.assertEqual(download_url, "/economy/articles/test-article/download-table/test-block-id")
+
+    def test_ons_table_block_download_data_attributes_in_context(self):
+        """Verify expected GTM data attributes are present in download context data."""
+        page = StatisticalArticlePageFactory()
+        context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": get_dummy_request(),
+        }
+
+        result = self.block.get_context(self.full_data, parent_context=context)
+
+        expected_file_size = get_approximate_file_size_in_kb(flatten_table_data(self.full_data["data"])).removesuffix(
+            "KB"
+        )
+
+        download_items_list = result["options"]["download"]["itemsList"][0]
+
+        expected_attributes = {
+            "data-ga-event": "file-download",
+            "data-ga-file-extension": "csv",
+            "data-ga-file-name": get_csv_download_filename(title=self.full_data.get("title"), fallback_stem="table"),
+            "data-ga-link-text": download_items_list["text"],
+            "data-ga-link-url": urlparse(download_items_list["url"]).path,
+            "data-ga-link-domain": urlparse(download_items_list["url"]).hostname,
+            "data-ga-file-size": expected_file_size,
+        }
+
+        self.assertEqual(download_items_list["attributes"], expected_attributes)
+
+    def test_ons_table_block_download_data_attributes_in_rendered_html(self):
+        """Verify GTM data attributes exist in the rendered HTML."""
+        page = StatisticalArticlePageFactory()
+        context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": get_dummy_request(),
+        }
+
+        result = self.block.get_context(self.full_data, parent_context=context)
+
+        expected_file_size = get_approximate_file_size_in_kb(flatten_table_data(self.full_data["data"])).removesuffix(
+            "KB"
+        )
+        download_items_list = result["options"]["download"]["itemsList"][0]
+
+        rendered = self.block.render(self.full_data, context=context)
+        soup = BeautifulSoup(rendered, "html.parser")
+        download_list_item = soup.find("p", class_="ons-list__item")
+
+        self.assertEqual(download_list_item.get("data-ga-event"), "file-download")
+        self.assertEqual(download_list_item.get("data-ga-file-extension"), "csv")
+        self.assertEqual(
+            download_list_item.get("data-ga-file-name"),
+            get_csv_download_filename(title=self.full_data.get("title"), fallback_stem="table"),
+        )
+        self.assertEqual(download_list_item.get("data-ga-link-text"), download_items_list["text"])
+        self.assertEqual(download_list_item.get("data-ga-link-url"), urlparse(download_items_list["url"]).path)
+        self.assertEqual(download_list_item.get("data-ga-link-domain"), urlparse(download_items_list["url"]).hostname)
+        self.assertEqual(download_list_item.get("data-ga-file-size"), expected_file_size)
 
     def test_additional_sections_heading_level_with_title_and_no_subtitle(self):
         """Test that footnotes and downloads headings render at h4 when table title is present."""
