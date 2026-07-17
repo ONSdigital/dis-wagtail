@@ -205,7 +205,7 @@ class TestCloudflareWagtailCacheTagMiddleware(TestCase):
         response = HttpResponse("Test content")
         response["Cache-Tag"] = "existing-tag"
         result = self.middleware.process_response(request, response)
-        self.assertEqual(result.get("Cache-Tag"), "existing-tag, wagtail")
+        self.assertEqual(result.get("Cache-Tag"), "existing-tag,wagtail")
 
     def test_does_not_duplicate_existing_tag(self):
         """If the configured tag already exists, it should not be added again."""

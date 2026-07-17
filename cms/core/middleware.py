@@ -88,12 +88,16 @@ class CloudflareWagtailCacheTagMiddleware(MiddlewareMixin):
         if cache_tag is None:
             return response
 
-        # TODO rework, ensure exact match of cache tag not substring, check logic is solid
-        existing_tags = response.get(CLOUDFLARE_CACHE_TAG_HEADER, "")
-        if cache_tag not in existing_tags.split(","):  # TODO resolve
-            if existing_tags:
-                response[CLOUDFLARE_CACHE_TAG_HEADER] = f"{existing_tags}, {cache_tag}"
-            else:
-                response[CLOUDFLARE_CACHE_TAG_HEADER] = cache_tag
+        cache_tag = str(cache_tag).strip()
+        if not cache_tag:
+            return response
+
+        # Add tag if header already exists and tag is not present
+        existing_header = response.get(CLOUDFLARE_CACHE_TAG_HEADER, "")
+        existing_tags = [t.strip() for t in existing_header.split(",") if t.strip()] if existing_header else []
+        if cache_tag not in existing_tags:
+            updated_tags = [*existing_tags, cache_tag]
+            response[CLOUDFLARE_CACHE_TAG_HEADER] = ",".join(updated_tags)
+        print(response[CLOUDFLARE_CACHE_TAG_HEADER])
 
         return response
