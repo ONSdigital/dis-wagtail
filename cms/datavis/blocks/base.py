@@ -7,11 +7,11 @@ from django.conf import settings
 from django.forms.widgets import RadioSelect
 from django.urls import reverse
 from django.utils.html import strip_tags
-from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
+from cms.data_downloads.utils import get_csv_download_filename
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
@@ -360,10 +360,11 @@ class BaseChartBlock(BaseVisualisationBlock):
         self, text: str, url: str, file_size: str, value: StructValue
     ) -> dict[str, str]:
         parsed_url = urlparse(url)
+        filename = get_csv_download_filename(title=value.get("title"), fallback_stem="chart")
         return {
             "data-ga-event": "file-download",
             "data-ga-file-extension": "csv",
-            "data-ga-file-name": slugify(value.get("title")),
+            "data-ga-file-name": filename,
             "data-ga-link-text": text,
             "data-ga-link-url": parsed_url.path,
             "data-ga-link-domain": parsed_url.hostname,

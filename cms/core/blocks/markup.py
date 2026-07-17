@@ -13,7 +13,11 @@ from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
 
 from cms.core.utils import strip_unwanted_control_chars_from_json
-from cms.data_downloads.utils import flatten_table_data
+from cms.data_downloads.utils import (
+    flatten_table_data,
+    get_csv_download_filename,
+    get_table_csv_download_title,
+)
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 
 if TYPE_CHECKING:
@@ -318,10 +322,12 @@ class ONSTableBlock(TinyTableBlock):
         text: str, url: str, file_size: str, title: str, caption: str
     ) -> dict[str, str]:
         parsed_url = urlparse(url)
+        csv_title = get_table_csv_download_title(title=title, caption=caption)
+        file_name = get_csv_download_filename(title=csv_title, fallback_stem="table")
         return {
             "data-ga-event": "file-download",
             "data-ga-file-extension": "csv",
-            "data-ga-file-name": title or caption,
+            "data-ga-file-name": file_name,
             "data-ga-link-text": text,
             "data-ga-link-url": parsed_url.path,
             "data-ga-link-domain": parsed_url.hostname,

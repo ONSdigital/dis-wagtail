@@ -10,7 +10,11 @@ from wagtail.log_actions import log
 from wagtail.models import Page
 
 from cms.data_downloads.permissions import get_revision_page_for_request, user_can_access_csv_download
-from cms.data_downloads.utils import create_data_csv_download_response_from_data
+from cms.data_downloads.utils import (
+    create_data_csv_download_response_from_data,
+    get_csv_download_filename,
+    get_table_csv_download_title,
+)
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -19,14 +23,14 @@ logger = logging.getLogger(__name__)
 
 
 def get_csv_data_from_chart(revision_page: Page, chart_id: str) -> tuple[list[list[str | int | float]], str]:
-    """Extract CSV data and title from chart.
+    """Extract CSV data and filename from chart.
 
     Args:
         revision_page: The page object containing the chart.
         chart_id: The unique block ID of the chart.
 
     Returns:
-        A tuple of (data, title) where data is a 2D list for CSV export.
+        A tuple of (data, filename) where data is a 2D list for CSV export.
 
     Raises:
         Http404: If chart not found or data is malformed.
@@ -43,18 +47,19 @@ def get_csv_data_from_chart(revision_page: Page, chart_id: str) -> tuple[list[li
             extra={"chart_id": chart_id, "page_id": revision_page.id, "page_slug": revision_page.slug},
         )
         raise Http404 from e
-    return data, chart_data.get("title", "chart")
+    filename = get_csv_download_filename(title=chart_data.get("title"), fallback_stem="chart")
+    return data, filename
 
 
 def get_csv_data_from_table(revision_page: Page, table_id: str) -> tuple[list[list[str | int | float]], str]:
-    """Extract CSV data and title from table.
+    """Extract CSV data and filename from table.
 
     Args:
         revision_page: The page object containing the table.
         table_id: The unique block ID of the table.
 
     Returns:
-        A tuple of (data, title) where data is a 2D list for CSV export.
+        A tuple of (data, filename) where data is a 2D list for CSV export.
 
     Raises:
         Http404: If table not found or data extraction fails.
@@ -69,8 +74,9 @@ def get_csv_data_from_table(revision_page: Page, table_id: str) -> tuple[list[li
         )
         raise Http404 from e
     table_data = revision_page.get_table(table_id)
-    title = table_data.get("title") or table_data.get("caption") or "table"
-    return csv_data, title
+    title = get_table_csv_download_title(title=table_data.get("title"), caption=table_data.get("caption"))
+    filename = get_csv_download_filename(title=title, fallback_stem="table")
+    return csv_data, filename
 
 
 @method_decorator(user_passes_test(user_can_access_csv_download), name="dispatch")
@@ -97,7 +103,7 @@ class RevisionChartDownloadView(View):
             Http404: If chart not found or data is invalid.
         """
         revision_page = get_revision_page_for_request(request, page_id, revision_id)
-        csv_data, title = get_csv_data_from_chart(revision_page, chart_id)
+        csv_data, filename = get_csv_data_from_chart(revision_page, chart_id)
 
         log(
             action="content.chart_download",
@@ -107,7 +113,7 @@ class RevisionChartDownloadView(View):
                 "revision_id": revision_id,
             },
         )
-        return create_data_csv_download_response_from_data(csv_data, title=title)
+        return create_data_csv_download_response_from_data(csv_data, filename=filename)
 
 
 @method_decorator(user_passes_test(user_can_access_csv_download), name="dispatch")
@@ -134,7 +140,7 @@ class RevisionTableDownloadView(View):
             Http404: If table not found or data extraction fails.
         """
         revision_page = get_revision_page_for_request(request, page_id, revision_id)
-        csv_data, title = get_csv_data_from_table(revision_page, table_id)
+        csv_data, filename = get_csv_data_from_table(revision_page, table_id)
 
         log(
             action="content.table_download",
@@ -144,4 +150,4 @@ class RevisionTableDownloadView(View):
                 "revision_id": revision_id,
             },
         )
-        return create_data_csv_download_response_from_data(csv_data, title=title)
+        return create_data_csv_download_response_from_data(csv_data, filename=filename)

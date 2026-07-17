@@ -123,21 +123,33 @@ def sanitize_data_for_csv(data: list[list[str | int | float]]) -> list[list[str 
     return sanitized_rows
 
 
-def create_data_csv_download_response_from_data(data: list[list[str | int | float]], *, title: str) -> HttpResponse:
+def get_table_csv_download_title(*, title: str | None, caption: str) -> str:
+    """Returns the display title for a table CSV download."""
+    return title or caption
+
+
+def get_csv_download_filename(*, title: str | None, fallback_stem: str) -> str:
+    """Returns a slugified CSV filename from the given title, falling back to fallback_stem if the title is absent or
+    not slugifiable.
+    """
+    filename = slugify(title or "") or fallback_stem
+    return f"{filename}.csv"
+
+
+def create_data_csv_download_response_from_data(data: list[list[str | int | float]], *, filename: str) -> HttpResponse:
     """Creates a Django HttpResponse for downloading a CSV file from table data.
 
     Args:
         data: The list of data rows to be converted to CSV, where each row is a list of values.
-        title: The title for the CSV file, which will be slugified to create the filename.
+        filename: The final filename for the CSV download.
 
     Returns:
         A Django HttpResponse object configured for CSV file download.
     """
-    filename = slugify(title) or "chart"
     response = HttpResponse(
         content_type="text/csv",
         headers={
-            "Content-Disposition": f'attachment; filename="{filename}.csv"',
+            "Content-Disposition": f'attachment; filename="{filename}"',
         },
     )
     response.write(codecs.BOM_UTF8)
