@@ -1179,7 +1179,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         cls.small = cls.image.get_rendition("width-1024")
         cls.large = cls.image.get_rendition("width-2048")
 
-    def _make_information_page(self, *, download: bool, image=None) -> InformationPage:
+    def _make_information_page(self, *, download: bool, image=None, alternative_text: str = "") -> InformationPage:
         image = image or self.image
 
         page = InformationPage(
@@ -1195,9 +1195,12 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
                                 "type": "image",
                                 "value": {
                                     "image": image.id,
-                                    "figure_title": "Figure 1",
-                                    "figure_subtitle": "Figure subtitle",
+                                    "alternative_text": alternative_text,
+                                    "figure_number": "Figure 1",
+                                    "figure_title": "The image title",
+                                    "figure_subtitle": "The image subtitle",
                                     "supporting_text": "Office for National Statistics",
+                                    "notes_section": "<p>Some important notes</p>",
                                     "download": download,
                                 },
                                 "id": str(uuid.uuid4()),
@@ -1219,13 +1222,33 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         response = self.client.get(page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        # Alt text from CustomImage.description
+        # Alt text falls back to CustomImage.description when alternative_text is not set
         self.assertContains(response, 'alt="Meaningful alt text"')
 
         # onsImage macro outputs src/srcset with both specific rendition URLs
         # Use the underlying file URLs to be agnostic of serve method
         self.assertContains(response, self.small.file.url)
         self.assertContains(response, self.large.file.url)
+
+        # Figure fields rendered by DS macro
+        self.assertContains(response, "Figure 1")
+        self.assertContains(response, "The image title")
+        self.assertContains(response, "The image subtitle")
+
+        # Source prefixed with "Source: "
+        self.assertContains(response, "Source: Office for National Statistics")
+
+        # Notes rendered
+        self.assertContains(response, "Some important notes")
+
+    def test_alternative_text_overrides_image_description(self):
+        page = self._make_information_page(download=False, alternative_text="Custom alt text")
+
+        response = self.client.get(page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(response, 'alt="Custom alt text"')
+        self.assertNotContains(response, 'alt="Meaningful alt text"')
 
     def test_renders_download_link_with_file_type_and_size_when_enabled(self):
         page = self._make_information_page(download=True)
@@ -1239,12 +1262,14 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         # HTML5 download attribute present once (avoid base-template noise)
         self.assertContains(response, " download", count=1)
 
-        # Large rendition used for download (assert exact URL appears twice in the response)
-        # Assert exact downloadable rendition file URL appears twice: once in href, once in onsImage srcset
+        # Large rendition used for download
+        # Appers twice in the response - once in the image srcset attribute and once in the download url
         self.assertContains(response, self.large.file.url, count=2)
+        # Small rendition
+        # Appers twice in the response - once in the image src attribute and once in the image srcset attribute
         self.assertContains(response, self.small.file.url, count=2)
 
-        # Assert the actual download anchor exists and targets the large rendition URL
+        # Download link rendered by DS figure macro targets the large rendition
         html = response.content.decode(response.charset or "utf-8", errors="replace")
         soup = BeautifulSoup(html, "html.parser")
         download_link = soup.select_one("a[download]")
@@ -1291,11 +1316,9 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertContains(response, page.title)
         self.assertContains(response, "Summary")
 
-        # Download UI should not render when the image is missing
+        # Nothing from the image block renders when the image is missing
         self.assertNotContains(response, "Download this image")
         self.assertNotContains(response, " download")
-
-        # Image block content should render without the image
-        self.assertContains(response, "Figure 1")
-        self.assertContains(response, "Figure subtitle")
-        self.assertContains(response, "Office for National Statistics")
+        self.assertNotContains(response, "Figure 1")
+        self.assertNotContains(response, "The image title")
+        self.assertNotContains(response, "The image subtitle")
