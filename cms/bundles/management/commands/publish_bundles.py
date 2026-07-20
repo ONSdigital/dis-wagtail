@@ -75,7 +75,7 @@ class Command(BaseCommand):
 
         for completed_bundle in as_completed_collector:
             logger.info(
-                f"_handle_bundle_post_publish_complete submitting to support executor for bundle {completed_bundle.pk}"
+                "_handle_bundle_post_publish_complete submitting to support executor for bundle %s", completed_bundle.pk
             )
             bundle_complete_futures.append(
                 run_in_post_publish_support_executor(self._handle_bundle_post_publish_complete, bundle=completed_bundle)
@@ -94,7 +94,7 @@ class Command(BaseCommand):
             )
             for bundle in as_completed_collector.value:
                 logger.info(
-                    f"_handle_bundle_post_publish_complete submitting to support executor for bundle {bundle.pk}"
+                    "_handle_bundle_post_publish_complete submitting to support executor for bundle %s", bundle.pk
                 )
                 bundle_complete_futures.append(
                     run_in_post_publish_support_executor(self._handle_bundle_post_publish_complete, bundle=bundle)
