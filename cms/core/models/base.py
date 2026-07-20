@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, ClassVar, Self, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
 
 from django.conf import settings
 from django.core.cache import cache
@@ -150,6 +150,29 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         # Override in subclasses where the breadcrumb label should differ from the page title.
         return str(self.title)
 
+    @staticmethod
+    def get_gtm_attributes_for_breadcrumbs(
+        page: BasePage, request: HttpRequest, link_text: str, position: int
+    ) -> dict[str, Any]:
+        attributes = {
+            "data-ga-event": "navigation-click",
+            "data-ga-navigation-type": "breadcrumb",
+            "data-ga-link-text": link_text,
+            "data-ga-click-path": page.get_url(request=request),
+            "data-ga-click-position": position,
+        }
+
+        if content_type := page.analytics_content_type:
+            attributes["data-ga-click-content-type"] = content_type
+
+        if content_group := page.analytics_content_group:
+            attributes["data-ga-click-content-group"] = content_group
+
+        if content_theme := page.analytics_content_theme:
+            attributes["data-ga-click-content-theme"] = content_theme
+
+        return attributes
+
     def get_breadcrumbs(self, request: HttpRequest) -> list[dict[str, object]]:
         """Returns the breadcrumbs for the page as a list of dictionaries compatible with the ONS design system
         breadcrumbs component.
@@ -157,17 +180,45 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         if prebuilt_breadcrumbs := getattr(self, "_breadcrumbs", None):
             return prebuilt_breadcrumbs  # type: ignore[no-any-return]
 
-        breadcrumbs = []
+        breadcrumbs: list[dict[str, object]] = []
         homepage_depth = 2
         for ancestor_page in self.get_ancestors().specific(defer=True):
             if ancestor_page.is_root():
                 continue
             if ancestor_page.depth <= homepage_depth:
-                breadcrumbs.append({"url": self.get_site().root_url, "text": _("Home")})
+                breadcrumb_url = self.get_site().root_url
+                breadcrumb_text = _("Home")
+
             elif not getattr(ancestor_page, "exclude_from_breadcrumbs", False):
-                breadcrumbs.append({"url": ancestor_page.get_full_url(request=request), "text": ancestor_page.title})
+                breadcrumb_url = ancestor_page.get_full_url(request=request)
+                breadcrumb_text = ancestor_page.title
+
+            else:
+                continue
+
+            breadcrumb_position = len(breadcrumbs) + 1
+            breadcrumbs.append(
+                {
+                    "url": breadcrumb_url,
+                    "text": breadcrumb_text,
+                    "attributes": self.get_gtm_attributes_for_breadcrumbs(
+                        ancestor_page, request, str(breadcrumb_text), breadcrumb_position
+                    ),
+                }
+            )
+
         if getattr(request, "is_for_subpage", False):
-            breadcrumbs.append({"url": self.get_full_url(request=request), "text": self.breadcrumb_title})
+            breadcrumb_position = len(breadcrumbs) + 1
+            breadcrumbs.append(
+                {
+                    "url": self.get_full_url(request=request),
+                    "text": self.breadcrumb_title,
+                    "attributes": self.get_gtm_attributes_for_breadcrumbs(
+                        self, request, self.breadcrumb_title, breadcrumb_position
+                    ),
+                }
+            )
+
         self._breadcrumbs = breadcrumbs  # pylint: disable=attribute-defined-outside-init
         return breadcrumbs
 
@@ -289,6 +340,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
             return cast(str, parent_topic_or_theme.slug)
         return None
 
+    # TODO: Revisit once the theme/page relationship is defined and the attribute's requirements are finalised.
     @cached_property
     def analytics_content_theme(self) -> str | None:
         """Returns the title of the top ancestor taxonomic topic for the pages parent topic or theme page,
