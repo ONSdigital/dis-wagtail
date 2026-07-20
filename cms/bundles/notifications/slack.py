@@ -55,6 +55,7 @@ def send_bundle_notification(  # pylint: disable=too-many-arguments  # noqa: PLR
     """
     bundle_cls = bundle.__class__
     current_ts = bundle_cls.objects.values_list("slack_notification_ts", flat=True).get(pk=bundle.pk)
+    logger.info("Sending Slack notification for bundle", extra={"bundle_id": bundle.pk, "current_ts": current_ts, "message": text})
     message_ts = send_or_update_slack_message(
         text=text,
         color=color,
