@@ -50,7 +50,6 @@ class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
 class CloudflareWagtailCacheTagMiddleware(MiddlewareMixin):
     """Adds a Cloudflare cache tag header to Wagtail server route responses."""
 
-    # TODO check edge cases
     def _is_wagtail_route(self, request: HttpRequest) -> bool:
         """Return True when the request was resolved through a Wagtail server route."""
         resolver_match = getattr(request, "resolver_match", None)
