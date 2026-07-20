@@ -403,6 +403,7 @@ def notify_slack_of_post_publish_end(
 
     has_errors = publish_failed or failed_post_publish_actions_count > 0
 
+    logger.info("sending post publish end")
     send_bundle_notification(
         bundle=bundle,
         text="Publishing the bundle has ended with errors." if has_errors else "Publishing the bundle has ended.",
