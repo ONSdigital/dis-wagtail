@@ -1,11 +1,17 @@
 from typing import Any, ClassVar
 from unittest.mock import Mock
+from urllib.parse import urlparse
 
-from django.test import SimpleTestCase
+from bs4 import BeautifulSoup
+from django.test import SimpleTestCase, TestCase
+from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.data_downloads.utils import get_csv_download_filename
 from cms.datavis.blocks.base import BaseChartBlock, BaseVisualisationBlock
 from cms.datavis.blocks.charts import LineChartBlock
+from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 from cms.datavis.tests.factories import TableDataFactory
 
 
@@ -143,7 +149,7 @@ class BuildChartDownloadUrlTests(SimpleTestCase):
         self.assertEqual(url, "/topics/economy/articles/gdp/download-chart/chart-789")
 
 
-class GetDownloadConfigTests(SimpleTestCase):
+class GetDownloadConfigTests(TestCase):
     """Tests for BaseChartBlock.get_download_config method."""
 
     def setUp(self):
@@ -259,3 +265,77 @@ class GetDownloadConfigTests(SimpleTestCase):
 
         csv_item = config["itemsList"][1]
         self.assertEqual(csv_item["url"], "/articles/test/download-chart/test-block-id")
+
+    def test_download_config_csv_download_data_attributes_in_config(self):
+        """Verify expected CSV download link GTM data attributes are present in download config data."""
+        page = StatisticalArticlePageFactory()
+        value = self.block.to_python(self.raw_data)
+        context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": get_dummy_request(),
+        }
+
+        config = self.block.get_download_config(
+            value,
+            parent_context=context,
+            block_id="test-block-id",
+            rows=[["a", "b"], ["1", "2"]],
+        )
+
+        # CSV item is at index 1 (image download is at index 0)
+        csv_item = config["itemsList"][1]
+        expected_file_size = get_approximate_file_size_in_kb([["a", "b"], ["1", "2"]]).removesuffix("KB")
+
+        expected_attributes = {
+            "data-ga-event": "file-download",
+            "data-ga-file-extension": "csv",
+            "data-ga-file-name": get_csv_download_filename(title=self.raw_data.get("title"), fallback_stem="chart"),
+            "data-ga-link-text": csv_item["text"],
+            "data-ga-link-url": urlparse(csv_item["url"]).path,
+            "data-ga-link-domain": urlparse(csv_item["url"]).hostname,
+            "data-ga-chart-title": self.raw_data.get("title"),
+            "data-ga-chart-type": "line",
+            "data-ga-file-size": expected_file_size,
+        }
+
+        self.assertEqual(csv_item["attributes"], expected_attributes)
+
+    def test_download_config_csv_download_data_attributes_in_rendered_html(self):
+        """Verify GTM data attributes are rendered correctly in the CSV download HTML."""
+        page = StatisticalArticlePageFactory()
+        value = self.block.to_python(self.raw_data)
+        context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": get_dummy_request(),
+        }
+
+        config = self.block.get_download_config(
+            value,
+            parent_context=context,
+            block_id="test-block-id",
+            rows=[["a", "b"], ["1", "2"]],
+        )
+
+        rendered = self.block.render(value, context=context)
+        soup = BeautifulSoup(rendered, "html.parser")
+        # Find all list items and get the CSV download one
+        download_list_items = soup.find_all("li", class_="ons-list__item")
+        download_csv_list_item = download_list_items[1]
+
+        csv_item = config["itemsList"][1]
+        expected_file_size = get_approximate_file_size_in_kb([["a", "b"], ["1", "2"]]).removesuffix("KB")
+
+        self.assertEqual(download_csv_list_item.get("data-ga-event"), "file-download")
+        self.assertEqual(download_csv_list_item.get("data-ga-file-extension"), "csv")
+        self.assertEqual(
+            download_csv_list_item.get("data-ga-file-name"),
+            get_csv_download_filename(title=self.raw_data.get("title"), fallback_stem="chart"),
+        )
+        self.assertEqual(download_csv_list_item.get("data-ga-link-text"), csv_item["text"])
+        self.assertEqual(download_csv_list_item.get("data-ga-link-url"), urlparse(csv_item["url"]).path)
+        self.assertEqual(download_csv_list_item.get("data-ga-link-domain"), urlparse(csv_item["url"]).hostname)
+        self.assertEqual(download_csv_list_item.get("data-ga-chart-title"), self.raw_data.get("title"))
+        self.assertEqual(download_csv_list_item.get("data-ga-chart-type"), "line")
+        self.assertEqual(download_csv_list_item.get("data-ga-file-size"), expected_file_size)
