@@ -218,7 +218,7 @@ class ONSTableBlock(TinyTableBlock):
             "hideCaption": True,
             "thList": [{"ths": self._prepare_header_cells(header_row)} for header_row in data.get("headers", [])],
             "trs": [{"tds": self._prepare_body_cells(row)} for row in data.get("rows", [])],
-            "sourceNote": _("Source: ") + value.get("source") if value.get("source") else None,
+            "sourceNote": _("Source") + ": " + value.get("source") if value.get("source") else None,
         }
 
         # Check for meaningful text before displaying footnotes
