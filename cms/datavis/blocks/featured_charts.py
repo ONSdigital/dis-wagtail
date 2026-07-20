@@ -15,6 +15,7 @@ class FeaturedLineChartBlock(LineChartBlock):
     # Override fields to remove unwanted options for featured charts
     subtitle = None
     caption = None
+    footnotes = None
     # TODO: remove download configuration options
 
 
@@ -24,6 +25,7 @@ class FeaturedBarColumnChartBlock(BarColumnChartBlock):
     # Override fields to remove unwanted options for featured charts
     subtitle = None
     caption = None
+    footnotes = None
     # TODO: remove download configuration options
 
 
@@ -33,6 +35,7 @@ class FeaturedBarColumnConfidenceIntervalChartBlock(BarColumnConfidenceIntervalC
     # Override fields to remove unwanted options for featured charts
     subtitle = None
     caption = None
+    footnotes = None
     # TODO: remove download configuration options
 
 
@@ -42,6 +45,7 @@ class FeaturedScatterPlotBlock(ScatterPlotBlock):
     # Override fields to remove unwanted options for featured charts
     subtitle = None
     caption = None
+    footnotes = None
     # TODO: remove download configuration options
 
 
@@ -51,6 +55,7 @@ class FeaturedAreaChartBlock(AreaChartBlock):
     # Override fields to remove unwanted options for featured charts
     subtitle = None
     caption = None
+    footnotes = None
     # TODO: remove download configuration options
 
 

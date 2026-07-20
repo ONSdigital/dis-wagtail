@@ -1,7 +1,21 @@
 {% from "components/featured-article/_macro.njk" import onsFeaturedArticle %}
+{% from "components/image/_macro.njk" import onsImage %}
+{% from "components/chart/_macro.njk" import onsChart %}
 
 {% set article_data = article.as_featured_article_macro_data(request) %}
-{% if article_data.chart %}
-    {%- do article_data.chart.update(id=article.featured_chart[0].id) -%}
-{% endif %}
-{{ onsFeaturedArticle(article_data) }}
+{% set article_child_data = article.as_featured_article_child_macro_data() %}
+
+
+{% call onsFeaturedArticle(article_data) %}
+    {# fmt:off #}
+    {% if article_child_data.chart %}
+        {{
+            onsChart(article_child_data.chart)
+        }}
+    {% elif article_child_data.image %}
+        {{
+            onsImage(article_child_data.image)
+        }}
+    {% endif %}
+    {# fmt:on #}
+{% endcall %}

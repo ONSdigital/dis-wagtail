@@ -613,6 +613,11 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
                 "short": ons_date_format(self.release_date, "DATE_FORMAT"),
             }
 
+        return data
+
+    def as_featured_article_child_macro_data(self) -> dict[str, Any]:
+        """Returns child content data (chart or image) for the onsFeaturedArticle macro's caller block."""
+        data = {}
         if self.featured_chart:
             chart_block = self.featured_chart[0]  # pylint: disable=unsubscriptable-object
             block_instance = chart_block.block
@@ -620,6 +625,9 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
             if isinstance(block_instance, BaseChartBlock):
                 data["chart"] = block_instance.get_component_config(block_value)
+                data["chart"]["id"] = self.featured_chart[0].id
+                # Featured article should not display downloads
+                data["chart"]["download"] = None
 
         elif self.listing_image:
             data["image"] = {
