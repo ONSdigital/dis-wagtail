@@ -549,7 +549,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
         bundle.save(update_fields=["status"])
 
     # Send publishing ended notification synchronously so it is guaranteed to be sent
-    # before any post-publish-end notification.
+    # before any post-publish-end notification (which is queued after this returns).
     notify_slack_of_publish_end(
         bundle=bundle,
         start_time=start_time,
