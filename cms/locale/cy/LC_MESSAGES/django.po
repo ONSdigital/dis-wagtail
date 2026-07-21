@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-09 01:26+0100\n"
+"POT-Creation-Date: 2026-07-21 16:08+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -398,7 +398,7 @@ msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:108
 msgid ""
-"Do you want to allow cookies that help with communications and marketing?"
+"Do you want to allow cookies that help with our communications and marketing?"
 msgstr ""
 
 #: cms/jinja2/templates/pages/cookies.html:109
