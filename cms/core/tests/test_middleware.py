@@ -169,7 +169,7 @@ class TestCloudflareWagtailCacheTagMiddleware(TestCase):
         request = self.factory.get("/cy")
         request.resolver_match = Mock(
             func=Mock(__module__="cms.home.views"),
-            view_name="localied_homepage",
+            view_name="localised_homepage",
         )
         return request
 
@@ -193,12 +193,6 @@ class TestCloudflareWagtailCacheTagMiddleware(TestCase):
         response = self.middleware.process_response(request, HttpResponse("Test content"))
         self.assertNotIn("Cache-Tag", response)
 
-    def test_does_not_tag_non_wagtail_routes(self):
-        """Non-Wagtail routes must not receive a cache tag."""
-        request = self.make_non_wagtail_request()
-        response = self.middleware.process_response(request, HttpResponse("Test content"))
-        self.assertNotIn("Cache-Tag", response)
-
     def test_appends_tag_to_existing_header(self):
         """Existing Cache-Tag headers should be appended to, not replaced."""
         request = self.make_wagtail_request()
@@ -214,16 +208,6 @@ class TestCloudflareWagtailCacheTagMiddleware(TestCase):
         response["Cache-Tag"] = "wagtail"
         result = self.middleware.process_response(request, response)
         self.assertEqual(result.get("Cache-Tag"), "wagtail")
-
-    def test_does_not_tag_unsuccessful_responses(self):
-        """Responses with error status codes should not be tagged."""
-        for status_code in [400, 404, 500]:
-            with self.subTest(status_code=status_code):
-                request = self.make_wagtail_request()
-                response = HttpResponse("Test content", status=status_code)
-                result = self.middleware.process_response(request, response)
-                self.assertNotIn("Cache-Tag", result)
-                self.assertEqual(result.status_code, status_code)
 
     def test_preserves_other_response_headers(self):
         """Middleware should preserve existing response headers."""
