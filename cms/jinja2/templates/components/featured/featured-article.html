@@ -5,7 +5,6 @@
 {% set article_data = article.as_featured_article_macro_data(request) %}
 {% set article_child_data = article.as_featured_article_child_macro_data() %}
 
-
 {% call onsFeaturedArticle(article_data) %}
     {# fmt:off #}
     {% if article_child_data.chart %}
