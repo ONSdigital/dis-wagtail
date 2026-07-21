@@ -4,6 +4,7 @@ from datetime import datetime
 from http import HTTPStatus
 from urllib.parse import urlparse
 
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import RequestFactory, TestCase, override_settings
@@ -667,33 +668,24 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
 
     def test_breadcrumb_excludes_container_pages(self):
         response = self.client.get(self.basic_page_url)
+        soup = BeautifulSoup(response.content, "html.parser")
         dummy_request = get_dummy_request()
         # confirm the series container page is not in the breadcrumb
         article_series = self.basic_page.get_parent()
         series_url = article_series.get_full_url(request=dummy_request)
-        self.assertNotContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{series_url}">{article_series.title}</a>',
-            html=True,
-        )
+        self.assertIsNone(soup.find("a", class_="ons-breadcrumbs__link", href=series_url, string=article_series.title))
 
         # confirm the articles index container page is not in the breadcrumb
         articles_index = article_series.get_parent()
         articles_index_url = articles_index.get_full_url(request=dummy_request)
-        self.assertNotContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{articles_index_url}">{articles_index.title}</a>',
-            html=True,
+        self.assertIsNone(
+            soup.find("a", class_="ons-breadcrumbs__link", href=articles_index_url, string=articles_index.title)
         )
 
         # confirm the breadcrumb points to the topic page (the closest navigable ancestor)
         topic_page = articles_index.get_parent()
         topic_url = topic_page.get_full_url(request=dummy_request)
-        self.assertContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{topic_url}">{topic_page.title}</a>',
-            html=True,
-        )
+        self.assertIsNotNone(soup.find("a", class_="ons-breadcrumbs__link", href=topic_url, string=topic_page.title))
 
     def test_related_data_breadcrumb_shows_full_title(self):
         self.basic_page.datasets = StreamValue(
@@ -702,19 +694,16 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         )
         self.basic_page.save_revision().publish()
         response = self.client.get(f"{self.basic_page_url}/related-data")
-        self.assertContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{self.basic_page.full_url}">PSF: November 2024</a>',
-            html=True,
+        soup = BeautifulSoup(response.content, "html.parser")
+        self.assertIsNotNone(
+            soup.find("a", class_="ons-breadcrumbs__link", href=self.basic_page.full_url, string="PSF: November 2024")
         )
 
         # confirm the articles index container page is not in the related data breadcrumb
         articles_index = self.basic_page.get_parent().get_parent()
         articles_index_url = articles_index.get_full_url(request=get_dummy_request())
-        self.assertNotContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{articles_index_url}">{articles_index.title}</a>',
-            html=True,
+        self.assertIsNone(
+            soup.find("a", class_="ons-breadcrumbs__link", href=articles_index_url, string=articles_index.title)
         )
 
     def test_pagination_is_not_shown(self):
@@ -1222,24 +1211,19 @@ class PreviousReleasesWithoutPaginationTestCase(TestCase):
 
     def test_breadcrumb_excludes_articles_index(self):
         response = self.client.get(self.previous_releases_url)
+        soup = BeautifulSoup(response.content, "html.parser")
 
         # confirm the articles index container page is not in the breadcrumb
         articles_index = self.article_series.get_parent()
         articles_index_url = articles_index.get_full_url(request=self.dummy_request)
-        self.assertNotContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{articles_index_url}">{articles_index.title}</a>',
-            html=True,
+        self.assertIsNone(
+            soup.find("a", class_="ons-breadcrumbs__link", href=articles_index_url, string=articles_index.title)
         )
 
         # confirm the breadcrumb points to the topic page (the closest navigable ancestor)
         topic_page = articles_index.get_parent()
         topic_url = topic_page.get_full_url(request=self.dummy_request)
-        self.assertContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{topic_url}">{topic_page.title}</a>',
-            html=True,
-        )
+        self.assertIsNotNone(soup.find("a", class_="ons-breadcrumbs__link", href=topic_url, string=topic_page.title))
 
     def test_page_content(self):
         response = self.client.get(self.previous_releases_url)

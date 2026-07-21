@@ -65,17 +65,16 @@ jobs:
             }
 
             const issueKey = match[0];
+            const jiraUrl = `https://officefornationalstatistics.atlassian.net/browse/${issueKey}`;
             const prBody = context.payload.pull_request?.body ?? "";
 
-            // Check if PR body already contains the issue key
-            if (prBody.includes(issueKey)) {
-              core.info('PR body already contains the JIRA issue key. Skipping JIRA link update.');
+            // Check if PR body already contains the Jira issue link
+            if (prBody.includes(jiraUrl)) {
+              core.info('PR body already contains the JIRA issue link. Skipping JIRA link update.');
               return;
             }
 
-            const jiraUrl = `https://officefornationalstatistics.atlassian.net/browse/${issueKey}`;
             const ticketLink = `Ticket: [${issueKey}](${jiraUrl})`;
-
             const updatedBody = prBody ? `${prBody}\n\n---\n${ticketLink}` : ticketLink;
 
             await github.rest.pulls.update({
