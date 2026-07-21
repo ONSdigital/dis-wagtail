@@ -55,10 +55,6 @@ def send_bundle_notification(  # pylint: disable=too-many-arguments  # noqa: PLR
     """
     bundle_cls = bundle.__class__
     current_ts = bundle_cls.objects.values_list("slack_notification_ts", flat=True).get(pk=bundle.pk)
-    logger.info(
-        "Sending Slack notification for bundle",
-        extra={"bundle_id": bundle.pk, "current_ts": current_ts, "slack_message": text},
-    )
     message_ts = send_or_update_slack_message(
         text=text,
         color=color,
@@ -407,7 +403,6 @@ def notify_slack_of_post_publish_end(
 
     has_errors = publish_failed or failed_post_publish_actions_count > 0
 
-    logger.info("sending post publish end")
     send_bundle_notification(
         bundle=bundle,
         text="Publishing the bundle has ended with errors." if has_errors else "Publishing the bundle has ended.",
