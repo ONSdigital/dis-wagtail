@@ -1,5 +1,4 @@
 import os
-from http import HTTPStatus
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, HttpResponsePermanentRedirect
@@ -50,43 +49,12 @@ class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
 class CloudflareWagtailCacheTagMiddleware(MiddlewareMixin):
     """Adds a Cloudflare cache tag header to Wagtail server route responses."""
 
-    def _is_wagtail_route(self, request: HttpRequest) -> bool:
-        """Return True when the request was resolved through a Wagtail server route."""
-        resolver_match = getattr(request, "resolver_match", None)
-        if not resolver_match:
-            return False
-
-        excluded_paths = {
-            "/api/",
-            "/v1/",
-            "/wagtail/",
-            "/admin/",
-            "/__debug__/",
-        }
-
-        request_path = request.path.lower()
-        if any(request_path.startswith(excluded) for excluded in excluded_paths):
-            return False
-
-        # Check if view is from wagtail package
-        view_func = getattr(resolver_match, "func", None)
-        view_module = getattr(view_func, "__module__", "")
-
-        return view_module.startswith("wagtail.")
-
     def _parse_cache_tags(self, header: str) -> list[str]:
         """Parse the Cache-Tag header into a list of tags."""
         return [tag.strip() for tag in header.split(",") if tag.strip()] if header else []
 
     def process_response(self, request: HttpRequest, response: HttpResponse) -> HttpResponse:
         """Add the Cloudflare cache tag header to the response."""
-        # Only tag successful responses, not client or server errors
-        if response.status_code >= HTTPStatus.BAD_REQUEST:
-            return response
-
-        if not self._is_wagtail_route(request):
-            return response
-
         cache_tag = getattr(settings, "WAGTAIL_CLOUDFLARE_CACHE_TAG", None)
         if cache_tag is None:
             return response
