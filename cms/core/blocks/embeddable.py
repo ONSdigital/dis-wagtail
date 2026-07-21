@@ -37,15 +37,15 @@ class ImageBlock(blocks.StructBlock):
     figure_subtitle = blocks.CharBlock(required=False, label="Subtitle")
     supporting_text = blocks.TextBlock(required=False, label="Source text")
     notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC, label="Footnotes")
-    empty_alt_text = blocks.BooleanBlock(
+    decorative_image = blocks.BooleanBlock(
         required=False,
         label="Image is decorative, so alt text should be empty",
     )
-    download = blocks.BooleanBlock(required=False, label="Show download link for image")
+    download = blocks.BooleanBlock(required=False, label="Show image download link")
 
     def clean(self, value: StructValue) -> StructValue:
         errors = {}
-        if value.get("empty_alt_text") and value.get("alternative_text"):
+        if value.get("decorative_image") and value.get("alternative_text"):
             errors["alternative_text"] = ValidationError(
                 "Alternative text must be empty when the image is marked as decorative."
             )
@@ -81,7 +81,7 @@ class ImageBlock(blocks.StructBlock):
                 "smallSrc": small.url,
                 "largeSrc": large.url,
             },
-            "alt": "" if value.get("empty_alt_text") else (value.get("alternative_text") or image.description),
+            "alt": "" if value.get("decorative_image") else (value.get("alternative_text") or image.description),
             "caption": _("Source") + ": " + value.get("supporting_text") if value.get("supporting_text") else None,
         }
 
@@ -106,7 +106,7 @@ class ImageBlock(blocks.StructBlock):
             "figure_title",
             "figure_subtitle",
             "alternative_text",
-            "empty_alt_text",
+            "decorative_image",
             "image",
             "supporting_text",
             "notes_section",

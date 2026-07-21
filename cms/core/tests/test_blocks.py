@@ -1181,7 +1181,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         cls.large = cls.image.get_rendition("width-2048")
 
     def _make_information_page(
-        self, *, download: bool, image=None, alternative_text: str = "", empty_alt_text: bool = False
+        self, *, download: bool, image=None, alternative_text: str = "", decorative_image: bool = False
     ) -> InformationPage:
         image = image or self.image
 
@@ -1199,7 +1199,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
                                 "value": {
                                     "image": image.id,
                                     "alternative_text": alternative_text,
-                                    "empty_alt_text": empty_alt_text,
+                                    "decorative_image": decorative_image,
                                     "figure_number": "Figure 1",
                                     "figure_title": "The image title",
                                     "figure_subtitle": "The image subtitle",
@@ -1254,8 +1254,8 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertContains(response, 'alt="Custom alt text"')
         self.assertNotContains(response, 'alt="Meaningful alt text"')
 
-    def test_empty_alt_text_renders_empty_alt_attribute(self):
-        page = self._make_information_page(download=False, empty_alt_text=True)
+    def test_decorative_image_renders_empty_alt_attribute(self):
+        page = self._make_information_page(download=False, decorative_image=True)
 
         response = self.client.get(page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -1263,13 +1263,13 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertContains(response, 'alt=""')
         self.assertNotContains(response, 'alt="Meaningful alt text"')
 
-    def test_empty_alt_text_and_alternative_text_raises_validation_error(self):
+    def test_decorative_image_and_alternative_text_raises_validation_error(self):
         block = ImageBlock()
         value = block.to_python(
             {
                 "image": self.image.id,
                 "alternative_text": "Some alt text",
-                "empty_alt_text": True,
+                "decorative_image": True,
             }
         )
         with self.assertRaises(StructBlockValidationError) as ctx:
