@@ -60,7 +60,6 @@ def send_or_update_slack_message(
                 text=text,
                 attachments=attachments,
             )
-            logger.info("slack response status code: %s", response.status_code)
             # Return timestamp if response is valid
             if response and response.get("ts"):
                 return str(response["ts"])
