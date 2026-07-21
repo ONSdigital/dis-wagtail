@@ -11,6 +11,9 @@ Feature: A CMS user can manually manage related articles on a Topic Page
         And the user clicks the "Save draft" button
         And the user views the topic page draft
         Then the user can see "External Article 1" in the related articles section
+        And the related article "External Article 1" displays the description "This is a short description for External Article 1"
+        And the related article "External Article 1" displays content type "Article"
+        And the related article "External Article 1" displays release year "2025"
 
     Scenario: Manually added links appear above auto-populated links
         When the user edits the topic page
@@ -18,6 +21,9 @@ Feature: A CMS user can manually manage related articles on a Topic Page
         And the user clicks the "Save draft" button
         And the user views the topic page draft
         Then the related article "Manual Link" is the first in the list
+        And the related article "Manual Link" displays the description "This is a short description for Manual Link"
+        And the related article "Manual Link" displays content type "Article"
+        And the related article "Manual Link" displays release year "2025"
 
     Scenario: Adding one manual link keeps two auto-populated links
         When the user edits the topic page
@@ -26,6 +32,9 @@ Feature: A CMS user can manually manage related articles on a Topic Page
         And the user views the topic page draft
         Then the related articles section contains 3 articles
         And the related article "Sticky Link 1" is the first in the list
+        And the related article "Sticky Link 1" displays the description "This is a short description for Sticky Link 1"
+        And the related article "Sticky Link 1" displays content type "Article"
+        And the related article "Sticky Link 1" displays release year "2025"
 
     Scenario: Adding two manual links keeps one auto-populated link
         When the user edits the topic page

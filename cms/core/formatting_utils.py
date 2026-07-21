@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from wagtail.models import Page
 
 from cms.core.custom_date_format import ons_date_format
+from cms.core.enums import RelatedContentType
 from cms.core.utils import get_related_content_type_label
 
 if TYPE_CHECKING:
@@ -28,12 +29,12 @@ PageDataCollection = Iterable[Union["ArticleDict", "MethodologyDict"]]
 
 
 def format_as_document_list_item(
-    title: str, url: str, content_type: StrOrPromise, description: str, release_date: date | None = None
+    title: str, url: str, content_type: StrOrPromise | None, description: str, release_date: date | None = None
 ) -> DocumentListItem:
     """Formats an object as a list element to be used in the ONS DocumentList design system component."""
     document_list_item: DocumentListItem = {
         "title": {"text": title, "url": url},
-        "metadata": {"object": {"text": content_type}},
+        "metadata": {"object": {"text": content_type}} if content_type else {},
         "description": f"<p>{description}</p>",
     }
     if release_date is not None:
@@ -43,13 +44,21 @@ def format_as_document_list_item(
 
 def _format_external_link(page_dict: ExternalArticleDict) -> DocumentListItem:
     """Format external link dictionary into DocumentListItem."""
-    return format_as_document_list_item(
+    page_type = page_dict.get("content_type") or RelatedContentType.ARTICLE
+    content_type = get_related_content_type_label(page_type)
+
+    page_datum: DocumentListItem = format_as_document_list_item(
         title=page_dict["title"],
         url=page_dict["url"],
-        content_type=get_related_content_type_label(page_dict["content_type"]),
+        content_type=content_type,
         description=page_dict.get("description", ""),
-        release_date=page_dict["release_date"],
+        release_date=page_dict.get("release_date"),
     )
+
+    if release_date := page_dict.get("release_date"):
+        page_datum["metadata"]["date"] = get_document_metadata_date(release_date)
+
+    return page_datum
 
 
 def _format_page_object(
@@ -59,7 +68,7 @@ def _format_page_object(
     page_datum: DocumentListItem = format_as_document_list_item(
         title=custom_title or getattr(page, "display_title", page.title),
         url=page.get_url(request=request),
-        content_type=getattr(page, "label", _("Page")),
+        content_type=page.label,
         description=getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
     )
 

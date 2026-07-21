@@ -17,7 +17,9 @@ from cms.core.utils import (
     redirect_to_parent_listing,
     strip_unwanted_control_chars_from_json,
 )
+from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -114,6 +116,20 @@ class TestContentTypeForPage(TestCase):
         page = MethodologyPageFactory(title="Test Methodology")
         content_type = get_content_type_for_page(page)
         self.assertEqual(content_type, "Methodology")
+
+        page = InformationPageFactory(title="Test Information")
+        content_type = get_content_type_for_page(page)
+        self.assertEqual(content_type, "Information")
+
+        page = IndexPageFactory(title="Text Index")
+        content_type = get_content_type_for_page(page)
+        self.assertEqual(content_type, "Index")
+
+    def test_get_content_type_for_page__suppressed_returns_none(self):
+        """Page types with the label suppressed return None, so no label is shown."""
+        page = HomePage.objects.first()
+
+        self.assertIsNone(get_content_type_for_page(page))
 
 
 class RedirectToParentListingTestCase(SimpleTestCase):
