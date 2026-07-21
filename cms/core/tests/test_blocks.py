@@ -28,6 +28,7 @@ from cms.core.blocks import (
     RelatedLinksBlock,
 )
 from cms.core.blocks.definitions import DefinitionsBlock
+from cms.core.blocks.embeddable import ImageBlock
 from cms.core.tests.factories import DefinitionFactory
 from cms.core.tests.utils import get_test_document
 from cms.core.utils import UNWANTED_CONTROL_CHARACTERS
@@ -1179,7 +1180,9 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         cls.small = cls.image.get_rendition("width-1024")
         cls.large = cls.image.get_rendition("width-2048")
 
-    def _make_information_page(self, *, download: bool, image=None, alternative_text: str = "") -> InformationPage:
+    def _make_information_page(
+        self, *, download: bool, image=None, alternative_text: str = "", empty_alt_text: bool = False
+    ) -> InformationPage:
         image = image or self.image
 
         page = InformationPage(
@@ -1196,6 +1199,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
                                 "value": {
                                     "image": image.id,
                                     "alternative_text": alternative_text,
+                                    "empty_alt_text": empty_alt_text,
                                     "figure_number": "Figure 1",
                                     "figure_title": "The image title",
                                     "figure_subtitle": "The image subtitle",
@@ -1249,6 +1253,28 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
 
         self.assertContains(response, 'alt="Custom alt text"')
         self.assertNotContains(response, 'alt="Meaningful alt text"')
+
+    def test_empty_alt_text_renders_empty_alt_attribute(self):
+        page = self._make_information_page(download=False, empty_alt_text=True)
+
+        response = self.client.get(page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(response, 'alt=""')
+        self.assertNotContains(response, 'alt="Meaningful alt text"')
+
+    def test_empty_alt_text_and_alternative_text_raises_validation_error(self):
+        block = ImageBlock()
+        value = block.to_python(
+            {
+                "image": self.image.id,
+                "alternative_text": "Some alt text",
+                "empty_alt_text": True,
+            }
+        )
+        with self.assertRaises(StructBlockValidationError) as ctx:
+            block.clean(value)
+        self.assertIn("alternative_text", ctx.exception.block_errors)
 
     def test_renders_download_link_with_file_type_and_size_when_enabled(self):
         page = self._make_information_page(download=True)
