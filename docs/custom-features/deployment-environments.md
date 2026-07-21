@@ -24,4 +24,4 @@ Only a subset of media stored in S3 are accessible to the external env. Notably 
 
 Certain static files (for example those related to the Wagtail admin) are inaccessible in the external environment. This is configured using `cms.core.whitenoise.CMSWhiteNoiseMiddleware`.
 
-External responses carry a Cloudflare Cache-Tag header (default wagtail, configurable via the `WAGTAIL_CLOUDFLARE_CACHE_TAG` env var) so they can be purged from Cloudflare as a group; purge invocation itself is manual/operational, not application-driven.
+External responses carry a Cloudflare `Cache-Tag` header (default `wagtail`, configurable via the `WAGTAIL_CLOUDFLARE_CACHE_TAG` env var) so they can be purged from Cloudflare as a group via the purge prefix option; purge invocation itself is manual/operational, not application-driven.
