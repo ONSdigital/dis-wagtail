@@ -6,6 +6,8 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import filesizeformat
+from django.utils.html import strip_tags
+from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks import StructBlockValidationError
 from wagtail.documents.blocks import DocumentChooserBlock
@@ -19,11 +21,37 @@ class ImageBlock(blocks.StructBlock):
     """Image block with caption."""
 
     image = ImageChooserBlock()
-    figure_title = blocks.CharBlock(required=False)
-    figure_subtitle = blocks.CharBlock(required=False)
-    supporting_text = blocks.TextBlock(required=False, label="Supporting text (source)")
-    notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
+    alternative_text = blocks.CharBlock(
+        required=False,
+        label="Alternative text",
+        help_text=(
+            "A description of what the image shows for screen reader users. "
+            "If this field is left blank, alt text will be sourced from the mandatory "
+            "'alternative text' field when the image was uploaded to Wagtail"
+        ),
+    )
+    figure_number = blocks.CharBlock(
+        required=False, label="Figure number", help_text="Include a label for the figure, for example Figure 1."
+    )
+    figure_title = blocks.CharBlock(required=False, label="Title")
+    figure_subtitle = blocks.CharBlock(required=False, label="Subtitle")
+    supporting_text = blocks.TextBlock(required=False, label="Source text")
+    notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC, label="Footnotes")
+    empty_alt_text = blocks.BooleanBlock(
+        required=False,
+        label="Image is decorative, so alt text should be empty",
+    )
     download = blocks.BooleanBlock(required=False, label="Show download link for image")
+
+    def clean(self, value: StructValue) -> StructValue:
+        errors = {}
+        if value.get("empty_alt_text") and value.get("alternative_text"):
+            errors["alternative_text"] = ValidationError(
+                "Alternative text must be empty when the image is marked as decorative."
+            )
+        if errors:
+            raise StructBlockValidationError(block_errors=errors)
+        return super().clean(value)
 
     def get_context(self, value: StreamValue, parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context)
@@ -38,22 +66,52 @@ class ImageBlock(blocks.StructBlock):
         small = image.get_rendition("width-1024")
         large = image.get_rendition("width-2048")
 
-        context["small_src"] = small.url
-        context["large_src"] = large.url
-
-        # Get file extension of the rendition being downloaded (uppercase, without the dot)
-        _, ext = os.path.splitext(large.file.name)
+        _base, ext = os.path.splitext(large.file.name)
         file_type = ext.lstrip(".").upper() or "IMG"
-        context["file_type"] = file_type
-
         size_bytes = getattr(large.file, "size", None)
-        context["file_size_human"] = filesizeformat(size_bytes) if size_bytes is not None else None
+        file_size_human = filesizeformat(size_bytes) if size_bytes is not None else None
 
+        options = {
+            "id": f"image-{context.get('block_id') or ''}",
+            "headingLevel": 3,
+            "figureNumber": value.get("figure_number"),
+            "title": value.get("figure_title"),
+            "subtitle": value.get("figure_subtitle"),
+            "image": {
+                "smallSrc": small.url,
+                "largeSrc": large.url,
+            },
+            "alt": "" if value.get("empty_alt_text") else (value.get("alternative_text") or image.description),
+            "caption": _("Source") + ": " + value.get("supporting_text") if value.get("supporting_text") else None,
+        }
+
+        if (notes := value.get("notes_section")) and strip_tags(str(notes)).strip():
+            options["footnotes"] = {"title": _("Footnotes"), "content": notes}
+
+        if value.get("download"):
+            size_text = f" ({file_size_human})" if file_size_human else ""
+            options["download"] = {
+                "title": _("Download this image"),
+                "itemsList": [{"text": f"{file_type}{size_text}", "url": large.url, "download": "file"}],
+            }
+
+        context["options"] = options
         return context
 
     class Meta:
         icon = "image"
         template = "templates/components/streamfield/image_block.html"
+        form_layout = [  # noqa
+            "figure_number",
+            "figure_title",
+            "figure_subtitle",
+            "alternative_text",
+            "empty_alt_text",
+            "image",
+            "supporting_text",
+            "notes_section",
+            "download",
+        ]
 
 
 class DocumentBlockStructValue(blocks.StructValue):

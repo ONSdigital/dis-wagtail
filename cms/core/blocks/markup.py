@@ -132,19 +132,17 @@ class BasicTableBlock(WagtailTableBlock):
 class ONSTableBlock(TinyTableBlock):
     """The ONS table block."""
 
+    table_number = blocks.CharBlock(
+        required=False, label="Table number", help_text="Include a label for the figure, for example Table 1."
+    )
     subtitle = blocks.CharBlock(required=False)
-    source = blocks.CharBlock(label="Source", required=False)
+    source = blocks.CharBlock(label="Source text", required=False)
     footnotes = blocks.RichTextBlock(label="Footnotes", features=settings.RICH_TEXT_BASIC, required=False)
     # Redeclare the inherited caption field
     caption = blocks.CharBlock(
         required=True,
         label="Accessible label",
-        help_text=(
-            "A short label to explain what this table is about for those "
-            "using a screen reader. This will not be visible on the page "
-            "but is important for accessibility. "
-            "Note that this is rendered as a hidden caption element."
-        ),
+        help_text=("A short label to explain what this table is about for screen reader users."),
     )
 
     def clean(self, value: dict) -> dict:
@@ -209,37 +207,33 @@ class ONSTableBlock(TinyTableBlock):
             return context
 
         options = {
+            # fallback is only when block_id is not available, which should not happen in normal usage
+            "id": f"table-{context.get('block_id') or ''}",
+            # Note that headingLevel logic for subtitle, downloads and footnotes is handled in the design system
+            "headingLevel": 3,
+            "figureNumber": value.get("table_number"),
+            "title": value.get("title"),
+            "subtitle": value.get("subtitle"),
             "caption": value.get("caption"),
             "hideCaption": True,
             "thList": [{"ths": self._prepare_header_cells(header_row)} for header_row in data.get("headers", [])],
             "trs": [{"tds": self._prepare_body_cells(row)} for row in data.get("rows", [])],
+            "sourceNote": _("Source") + ": " + source if (source := value.get("source")) else None,
         }
+
+        # Check for meaningful text before displaying footnotes
+        if (footnotes := value.get("footnotes")) and strip_tags(str(footnotes)).strip():
+            options["footnotes"] = {"title": _("Footnotes"), "content": footnotes}
 
         # Add download config if block_id and page context available
         block_id = context.get("block_id")
         if block_id and parent_context:
             options["download"] = self._get_download_config(parent_context=parent_context, block_id=block_id, data=data)
 
-        # Used by footnotes and downloads sections
-        if value.get("title") and value.get("subtitle"):
-            additional_sections_heading_level = 5
-        elif value.get("title"):
-            additional_sections_heading_level = 4
-        else:
-            additional_sections_heading_level = 3
-
         table_context = {
-            "title": value.get("title"),
-            "subtitle": value.get("subtitle"),
             "options": options,
-            "source": value.get("source"),
-            "additional_sections_heading_level": additional_sections_heading_level,
             **context,
         }
-
-        # Check for meaningful text before displaying footnotes
-        if (footnotes := value.get("footnotes")) and strip_tags(str(footnotes)).strip():
-            table_context["footnotes"] = footnotes
 
         return table_context
 
@@ -294,3 +288,12 @@ class ONSTableBlock(TinyTableBlock):
     class Meta:
         icon = "table"
         template = "templates/components/streamfield/table_block.html"
+        form_layout = [  # noqa
+            "table_number",
+            "title",
+            "subtitle",
+            "caption",
+            "data",
+            "source",
+            "footnotes",
+        ]

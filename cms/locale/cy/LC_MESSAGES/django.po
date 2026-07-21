@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-06 17:07+0100\n"
+"POT-Creation-Date: 2026-07-21 08:21+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -73,11 +73,25 @@ msgstr "Dangos popeth"
 msgid "Hide all"
 msgstr "Cuddio popeth"
 
-#: cms/core/blocks/markup.py:260
+#: cms/core/blocks/embeddable.py:71 cms/core/blocks/markup.py:221
+#: cms/datavis/blocks/base.py:148
+msgid "Source"
+msgstr "Ffynhonnell"
+
+#: cms/core/blocks/embeddable.py:75 cms/core/blocks/markup.py:226
+#: cms/datavis/blocks/base.py:165 cms/datavis/blocks/charts.py:974
+msgid "Footnotes"
+msgstr "Troednodiadau"
+
+#: cms/core/blocks/embeddable.py:80
+msgid "Download this image"
+msgstr "Lawrlwythwch y ddelwedd hon"
+
+#: cms/core/blocks/markup.py:261
 msgid "Download this table"
 msgstr "Lawrlwythwch y tabl hwn"
 
-#: cms/core/blocks/markup.py:261
+#: cms/core/blocks/markup.py:262
 #, python-format
 msgid "Download CSV %(size)s"
 msgstr "Lawrlwythwch CSV %(size)s"
@@ -166,11 +180,6 @@ msgstr "Mae’r holl gynnwys ar gael o dan y"
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
-#: cms/datavis/blocks/base.py:161 cms/datavis/blocks/charts.py:883
-#: cms/jinja2/templates/components/streamfield/table_block.html:15
-msgid "Footnotes"
-msgstr "Troednodiadau"
-
 #: cms/datavis/blocks/table.py:58
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:94
 #: cms/jinja2/templates/pages/topic_page.html:95
@@ -242,24 +251,6 @@ msgstr "Dangos pob diffiniad"
 #: cms/jinja2/templates/components/streamfield/definitions_block.html:7
 msgid "Hide all definitions"
 msgstr "Cuddio pob diffiniad"
-
-#: cms/jinja2/templates/components/streamfield/image_block.html:19
-#: cms/jinja2/templates/components/streamfield/table_block.html:11
-msgid "Source"
-msgstr "Ffynhonnell"
-
-#: cms/jinja2/templates/components/streamfield/image_block.html:35
-msgid "Notes"
-msgstr "Nodiadau"
-
-#: cms/jinja2/templates/components/streamfield/image_block.html:41
-#: cms/jinja2/templates/components/streamfield/image_block.html:43
-msgid "Download image"
-msgstr "Lawrlwythwch y ddelwedd"
-
-#: cms/jinja2/templates/components/streamfield/image_block.html:48
-msgid "Download this image"
-msgstr "Lawrlwythwch y ddelwedd hon"
 
 #: cms/jinja2/templates/components/streamfield/release_date_change_block.html:2
 msgid "Previous date"
@@ -801,3 +792,9 @@ msgstr "Cymraeg"
 #: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:13
 msgid "Not started"
 msgstr "Heb ei ddechrau"
+
+#~ msgid "Notes"
+#~ msgstr "Nodiadau"
+
+#~ msgid "Download image"
+#~ msgstr "Lawrlwythwch y ddelwedd"

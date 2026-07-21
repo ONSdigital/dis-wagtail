@@ -28,6 +28,7 @@ from cms.core.blocks import (
     RelatedLinksBlock,
 )
 from cms.core.blocks.definitions import DefinitionsBlock
+from cms.core.blocks.embeddable import ImageBlock
 from cms.core.tests.factories import DefinitionFactory
 from cms.core.tests.utils import get_test_document
 from cms.core.utils import UNWANTED_CONTROL_CHARACTERS
@@ -655,11 +656,12 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             "rows": [[{"value": "row cell", "type": "td"}]],
         }
         cls.full_data = {
+            "table_number": "Table 1",
             "title": "The table",
             "subtitle": "The subtitle",
             "caption": "The accessible label",
             "source": "https://ons.gov.uk",
-            "footnotes": "footnotes",
+            "footnotes": "Footnotes content",
             "data": cls.simple_table_data,
         }
         cls.data_with_empty_table = {
@@ -667,7 +669,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             "subtitle": "The subtitle",
             "caption": "The accessible label",
             "source": "https://ons.gov.uk",
-            "footnotes": "footnotes",
+            "footnotes": "Footnotes content",
             "data": {
                 "headers": [],
                 "rows": [],
@@ -738,37 +740,36 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.block.clean(value)
 
     def test_get_context(self):
-        context = self.block.get_context(self.full_data)
-        self.assertDictEqual(
-            context["options"],
-            {
-                "caption": "The accessible label",
-                "hideCaption": True,
-                "thList": [{"ths": [{"value": "header cell"}]}],
-                "trs": [{"tds": [{"value": "row cell"}]}],
-            },
-        )
-        self.assertEqual(context["title"], "The table")
-        self.assertEqual(context["subtitle"], "The subtitle")
-        self.assertEqual(context["source"], "https://ons.gov.uk")
-        self.assertEqual(context["footnotes"], "footnotes")
+        context = self.block.get_context(self.full_data, parent_context={"block_id": "test-block-id"})
+        options = context["options"]
+        self.assertEqual(options["id"], "table-test-block-id")
+        self.assertEqual(options["headingLevel"], 3)
+        self.assertEqual(options["figureNumber"], "Table 1")
+        self.assertEqual(options["title"], "The table")
+        self.assertEqual(options["subtitle"], "The subtitle")
+        self.assertEqual(options["caption"], "The accessible label")
+        self.assertTrue(options["hideCaption"])
+        self.assertEqual(options["thList"], [{"ths": [{"value": "header cell"}]}])
+        self.assertEqual(options["trs"], [{"tds": [{"value": "row cell"}]}])
+        self.assertEqual(options["sourceNote"], "Source: https://ons.gov.uk")
+        self.assertEqual(options["footnotes"], {"title": "Footnotes", "content": "Footnotes content"})
 
     def test_get_context__with_empty_table(self):
         context = self.block.get_context(self.data_with_empty_table)
-        self.assertNotIn("title", context)
-        self.assertNotIn("subtitle", context)
-        self.assertNotIn("caption", context)
         self.assertNotIn("options", context)
-        self.assertNotIn("source", context)
-        self.assertNotIn("footnotes", context)
+
+    def test_get_context__source_note_format(self):
+        context = self.block.get_context(self.full_data)
+        self.assertEqual(context["options"]["sourceNote"], "Source: https://ons.gov.uk")
 
     def test_footnotes_html_only_omitted(self):
+        context = self.block.get_context(self.full_data)
         for html in ("<p></p>", "<p> </p>"):
             with self.subTest(html=html):
                 data = self.full_data.copy()
                 data["footnotes"] = html
                 context = self.block.get_context(data)
-                self.assertNotIn("footnotes", context)
+                self.assertNotIn("Footnotes", context["options"])
                 rendered = self.block.render(data)
                 self.assertNotIn("Footnotes", rendered)
         content = "Valid content"
@@ -776,21 +777,23 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             data = self.full_data.copy()
             data["footnotes"] = content
             context = self.block.get_context(data)
-            self.assertIn("footnotes", context)
+            self.assertEqual(context["options"]["footnotes"]["content"], content)
             rendered = self.block.render(data)
             self.assertIn(content, rendered)
 
     def test_render_block__full(self):
         rendered = self.block.render(self.full_data)
+        self.assertIn(self.full_data["table_number"], rendered)
         self.assertIn(self.full_data["title"], rendered)
-        self.assertIn(f"<h4>{self.full_data['subtitle']}</h4>", rendered)
+        self.assertIn(self.full_data["subtitle"], rendered)
         soup = BeautifulSoup(rendered, "html.parser")
         caption_tag = soup.find("caption")
         self.assertIsNotNone(caption_tag)
         self.assertIn(self.full_data["caption"], caption_tag.get_text())
         self.assertIn("ons-u-vh", caption_tag.get("class", []))
-        self.assertIn("Footnotes", rendered)
+        self.assertIn("Footnotes content", rendered)
         self.assertIn(self.full_data["footnotes"], rendered)
+        self.assertIn("Source: " + self.full_data["source"], rendered)
         self.assertIn("<table", rendered)
         self.assertIn("ons-table", rendered)
         self.assertIn("header cell", rendered)
@@ -798,9 +801,12 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
     def test_render_block__no_table(self):
         rendered = self.block.render(self.data_with_empty_table)
+        self.assertNotIn('self.full_data["table_number"]', rendered)
         self.assertNotIn(self.full_data["title"], rendered)
         self.assertNotIn(self.full_data["subtitle"], rendered)
-        self.assertNotIn("Footnotes", rendered)
+        self.assertNotIn(self.full_data["caption"], rendered)
+        self.assertNotIn("Source: " + self.full_data["source"], rendered)
+        self.assertNotIn("Footnotes content", rendered)
         self.assertNotIn("<table ", rendered)
         self.assertNotIn("header cell", rendered)
         self.assertNotIn("row cell", rendered)
@@ -809,6 +815,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         base_value = {"data": self.simple_table_data}
 
         data = {
+            "table_number": "Table 1",
             "title": "The table",
             "subtitle": "The subtitle",
             "source": "https://ons.gov.uk",
@@ -817,10 +824,11 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
 
         cases = [
             # field with value, fields not rendered
-            ("title", ["subtitle", "source", "footnotes"]),
-            ("subtitle", ["title", "source", "footnotes"]),
-            ("source", ["title", "subtitle", "footnotes"]),
-            ("footnotes", ["title", "subtitle", "source"]),
+            # Subtitle not tested as the DS will not render it if there is no title
+            ("table_number", ["title", "subtitle", "source", "footnotes"]),
+            ("title", ["table_number", "subtitle", "source", "footnotes"]),
+            ("source", ["table_number", "title", "subtitle", "footnotes"]),
+            ("footnotes", ["table_number", "title", "subtitle", "source"]),
         ]
 
         for field_name, not_present in cases:
@@ -1053,70 +1061,6 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         download_url = result["options"]["download"]["itemsList"][0]["url"]
         self.assertEqual(download_url, "/economy/articles/test-article/download-table/test-block-id")
 
-    def test_additional_sections_heading_level_with_title_and_no_subtitle(self):
-        """Test that footnotes and downloads headings render at h4 when table title is present."""
-        page = StatisticalArticlePageFactory()
-        parent_context = {
-            "block_id": "test-block-id",
-            "page": page,
-            "request": None,
-        }
-        data = {**self.full_data, "subtitle": ""}
-        context = self.block.get_context(data, parent_context=parent_context)
-        self.assertEqual(context["additional_sections_heading_level"], 4)
-
-        rendered = self.block.render(data, context=parent_context)
-        soup = BeautifulSoup(rendered, "html.parser")
-        h4_tags = soup.find_all("h4")
-        self.assertTrue(any("Footnotes" in tag.get_text() for tag in h4_tags))
-        self.assertTrue(any("Download this table" in tag.get_text() for tag in h4_tags))
-
-    def test_additional_sections_heading_level_without_title_or_subtitle(self):
-        """Test that footnotes and downloads headings render at h3 when table title is not present."""
-        data_without_title = {
-            "source": "https://ons.gov.uk",
-            "footnotes": "footnotes",
-            "data": self.simple_table_data,
-        }
-        page = StatisticalArticlePageFactory()
-        parent_context = {
-            "block_id": "test-block-id",
-            "page": page,
-            "request": None,
-        }
-        context = self.block.get_context(data_without_title, parent_context=parent_context)
-        self.assertEqual(context["additional_sections_heading_level"], 3)
-
-        rendered = self.block.render(data_without_title, context=parent_context)
-        soup = BeautifulSoup(rendered, "html.parser")
-        h3_tags = soup.find_all("h3")
-        self.assertTrue(any("Footnotes" in tag.get_text() for tag in h3_tags))
-        self.assertTrue(any("Download this table" in tag.get_text() for tag in h3_tags))
-
-    def test_additional_sections_heading_level_with_title_and_subtitle(self):
-        """Test that footnotes and downloads headings render at h5 when both title and subtitle are present."""
-        data_with_title_and_subtitle = {
-            "title": "The table",
-            "subtitle": "A subtitle",
-            "source": "https://ons.gov.uk",
-            "footnotes": "footnotes",
-            "data": self.simple_table_data,
-        }
-        page = StatisticalArticlePageFactory()
-        parent_context = {
-            "block_id": "test-block-id",
-            "page": page,
-            "request": None,
-        }
-        context = self.block.get_context(data_with_title_and_subtitle, parent_context=parent_context)
-        self.assertEqual(context["additional_sections_heading_level"], 5)
-
-        rendered = self.block.render(data_with_title_and_subtitle, context=parent_context)
-        soup = BeautifulSoup(rendered, "html.parser")
-        h5_tags = soup.find_all("h5")
-        self.assertTrue(any("Footnotes" in tag.get_text() for tag in h5_tags))
-        self.assertTrue(any("Download this table" in tag.get_text() for tag in h5_tags))
-
     def test_ons_table_block_download_config_missing_without_page(self):
         """Test that download is empty when page is missing from context."""
         context = {
@@ -1236,7 +1180,9 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         cls.small = cls.image.get_rendition("width-1024")
         cls.large = cls.image.get_rendition("width-2048")
 
-    def _make_information_page(self, *, download: bool, image=None) -> InformationPage:
+    def _make_information_page(
+        self, *, download: bool, image=None, alternative_text: str = "", empty_alt_text: bool = False
+    ) -> InformationPage:
         image = image or self.image
 
         page = InformationPage(
@@ -1252,9 +1198,13 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
                                 "type": "image",
                                 "value": {
                                     "image": image.id,
-                                    "figure_title": "Figure 1",
-                                    "figure_subtitle": "Figure subtitle",
+                                    "alternative_text": alternative_text,
+                                    "empty_alt_text": empty_alt_text,
+                                    "figure_number": "Figure 1",
+                                    "figure_title": "The image title",
+                                    "figure_subtitle": "The image subtitle",
                                     "supporting_text": "Office for National Statistics",
+                                    "notes_section": "<p>Some important notes</p>",
                                     "download": download,
                                 },
                                 "id": str(uuid.uuid4()),
@@ -1276,13 +1226,55 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         response = self.client.get(page.url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        # Alt text from CustomImage.description
+        # Alt text falls back to CustomImage.description when alternative_text is not set
         self.assertContains(response, 'alt="Meaningful alt text"')
 
         # onsImage macro outputs src/srcset with both specific rendition URLs
         # Use the underlying file URLs to be agnostic of serve method
         self.assertContains(response, self.small.file.url)
         self.assertContains(response, self.large.file.url)
+
+        # Figure fields rendered by DS macro
+        self.assertContains(response, "Figure 1")
+        self.assertContains(response, "The image title")
+        self.assertContains(response, "The image subtitle")
+
+        # Source prefixed with "Source: "
+        self.assertContains(response, "Source: Office for National Statistics")
+
+        # Notes rendered
+        self.assertContains(response, "Some important notes")
+
+    def test_alternative_text_overrides_image_description(self):
+        page = self._make_information_page(download=False, alternative_text="Custom alt text")
+
+        response = self.client.get(page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(response, 'alt="Custom alt text"')
+        self.assertNotContains(response, 'alt="Meaningful alt text"')
+
+    def test_empty_alt_text_renders_empty_alt_attribute(self):
+        page = self._make_information_page(download=False, empty_alt_text=True)
+
+        response = self.client.get(page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertContains(response, 'alt=""')
+        self.assertNotContains(response, 'alt="Meaningful alt text"')
+
+    def test_empty_alt_text_and_alternative_text_raises_validation_error(self):
+        block = ImageBlock()
+        value = block.to_python(
+            {
+                "image": self.image.id,
+                "alternative_text": "Some alt text",
+                "empty_alt_text": True,
+            }
+        )
+        with self.assertRaises(StructBlockValidationError) as ctx:
+            block.clean(value)
+        self.assertIn("alternative_text", ctx.exception.block_errors)
 
     def test_renders_download_link_with_file_type_and_size_when_enabled(self):
         page = self._make_information_page(download=True)
@@ -1296,12 +1288,14 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         # HTML5 download attribute present once (avoid base-template noise)
         self.assertContains(response, " download", count=1)
 
-        # Large rendition used for download (assert exact URL appears twice in the response)
-        # Assert exact downloadable rendition file URL appears twice: once in href, once in onsImage srcset
+        # Large rendition used for download
+        # Appers twice in the response - once in the image srcset attribute and once in the download url
         self.assertContains(response, self.large.file.url, count=2)
+        # Small rendition
+        # Appers twice in the response - once in the image src attribute and once in the image srcset attribute
         self.assertContains(response, self.small.file.url, count=2)
 
-        # Assert the actual download anchor exists and targets the large rendition URL
+        # Download link rendered by DS figure macro targets the large rendition
         html = response.content.decode(response.charset or "utf-8", errors="replace")
         soup = BeautifulSoup(html, "html.parser")
         download_link = soup.select_one("a[download]")
@@ -1348,11 +1342,9 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertContains(response, page.title)
         self.assertContains(response, "Summary")
 
-        # Download UI should not render when the image is missing
+        # Nothing from the image block renders when the image is missing
         self.assertNotContains(response, "Download this image")
         self.assertNotContains(response, " download")
-
-        # Image block content should render without the image
-        self.assertContains(response, "Figure 1")
-        self.assertContains(response, "Figure subtitle")
-        self.assertContains(response, "Office for National Statistics")
+        self.assertNotContains(response, "Figure 1")
+        self.assertNotContains(response, "The image title")
+        self.assertNotContains(response, "The image subtitle")
