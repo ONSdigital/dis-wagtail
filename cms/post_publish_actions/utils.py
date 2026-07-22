@@ -77,7 +77,7 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_f
                 "outstanding_actions": outstanding_actions,
             },
         )
-        logger.info("bundle %s: %s finished at %s"% (bundle.pk, bundle.name, timezone.now().isoformat()))
+        logger.info("bundle %s: %s finished at %s" % (bundle.pk, bundle.name, timezone.now().isoformat()))
     notify_slack_of_post_publish_end(bundle, start_time, timezone.now(), publish_failed=publish_failed)
 
 
