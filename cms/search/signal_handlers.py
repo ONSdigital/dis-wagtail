@@ -5,6 +5,7 @@ from typing import Any
 from django.conf import settings
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
+from django.utils import timezone
 from wagtail.models import Page
 from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move
 
@@ -20,9 +21,15 @@ logger = logging.getLogger(__name__)
 @post_publish_action(PostPublishActionType.SEARCH_UPDATED)
 def update_index_post_publish_action(page: Page, _bundle: Bundle | None) -> None:
     # TODO: remove after testing
+    start_time = timezone.now()
+    logger.info("update index for bundle %s, page %s started at" % (_bundle.name, page.title, start_time.isoformat()))
     sleep(5)
     if is_indexable_page(page):
         get_publisher().publish_created_or_updated(page)
+    logger.info(
+        "update index for bundle %s, page %s finished at"
+        % (_bundle.name, page.title, (timezone.now() - start_time).isoformat())
+    )
 
 
 @receiver(page_published)
