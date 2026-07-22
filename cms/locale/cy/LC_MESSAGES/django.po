@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-21 08:21+0100\n"
+"POT-Creation-Date: 2026-07-22 08:49+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -73,17 +73,18 @@ msgstr "Dangos popeth"
 msgid "Hide all"
 msgstr "Cuddio popeth"
 
-#: cms/core/blocks/embeddable.py:71 cms/core/blocks/markup.py:221
-#: cms/datavis/blocks/base.py:148
+#: cms/core/blocks/embeddable.py:85 cms/core/blocks/markup.py:221
+#: cms/datavis/blocks/base.py:148 diff.txt:1062 diff.txt:1114
 msgid "Source"
 msgstr "Ffynhonnell"
 
-#: cms/core/blocks/embeddable.py:75 cms/core/blocks/markup.py:226
+#: cms/core/blocks/embeddable.py:89 cms/core/blocks/markup.py:226
 #: cms/datavis/blocks/base.py:165 cms/datavis/blocks/charts.py:974
+#: diff.txt:1118
 msgid "Footnotes"
 msgstr "Troednodiadau"
 
-#: cms/core/blocks/embeddable.py:80
+#: cms/core/blocks/embeddable.py:94 diff.txt:1091
 msgid "Download this image"
 msgstr "Lawrlwythwch y ddelwedd hon"
 
@@ -144,7 +145,7 @@ msgstr "Thema"
 msgid "Released"
 msgstr "Rhyddhawyd"
 
-#: cms/core/models/base.py:166
+#: cms/core/models/base.py:190
 msgid "Home"
 msgstr "Cartref"
 
@@ -793,8 +794,10 @@ msgstr "Cymraeg"
 msgid "Not started"
 msgstr "Heb ei ddechrau"
 
-#~ msgid "Notes"
-#~ msgstr "Nodiadau"
+#: diff.txt:1078
+msgid "Notes"
+msgstr "Nodiadau"
 
-#~ msgid "Download image"
-#~ msgstr "Lawrlwythwch y ddelwedd"
+#: diff.txt:1084 diff.txt:1086
+msgid "Download image"
+msgstr "Lawrlwythwch y ddelwedd"

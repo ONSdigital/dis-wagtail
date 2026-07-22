@@ -246,8 +246,8 @@ def user_adds_chart_to_content(context: Context) -> None:
 
     chart_region = page.get_by_role("region", name="Line chart")
     chart_region.get_by_role("textbox", name="Title*", exact=True).fill("Test Chart Title")
-    chart_region.get_by_role("textbox", name="Subtitle*").fill("Test Chart Subtitle")
-    chart_region.get_by_label("Audio description*").fill("This is the chart audio description")
+    chart_region.get_by_role("textbox", name="Subtitle").fill("Test Chart Subtitle")
+    chart_region.get_by_label("Accessible description*").fill("This is the chart audio description")
 
     # Wait for the table editor to be ready and fill in chart data
     page.wait_for_timeout(500)
@@ -261,7 +261,7 @@ def user_adds_table_with_pasted_content(context: Context) -> None:
     page.locator('[data-contentpath="footnotes"] [role="textbox"]').fill("some footnotes")
     page.get_by_role("region", name="Table", exact=True).get_by_label("Title", exact=True).fill("The table title")
     page.get_by_role("region", name="Table", exact=True).get_by_label("Subtitle").fill("The subtitle")
-    page.get_by_role("region", name="Table", exact=True).get_by_label("Source").fill("The source")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Source text").fill("The source")
     page.get_by_role("region", name="Table", exact=True).get_by_label("Accessible label").fill("The accessible label")
 
     tinymce = (
@@ -615,7 +615,7 @@ def user_fills_in_chart_title(context: Context) -> None:
 @step("the user fills in the chart audio description")
 def user_fills_in_chart_audio_description(context: Context) -> None:
     featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
-    featured_chart_content.get_by_label("Audio Description*").fill("This is the audio description")
+    featured_chart_content.get_by_label("Accessible description*").fill("This is the audio description")
 
 
 @step("the user enters data into the chart table")
