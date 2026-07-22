@@ -75,7 +75,7 @@ class Command(BaseCommand):
 
         for completed_bundle in as_completed_collector:
             logger.info(
-                "register completed notification action for bundle %s:%s", (completed_bundle.pk, completed_bundle.name)
+                "register completed notification action for bundle %s:%s" % (completed_bundle.pk, completed_bundle.name)
             )
             bundle_complete_futures.append(
                 run_in_post_publish_support_executor(
@@ -113,7 +113,7 @@ class Command(BaseCommand):
 
     @force_write_db()
     def _handle_bundle_post_publish_complete(self, bundle: Bundle, finished_at: datetime) -> None:
-        logger.info("send completed notification action for bundle %s:%s", (bundle.pk, bundle.name))
+        logger.info("send completed notification action for bundle %s:%s" % (bundle.pk, bundle.name))
         notify_slack_of_post_publish_end(
             bundle,
             self.bundle_start_times[bundle],
