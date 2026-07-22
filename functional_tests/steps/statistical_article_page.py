@@ -731,6 +731,7 @@ def a_statistical_article_page_with_configured_listing_image_exists(
 @then("the page has a CSV download link for the chart")
 def the_page_has_a_csv_download_link_for_the_chart(context: Context) -> None:
     """Check that the page has a CSV download link for the chart."""
+    context.page.get_by_role("button", name="Download: line chart").click()
     csv_download_link = context.page.get_by_role("link", name="Download CSV")
     expect(csv_download_link).to_be_visible()
 
