@@ -10,7 +10,7 @@ from playwright.sync_api import expect
 
 COOKIE_TYPE_RADIO_LOCATOR = {
     "usage": "Do you want to allow cookies that measure website use?",
-    "campaigns": "Do you want to allow cookies that help with our communications and marketing?",
+    "campaigns": "Do you want to allow cookies that help with communications and marketing?",
     "settings": "Do you want to allow cookies that remember your settings?",
 }
 
