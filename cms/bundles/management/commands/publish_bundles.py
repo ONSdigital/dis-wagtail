@@ -172,6 +172,7 @@ class Command(BaseCommand):
                     self.stdout.write(f"Publishing {bundle.name} in {bundle_ts - now_ts:.0f}s")
                     notify_slack_of_bundle_pre_publish(bundle, bundle.release_date)
 
+            self._await_bundle_post_publish_actions(list(self.bundle_start_times))
+
             bundle_scheduler.run()
 
-            self._await_bundle_post_publish_actions(list(self.bundle_start_times))
