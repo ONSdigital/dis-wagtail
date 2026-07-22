@@ -22,13 +22,13 @@ logger = logging.getLogger(__name__)
 def update_index_post_publish_action(page: Page, _bundle: Bundle | None) -> None:
     # TODO: remove after testing
     start_time = timezone.now()
-    logger.info("update index for bundle %s, page %s started at" % (_bundle.name, page.title, start_time.isoformat()))
+    logger.info("update index for bundle %s, page %s started at %s" % (_bundle.name, page.pk, start_time.isoformat()))
     sleep(5)
     if is_indexable_page(page):
         get_publisher().publish_created_or_updated(page)
     logger.info(
-        "update index for bundle %s, page %s finished at"
-        % (_bundle.name, page.title, (timezone.now() - start_time).isoformat())
+        "update index for bundle %s, page %s finished at %s"
+        % (_bundle.name, page.pk, (timezone.now() - start_time).total_seconds())
     )
 
 

@@ -79,7 +79,9 @@ class Command(BaseCommand):
             )
             bundle_complete_futures.append(
                 run_in_post_publish_support_executor(
-                    self._handle_bundle_post_publish_complete, bundle=completed_bundle, finished_at=timezone.now()
+                    self._handle_bundle_post_publish_complete,
+                    bundle=completed_bundle,
+                    finished_at=timezone.now().isoformat(),
                 )
             )
 
@@ -112,12 +114,12 @@ class Command(BaseCommand):
         )
 
     @force_write_db()
-    def _handle_bundle_post_publish_complete(self, bundle: Bundle, finished_at: datetime) -> None:
+    def _handle_bundle_post_publish_complete(self, bundle: Bundle, finished_at: str) -> None:
         logger.info("send completed notification action for bundle %s:%s" % (bundle.pk, bundle.name))
         notify_slack_of_post_publish_end(
             bundle,
             self.bundle_start_times[bundle],
-            finished_at,
+            datetime.fromisoformat(finished_at),
             publish_failed=bundle.pk not in self.published_bundle_ids,
         )
 
