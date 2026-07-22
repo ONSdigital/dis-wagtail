@@ -46,8 +46,11 @@ def as_completed_actions_by_bundle(
 
         for bundle in bundles_to_check.copy():
             if bundle.pk not in unfinished_bundles:
+                logger.info("bundle %s: %s actions finished" % (bundle.pk, bundle.name))
                 yield bundle
                 bundles_to_check.remove(bundle)
+            else:
+                logger.info("bundle %s: %s actions not yet finished" % (bundle.pk, bundle.name))
 
         # Only wait if there are bundles to check
         if bundles_to_check:
@@ -74,7 +77,7 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_f
                 "outstanding_actions": outstanding_actions,
             },
         )
-
+        logger.info("bundle %s: %s finished at %s"% (bundle.pk, bundle.name, timezone.now().isoformat()))
     notify_slack_of_post_publish_end(bundle, start_time, timezone.now(), publish_failed=publish_failed)
 
 
