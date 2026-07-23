@@ -35,8 +35,7 @@
 
         <p>{{ _("Cookies are files saved on your phone, tablet or computer when you visit a website.") }}</p>
         <p>{{ _("We use cookies to collect and store information about how you use the ONS website, such as the pages you visit.") }}</p>
-        {# :TODO: The URL should be updated post launch as the slug for the cookies page is changing to /help/cookies-information. #}
-        <p>{% trans help_cookies_url="/help/cookies" %}This page has a brief explanation of each type of cookie we use. If you want more details, <a href="{{ help_cookies_url }}">read our detailed cookie information</a>.{% endtrans %}</p>
+        <p>{% trans help_cookies_url="/help/cookies-information" %}This page has a brief explanation of each type of cookie we use. If you want more details, <a href="{{ help_cookies_url }}">read our detailed cookie information</a>.{% endtrans %}</p>
 
         <h2>{{ _("Cookie settings") }}</h2>
 
