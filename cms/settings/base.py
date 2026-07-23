@@ -1195,4 +1195,4 @@ PERMISSIONS_POLICY: dict = {
 
 # Cloudflare cache tag for Wagtail responses
 # Used to purge Wagtail server route responses as a group
-WAGTAIL_CLOUDFLARE_CACHE_TAG = env.get("WAGTAIL_CLOUDFLARE_CACHE_TAG", "wagtail")
+WAGTAIL_CLOUDFLARE_CACHE_TAG = env.get("WAGTAIL_CLOUDFLARE_CACHE_TAG", "wagtail").strip()

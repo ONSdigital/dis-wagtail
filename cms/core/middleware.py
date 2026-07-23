@@ -47,23 +47,20 @@ class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
 
 
 class CloudflareWagtailCacheTagMiddleware(MiddlewareMixin):
-    """Adds a Cloudflare cache tag header to Wagtail server route responses."""
+    """Adds a Cloudflare cache tag header to responses."""
 
-    def _parse_cache_tags(self, header: str) -> list[str]:
+    @staticmethod
+    def _parse_cache_tags(header: str) -> list[str]:
         """Parse the Cache-Tag header into a list of tags."""
         return [tag.strip() for tag in header.split(",") if tag.strip()] if header else []
 
     def process_response(self, request: HttpRequest, response: HttpResponse) -> HttpResponse:
         """Add the Cloudflare cache tag header to the response."""
-        cache_tag = getattr(settings, "WAGTAIL_CLOUDFLARE_CACHE_TAG", None)
-        if cache_tag is None:
-            return response
-
-        cache_tag = str(cache_tag).strip()
+        cache_tag = settings.WAGTAIL_CLOUDFLARE_CACHE_TAG
         if not cache_tag:
             return response
 
-        # Add tag if header already exists and tag is not present
+        # Append the configured tag when missing, or create the header if absent.
         existing_header = response.get(CLOUDFLARE_CACHE_TAG_HEADER, "")
         existing_tags = self._parse_cache_tags(existing_header)
         if cache_tag not in existing_tags:
