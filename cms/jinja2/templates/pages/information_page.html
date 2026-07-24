@@ -24,7 +24,7 @@
     -%}
 {# fmt:on #}
 
-{% block header_area %}
+{% block breadcrumbs %}
     {# fmt:off #}
     {{
         onsBreadcrumbs({
@@ -33,6 +33,11 @@
             "variant": 'grey'
         })
     }}
+    {# fmt:on #}
+{% endblock %}
+
+{% block hero %}
+    {# fmt:off #}
     {{
         onsHero({
             "title": page.title,
@@ -50,7 +55,7 @@
     {# fmt:on #}
 {% endblock %}
 
-{% block main %}
+{% block mainContent %}
     <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--xl ons-js-table-of-contents-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}

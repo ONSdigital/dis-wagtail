@@ -4,6 +4,7 @@
 {% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/details/_macro.njk" import onsDetails %}
 {% from "components/table/_macro.njk" import onsTable %}
+{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 
 {%- set page_heading -%}
     {{ _("Change your cookies choices") }}
@@ -16,7 +17,19 @@
 {# Render the page heading in the main content area #}
 {% set render_heading_in_content = true %}
 
-{% block main %}
+{% block breadcrumbs %}
+    {# fmt:off #}
+    {{
+        onsBreadcrumbs({
+            "ariaLabel": breadcrumbs_aria_label,
+            "itemsList": page.get_breadcrumbs(request=request)
+        })
+    }}
+    {# fmt:on #}
+{% endblock %}
+
+{% block mainContent %}
+    {{ super() }}
     <div class="ons-page__body">
         {# fmt:off #}
         {% call onsPanel({

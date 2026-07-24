@@ -3,7 +3,7 @@
 {% from "components/panel/_macro.njk" import onsPanel %}
 {% from "components/button/_macro.njk" import onsButton %}
 
-{% block header_area %}
+{% block hero %}
     {# fmt:off #}
     {{
         onsHero({
@@ -14,7 +14,7 @@
     {# fmt:on #}
 {% endblock %}
 
-{% block main %}
+{% block mainContent %}
     {% call onsPanel({"variant": 'announcement'}) %}
         <h2 class="ons-u-mb-no">Welcome to the ONS Wagtail instance</h2>
 

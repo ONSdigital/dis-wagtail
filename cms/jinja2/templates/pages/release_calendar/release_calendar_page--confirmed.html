@@ -1,10 +1,7 @@
 {% extends "templates/pages/release_calendar/release_calendar_page.html" %}
 {% from "components/panel/_macro.njk" import onsPanel %}
 
-{% block header_area %}
-    {%- set hero_topic = _("Release") -%}
-    {%- set release_date_label = _("Release date:") -%}
-
+{% block breadcrumbs %}
     {# fmt:off #}
     {{
         onsBreadcrumbs({
@@ -13,6 +10,14 @@
             "variant": 'grey'
         })
     }}
+    {# fmt:on #}
+{% endblock %}
+
+{% block hero %}
+    {%- set hero_topic = _("Release") -%}
+    {%- set release_date_label = _("Release date:") -%}
+
+    {# fmt:off #}
     {{
         onsHero({
             "topic": hero_topic,
@@ -34,14 +39,14 @@
         })
     }}
     {# fmt:on #}
+{% endblock %}
 
-    {% block release_note %}
-        <div class="ons-container ons-u-mt-m">
-            {% call onsPanel() %}
-                <p>{{ _("This release is not yet published") }}</p>
-            {% endcall %}
-        </div>
-    {% endblock %}
+{% block release_note %}
+    <div class="ons-container ons-u-mt-m">
+        {% call onsPanel() %}
+            <p>{{ _("This release is not yet published") }}</p>
+        {% endcall %}
+    </div>
 {% endblock %}
 
 {% block release_content %}

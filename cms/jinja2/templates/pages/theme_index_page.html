@@ -4,8 +4,7 @@
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
 
-{% block header_area %}
-    {%- set hero_topic = _("Browse") -%}
+{% block breadcrumbs %}
     {# fmt:off #}
     {{
         onsBreadcrumbs({
@@ -14,6 +13,12 @@
             "variant": 'pale-blue'
         })
     }}
+    {# fmt:on #}
+{% endblock %}
+
+{% block hero %}
+    {%- set hero_topic = _("Browse") -%}
+    {# fmt:off #}
     {{
         onsHero({
             "topic": hero_topic,
@@ -25,7 +30,7 @@
     {# fmt:on #}
 {% endblock %}
 
-{% block main %}
+{% block mainContent %}
     {% if formatted_items %}
         {{ onsDocumentList({"documents": formatted_items}) }}
     {% endif %}
