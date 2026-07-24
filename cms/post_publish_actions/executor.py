@@ -157,6 +157,7 @@ def run_bundle_notification_in_support_executor[**P](
 ) -> Future:
     previous = _bundle_notification_futures.get(bundle_id)
     future = run_in_support_executor(_run_after, previous, fn, *args, **kwargs)
+    _bundle_notification_futures[bundle_id] = future
     return future
 
 

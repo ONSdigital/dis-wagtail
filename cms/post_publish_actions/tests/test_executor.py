@@ -93,7 +93,7 @@ class ExecutorTestCase(TestCase):
     def test_bundle_notifications_for_different_bundles_are_not_chained(self):
         order = []
 
-        executor.run_bundle_notification_in_support_executor(1, lambda: (time.sleep(1)), order.append("first"))
+        executor.run_bundle_notification_in_support_executor(1, lambda: (time.sleep(0.5), order.append("first")))
         executor.run_bundle_notification_in_support_executor(2, lambda: (order.append("second")))
         executor.wait_for_bundle_notifications(2)
 
