@@ -199,6 +199,7 @@ class TestBasePagePermissionTester(WagtailTestUtils, TestCase):
                 tester = BasePagePermissionTester(user=user, page=non_live)
                 self.assertFalse(tester.can_unpublish())
 
+    @override_settings(CMS_PAGE_PRIVACY_CONTROLS_ENABLED=False)
     def test_cannot_set_page_view_restrictions(self):
         mark_page_as_ready_to_publish(self.english_index_page)
         for user in [self.superuser, self.publishing_admin, self.publishing_officer, self.user]:

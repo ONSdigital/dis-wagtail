@@ -1052,6 +1052,18 @@ AWS_COGNITO_LOGIN_ENABLED = env.get("AWS_COGNITO_LOGIN_ENABLED", "false").lower(
 AWS_COGNITO_USER_POOL_ID = env.get("AWS_COGNITO_USER_POOL_ID")
 AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
 
+# Privacy feature flags. Page privacy gates the page view-restriction controls and routes;
+# collection privacy gates the document view-restriction password route.
+CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
+CMS_COLLECTION_PRIVACY_CONTROLS_ENABLED = env.get("CMS_COLLECTION_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
+
+# Wagtail redirects visitors of private pages here. The view routes them to Florence SSO
+# when Cognito is enabled, or to Wagtail's built-in frontend login otherwise.
+# Only defined when page privacy controls are on; otherwise the route is not registered
+# and Wagtail falls back to its built-in /_util/login/ view.
+if AWS_COGNITO_LOGIN_ENABLED and CMS_PAGE_PRIVACY_CONTROLS_ENABLED:
+    WAGTAIL_FRONTEND_LOGIN_URL = env.get("WAGTAIL_FRONTEND_LOGIN_URL", "/auth/frontend-login")
+
 # Auth Sync Teams
 AWS_COGNITO_TEAM_SYNC_ENABLED = env.get("AWS_COGNITO_TEAM_SYNC_ENABLED", "false").lower() == "true"
 AWS_COGNITO_TEAM_SYNC_FREQUENCY = int(env.get("AWS_COGNITO_TEAM_SYNC_FREQUENCY", "1"))
@@ -1130,8 +1142,6 @@ HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS = int(env.get("HTTP_REQUEST_DEFAULT_TIMEOUT
 DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "100"))
 
 WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_publish"
-
-CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
 
 # Use default autosave value if not specified. Set to 0 to disable
 WAGTAIL_AUTOSAVE_INTERVAL = int(env.get("WAGTAIL_AUTOSAVE_INTERVAL", 500))

@@ -1,7 +1,13 @@
 from django.conf import settings
 from django.test import TestCase, override_settings
 
-from cms.auth.checks import check_aws_cognito, check_identity_api, check_session_config, check_team_sync
+from cms.auth.checks import (
+    check_aws_cognito,
+    check_identity_api,
+    check_session_config,
+    check_team_sync,
+    check_wagtail_admin_login_url,
+)
 
 
 class AuthSettingsCheckTests(TestCase):
@@ -106,6 +112,76 @@ class AuthSettingsCheckTests(TestCase):
             # This creates a clean settings without SESSION_COOKIE_AGE or SESSION_RENEWAL_OFFSET_SECONDS
             errors = check_session_config(app_configs=None)
             self.assertEqual(errors, [])
+
+
+class WagtailAdminLoginURLCheckTests(TestCase):
+    """Tests for check_wagtail_admin_login_url, which catches the config where
+    WAGTAILADMIN_LOGIN_URL points at the local admin login redirect and would loop.
+    """
+
+    @override_settings(
+        AWS_COGNITO_LOGIN_ENABLED=True,
+        WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False,
+        WAGTAILADMIN_HOME_PATH="admin/",
+        WAGTAILADMIN_LOGIN_URL="/admin/login/",
+    )
+    def test_self_redirect_loop_config_raises_error(self):
+        """Cognito on, core login off, and the login URL left at the local default
+        makes /admin/login/ redirect to itself — should raise E010.
+        """
+        errors = check_wagtail_admin_login_url(app_configs=None)
+
+        self.assertEqual(len(errors), 1)
+        error = errors[0]
+        self.assertEqual(error.id, "auth.E010")
+        self.assertIn("redirects to itself", error.msg)
+        self.assertIn("Florence SSO", error.hint)
+
+    @override_settings(
+        AWS_COGNITO_LOGIN_ENABLED=True,
+        WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False,
+        WAGTAILADMIN_HOME_PATH="cms-admin/",
+        WAGTAILADMIN_LOGIN_URL="/cms-admin/login/",
+    )
+    def test_self_redirect_loop_with_custom_admin_path(self):
+        """The check follows a customised WAGTAILADMIN_HOME_PATH."""
+        errors = check_wagtail_admin_login_url(app_configs=None)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].id, "auth.E010")
+
+    @override_settings(
+        AWS_COGNITO_LOGIN_ENABLED=True,
+        WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False,
+        WAGTAILADMIN_HOME_PATH="admin/",
+        WAGTAILADMIN_LOGIN_URL="https://florence.example/florence/login",
+    )
+    def test_external_login_url_no_error(self):
+        """An external SSO login URL is the intended configuration."""
+        errors = check_wagtail_admin_login_url(app_configs=None)
+        self.assertEqual(errors, [])
+
+    @override_settings(
+        AWS_COGNITO_LOGIN_ENABLED=True,
+        WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True,
+        WAGTAILADMIN_HOME_PATH="admin/",
+        WAGTAILADMIN_LOGIN_URL="/admin/login/",
+    )
+    def test_core_login_enabled_no_error(self):
+        """With core admin login enabled, /admin/login/ is a real login page, not a redirect."""
+        errors = check_wagtail_admin_login_url(app_configs=None)
+        self.assertEqual(errors, [])
+
+    @override_settings(
+        AWS_COGNITO_LOGIN_ENABLED=False,
+        WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False,
+        WAGTAILADMIN_HOME_PATH="admin/",
+        WAGTAILADMIN_LOGIN_URL="/admin/login/",
+    )
+    def test_cognito_disabled_no_error(self):
+        """The check only applies to Cognito/SSO deployments."""
+        errors = check_wagtail_admin_login_url(app_configs=None)
+        self.assertEqual(errors, [])
 
 
 class IdentityAPISettingsCheckTests(TestCase):

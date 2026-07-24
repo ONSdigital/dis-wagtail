@@ -1,6 +1,8 @@
 # pylint: disable=too-many-lines
 from http import HTTPStatus
+from urllib.parse import urlsplit
 
+from django.contrib.auth.models import Group
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -1287,3 +1289,118 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
         self.assertIn("100", content)
         self.assertNotIn("Gwerth Cywir", content)
         self.assertNotIn("999", content)
+
+
+class ArticleSeriesPagePrivacyTestCase(WagtailTestUtils, TestCase):
+    """View restrictions on editions must be enforced on the series routable sub-routes.
+
+    The series sub-routes serve child StatisticalArticlePage editions; wagtail's URL-level
+    restriction check only covers the routed page (the series), so the edition's own
+    restrictions are enforced via serve_page_with_view_restrictions.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.series = ArticleSeriesPageFactory()
+        cls.edition = StatisticalArticlePageFactory(parent=cls.series, title="Private edition")
+        # page.url is absolute in tests (site host differs from the test client host);
+        # `next`/`return_url` use the request path, so keep both forms.
+        cls.series_path = urlsplit(cls.series.url).path
+        cls.edition_url = f"{cls.series.url}/editions/{cls.edition.slug}"
+        cls.edition_path = f"{cls.series_path}/editions/{cls.edition.slug}"
+        cls.protected_urls = [
+            cls.series.url,  # latest_article
+            f"{cls.series.url}/related-data",
+            cls.edition_url,
+            f"{cls.edition_url}/related-data",
+            f"{cls.edition_url}/versions/1",
+            f"{cls.edition_url}/download-chart/some-chart",
+            f"{cls.edition_url}/download-table/some-table",
+        ]
+
+    def test_password_restricted_edition_is_protected_on_series_routes(self):
+        restriction = PageViewRestriction.objects.create(
+            page=self.edition, restriction_type=PageViewRestriction.PASSWORD, password="edition-password"
+        )
+        action_url = reverse("wagtailcore_authenticate_with_password", args=[restriction.id, self.edition.id])
+
+        for url in self.protected_urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+                self.assertContains(response, action_url)
+                self.assertContains(response, 'name="return_url"')
+                # The hidden return_url must point back at the requested sub-route.
+                self.assertContains(response, f'value="{urlsplit(url).path}"')
+
+        # Entering the correct password grants access to the edition.
+        response = self.client.post(
+            action_url, {"password": "edition-password", "return_url": self.edition_path}, follow=False
+        )
+        self.assertRedirects(response, self.edition_path, fetch_redirect_response=False)
+        self.assertEqual(self.client.get(self.edition_url).status_code, HTTPStatus.OK)
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=True, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False)
+    def test_password_restriction_unlocks_for_anonymous_users_with_cognito_enabled(self):
+        """Regression: with Cognito on and core admin login off, ONSAuthMiddleware used to flush
+        anonymous sessions on every request, wiping the passed-restriction mark so the correct
+        password never unlocked the page.
+        """
+        restriction = PageViewRestriction.objects.create(
+            page=self.edition, restriction_type=PageViewRestriction.PASSWORD, password="edition-password"
+        )
+        action_url = reverse("wagtailcore_authenticate_with_password", args=[restriction.id, self.edition.id])
+
+        response = self.client.post(
+            action_url, {"password": "edition-password", "return_url": self.edition_path}, follow=False
+        )
+
+        self.assertRedirects(response, self.edition_path, fetch_redirect_response=False)
+        self.assertEqual(self.client.get(self.edition_url).status_code, HTTPStatus.OK)
+
+    def test_login_restricted_edition_redirects_to_login_on_series_routes(self):
+        PageViewRestriction.objects.create(page=self.edition, restriction_type=PageViewRestriction.LOGIN)
+        login_url = reverse("wagtailcore_login")
+
+        for url in self.protected_urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertRedirects(response, f"{login_url}?next={urlsplit(url).path}", fetch_redirect_response=False)
+
+        self.client.force_login(self.create_superuser(username="admin"))
+        self.assertEqual(self.client.get(self.edition_url).status_code, HTTPStatus.OK)
+
+    def test_groups_restricted_edition_redirects_unless_user_in_group(self):
+        restriction = PageViewRestriction.objects.create(page=self.edition, restriction_type=PageViewRestriction.GROUPS)
+        group = Group.objects.create(name="Edition viewers")
+        restriction.groups.add(group)
+
+        user = UserFactory()
+        self.client.force_login(user)
+        response = self.client.get(self.edition_url)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertIn(f"next={self.edition_path}", response["Location"])
+
+        user.groups.add(group)
+        self.assertEqual(self.client.get(self.edition_url).status_code, HTTPStatus.OK)
+
+    @override_settings(CMS_PAGE_PRIVACY_CONTROLS_ENABLED=True, WAGTAIL_FRONTEND_LOGIN_URL="/auth/frontend-login")
+    def test_login_restriction_uses_frontend_login_url_when_configured(self):
+        PageViewRestriction.objects.create(page=self.edition, restriction_type=PageViewRestriction.LOGIN)
+
+        response = self.client.get(self.edition_url)
+
+        self.assertRedirects(response, f"/auth/frontend-login?next={self.edition_path}", fetch_redirect_response=False)
+
+    def test_unrestricted_edition_served_on_series_routes(self):
+        for url in [self.series.url, self.edition_url]:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, HTTPStatus.OK)
+
+    def test_restriction_on_series_still_enforced_on_sub_routes(self):
+        PageViewRestriction.objects.create(page=self.series, restriction_type=PageViewRestriction.LOGIN)
+
+        response = self.client.get(self.edition_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertIn(f"next={self.edition_path}", response["Location"])
