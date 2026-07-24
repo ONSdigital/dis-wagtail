@@ -56,7 +56,7 @@ class CloudflareWagtailCacheTagMiddleware(MiddlewareMixin):
 
     def process_response(self, request: HttpRequest, response: HttpResponse) -> HttpResponse:
         """Add the Cloudflare cache tag header to the response."""
-        cache_tag = settings.WAGTAIL_CLOUDFLARE_CACHE_TAG
+        cache_tag = settings.CMS_CLOUDFLARE_CACHE_TAG
         if not cache_tag:
             return response
 

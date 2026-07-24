@@ -141,7 +141,7 @@ class TestNonTrailingSlashRedirectMiddleware(TestCase):
                 self.assertEqual(result, expected)
 
 
-@override_settings(WAGTAIL_CLOUDFLARE_CACHE_TAG="wagtail")
+@override_settings(CMS_CLOUDFLARE_CACHE_TAG="wagtail")
 class TestCloudflareWagtailCacheTagMiddleware(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
@@ -156,14 +156,14 @@ class TestCloudflareWagtailCacheTagMiddleware(TestCase):
         response = self.middleware.process_response(request, HttpResponse("Test content"))
         self.assertEqual(response.get("Cache-Tag"), "wagtail")
 
-    @override_settings(WAGTAIL_CLOUDFLARE_CACHE_TAG="custom-tag")
+    @override_settings(CMS_CLOUDFLARE_CACHE_TAG="custom-tag")
     def test_uses_custom_cache_tag_when_configured(self):
         """Custom tag values should replace the default."""
         request = self.make_request()
         response = self.middleware.process_response(request, HttpResponse("Test content"))
         self.assertEqual(response.get("Cache-Tag"), "custom-tag")
 
-    @override_settings(WAGTAIL_CLOUDFLARE_CACHE_TAG="")
+    @override_settings(CMS_CLOUDFLARE_CACHE_TAG="")
     def test_does_not_add_header_when_cache_tag_is_empty(self):
         """Empty cache tag configuration should skip tagging."""
         request = self.make_request()
