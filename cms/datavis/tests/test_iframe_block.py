@@ -121,10 +121,10 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         invalid_data = {
             # All required fields are missing
             "title": "",
-            "subtitle": "",
             "audio_description": "",
             "iframe_source_url": "",
             # Optional fields
+            "subtitle": "",
             "caption": "",
             "footnotes": "",
         }
@@ -139,17 +139,16 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
 
         # All required fields should have errors
         self.assertIn("title", errors)
-        self.assertIn("subtitle", errors)
         self.assertIn("audio_description", errors)
         self.assertIn("iframe_source_url", errors)
 
         # Check the error messages
         self.assertEqual(errors["title"].message, "This field is required.")
-        self.assertEqual(errors["subtitle"].message, "This field is required.")
         self.assertEqual(errors["audio_description"].message, "This field is required.")
         self.assertEqual(errors["iframe_source_url"].message, "Please enter a valid URL.")
 
         # Optional fields should not have errors
+        self.assertNotIn("subtitle", errors)
         self.assertNotIn("caption", errors)
         self.assertNotIn("footnotes", errors)
 
