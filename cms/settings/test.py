@@ -8,6 +8,9 @@ from django.urls import clear_url_caches
 # Force logs to JSON in tests, to match production behaviour
 os.environ.setdefault("LOG_AS_JSON", "true")
 
+# Enable test data loading app for testing
+os.environ.setdefault("CMS_TEST_DATA_ENABLED", "true")
+
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
 env = os.environ.copy()

@@ -1,0 +1,255 @@
+import itertools
+import json
+from io import StringIO
+
+import factory.random
+from django.conf import settings
+from django.core.management import call_command
+from django.db.models.signals import post_save
+from django.test import TestCase
+from django.test.testcases import SimpleTestCase
+from modelsearch.index import class_is_indexed
+from wagtail.models import Collection, ReferenceIndex
+
+from cms.datasets.models import Dataset
+from cms.datasets.tests.factories import DatasetFactory
+from cms.images.models import CustomImage
+from cms.taxonomy.models import Topic
+from cms.test_data.config import TestDataConfig
+from cms.test_data.factories import ImageFactory
+from cms.test_data.random import get_default_locale
+from cms.topics.models import TopicPage
+from cms.topics.tests.factories import TopicPageFactory
+
+AFFECTED_MODELS = [TopicPage, Topic, CustomImage, Dataset]
+
+
+class CreateTestDataTestCase(TestCase):
+    def _call_with_config(self, config: dict | None = None) -> str:
+        output = StringIO()
+        call_command(
+            "create_test_data", interactive=False, stdout=output, config=TestDataConfig.model_validate(config or {})
+        )
+        return output.getvalue()
+
+    def test_streamfield_content_is_valid(self) -> None:
+        """Generated blocks should be valid in case they are accessed in admin panel."""
+        self._call_with_config(
+            {
+                "datasets": {"count": 2},
+                "topics": {"count": 2, "datasets": 2, "dataset_manual_links": 1, "explore_more": 2},
+            }
+        )
+
+        for topic_page in TopicPage.objects.filter(alias_of_id=None):
+            for field_name in ("datasets", "explore_more"):
+                with self.subTest(topic_page=topic_page, field=field_name):
+                    stream_block = TopicPage._meta.get_field(field_name).stream_block
+                    stream_block.clean(getattr(topic_page, field_name))
+
+    def test_creates_data(self) -> None:
+        original_counts = {model: model.objects.count() for model in AFFECTED_MODELS}
+
+        self._call_with_config()
+
+        for model, original_count in original_counts.items():
+            with self.subTest(model):
+                self.assertGreater(model.objects.count(), original_count, model)
+
+    def test_creates_topics(self) -> None:
+        self.assertEqual(TopicPage.objects.count(), 0)
+        self._call_with_config(
+            {
+                "topics": {
+                    "count": 3,
+                    "datasets": 1,
+                    "dataset_manual_links": 1,
+                    "explore_more": 2,
+                    "published_probability": 1,
+                    "revisions": {"min": 2, "max": 3},
+                }
+            }
+        )
+        self.assertEqual(TopicPage.objects.filter(alias_of_id=None).count(), 3)
+        self.assertEqual(TopicPage.objects.exclude(alias_of_id=None).count(), 3)
+        self.assertEqual(len(set(TopicPage.objects.values_list("title", flat=True))), 3)
+
+        for topic_page in TopicPage.objects.filter(alias_of_id=None):
+            with self.subTest(topic_page):
+                self.assertEqual(
+                    [child.block_type for child in topic_page.explore_more], ["internal_link", "external_link"]
+                )
+                for block in topic_page.explore_more:
+                    self.assertIn(settings.CMS_TEST_DATA_PREFIX, block.value["thumbnail"].title)
+
+                self.assertLessEqual(topic_page.revisions.count(), 3)
+                self.assertGreaterEqual(topic_page.revisions.count(), 2)
+
+                self.assertTrue(topic_page.live)
+
+    def test_idempotent(self) -> None:
+        self._call_with_config()
+
+        topic_titles = set(TopicPage.objects.values_list("title", flat=True))
+
+        original_counts = {model: model.objects.count() for model in [*AFFECTED_MODELS, Collection]}
+
+        self._call_with_config()
+
+        for model, original_count in original_counts.items():
+            with self.subTest(model):
+                self.assertEqual(model.objects.count(), original_count, model)
+        self.assertEqual(set(TopicPage.objects.values_list("title", flat=True)), topic_titles)
+
+    def test_does_not_leak_ollections(self) -> None:
+        """Seeded images must reuse root collection instead of creating their own."""
+        original_count = Collection.objects.count()
+
+        self._call_with_config({"images": {"count": 3}})
+
+        self.assertEqual(Collection.objects.count(), original_count)
+
+    def test_restores_global_factory_state(self):
+        original_locale = get_default_locale()
+        original_state = factory.random.get_random_state()
+
+        self._call_with_config()
+
+        self.assertEqual(get_default_locale(), original_locale)
+        self.assertEqual(factory.random.get_random_state(), original_state)
+
+    def test_seeded(self) -> None:
+        self._call_with_config()
+
+        topic_titles = set(TopicPage.objects.values_list("title", flat=True))
+
+        call_command("delete_test_data", stdout=StringIO(), interactive=False)
+
+        self._call_with_config()
+
+        self.assertEqual(set(TopicPage.objects.values_list("title", flat=True)), topic_titles)
+
+    def test_tree_is_valid(self) -> None:
+        self._call_with_config()
+
+        output = StringIO()
+        call_command("fixtree", interactive=False, stdout=output)
+
+        self.assertIn("Checking page tree for problems...\nNo problems found.", output.getvalue())
+        self.assertIn("Checking collection tree for problems...\nNo problems found.", output.getvalue())
+
+
+class DeleteTestDataTestCase(TestCase):
+    def test_no_existing_data(self) -> None:
+        output = StringIO()
+        call_command("delete_test_data", stdout=output, no_color=True)
+        self.assertIn("No data to delete", output.getvalue())
+
+    def test_leaves_real_content_alone(self) -> None:
+        real_page = TopicPageFactory(title="A real topic page")
+        real_dataset = DatasetFactory(title="A real dataset")
+        real_image = ImageFactory(title="A real image")
+
+        call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
+        call_command("delete_test_data", interactive=False, stdout=StringIO())
+
+        self.assertTrue(TopicPage.objects.filter(pk=real_page.pk).exists())
+        self.assertTrue(Topic.objects.filter(pk=real_page.topic.pk).exists())
+        self.assertTrue(Dataset.objects.filter(pk=real_dataset.pk).exists())
+        self.assertTrue(CustomImage.objects.filter(pk=real_image.pk).exists())
+
+        self.assertFalse(TopicPage.objects.filter(title__istartswith=settings.CMS_TEST_DATA_PREFIX).exists())
+        self.assertFalse(Topic.objects.filter(title__istartswith=settings.CMS_TEST_DATA_PREFIX).exists())
+
+    def test_dry_run(self) -> None:
+        call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
+
+        original_counts = {model: model.objects.count() for model in AFFECTED_MODELS}
+
+        output = StringIO()
+        call_command("delete_test_data", stdout=output, no_color=True, dry_run=True)
+        self.assertIn("Found data to delete", output.getvalue())
+        self.assertNotIn("Successfully deleted", output.getvalue())
+
+        for model, original_count in original_counts.items():
+            self.assertEqual(model.objects.count(), original_count, model)
+
+    def test_delete_data(self) -> None:
+        call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
+
+        original_counts = {model: model.objects.count() for model in AFFECTED_MODELS}
+
+        output = StringIO()
+        call_command("delete_test_data", stdout=output, no_color=True, interactive=False)
+        self.assertIn("Found data to delete", output.getvalue())
+        self.assertIn("Successfully deleted", output.getvalue())
+
+        for model, original_count in original_counts.items():
+            self.assertLess(model.objects.count(), original_count, model)
+
+    def test_tree_is_valid(self) -> None:
+        call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
+
+        call_command("delete_test_data", interactive=False, stdout=StringIO())
+
+        output = StringIO()
+        call_command("fixtree", interactive=False, stdout=output)
+
+        self.assertIn("Checking page tree for problems...\nNo problems found.", output.getvalue())
+        self.assertIn("Checking collection tree for problems...\nNo problems found.", output.getvalue())
+
+        # Topics aren't part of the page tree, to manually check they're valid
+        self.assertEqual(Topic.objects.root_topic().numchild, 0)
+        self.assertEqual(Topic.find_problems(), ([], [], [], [], []))
+
+    def test_deletes_reference_index(self):
+        call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
+
+        instances = list(
+            itertools.chain.from_iterable(
+                model.objects.all() for model in AFFECTED_MODELS if ReferenceIndex.model_is_indexable(model)
+            )
+        )
+
+        call_command("delete_test_data", interactive=False, stdout=StringIO())
+
+        for instance in instances:
+            self.assertFalse(ReferenceIndex.get_references_for_object(instance).exists())
+            self.assertFalse(ReferenceIndex.get_references_to(instance).exists())
+
+    def test_deletes_search_index(self):
+        call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
+
+        instances = list(
+            itertools.chain.from_iterable(model.objects.all() for model in AFFECTED_MODELS if class_is_indexed(model))
+        )
+
+        call_command("delete_test_data", interactive=False, stdout=StringIO())
+
+        for instance in instances:
+            self.assertFalse(instance.index_entries.exists())
+
+    def test_signals_reconnected(self):
+        call_command("create_test_data", interactive=False, config=TestDataConfig(), stdout=StringIO())
+
+        post_save_receivers = sorted(str(receiver[0]) for receiver in post_save.receivers)
+
+        call_command("delete_test_data", interactive=False, stdout=StringIO())
+
+        self.assertEqual(sorted(str(receiver[0]) for receiver in post_save.receivers), post_save_receivers)
+
+
+class ShowDefaultTestDataConfigTestCase(SimpleTestCase):
+    def test_output_default(self) -> None:
+        output = StringIO()
+        call_command("show_default_test_data_config", stdout=output)
+
+        default_config = TestDataConfig.model_validate_json(output.getvalue())
+        self.assertEqual(default_config, TestDataConfig())
+
+    def test_outputs_schema(self) -> None:
+        output = StringIO()
+        call_command("show_default_test_data_config", stdout=output, schema=True)
+
+        # We can't really validate it, so just check it looks like JSON
+        json.loads(output.getvalue())
