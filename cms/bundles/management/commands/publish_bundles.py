@@ -1,9 +1,11 @@
 import logging
 import sched
 import time
+from concurrent.futures import ALL_COMPLETED, Future, wait
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
@@ -12,6 +14,8 @@ from cms.bundles.models import Bundle
 from cms.bundles.notifications.slack import notify_slack_of_bundle_pre_publish
 from cms.bundles.utils import publish_bundle
 from cms.core.db_router import force_write_db
+from cms.post_publish_actions.executor import run_in_support_executor
+from cms.post_publish_actions.utils import post_publish_notify_slack
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +54,17 @@ class Command(BaseCommand):
                 logger.error("Bundle no longer approved", extra={"bundle_id": bundle.pk})
                 return
 
-            publish_bundle(bundle)
+            start_time = timezone.now()
+            publish_succeeded = False
+            try:
+                publish_succeeded = publish_bundle(bundle)
+            finally:
+                self.bundle_complete_futures.append(
+                    run_in_support_executor(
+                        post_publish_notify_slack, start_time, bundle, publish_failed=not publish_succeeded
+                    )
+                )
+
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("Publish failed", extra={"bundle_id": bundle.pk, "event": "publish_failed"})
 
@@ -65,9 +79,14 @@ class Command(BaseCommand):
         if include_future := options["include_future"]:
             max_release_date += timedelta(seconds=include_future)
 
-        bundles_to_publish = Bundle.objects.filter(
-            status=BundleStatus.APPROVED, release_date__lte=max_release_date
-        ).annotate_release_date()
+        # Force evaluate bundles
+        bundles_to_publish = list(
+            Bundle.objects.filter(
+                status=BundleStatus.APPROVED, release_date__lte=max_release_date
+            ).annotate_release_date()
+        )
+
+        self.bundle_complete_futures: list[Future] = []  # pylint: disable=attribute-defined-outside-init
 
         if not bundles_to_publish:
             self.stdout.write("No bundles to go live.")
@@ -98,3 +117,9 @@ class Command(BaseCommand):
                     notify_slack_of_bundle_pre_publish(bundle, bundle.release_date)
 
             bundle_scheduler.run()
+
+            wait(
+                self.bundle_complete_futures,
+                return_when=ALL_COMPLETED,
+                timeout=settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS + settings.BUNDLE_POST_PUBLISH_POLL_FREQUENCY,
+            )

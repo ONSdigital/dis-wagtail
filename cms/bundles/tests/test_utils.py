@@ -27,6 +27,8 @@ from cms.bundles.utils import (
 from cms.core.tests.utils import rebuild_internal_search_index
 from cms.methodology.models import MethodologyPage
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.post_publish_actions.executor import flush_executor
+from cms.post_publish_actions.models import PostPublishAction, PostPublishActionType
 from cms.release_calendar.models import ReleaseCalendarPage
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.standard_pages.models import IndexPage, InformationPage
@@ -453,6 +455,10 @@ class SerializeBundleContentTranslationTests(TestCase):
 class PublishBundleFailureTests(TestCase):
     """Tests for publish_bundle failure handling."""
 
+    def setUp(self):
+        """Ensure executor threads don't outlive test lifetime."""
+        self.addCleanup(flush_executor)
+
     @patch("cms.bundles.utils.logger")
     @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
     @patch("cms.bundles.utils.alert_slack_of_bundle_content_failure")
@@ -639,6 +645,44 @@ class PublishBundleFailureTests(TestCase):
 
         # Failure notification should still be sent when update_status=False
         mock_notify_failure.assert_called_once()
+
+    @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    def test_publish_bundle__reset_post_publish_actions_before_publish(
+        self, _mock_notify_start, _mock_notify_end, _mock_notify_failure
+    ):
+        page_will_publish = StatisticalArticlePageFactory(title="Article 2", live=False)
+        page_will_publish.save_revision()
+
+        bundle = BundleFactory(approved=True, bundled_pages=[page_will_publish])
+
+        existing_action = PostPublishAction.objects.create(
+            bundle=bundle, page=page_will_publish, action_type=PostPublishActionType.S3_ACL
+        )
+
+        invalid_action = PostPublishAction.objects.create(
+            bundle=bundle, page=page_will_publish, action_type="DOES_NOT_EXIST"
+        )
+
+        publish_bundle(bundle)
+
+        bundle.refresh_from_db()
+        self.assertEqual(bundle.status, BundleStatus.PUBLISHED)
+
+        with self.assertRaises(PostPublishAction.DoesNotExist):
+            existing_action.refresh_from_db()
+
+        with self.assertRaises(PostPublishAction.DoesNotExist):
+            invalid_action.refresh_from_db()
+
+        self.assertEqual(PostPublishAction.objects.filter(bundle=bundle, page=page_will_publish).count(), 2)
+
+        self.assertTrue(
+            PostPublishAction.objects.filter(
+                bundle=existing_action.bundle, page=existing_action.page, action_type=existing_action.action_type
+            ).exists()
+        )
 
 
 class SerializePreviewBundleContentTests(TestCase):

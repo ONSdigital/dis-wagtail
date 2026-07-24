@@ -30,15 +30,16 @@ from cms.bundles.clients.api import BundleAPIClient, BundleAPIClientError, Bundl
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleContentItemState, BundleStatus
 from cms.bundles.models import Bundle
-from cms.bundles.notifications.slack import (
-    notify_slack_of_status_change,
-)
+from cms.bundles.notifications.slack import notify_slack_of_status_change
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
 from cms.bundles.utils import publish_bundle
 from cms.bundles.viewsets.utils import add_exception_cause_to_form
 from cms.core.custom_date_format import ons_date_format
+from cms.core.db_router import force_write_db
 from cms.core.utils import redirect
 from cms.datasets.models import Dataset
+from cms.post_publish_actions.executor import run_in_support_executor
+from cms.post_publish_actions.utils import post_publish_notify_slack
 from cms.teams.models import Team
 
 if TYPE_CHECKING:
@@ -346,13 +347,20 @@ class BundleEditView(EditView):
             new_date = instance.publication_date.strftime("%Y-%m-%d %H:%M") if instance.publication_date else None
             log(action="bundles.schedule_changed", instance=instance, data={"old": old_date, "new": new_date})
 
+    @force_write_db()
     def run_after_hook(self) -> HttpResponseBase | None:
         """This method allows calling hooks or additional logic after an action has been executed.
 
         In our case, we want to replicate the scheduled publication (send Slack notification, publish pages, update RC).
         """
         if self.action == "publish" or (self.action == "edit" and self.object.status == BundleStatus.PUBLISHED):
-            publish_bundle(self.object, update_status=False)
+            start_date = timezone.now()
+
+            publish_succeeded = publish_bundle(self.object, update_status=False)
+
+            run_in_support_executor(
+                post_publish_notify_slack, start_date, self.object, publish_failed=not publish_succeeded
+            )
 
     def get_action(self, request: HttpRequest) -> str:
         """Determine the POST action."""
@@ -859,6 +867,10 @@ class BundleDeleteView(DeleteView):
 
         try:
             client.delete_bundle(instance.bundle_api_bundle_id)
+            logger.info(
+                "Deleted bundle from Bundle API",
+                extra={"id": instance.pk, "api_id": instance.bundle_api_bundle_id},
+            )
         except BundleAPIClientError404:
             logger.warning(
                 "Bundle not found in Bundle API when deleting CMS bundle",
