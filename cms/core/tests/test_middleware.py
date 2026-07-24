@@ -1,6 +1,7 @@
-from django.test import RequestFactory, TestCase
+from django.http import HttpResponse
+from django.test import RequestFactory, TestCase, override_settings
 
-from cms.core.middleware import NonTrailingSlashRedirectMiddleware
+from cms.core.middleware import CloudflareWagtailCacheTagMiddleware, NonTrailingSlashRedirectMiddleware
 
 
 class TestNonTrailingSlashRedirectMiddleware(TestCase):
@@ -138,3 +139,58 @@ class TestNonTrailingSlashRedirectMiddleware(TestCase):
             with self.subTest(path=path):
                 result = self.middleware.is_request_path_allowed(path)
                 self.assertEqual(result, expected)
+
+
+@override_settings(CMS_CLOUDFLARE_CACHE_TAG="wagtail")
+class TestCloudflareWagtailCacheTagMiddleware(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.middleware = CloudflareWagtailCacheTagMiddleware(lambda req: None)
+
+    def make_request(self, path: str = "/test-page/"):
+        return self.factory.get(path)
+
+    def test_adds_default_cache_tag_to_response(self):
+        """Responses should get the default cache tag."""
+        request = self.make_request()
+        response = self.middleware.process_response(request, HttpResponse("Test content"))
+        self.assertEqual(response.get("Cache-Tag"), "wagtail")
+
+    @override_settings(CMS_CLOUDFLARE_CACHE_TAG="custom-tag")
+    def test_uses_custom_cache_tag_when_configured(self):
+        """Custom tag values should replace the default."""
+        request = self.make_request()
+        response = self.middleware.process_response(request, HttpResponse("Test content"))
+        self.assertEqual(response.get("Cache-Tag"), "custom-tag")
+
+    @override_settings(CMS_CLOUDFLARE_CACHE_TAG="")
+    def test_does_not_add_header_when_cache_tag_is_empty(self):
+        """Empty cache tag configuration should skip tagging."""
+        request = self.make_request()
+        response = self.middleware.process_response(request, HttpResponse("Test content"))
+        self.assertNotIn("Cache-Tag", response)
+
+    def test_appends_tag_to_existing_header(self):
+        """Existing Cache-Tag headers should be appended to, not replaced."""
+        request = self.make_request()
+        response = HttpResponse("Test content")
+        response["Cache-Tag"] = "existing-tag"
+        result = self.middleware.process_response(request, response)
+        self.assertEqual(result.get("Cache-Tag"), "existing-tag,wagtail")
+
+    def test_does_not_duplicate_existing_tag(self):
+        """If the configured tag already exists, it should not be added again."""
+        request = self.make_request()
+        response = HttpResponse("Test content")
+        response["Cache-Tag"] = "wagtail"
+        result = self.middleware.process_response(request, response)
+        self.assertEqual(result.get("Cache-Tag"), "wagtail")
+
+    def test_preserves_other_response_headers(self):
+        """Middleware should preserve unrelated headers such as Content-Type."""
+        request = self.make_request()
+        response = HttpResponse("Test content")
+        response["Content-Type"] = "application/json"
+        result = self.middleware.process_response(request, response)
+        self.assertEqual(result["Content-Type"], "application/json")
+        self.assertEqual(result.get("Cache-Tag"), "wagtail")

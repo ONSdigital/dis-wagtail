@@ -1,12 +1,13 @@
 import os
 
 from django.conf import settings
-from django.http import HttpRequest, HttpResponsePermanentRedirect
+from django.http import HttpRequest, HttpResponse, HttpResponsePermanentRedirect
 from django.utils.deprecation import MiddlewareMixin
 
 from cms.core.utils import redirect
 
 NON_TRAILING_SLASH_METHODS = {"GET", "HEAD"}
+CLOUDFLARE_CACHE_TAG_HEADER = "Cache-Tag"
 
 ALLOWED_REQUEST_PATHS = {
     settings.DJANGO_ADMIN_HOME_PATH,
@@ -43,3 +44,27 @@ class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
         """Check if the request path is allowed to be redirected."""
         stripped_path = path.lstrip("/")
         return any(stripped_path.startswith(allowed_path.lstrip("/")) for allowed_path in ALLOWED_REQUEST_PATHS)
+
+
+class CloudflareWagtailCacheTagMiddleware(MiddlewareMixin):
+    """Adds a Cloudflare cache tag header to responses."""
+
+    @staticmethod
+    def _parse_cache_tags(header: str) -> list[str]:
+        """Parse the Cache-Tag header into a list of tags."""
+        return [tag.strip() for tag in header.split(",") if tag.strip()] if header else []
+
+    def process_response(self, request: HttpRequest, response: HttpResponse) -> HttpResponse:
+        """Add the Cloudflare cache tag header to the response."""
+        cache_tag = settings.CMS_CLOUDFLARE_CACHE_TAG
+        if not cache_tag:
+            return response
+
+        # Append the configured tag when missing, or create the header if absent.
+        existing_header = response.get(CLOUDFLARE_CACHE_TAG_HEADER, "")
+        existing_tags = self._parse_cache_tags(existing_header)
+        if cache_tag not in existing_tags:
+            updated_tags = [*existing_tags, cache_tag]
+            response[CLOUDFLARE_CACHE_TAG_HEADER] = ",".join(updated_tags)
+
+        return response
