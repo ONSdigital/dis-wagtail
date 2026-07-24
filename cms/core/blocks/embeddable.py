@@ -1,5 +1,6 @@
 import os
 import re
+import uuid
 from typing import TYPE_CHECKING, ClassVar
 from urllib.parse import urlparse
 
@@ -72,7 +73,7 @@ class ImageBlock(blocks.StructBlock):
         file_size_human = filesizeformat(size_bytes) if size_bytes is not None else None
 
         options = {
-            "id": f"image-{context.get('block_id') or ''}",
+            "id": f"image-{context.get('block_id') or uuid.uuid4().hex[:8]}",
             "headingLevel": 3,
             "figureNumber": value.get("figure_number"),
             "title": value.get("figure_title"),

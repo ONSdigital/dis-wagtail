@@ -1,3 +1,4 @@
+import uuid
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
@@ -208,7 +209,7 @@ class ONSTableBlock(TinyTableBlock):
 
         options = {
             # fallback is only when block_id is not available, which should not happen in normal usage
-            "id": f"table-{context.get('block_id') or ''}",
+            "id": f"table-{context.get('block_id') or uuid.uuid4().hex[:8]}",
             # Note that headingLevel logic for subtitle, downloads and footnotes is handled in the design system
             "headingLevel": 3,
             "figureNumber": value.get("table_number"),
