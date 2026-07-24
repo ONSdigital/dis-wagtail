@@ -2,7 +2,7 @@ import logging
 import time
 import traceback
 from collections.abc import Callable
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from datetime import timedelta
 from functools import partial
 from typing import Any
@@ -129,6 +129,7 @@ def flush_executor() -> None:
     global _executor, _support_executor  # noqa: PLW0603 # pylint: disable=global-statement
     _executor.shutdown(wait=True)
     _support_executor.shutdown(wait=True)
+    _end_notification_futures.clear()
 
     _executor = _build_executor()
     _support_executor = _build_support_executor()
@@ -140,6 +141,22 @@ def run_in_executor[**P](fn: Callable[P, None], *args: P.args, **kwargs: P.kwarg
 
 def run_in_support_executor[**P](fn: Callable[P, None], *args: P.args, **kwargs: P.kwargs) -> Future:
     return _support_executor.submit(partial(_executor_wrapper, fn, *args, **kwargs))
+
+
+_end_notification_futures: dict[int, Future] = {}
+
+
+def run_end_notification_in_support_executor[**P](
+    bundle_id: int, fn: Callable[P, None], *args: P.args, **kwargs: P.kwargs
+):
+    future = run_in_support_executor(fn, *args, **kwargs)
+    _end_notification_futures[bundle_id] = future
+    return future
+
+
+def wait_for_end_notification(bundle_id: int) -> None:
+    if future := _end_notification_futures.pop(bundle_id, None):
+        wait([future])
 
 
 def executor_stop_and_wait(progress: bool = False) -> None:

@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from django.conf import settings
+from django.db.models import Max
 from django.utils import timezone
 from wagtail.models import Page
 
@@ -12,6 +13,7 @@ from cms.bundles.notifications.slack import notify_slack_of_post_publish_end
 from cms.core.db_router import force_write_db
 from cms.core.utils import GeneratorCollector
 
+from .executor import wait_for_end_notification
 from .models import PostPublishAction, PostPublishActionStatus
 from .registry import get_post_publish_actions
 
@@ -46,11 +48,8 @@ def as_completed_actions_by_bundle(
 
         for bundle in bundles_to_check.copy():
             if bundle.pk not in unfinished_bundles:
-                logger.info("bundle %s: %s actions finished" % (bundle.pk, bundle.name))
                 yield bundle
                 bundles_to_check.remove(bundle)
-            else:
-                logger.info("bundle %s: %s actions not yet finished" % (bundle.pk, bundle.name))
 
         # Only wait if there are bundles to check
         if bundles_to_check:
@@ -77,8 +76,15 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_f
                 "outstanding_actions": outstanding_actions,
             },
         )
-        logger.info("bundle %s: %s finished at %s" % (bundle.pk, bundle.name, timezone.now().isoformat()))
-    notify_slack_of_post_publish_end(bundle, start_time, timezone.now(), publish_failed=publish_failed)
+
+    end_time = (
+        PostPublishAction.objects.completed()
+        .filter(bundle=bundle, finished_at__gte=start_time)
+        .aggregate(latest_finish=Max("finished_at"))["latest_finish"]
+        or timezone.now()
+    )
+    wait_for_end_notification(bundle.pk)
+    notify_slack_of_post_publish_end(bundle, start_time, end_time, publish_failed=publish_failed)
 
 
 def run_post_publish_actions_for(page: Page, bundle: Bundle | None) -> None:

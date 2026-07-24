@@ -22,7 +22,7 @@ from cms.bundles.notifications.slack import (
     notify_slack_of_publish_end,
 )
 from cms.core.fields import StreamField
-from cms.post_publish_actions.executor import run_in_support_executor
+from cms.post_publish_actions.executor import run_end_notification_in_support_executor, run_in_support_executor
 from cms.post_publish_actions.models import PostPublishAction
 from cms.post_publish_actions.signal_handlers import suppress_post_publish_actions_signal
 from cms.post_publish_actions.utils import run_post_publish_actions_for
@@ -520,7 +520,8 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
 
         # Send failure notification
         end_time = timezone.now()
-        run_in_support_executor(
+        run_end_notification_in_support_executor(
+            bundle.pk,
             notify_slack_of_bundle_failure,
             bundle=bundle,
             start_time=start_time,
@@ -548,9 +549,10 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
         bundle.status = BundleStatus.PUBLISHED
         bundle.save(update_fields=["status"])
 
-    # Send publishing ended notification synchronously so it is guaranteed to be sent
-    # before any post-publish-end notification.
-    notify_slack_of_publish_end(
+    # Send publishing ended notification
+    run_end_notification_in_support_executor(
+        bundle.pk,
+        notify_slack_of_publish_end,
         bundle=bundle,
         start_time=start_time,
         end_time=timezone.now(),

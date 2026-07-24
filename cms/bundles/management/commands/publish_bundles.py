@@ -1,8 +1,8 @@
-import concurrent.futures
 import logging
 import sched
 import time
-from datetime import datetime, timedelta
+from concurrent.futures import ALL_COMPLETED, Future, wait
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
@@ -11,13 +11,11 @@ from django.utils import timezone
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle
-from cms.bundles.notifications.slack import notify_slack_of_bundle_pre_publish, notify_slack_of_post_publish_end
+from cms.bundles.notifications.slack import notify_slack_of_bundle_pre_publish
 from cms.bundles.utils import publish_bundle
 from cms.core.db_router import force_write_db
-from cms.core.utils import GeneratorCollector
-from cms.post_publish_actions.executor import run_in_support_executor as run_in_post_publish_support_executor
-from cms.post_publish_actions.models import PostPublishAction
-from cms.post_publish_actions.utils import as_completed_actions_by_bundle
+from cms.post_publish_actions.executor import run_in_support_executor
+from cms.post_publish_actions.utils import post_publish_notify_slack
 
 logger = logging.getLogger(__name__)
 
@@ -56,72 +54,19 @@ class Command(BaseCommand):
                 logger.error("Bundle no longer approved", extra={"bundle_id": bundle.pk})
                 return
 
-            self.bundle_start_times[bundle] = timezone.now()
-
-            if publish_bundle(bundle):
-                self.published_bundle_ids.add(bundle.pk)
-
-        except Exception:  # pylint: disable=broad-exception-caught
-            logger.exception("Publish failed", extra={"bundle_id": bundle.pk, "event": "publish_failed"})
-
-    def _await_bundle_post_publish_actions(self, bundles: list[Bundle]) -> None:
-        # If there are no start times, no bundles were published
-        if not self.bundle_start_times:
-            return
-        start_time = min(self.bundle_start_times.values())
-        as_completed_collector = GeneratorCollector(as_completed_actions_by_bundle(bundles, start_time))
-
-        bundle_complete_futures = []
-
-        for completed_bundle in as_completed_collector:
-            logger.info(
-                "register completed notification action for bundle %s:%s" % (completed_bundle.pk, completed_bundle.name)
-            )
-            bundle_complete_futures.append(
-                run_in_post_publish_support_executor(
-                    self._handle_bundle_post_publish_complete,
-                    bundle=completed_bundle,
-                    finished_at=timezone.now().isoformat(),
-                )
-            )
-
-        if as_completed_collector.value:
-            outstanding_actions = (
-                PostPublishAction.objects.pending().filter(bundle__in=as_completed_collector.value).mark_timed_out()
-            )
-            logger.error(
-                "Post publish actions timeout",
-                extra={
-                    "unfinished_bundles": [bundle.pk for bundle in as_completed_collector.value],
-                    "outstanding_actions": outstanding_actions,
-                },
-            )
-            for bundle in as_completed_collector.value:
-                bundle_complete_futures.append(
-                    run_in_post_publish_support_executor(
-                        self._handle_bundle_post_publish_complete, bundle=bundle, finished_at=timezone.now()
+            start_time = timezone.now()
+            publish_succeeded = False
+            try:
+                publish_succeeded = publish_bundle(bundle)
+            finally:
+                self.bundle_complete_futures.append(
+                    run_in_support_executor(
+                        post_publish_notify_slack, start_time, bundle, publish_failed=not publish_succeeded
                     )
                 )
 
-        remaining_time = max(
-            settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS - (timezone.now() - start_time).total_seconds(), 1
-        )
-
-        concurrent.futures.wait(
-            bundle_complete_futures,
-            return_when=concurrent.futures.ALL_COMPLETED,
-            timeout=remaining_time + settings.BUNDLE_POST_PUBLISH_POLL_FREQUENCY,
-        )
-
-    @force_write_db()
-    def _handle_bundle_post_publish_complete(self, bundle: Bundle, finished_at: str) -> None:
-        logger.info("send completed notification action for bundle %s:%s" % (bundle.pk, bundle.name))
-        notify_slack_of_post_publish_end(
-            bundle,
-            self.bundle_start_times[bundle],
-            datetime.fromisoformat(finished_at),
-            publish_failed=bundle.pk not in self.published_bundle_ids,
-        )
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Publish failed", extra={"bundle_id": bundle.pk, "event": "publish_failed"})
 
     @force_write_db()
     def handle(self, *args: Any, **options: Any) -> None:
@@ -141,8 +86,7 @@ class Command(BaseCommand):
             ).annotate_release_date()
         )
 
-        self.bundle_start_times: dict[Bundle, datetime] = {}  # pylint: disable=attribute-defined-outside-init
-        self.published_bundle_ids: set[int] = set()  # pylint: disable=attribute-defined-outside-init
+        self.bundle_complete_futures: list[Future] = []  # pylint: disable=attribute-defined-outside-init
 
         if not bundles_to_publish:
             self.stdout.write("No bundles to go live.")
@@ -174,4 +118,8 @@ class Command(BaseCommand):
 
             bundle_scheduler.run()
 
-            self._await_bundle_post_publish_actions(list(self.bundle_start_times))
+            wait(
+                self.bundle_complete_futures,
+                return_when=ALL_COMPLETED,
+                timeout=settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS + settings.BUNDLE_POST_PUBLISH_POLL_FREQUENCY,
+            )

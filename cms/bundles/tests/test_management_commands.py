@@ -84,7 +84,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
-    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     def test_publish_bundle(self, mock_notify_post_publish_end, mock_notify_end, mock_notify_start):
         """Test publishing a bundle."""
         # Sanity checks
@@ -128,7 +128,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
-    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     @patch("cms.search.signal_handlers.get_publisher")
     def test_publish_bundle_waits_for_action(
         self, mock_get_publisher, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
@@ -160,7 +160,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
-    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     @patch("cms.search.signal_handlers.get_publisher")
     def test_publish_bundle_action_error(
         self, mock_get_publisher, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
@@ -195,7 +195,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
     )
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
-    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     @patch("cms.search.signal_handlers.get_publisher")
     def test_publish_bundle_action_timeout_then_finish(
         self, mock_get_publisher, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
@@ -236,7 +236,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
     )
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
-    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     @patch("cms.search.signal_handlers.get_publisher")
     def test_publish_bundle_action_timeout(
         self, mock_get_publisher, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
@@ -274,7 +274,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
-    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     def test_publish_bundle_with_page_in_workflow(
         self, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
     ):
@@ -420,7 +420,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.alert_slack_of_bundle_content_failure")
     @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
-    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     def test_failed_bundle_gets_post_publish_end_notification_flagged_as_failed(
         self,
         mock_notify_post_publish_end,
@@ -458,17 +458,17 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
         mock_publish_bundle.assert_not_called()
         mock_logger.error.assert_called_once_with("Bundle no longer approved", extra={"bundle_id": self.bundle.pk})
 
-    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     def test_bundle_no_longer_approved_does_not_send_success_notification(self, mock_notify_post_publish_end):
         """Test a bundle that was initially approved but moved out of that status isn't published."""
         self.bundle.status = BundleStatus.DRAFT
         self.bundle.save(update_fields=["status"])
 
         command = PublishBundlesCommand()
-        command.bundle_start_times = {}
+        command.bundle_complete_futures = []
         command._handle_bundle_action(self.bundle)  # pylint: disable=protected-access
-        command._await_bundle_post_publish_actions([self.bundle])  # pylint: disable=protected-access
 
+        self.assertEqual(command.bundle_complete_futures, [])
         mock_notify_post_publish_end.assert_not_called()
 
     def test_publish_bundle_with_zero_pages(self):
@@ -535,7 +535,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.ons.gov.uk")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
-    @patch("cms.bundles.management.commands.publish_bundles.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     def test_publish_bundle_with_base_url(self, mock_notify_post_publish_end, mock_notify_end, mock_notify_start):
         """Test publishing with a configured base URL."""
         self.call_command()

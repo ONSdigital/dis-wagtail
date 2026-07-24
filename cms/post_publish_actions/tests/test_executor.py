@@ -75,6 +75,23 @@ class ExecutorTestCase(TestCase):
         executor.run_in_executor(lambda: None)
         self.assertEqual(mock_close_old_connections.call_count, 2)
 
+    def test_wait_for_end_notification_waits_for_the_registered_future(self):
+        order = []
+
+        def end_notification():
+            time.sleep(0.2)
+            order.append("end")
+
+        executor.run_end_notification_in_support_executor(1, end_notification)
+        executor.wait_for_end_notification(1)
+        order.append("post")
+
+        self.assertEqual(order, ["end", "post"])
+        self.assertNotIn(1, executor._end_notification_futures)
+
+    def test_wait_for_end_notification_without_registration(self):
+        executor.wait_for_end_notification(12345)
+
     def test_swallows_exceptions(self):
         """Test exceptions don't escape worker boundary and are logged."""
 
