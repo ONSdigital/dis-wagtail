@@ -807,9 +807,3 @@ msgstr "Cymraeg"
 #: cms/workflows/templates/wagtailadmin/workflows/workflow_status.html:13
 msgid "Not started"
 msgstr "Heb ei ddechrau"
-
-#~ msgid "Notes"
-#~ msgstr "Nodiadau"
-
-#~ msgid "Download image"
-#~ msgstr "Lawrlwythwch y ddelwedd"

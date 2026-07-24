@@ -36,7 +36,7 @@ class ImageBlock(blocks.StructBlock):
     )
     figure_title = blocks.CharBlock(required=False, label="Title")
     figure_subtitle = blocks.CharBlock(required=False, label="Subtitle")
-    supporting_text = blocks.TextBlock(required=False, label="Source text")
+    supporting_text = blocks.CharBlock(required=False, label="Source text")
     notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC, label="Footnotes")
     decorative_image = blocks.BooleanBlock(
         required=False,
