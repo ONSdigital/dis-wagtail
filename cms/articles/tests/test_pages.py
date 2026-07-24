@@ -2,6 +2,7 @@
 from datetime import timedelta
 from http import HTTPStatus
 
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import override_settings
@@ -79,14 +80,17 @@ class ArticleSeriesPageTests(WagtailPageTestCase):
         """Test that the previous releases page includes a breadcrumb for the latest article."""
         StatisticalArticlePageFactory(parent=self.article_series_page, title="Latest Article")
         response = self.client.get(f"{self.article_series_page.url}/editions")
+        soup = BeautifulSoup(response.content, "html.parser")
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         # Check the breadcrumbs include the series page link, which serves the evergreen latest article
-        self.assertContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{self.article_series_page.full_url}">'
-            f"{self.article_series_page.title}</a>",
-            html=True,
+        self.assertIsNotNone(
+            soup.find(
+                "a",
+                class_="ons-breadcrumbs__link",
+                href=self.article_series_page.full_url,
+                string=self.article_series_page.title,
+            )
         )
 
     def test_analytics_content_type(self):
@@ -456,6 +460,7 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         request = get_dummy_request()
         page_url = self.page.get_url(request=request)
         response = self.client.get(page_url)
+        soup = BeautifulSoup(response.content, "html.parser")
 
         # Breadcrumbs
         content = response.content.decode(encoding="utf-8")
@@ -466,15 +471,11 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         topic_full_url = topic.get_full_url(request=request)
 
         # The articles index is a non-navigable container, so it is excluded from the breadcrumb.
-        self.assertNotIn(
-            f'<a class="ons-breadcrumbs__link" href="{articles_index_full_url}">{articles_index.title}</a>',
-            content,
+        self.assertIsNone(
+            soup.find("a", class_="ons-breadcrumbs__link", href=articles_index_full_url, string=articles_index.title)
         )
 
-        self.assertInHTML(
-            f'<a class="ons-breadcrumbs__link" href="{topic_full_url}">{topic.title}</a>',
-            content,
-        )
+        self.assertIsNotNone(soup.find("a", class_="ons-breadcrumbs__link", href=topic_full_url, string=topic.title))
 
         # Census
         self.assertNotContains(response, "ons-hero__census-logo")
