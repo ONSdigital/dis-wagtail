@@ -1193,6 +1193,6 @@ PERMISSIONS_POLICY: dict = {
     "usb": [],
 }
 
-# Cloudflare cache tag for Wagtail responses
-# Used to purge Wagtail server route responses as a group
+# Cloudflare cache tag applied to CMS responses.
+# Used to purge Wagtail CMS responses as a group.
 CMS_CLOUDFLARE_CACHE_TAG = env.get("CMS_CLOUDFLARE_CACHE_TAG", "wagtail").strip()
