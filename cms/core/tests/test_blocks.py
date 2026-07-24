@@ -1289,7 +1289,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertContains(response, " download", count=1)
 
         # Large rendition used for download
-        # Appers twice in the response - once in the image srcset attribute and once in the download url
+        # Appears twice in the response - once in the image srcset attribute and once in the download url
         self.assertContains(response, self.large.file.url, count=2)
         # Small rendition
         # Appers twice in the response - once in the image src attribute and once in the image srcset attribute
