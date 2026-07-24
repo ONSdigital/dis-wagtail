@@ -68,11 +68,28 @@ class DatasetStoryBlock(StreamBlock):
 
         block_errors = {}
         for block_indices in url_paths.values():
+            if len(block_indices) <= 1:
+                continue
+
+            # Manual links only carry a URL, with no edition/version, so they're
+            # considered a duplicate of anything else referencing the same URL.
+            manual_indices = {i for i in block_indices if cleaned_value[i].block_type != "dataset_lookup"}
+            if manual_indices:
+                duplicate_indices = block_indices
+            else:
+                # A looked up dataset is only a duplicate of another looked up dataset
+                # if the series, edition and version all match.
+                lookup_indices_by_compound_id = defaultdict(set)
+                for i in block_indices:
+                    lookup_indices_by_compound_id[cleaned_value[i].value.compound_id].add(i)
+                duplicate_indices = {
+                    i for indices in lookup_indices_by_compound_id.values() if len(indices) > 1 for i in indices
+                }
+
             # Add a block error for any index which contains a duplicate URL,
             # so that the validation error messages appear on the actual duplicate entries
-            if len(block_indices) > 1:
-                for index in block_indices:
-                    block_errors[index] = ValidationError("Duplicate datasets are not allowed")
+            for index in duplicate_indices:
+                block_errors[index] = ValidationError("Duplicate datasets are not allowed")
 
         if block_errors:
             raise StreamBlockValidationError(block_errors=block_errors)

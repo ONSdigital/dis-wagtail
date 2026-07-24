@@ -78,6 +78,48 @@ class TestDatasetStoryBlock(TestCase):
             [
                 ("dataset_lookup", self.lookup_dataset.id),
                 (
+                    "dataset_lookup",
+                    Dataset.objects.create(
+                        # Same namespace as the first dataset, but different edition and version
+                        namespace=self.lookup_dataset.namespace,
+                        edition="test2_edition",
+                        version=2,
+                        title="test_title",
+                        description="test_description",
+                    ).id,
+                ),
+            ],
+            [
+                ("dataset_lookup", self.lookup_dataset.id),
+                (
+                    "dataset_lookup",
+                    Dataset.objects.create(
+                        # Same namespace and version as the first dataset, but different edition
+                        namespace=self.lookup_dataset.namespace,
+                        edition="test2_edition",
+                        version=1,
+                        title="test_title",
+                        description="test_description",
+                    ).id,
+                ),
+            ],
+            [
+                ("dataset_lookup", self.lookup_dataset.id),
+                (
+                    "dataset_lookup",
+                    Dataset.objects.create(
+                        # Same namespace and edition as the first dataset, but different version
+                        namespace=self.lookup_dataset.namespace,
+                        edition=self.lookup_dataset.edition,
+                        version=2,
+                        title="test_title",
+                        description="test_description",
+                    ).id,
+                ),
+            ],
+            [
+                ("dataset_lookup", self.lookup_dataset.id),
+                (
                     "manual_link",
                     {"title": "Dataset Title", "url": "https://example.com/datasets/foo/editions/bar/versions/1"},
                 ),
@@ -112,6 +154,8 @@ class TestDatasetStoryBlock(TestCase):
                     block,
                     stream_data=stream_data,
                 )
-
-                # Expect clean to not raise any errors
-                block.clean(value)
+                try:
+                    # Expect clean to not raise any errors
+                    block.clean(value)
+                except ValidationError as e:
+                    self.fail(f"ValidationError raised unexpectedly: {e}")
