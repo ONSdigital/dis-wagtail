@@ -517,7 +517,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
 
         # Mock an error during publication
         with patch(
-            "cms.bundles.utils.notify_slack_of_publication_start",
+            "cms.bundles.management.commands.publish_bundles.publish_bundle",
             side_effect=Exception("Test error"),
         ):
             self.call_command()

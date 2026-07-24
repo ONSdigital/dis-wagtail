@@ -13,7 +13,7 @@ from cms.bundles.notifications.slack import notify_slack_of_post_publish_end
 from cms.core.db_router import force_write_db
 from cms.core.utils import GeneratorCollector
 
-from .executor import wait_for_end_notification
+from .executor import wait_for_bundle_notifications
 from .models import PostPublishAction, PostPublishActionStatus
 from .registry import get_post_publish_actions
 
@@ -61,6 +61,7 @@ def as_completed_actions_by_bundle(
 
 @force_write_db()
 def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_failed: bool = False) -> None:
+    """Notifies slack when all post publish actions are completed."""
     as_completed_collector = GeneratorCollector(as_completed_actions_by_bundle([bundle], start_time))
 
     # Consume the generator
@@ -83,7 +84,7 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_f
         .aggregate(latest_finish=Max("finished_at"))["latest_finish"]
         or timezone.now()
     )
-    wait_for_end_notification(bundle.pk)
+    wait_for_bundle_notifications(bundle.pk)
     notify_slack_of_post_publish_end(bundle, start_time, end_time, publish_failed=publish_failed)
 
 

@@ -75,22 +75,33 @@ class ExecutorTestCase(TestCase):
         executor.run_in_executor(lambda: None)
         self.assertEqual(mock_close_old_connections.call_count, 2)
 
-    def test_wait_for_end_notification_waits_for_the_registered_future(self):
+    def test_bundle_notifications_run_in_submission_order(self):
         order = []
 
-        def end_notification():
+        def slow_start_notification():
             time.sleep(0.2)
-            order.append("end")
+            order.append("start")
 
-        executor.run_end_notification_in_support_executor(1, end_notification)
-        executor.wait_for_end_notification(1)
+        executor.run_bundle_notification_in_support_executor(1, slow_start_notification)
+        executor.run_bundle_notification_in_support_executor(1, lambda: order.append("end"))
+        executor.wait_for_bundle_notifications(1)
         order.append("post")
 
-        self.assertEqual(order, ["end", "post"])
-        self.assertNotIn(1, executor._end_notification_futures)
+        self.assertEqual(order, ["start", "end", "post"])
+        self.assertNotIn(1, executor._bundle_notification_futures)
 
-    def test_wait_for_end_notification_without_registration(self):
-        executor.wait_for_end_notification(12345)
+    def test_bundle_notifications_for_different_bundles_are_not_chained(self):
+        order = []
+
+        executor.run_bundle_notification_in_support_executor(1, lambda: (time.sleep(0.2)), order.append("first"))
+        executor.run_bundle_notification_in_support_executor(2, lambda: (order.append("second")))
+        executor.wait_for_bundle_notifications(2)
+
+        self.assertEqual(order, ["second"])
+        executor.wait_for_bundle_notifications(1)
+
+    def test_wait_for_bundle_notifications_without_registration(self):
+        executor.wait_for_bundle_notifications(12345)
 
     def test_swallows_exceptions(self):
         """Test exceptions don't escape worker boundary and are logged."""
