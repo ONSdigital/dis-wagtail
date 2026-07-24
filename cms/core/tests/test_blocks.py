@@ -1181,7 +1181,13 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         cls.large = cls.image.get_rendition("width-2048")
 
     def _make_information_page(
-        self, *, download: bool, image=None, alternative_text: str = "", decorative_image: bool = False
+        self,
+        *,
+        download: bool,
+        image=None,
+        alternative_text: str = "",
+        decorative_image: bool = False,
+        block_id: str = "",
     ) -> InformationPage:
         image = image or self.image
 
@@ -1207,7 +1213,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
                                     "notes_section": "<p>Some important notes</p>",
                                     "download": download,
                                 },
-                                "id": str(uuid.uuid4()),
+                                "id": block_id or str(uuid.uuid4()),
                             }
                         ],
                     },
@@ -1255,13 +1261,16 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertNotContains(response, 'alt="Meaningful alt text"')
 
     def test_decorative_image_renders_empty_alt_attribute(self):
-        page = self._make_information_page(download=False, decorative_image=True)
+        block_id = "test-decorative-image-block"
+        page = self._make_information_page(download=False, decorative_image=True, block_id=block_id)
 
         response = self.client.get(page.url)
+        soup = BeautifulSoup(response.content, "html.parser")
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        self.assertContains(response, 'alt=""')
-        self.assertNotContains(response, 'alt="Meaningful alt text"')
+        figure = soup.find("figure", id=f"image-{block_id}")
+        self.assertIsNotNone(figure)
+        self.assertIsNotNone(figure.find("img", class_="ons-image__img", alt=""))
 
     def test_decorative_image_and_alternative_text_raises_validation_error(self):
         block = ImageBlock()
