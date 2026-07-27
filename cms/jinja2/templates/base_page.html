@@ -107,7 +107,7 @@
 {% block mainContent %}
     {% if render_heading_in_content %}
         <h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">
-            {{ page_heading or page.title }}
+            {{ page_heading or page.title or title }}
         </h1>
     {% endif %}
 {% endblock %}
