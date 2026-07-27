@@ -1,6 +1,6 @@
 application:
   repo_name: dis-wagtail
-  branch: 1226-parallel-bundle-publish-actions
+  branch: spike/workflow-return-to-draft-reject-CMS-1274
 helm:
   repo_name: dis-helm-cms-service-chart
   values_files:
