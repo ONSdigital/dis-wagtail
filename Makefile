@@ -47,7 +47,7 @@ npm-build: ## Build the front-end assets
 	@if [ -f "$$HOME/.nvm/nvm.sh" ]; then . $$HOME/.nvm/nvm.sh && nvm use; fi && npm run build
 
 .PHONY: lint
-lint: lint-py lint-html lint-frontend lint-migrations ## Run all linters (python, html, front-end, migrations)
+lint: lint-py lint-html lint-frontend lint-migrations check-poetry-version ## Run all linters (python, html, front-end, migrations)
 
 .PHONY: lint-py
 lint-py:  ## Run all Python linters (ruff/pylint/mypy).
@@ -67,6 +67,10 @@ lint-frontend:  ## Run front-end linters
 .PHONY: lint-migrations
 lint-migrations: ## Run django-migration-linter
 	poetry run python manage.py lintmigrations --quiet ignore ok
+
+.PHONY: check-poetry-version
+check-poetry-version: ## Check pyproject.toml and poetry.lock use the same Poetry version
+	./scripts/check-poetry-version.sh
 
 .PHONY: test
 test:  ## Run the tests and check coverage.

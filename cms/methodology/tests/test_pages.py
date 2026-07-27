@@ -1,5 +1,6 @@
 from http import HTTPStatus
 
+from bs4 import BeautifulSoup
 from django.urls import reverse
 from wagtail.coreutils import get_dummy_request
 from wagtail.rich_text import RichText
@@ -48,25 +49,21 @@ class MethodologyPageTest(WagtailPageTestCase):
 
     def test_breadcrumb_excludes_methodology_index(self):
         response = self.client.get(self.page.url)
+        soup = BeautifulSoup(response.content, "html.parser")
         dummy_request = get_dummy_request()
 
         # confirm the methodology index container page is not in the breadcrumb
         methodology_index = self.page.get_parent()
         methodology_index_url = methodology_index.get_full_url(request=dummy_request)
-        self.assertNotContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{methodology_index_url}">{methodology_index.title}</a>',
-            html=True,
+
+        self.assertIsNone(
+            soup.find("a", class_="ons-breadcrumbs__link", href=methodology_index_url, string=methodology_index.title)
         )
 
         # confirm the breadcrumb points to the topic page (the closest navigable ancestor)
         topic_page = methodology_index.get_parent()
         topic_url = topic_page.get_full_url(request=dummy_request)
-        self.assertContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{topic_url}">{topic_page.title}</a>',
-            html=True,
-        )
+        self.assertIsNotNone(soup.find("a", class_="ons-breadcrumbs__link", href=topic_url, string=topic_page.title))
 
     def test_methodology_page_uses_correct_toc_class(self):
         """Test that the methodology page uses the correct table of contents class."""

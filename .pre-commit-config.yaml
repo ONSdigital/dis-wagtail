@@ -50,6 +50,15 @@ repos:
         # Only run on changes to pyproject.toml
         files: ^pyproject.toml$
 
+  - repo: local
+    hooks:
+      - id: check-poetry-version
+        name: check-poetry-version
+        language: system
+        entry: ./scripts/check-poetry-version.sh
+        pass_filenames: false
+        files: ^(pyproject\.toml|poetry\.lock)$
+
   # Template linting
   - repo: https://github.com/rtts/djhtml
     rev: 3.0.11

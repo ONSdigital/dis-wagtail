@@ -9,10 +9,13 @@ from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from wagtail.models import Locale, PageLogEntry
+from wagtail.models import Locale, ModelLogEntry, PageLogEntry
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.core.models import ContactDetails
+from cms.core.models.snippets import Definition
+from cms.core.tests.factories import ContactDetailsFactory, DefinitionFactory
 from cms.standard_pages.models import InformationPage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.users.tests.factories import UserFactory
@@ -123,6 +126,141 @@ class PageEditViewAuditLogTestCase(WagtailTestUtils, TestCase):
 
         page_ids = set(log_entries.values_list("page_id", flat=True))
         self.assertEqual(page_ids, {self.page.pk, other_page.pk})
+
+
+class SnippetEditViewAuditLogTestCase(WagtailTestUtils, TestCase):
+    """Tests for the snippet edit view audit logging via before_edit_snippet hook."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.other_user = cls.create_superuser(username="other_admin")
+        cls.contact_details = ContactDetailsFactory(name="Test Contact")
+        cls.definition = DefinitionFactory(name="Test Definition")
+
+    def setUp(self):
+        self.client.force_login(self.superuser)
+        self.contact_edit_url = reverse(
+            ContactDetails.snippet_viewset.get_url_name("edit"),  # pylint: disable=no-member
+            args=[self.contact_details.pk],
+        )
+        self.definition_edit_url = reverse(
+            Definition.snippet_viewset.get_url_name("edit"),  # pylint: disable=no-member
+            args=[self.definition.pk],
+        )
+
+    def test_edit_view__creates_audit_log_entry(self):
+        """Test that viewing the snippet edit view creates an audit log entry."""
+        response = self.client.get(self.contact_edit_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        log_entry = ModelLogEntry.objects.filter(object_id=self.contact_details.pk, action="snippets.edit_view").first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.user, self.superuser)
+        self.assertEqual(log_entry.message, "Viewed snippet editor for contact details")
+
+        response = self.client.get(self.definition_edit_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        log_entry = ModelLogEntry.objects.filter(object_id=self.definition.pk, action="snippets.edit_view").first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.user, self.superuser)
+        self.assertEqual(log_entry.message, "Viewed snippet editor for definition")
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_cooldown_prevents_duplicate_entries(self):
+        """Test that viewing the snippet edit view multiple times within the cooldown period
+        only creates one audit log entry.
+        """
+        ModelLogEntry.objects.filter(object_id=self.contact_details.pk, action="snippets.edit_view").delete()
+        cache.clear()
+
+        # First visit - should create a log entry
+        self.client.get(self.contact_edit_url)
+        first_count = ModelLogEntry.objects.filter(
+            object_id=self.contact_details.pk, action="snippets.edit_view"
+        ).count()
+        self.assertEqual(first_count, 1)
+
+        # Second visit within cooldown - should NOT create another log entry
+        self.client.get(self.contact_edit_url)
+        second_count = ModelLogEntry.objects.filter(
+            object_id=self.contact_details.pk, action="snippets.edit_view"
+        ).count()
+        self.assertEqual(second_count, 1)
+
+        # Third visit within cooldown - still no new entry
+        self.client.get(self.contact_edit_url)
+        third_count = ModelLogEntry.objects.filter(
+            object_id=self.contact_details.pk, action="snippets.edit_view"
+        ).count()
+        self.assertEqual(third_count, 1)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_cooldown_allows_new_entry_after_expiry(self):
+        """Test that a new audit log entry is created after the cooldown expires."""
+        ModelLogEntry.objects.filter(object_id=self.contact_details.pk, action="snippets.edit_view").delete()
+        cache.clear()
+
+        # First visit
+        self.client.get(self.contact_edit_url)
+        first_count = ModelLogEntry.objects.filter(
+            object_id=self.contact_details.pk, action="snippets.edit_view"
+        ).count()
+        self.assertEqual(first_count, 1)
+
+        # Clear cache to simulate cooldown expiry
+        cache.clear()
+
+        # Second visit after cooldown expiry - should create a new log entry
+        self.client.get(self.contact_edit_url)
+        second_count = ModelLogEntry.objects.filter(
+            object_id=self.contact_details.pk, action="snippets.edit_view"
+        ).count()
+        self.assertEqual(second_count, 2)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_different_users_get_separate_cooldowns(self):
+        """Test that different users have separate cooldown periods."""
+        ModelLogEntry.objects.filter(object_id=self.contact_details.pk, action="snippets.edit_view").delete()
+        cache.clear()
+
+        # First user views the snippet
+        self.client.force_login(self.superuser)
+        self.client.get(self.contact_edit_url)
+
+        # Second user views the same snippet - should also create a log entry
+        self.client.force_login(self.other_user)
+        self.client.get(self.contact_edit_url)
+
+        log_entries = ModelLogEntry.objects.filter(object_id=self.contact_details.pk, action="snippets.edit_view")
+        self.assertEqual(log_entries.count(), 2)
+
+        users = set(log_entries.values_list("user_id", flat=True))
+        self.assertEqual(users, {self.superuser.pk, self.other_user.pk})
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_different_snippets_get_separate_cooldowns(self):
+        """Test that different snippets have separate cooldown periods for the same user."""
+        other_snippet = ContactDetailsFactory(name="Other Contact")
+        ModelLogEntry.objects.filter(action="snippets.edit_view").delete()
+        cache.clear()
+
+        # View first snippet
+        self.client.get(self.contact_edit_url)
+
+        # View second snippet - should also create a log entry
+        self.client.get(
+            reverse(ContactDetails.snippet_viewset.get_url_name("edit"), args=[other_snippet.pk])  # pylint: disable=no-member
+        )
+
+        log_entries = ModelLogEntry.objects.filter(action="snippets.edit_view")
+        self.assertEqual(log_entries.count(), 2)
+
+        object_ids = set(log_entries.values_list("object_id", flat=True))
+        self.assertEqual(object_ids, {str(self.contact_details.pk), str(other_snippet.pk)})
 
 
 class PreventDeleteOfPreviouslyPublishedPageHookTests(WagtailTestUtils, TestCase):
