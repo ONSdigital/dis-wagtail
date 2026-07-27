@@ -404,9 +404,13 @@ def update_bundle_linked_release_calendar_page(bundle: Bundle) -> None:
         page.status = ReleaseStatus.PUBLISHED
         revision = page.save_revision(log_action=True)
         revision.publish()
+        logger.info(
+            "Updated release calendar page linked to bundle",
+            extra={"bundle_id": bundle.pk, "page_id": page.pk, "event": "release_calendar_page_updated"},
+        )
 
 
-def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
+def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:  # pylint: disable=too-many-statements # noqa
     """Publishes a given bundle.
 
     This means it publishes the related pages, as well as updates the linked release calendar.
@@ -450,6 +454,10 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                         run_post_publish_actions_for(page, bundle)
 
                     pages_published += 1
+                    logger.info(
+                        "Published page by approving its workflow",
+                        extra={"bundle_id": bundle.pk, "page_id": page.pk, "event": "publish_bundle_page"},
+                    )
                 elif page.latest_revision:
                     with suppress_post_publish_actions_signal():
                         # just run publish
@@ -459,6 +467,10 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                         run_post_publish_actions_for(page, bundle)
 
                     pages_published += 1
+                    logger.info(
+                        "Published page from its latest revision",
+                        extra={"bundle_id": bundle.pk, "page_id": page.pk, "event": "publish_bundle_page"},
+                    )
                 else:
                     failed_pages.append(page.pk)
                     logger.error(
@@ -516,6 +528,11 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
             failure_status = BundleStatus.PARTIALLY_PUBLISHED
             alert_type = BundleAlertType.FAIL
 
+            logger.error(
+                "Some pages failed to publish",
+                extra={"bundle_id": bundle.pk, "event": "bundle_publish_partial_failure"},
+            )
+
         # Always update status on failures
         bundle.status = failure_status
         bundle.save(update_fields=["status"])
@@ -550,18 +567,27 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     if update_status and (pages_published > 0 or bundle.has_datasets):
         bundle.status = BundleStatus.PUBLISHED
         bundle.save(update_fields=["status"])
+        logger.info(
+            "Bundle status set to published", extra={"bundle_id": bundle.pk, "event": "bundle_status_published"}
+        )
 
     # Send publishing ended notification
+    end_time = timezone.now()
     run_bundle_notification_in_support_executor(
         bundle.pk,
         notify_slack_of_publish_end,
         bundle=bundle,
         start_time=start_time,
-        end_time=timezone.now(),
+        end_time=end_time,
         url=bundle.full_inspect_url,
     )
 
+    publish_duration = (end_time - start_time).total_seconds()
     log(action="wagtail.publish.scheduled", instance=bundle)
+    logger.info(
+        "Bundle published",
+        extra={"bundle_id": bundle.pk, "duration": round(publish_duration * 1000, 3), "event": "publish_succeeded"},
+    )
     return True
 
 

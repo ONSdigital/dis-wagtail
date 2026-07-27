@@ -354,6 +354,9 @@ class BundleEditView(EditView):
         In our case, we want to replicate the scheduled publication (send Slack notification, publish pages, update RC).
         """
         if self.action == "publish" or (self.action == "edit" and self.object.status == BundleStatus.PUBLISHED):
+            logger.info(
+                "Manually publishing bundle", extra={"bundle_id": self.object.pk, "event": "manual_bundle_publish"}
+            )
             start_date = timezone.now()
 
             publish_succeeded = publish_bundle(self.object, update_status=False)
