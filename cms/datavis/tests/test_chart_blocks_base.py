@@ -27,6 +27,7 @@ class BaseVisualisationBlockTestCase(SimpleTestCase, WagtailTestUtils):
     def setUp(self):
         super().setUp()
         self.raw_data = {
+            "figure_number": "Figure 1",
             "title": "Test Chart",
             "subtitle": "Test Subtitle",
             "caption": "Test Caption",
@@ -43,6 +44,7 @@ class BaseVisualisationBlockTestCase(SimpleTestCase, WagtailTestUtils):
         value = self.get_value()
         pairs = [
             # `value` dict key, expected value
+            ("figure_number", "Figure 1"),
             ("title", "Test Chart"),
             ("subtitle", "Test Subtitle"),
             ("audio_description", "Test Audio Description"),
@@ -96,6 +98,7 @@ class BaseChartBlockTestCase(BaseVisualisationBlockTestCase):
         value = self.get_value()
         pairs = [
             # `value` dict key, expected value
+            ("figure_number", "Figure 1"),
             ("title", "Test Chart"),
             ("subtitle", "Test Subtitle"),
             ("audio_description", "Test Audio Description"),
