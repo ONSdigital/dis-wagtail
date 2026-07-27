@@ -117,6 +117,22 @@ class LineChartBlock(BaseChartBlock):
 
     class Meta:
         icon = "chart-line"
+        form_layout = [  # noqa
+            "figure_number",
+            "title",
+            "subtitle",
+            "audio_description",
+            "table",
+            "theme",
+            "show_legend",
+            "show_markers",
+            "x_axis",
+            "y_axis",
+            "options",
+            "annotations",
+            "caption",
+            "footnotes",
+        ]
 
 
 class BarColumnChartBlock(BaseChartBlock):
@@ -241,6 +257,25 @@ class BarColumnChartBlock(BaseChartBlock):
 
     class Meta:
         icon = "chart-bar"
+        form_layout = [  # noqa
+            "figure_number",
+            "title",
+            "subtitle",
+            "audio_description",
+            "table",
+            "select_chart_type",
+            "theme",
+            "show_legend",
+            "show_data_labels",
+            "use_stacked_layout",
+            "x_axis",
+            "y_axis",
+            "options",
+            "series_customisation",
+            "annotations",
+            "caption",
+            "footnotes",
+        ]
 
     def get_series_customisation(self, value: StructValue, series_number: int) -> dict[str, Any]:
         for block in value.get("series_customisation", []):
@@ -487,6 +522,23 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
 
     class Meta:
         icon = "chart-column"
+        form_layout = [  # noqa
+            "figure_number",
+            "title",
+            "subtitle",
+            "audio_description",
+            "table",
+            "select_chart_type",
+            "x_axis",
+            "y_axis",
+            "estimate_line_label",
+            "uncertainty_range_label",
+            "options",
+            "series_customisation",
+            "annotations",
+            "caption",
+            "footnotes",
+        ]
 
     def get_component_config(
         self,
@@ -682,6 +734,21 @@ class ScatterPlotBlock(BaseChartBlock):
 
     class Meta:
         icon = "chart-line"
+        form_layout = [  # noqa
+            "figure_number",
+            "title",
+            "subtitle",
+            "audio_description",
+            "table",
+            "theme",
+            "show_legend",
+            "x_axis",
+            "y_axis",
+            "options",
+            "annotations",
+            "caption",
+            "footnotes",
+        ]
 
     def get_series_data(self, value: StructValue) -> tuple[list[list[str | int | float]], list[dict[str, Any]]]:
         rows: list[list[str | int | float]] = value["table"].rows
@@ -751,6 +818,21 @@ class AreaChartBlock(BaseChartBlock):
 
     class Meta:
         icon = "chart-area"
+        form_layout = [  # noqa
+            "figure_number",
+            "title",
+            "subtitle",
+            "audio_description",
+            "table",
+            "theme",
+            "show_legend",
+            "x_axis",
+            "y_axis",
+            "options",
+            "annotations",
+            "caption",
+            "footnotes",
+        ]
 
     def clean(self, value: StructValue) -> StructValue:
         value = super().clean(value)
@@ -788,6 +870,15 @@ class IframeBlock(BaseVisualisationBlock):
 
     class Meta:
         icon = "code"
+        form_layout = [  # noqa
+            "figure_number",
+            "title",
+            "subtitle",
+            "audio_description",
+            "iframe_source_url",
+            "caption",
+            "footnotes",
+        ]
 
     def clean(self, value: StructValue) -> StructValue:
         errors = {}
