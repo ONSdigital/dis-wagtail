@@ -1,5 +1,6 @@
 {% extends "templates/base.html" %}
 {% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
+{% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/back-to-top/_macro.njk" import onsBackToTop %}
 
 {%- set back_to_top = _('Back to top') -%}
@@ -89,14 +90,17 @@
     {% include "templates/components/navigation/breadcrumbs.html" %}
 {% endblock %}
 
-{# Default heading if hero not used #}
+{# Default heading if hero not overridden #}
 {% block hero %}
     {% if not render_heading_in_content %}
-        <div class="ons-container">
-            <h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">
-                {{ page_heading or page.title }}
-            </h1>
-        </div>
+        {# fmt:off #}
+        {{
+            onsHero({
+                "title": page_heading or page.title,
+                "variants": 'grey'
+            })
+        }}
+        {# fmt:on #}
     {% endif %}
 {% endblock %}
 
