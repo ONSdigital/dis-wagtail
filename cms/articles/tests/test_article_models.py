@@ -1145,7 +1145,7 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
 
         self.assertInHTML("<p>Test main points summary</p>", data["description"])
 
-    def test_as_featured_article_macro_data_with_chart(self):
+    def test_as_featured_article_child_macro_data_with_chart(self):
         """Test that a chart is used when available."""
         table_data = TableDataFactory(
             table_data=[
@@ -1170,8 +1170,7 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
         self.page.featured_chart = [chart_data]
         self.page.save()
 
-        request = RequestFactory().get("/")
-        data = self.page.as_featured_article_macro_data(request)
+        data = self.page.as_featured_article_child_macro_data()
 
         self.assertEqual(data["chart"]["chartType"], "line")
         self.assertEqual(data["chart"]["title"], "Test Chart")
@@ -1180,10 +1179,9 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
 
         self.assertNotIn("image", data)
 
-    def test_as_featured_article_macro_data_without_chart(self):
+    def test_as_featured_article_child_macro_data_without_chart(self):
         """Test that a listing image is used when there is no chart."""
-        request = RequestFactory().get("/")
-        data = self.page.as_featured_article_macro_data(request)
+        data = self.page.as_featured_article_child_macro_data()
 
         self.assertNotIn("chart", data)
 
