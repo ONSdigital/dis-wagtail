@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, cast
 
 import jinja2
 from django.conf import settings
@@ -30,6 +30,82 @@ class TranslationURLDict(TypedDict):
 class HreflangDict(TypedDict):
     url: str
     lang: str
+
+
+class PageConfigHeaderPhaseDict(TypedDict):
+    badge: str
+    html: str
+
+
+class PageConfigHeaderMenuLinksToggleButtonDict(TypedDict):
+    text: str
+    ariaLabel: str
+
+
+class PageConfigHeaderMenuLinksDict(TypedDict):
+    id: str
+    ariaLabel: str
+    ariaListLabel: str
+    toggleMenuButton: PageConfigHeaderMenuLinksToggleButtonDict
+    keyLinks: list
+    columns: list
+
+
+class PageConfigHeaderSearchFormDict(TypedDict):
+    action: str
+    inputName: str
+
+
+class PageConfigHeaderSearchDict(TypedDict):
+    id: str
+    form: PageConfigHeaderSearchFormDict
+
+
+class PageConfigHeaderLanguageDict(TypedDict):
+    languages: list[TranslationURLDict]
+
+
+class PageConfigHeaderDict(TypedDict):
+    variants: str
+    phase: PageConfigHeaderPhaseDict
+    mastheadLogoUrl: str
+    menuLinks: PageConfigHeaderMenuLinksDict
+    search: PageConfigHeaderSearchDict
+    language: PageConfigHeaderLanguageDict
+
+
+class PageConfigMetaDict(TypedDict):
+    hrefLangs: list[HreflangDict]
+    canonicalUrl: str
+
+
+class PageConfigFooterOglLinkDict(TypedDict):
+    pre: str
+    text: str
+    url: str
+    post: str
+
+
+class PageConfigFooterDict(TypedDict):
+    cols: list
+    oglLink: PageConfigFooterOglLinkDict
+
+
+class PageConfigDict(TypedDict):
+    """Keys returned by get_page_config.
+
+    IMPORTANT: these key names MUST align exactly with the keys consumed by the ONS Design System
+    template (layout/_template.njk). Renaming any key here will silently break DS rendering.
+    """
+
+    title: str | None
+    bodyClasses: str
+    header: PageConfigHeaderDict
+    meta: PageConfigMetaDict
+    description: str
+    absoluteUrl: str
+    mainColClasses: str
+    footer: PageConfigFooterDict
 
 
 def _build_locale_urls(request: HttpRequest) -> list[LocaleURLsDict]:
@@ -216,14 +292,17 @@ def _get_page_config(context: jinja2.runtime.Context, page: BasePage | None, sit
 
 
 @jinja2.pass_context
-def get_page_config(context: jinja2.runtime.Context) -> dict:
+def get_page_config(context: jinja2.runtime.Context) -> PageConfigDict:
     page: BasePage | None = context.get("page")
     request = context["request"]
     site: Site = Site.find_for_request(request)
 
     # Merge the base and page-specific config, so they can be cached independently.
     # Page config is passed last so it can take precedence.
-    return deep_merge_mapping(
-        _get_base_page_config(context, site, request),
-        _get_page_config(context, page, site, request),
+    return cast(
+        PageConfigDict,
+        deep_merge_mapping(
+            _get_base_page_config(context, site, request),
+            _get_page_config(context, page, site, request),
+        ),
     )
