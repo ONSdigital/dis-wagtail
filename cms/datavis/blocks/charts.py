@@ -855,6 +855,8 @@ class AreaChartBlock(BaseChartBlock):
 
 
 class IframeBlock(BaseVisualisationBlock):
+    # Overrides title in BaseVisualisationBlock as it is not required for the iframe
+    title = blocks.CharBlock(required=False)
     iframe_source_url = RelativeOrAbsoluteURLBlock(
         required=True,
         help_text=(
@@ -867,13 +869,34 @@ class IframeBlock(BaseVisualisationBlock):
             f"{' or '.join(f'<code>{p}</code>' for p in settings.IFRAME_VISUALISATION_PATH_PREFIXES)}."
         ),
     )
+    # Used in the iframe title attribute
+    accessible_label = blocks.CharBlock(
+        required=True,
+        help_text=(
+            "A brief but descriptive label for the embed, for example "
+            "“Bar chart of GDP per region” or “Interactive personal inflation calculator tool”"
+        ),
+    )
+    # Overrides audio_description in BaseVisualisationBlock in order to update the help text
+    audio_description = blocks.TextBlock(
+        required=True,
+        help_text=(
+            "An overview of what the embed shows for screen reader users, for example"
+            "“GDP is the highest in London and lowest in the North East” or "
+            '"Inputs for users to describe what their household spends on different categories, which gives an estimate'
+            'of how much monthly spend has increased over the past year and compares to previous years"'
+        ),
+        label="Accessible description",
+    )
 
     class Meta:
+        template = "templates/components/streamfield/datavis/iframe_visualisation_block.html"
         icon = "code"
         form_layout = [  # noqa
             "figure_number",
             "title",
             "subtitle",
+            "accessible_label",
             "audio_description",
             "iframe_source_url",
             "caption",
@@ -887,12 +910,20 @@ class IframeBlock(BaseVisualisationBlock):
             if field.required and not value.get(field_name):
                 errors[field_name] = ValidationError("This field is required.")
 
+        errors |= self._validate_subtitle(value)
         errors |= self._validate_source_url(value)
 
         if errors:
             raise blocks.StructBlockValidationError(errors)
 
         return super().clean(value)
+
+    @staticmethod
+    def _validate_subtitle(value: StructValue) -> dict[str, ValidationError]:
+        """Validate that a subtitle is only present when a title is also provided."""
+        if value.get("subtitle") and not value.get("title"):
+            return {"subtitle": ValidationError("Please add a title if you want to add a subtitle.")}
+        return {}
 
     def _validate_source_url(self, value: StructValue) -> dict[str, ValidationError]:
         """Validate the source URL of the iframe. Validation errors are returned as an errors dict.
@@ -951,7 +982,7 @@ class IframeBlock(BaseVisualisationBlock):
             )
         return errors
 
-    def get_component_config(
+    def get_figure_config(
         self,
         value: StructValue,
         *,
@@ -960,12 +991,12 @@ class IframeBlock(BaseVisualisationBlock):
         block_id: str | None = None,  # pylint: disable=unused-argument
     ) -> dict[str, Any]:
         config = {
+            "figureNumber": value.get("figure_number"),
             "headingLevel": 3,
             "title": value.get("title"),
             "subtitle": value.get("subtitle"),
-            "caption": value.get("caption"),
-            "description": value.get("audio_description"),
-            "iframeUrl": value.get("iframe_source_url"),
+            "caption": _("Source") + ": " + value.get("caption") if value.get("caption") else None,
+            "audioDescription": value.get("audio_description"),
         }
 
         # Check for meaningful text before displaying footnotes
@@ -977,8 +1008,23 @@ class IframeBlock(BaseVisualisationBlock):
 
         return config
 
+    def get_iframe_config(
+        self,
+        value: StructValue,
+        *,
+        # We don't call super() here, so these args are unused
+        parent_context: dict[str, Any] | None = None,  # pylint: disable=unused-argument
+        block_id: str | None = None,  # pylint: disable=unused-argument
+    ) -> dict[str, Any]:
+        config = {
+            "iframeUrl": value.get("iframe_source_url"),
+            "iframeTitle": value.get("accessible_label"),
+        }
+        return config
+
     def get_context(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
 
-        context["chart_config"] = self.get_component_config(value)
+        context["figure_config"] = self.get_figure_config(value)
+        context["iframe_config"] = self.get_iframe_config(value)
         return context

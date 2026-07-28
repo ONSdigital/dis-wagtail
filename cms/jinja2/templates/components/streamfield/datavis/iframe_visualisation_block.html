@@ -1,0 +1,20 @@
+{% from "components/figure/_macro.njk" import onsFigure %}
+
+{%- do figure_config.update(id=block_id) -%}
+
+{# fmt:off #}
+{% call onsFigure(figure_config) %}
+    <div
+        data-chart-iframe
+        {# id needs prefix to be different from figure id #}
+        id="iframe--{{ block_id }}"
+        data-url="{{ iframe_config.iframeUrl }}"
+        data-title="{{ iframe_config.iframeTitle }}">
+        <iframe src="{{ iframe_config.iframeUrl }}"
+            title="{{ iframe_config.iframeTitle }}"
+            class="chart-embed"
+        >
+        </iframe>
+    </div>
+{% endcall %}
+{# fmt:on #}

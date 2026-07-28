@@ -1,10 +1,10 @@
 {#-
-This is a partial include to reuse on pages with equations/ONS embeds.
+This is a partial include to reuse on pages with equations/iframe visualisations.
 The conditionals should help with only adding the extra JavaScript when needed.
 -#}
 {% if page.has_equations %}
     <script async src="{{ mathjax() }}"></script>
 {% endif %}
-{% if page.has_ons_embed %}
+{% if page.has_iframe_visualisation %}
     <script src="{{ static('js/third-party/pym.min.js') }}"></script>
 {% endif %}

@@ -247,6 +247,30 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         del self.page.has_equations  # clear cached property
         self.assertTrue(self.page.has_equations)
 
+    def test_has_iframe_visualisation(self):
+        """Test has_iframe_visualisation property."""
+        self.assertFalse(self.page.has_iframe_visualisation)
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Test Section",
+                    "content": [
+                        {
+                            "type": "iframe_visualisation",
+                            "value": {
+                                "iframe_source_url": "/visualisations/dvc/1",
+                                "accessible_label": "Bar chart of GDP per region",
+                                "audio_description": "GDP is highest in London and lowest in the North East.",
+                            },
+                        }
+                    ],
+                },
+            }
+        ]
+        del self.page.has_iframe_visualisation  # clear cached property
+        self.assertTrue(self.page.has_iframe_visualisation)
+
     def test_next_date_must_be_after_release_date(self):
         """Tests the model validates next release date is after the release date."""
         self.page.next_release_date = self.page.release_date
