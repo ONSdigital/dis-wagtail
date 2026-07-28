@@ -14,6 +14,7 @@ class ScatterPlotBlockTestCase(BaseChartBlockTestCase):
     def setUp(self):
         super().setUp()
         self.raw_data = {
+            "figure_number": "Figure 1",
             "title": "Test Chart",
             "subtitle": "Test Subtitle",
             "caption": "Test Caption",
