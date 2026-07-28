@@ -15,7 +15,9 @@ from wagtail.documents.blocks import DocumentChooserBlock
 from wagtail.images.blocks import ImageChooserBlock
 
 if TYPE_CHECKING:
+    from django.http import HttpRequest
     from wagtail.blocks import StreamValue, StructValue
+    from wagtail.images.models import AbstractRendition
 
 
 class ImageBlock(blocks.StructBlock):
@@ -67,11 +69,6 @@ class ImageBlock(blocks.StructBlock):
         small = image.get_rendition("width-1024")
         large = image.get_rendition("width-2048")
 
-        _base, ext = os.path.splitext(large.file.name)
-        file_type = ext.lstrip(".").upper() or "IMG"
-        size_bytes = getattr(large.file, "size", None)
-        file_size_human = filesizeformat(size_bytes) if size_bytes is not None else None
-
         options = {
             "id": f"image-{context.get('block_id') or uuid.uuid4().hex[:8]}",
             "headingLevel": 3,
@@ -90,14 +87,57 @@ class ImageBlock(blocks.StructBlock):
             options["footnotes"] = {"title": _("Footnotes"), "content": notes}
 
         if value.get("download"):
-            size_text = f" ({file_size_human})" if file_size_human else ""
-            options["download"] = {
-                "title": _("Download this image"),
-                "itemsList": [{"text": f"{file_type}{size_text}", "url": large.url, "download": "file"}],
-            }
+            options["download"] = self._get_download_options(large, context.get("request"), value)
 
         context["options"] = options
         return context
+
+    def _get_download_options(self, large_image: AbstractRendition, request: HttpRequest, value: StructValue) -> dict:
+        """Build the download payload for the image."""
+        _base, ext = os.path.splitext(large_image.file.name)
+        file_type = ext.lstrip(".").upper() or "IMG"
+        size_bytes = getattr(large_image.file, "size", None)
+
+        file_size_human = filesizeformat(size_bytes) if size_bytes is not None else None
+        size_text = f" ({file_size_human})" if file_size_human else ""
+        link_text = f"{file_type}{size_text}"
+
+        # Build an absolute URL when possible so GTM attributes include the link domain
+        absolute_url = request.build_absolute_uri(large_image.url) if request else large_image.url
+
+        attributes = self._get_gtm_attributes_image_download(
+            text=link_text,
+            url=absolute_url,
+            file_extension=ext.lstrip("."),
+            file_name=value.get("figure_title"),
+            file_size_bytes=size_bytes,
+        )
+
+        return {
+            "title": _("Download this image"),
+            "itemsList": [{"text": link_text, "url": large_image.url, "download": "file", "attributes": attributes}],
+        }
+
+    @staticmethod
+    def _get_gtm_attributes_image_download(
+        text: str,
+        url: str,
+        file_extension: str,
+        file_name: str,
+        file_size_bytes: int | None,
+    ) -> dict[str, str]:
+        parsed_url = urlparse(url)
+        attributes = {
+            "data-ga-event": "file-download",
+            "data-ga-file-extension": file_extension,
+            "data-ga-file-name": file_name,
+            "data-ga-link-text": text,
+            "data-ga-link-url": parsed_url.path,
+            "data-ga-link-domain": parsed_url.hostname,
+        }
+        if file_size_bytes is not None:
+            attributes["data-ga-file-size"] = str(file_size_bytes / 1000)  # Convert from Bytes to KB
+        return attributes
 
     class Meta:
         icon = "image"
