@@ -1,23 +1,10 @@
 {% extends "templates/base_page.html" %}
 
-{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
 
 {%- set official_statistics_badge_url = "https://uksa.statisticsauthority.gov.uk/about-the-authority/uk-statistical-system/types-of-official-statistics/" -%}
-
-{% block breadcrumbs %}
-    {# fmt:off #}
-    {{
-        onsBreadcrumbs({
-            "ariaLabel": breadcrumbs_aria_label,
-            "itemsList": page.get_breadcrumbs(request=request),
-            "variant": 'grey'
-        })
-    }}
-    {# fmt:on #}
-{% endblock %}
 
 {% block hero %}
     {%- set hero_topic = _("Release") -%}

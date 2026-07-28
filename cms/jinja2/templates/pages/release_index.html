@@ -1,18 +1,6 @@
 {% extends "templates/base_page.html" %}
 {% from "components/hero/_macro.njk" import onsHero %}
 
-{% block breadcrumbs %}
-    {# fmt:off #}
-    {{
-        onsBreadcrumbs({
-            "ariaLabel": breadcrumbs_aria_label,
-            "itemsList": page.get_breadcrumbs(request=request),
-            "variant": 'grey'
-        })
-    }}
-    {# fmt:on #}
-{% endblock %}
-
 {% block hero %}
     {# fmt:off #}
     {{

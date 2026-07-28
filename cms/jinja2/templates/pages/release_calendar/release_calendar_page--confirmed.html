@@ -1,18 +1,6 @@
 {% extends "templates/pages/release_calendar/release_calendar_page.html" %}
 {% from "components/panel/_macro.njk" import onsPanel %}
 
-{% block breadcrumbs %}
-    {# fmt:off #}
-    {{
-        onsBreadcrumbs({
-            "ariaLabel": breadcrumbs_aria_label,
-            "itemsList": page.get_breadcrumbs(request=request),
-            "variant": 'grey'
-        })
-    }}
-    {# fmt:on #}
-{% endblock %}
-
 {% block hero %}
     {%- set hero_topic = _("Release") -%}
     {%- set release_date_label = _("Release date:") -%}

@@ -1,7 +1,6 @@
 {% extends "templates/base_page.html" %}
 
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
-{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/list/_macro.njk" import onsList %}
 {% from "components/hero/_macro.njk" import onsHero %}
 
@@ -10,18 +9,6 @@
 {%- set published_label = _("Published:") -%}
 {%- set contact_label = _("Contact:") -%}
 {%- set save_or_print_label = _("Save or print this page") -%}
-
-{% block breadcrumbs %}
-    {# fmt:off #}
-    {{
-        onsBreadcrumbs({
-            "ariaLabel": breadcrumbs_aria_label,
-            "itemsList": page.get_breadcrumbs(request=request),
-            "variant": 'grey'
-        })
-    }}
-    {# fnt:on #}
-{% endblock %}
 
 {% block hero %}
     {# fmt:off #}

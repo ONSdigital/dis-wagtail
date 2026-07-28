@@ -1,20 +1,7 @@
 {% extends "templates/base_page.html" %}
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
-{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
-
-{% block breadcrumbs %}
-    {# fmt:off #}
-    {{
-        onsBreadcrumbs({
-            "ariaLabel": breadcrumbs_aria_label,
-            "itemsList": page.get_breadcrumbs(request=request),
-            "variant": 'grey'
-        })
-    }}
-    {# fmt:on #}
-{% endblock %}
 
 {% block hero %}
     {# fmt:off #}
