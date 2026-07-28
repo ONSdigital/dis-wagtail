@@ -170,6 +170,9 @@ CSP_ENABLED = env.get("CMS_CSP_ENABLED", "true").lower().strip() == "true"
 if CSP_ENABLED:
     MIDDLEWARE.append("django.middleware.csp.ContentSecurityPolicyMiddleware")
 
+if IS_EXTERNAL_ENV:
+    MIDDLEWARE.append("cms.core.middleware.CloudflareWagtailCacheTagMiddleware")
+
 
 ROOT_URLCONF = "cms.urls"
 
@@ -1189,3 +1192,7 @@ PERMISSIONS_POLICY: dict = {
     "payment": [],
     "usb": [],
 }
+
+# Cloudflare cache tag applied to CMS responses.
+# Used to purge Wagtail CMS responses as a group.
+CMS_CLOUDFLARE_CACHE_TAG = env.get("CMS_CLOUDFLARE_CACHE_TAG", "wagtail").strip()
