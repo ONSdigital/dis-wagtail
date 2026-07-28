@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.test import override_settings
 from wagtail.blocks.struct_block import StructValue
 
-from cms.datavis.blocks.charts import IframeBlock
+from cms.datavis.blocks.iframe import IframeBlock
 from cms.datavis.tests.test_chart_blocks_base import BaseVisualisationBlockTestCase
 
 
