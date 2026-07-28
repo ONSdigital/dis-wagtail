@@ -28,3 +28,8 @@
     }}
     {# fmt:on #}
 {% endblock %}
+
+{% block mainContent %}
+    {{ super() }}
+    {% include "templates/components/back-to-top/back-to-top.html" %}
+{% endblock %}
