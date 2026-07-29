@@ -90,7 +90,7 @@ msgstr "Lawrlwythwch y ddelwedd hon"
 #: cms/core/blocks/markup.py:271 cms/datavis/blocks/base.py:354
 #, python-format
 msgid "Download CSV (%(size)s)"
-msgstr "Lawrlwythwch CSV %(size)s"
+msgstr "Lawrlwythwch CSV (%(size)s)"
 
 #: cms/core/blocks/markup.py:280
 msgid "Download this table"
