@@ -642,3 +642,11 @@ class GetTableCsvDownloadTitleTests(SimpleTestCase):
     def test_returns_caption_when_title_is_empty(self):
         result = get_table_csv_download_title(title="", caption="Table caption")
         self.assertEqual(result, "Table caption")
+
+    def test_returns_fallback_when_title_and_caption_are_empty(self):
+        result = get_table_csv_download_title(title="", caption="")
+        self.assertEqual(result, "table")
+
+    def test_returns_fallback_when_title_and_caption_are_none(self):
+        result = get_table_csv_download_title(title=None, caption=None)
+        self.assertEqual(result, "table")

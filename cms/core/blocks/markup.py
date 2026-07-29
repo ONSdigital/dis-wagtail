@@ -256,7 +256,7 @@ class ONSTableBlock(TinyTableBlock):
         block_id: str,
         data: dict,
         table_title: str | None,
-        table_caption: str,
+        table_caption: str | None,
     ) -> dict[str, Any]:
         """Build download config for ONS Downloads component."""
         page = parent_context.get("page")
@@ -269,24 +269,24 @@ class ONSTableBlock(TinyTableBlock):
         file_size_with_unit = get_approximate_file_size_in_kb(csv_rows)
         file_size_kb = file_size_with_unit.removesuffix("KB")
         link_text = _("Download CSV (%(size)s)") % {"size": file_size_with_unit}
+        csv_title = get_table_csv_download_title(title=table_title, caption=table_caption)
+        file_name = get_csv_download_filename(title=csv_title, fallback_stem="table")
 
-        # Build URL (preview vs published)
-        request = parent_context.get("request")
-        is_preview = getattr(request, "is_preview", False) if request else False
-        csv_url = (
-            self._build_preview_table_download_url(page, block_id, request)
-            if is_preview
-            else self._build_table_download_url(page, block_id, parent_context.get("superseded_version"))
-        )
+        csv_url = self._get_table_download_url(parent_context=parent_context, page=page, block_id=block_id)
 
-        data_attributes = self._get_gtm_attributes_table_download(
-            link_text, csv_url, file_size_kb, table_title, table_caption
-        )
+        data_attributes = self._get_gtm_attributes_table_download(link_text, csv_url, file_size_kb, file_name)
 
         return {
             "title": _("Download this table"),
             "itemsList": [{"text": link_text, "url": csv_url, "attributes": data_attributes}],
         }
+
+    def _get_table_download_url(self, *, parent_context: dict, page: Any, block_id: str) -> str:
+        request = parent_context.get("request")
+        if getattr(request, "is_preview", False):
+            return self._build_preview_table_download_url(page, block_id, request)
+
+        return self._build_table_download_url(page, block_id, parent_context.get("superseded_version"))
 
     @staticmethod
     def _build_table_download_url(page: Any, block_id: str, superseded_version: int | None = None) -> str:
@@ -312,21 +312,20 @@ class ONSTableBlock(TinyTableBlock):
         )
 
     @staticmethod
-    def _get_gtm_attributes_table_download(
-        text: str, url: str, file_size: str, title: str, caption: str
-    ) -> dict[str, str]:
+    def _get_gtm_attributes_table_download(text: str, url: str, file_size: str, file_name: str) -> dict[str, str]:
         parsed_url = urlparse(url)
-        csv_title = get_table_csv_download_title(title=title, caption=caption)
-        file_name = get_csv_download_filename(title=csv_title, fallback_stem="table")
-        return {
+        attributes = {
             "data-ga-event": "file-download",
             "data-ga-file-extension": "csv",
             "data-ga-file-name": file_name,
             "data-ga-link-text": text,
             "data-ga-link-url": parsed_url.path,
-            "data-ga-link-domain": parsed_url.hostname,
             "data-ga-file-size": file_size,
         }
+        if parsed_url.hostname is not None:
+            attributes["data-ga-link-domain"] = parsed_url.hostname
+
+        return attributes
 
     class Meta:
         icon = "table"

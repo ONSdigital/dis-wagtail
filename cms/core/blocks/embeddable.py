@@ -92,7 +92,9 @@ class ImageBlock(blocks.StructBlock):
         context["options"] = options
         return context
 
-    def _get_download_options(self, large_image: AbstractRendition, request: HttpRequest, value: StructValue) -> dict:
+    def _get_download_options(
+        self, large_image: AbstractRendition, request: HttpRequest | None, value: StructValue
+    ) -> dict:
         """Build the download payload for the image."""
         _base, ext = os.path.splitext(large_image.file.name)
         file_type = ext.lstrip(".").upper() or "IMG"
@@ -133,8 +135,11 @@ class ImageBlock(blocks.StructBlock):
             "data-ga-file-name": file_name,
             "data-ga-link-text": text,
             "data-ga-link-url": parsed_url.path,
-            "data-ga-link-domain": parsed_url.hostname,
         }
+
+        if parsed_url.hostname is not None:
+            attributes["data-ga-link-domain"] = parsed_url.hostname
+
         if file_size_bytes is not None:
             attributes["data-ga-file-size"] = str(file_size_bytes / 1000)  # Convert from Bytes to KB
         return attributes

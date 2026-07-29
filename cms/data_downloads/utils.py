@@ -123,9 +123,9 @@ def sanitize_data_for_csv(data: list[list[str | int | float]]) -> list[list[str 
     return sanitized_rows
 
 
-def get_table_csv_download_title(*, title: str | None, caption: str) -> str:
+def get_table_csv_download_title(*, title: str | None, caption: str | None) -> str:
     """Returns the display title for a table CSV download."""
-    return title or caption
+    return title or caption or "table"
 
 
 def get_csv_download_filename(*, title: str | None, fallback_stem: str) -> str:
