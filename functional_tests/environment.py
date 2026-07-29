@@ -129,6 +129,22 @@ def before_scenario(context: Context, scenario: Scenario) -> None:
 
     context.page = context.playwright_context.new_page()
 
+    # Intercept external image requests from jspreadsheet to avoid CSP violations in CI.
+    # jspreadsheet.js tries to load //bossanova.uk/jspreadsheet/logo.png at runtime.
+    _empty_png = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x00"
+        b"\x00\x02\x00\x01\xe2!\xbc\x33\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    context.page.route(
+        "**/bossanova.uk/**",
+        lambda route, _: route.fulfill(
+            status=200,
+            headers={"Content-Type": "image/png"},
+            body=_empty_png,
+        ),
+    )
+
     # For debugging purposes, log all console messages from the page;
     # this can be useful to see errors from the dis-authorisation-client-js library
     context.page.on("console", lambda msg: print(f"[PAGE][{msg.type}] {msg.text}"))
