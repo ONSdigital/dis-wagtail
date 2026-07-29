@@ -1450,11 +1450,12 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         download_item = result["options"]["download"]["itemsList"][0]
         absolute_url = request.build_absolute_uri(self.large.url)
         expected_file_extension = self.large.file.name.rsplit(".", maxsplit=1)[-1]
+        expected_file_name = urlparse(self.large.url).path.rsplit("/", maxsplit=1)[-1]
         expected_link_text = f"{expected_file_extension.upper()} ({filesizeformat(self.large.file.size)})"
         expected_attributes = {
             "data-ga-event": "file-download",
             "data-ga-file-extension": expected_file_extension,
-            "data-ga-file-name": "The image title",
+            "data-ga-file-name": expected_file_name,
             "data-ga-link-text": expected_link_text,
             "data-ga-link-url": urlparse(absolute_url).path,
             "data-ga-link-domain": urlparse(absolute_url).hostname,
@@ -1474,11 +1475,12 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         download_link = soup.find("a", href=self.large.file.url)
         download_list_item = download_link.find_parent(class_="ons-list__item")
         absolute_download_url = response.wsgi_request.build_absolute_uri(download_link.get("href"))
+        expected_file_name = urlparse(download_link.get("href")).path.rsplit("/", maxsplit=1)[-1]
 
         self.assertEqual(download_list_item.get("data-ga-link-text"), download_link.get_text(strip=True))
         self.assertEqual(download_list_item.get("data-ga-event"), "file-download")
         self.assertEqual(download_list_item.get("data-ga-file-extension"), expected_file_extension)
-        self.assertEqual(download_list_item.get("data-ga-file-name"), "The image title")
+        self.assertEqual(download_list_item.get("data-ga-file-name"), expected_file_name)
         self.assertEqual(download_list_item.get("data-ga-link-url"), urlparse(download_link.get("href")).path)
         self.assertEqual(download_list_item.get("data-ga-link-domain"), urlparse(absolute_download_url).hostname)
         self.assertEqual(download_list_item.get("data-ga-file-size"), str(self.large.file.size / 1000))

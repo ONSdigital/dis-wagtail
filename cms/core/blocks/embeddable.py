@@ -87,14 +87,12 @@ class ImageBlock(blocks.StructBlock):
             options["footnotes"] = {"title": _("Footnotes"), "content": notes}
 
         if value.get("download"):
-            options["download"] = self._get_download_options(large, context.get("request"), value)
+            options["download"] = self._get_download_options(large, context.get("request"))
 
         context["options"] = options
         return context
 
-    def _get_download_options(
-        self, large_image: AbstractRendition, request: HttpRequest | None, value: StructValue
-    ) -> dict:
+    def _get_download_options(self, large_image: AbstractRendition, request: HttpRequest | None) -> dict:
         """Build the download payload for the image."""
         _base, ext = os.path.splitext(large_image.file.name)
         file_type = ext.lstrip(".").upper() or "IMG"
@@ -106,12 +104,13 @@ class ImageBlock(blocks.StructBlock):
 
         # Build an absolute URL when possible so GTM attributes include the link domain
         absolute_url = request.build_absolute_uri(large_image.url) if request else large_image.url
+        file_name = os.path.basename(urlparse(large_image.url).path)
 
         attributes = self._get_gtm_attributes_image_download(
             text=link_text,
             url=absolute_url,
             file_extension=ext.lstrip("."),
-            file_name=value.get("figure_title"),
+            file_name=file_name,
             file_size_bytes=size_bytes,
         )
 
