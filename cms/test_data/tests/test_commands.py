@@ -101,7 +101,7 @@ class CreateTestDataTestCase(TestCase):
                 self.assertEqual(model.objects.count(), original_count, model)
         self.assertEqual(set(TopicPage.objects.values_list("title", flat=True)), topic_titles)
 
-    def test_does_not_leak_ollections(self) -> None:
+    def test_does_not_leak_collections(self) -> None:
         """Seeded images must reuse root collection instead of creating their own."""
         original_count = Collection.objects.count()
 
