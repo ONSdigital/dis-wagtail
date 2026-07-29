@@ -6,5 +6,5 @@ The conditionals should help with only adding the extra JavaScript when needed.
     <script async src="{{ mathjax() }}"></script>
 {% endif %}
 {% if page.has_iframe_visualisation %}
-    <script src="{{ static('js/third-party/pym.min.js') }}"></script>
+    <script src="{{ ONS_CDN_BASE_URL }}/vendor/pym/1.3.2/pym.min.js"></script>
 {% endif %}
