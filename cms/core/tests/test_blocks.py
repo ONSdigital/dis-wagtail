@@ -1353,6 +1353,9 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         page = self._make_information_page(download=True)
 
         response = self.client.get(page.url)
+        html = response.content.decode(response.charset or "utf-8", errors="replace")
+        soup = BeautifulSoup(html, "html.parser")
+
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         # Download section rendered
@@ -1361,20 +1364,24 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         # HTML5 download attribute present once (avoid base-template noise)
         self.assertContains(response, " download", count=1)
 
-        # Large rendition used for download
-        # Appears twice in the response - once in the image srcset attribute and once in the download url
-        self.assertContains(response, self.large.file.url, count=2)
-        # Small rendition
-        # Appers twice in the response - once in the image src attribute and once in the image srcset attribute
-        self.assertContains(response, self.small.file.url, count=2)
+        image = soup.find("img", class_="ons-image__img")
+        self.assertIsNotNone(image)
+        self.assertTrue(image.has_attr("srcset"))
+        self.assertTrue(image.has_attr("src"))
 
-        # Download link rendered by DS figure macro targets the large rendition
-        html = response.content.decode(response.charset or "utf-8", errors="replace")
-        soup = BeautifulSoup(html, "html.parser")
         download_link = soup.select_one("a[download]")
-
         self.assertIsNotNone(download_link)
+
+        # Large rendition used for download
+        # Appears twice in the response - once in the image srcset attribute and once in the download url rendered by
+        # DS figure macro
+        self.assertIn(self.large.file.url, image["srcset"])
         self.assertEqual(download_link.get("href"), self.large.file.url)
+
+        # Small rendition
+        # Appears twice in the response - once in the image src attribute and once in the image srcset attribute
+        self.assertIn(self.small.file.url, image["srcset"])
+        self.assertIn(self.small.file.url, image["src"])
 
         expected = filesizeformat(self.large.file.size)
         self.assertIn(f"({expected})", download_link.get_text(strip=True))
