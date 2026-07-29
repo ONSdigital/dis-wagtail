@@ -16,12 +16,14 @@ class SectionStoryBlock(StreamBlock):
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
 
+    def has_block_with_name(self, name: str, value: StreamValue) -> bool:
+        """Checks if there are any blocks with the given name."""
+        return any(block.value["content"].first_block_by_name(block_name=name) is not None for block in value)
+
     def has_equations(self, value: StreamValue) -> bool:
         """Checks if there are any equation blocks."""
-        return any(block.value["content"].first_block_by_name(block_name="equation") is not None for block in value)
+        return self.has_block_with_name("equation", value)
 
     def has_iframe_visalisations(self, value: StreamValue) -> bool:
         """Checks if there are any iframe visualisation blocks."""
-        return any(
-            block.value["content"].first_block_by_name(block_name="iframe_visualisation") is not None for block in value
-        )
+        return self.has_block_with_name("iframe_visualisation", value)
