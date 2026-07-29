@@ -26,12 +26,15 @@ AnnotationsReturn = tuple[AnnotationsList, AnnotationsList, AnnotationsList]
 
 
 class BaseVisualisationBlock(blocks.StructBlock):
+    figure_number = blocks.CharBlock(required=False, help_text="Include a label for the figure, for example Figure 1.")
     title = blocks.CharBlock()
-    subtitle = blocks.CharBlock()
+    subtitle = blocks.CharBlock(required=False)
     audio_description = blocks.TextBlock(
-        required=True, help_text="An overview of what the chart shows for screen readers."
+        required=True,
+        help_text="An overview of what the chart shows for screen reader users.",
+        label="Accessible description",
     )
-    caption = blocks.CharBlock(required=False)
+    caption = blocks.CharBlock(required=False, label="Source text")
     footnotes = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
 
     class Meta:
@@ -139,9 +142,10 @@ class BaseChartBlock(BaseVisualisationBlock):
             "theme": value.get("theme"),
             "headingLevel": 3,
             "description": value.get("audio_description"),
+            "figureNumber": value.get("figure_number"),
             "title": value.get("title"),
             "subtitle": value.get("subtitle"),
-            "caption": value.get("caption"),
+            "caption": _("Source") + ": " + value.get("caption") if value.get("caption") else None,
             "legend": value.get("show_legend", True),
             "xAxis": self.get_x_axis_config(value.get("x_axis"), rows),
             "yAxis": self.get_y_axis_config(value.get("y_axis")),
