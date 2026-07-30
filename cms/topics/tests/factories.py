@@ -45,7 +45,7 @@ class TopicPageFactory(wagtail_factories.PageFactory):
 
     class Meta:
         model = TopicPage
-        django_get_or_create = ("title", "parent")
+        django_get_or_create = ("title", "parent", "topic")
 
     parent = factory.LazyFunction(lambda: HomePage.objects.first())  # pylint: disable=unnecessary-lambda
     first_published_at = factory.LazyAttribute(
