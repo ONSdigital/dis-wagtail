@@ -53,9 +53,11 @@ class CoreBlocksTestCase(TestCase):
         value = block.to_python(
             {"document": self.document.pk, "title": "The block document", "description": "Document description"}
         )
+        request = get_dummy_request()
+        absolute_url = request.build_absolute_uri(self.document.url)
 
         self.assertDictEqual(
-            value.as_macro_data(),
+            value.as_macro_data(request=request),
             {
                 "thumbnail": False,
                 "title": {
@@ -75,7 +77,7 @@ class CoreBlocksTestCase(TestCase):
                     "data-ga-file-name": self.document.title,
                     "data-ga-link-text": "The block document",
                     "data-ga-link-url": self.document.url,
-                    "data-ga-link-domain": urlparse(self.document.url).hostname,
+                    "data-ga-link-domain": urlparse(absolute_url).hostname,
                     "data-ga-file-size": "0.025",  # KB
                 },
             },
@@ -96,8 +98,10 @@ class CoreBlocksTestCase(TestCase):
                 }
             ]
         )
+        request = get_dummy_request()
+        absolute_url = request.build_absolute_uri(self.document.url)
 
-        context = block.get_context(value)
+        context = block.get_context(value, parent_context={"request": request})
         self.assertListEqual(
             context["macro_data"],
             [
@@ -120,7 +124,7 @@ class CoreBlocksTestCase(TestCase):
                         "data-ga-file-name": self.document.title,
                         "data-ga-link-text": "The block document",
                         "data-ga-link-url": self.document.url,
-                        "data-ga-link-domain": urlparse(self.document.url).hostname,
+                        "data-ga-link-domain": urlparse(absolute_url).hostname,
                         "data-ga-file-size": "0.025",  # KB
                     },
                 }
