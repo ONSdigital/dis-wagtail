@@ -44,9 +44,9 @@ class IframeBlock(BaseVisualisationBlock):
         required=True,
         help_text=(
             "An overview of what the embed shows for screen reader users, for example"
-            "“GDP is the highest in London and lowest in the North East” or "
-            '"Inputs for users to describe what their household spends on different categories, which gives an estimate'
-            'of how much monthly spend has increased over the past year and compares to previous years"'
+            " “GDP is the highest in London and lowest in the North East” or"
+            " “Inputs for users to describe what their household spends on different categories, which gives an"
+            " estimate of how much monthly spend has increased over the past year and compares to previous years”"
         ),
         label="Accessible description",
     )
