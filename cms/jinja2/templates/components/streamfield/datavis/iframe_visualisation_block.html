@@ -1,7 +1,5 @@
 {% from "components/figure/_macro.njk" import onsFigure %}
 
-{%- do figure_config.update(id=block_id) -%}
-
 {# fmt:off #}
 {% call onsFigure(figure_config) %}
     <div

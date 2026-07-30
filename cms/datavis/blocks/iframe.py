@@ -1,3 +1,4 @@
+import uuid
 from typing import TYPE_CHECKING, Any
 from urllib.parse import ParseResult, urlparse
 
@@ -173,5 +174,7 @@ class IframeBlock(BaseVisualisationBlock):
         context: dict[str, Any] = super().get_context(value, parent_context)
 
         context["figure_config"] = self.get_figure_config(value)
+        # fallback is only when block_id is not available, which should not happen in normal usage
+        context["figure_config"]["id"] = f"{context.get('block_id') or uuid.uuid4().hex[:8]}"
         context["iframe_config"] = self.get_iframe_config(value)
         return context
