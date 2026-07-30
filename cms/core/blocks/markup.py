@@ -1,6 +1,5 @@
 import uuid
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -13,6 +12,7 @@ from wagtail.blocks import StructBlockValidationError
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
 
+from cms.core.analytics_utils import get_gtm_attributes_file_download
 from cms.core.utils import strip_unwanted_control_chars_from_json
 from cms.data_downloads.utils import (
     flatten_table_data,
@@ -273,12 +273,17 @@ class ONSTableBlock(TinyTableBlock):
         file_name = get_csv_download_filename(title=csv_title, fallback_stem="table")
 
         csv_url = self._get_table_download_url(parent_context=parent_context, page=page, block_id=block_id)
-
-        data_attributes = self._get_gtm_attributes_table_download(link_text, csv_url, file_size_kb, file_name)
+        attributes = get_gtm_attributes_file_download(
+            text=link_text,
+            url=csv_url,
+            file_extension="csv",
+            file_name=file_name,
+            file_size_kb=file_size_kb,
+        )
 
         return {
             "title": _("Download this table"),
-            "itemsList": [{"text": link_text, "url": csv_url, "attributes": data_attributes}],
+            "itemsList": [{"text": link_text, "url": csv_url, "attributes": attributes}],
         }
 
     def _get_table_download_url(self, *, parent_context: dict, page: Any, block_id: str) -> str:
@@ -310,22 +315,6 @@ class ONSTableBlock(TinyTableBlock):
             "data_downloads:revision_table_download",
             kwargs={"page_id": page.pk, "revision_id": revision_id, "table_id": block_id},
         )
-
-    @staticmethod
-    def _get_gtm_attributes_table_download(text: str, url: str, file_size: str, file_name: str) -> dict[str, str]:
-        parsed_url = urlparse(url)
-        attributes = {
-            "data-ga-event": "file-download",
-            "data-ga-file-extension": "csv",
-            "data-ga-file-name": file_name,
-            "data-ga-link-text": text,
-            "data-ga-link-url": parsed_url.path,
-            "data-ga-file-size": file_size,
-        }
-        if parsed_url.hostname is not None:
-            attributes["data-ga-link-domain"] = parsed_url.hostname
-
-        return attributes
 
     class Meta:
         icon = "table"
