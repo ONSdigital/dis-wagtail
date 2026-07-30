@@ -143,14 +143,7 @@ class IframeBlock(BaseVisualisationBlock):
             )
         return errors
 
-    def get_figure_config(
-        self,
-        value: StructValue,
-        *,
-        # We don't call super() here, so these args are unused
-        parent_context: dict[str, Any] | None = None,  # pylint: disable=unused-argument
-        block_id: str | None = None,  # pylint: disable=unused-argument
-    ) -> dict[str, Any]:
+    def get_figure_config(self, value: StructValue) -> dict[str, Any]:
         config = {
             "figureNumber": value.get("figure_number"),
             "headingLevel": 3,
@@ -169,14 +162,7 @@ class IframeBlock(BaseVisualisationBlock):
 
         return config
 
-    def get_iframe_config(
-        self,
-        value: StructValue,
-        *,
-        # We don't call super() here, so these args are unused
-        parent_context: dict[str, Any] | None = None,  # pylint: disable=unused-argument
-        block_id: str | None = None,  # pylint: disable=unused-argument
-    ) -> dict[str, Any]:
+    def get_iframe_config(self, value: StructValue) -> dict[str, Any]:
         config = {
             "iframeUrl": value.get("iframe_source_url"),
             "iframeTitle": value.get("accessible_label"),
