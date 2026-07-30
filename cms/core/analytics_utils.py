@@ -30,7 +30,7 @@ def get_gtm_attributes_file_download(
     url: str,
     file_extension: str,
     file_name: str,
-    file_size_kb: int | None,
+    file_size_kb: str | None,
 ) -> dict[str, str]:
     """Gets GTM attributes for file download links."""
     parsed_url = urlparse(url)

@@ -99,7 +99,7 @@ class ImageBlock(blocks.StructBlock):
         _base, ext = os.path.splitext(large_image.file.name)
         file_type = ext.lstrip(".").upper() or "IMG"
         size_bytes = getattr(large_image.file, "size", None)
-        size_kb = str(size_bytes / 1000)  # Convert from Bytes to KB
+        size_kb = str(size_bytes / 1000) if size_bytes is not None else None  # Convert from Bytes to KB
 
         file_size_human = filesizeformat(size_bytes) if size_bytes is not None else None
         size_text = f" ({file_size_human})" if file_size_human else ""
