@@ -456,7 +456,9 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
         command._handle_bundle_action(self.bundle)  # pylint: disable=protected-access
 
         mock_publish_bundle.assert_not_called()
-        mock_logger.error.assert_called_once_with("Bundle no longer approved", extra={"bundle_id": self.bundle.pk})
+        mock_logger.error.assert_called_once_with(
+            "Bundle no longer approved", extra={"bundle_id": self.bundle.pk, "event": "bundle_no_longer_approved"}
+        )
 
     @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     def test_bundle_no_longer_approved_does_not_send_success_notification(self, mock_notify_post_publish_end):
