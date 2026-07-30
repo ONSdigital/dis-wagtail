@@ -38,6 +38,8 @@ class TestDataFactory:
         self.faker = Faker(locale="en_GB")
         self.faker.seed_instance(seed)
 
+        self._title_counter = itertools.count()
+
         # NB: These modify global state
 
         self.title_factory = factory.LazyFunction(self.random_title)  # type: ignore[no-untyped-call]
@@ -49,7 +51,7 @@ class TestDataFactory:
         self.get_config_count = partial(self.config.get_count, faker=self.faker)
 
     def random_title(self) -> str:
-        return settings.CMS_TEST_DATA_PREFIX + self.faker.sentence(nb_words=3)
+        return f"{settings.CMS_TEST_DATA_PREFIX} {next(self._title_counter)} {self.faker.sentence(nb_words=3)}"
 
     def create_batch_from_factory(
         self, factory_class: type[Factory], instance_count: int, factory_kwargs: dict
