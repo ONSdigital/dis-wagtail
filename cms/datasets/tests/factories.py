@@ -12,7 +12,7 @@ class DatasetFactory(factory.django.DjangoModelFactory):
         model = Dataset
         django_get_or_create = ("namespace", "edition", "version")
 
-    namespace = factory.Faker("sentence", nb_words=4)
+    namespace = factory.Faker("slug")
     title = factory.Faker("sentence", nb_words=4)
     description = factory.Faker("sentence", nb_words=16)
     version = factory.Sequence(lambda n: n)
