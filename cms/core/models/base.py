@@ -140,13 +140,13 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         return False
 
     @cached_property
-    def has_iframe_visualisation(self) -> bool:
+    def has_iframe_visualisations(self) -> bool:
         """Checks if there are any iframe visualisation blocks."""
         if (streamvalue := getattr(self, self.content_field_name)) and hasattr(
-            streamvalue.stream_block, "has_iframe_visalisations"
+            streamvalue.stream_block, "has_iframe_visualisations"
         ):
             # run the check on the StreamBlock itself, if it supports it
-            return bool(streamvalue.stream_block.has_iframe_visalisations(streamvalue))
+            return bool(streamvalue.stream_block.has_iframe_visualisations(streamvalue))
 
         return False
 

@@ -24,6 +24,6 @@ class SectionStoryBlock(StreamBlock):
         """Checks if there are any equation blocks."""
         return self.has_block_with_name("equation", value)
 
-    def has_iframe_visalisations(self, value: StreamValue) -> bool:
+    def has_iframe_visualisations(self, value: StreamValue) -> bool:
         """Checks if there are any iframe visualisation blocks."""
         return self.has_block_with_name("iframe_visualisation", value)

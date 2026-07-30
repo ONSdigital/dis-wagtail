@@ -247,9 +247,9 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         del self.page.has_equations  # clear cached property
         self.assertTrue(self.page.has_equations)
 
-    def test_has_iframe_visualisation(self):
-        """Test has_iframe_visualisation property."""
-        self.assertFalse(self.page.has_iframe_visualisation)
+    def test_has_iframe_visualisations(self):
+        """Test has_iframe_visualisations property."""
+        self.assertFalse(self.page.has_iframe_visualisations)
         self.page.content = [
             {
                 "type": "section",
@@ -268,8 +268,8 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
                 },
             }
         ]
-        del self.page.has_iframe_visualisation  # clear cached property
-        self.assertTrue(self.page.has_iframe_visualisation)
+        del self.page.has_iframe_visualisations  # clear cached property
+        self.assertTrue(self.page.has_iframe_visualisations)
 
     def test_next_date_must_be_after_release_date(self):
         """Tests the model validates next release date is after the release date."""
