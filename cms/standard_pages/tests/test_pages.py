@@ -40,13 +40,12 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            f"<title>Cookies on {settings.ONS_COOKIE_BANNER_SERVICE_NAME} - Office for National Statistics</title>",
+            "<title>Change your cookies choices - Office for National Statistics</title>",
             html=True,
         )
         self.assertContains(
             response,
-            f'<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Cookies '
-            f"on {settings.ONS_COOKIE_BANNER_SERVICE_NAME}</h1>",
+            '<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Change your cookies choices</h1>',
             html=True,
         )
         self.assertContains(response, "Cookie settings")
