@@ -169,6 +169,7 @@ def user_populates_the_statistical_article_page(context: Context) -> None:
     page.wait_for_timeout(50)  # added to allow JS to be ready
     page.get_by_role("textbox", name="Release Edition").focus()  # focus up to prevent any overlap with the action menu
     page.locator("#panel-child-content-content-content").get_by_title("Insert a block").click()
+    page.wait_for_timeout(50)
     page.get_by_label("Section heading*").fill("Heading")
     page.locator("#panel-child-content-content-content").get_by_role("region").get_by_role(
         "button", name="Insert a block"
