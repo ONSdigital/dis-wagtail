@@ -22,7 +22,7 @@ class TopicManager(MP_NodeManager):
     def get_queryset(self) -> TreeQuerySet:
         """Filter out the dummy root topic from all querysets."""
         # Reuse Wagtail's custom tree QuerySet for helpful utils
-        return TreeQuerySet(self.model).order_by("path").filter(depth__gt=1)
+        return TreeQuerySet(self.model, using=self._db, hints=self._hints).order_by("path").filter(depth__gt=1)
 
     def root_topic(self) -> Topic:
         """Return the dummy root topic."""
