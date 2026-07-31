@@ -6,7 +6,7 @@ from django.db import models, transaction
 from django.utils import timezone
 
 if TYPE_CHECKING:
-    from bundles.models import Bundle
+    from cms.bundles.models import Bundle
 
 
 class PostPublishActionType(models.TextChoices):
