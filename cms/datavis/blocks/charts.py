@@ -249,7 +249,9 @@ class BarColumnChartBlock(BaseChartBlock):
         [
             (
                 SERIES_AS_LINE_OVERLAY_BLOCK,
-                TextInputIntegerBlock(help_text="The number of the series to display as a line overlay."),
+                TextInputIntegerBlock(
+                    help_text="The number of the series to display as a line overlay.", required_on_save=True
+                ),
             ),
         ],
         required=False,
