@@ -23,12 +23,13 @@ DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
 
 
 class ManualDatasetBlock(StructBlock):
-    title = CharBlock(required=True)
+    title = CharBlock(required=True, required_on_save=True)
     description = TextBlock(required=False)
     url = RelativeOrAbsoluteURLBlock(
         required=True,
         help_text="Enter a relative URL (e.g. /some/path) or a full URL starting with 'https://' "
         f"that matches one of the allowed domains or their subdomains: {', '.join(settings.ONS_ALLOWED_LINK_DOMAINS)}",
+        required_on_save=True,
     )
 
     class Meta:
@@ -44,7 +45,7 @@ class ManualDatasetBlock(StructBlock):
 
 
 class DatasetStoryBlock(StreamBlock):
-    dataset_lookup = DatasetChooserBlock(label="Lookup Dataset")
+    dataset_lookup = DatasetChooserBlock(label="Lookup Dataset", required_on_save=True)
     manual_link = ManualDatasetBlock(
         required=False,
         label="Manually Linked Dataset",
