@@ -11,6 +11,7 @@ class EquationBlock(blocks.StructBlock):
         label="Mathematical equation",
         help_text="Enter a mathematical equation using the MathJax syntax such as"
         " <code>$$\\frac{(n^2+n)(2n+1)}{6}$$</code>.",
+        required_on_save=True,
     )
     svg = blocks.TextBlock(required=False)
 

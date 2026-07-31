@@ -59,7 +59,7 @@ class HeadingBlock(blocks.CharBlock):
 class QuoteBlock(blocks.StructBlock):
     """The quote block."""
 
-    quote = blocks.CharBlock(form_classname="title")
+    quote = blocks.CharBlock(form_classname="title", required_on_save=True)
     attribution = blocks.CharBlock(required=False)
 
     class Meta:
@@ -142,6 +142,7 @@ class ONSTableBlock(TinyTableBlock):
     # Redeclare the inherited caption field
     caption = blocks.CharBlock(
         required=True,
+        required_on_save=True,
         label="Accessible label",
         help_text=("A short label to explain what this table is about for screen reader users."),
     )
