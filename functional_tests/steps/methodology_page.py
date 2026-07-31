@@ -104,17 +104,33 @@ def validation_error_displayed_when_incorrect_date_selected(context: Context) ->
     expect(context.page.get_by_text("The last revised date must be after the published date.")).to_be_visible()
 
 
+@when("the user adds an empty section to the methodology page content")
+def user_adds_an_empty_section(context: Context) -> None:
+    context.page.get_by_title("Insert a block").click()
+
+
 @then("the methodology page mandatory fields raise validation errors")
 def mandatory_fields_raise_validation_error_when_not_set(context: Context) -> None:
+    # Covers the top-level page fields only. An entirely empty content StreamField is not
+    # reported on save, because Wagtail defers a StreamField's own "this field is required"
+    # check to publish time. Required fields inside a block that has been added are covered
+    # by the section heading scenario below.
     expect(context.page.get_by_text("The page could not be created due to validation errors")).to_be_visible()
 
     for locator in [
         "#panel-child-content-title-content .error-message",
         "#panel-child-content-summary-content .error-message",
         "#panel-child-content-child-metadata-child-panel-child-publication_date-errors .error-message",
-        ".help-block.help-critical",
     ]:
         expect(context.page.locator(locator).get_by_text("This field is required")).to_be_visible()
+
+
+@then("the methodology page section heading raises a validation error")
+def section_heading_raises_validation_error(context: Context) -> None:
+    expect(context.page.get_by_text("The page could not be created due to validation errors")).to_be_visible()
+    expect(
+        context.page.locator("#panel-child-content-content-content").get_by_text("This field is required")
+    ).to_be_visible()
 
 
 @then("the preview of the methodology page is displayed with the populated data")
