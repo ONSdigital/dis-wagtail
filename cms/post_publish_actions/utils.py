@@ -24,7 +24,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@force_write_db()
 def as_completed_actions_by_bundle(
     bundles: list[Bundle], start_time: datetime
 ) -> Generator[Bundle, None, list[Bundle]]:
@@ -39,12 +38,13 @@ def as_completed_actions_by_bundle(
         bundles_to_check
         and (timezone.now() - start_time).total_seconds() <= settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS
     ):
-        unfinished_bundles: set[int] = set(
-            PostPublishAction.objects.pending()
-            .filter(bundle__in=bundles_to_check)
-            .values_list("bundle_id", flat=True)
-            .distinct()
-        )
+        with force_write_db():
+            unfinished_bundles: set[int] = set(
+                PostPublishAction.objects.pending()
+                .filter(bundle__in=bundles_to_check)
+                .values_list("bundle_id", flat=True)
+                .distinct()
+            )
 
         for bundle in bundles_to_check.copy():
             if bundle.pk not in unfinished_bundles:
