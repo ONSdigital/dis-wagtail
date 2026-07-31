@@ -256,6 +256,7 @@ if "PG_DB_ADDR" in env:
     if AWS_REGION is None:
         raise ImproperlyConfigured("AWS_REGION must be defined to use database IAM authentication.")
     rds_client = create_rds_client(AWS_REGION)
+
     # Use IAM authentication to connect to the Database
     def _iam_database_config(host: str) -> dj_database_url.DBConfig:
         return cast(
