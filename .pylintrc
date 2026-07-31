@@ -431,6 +431,7 @@ disable=raw-checker-failed,
         missing-function-docstring,
         fixme,
         too-many-public-methods,
+        cyclic-import,
 
 # note:
 # - wrong-import-order: covered by ruff

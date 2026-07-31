@@ -9,6 +9,7 @@ from django.utils.datastructures import CaseInsensitiveMapping
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.utils import (
     UNWANTED_CONTROL_CHARACTERS,
+    GeneratorCollector,
     deep_merge_mapping,
     get_client_ip,
     get_content_type_for_page,
@@ -248,3 +249,40 @@ class DeepMergeMappingTestCase(SimpleTestCase):
             deep_merge_mapping(CaseInsensitiveMapping({"a": 1}), CaseInsensitiveMapping({"a": 2})),
             CaseInsensitiveMapping({"a": 2}),
         )
+
+
+class GeneratorCollectorTestCase(SimpleTestCase):
+    def test_collects(self):
+        def test_gen():
+            yield from range(5)
+            return "five"
+
+        collector = GeneratorCollector(test_gen())
+
+        self.assertEqual(list(collector), list(range(5)))
+        self.assertEqual(collector.value, "five")
+
+    def test_no_return(self):
+        def test_gen():
+            yield from range(5)
+
+        collector = GeneratorCollector(test_gen())
+
+        self.assertEqual(list(collector), list(range(5)))
+        self.assertIsNone(collector.value)
+
+    def test_consume(self):
+        def test_gen():
+            yield from range(5)
+            return "five"
+
+        gen = test_gen()
+        collector = GeneratorCollector(gen)
+
+        collector.consume()
+
+        self.assertEqual(collector.value, "five")
+        self.assertEqual(list(collector), [])
+
+        with self.assertRaises(StopIteration):
+            next(gen)

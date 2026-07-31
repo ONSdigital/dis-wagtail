@@ -2,7 +2,7 @@ import io
 import json
 import re
 import string
-from collections.abc import Mapping
+from collections.abc import Generator, Mapping
 from itertools import chain
 from threading import Lock
 from typing import TYPE_CHECKING, Any
@@ -147,3 +147,21 @@ def deep_merge_mapping(dict1: Mapping, dict2: Mapping) -> dict:
             result[key] = value
 
     return result
+
+
+class GeneratorCollector[T, R]:
+    """Wrap a generator in a convenient API to access both the yielded and returned values."""
+
+    value: R | None
+
+    def __init__(self, gen: Generator[T, None, R]) -> None:
+        self.gen = gen
+        self.value = None
+
+    def __iter__(self) -> Generator[T, None, R]:
+        self.value = yield from self.gen
+        return self.value
+
+    def consume(self) -> None:
+        for _ in iter(self):
+            pass
