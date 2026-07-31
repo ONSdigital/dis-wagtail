@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, ClassVar, cast
-from urllib.parse import urlparse
 
 from django.conf import settings
 from django.forms.widgets import RadioSelect
@@ -11,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
+from cms.core.analytics_utils import get_gtm_attributes_file_download
 from cms.data_downloads.utils import get_csv_download_filename
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
@@ -362,18 +362,13 @@ class BaseChartBlock(BaseVisualisationBlock):
     def _get_gtm_attributes_csv_download(
         self, text: str, url: str, file_size: str, value: StructValue
     ) -> dict[str, str]:
-        parsed_url = urlparse(url)
-        filename = get_csv_download_filename(title=value.get("title"), fallback_stem="chart")
+        file_name = get_csv_download_filename(title=value.get("title"), fallback_stem="chart")
         return {
-            "data-ga-event": "file-download",
-            "data-ga-file-extension": "csv",
-            "data-ga-file-name": filename,
-            "data-ga-link-text": text,
-            "data-ga-link-url": parsed_url.path,
-            "data-ga-link-domain": parsed_url.hostname,
+            **get_gtm_attributes_file_download(
+                text=text, url=url, file_extension="csv", file_name=file_name, file_size_kb=file_size
+            ),
             "data-ga-chart-title": value.get("title"),
             "data-ga-chart-type": self.get_highcharts_chart_type(value),
-            "data-ga-file-size": file_size,
         }
 
     def get_download_config(
