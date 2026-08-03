@@ -24,6 +24,11 @@ gunicorn = "~26.0.0"
 psycopg = {extras = ["pool"], version = "^3.3.4"}
 wagtail-font-awesome-svg = "^2.0"
 apscheduler = "^3.11.3"
+# :TODO: Migrate to wagtail-polymath (the renamed successor) once a release includes the
+# configurable MathJax URL. 1.3.1 hardcodes cdnjs.cloudflare.com with no SRI, which is why
+# cdnjs is in SECURE_CSP static_sources. A release with WAGTAIL_POLYMATH's mathjax_url and
+# mathjax_sri lets us serve MathJax from the ONS CDN with integrity checking and drop cdnjs.
+# https://github.com/wagtail-nest/wagtail-polymath/commit/4176f020a46ce05c6b150b01563034c227d81ee4
 wagtailmath = "~1.3.1"
 whitenoise = "~6.12.0"
 slack-sdk = "^3.43.0"
