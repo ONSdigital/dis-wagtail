@@ -20,7 +20,7 @@ django-extensions = "~4.1"
 django-jinja = "^2.11.0"
 django-redis = "~7.0.0"
 django-storages = { version = "~1.14.6", extras = ["s3"] }
-gunicorn = "~25.3.0"
+gunicorn = "~26.0.0"
 psycopg = {extras = ["pool"], version = "^3.3.4"}
 wagtail-font-awesome-svg = "^2.0"
 apscheduler = "^3.11.3"
@@ -29,7 +29,7 @@ whitenoise = "~6.12.0"
 slack-sdk = "^3.43.0"
 django-cache-memoize = "^0.2.1"
 requests = "^2.34.2"
-django-treebeard = "^4.8.0" # Wagtail 7.3 requires treebeard < 5.0
+django-treebeard = "^4.8.0" # Wagtail 7.4 allows < 6.0, but 5.x needs a TopicManager refactor
 kafka-python = "^2.3.2"
 wagtail-tinytableblock = "^0.4.5"
 queryish = "^0.3"
