@@ -48,5 +48,9 @@ updates:
         applies-to: version-updates
         patterns:
           - '*'
+    ignore:
+      - dependency-name: cryptography
+        update-types:
+          - 'version-update:semver-major'
     cooldown:
       default-days: 7
