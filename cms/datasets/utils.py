@@ -93,7 +93,7 @@ def convert_old_dataset_format(data: dict[str, Any]) -> dict[str, Any]:
     try:
         latest_version = data.get("links", {}).get("latest_version", None)
         edition = extract_edition_from_dataset_url(latest_version.get("href", ""))
-    except (AttributeError, ValueError):
+    except AttributeError, ValueError:
         latest_version = None
         edition = None
 
