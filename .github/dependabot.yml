@@ -50,5 +50,7 @@ updates:
           - '*'
     ignore:
       - dependency-name: cryptography
+        # Currently 49 and up don't support intel mac
+        versions: ['>=49.0.0']
     cooldown:
       default-days: 7
