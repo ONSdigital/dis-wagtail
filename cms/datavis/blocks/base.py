@@ -340,7 +340,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         if not page:
             return None
         file_size_with_unit = get_approximate_file_size_in_kb(rows or [])
-        file_size_kb = file_size_with_unit.removesuffix("KB")
+        file_size_kb = str(len(bytes(str(rows or []), "utf-8")) / 1000)
 
         request: HttpRequest | None = parent_context.get("request")
         is_preview = getattr(request, "is_preview", False) if request else False
