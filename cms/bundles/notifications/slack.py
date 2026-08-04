@@ -19,7 +19,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger("cms.bundles")
 
 
-class BundleAlertType(str, Enum):
+# Not migrated to enum.StrEnum: members are placed directly into Slack payloads, and StrEnum
+# changes what str() returns ("Fail" rather than "BundleAlertType.FAIL").
+class BundleAlertType(str, Enum):  # noqa: UP042
     """Alert severity levels for Slack bundle notifications."""
 
     CRITICAL = "Critical"
@@ -111,7 +113,7 @@ def _get_example_page_url(bundle: Bundle) -> str | None:
     return str(first_page.specific_deferred.full_url) if first_page else None
 
 
-def notify_slack_of_status_change(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913
+def notify_slack_of_status_change(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913,PLR0917
     bundle: Bundle,
     changed_at: datetime,
     old_status: _StrOrPromise,
