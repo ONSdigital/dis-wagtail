@@ -533,7 +533,7 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(analytics_values.get("outputSeries"), self.page.get_parent().slug)
         self.assertEqual(analytics_values.get("latestRelease"), "yes")
         self.assertEqual(analytics_values.get("releaseDate"), format_date_for_gtm(self.page.release_date))
-        self.assertEqual(analytics_values.get("wordCount"), self.page.word_count)
+        self.assertEqual(analytics_values.get("wordCount"), str(self.page.word_count))
 
     def test_get_analytics_values_for_latest_via_non_evergreen_url(self):
         """Test that that page analytics values contains the evergreen series URL if the page is requested from it's
