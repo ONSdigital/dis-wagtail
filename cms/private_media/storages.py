@@ -29,7 +29,7 @@ class AccessControlledS3Storage(S3Storage):
     def _set_file_acl(self, file: FieldFile, acl_name: str) -> bool:
         try:
             obj = self.bucket.Object(file.name)
-        except (ClientError, Boto3Error):
+        except ClientError, Boto3Error:
             logger.exception(
                 "Failed to retrieve object",
                 extra={
@@ -40,12 +40,12 @@ class AccessControlledS3Storage(S3Storage):
             return False
         try:
             obj_acl = obj.Acl()
-        except (ClientError, Boto3Error):
+        except ClientError, Boto3Error:
             logger.exception("Failed to retrieve ACL", extra={"key": file.name, "event": "acl_retrieve_failed"})
             return False
         try:
             obj_acl.put(ACL=acl_name)
-        except (ClientError, Boto3Error):
+        except ClientError, Boto3Error:
             logger.exception("Failed to set ACL", extra={"key": file.name, "event": "acl_set_failed"})
             return False
 

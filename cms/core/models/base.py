@@ -417,7 +417,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         response: TemplateResponse = super().serve_preview(request, mode_name)
         return response
 
-    def save_revision(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913
+    def save_revision(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913,PLR0917
         self,
         user: User | None = None,
         approved_go_live_at: datetime | None = None,

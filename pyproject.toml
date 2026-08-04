@@ -62,7 +62,7 @@ types-requests = "^2.33.0.20260518"
 django-stubs = { version="^6.0.6", extras=["compatible-mypy"]}
 pylint = "^4.0.6"
 pylint-django = "^2.7.0"
-ruff = "0.14.14"  # keep version in sync with .pre-commit-config.yaml
+ruff = "0.16.1"  # keep version in sync with .pre-commit-config.yaml
 
 wagtail-factories = "^4.5.0"
 coverage = "^7.15.0"
@@ -130,7 +130,11 @@ ignore = [
     # Allow non-top-level imports
     "PLC0415",
     # contextlib.suppress is slower
-    "SIM105"
+    "SIM105",
+    # Duplicates pylint's unnecessary-lambda, which is still enforced. The lambdas it
+    # flags are deliberate: they defer manager access to call time rather than binding
+    # at import, and are already annotated with a pylint pragma at each site.
+    "PLW0108"
 ]
 
 [tool.ruff.lint.pydocstyle]
