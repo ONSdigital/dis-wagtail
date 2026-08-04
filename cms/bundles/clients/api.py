@@ -240,7 +240,7 @@ class BundleAPIClient:
         errors: list | None = None
         try:
             errors = error.response.json().get("errors")
-        except (ValueError, AttributeError, requests.exceptions.JSONDecodeError):
+        except ValueError, AttributeError, requests.exceptions.JSONDecodeError:
             pass
 
         return formatted_msg, errors

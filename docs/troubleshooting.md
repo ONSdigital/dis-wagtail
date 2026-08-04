@@ -23,6 +23,7 @@ Add a `tearDown()` method to your test class that resets the translation to the 
 from django.conf import settings
 from django.utils import translation
 
+
 class YourTestClass(TestCase):
     def tearDown(self):
         # Reset the translation to the default language after each test to avoid

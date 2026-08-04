@@ -258,7 +258,7 @@ def format_added_removed_message(
         if not added_items and not removed_items:
             return context or ""
         return format_added_removed_items(added_items, removed_items, context=context)
-    except (KeyError, TypeError):
+    except KeyError, TypeError:
         return context or ""
 
 
