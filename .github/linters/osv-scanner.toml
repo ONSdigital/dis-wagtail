@@ -2,3 +2,10 @@
 ecosystem = "npm"
 group = "dev"
 ignore = true
+
+[[PackageOverrides]]
+ecosystem = "PyPI"
+name = "cryptography"
+version = "48.0.1"
+vulnerability.ignore = true
+reason = "Local only pinned to 48.0.1 for intel mac compatibility, not used in production."
