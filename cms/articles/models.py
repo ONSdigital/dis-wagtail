@@ -856,10 +856,10 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
     @cached_property
     def cached_analytics_values(self) -> dict[str, str | bool]:
-        values: dict[str, str | bool] = {
+        values: dict[str, str | bool | int] = {
             "pageTitle": self.display_title,
             "latestRelease": bool_to_yes_no(self.is_latest),
-            "wordCount": str(self.word_count),
+            "wordCount": self.word_count,
             **self.cached_link_analytics_values,
         }
 
