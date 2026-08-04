@@ -1,10 +1,8 @@
-{% extends "templates/base_page.html" %}
+{% extends "templates/pages/errors/base_error.html" %}
 
-{% block title %}Access Denied (403){% endblock %}
+{% set page_title = _("Access Denied") %}
 
-{% block main %}
-    <h1>Access Denied</h1>
-
+{% block error_content %}
     <p>
         We cannot process your request.<br>
         You can try to go back and try again. If the problem persists, please contact us.
