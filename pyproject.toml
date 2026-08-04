@@ -69,7 +69,7 @@ pylint-django = "^2.7.0"
 ruff = "0.14.14"  # keep version in sync with .pre-commit-config.yaml
 
 coverage = "^7.15.0"
-responses = "^0.25.8"
+responses = "^0.26.2"
 
 dslr = "^0.6.0"
 django-debug-toolbar = "^6.3.0"
