@@ -2,8 +2,3 @@
 ecosystem = "npm"
 group = "dev"
 ignore = true
-
-[[PackageOverrides]]
-ecosystem = "PyPI"
-name = "cryptography"
-ignore = true
