@@ -4654,14 +4654,14 @@ testing = ["jinja2 (>=2.10,<4.0)", "markupsafe (==2.1.5)"]
 
 [[package]]
 name = "wagtail-tinytableblock"
-version = "0.4.5"
+version = "0.5.0"
 description = "A Wagtail StreamField block powered by TinyMCE and its table plugin"
 optional = false
 python-versions = ">=3.12"
 groups = ["main"]
 files = [
-    {file = "wagtail_tinytableblock-0.4.5-py3-none-any.whl", hash = "sha256:a13d57c44e4b2a204172a683ca6e0e4ef5f5185b2cae97a1d0aad526b00b30f8"},
-    {file = "wagtail_tinytableblock-0.4.5.tar.gz", hash = "sha256:d7fd2c73f373a69b957c9c5197eaaee6f761293055ff7761b76d797bc67e6535"},
+    {file = "wagtail_tinytableblock-0.5.0-py3-none-any.whl", hash = "sha256:0b2cdb07c1b1de8f6d5dfb9448e710d097f0ff984d6cce97a7d9486eb56a8bea"},
+    {file = "wagtail_tinytableblock-0.5.0.tar.gz", hash = "sha256:8718142f2e6b01fb7a9f9619a5e420681e03f97ad774eae5c987ae5244da0239"},
 ]
 
 [package.dependencies]
@@ -4795,4 +4795,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "8061be4393d92047f315542b361b75413ba44e588f9ad40393daa0f885092622"
+content-hash = "2a6c867e1ee6de22781908bccdeca31acc2fbff897055b5773f22730635e6b71"
