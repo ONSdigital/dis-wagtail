@@ -341,7 +341,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         if not page:
             return None
 
-        size_suffix = f" ({get_approximate_file_size_in_kb(rows or [])})"
+        size_suffix = f"({get_approximate_file_size_in_kb(rows or [])})"
         file_size_kb = format_file_size_kb(len(bytes(str(rows or []), "utf-8")))
 
         request: HttpRequest | None = parent_context.get("request")
