@@ -292,6 +292,7 @@ class GetDownloadConfigTests(TestCase):
         # CSV item is at index 1 (image download is at index 0)
         csv_item = config["itemsList"][1]
         expected_url = f"{page.url.rstrip('/')}/download-chart/test-block-id"
+        absolute_expected_url = context["request"].build_absolute_uri(expected_url)
         expected_file_size_with_unit = get_approximate_file_size_in_kb(rows)
         expected_file_size = format_file_size_kb(len(bytes(str(rows), "utf-8")))
         expected_link_text = f"Download CSV ({expected_file_size_with_unit})"
@@ -301,8 +302,8 @@ class GetDownloadConfigTests(TestCase):
             "data-ga-file-extension": "csv",
             "data-ga-file-name": get_csv_download_filename(title=self.raw_data.get("title"), fallback_stem="chart"),
             "data-ga-link-text": expected_link_text,
-            "data-ga-link-url": urlparse(expected_url).path,
-            "data-ga-link-domain": urlparse(expected_url).hostname,
+            "data-ga-link-url": urlparse(absolute_expected_url).path,
+            "data-ga-link-domain": urlparse(absolute_expected_url).hostname,
             "data-ga-chart-title": self.raw_data.get("title"),
             "data-ga-chart-type": "line",
             "data-ga-file-size": expected_file_size,
@@ -329,6 +330,7 @@ class GetDownloadConfigTests(TestCase):
         soup = BeautifulSoup(response.content, "html.parser")
         download_csv_link = soup.find("a", href=f"{page.url.rstrip('/')}/download-chart/test-block-id")
         download_csv_list_item = download_csv_link.find_parent(class_="ons-list__item")
+        absolute_download_url = response.wsgi_request.build_absolute_uri(download_csv_link.get("href"))
 
         expected_file_size = format_file_size_kb(len(bytes(str(value["table"].rows), "utf-8")))
 
@@ -340,9 +342,7 @@ class GetDownloadConfigTests(TestCase):
             get_csv_download_filename(title=self.raw_data.get("title"), fallback_stem="chart"),
         )
         self.assertEqual(download_csv_list_item.get("data-ga-link-url"), urlparse(download_csv_link.get("href")).path)
-        self.assertEqual(
-            download_csv_list_item.get("data-ga-link-domain"), urlparse(download_csv_link.get("href")).hostname
-        )
+        self.assertEqual(download_csv_list_item.get("data-ga-link-domain"), urlparse(absolute_download_url).hostname)
         self.assertEqual(download_csv_list_item.get("data-ga-chart-title"), self.raw_data.get("title"))
         self.assertEqual(download_csv_list_item.get("data-ga-chart-type"), "line")
         self.assertEqual(download_csv_list_item.get("data-ga-file-size"), expected_file_size)

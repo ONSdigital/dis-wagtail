@@ -266,19 +266,19 @@ class ONSTableBlock(TinyTableBlock):
         # Flatten table data for size calculation
         csv_rows = flatten_table_data(data)
 
-        size_suffix = f" ({get_approximate_file_size_in_kb(csv_rows)})"
-        file_size_kb = format_file_size_kb(len(bytes(str(csv_rows), "utf-8")))
+        size_suffix = f"({get_approximate_file_size_in_kb(csv_rows)})"
         link_text = _("Download CSV %(size)s") % {"size": size_suffix}
         csv_title = get_table_csv_download_title(title=table_title, caption=table_caption)
-        file_name = get_csv_download_filename(title=csv_title, fallback_stem="table")
 
         csv_url = self._get_table_download_url(parent_context=parent_context, page=page, block_id=block_id)
+        request = parent_context.get("request")
+        absolute_csv_url = request.build_absolute_uri(csv_url) if request else csv_url
         attributes = get_gtm_attributes_file_download(
             text=link_text,
-            url=csv_url,
+            url=absolute_csv_url,
             file_extension="csv",
-            file_name=file_name,
-            file_size_kb=file_size_kb,
+            file_name=get_csv_download_filename(title=csv_title, fallback_stem="table"),
+            file_size_kb=format_file_size_kb(len(bytes(str(csv_rows), "utf-8"))),
         )
 
         return {

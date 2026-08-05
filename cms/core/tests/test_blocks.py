@@ -1085,14 +1085,15 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         expected_link_text = f"Download CSV ({expected_file_size_with_unit})"
 
         download_items_list = result["options"]["download"]["itemsList"][0]
+        absolute_download_url = context["request"].build_absolute_uri(download_items_list["url"])
 
         expected_attributes = {
             "data-ga-event": "file-download",
             "data-ga-file-extension": "csv",
             "data-ga-file-name": get_csv_download_filename(title=self.full_data.get("title"), fallback_stem="table"),
             "data-ga-link-text": expected_link_text,
-            "data-ga-link-url": urlparse(download_items_list["url"]).path,
-            "data-ga-link-domain": urlparse(download_items_list["url"]).hostname,
+            "data-ga-link-url": urlparse(absolute_download_url).path,
+            "data-ga-link-domain": urlparse(absolute_download_url).hostname,
             "data-ga-file-size": expected_file_size,
         }
 
@@ -1125,8 +1126,9 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             download_list_item.get("data-ga-file-name"),
             get_csv_download_filename(title=self.full_data.get("title"), fallback_stem="table"),
         )
+        absolute_download_url = response.wsgi_request.build_absolute_uri(download_link.get("href"))
         self.assertEqual(download_list_item.get("data-ga-link-url"), urlparse(download_link.get("href")).path)
-        self.assertEqual(download_list_item.get("data-ga-link-domain"), urlparse(download_link.get("href")).hostname)
+        self.assertEqual(download_list_item.get("data-ga-link-domain"), urlparse(absolute_download_url).hostname)
         self.assertEqual(download_list_item.get("data-ga-file-size"), expected_file_size)
 
     def test_ons_table_block_download_config_missing_without_page(self):

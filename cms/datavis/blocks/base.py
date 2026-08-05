@@ -354,11 +354,12 @@ class BaseChartBlock(BaseVisualisationBlock):
             csv_url = self._build_chart_download_url(page, block_id, superseded_version)
 
         link_text = _("Download CSV %(size)s") % {"size": size_suffix}
+        absolute_csv_url = request.build_absolute_uri(csv_url) if request else csv_url
 
         return {
             "text": link_text,
             "url": csv_url,
-            "attributes": self._get_gtm_attributes_csv_download(link_text, csv_url, file_size_kb, value),
+            "attributes": self._get_gtm_attributes_csv_download(link_text, absolute_csv_url, file_size_kb, value),
         }
 
     def _get_gtm_attributes_csv_download(
