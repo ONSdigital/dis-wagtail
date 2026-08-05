@@ -2,6 +2,7 @@ from django.conf import settings
 from django.test import TestCase, override_settings
 
 from cms.auth.checks import (
+    check_admin_login_mechanism,
     check_aws_cognito,
     check_identity_api,
     check_session_config,
@@ -178,9 +179,76 @@ class WagtailAdminLoginURLCheckTests(TestCase):
         WAGTAILADMIN_HOME_PATH="admin/",
         WAGTAILADMIN_LOGIN_URL="/admin/login/",
     )
-    def test_cognito_disabled_no_error(self):
-        """The check only applies to Cognito/SSO deployments."""
+    def test_self_redirect_loop_raises_error_with_cognito_disabled(self):
+        """The loop only depends on the URL wiring, so it must be flagged whether or not
+        Cognito is enabled (the RedirectView is mounted regardless).
+        """
         errors = check_wagtail_admin_login_url(app_configs=None)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].id, "auth.E010")
+
+    @override_settings(
+        IS_EXTERNAL_ENV=True,
+        AWS_COGNITO_LOGIN_ENABLED=True,
+        WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False,
+        WAGTAILADMIN_HOME_PATH="admin/",
+        WAGTAILADMIN_LOGIN_URL="/admin/login/",
+    )
+    def test_external_env_no_error(self):
+        """The admin URLs (and the login RedirectView) are not mounted in the external env,
+        so the loop cannot exist there.
+        """
+        errors = check_wagtail_admin_login_url(app_configs=None)
+        self.assertEqual(errors, [])
+
+
+class AdminLoginMechanismCheckTests(TestCase):
+    """Tests for check_admin_login_mechanism, which catches internal deployments where
+    no admin auth mechanism is enabled at all.
+    """
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=False, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False)
+    def test_both_login_mechanisms_disabled_raises_error(self):
+        errors = check_admin_login_mechanism(app_configs=None)
+
+        self.assertEqual(len(errors), 1)
+        error = errors[0]
+        self.assertEqual(error.id, "auth.E011")
+        self.assertIn("No admin login mechanism is enabled", error.msg)
+
+    @override_settings(
+        AWS_COGNITO_LOGIN_ENABLED=False,
+        WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False,
+        WAGTAILADMIN_LOGIN_URL="https://florence.example/florence/login",
+    )
+    def test_fires_even_with_external_login_url(self):
+        """A correct-looking WAGTAILADMIN_LOGIN_URL doesn't help when nothing consumes the
+        SSO callback and the core login form is disabled.
+        """
+        errors = check_admin_login_mechanism(app_configs=None)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].id, "auth.E011")
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=True, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False)
+    def test_cognito_enabled_no_error(self):
+        errors = check_admin_login_mechanism(app_configs=None)
+        self.assertEqual(errors, [])
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=False, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=True)
+    def test_core_login_enabled_no_error(self):
+        errors = check_admin_login_mechanism(app_configs=None)
+        self.assertEqual(errors, [])
+
+    @override_settings(
+        IS_EXTERNAL_ENV=True,
+        AWS_COGNITO_LOGIN_ENABLED=False,
+        WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False,
+    )
+    def test_external_env_no_error(self):
+        """The external env serves no admin, so having no admin login mechanism is expected."""
+        errors = check_admin_login_mechanism(app_configs=None)
         self.assertEqual(errors, [])
 
 
