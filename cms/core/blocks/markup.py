@@ -266,9 +266,9 @@ class ONSTableBlock(TinyTableBlock):
         # Flatten table data for size calculation
         csv_rows = flatten_table_data(data)
 
-        file_size_with_unit = get_approximate_file_size_in_kb(csv_rows)
+        size_suffix = f" ({get_approximate_file_size_in_kb(csv_rows)})"
         file_size_kb = format_file_size_kb(len(bytes(str(csv_rows), "utf-8")))
-        link_text = _("Download CSV (%(size)s)") % {"size": file_size_with_unit}
+        link_text = _("Download CSV %(size)s") % {"size": size_suffix}
         csv_title = get_table_csv_download_title(title=table_title, caption=table_caption)
         file_name = get_csv_download_filename(title=csv_title, fallback_stem="table")
 

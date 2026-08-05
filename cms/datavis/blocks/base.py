@@ -340,7 +340,8 @@ class BaseChartBlock(BaseVisualisationBlock):
         page: BasePage | None = parent_context.get("page")
         if not page:
             return None
-        file_size_with_unit = get_approximate_file_size_in_kb(rows or [])
+
+        size_suffix = f" ({get_approximate_file_size_in_kb(rows or [])})"
         file_size_kb = format_file_size_kb(len(bytes(str(rows or []), "utf-8")))
 
         request: HttpRequest | None = parent_context.get("request")
@@ -352,7 +353,7 @@ class BaseChartBlock(BaseVisualisationBlock):
             superseded_version: int | None = parent_context.get("superseded_version")
             csv_url = self._build_chart_download_url(page, block_id, superseded_version)
 
-        link_text = _("Download CSV (%(size)s)") % {"size": file_size_with_unit}
+        link_text = _("Download CSV %(size)s") % {"size": size_suffix}
 
         return {
             "text": link_text,
