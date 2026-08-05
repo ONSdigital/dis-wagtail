@@ -260,6 +260,7 @@ class GetDownloadConfigTests(TestCase):
         page.url = "/articles/test/"
         request = Mock()
         request.is_preview = False
+        request.build_absolute_uri.side_effect = lambda url: f"http://testserver{url}"
 
         config = self.block.get_download_config(
             value,
