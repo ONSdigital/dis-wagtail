@@ -1080,7 +1080,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         result = self.block.get_context(self.full_data, parent_context=context)
 
         expected_file_size_with_unit = get_approximate_file_size_in_kb(flatten_table_data(self.full_data["data"]))
-        expected_file_size = expected_file_size_with_unit.removesuffix("KB")
+        expected_file_size = str(len(bytes(flatten_table_data(self.full_data["data"]), "utf-8")) / 1024)
         expected_link_text = f"Download CSV ({expected_file_size_with_unit})"
 
         download_items_list = result["options"]["download"]["itemsList"][0]
@@ -1463,7 +1463,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
             "data-ga-link-text": expected_link_text,
             "data-ga-link-url": urlparse(absolute_url).path,
             "data-ga-link-domain": urlparse(absolute_url).hostname,
-            "data-ga-file-size": str(self.large.file.size / 1000),
+            "data-ga-file-size": str(self.large.file.size / 1024),
         }
 
         self.assertEqual(download_item["attributes"], expected_attributes)
@@ -1487,4 +1487,4 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertEqual(download_list_item.get("data-ga-file-name"), expected_file_name)
         self.assertEqual(download_list_item.get("data-ga-link-url"), urlparse(download_link.get("href")).path)
         self.assertEqual(download_list_item.get("data-ga-link-domain"), urlparse(absolute_download_url).hostname)
-        self.assertEqual(download_list_item.get("data-ga-file-size"), str(self.large.file.size / 1000))
+        self.assertEqual(download_list_item.get("data-ga-file-size"), str(self.large.file.size / 1024))
