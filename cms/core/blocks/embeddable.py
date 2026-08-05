@@ -15,6 +15,7 @@ from wagtail.documents.blocks import DocumentChooserBlock
 from wagtail.images.blocks import ImageChooserBlock
 
 from cms.core.analytics_utils import get_gtm_attributes_file_download
+from cms.core.utils import format_file_size_kb
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -99,7 +100,7 @@ class ImageBlock(blocks.StructBlock):
         _base, ext = os.path.splitext(large_image.file.name)
         file_type = ext.lstrip(".").upper() or "IMG"
         size_bytes = getattr(large_image.file, "size", None)
-        size_kb = str(size_bytes / 1024) if size_bytes is not None else None  # Convert from Bytes to KB
+        size_kb = format_file_size_kb(size_bytes) if size_bytes is not None else None
 
         file_size_human = filesizeformat(size_bytes) if size_bytes is not None else None
         size_text = f" ({file_size_human})" if file_size_human else ""
@@ -164,7 +165,7 @@ class DocumentBlockStructValue(blocks.StructValue):
                 url=absolute_url,
                 file_extension=self["document"].file_extension.lower(),
                 file_name=self["document"].title,
-                file_size_kb=str(self["document"].get_file_size() / 1024),  # Convert from Bytes to KB
+                file_size_kb=format_file_size_kb(self["document"].get_file_size()),
             ),
         }
 

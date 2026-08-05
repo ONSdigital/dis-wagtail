@@ -11,6 +11,7 @@ from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
 from cms.core.analytics_utils import get_gtm_attributes_file_download
+from cms.core.utils import format_file_size_kb
 from cms.data_downloads.utils import get_csv_download_filename
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
@@ -340,7 +341,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         if not page:
             return None
         file_size_with_unit = get_approximate_file_size_in_kb(rows or [])
-        file_size_kb = str(len(bytes(str(rows or []), "utf-8")) / 1024)
+        file_size_kb = format_file_size_kb(len(bytes(str(rows or []), "utf-8")))
 
         request: HttpRequest | None = parent_context.get("request")
         is_preview = getattr(request, "is_preview", False) if request else False

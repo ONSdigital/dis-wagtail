@@ -8,6 +8,7 @@ from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.core.utils import format_file_size_kb
 from cms.data_downloads.utils import get_csv_download_filename
 from cms.datavis.blocks.base import BaseChartBlock, BaseVisualisationBlock
 from cms.datavis.blocks.charts import LineChartBlock
@@ -292,7 +293,7 @@ class GetDownloadConfigTests(TestCase):
         csv_item = config["itemsList"][1]
         expected_url = f"{page.url.rstrip('/')}/download-chart/test-block-id"
         expected_file_size_with_unit = get_approximate_file_size_in_kb(rows)
-        expected_file_size = str(len(bytes(str(rows), "utf-8")) / 1024)
+        expected_file_size = format_file_size_kb(len(bytes(str(rows), "utf-8")))
         expected_link_text = f"Download CSV ({expected_file_size_with_unit})"
 
         expected_attributes = {
@@ -329,7 +330,7 @@ class GetDownloadConfigTests(TestCase):
         download_csv_link = soup.find("a", href=f"{page.url.rstrip('/')}/download-chart/test-block-id")
         download_csv_list_item = download_csv_link.find_parent(class_="ons-list__item")
 
-        expected_file_size = len(bytes(str(value["table"].rows), "utf-8")) / 1024
+        expected_file_size = format_file_size_kb(len(bytes(str(value["table"].rows), "utf-8")))
 
         self.assertEqual(download_csv_list_item.get("data-ga-link-text"), download_csv_list_item.get_text(strip=True))
         self.assertEqual(download_csv_list_item.get("data-ga-event"), "file-download")
@@ -344,4 +345,4 @@ class GetDownloadConfigTests(TestCase):
         )
         self.assertEqual(download_csv_list_item.get("data-ga-chart-title"), self.raw_data.get("title"))
         self.assertEqual(download_csv_list_item.get("data-ga-chart-type"), "line")
-        self.assertEqual(download_csv_list_item.get("data-ga-file-size"), str(expected_file_size))
+        self.assertEqual(download_csv_list_item.get("data-ga-file-size"), expected_file_size)

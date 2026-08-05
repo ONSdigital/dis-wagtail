@@ -32,7 +32,7 @@ from cms.core.blocks.definitions import DefinitionsBlock
 from cms.core.blocks.embeddable import ImageBlock
 from cms.core.tests.factories import DefinitionFactory
 from cms.core.tests.utils import get_test_document
-from cms.core.utils import UNWANTED_CONTROL_CHARACTERS
+from cms.core.utils import UNWANTED_CONTROL_CHARACTERS, format_file_size_kb
 from cms.data_downloads.utils import flatten_table_data, get_csv_download_filename
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 from cms.home.models import HomePage
@@ -78,7 +78,7 @@ class CoreBlocksTestCase(TestCase):
                     "data-ga-link-text": "The block document",
                     "data-ga-link-url": self.document.url,
                     "data-ga-link-domain": urlparse(absolute_url).hostname,
-                    "data-ga-file-size": "0.025",  # KB
+                    "data-ga-file-size": format_file_size_kb(self.document.get_file_size()),
                 },
             },
         )
@@ -125,7 +125,7 @@ class CoreBlocksTestCase(TestCase):
                         "data-ga-link-text": "The block document",
                         "data-ga-link-url": self.document.url,
                         "data-ga-link-domain": urlparse(absolute_url).hostname,
-                        "data-ga-file-size": "0.025",  # KB
+                        "data-ga-file-size": format_file_size_kb(self.document.get_file_size()),
                     },
                 }
             ],
@@ -1080,7 +1080,8 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         result = self.block.get_context(self.full_data, parent_context=context)
 
         expected_file_size_with_unit = get_approximate_file_size_in_kb(flatten_table_data(self.full_data["data"]))
-        expected_file_size = str(len(bytes(flatten_table_data(self.full_data["data"]), "utf-8")) / 1024)
+        csv_rows = flatten_table_data(self.full_data["data"])
+        expected_file_size = format_file_size_kb(len(str(csv_rows).encode("utf-8")))
         expected_link_text = f"Download CSV ({expected_file_size_with_unit})"
 
         download_items_list = result["options"]["download"]["itemsList"][0]
@@ -1110,9 +1111,8 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
             }
         ]
         page.save_revision().publish()
-        expected_file_size = get_approximate_file_size_in_kb(flatten_table_data(self.full_data["data"])).removesuffix(
-            "KB"
-        )
+        csv_rows = flatten_table_data(self.full_data["data"])
+        expected_file_size = format_file_size_kb(len(str(csv_rows).encode("utf-8")))
         response = self.client.get(page.url)
         soup = BeautifulSoup(response.content, "html.parser")
         download_link = soup.find("a", href=f"{page.url.rstrip('/')}/download-table/test-block-id")
@@ -1463,7 +1463,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
             "data-ga-link-text": expected_link_text,
             "data-ga-link-url": urlparse(absolute_url).path,
             "data-ga-link-domain": urlparse(absolute_url).hostname,
-            "data-ga-file-size": str(self.large.file.size / 1024),
+            "data-ga-file-size": format_file_size_kb(self.large.file.size),
         }
 
         self.assertEqual(download_item["attributes"], expected_attributes)
@@ -1487,4 +1487,4 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertEqual(download_list_item.get("data-ga-file-name"), expected_file_name)
         self.assertEqual(download_list_item.get("data-ga-link-url"), urlparse(download_link.get("href")).path)
         self.assertEqual(download_list_item.get("data-ga-link-domain"), urlparse(absolute_download_url).hostname)
-        self.assertEqual(download_list_item.get("data-ga-file-size"), str(self.large.file.size / 1024))
+        self.assertEqual(download_list_item.get("data-ga-file-size"), format_file_size_kb(self.large.file.size))

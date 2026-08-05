@@ -13,7 +13,7 @@ from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
 
 from cms.core.analytics_utils import get_gtm_attributes_file_download
-from cms.core.utils import strip_unwanted_control_chars_from_json
+from cms.core.utils import format_file_size_kb, strip_unwanted_control_chars_from_json
 from cms.data_downloads.utils import (
     flatten_table_data,
     get_csv_download_filename,
@@ -267,7 +267,7 @@ class ONSTableBlock(TinyTableBlock):
         csv_rows = flatten_table_data(data)
 
         file_size_with_unit = get_approximate_file_size_in_kb(csv_rows)
-        file_size_kb = str(len(bytes(str(csv_rows), "utf-8")) / 1024)
+        file_size_kb = format_file_size_kb(len(bytes(str(csv_rows), "utf-8")))
         link_text = _("Download CSV (%(size)s)") % {"size": file_size_with_unit}
         csv_title = get_table_csv_download_title(title=table_title, caption=table_caption)
         file_name = get_csv_download_filename(title=csv_title, fallback_stem="table")
