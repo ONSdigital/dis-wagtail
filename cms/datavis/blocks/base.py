@@ -354,7 +354,7 @@ class BaseChartBlock(BaseVisualisationBlock):
             csv_url = self._build_chart_download_url(page, block_id, superseded_version)
 
         link_text = _("Download CSV %(size)s") % {"size": size_suffix}
-        absolute_csv_url = request.build_absolute_uri(csv_url) if request else csv_url
+        absolute_csv_url = request.build_absolute_uri(csv_url) if request and not is_preview else csv_url
 
         return {
             "text": link_text,

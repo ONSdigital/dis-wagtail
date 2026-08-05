@@ -272,7 +272,9 @@ class ONSTableBlock(TinyTableBlock):
 
         csv_url = self._get_table_download_url(parent_context=parent_context, page=page, block_id=block_id)
         request = parent_context.get("request")
-        absolute_csv_url = request.build_absolute_uri(csv_url) if request else csv_url
+        absolute_csv_url = (
+            request.build_absolute_uri(csv_url) if request and not getattr(request, "is_preview", False) else csv_url
+        )
         attributes = get_gtm_attributes_file_download(
             text=link_text,
             url=absolute_csv_url,
