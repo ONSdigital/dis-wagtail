@@ -1,8 +1,18 @@
 {% extends "templates/base_page.html" %}
-{% block header_area %}
-    <div class="ons-container">
-        <h1 class="ons-u-fs-3xl common-header__heading">
-            {{ page.title }}
-        </h1>
-    </div>
+{% from "components/hero/_macro.njk" import onsHero %}
+
+{% block hero %}
+    {# fmt:off #}
+    {{
+        onsHero({
+            "title": page.title,
+            "variants": 'grey',
+        })
+    }}
+    {# fmt:on #}
+{% endblock %}
+
+{% block mainContent %}
+    {{ super() }}
+    {% include "templates/components/back-to-top/back-to-top.html" %}
 {% endblock %}

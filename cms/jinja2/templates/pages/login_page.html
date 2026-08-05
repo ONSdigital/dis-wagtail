@@ -6,7 +6,7 @@
 
 {% block body_class %}template-login{% endblock %}
 
-{% block main %}
+{% block mainContent %}
     <h1>{{ _("Log in") }}</h1>
 
     <form method="post" action="{{ url('wagtailcore_login') }}">
@@ -15,4 +15,5 @@
         <button type="submit" class="button">{{ _("Log in") }}</button>
         <input type="hidden" name="next" value="{{ next }}" />
     </form>
+    {% include "templates/components/back-to-top/back-to-top.html" %}
 {% endblock %}
