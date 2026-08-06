@@ -7,6 +7,7 @@ from django.http import Http404
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from wagtail import hooks
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale, PageViewRestriction
@@ -1406,6 +1407,39 @@ class ArticleSeriesPagePrivacyTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertIn(f"next={self.edition_path}", response["Location"])
+
+    def _get_serve_chain_pages(self, url):
+        """GET the url with a temporary outermost on_serve_page hook recording each chain
+        invocation (order=-1 wraps outside wagtail's restriction check, so runs that
+        short-circuit into a restriction response are still counted). Returns the page ids
+        the chain ran for.
+        """
+        chain_pages = []
+
+        def counting_hook(callback):
+            def inner(page, request, serve_args, serve_kwargs):
+                chain_pages.append(page.pk)
+                return callback(page, request, serve_args, serve_kwargs)
+
+            return inner
+
+        with hooks.register_temporarily("on_serve_page", counting_hook, order=-1):
+            self.client.get(url)
+        return chain_pages
+
+    def test_hook_chain_runs_once_for_unrestricted_edition(self):
+        """The helper skips the chain replay when the edition has no restrictions of its
+        own - the URL-level run against the series already enforced its ancestors'.
+        """
+        self.assertEqual(self._get_serve_chain_pages(self.edition_url), [self.series.pk])
+
+    def test_hook_chain_replayed_for_restricted_edition(self):
+        """An edition with its own restriction still gets the chain run against it."""
+        PageViewRestriction.objects.create(
+            page=self.edition, restriction_type=PageViewRestriction.PASSWORD, password="pw"
+        )
+
+        self.assertEqual(self._get_serve_chain_pages(self.edition_url), [self.series.pk, self.edition.pk])
 
 
 class ExternalEnvArticleSeriesPrivacyTestCase(WagtailTestUtils, TestCase):

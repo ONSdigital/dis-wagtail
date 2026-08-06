@@ -156,7 +156,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
             raise Http404
 
         return serve_page_with_view_restrictions(
-            latest, request, args=args, kwargs={**kwargs, "serve_as_edition": True}
+            latest, request, routed_page=self, args=args, kwargs={**kwargs, "serve_as_edition": True}
         )
 
     @path("related-data/")
@@ -167,7 +167,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
         request.is_for_subpage = True  # type: ignore[attr-defined]
         return serve_page_with_view_restrictions(
-            latest, request, serve_callable=latest.related_data, args=args, kwargs=kwargs
+            latest, request, routed_page=self, serve_callable=latest.related_data, args=args, kwargs=kwargs
         )
 
     @path("editions/")
@@ -199,7 +199,9 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     def release(self, request: HttpRequest, slug: str, **kwargs: Any) -> HttpResponse:
         if not (edition := self._servable_editions().filter(slug=slug).first()):
             raise Http404
-        return serve_page_with_view_restrictions(edition, request, kwargs={**kwargs, "serve_as_edition": True})
+        return serve_page_with_view_restrictions(
+            edition, request, routed_page=self, kwargs={**kwargs, "serve_as_edition": True}
+        )
 
     @path("editions/<str:slug>/related-data/")
     def release_related_data(self, request: HttpRequest, slug: str) -> HttpResponse:
@@ -216,7 +218,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         if not (edition := self._servable_editions().filter(slug=slug).first()):
             raise Http404
         return serve_page_with_view_restrictions(
-            edition, request, serve_callable=edition.download_chart, args=(chart_id,)
+            edition, request, routed_page=self, serve_callable=edition.download_chart, args=(chart_id,)
         )
 
     @path("editions/<str:slug>/versions/<int:version>/download-chart/<str:chart_id>/")
@@ -229,7 +231,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         if not (edition := self._servable_editions().filter(slug=slug).first()):
             raise Http404
         return serve_page_with_view_restrictions(
-            edition, request, serve_callable=edition.download_table, args=(table_id,)
+            edition, request, routed_page=self, serve_callable=edition.download_table, args=(table_id,)
         )
 
     @path("editions/<str:slug>/versions/<int:version>/download-table/<str:table_id>/")
