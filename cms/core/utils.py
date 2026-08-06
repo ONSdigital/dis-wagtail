@@ -2,14 +2,15 @@ import io
 import json
 import re
 import string
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from itertools import chain
 from threading import Lock
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
-from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
+from django.http import Http404, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import redirect as _redirect
+from wagtail import hooks
 
 from cms.core.enums import RelatedContentType
 
@@ -41,7 +42,7 @@ MATPLOTLIB_CONTEXT = {
 }
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
+    from django.http import HttpRequest, HttpResponse
     from django_stubs_ext import StrOrPromise
 
 
@@ -125,6 +126,65 @@ def redirect_to_parent_listing(
     if callable(method) and (redirect_url := method()):
         return redirect(redirect_url)
     return redirect(parent.get_url(request=request))
+
+
+def _has_direct_view_restrictions(page: Page) -> bool:
+    """Returns whether any view restriction is attached to the page itself, resolving
+    alias pages to their source (mirroring Page.get_view_restrictions).
+    """
+    from wagtail.models import PageViewRestriction  # pylint: disable=import-outside-toplevel
+
+    source_page = page
+    while source_page.alias_of_id:
+        source_page = source_page.alias_of
+    has_restrictions: bool = PageViewRestriction.objects.filter(page=source_page).exists()
+    return has_restrictions
+
+
+def serve_page_with_view_restrictions(  # pylint: disable=too-many-arguments  # noqa: PLR0913
+    page: Page,
+    request: HttpRequest,
+    *,
+    routed_page: Page | None = None,
+    serve_callable: Callable[..., HttpResponse] | None = None,
+    args: tuple[Any, ...] = (),
+    kwargs: dict[str, Any] | None = None,
+) -> HttpResponse:
+    """Serve the given page (or a bound view method of it) through Wagtail's
+    "on_serve_page" hook chain so the page's own view restrictions are enforced.
+
+    Wagtail only checks view restrictions for the page matched by URL routing. When a
+    routable page serves the content of a different page (e.g. ArticleSeriesPage serving
+    StatisticalArticlePage editions), the rendered page's restrictions are never checked
+    unless it is served through the hook chain, mirroring wagtail.views.serve.
+
+    Pass `routed_page` (the routable page whose sub-route is serving `page`) to avoid
+    running the hook chain twice per request: wagtail's serve view already ran it against
+    `routed_page`, which covers all of `page`'s ancestor restrictions when `page` is its
+    descendant. The chain is then only replayed when `page` carries restrictions of its
+    own.
+    """
+    # The external environment has no auth machinery (no sessions, users, or auth
+    # backends), so view restrictions can never be satisfied there and evaluating them
+    # crashes on the missing request attributes. Treat restricted pages as not existing.
+    if settings.IS_EXTERNAL_ENV and page.get_view_restrictions().exists():
+        raise Http404
+
+    def _serve(inner_page: Page, inner_request: HttpRequest, serve_args: Any, serve_kwargs: Any) -> HttpResponse:
+        target = serve_callable if serve_callable is not None else inner_page.serve
+        response: HttpResponse = target(inner_request, *serve_args, **serve_kwargs)
+        return response
+
+    if routed_page is not None and page.is_descendant_of(routed_page) and not _has_direct_view_restrictions(page):
+        # The URL-level hook run against `routed_page` already enforced every restriction
+        # that applies to `page` (its own set minus direct ones is exactly its ancestors'),
+        # so re-running the chain would only duplicate hook side effects and queries.
+        return _serve(page, request, args, kwargs or {})
+
+    serve_chain: Callable[..., HttpResponse] = _serve
+    for fn in reversed(hooks.get_hooks("on_serve_page")):
+        serve_chain = fn(serve_chain)
+    return serve_chain(page, request, args, kwargs or {})
 
 
 def strip_unwanted_control_chars_from_json(data: str) -> str:
