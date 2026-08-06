@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from django.template.defaultfilters import filesizeformat
 from django.test import TestCase
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
+from wagtail.coreutils import get_dummy_request
 from wagtail.images import get_image_model
 from wagtail.images.tests.utils import get_test_image_file
 from wagtail.rich_text import RichText
@@ -31,7 +32,9 @@ from cms.core.blocks.definitions import DefinitionsBlock
 from cms.core.blocks.embeddable import ImageBlock
 from cms.core.tests.factories import DefinitionFactory
 from cms.core.tests.utils import get_test_document
-from cms.core.utils import UNWANTED_CONTROL_CHARACTERS
+from cms.core.utils import UNWANTED_CONTROL_CHARACTERS, format_file_size_kb
+from cms.data_downloads.utils import flatten_table_data, get_csv_download_filename
+from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 from cms.home.models import HomePage
 from cms.standard_pages.models import InformationPage
 
@@ -50,9 +53,11 @@ class CoreBlocksTestCase(TestCase):
         value = block.to_python(
             {"document": self.document.pk, "title": "The block document", "description": "Document description"}
         )
+        request = get_dummy_request()
+        absolute_url = request.build_absolute_uri(self.document.url)
 
         self.assertDictEqual(
-            value.as_macro_data(),
+            value.as_macro_data(request=request),
             {
                 "thumbnail": False,
                 "title": {
@@ -72,8 +77,8 @@ class CoreBlocksTestCase(TestCase):
                     "data-ga-file-name": self.document.title,
                     "data-ga-link-text": "The block document",
                     "data-ga-link-url": self.document.url,
-                    "data-ga-link-domain": urlparse(self.document.url).hostname,
-                    "data-ga-file-size": "0.025",  # KB
+                    "data-ga-link-domain": urlparse(absolute_url).hostname,
+                    "data-ga-file-size": format_file_size_kb(self.document.get_file_size()),
                 },
             },
         )
@@ -93,8 +98,10 @@ class CoreBlocksTestCase(TestCase):
                 }
             ]
         )
+        request = get_dummy_request()
+        absolute_url = request.build_absolute_uri(self.document.url)
 
-        context = block.get_context(value)
+        context = block.get_context(value, parent_context={"request": request})
         self.assertListEqual(
             context["macro_data"],
             [
@@ -117,8 +124,8 @@ class CoreBlocksTestCase(TestCase):
                         "data-ga-file-name": self.document.title,
                         "data-ga-link-text": "The block document",
                         "data-ga-link-url": self.document.url,
-                        "data-ga-link-domain": urlparse(self.document.url).hostname,
-                        "data-ga-file-size": "0.025",  # KB
+                        "data-ga-link-domain": urlparse(absolute_url).hostname,
+                        "data-ga-file-size": format_file_size_kb(self.document.get_file_size()),
                     },
                 }
             ],
@@ -1061,6 +1068,69 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         download_url = result["options"]["download"]["itemsList"][0]["url"]
         self.assertEqual(download_url, "/economy/articles/test-article/download-table/test-block-id")
 
+    def test_ons_table_block_download_data_attributes_in_context(self):
+        """Verify expected GTM data attributes are present in download context data."""
+        page = StatisticalArticlePageFactory()
+        context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": get_dummy_request(),
+        }
+
+        result = self.block.get_context(self.full_data, parent_context=context)
+
+        expected_file_size_with_unit = get_approximate_file_size_in_kb(flatten_table_data(self.full_data["data"]))
+        csv_rows = flatten_table_data(self.full_data["data"])
+        expected_file_size = format_file_size_kb(len(str(csv_rows).encode("utf-8")))
+        expected_link_text = f"Download CSV ({expected_file_size_with_unit})"
+
+        download_items_list = result["options"]["download"]["itemsList"][0]
+        absolute_download_url = context["request"].build_absolute_uri(download_items_list["url"])
+
+        expected_attributes = {
+            "data-ga-event": "file-download",
+            "data-ga-file-extension": "csv",
+            "data-ga-file-name": get_csv_download_filename(title=self.full_data.get("title"), fallback_stem="table"),
+            "data-ga-link-text": expected_link_text,
+            "data-ga-link-url": urlparse(absolute_download_url).path,
+            "data-ga-link-domain": urlparse(absolute_download_url).hostname,
+            "data-ga-file-size": expected_file_size,
+        }
+
+        self.assertEqual(download_items_list["attributes"], expected_attributes)
+
+    def test_ons_table_block_download_data_attributes_in_rendered_html(self):
+        """Verify GTM data attributes exist in the rendered HTML."""
+        page = StatisticalArticlePageFactory()
+        page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Table section",
+                    "content": [{"type": "table", "value": self.full_data, "id": "test-block-id"}],
+                },
+            }
+        ]
+        page.save_revision().publish()
+        csv_rows = flatten_table_data(self.full_data["data"])
+        expected_file_size = format_file_size_kb(len(str(csv_rows).encode("utf-8")))
+        response = self.client.get(page.url)
+        soup = BeautifulSoup(response.content, "html.parser")
+        download_link = soup.find("a", href=f"{page.url.rstrip('/')}/download-table/test-block-id")
+        download_list_item = download_link.find_parent(class_="ons-list__item")
+
+        self.assertEqual(download_list_item.get("data-ga-link-text"), download_list_item.get_text(strip=True))
+        self.assertEqual(download_list_item.get("data-ga-event"), "file-download")
+        self.assertEqual(download_list_item.get("data-ga-file-extension"), "csv")
+        self.assertEqual(
+            download_list_item.get("data-ga-file-name"),
+            get_csv_download_filename(title=self.full_data.get("title"), fallback_stem="table"),
+        )
+        absolute_download_url = response.wsgi_request.build_absolute_uri(download_link.get("href"))
+        self.assertEqual(download_list_item.get("data-ga-link-url"), urlparse(download_link.get("href")).path)
+        self.assertEqual(download_list_item.get("data-ga-link-domain"), urlparse(absolute_download_url).hostname)
+        self.assertEqual(download_list_item.get("data-ga-file-size"), expected_file_size)
+
     def test_ons_table_block_download_config_missing_without_page(self):
         """Test that download is empty when page is missing from context."""
         context = {
@@ -1289,6 +1359,9 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         page = self._make_information_page(download=True)
 
         response = self.client.get(page.url)
+        html = response.content.decode(response.charset or "utf-8", errors="replace")
+        soup = BeautifulSoup(html, "html.parser")
+
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         # Download section rendered
@@ -1297,20 +1370,24 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         # HTML5 download attribute present once (avoid base-template noise)
         self.assertContains(response, " download", count=1)
 
-        # Large rendition used for download
-        # Appears twice in the response - once in the image srcset attribute and once in the download url
-        self.assertContains(response, self.large.file.url, count=2)
-        # Small rendition
-        # Appers twice in the response - once in the image src attribute and once in the image srcset attribute
-        self.assertContains(response, self.small.file.url, count=2)
+        image = soup.find("img", class_="ons-image__img")
+        self.assertIsNotNone(image)
+        self.assertTrue(image.has_attr("srcset"))
+        self.assertTrue(image.has_attr("src"))
 
-        # Download link rendered by DS figure macro targets the large rendition
-        html = response.content.decode(response.charset or "utf-8", errors="replace")
-        soup = BeautifulSoup(html, "html.parser")
         download_link = soup.select_one("a[download]")
-
         self.assertIsNotNone(download_link)
+
+        # Large rendition used for download
+        # Appears twice in the response - once in the image srcset attribute and once in the download url rendered by
+        # DS figure macro
+        self.assertIn(self.large.file.url, image["srcset"])
         self.assertEqual(download_link.get("href"), self.large.file.url)
+
+        # Small rendition
+        # Appears twice in the response - once in the image src attribute and once in the image srcset attribute
+        self.assertIn(self.small.file.url, image["srcset"])
+        self.assertIn(self.small.file.url, image["src"])
 
         expected = filesizeformat(self.large.file.size)
         self.assertIn(f"({expected})", download_link.get_text(strip=True))
@@ -1357,3 +1434,59 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertNotContains(response, "Figure 1")
         self.assertNotContains(response, "The image title")
         self.assertNotContains(response, "The image subtitle")
+
+    def test_image_block_download_data_attributes_in_context(self):
+        """Verify expected GTM data attributes are present in image download context data."""
+        block = ImageBlock()
+        value = block.to_python(
+            {
+                "image": self.image.id,
+                "figure_title": "The image title",
+                "download": True,
+            }
+        )
+        request = get_dummy_request()
+        context = {
+            "block_id": "test-block-id",
+            "request": request,
+        }
+
+        result = block.get_context(value, parent_context=context)
+
+        download_item = result["options"]["download"]["itemsList"][0]
+        absolute_url = request.build_absolute_uri(self.large.url)
+        expected_file_extension = self.large.file.name.rsplit(".", maxsplit=1)[-1]
+        expected_file_name = urlparse(self.large.url).path.rsplit("/", maxsplit=1)[-1]
+        expected_link_text = f"{expected_file_extension.upper()} ({filesizeformat(self.large.file.size)})"
+        expected_attributes = {
+            "data-ga-event": "file-download",
+            "data-ga-file-extension": expected_file_extension,
+            "data-ga-file-name": expected_file_name,
+            "data-ga-link-text": expected_link_text,
+            "data-ga-link-url": urlparse(absolute_url).path,
+            "data-ga-link-domain": urlparse(absolute_url).hostname,
+            "data-ga-file-size": format_file_size_kb(self.large.file.size),
+        }
+
+        self.assertEqual(download_item["attributes"], expected_attributes)
+
+    def test_image_block_download_data_attributes_in_rendered_html(self):
+        """Verify image download GTM data attributes exist in the rendered HTML."""
+        page = self._make_information_page(download=True)
+        expected_file_extension = self.large.file.name.rsplit(".", maxsplit=1)[-1]
+
+        response = self.client.get(page.url)
+
+        soup = BeautifulSoup(response.content, "html.parser")
+        download_link = soup.find("a", href=self.large.file.url)
+        download_list_item = download_link.find_parent(class_="ons-list__item")
+        absolute_download_url = response.wsgi_request.build_absolute_uri(download_link.get("href"))
+        expected_file_name = urlparse(download_link.get("href")).path.rsplit("/", maxsplit=1)[-1]
+
+        self.assertEqual(download_list_item.get("data-ga-link-text"), download_link.get_text(strip=True))
+        self.assertEqual(download_list_item.get("data-ga-event"), "file-download")
+        self.assertEqual(download_list_item.get("data-ga-file-extension"), expected_file_extension)
+        self.assertEqual(download_list_item.get("data-ga-file-name"), expected_file_name)
+        self.assertEqual(download_list_item.get("data-ga-link-url"), urlparse(download_link.get("href")).path)
+        self.assertEqual(download_list_item.get("data-ga-link-domain"), urlparse(absolute_download_url).hostname)
+        self.assertEqual(download_list_item.get("data-ga-file-size"), format_file_size_kb(self.large.file.size))
