@@ -8,7 +8,7 @@ from threading import Lock
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
-from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
+from django.http import Http404, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import redirect as _redirect
 from wagtail import hooks
 
@@ -144,6 +144,11 @@ def serve_page_with_view_restrictions(
     StatisticalArticlePage editions), the rendered page's restrictions are never checked
     unless it is served through the hook chain, mirroring wagtail.views.serve.
     """
+    # The external environment has no auth machinery (no sessions, users, or auth
+    # backends), so view restrictions can never be satisfied there and evaluating them
+    # crashes on the missing request attributes. Treat restricted pages as not existing.
+    if settings.IS_EXTERNAL_ENV and page.get_view_restrictions().exists():
+        raise Http404
 
     def _serve(inner_page: Page, inner_request: HttpRequest, serve_args: Any, serve_kwargs: Any) -> HttpResponse:
         target = serve_callable if serve_callable is not None else inner_page.serve

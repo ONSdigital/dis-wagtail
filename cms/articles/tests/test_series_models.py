@@ -3,6 +3,7 @@ from http import HTTPStatus
 from urllib.parse import urlsplit
 
 from django.contrib.auth.models import Group
+from django.http import Http404
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -16,6 +17,7 @@ from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalAr
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.utils import TranslationResetMixin
+from cms.core.utils import serve_page_with_view_restrictions
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datavis.tests.factories import TableDataFactory
 from cms.users.tests.factories import UserFactory
@@ -1404,3 +1406,81 @@ class ArticleSeriesPagePrivacyTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertIn(f"next={self.edition_path}", response["Location"])
+
+
+class ExternalEnvArticleSeriesPrivacyTestCase(WagtailTestUtils, TestCase):
+    """The external environment has no auth machinery (no sessions, users, or auth
+    backends), so view restrictions can never be satisfied there - restricted editions
+    must be treated as not existing (404) rather than entering the restriction flow,
+    which would crash on the missing request attributes.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.series = ArticleSeriesPageFactory()
+        cls.public_edition = StatisticalArticlePageFactory(
+            parent=cls.series, title="Public edition", release_date=timezone.now().date()
+        )
+        cls.private_edition = StatisticalArticlePageFactory(
+            parent=cls.series,
+            title="Private edition",
+            release_date=timezone.now().date() + timezone.timedelta(days=1),
+        )
+        PageViewRestriction.objects.create(page=cls.private_edition, restriction_type=PageViewRestriction.LOGIN)
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_series_root_skips_restricted_latest_and_serves_latest_public_edition(self):
+        response = self.client.get(self.series.url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.public_edition.title)
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_restricted_edition_sub_routes_404(self):
+        private_url = f"{self.series.url}/editions/{self.private_edition.slug}"
+        for url in [
+            private_url,
+            f"{private_url}/related-data",
+            f"{private_url}/download-chart/some-chart",
+            f"{private_url}/download-table/some-table",
+        ]:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, HTTPStatus.NOT_FOUND)
+
+    def test_series_root_404_when_only_edition_is_restricted(self):
+        # Create the data before entering the external-env override: the DB router blocks
+        # writes while IS_EXTERNAL_ENV is active.
+        series = ArticleSeriesPageFactory()
+        restricted = StatisticalArticlePageFactory(parent=series, title="Only restricted edition")
+        PageViewRestriction.objects.create(page=restricted, restriction_type=PageViewRestriction.LOGIN)
+
+        with override_settings(IS_EXTERNAL_ENV=True):
+            self.assertEqual(self.client.get(series.url).status_code, HTTPStatus.NOT_FOUND)
+
+    def test_restricted_series_404s_on_all_routes(self):
+        """Directly-routed restricted pages are covered by the before_serve_page hook."""
+        PageViewRestriction.objects.create(page=self.series, restriction_type=PageViewRestriction.LOGIN)
+
+        with override_settings(IS_EXTERNAL_ENV=True):
+            for url in [self.series.url, f"{self.series.url}/editions/{self.public_edition.slug}"]:
+                with self.subTest(url=url):
+                    self.assertEqual(self.client.get(url).status_code, HTTPStatus.NOT_FOUND)
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_helper_raises_http404_not_attribute_error_without_auth_middleware(self):
+        """The real external-env request has no .user/.session attributes; the helper must
+        404 before wagtail's restriction check touches them.
+        """
+        request = RequestFactory().get(f"/{self.private_edition.slug}")
+
+        with self.assertRaises(Http404):
+            serve_page_with_view_restrictions(self.private_edition, request)
+
+    def test_internal_env_unaffected(self):
+        """Internally the restriction flow still runs: the restricted latest edition is
+        served as the restriction response, not skipped.
+        """
+        response = self.client.get(self.series.url)
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertIn("next=", response["Location"])

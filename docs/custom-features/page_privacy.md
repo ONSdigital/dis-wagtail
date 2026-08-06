@@ -84,6 +84,22 @@ The rule for any future routable page: if a `@path` method builds its response f
 `on_serve_page` check already covers it. Only wrap the call in `serve_page_with_view_restrictions` if the method
 delegates to a _different_ page's `serve()` or view methods.
 
+## Restricted pages in the external environment
+
+The external environment strips the entire auth stack: no `django.contrib.sessions`, no authentication middleware,
+and `AUTHENTICATION_BACKENDS` is empty. Requests there have no `.user` or `.session` attributes, so view
+restrictions can never be satisfied - evaluating them (wagtail's `accept_request`) raises `AttributeError`.
+Restricted pages are therefore treated as **not existing** (404) in the external environment, at three layers:
+
+- a `before_serve_page` hook (`cms/core/wagtail_hooks.py`) 404s any directly-routed page with view restrictions
+  when `IS_EXTERNAL_ENV` is set,
+- `serve_page_with_view_restrictions` applies the same guard for pages served indirectly through routable
+  sub-routes, and
+- `ArticleSeriesPage._servable_editions` filters editions with `.public()` in the external environment, so a
+  restricted latest edition is skipped (the series root serves the latest _public_ edition) rather than reached
+  at all. Internally the queryset keeps restricted editions so the restriction response is served, matching
+  direct-visit behaviour.
+
 ## Layered restrictions require multiple verification steps
 
 Page view restrictions are inherited: a page must satisfy its own restriction _and_ every restriction on its

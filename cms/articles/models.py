@@ -16,6 +16,7 @@ from wagtail.contrib.routable_page.models import path
 from wagtail.coreutils import WAGTAIL_APPEND_SLASH, resolve_model_string
 from wagtail.fields import RichTextField
 from wagtail.models import Page
+from wagtail.query import PageQuerySet
 from wagtail.search import index
 from wagtail.templatetags.wagtailcore_tags import richtext
 
@@ -121,10 +122,21 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         # TODO: update to include drafts when looking at previews holistically.
         return latest.summary if (latest := self.get_latest()) else ""
 
+    def _servable_editions(self) -> PageQuerySet:
+        """Live editions eligible for serving.
+
+        The external environment has no auth machinery, so view restrictions can never be
+        satisfied there - restricted editions are excluded so they 404 instead of crashing.
+        Internally, restricted editions are kept so the restriction response (password
+        form/login redirect) is served, matching direct-visit behaviour.
+        """
+        queryset: PageQuerySet = StatisticalArticlePage.objects.live().child_of(self)
+        if settings.IS_EXTERNAL_ENV:
+            queryset = queryset.public()
+        return queryset
+
     def get_latest(self) -> StatisticalArticlePage | None:
-        latest: StatisticalArticlePage | None = (
-            StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date").first()
-        )
+        latest: StatisticalArticlePage | None = self._servable_editions().order_by("-release_date").first()
         return latest
 
     @property
@@ -185,7 +197,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
     @path("editions/<str:slug>/")
     def release(self, request: HttpRequest, slug: str, **kwargs: Any) -> HttpResponse:
-        if not (edition := StatisticalArticlePage.objects.live().child_of(self).filter(slug=slug).first()):
+        if not (edition := self._servable_editions().filter(slug=slug).first()):
             raise Http404
         return serve_page_with_view_restrictions(edition, request, kwargs={**kwargs, "serve_as_edition": True})
 
@@ -201,7 +213,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
     @path("editions/<str:slug>/download-chart/<str:chart_id>/")
     def download_chart(self, request: HttpRequest, slug: str, chart_id: str) -> HttpResponse:
-        if not (edition := StatisticalArticlePage.objects.live().child_of(self).filter(slug=slug).first()):
+        if not (edition := self._servable_editions().filter(slug=slug).first()):
             raise Http404
         return serve_page_with_view_restrictions(
             edition, request, serve_callable=edition.download_chart, args=(chart_id,)
@@ -214,7 +226,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
     @path("editions/<str:slug>/download-table/<str:table_id>/")
     def download_table(self, request: HttpRequest, slug: str, table_id: str) -> HttpResponse:
-        if not (edition := StatisticalArticlePage.objects.live().child_of(self).filter(slug=slug).first()):
+        if not (edition := self._servable_editions().filter(slug=slug).first()):
             raise Http404
         return serve_page_with_view_restrictions(
             edition, request, serve_callable=edition.download_table, args=(table_id,)
