@@ -847,16 +847,20 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         return cast("HttpResponse", super().serve(request, *args, **kwargs))
 
     @cached_property
-    def cached_analytics_values(self) -> dict[str, str | bool]:
-        parent_series = self.get_parent()
-
-        values = {
-            "pageTitle": self.display_title,
-            "outputSeries": parent_series.slug,
+    def cached_link_analytics_values(self) -> dict[str, str]:
+        return {
+            "outputSeries": self.get_parent().slug,
             "outputEdition": self.slug,
             "releaseDate": format_date_for_gtm(self.release_date),
+        }
+
+    @cached_property
+    def cached_analytics_values(self) -> dict[str, str | bool]:
+        values: dict[str, str | bool] = {
+            "pageTitle": self.display_title,
             "latestRelease": bool_to_yes_no(self.is_latest),
-            "wordCount": self.word_count,
+            "wordCount": str(self.word_count),
+            **self.cached_link_analytics_values,
         }
 
         if self.next_release_date:
