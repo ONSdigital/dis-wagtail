@@ -97,9 +97,10 @@ const options = {
             options: {
               sourceMap: true,
               implementation: sass,
+              api: 'modern',
               sassOptions: {
                 outputStyle: 'compressed',
-                includePaths: [path.resolve(`${projectRoot}/static_src/sass`)],
+                loadPaths: [path.resolve(`${projectRoot}/static_src/sass`)],
               },
             },
           },

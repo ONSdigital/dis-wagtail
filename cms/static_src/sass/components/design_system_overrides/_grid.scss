@@ -4,7 +4,6 @@
 Adds custom gap values to match the designs
 */
 
-/* stylelint-disable selector-class-pattern */
 // Note that in the design system, this needs to be defined for all column and gap variations
 .ons-col-4\@m {
     @include media-query('m') {
@@ -13,4 +12,3 @@ Adds custom gap values to match the designs
         flex-basis: calc(33.333333333% - rem-sizing(40));
     }
 }
-/* stylelint-enable selector-class-pattern */
