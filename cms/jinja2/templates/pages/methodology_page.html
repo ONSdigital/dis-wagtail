@@ -1,7 +1,6 @@
 {% extends "templates/base_page.html" %}
 
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
-{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/list/_macro.njk" import onsList %}
 {% from "components/hero/_macro.njk" import onsHero %}
 
@@ -11,7 +10,7 @@
 {%- set contact_label = _("Contact:") -%}
 {%- set save_or_print_label = _("Save or print this page") -%}
 
-{% block header_area %}
+{% block hero %}
     {# fmt:off #}
     {% set publication_item = {
         "term": published_label,
@@ -57,16 +56,7 @@
     {% else %}
         {% set contact_item = None %}
     {% endif %}
-    {# fmt:on #}
 
-    {# fmt:off #}
-    {{
-        onsBreadcrumbs({
-            "ariaLabel": breadcrumbs_aria_label,
-            "itemsList": page.get_breadcrumbs(request=request),
-            "variant": 'grey'
-        })
-    }}
     {{
         onsHero({
             "topic": _("Methodology"),
@@ -85,7 +75,7 @@
     {# fmt:on #}
 {% endblock %}
 
-{% block main %}
+{% block mainContent %}
     <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--xl ons-js-table-of-contents-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
@@ -130,4 +120,5 @@
             {% endif %}
         </div>
     </div>
+    {% include "templates/components/back-to-top/back-to-top.html" %}
 {% endblock %}
