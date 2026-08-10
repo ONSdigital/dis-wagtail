@@ -52,7 +52,7 @@ class GetFormattedPagesListTests(TestCase):
         result = get_formatted_pages_list([page_dict])
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
-            "metadata": {"object": {"text": "Page"}},
+            "metadata": {},
             "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)
@@ -65,7 +65,7 @@ class GetFormattedPagesListTests(TestCase):
         result = get_formatted_pages_list([page_dict])
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
-            "metadata": {"object": {"text": "Page"}},
+            "metadata": {},
             "description": "<p>Listing summary</p>",
         }
         self.assertEqual(len(result), 1)
@@ -97,7 +97,6 @@ class GetFormattedPagesListTests(TestCase):
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
             "metadata": {
-                "object": {"text": "Page"},
                 "date": {
                     "prefix": "Released",
                     "showPrefix": True,
@@ -124,7 +123,6 @@ class GetFormattedPagesListTests(TestCase):
         expected_page1 = {
             "title": {"text": "Page One", "url": "https://ons.gov.uk"},
             "metadata": {
-                "object": {"text": "Page"},
                 "date": {
                     "prefix": "Released",
                     "showPrefix": True,
@@ -151,7 +149,7 @@ class GetFormattedPagesListTests(TestCase):
 
         expected = {
             "title": {"text": "Test Page", "url": "https://ons.gov.uk"},
-            "metadata": {"object": {"text": "Page"}},
+            "metadata": {},
             "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)
@@ -165,7 +163,7 @@ class GetFormattedPagesListTests(TestCase):
 
         expected = {
             "title": {"text": "Custom Title", "url": "https://ons.gov.uk"},
-            "metadata": {"object": {"text": "Page"}},
+            "metadata": {},
             "description": "<p>Test summary</p>",
         }
         self.assertEqual(len(result), 1)

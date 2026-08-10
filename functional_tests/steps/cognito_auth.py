@@ -4,7 +4,7 @@ from behave.runner import Context
 from django.conf import settings
 
 from cms.auth.utils import get_auth_config
-from functional_tests.step_helpers.auth_utils import AuthenticationTestHelper
+from functional_tests.step_helpers.auth_utils import CognitoAuthenticationTestHelper
 from functional_tests.step_helpers.utils import require_request
 from functional_tests.steps.page_editor import click_the_given_button
 
@@ -12,7 +12,7 @@ from functional_tests.steps.page_editor import click_the_given_button
 @given("the user is authenticated")
 def create_valid_tokens(context: Context) -> None:
     """Set up valid JWT tokens and authentication cookies for testing."""
-    helper = AuthenticationTestHelper(context)
+    helper = CognitoAuthenticationTestHelper(context)
     helper.setup_authenticated_user()
 
 

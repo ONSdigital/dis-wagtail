@@ -1,10 +1,11 @@
 from typing import Any
 
 from django import forms
-from wagtail.admin.forms import WagtailAdminPageForm
+
+from cms.core.forms import DeduplicateInlinePanelAdminForm
 
 
-class TopicPageAdminForm(WagtailAdminPageForm):
+class TopicPageAdminForm(DeduplicateInlinePanelAdminForm):
     topic_page_id = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -16,7 +17,9 @@ class TopicPageAdminForm(WagtailAdminPageForm):
     def clean(self) -> dict[str, Any] | None:
         cleaned_data: dict[str, Any] = super().clean()
 
-        # remove topic_page_id before save
         cleaned_data.pop("topic_page_id", None)
+
+        self.deduplicate_nullable_page_formset("related_articles")
+        self.deduplicate_nullable_page_formset("related_methodologies")
 
         return cleaned_data

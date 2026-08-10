@@ -209,7 +209,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         On drift, the approval is blocked with a `ValidationError` listing the
         changed fields, forcing the approver to reconfirm by submitting again.
         """
-        if not settings.BUNDLE_DATASET_METADATA_VALIDATION_ENABLED or "bundled_datasets" not in self.formsets:
+        if not settings.BUNDLE_DATASET_METADATA_VALIDATION_ENABLED or not self._has_datasets():
             return
 
         if not self.datasets_bundle_api_user_access_token:

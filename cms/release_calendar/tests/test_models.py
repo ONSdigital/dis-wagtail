@@ -342,6 +342,11 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
         BundleFactory(release_calendar_page=self.page, status=BundleStatus.APPROVED)
         self.assertIsInstance(self.page.get_lock(), ReleasePageInBundleReadyToBePublishedLock)
 
+    def test_active_bundles__includes_bundle_when_added_as_bundled_page(self):
+        """active_bundles must cover the BundlePage path, not only the release_calendar_page FK."""
+        bundle = BundleFactory(bundled_pages=[self.page])
+        self.assertIn(bundle, self.page.active_bundles)
+
 
 class ReleaseCalendarPageAdminTests(WagtailTestUtils, TestCase):
     @classmethod

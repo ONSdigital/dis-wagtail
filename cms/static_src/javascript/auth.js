@@ -21,11 +21,10 @@ if (configEl) {
 
 const {
   wagtailAdminHomePath,
-  csrfCookieName,
-  csrfHeaderName,
   sessionRenewalOffsetSeconds,
   authTokenRefreshUrl,
   idTokenCookieName,
+  csrfHeaderName,
 } = authConfig;
 
 const { origin } = window.location;
@@ -46,17 +45,18 @@ function getCookieByName(name) {
   return cookie ? cookie[1] : null;
 }
 
+function getCSRFToken() {
+  // CSRF cookie is httpOnly, so retrieve the value from the DOM.
+  return window.wagtailConfig
+    ? window.wagtailConfig.CSRF_TOKEN
+    : document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
 // Performs a fetch request with CSRF protection.
 const fetchWithCsrf = async (url, method = 'POST', body = null, additionalHeaders = {}) => {
-  const csrfToken = getCookieByName(csrfCookieName);
-  if (!csrfToken) {
-    console.error('[WAGTAIL] CSRF token not found.');
-    return null;
-  }
-
   const headers = {
     'Content-Type': 'application/json',
-    [csrfHeaderName]: csrfToken,
+    [csrfHeaderName]: getCSRFToken(),
     ...additionalHeaders,
   };
 
@@ -64,6 +64,7 @@ const fetchWithCsrf = async (url, method = 'POST', body = null, additionalHeader
     method,
     headers,
     credentials: 'include',
+    mode: 'same-origin',
     ...(body && { body: JSON.stringify(body) }),
   };
 

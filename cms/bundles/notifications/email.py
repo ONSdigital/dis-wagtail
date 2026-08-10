@@ -96,7 +96,7 @@ def _send_bundle_email(bundle: Bundle, team: Team, subject: str, email_template_
 def send_bundle_in_review_email(bundle_team: BundleTeam) -> None:
     """Send email notification to the team members when a bundle is ready for review."""
     bundle: Bundle = bundle_team.parent
-    team: Team = bundle_team.team  # type: ignore[assignment]
+    team: Team = bundle_team.team
     subject = f'Bundle "{bundle.name}" is ready for review'
 
     email_template_name = "bundle_in_review_email"
@@ -109,7 +109,7 @@ def send_bundle_in_review_email(bundle_team: BundleTeam) -> None:
 def send_bundle_published_email(bundle_team: BundleTeam) -> None:
     """Send email notification to the team members when a bundle is published."""
     bundle: Bundle = bundle_team.parent
-    team: Team = bundle_team.team  # type: ignore[assignment]
+    team: Team = bundle_team.team
     subject = f'Bundle "{bundle.name}" has been published'
 
     email_template_name = "bundle_published_email"

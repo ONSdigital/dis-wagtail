@@ -113,6 +113,80 @@ class InformationPageTestCase(WagtailTestUtils, TestCase):
         self.assertInHTML(str(RichText(self.page.summary)), response.content.decode(encoding="utf-8"))
         self.assertContains(response, self.page.content)
 
+    def test_has_equations(self):
+        """Test has_equations property."""
+        self.assertFalse(self.page.has_equations)
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Test Section",
+                    "content": [{"type": "equation", "value": {"equation": "$$y = mx + b$$"}}],
+                },
+            }
+        ]
+        del self.page.has_equations  # clear cached property
+        self.assertTrue(self.page.has_equations)
+
+    def test_has_iframe_visualisations(self):
+        """Test has_iframe_visualisations property."""
+        self.assertFalse(self.page.has_iframe_visualisations)
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Test Section",
+                    "content": [
+                        {
+                            "type": "iframe_visualisation",
+                            "value": {
+                                "iframe_source_url": "/visualisations/dvc/1",
+                                "accessible_label": "Bar chart of GDP per region",
+                                "audio_description": "GDP is highest in London and lowest in the North East.",
+                            },
+                        }
+                    ],
+                },
+            }
+        ]
+        del self.page.has_iframe_visualisations  # clear cached property
+        self.assertTrue(self.page.has_iframe_visualisations)
+
+    def test_content_scripts_not_loaded_without_relevant_blocks(self):
+        """MathJax and pym.js should not load when the page has no equation or iframe blocks."""
+        response = self.client.get(self.page_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertNotContains(response, "MathJax.js")
+        self.assertNotContains(response, "pym.min.js")
+
+    def test_content_scripts_loaded_for_relevant_blocks(self):
+        """MathJax and pym.js should load when the page has equation and iframe blocks."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Test Section",
+                    "content": [
+                        {"type": "equation", "value": {"equation": "$$y = mx + b$$"}},
+                        {
+                            "type": "iframe_visualisation",
+                            "value": {
+                                "iframe_source_url": "/visualisations/dvc/1",
+                                "accessible_label": "Bar chart of GDP per region",
+                                "audio_description": "GDP is highest in London and lowest in the North East.",
+                            },
+                        },
+                    ],
+                },
+            }
+        ]
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, "MathJax.js")
+        self.assertContains(response, "pym.min.js")
+
     def test_get_cached_paths(self):
         self.page.content = [
             {

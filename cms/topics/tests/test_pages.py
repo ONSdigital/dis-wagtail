@@ -205,7 +205,7 @@ class TopicPageTests(WagtailPageTestCase):
 
         response = self.client.get(self.page.url)
 
-        self.assertContains(response, "<h2>Time Series</h2>")
+        self.assertContains(response, "<h2>Time series</h2>")
         self.assertContains(response, '<section id="time-series"')
 
         self.assertContains(response, title)

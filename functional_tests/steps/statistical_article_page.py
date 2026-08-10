@@ -246,8 +246,8 @@ def user_adds_chart_to_content(context: Context) -> None:
 
     chart_region = page.get_by_role("region", name="Line chart")
     chart_region.get_by_role("textbox", name="Title*", exact=True).fill("Test Chart Title")
-    chart_region.get_by_role("textbox", name="Subtitle*").fill("Test Chart Subtitle")
-    chart_region.get_by_label("Audio description*").fill("This is the chart audio description")
+    chart_region.get_by_role("textbox", name="Subtitle").fill("Test Chart Subtitle")
+    chart_region.get_by_label("Accessible description*").fill("This is the chart audio description")
 
     # Wait for the table editor to be ready and fill in chart data
     page.wait_for_timeout(500)
@@ -259,9 +259,10 @@ def user_adds_table_with_pasted_content(context: Context) -> None:
     page.locator("#panel-child-content-content-content").get_by_role("button", name="Insert a block").nth(2).click()
     page.get_by_text("Table").last.click()
     page.locator('[data-contentpath="footnotes"] [role="textbox"]').fill("some footnotes")
-    page.get_by_role("region", name="Table", exact=True).get_by_label("Title").fill("The table title")
-    page.get_by_role("region", name="Table", exact=True).get_by_label("Sub-heading").fill("The caption")
-    page.get_by_role("region", name="Table", exact=True).get_by_label("Source").fill("The source")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Title", exact=True).fill("The table title")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Subtitle").fill("The subtitle")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Source text").fill("The source")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Accessible label").fill("The accessible label")
 
     tinymce = (
         page.get_by_role("region", name="Table", exact=True).locator('iframe[title="Rich Text Area"]').content_frame
@@ -279,7 +280,7 @@ def check_populated_data(locator):
     expect(locator.get_by_role("heading", name="The article page")).to_be_visible()
     expect(locator.get_by_text("Page summary")).to_be_visible()
     expect(locator.get_by_text("11 January 2025", exact=True)).to_be_visible()
-    expect(locator.get_by_role("heading", name="Cite this analysis")).to_be_visible()
+    expect(locator.get_by_role("heading", name="Cite this page")).to_be_visible()
 
     expect(locator.get_by_role("heading", name="Heading")).to_be_visible()
     expect(locator.get_by_role("heading", name="Content")).to_be_visible()
@@ -614,7 +615,7 @@ def user_fills_in_chart_title(context: Context) -> None:
 @step("the user fills in the chart audio description")
 def user_fills_in_chart_audio_description(context: Context) -> None:
     featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
-    featured_chart_content.get_by_label("Audio Description*").fill("This is the audio description")
+    featured_chart_content.get_by_label("Accessible description*").fill("This is the audio description")
 
 
 @step("the user enters data into the chart table")
@@ -730,6 +731,11 @@ def a_statistical_article_page_with_configured_listing_image_exists(
 @then("the page has a CSV download link for the chart")
 def the_page_has_a_csv_download_link_for_the_chart(context: Context) -> None:
     """Check that the page has a CSV download link for the chart."""
+    download_details = context.page.locator('.ons-js-details[id^="figure-downloads--"]')
+    # Wait for this class as it signifies the design system js has loaded, initialised and updated
+    # element roles and styles
+    expect(download_details).to_contain_class("ons-details--initialised")
+    download_details.get_by_text("Download: line chart").click()
     csv_download_link = context.page.get_by_role("link", name="Download CSV")
     expect(csv_download_link).to_be_visible()
 

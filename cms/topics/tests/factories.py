@@ -4,6 +4,7 @@ import factory
 import wagtail_factories
 from django.utils import timezone
 
+from cms.core.enums import RelatedMethodologyType
 from cms.home.models import HomePage
 from cms.taxonomy.tests.factories import TopicFactory
 from cms.topics.models import TopicPage, TopicPageRelatedArticle, TopicPageRelatedMethodology
@@ -44,4 +45,7 @@ class TopicPageRelatedMethodologyFactory(factory.django.DjangoModelFactory):
 
     parent = factory.SubFactory(TopicPageFactory)
     page = factory.SubFactory("cms.methodology.tests.factories.MethodologyPageFactory")
+    external_url = ""
+    title = ""
+    content_type = RelatedMethodologyType.METHODOLOGY
     sort_order = factory.Sequence(lambda n: n)

@@ -1,8 +1,8 @@
 from unittest import skip
 
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.test import RequestFactory, override_settings
-from django.utils import translation
 from wagtail.models import Site
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -21,10 +21,6 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
         cls.english_site = Site.objects.get(is_default_site=True)
         cls.welsh_site = Site.objects.get(root_page=cls.welsh_home)
 
-    def tearDown(self):
-        # Clear translation caches
-        translation.deactivate()
-
     def test_welsh_cookies_page_shows_localised_version_notice_by_default(self):
         request = RequestFactory().get(self.welsh_cookies_page.url)
         request.LANGUAGE_CODE = "cy"
@@ -40,35 +36,32 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
 
     def test_get_cookies_page(self):
         response = self.client.get(self.cookies_page.url)
+        soup = BeautifulSoup(response.content, "html.parser")
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            f"<title>Cookies on {settings.ONS_COOKIE_BANNER_SERVICE_NAME} - Office for National Statistics</title>",
+            "<title>Change your cookies choices - Office for National Statistics</title>",
             html=True,
         )
         self.assertContains(
             response,
-            f'<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Cookies '
-            f"on {settings.ONS_COOKIE_BANNER_SERVICE_NAME}</h1>",
+            '<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Change your cookies choices</h1>',
             html=True,
         )
         self.assertContains(response, "Cookie settings")
         # Check the breadcrumbs include the home page link
-        self.assertContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{self.english_site.root_url}">Home</a>',
-            html=True,
+        self.assertIsNotNone(
+            soup.find("a", class_="ons-breadcrumbs__link", href=self.english_site.root_url, string="Home")
         )
 
     def test_welsh_cookies_page_renders_translated_furniture(self):
         response = self.client.get(self.welsh_cookies_page.url, headers={"host": "cy.ons.localhost"})
+        soup = BeautifulSoup(response.content, "html.parser")
         self.assertEqual(response.status_code, 200)
 
         # Check the breadcrumbs include the home page link
-        self.assertContains(
-            response,
-            f'<a class="ons-breadcrumbs__link" href="{self.welsh_site.root_url}">Cartref</a>',
-            html=True,
+        self.assertIsNotNone(
+            soup.find("a", class_="ons-breadcrumbs__link", href=self.welsh_site.root_url, string="Cartref")
         )
 
     # TODO: Remove skip when translations for Cookies page are available

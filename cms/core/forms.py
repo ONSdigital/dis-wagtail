@@ -43,6 +43,27 @@ class DeduplicateInlinePanelAdminForm(WagtailAdminPageForm):
 
         return None
 
+    def deduplicate_nullable_page_formset(self, formset_name: str) -> None:
+        """Deduplicate InlinePanel page choices where the page field is nullable.
+
+        Unlike deduplicate_formset(), rows where page is None (external URL rows)
+        are skipped rather than marked for deletion.
+        """
+        formset = self.formsets.get(formset_name) if hasattr(self, "formsets") else None
+        if not formset:
+            return
+        seen: set = set()
+        for index, form in enumerate(formset.forms):
+            if not form.is_valid():
+                continue
+            page = form.clean().get("page")
+            if page is None:
+                continue
+            if page in seen:
+                formset.forms[index].cleaned_data["DELETE"] = True
+            else:
+                seen.add(page)
+
 
 class DeduplicateTopicsAdminForm(DeduplicateInlinePanelAdminForm):
     def clean(self) -> dict[str, Any] | None:

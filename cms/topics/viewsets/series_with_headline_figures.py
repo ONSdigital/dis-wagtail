@@ -15,6 +15,7 @@ from wagtail.admin.ui.tables.pages import PageStatusColumn
 from wagtail.admin.views.generic.chooser import ChooseResultsView, ChooseView, ChosenResponseMixin, ChosenViewMixin
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.coreutils import resolve_model_string
+from wagtail.log_actions import log
 
 from cms.articles.models import ArticleSeriesPage
 from cms.core.forms import NoLocaleFilterInChoosersForm
@@ -113,9 +114,28 @@ class SeriesWithHeadlineFiguresChooserMixin:
         self.paginator = self.paginator_class(objects, per_page=self.per_page)  # type: ignore[attr-defined]
         try:
             paginated: PaginatorPage[ArticleSeriesPage] = self.paginator.page(request.GET.get("p", 1))
-            return paginated
         except InvalidPage as e:
             raise Http404 from e
+
+        # Log the viewed headline figures
+        topic_page_id = request.GET.get("topic_page_id")
+        if topic_page_id:
+            topic_page_model = resolve_model_string("topics.TopicPage")
+            try:
+                topic_page = topic_page_model.objects.only("pk").get(pk=topic_page_id)
+                # The IDs do not contain sensitive information, so we can log them directly
+                figure_ids = [item.headline_figure["figure_id"] for item in paginated]
+                log(
+                    action="topics.headline_figures_chooser.view",
+                    instance=topic_page,
+                    data={
+                        "figure_ids": figure_ids,
+                    },
+                )
+            except topic_page_model.DoesNotExist:
+                pass
+
+        return paginated
 
     @property
     def title_column(self) -> SpecialTitleColumn:

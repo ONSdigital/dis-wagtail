@@ -32,6 +32,7 @@ class FutureReleaseCalendarMixin:
             Q(status__in=[ReleaseStatus.CANCELLED, ReleaseStatus.PUBLISHED])
             | Q(release_date__lt=timezone.now())
             | Q(bundles__status__in=ACTIVE_BUNDLE_STATUSES)
+            | Q(bundlepage__parent__status__in=ACTIVE_BUNDLE_STATUSES)
             | Q(alias_of__isnull=False)
         )
         pages: QuerySet[ReleaseCalendarPage] = (

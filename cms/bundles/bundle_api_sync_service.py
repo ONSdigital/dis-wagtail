@@ -21,6 +21,7 @@ from cms.bundles.utils import (
 
 if TYPE_CHECKING:
     from cms.bundles.models import Bundle, BundleDataset
+    from cms.datasets.models import Dataset
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +189,9 @@ class BundleAPISyncService:
             return
 
         # Build desired CMS view
-        cms_items: dict[str, BundleDataset] = {d.dataset.compound_id: d for d in self.bundled_datasets}
+        cms_items: dict[str, BundleDataset] = {
+            self._get_dataset_or_raise(d).compound_id: d for d in self.bundled_datasets
+        }
 
         # Fetch and index remote state
         api_contents = self.api_client.get_bundle_contents(self.api_id)
@@ -281,7 +284,8 @@ class BundleAPISyncService:
 
         etag = None
         for item in items:
-            content_item = build_content_item_for_dataset(item.dataset)
+            dataset = self._get_dataset_or_raise(item)
+            content_item = build_content_item_for_dataset(dataset)
             try:
                 # Client handles If-Match internally. We only read the returned ETag.
                 response = self.api_client.add_content_to_bundle(
@@ -290,14 +294,14 @@ class BundleAPISyncService:
                 )
                 etag = response["etag_header"]
 
-                content_id = extract_content_id_from_bundle_response(response, item.dataset)
+                content_id = extract_content_id_from_bundle_response(response, dataset)
                 if not content_id:
                     msg = (
                         f"Failed to add dataset to bundle in Bundle API. "
-                        f"Bundle API did not return a content ID for the added dataset - {item.dataset}"
+                        f"Bundle API did not return a content ID for the added dataset - {dataset}"
                     )
                     logger.error(
-                        msg, extra={"id": self.bundle.pk, "api_id": self.api_id, "dataset": item.dataset.compound_id}
+                        msg, extra={"id": self.bundle.pk, "api_id": self.api_id, "dataset": dataset.compound_id}
                     )
                     raise ValidationError(msg)
 
@@ -310,17 +314,25 @@ class BundleAPISyncService:
                         "id": self.bundle.pk,
                         "api_id": self.api_id,
                         "content_id": content_id,
-                        "dataset": item.dataset.compound_id,
+                        "dataset": dataset.compound_id,
                     },
                 )
             except BundleAPIClientError as e:
-                msg = f"Failed to add dataset to bundle in Bundle API - {item.dataset}"
+                msg = f"Failed to add dataset to bundle in Bundle API - {dataset}"
                 logger.exception(
-                    msg, extra={"id": self.bundle.pk, "api_id": self.api_id, "dataset": item.dataset.compound_id}
+                    msg, extra={"id": self.bundle.pk, "api_id": self.api_id, "dataset": dataset.compound_id}
                 )
                 raise ValidationError(msg) from e
 
         return etag
+
+    @staticmethod
+    def _get_dataset_or_raise(bundled_dataset: BundleDataset) -> Dataset:
+        """Return the linked dataset or raise if the relation is unexpectedly null."""
+        dataset: Dataset | None = bundled_dataset.dataset
+        if dataset is None:
+            raise ValidationError(f"Bundle dataset {bundled_dataset.pk} has no linked dataset")
+        return dataset
 
     def _delete_content_items(
         self,

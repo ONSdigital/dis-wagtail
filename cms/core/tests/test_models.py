@@ -7,7 +7,7 @@ from wagtail.test.utils.form_data import rich_text
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
-from cms.core.models import ContactDetails, Definition
+from cms.core.models import BasePage, ContactDetails, Definition
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.taxonomy.models import Topic
@@ -157,16 +157,34 @@ class PageBreadcrumbsTestCase(TestCase):
         breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
 
         # The articles index page is a non-navigable container, so it is excluded from the trail.
-        topic = self.series.get_parent().get_parent()
+        topic = self.series.get_parent().get_parent().specific
 
         expected_entries = [
             {
                 "url": self.statistical_article.get_site().root_url,
                 "text": "Home",
+                "attributes": {
+                    "data-ga-event": "navigation-click",
+                    "data-ga-navigation-type": "breadcrumb",
+                    "data-ga-link-text": "Home",
+                    "data-ga-click-content-type": "homepage",
+                    "data-ga-click-path": "/",
+                    "data-ga-click-position": 1,
+                },
             },
             {
                 "url": topic.get_full_url(request=self.dummy_request),
                 "text": topic.title,
+                "attributes": {
+                    "data-ga-event": "navigation-click",
+                    "data-ga-navigation-type": "breadcrumb",
+                    "data-ga-link-text": topic.title,
+                    "data-ga-click-content-type": topic.analytics_content_type,
+                    "data-ga-click-path": topic.get_url(request=self.dummy_request),
+                    "data-ga-click-position": 2,
+                    "data-ga-click-content-group": topic.analytics_content_group,
+                    "data-ga-click-content-theme": topic.analytics_content_theme,
+                },
             },
         ]
 
@@ -180,26 +198,84 @@ class PageBreadcrumbsTestCase(TestCase):
         breadcrumbs_output = self.statistical_article.get_breadcrumbs(request=self.dummy_request)
 
         # The articles index page is a non-navigable container, so it is excluded from the trail.
-        topic = self.series.get_parent().get_parent()
+        topic = self.series.get_parent().get_parent().specific
 
         expected_entries = [
             {
                 "url": self.statistical_article.get_site().root_url,
                 "text": "Home",
+                "attributes": {
+                    "data-ga-event": "navigation-click",
+                    "data-ga-navigation-type": "breadcrumb",
+                    "data-ga-link-text": "Home",
+                    "data-ga-click-content-type": "homepage",
+                    "data-ga-click-path": "/",
+                    "data-ga-click-position": 1,
+                },
             },
             {
                 "url": topic.get_full_url(request=self.dummy_request),
                 "text": topic.title,
+                "attributes": {
+                    "data-ga-event": "navigation-click",
+                    "data-ga-navigation-type": "breadcrumb",
+                    "data-ga-link-text": topic.title,
+                    "data-ga-click-content-type": topic.analytics_content_type,
+                    "data-ga-click-path": topic.get_url(request=self.dummy_request),
+                    "data-ga-click-position": 2,
+                    "data-ga-click-content-group": topic.analytics_content_group,
+                    "data-ga-click-content-theme": topic.analytics_content_theme,
+                },
             },
             {
                 "url": self.statistical_article.get_full_url(request=self.dummy_request),
                 "text": self.statistical_article.breadcrumb_title,
+                "attributes": {
+                    "data-ga-event": "navigation-click",
+                    "data-ga-navigation-type": "breadcrumb",
+                    "data-ga-link-text": self.statistical_article.breadcrumb_title,
+                    "data-ga-click-content-type": self.statistical_article.analytics_content_type,
+                    "data-ga-click-path": self.statistical_article.get_url(request=self.dummy_request),
+                    "data-ga-click-position": 3,
+                    "data-ga-click-content-group": self.statistical_article.analytics_content_group,
+                    "data-ga-click-content-theme": self.statistical_article.analytics_content_theme,
+                },
             },
         ]
 
         self.assertIsInstance(breadcrumbs_output, list)
         self.assertEqual(len(breadcrumbs_output), 3)
         self.assertListEqual(breadcrumbs_output, expected_entries)
+
+    def test_get_gtm_attributes_for_breadcrumbs_excludes_data_attributes_when_none(self):
+        """Test that data attributes are not included in GTM attributes when the page has no value for them."""
+
+        class DummyPage:
+            analytics_content_type = None
+            analytics_content_group = None
+            analytics_content_theme = None
+
+            @staticmethod
+            def get_url(request):
+                return "/dummy-path"
+
+        attributes = BasePage.get_gtm_attributes_for_breadcrumbs(
+            page=DummyPage(),
+            request=self.dummy_request,
+            link_text="Dummy",
+            position=1,
+        )
+
+        self.assertDictEqual(
+            attributes,
+            {
+                "data-ga-event": "navigation-click",
+                "data-ga-navigation-type": "breadcrumb",
+                "data-ga-link-text": "Dummy",
+                "data-ga-click-path": "/dummy-path",
+                "data-ga-click-position": 1,
+            },
+        )
 
 
 class CanonicalFullUrlsTestCase(TestCase):

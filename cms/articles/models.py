@@ -72,6 +72,8 @@ class ArticlesIndexPage(BasePage):  # type: ignore[django-manager-missing]
     # disables the "Promote" tab as we control the slug, and the page redirects
     promote_panels: ClassVar[list[Panel]] = []
 
+    label = None
+
     def clean(self) -> None:
         self.slug = "articles"
         super().clean()
@@ -98,7 +100,6 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
     parent_page_types: ClassVar[list[str]] = ["ArticlesIndexPage"]
     subpage_types: ClassVar[list[str]] = ["StatisticalArticlePage"]
-    preview_modes: ClassVar[list[str]] = []  # Disabling the preview mode due to it being a container page.
     page_description = "A container for statistical articles in a series."
     exclude_from_breadcrumbs = True
 
@@ -116,6 +117,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
             )
         ),
     ]
+
+    label = None
 
     @cached_property
     def summary(self) -> str:
@@ -154,6 +157,16 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         )
         return latest
 
+    @property
+    def preview_modes(self) -> list[tuple[str, str]]:
+        return [
+            ("default", "Previous releases"),
+        ]
+
+    def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        response: TemplateResponse = self.previous_releases(request, for_preview=True)
+        return response
+
     @path("")
     def latest_article(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         """Serves the latest statistical article page in the series."""
@@ -173,8 +186,13 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         return response
 
     @path("editions/")
-    def previous_releases(self, request: HttpRequest) -> TemplateResponse:
-        children = StatisticalArticlePage.objects.live().child_of(self).order_by("-release_date")
+    def previous_releases(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
+        for_preview = kwargs.pop("for_preview", False)
+        objects = StatisticalArticlePage.objects
+        if not for_preview:
+            # only show live pages if not in preview mode
+            objects = objects.live().public()
+        children = objects.child_of(self).order_by("-release_date", "-first_published_at")
         paginator = Paginator(children, per_page=settings.PREVIOUS_RELEASES_PER_PAGE)
 
         try:
@@ -263,7 +281,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
     subpage_types: ClassVar[list[str]] = []
     search_index_content_type: ClassVar[str] = "statistical_article"
     template = "templates/pages/statistical_article_page.html"
-    label = _("Article")  # type: ignore[assignment]
+    label = _("Article")
 
     # Fields
     news_headline = models.CharField(max_length=255, blank=True)
@@ -495,7 +513,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             if hasattr(block.block, "to_table_of_contents_items"):
                 items += block.block.to_table_of_contents_items(block.value)
         if self.show_cite_this_page:
-            items += [{"url": "#cite-this-page", "text": _("Cite this article")}]
+            items += [{"url": "#cite-this-page", "text": _("Cite this page")}]
         if self.contact_details_id:
             items += [{"url": "#contact-details", "text": _("Contact details")}]
         add_table_of_contents_gtm_attributes(items)
@@ -634,13 +652,21 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
                 "short": ons_date_format(self.release_date, "DATE_FORMAT"),
             }
 
+        return data
+
+    def as_featured_article_child_macro_data(self) -> dict[str, Any]:
+        """Returns child content data (chart or image) for the onsFeaturedArticle macro's caller block."""
+        data = {}
         if self.featured_chart:
-            chart_block = self.featured_chart[0]  # pylint: disable=unsubscriptable-object
+            chart_block = self.featured_chart[0]
             block_instance = chart_block.block
             block_value = chart_block.value
 
             if isinstance(block_instance, BaseChartBlock):
                 data["chart"] = block_instance.get_component_config(block_value)
+                data["chart"]["id"] = self.featured_chart[0].id  # pylint: disable=unsubscriptable-object
+                # Featured article should not display downloads
+                data["chart"]["download"] = None
 
         elif self.listing_image:
             data["image"] = {
@@ -709,6 +735,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         ]
 
     def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
+        self._log_preview(request, mode_name)
         match mode_name:
             case "related_data":
                 return cast("TemplateResponse", self.related_data(request))
@@ -717,7 +744,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
                 topic_page_class = resolve_model_string("topics.TopicPage")
                 topic_page = topic_page_class.objects.ancestor_of(self).first()
                 return cast("TemplateResponse", topic_page.serve(request, featured_item=self))
-        return cast("TemplateResponse", super().serve_preview(request, mode_name))
+        return super().serve_preview(request, mode_name)
 
     @path("versions/<int:version>/")
     def previous_version(self, request: HttpRequest, version: int, **kwargs: Any) -> TemplateResponse | HttpResponse:
