@@ -1,6 +1,7 @@
-from typing import TYPE_CHECKING, ClassVar, Self, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
 
 from django.conf import settings
+from django.db import transaction
 from django.http import HttpRequest
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -17,6 +18,7 @@ from cms.core.cache import get_default_cache_control_decorator
 from cms.core.forms import DeduplicateTopicsAdminForm, ONSCopyForm
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.query import order_by_pk_position
+from cms.core.signals import page_title_changed
 from cms.locale.utils import get_mapped_site_root_paths
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 
@@ -107,6 +109,23 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     def permissions_for_user(self, user: User) -> BasePagePermissionTester:
         """Override the permission tester class to use for our page models."""
         return BasePagePermissionTester(user, self)
+
+    @transaction.atomic
+    def save(  # type: ignore[override]
+        self, clean: bool = True, user: User | None = None, log_action: bool = False, **kwargs: Any
+    ) -> Self | None:
+        original_values = type(self).objects.values("title", "slug").filter(pk=self.pk).first() if self.pk else None
+
+        instance: Self | None = super().save(  # type: ignore[call-arg]
+            clean=clean, user=user, log_action=log_action, **kwargs
+        )
+
+        if original_values and self.title != original_values["title"] and self.slug == original_values["slug"]:
+            # The title has changed, but not the slug.
+            # The slug change is already handled by the `page_slug_changed` signal.
+            transaction.on_commit(lambda: page_title_changed.send(sender=type(self), instance=self))
+
+        return instance
 
     @cached_property
     def related_pages(self) -> PageQuerySet:
