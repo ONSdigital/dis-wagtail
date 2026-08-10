@@ -216,7 +216,7 @@ def executor_stop_and_wait(progress: bool = False) -> None:
             last_running_threads = len(running_threads)
 
             if not shutdown_notified and time.monotonic() >= shutdown_notify_at:
-                logger.warning(
+                logger.error(
                     "Post-publish actions still running at shutdown",
                     extra={
                         "event": "post_publish_action_shutdown_timeout",
