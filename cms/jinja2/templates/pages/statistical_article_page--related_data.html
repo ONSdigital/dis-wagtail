@@ -1,20 +1,12 @@
 {% extends "templates/base_page.html" %}
 
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
-{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/pagination/_macro.njk" import onsPagination %}
 
-{% block header_area %}
+{% block hero %}
     {%- set hero_topic = _("Related data") -%}
     {# fmt:off #}
-    {{
-        onsBreadcrumbs({
-            "ariaLabel": breadcrumbs_aria_label,
-            "itemsList": page.get_breadcrumbs(request=request),
-            "variant": 'grey'
-        })
-    }}
     {{
         onsHero({
             "topic": hero_topic,
@@ -27,7 +19,7 @@
     {# fmt:on #}
 {% endblock %}
 
-{% block main %}
+{% block mainContent %}
     <div class="ons-grid ons-js-table-of-contents-container">
         <div class="ons-grid__col ons-col-8@m">
             {{ onsDocumentList({"documents": paginated_datasets}) }}
@@ -47,4 +39,5 @@
             {% endblock %}
         </div>
     </div>
+    {% include "templates/components/back-to-top/back-to-top.html" %}
 {% endblock %}

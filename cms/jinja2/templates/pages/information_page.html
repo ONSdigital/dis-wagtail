@@ -1,6 +1,5 @@
 {% extends "templates/base_page.html" %}
 
-{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/related-content/_macro.njk" import onsRelatedContent %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
@@ -24,15 +23,8 @@
     -%}
 {# fmt:on #}
 
-{% block header_area %}
+{% block hero %}
     {# fmt:off #}
-    {{
-        onsBreadcrumbs({
-            "ariaLabel": breadcrumbs_aria_label,
-            "itemsList": page.get_breadcrumbs(request=request),
-            "variant": 'grey'
-        })
-    }}
     {{
         onsHero({
             "title": page.title,
@@ -50,7 +42,7 @@
     {# fmt:on #}
 {% endblock %}
 
-{% block main %}
+{% block mainContent %}
     <div class="ons-grid ons-grid-flex-gap ons-grid-flex-gap--xl ons-js-table-of-contents-container">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
@@ -70,4 +62,5 @@
             {% include_block page.content %}
         </div>
     </div>
+    {% include "templates/components/back-to-top/back-to-top.html" %}
 {% endblock %}

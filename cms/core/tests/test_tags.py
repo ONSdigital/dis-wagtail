@@ -331,11 +331,31 @@ class PageConfigTestCase(TestCase):
         self.assertEqual(config["bodyClasses"], "template-home-page")
         self.assertEqual(config["title"], f"Office for National Statistics - {self.page.title}")
         self.assertEqual(config["meta"]["canonicalUrl"], "https://ons.localhost/")
+        self.assertEqual(config["description"], "")
         self.assertEqual(config["absoluteUrl"], "http://ons.localhost:443/")
-
+        self.assertEqual(config["mainColClasses"], "ons-u-mb-5xl")
+        self.assertEqual(config["header"]["variants"], "basic")
+        self.assertEqual(config["header"]["mastheadLogoUrl"], "/")
+        self.assertEqual(config["header"]["phase"], {"badge": "Beta", "html": "This is a new service."})
         self.assertEqual(
             config["header"]["search"],
             {"id": "search", "form": {"action": "/search", "inputName": "q"}},
+        )
+        self.assertEqual(
+            config["footer"]["oglLink"],
+            {
+                "pre": "All content is available under the",
+                "text": "Open Government Licence v3.0",
+                "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+                "post": ", except where otherwise stated",
+            },
+        )
+        self.assertEqual(config["header"]["menuLinks"]["id"], "nav-links-external")
+        self.assertEqual(config["header"]["menuLinks"]["ariaLabel"], "Menu links navigation")
+        self.assertEqual(config["header"]["menuLinks"]["ariaListLabel"], "Menu links")
+        self.assertEqual(
+            config["header"]["menuLinks"]["toggleMenuButton"],
+            {"text": "Menu", "ariaLabel": "Toggle menu"},
         )
 
     def test_welsh_page_config(self):
@@ -368,10 +388,16 @@ class PageConfigTestCase(TestCase):
 
         self.assertEqual(config["bodyClasses"], "")
         self.assertEqual(config["title"], "not found - Office for National Statistics")
-        self.assertEqual(len(config["header"]["language"]["languages"]), 2)
+        self.assertEqual(config["description"], "")
+        self.assertEqual(config["mainColClasses"], "ons-u-mb-5xl")
+        self.assertEqual(config["absoluteUrl"], "http://ons.localhost:443/")
         self.assertEqual(config["meta"]["canonicalUrl"], "http://ons.localhost:443/")
         self.assertEqual(len(config["meta"]["hrefLangs"]), 2)
-        self.assertEqual(config["absoluteUrl"], "http://ons.localhost:443/")
+        self.assertEqual(config["meta"]["hrefLangs"][0]["lang"], "en-gb")
+
+        self.assertEqual(len(config["header"]["language"]["languages"]), 2)
+        self.assertEqual(config["header"]["language"]["languages"][0]["isoCode"], "en")
+        self.assertEqual(config["header"]["language"]["languages"][0]["current"], True)
 
     def test_config_no_page_title(self):
         with self.assertNumQueries(6):
