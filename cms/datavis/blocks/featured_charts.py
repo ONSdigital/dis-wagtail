@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from wagtail import blocks
 from wagtail.blocks import StreamBlock
 
 from cms.datavis.blocks.charts import (
@@ -7,6 +12,10 @@ from cms.datavis.blocks.charts import (
     LineChartBlock,
     ScatterPlotBlock,
 )
+from cms.datavis.blocks.iframe import IframeBlock
+
+if TYPE_CHECKING:
+    from wagtail.blocks import StreamValue
 
 
 class FeaturedLineChartBlock(LineChartBlock):
@@ -136,6 +145,32 @@ class FeaturedAreaChartBlock(AreaChartBlock):
         ]
 
 
+class FeaturedIframeBlock(IframeBlock):
+    """Featured chart variant of IframeBlock with simplified fields."""
+
+    # Featured charts are displayed below the article title, so the title is
+    # optional and should not duplicate the article title.
+    title = blocks.CharBlock(
+        required=False,
+        label="Featured chart title",
+        help_text="This input field should not duplicate the article title as this will be displayed above.",
+    )
+
+    # Override fields to remove unwanted options for featured charts.
+    figure_number = None
+    subtitle = None
+    caption = None
+    footnotes = None
+
+    class Meta:
+        form_layout = [  # noqa
+            "title",
+            "accessible_label",
+            "audio_description",
+            "iframe_source_url",
+        ]
+
+
 class FeaturedChartBlock(StreamBlock):
     line_chart = FeaturedLineChartBlock(label="Line Chart")
     bar_column_chart = FeaturedBarColumnChartBlock(label="Bar/Column Chart")
@@ -144,6 +179,8 @@ class FeaturedChartBlock(StreamBlock):
     )
     scatter_plot = FeaturedScatterPlotBlock(label="Scatter Plot")
     area_chart = FeaturedAreaChartBlock(label="Area Chart")
-    # TODO: enable iframe once supported by the Design System, see
-    # https://github.com/ONSdigital/design-system/pull/3641
-    # iframe = ONSEmbedBlock(label="Iframe Embed")
+    iframe = FeaturedIframeBlock(label="Iframe Visualisation")
+
+    def has_iframe_visualisations(self, value: StreamValue) -> bool:
+        """Return whether the featured chart contains an iframe visualisation."""
+        return any(block.block_type == "iframe" for block in value)
