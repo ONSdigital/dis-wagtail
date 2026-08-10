@@ -30,6 +30,19 @@ class ExecutorTestCase(TestCase):
         self.assertIsNot(executor._executor, original_executor)
         self.assertIsNot(executor._support_executor, original_support_executor)
 
+        # Orignal executors will still exist in original thread
+        self.assertFalse(original_executor._shutdown)
+        self.assertFalse(original_support_executor._shutdown)
+
+    def test_reset_after_fork(self):
+        original_executor = executor._executor
+        original_support_executor = executor._support_executor
+
+        executor.reset_after_fork()
+
+        self.assertIsNot(executor._executor, original_executor)
+        self.assertIsNot(executor._support_executor, original_support_executor)
+
         self.assertTrue(original_executor._shutdown)
         self.assertTrue(original_support_executor._shutdown)
 

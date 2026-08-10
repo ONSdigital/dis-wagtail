@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 import traceback
 from collections.abc import Callable
@@ -132,6 +133,19 @@ def flush_executor() -> None:
 
     _executor = _build_executor()
     _support_executor = _build_support_executor()
+
+
+def _reset_executors_after_fork() -> None:
+    """Rebuild executors in child process after a fork."""
+    global _executor, _support_executor  # noqa: PLW0603 # pylint: disable=global-statement
+
+    _bundle_notification_futures.clear()
+
+    _executor = _build_executor()
+    _support_executor = _build_support_executor()
+
+
+os.register_at_fork(after_in_child=_reset_executors_after_fork)
 
 
 def run_in_executor[**P](fn: Callable[P, None], *args: P.args, **kwargs: P.kwargs) -> Future:
