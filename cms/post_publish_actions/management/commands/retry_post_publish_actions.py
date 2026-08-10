@@ -6,6 +6,7 @@ from typing import Any
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
 from cms.core.db_router import force_write_db
@@ -17,6 +18,12 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Retry post-publish actions which have failed or timed out"
 
+    def _get_failed_actions(self) -> PostPublishActionQuerySet:
+        return PostPublishAction.objects.active().filter(
+            enqueued_at__lte=timezone.now() - timedelta(seconds=settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS * 2),
+            status__in=[PostPublishActionStatus.RUNNING, PostPublishActionStatus.FAILED, PostPublishActionStatus.READY],
+        )
+
     def _get_actions_to_retry(self) -> PostPublishActionQuerySet:
         """Find the actions to be retried.
         An action should be retried if:
@@ -25,13 +32,27 @@ class Command(BaseCommand):
             - It hasn't run yet (also unlikely).
             - It is marked as failed.
         """
-        return PostPublishAction.objects.active().filter(
-            enqueued_at__lte=timezone.now() - timedelta(seconds=settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS * 2),
-            status__in=[PostPublishActionStatus.RUNNING, PostPublishActionStatus.FAILED, PostPublishActionStatus.READY],
+        return self._get_failed_actions().filter(
+            retry_count__lt=settings.BUNDLE_POST_PUBLISH_MAX_RETRIES,
+        )
+
+    def _get_exhausted_actions(self) -> PostPublishActionQuerySet:
+        """Find the actions which have exhausted their retries."""
+        return self._get_failed_actions().filter(
+            retry_count__gte=settings.BUNDLE_POST_PUBLISH_MAX_RETRIES,
         )
 
     @force_write_db()
     def handle(self, *args: Any, **options: Any) -> None:
+        if exhausted_action_ids := list(self._get_exhausted_actions().values_list("pk", flat=True)):
+            logger.error(
+                "Post-publish actions have exhausted their retries",
+                extra={
+                    "event": "post_publish_action_retries_exhausted",
+                    "exhausted_action_ids": exhausted_action_ids,
+                    "max_retries": settings.BUNDLE_POST_PUBLISH_MAX_RETRIES,
+                },
+            )
         actions_to_retry = self._get_actions_to_retry()
 
         actions_to_retry_ids: set[int] = set(actions_to_retry.values_list("pk", flat=True))
@@ -50,6 +71,8 @@ class Command(BaseCommand):
                 duration=None,
                 finished_at=None,
                 timed_out_at=None,
+                enqueued_at=start_time,
+                retry_count=F("retry_count") + 1,
             )
 
         while (

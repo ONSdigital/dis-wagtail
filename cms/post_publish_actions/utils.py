@@ -106,6 +106,7 @@ def run_post_publish_actions_for(page: Page, bundle: Bundle | None) -> None:
             defaults={
                 "status": PostPublishActionStatus.READY,
                 "finished_at": None,
+                "retry_count": 0,
             },
         )
 

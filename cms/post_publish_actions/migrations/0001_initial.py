@@ -24,6 +24,7 @@ class Migration(migrations.Migration):
                 ("duration", models.DurationField(null=True)),
                 ("finished_at", models.DateTimeField(null=True)),
                 ("timed_out_at", models.DateTimeField(null=True)),
+                ("retry_count", models.PositiveSmallIntegerField(default=0)),
                 (
                     "bundle",
                     models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to="bundles.bundle"),

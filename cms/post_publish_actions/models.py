@@ -77,6 +77,7 @@ class PostPublishAction(models.Model):
     duration = models.DurationField(null=True)
     finished_at = models.DateTimeField(null=True)
     timed_out_at = models.DateTimeField(null=True)
+    retry_count = models.PositiveSmallIntegerField(default=0)
 
     objects = PostPublishActionQuerySet.as_manager()
 
