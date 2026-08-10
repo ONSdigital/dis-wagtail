@@ -86,9 +86,11 @@ class PostPublishAction(models.Model):
             models.UniqueConstraint(
                 fields=["bundle", "page", "action_type"],
                 condition=models.Q(bundle__isnull=False),
-                name="bundle_page_type",
+                name="post_publish_actions_bundle_page_type",
             ),
-            models.UniqueConstraint(fields=["page", "action_type"], condition=models.Q(bundle=None), name="page_type"),
+            models.UniqueConstraint(
+                fields=["page", "action_type"], condition=models.Q(bundle=None), name="post_publish_actions_page_type"
+            ),
         ]
 
     def __str__(self) -> str:

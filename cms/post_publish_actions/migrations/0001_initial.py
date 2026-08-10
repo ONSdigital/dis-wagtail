@@ -35,10 +35,12 @@ class Migration(migrations.Migration):
                     models.UniqueConstraint(
                         condition=models.Q(("bundle__isnull", False)),
                         fields=("bundle", "page", "action_type"),
-                        name="bundle_page_type",
+                        name="post_publish_actions_bundle_page_type",
                     ),
                     models.UniqueConstraint(
-                        condition=models.Q(("bundle", None)), fields=("page", "action_type"), name="page_type"
+                        condition=models.Q(("bundle", None)),
+                        fields=("page", "action_type"),
+                        name="post_publish_actions_page_type",
                     ),
                 ],
             },
