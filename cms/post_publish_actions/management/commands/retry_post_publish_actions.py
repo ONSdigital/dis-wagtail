@@ -30,7 +30,7 @@ class Command(BaseCommand):
             status__in=[PostPublishActionStatus.RUNNING, PostPublishActionStatus.FAILED, PostPublishActionStatus.READY],
         )
 
-    @force_write_db
+    @force_write_db()
     def handle(self, *args: Any, **options: Any) -> None:
         actions_to_retry = self._get_actions_to_retry()
 
