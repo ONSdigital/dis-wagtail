@@ -109,6 +109,7 @@ def user_adds_an_empty_section(context: Context) -> None:
     context.page.get_by_title("Insert a block").click()
     expect(context.page.get_by_label("Section heading*")).to_be_visible()
 
+
 @then("the methodology page mandatory fields raise validation errors")
 def mandatory_fields_raise_validation_error_when_not_set(context: Context) -> None:
     # Covers the top-level page fields only. An entirely empty content StreamField is not
