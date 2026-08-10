@@ -46,8 +46,8 @@ class PostPublishActionQuerySet(models.QuerySet):
     def failed(self) -> Self:
         return self.completed().filter(status=PostPublishActionStatus.FAILED)
 
-    def count_for_bundle(self, bundle_id: int | Bundle) -> int:
-        return self.filter(bundle=bundle_id).count()
+    def count_for_bundle(self, bundle: int | Bundle) -> int:
+        return self.filter(bundle=bundle).count()
 
     def mark_timed_out(self) -> int:
         now = timezone.now()
