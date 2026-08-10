@@ -215,16 +215,16 @@ def executor_stop_and_wait(progress: bool = False) -> None:
             )
             last_running_threads = len(running_threads)
 
-            if not shutdown_notified and time.monotonic() >= shutdown_notify_at:
-                logger.error(
-                    "Post-publish actions still running at shutdown",
-                    extra={
-                        "event": "post_publish_action_shutdown_timeout",
-                        "thread_count": len(running_threads),
-                        "thread_ids": [t.native_id for t in running_threads],
-                        "thread_names": [t.name for t in running_threads],
-                    },
-                )
-                shutdown_notified = True
+        if not shutdown_notified and time.monotonic() >= shutdown_notify_at:
+            logger.error(
+                "Post-publish actions still running at shutdown",
+                extra={
+                    "event": "post_publish_action_shutdown_timeout",
+                    "thread_count": len(running_threads),
+                    "thread_ids": [t.native_id for t in running_threads],
+                    "thread_names": [t.name for t in running_threads],
+                },
+            )
+            shutdown_notified = True
 
         time.sleep(0.1)
