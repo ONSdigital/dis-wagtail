@@ -39,7 +39,7 @@ _support_executor = _build_support_executor()
 logger = logging.getLogger(__name__)
 
 
-def _executor_wrapper[**P](executor_fn: Callable[P, None], *args: P.args, **kwargs: P.kwargs) -> Any:
+def _executor_wrapper[**P](executor_fn: Callable[P, None], *args: P.args, **kwargs: P.kwargs) -> None:
     close_old_connections()
 
     try:
