@@ -39,7 +39,7 @@ class ExecutorTestCase(TestCase):
         original_executor = executor._executor
         original_support_executor = executor._support_executor
 
-        executor.reset_after_fork()
+        executor._reset_executors_after_fork()
 
         self.assertIsNot(executor._executor, original_executor)
         self.assertIsNot(executor._support_executor, original_support_executor)
