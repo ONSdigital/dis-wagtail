@@ -146,11 +146,11 @@ class Command(BaseCommand):
             )
             if not_done:
                 logger.error(
-                    "Timed out waiting for post publish actions",
+                    "Timed out waiting for post-publish actions",
                     extra={"event": "post_publish_action_timeout", "outstanding_actions": len(not_done)},
                 )
             else:
                 logger.info(
-                    "All post publish actions completed",
+                    "All post-publish actions completed",
                     extra={"event": "post_publish_notifications_complete", "action_count": len(done)},
                 )

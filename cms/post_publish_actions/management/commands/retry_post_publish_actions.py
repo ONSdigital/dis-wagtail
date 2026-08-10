@@ -65,7 +65,7 @@ class Command(BaseCommand):
         if actions_to_retry_ids:
             PostPublishAction.objects.pending().filter(id__in=actions_to_retry_ids).mark_timed_out()
             logger.error(
-                "Post publish actions timeout",
+                "Post-publish actions timeout",
                 extra={
                     "outstanding_action_ids": list(actions_to_retry_ids),
                 },

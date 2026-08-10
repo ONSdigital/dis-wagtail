@@ -5,7 +5,6 @@ from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, wait
 from datetime import timedelta
 from functools import partial
-from typing import Any
 
 from django.conf import settings
 from django.db import close_old_connections
@@ -45,7 +44,7 @@ def _executor_wrapper[**P](executor_fn: Callable[P, None], *args: P.args, **kwar
     try:
         executor_fn(*args, **kwargs)
     except Exception:  # pylint: disable=broad-exception-caught
-        logger.exception("Unhandled exception in post publish actions")
+        logger.exception("Unhandled exception in post-publish actions")
     finally:
         close_old_connections()
 
@@ -68,12 +67,12 @@ def run_action(
     action.save(update_fields=["status"])
 
     # use `specific` to ensure pages are cast to their subclass
-    # guarantees class attributes are available in post publish actions
+    # guarantees class attributes are available in post-publish actions
     page = Page.objects.get(id=page_id).specific
     bundle = Bundle.objects.get(id=bundle_id)
 
     logger.info(
-        "Starting publish action",
+        "Starting post-publish action",
         extra={
             "page_id": page_id,
             "bundle_id": bundle_id,
@@ -92,7 +91,7 @@ def run_action(
     except Exception as e:  # pylint: disable=broad-exception-caught
         duration = time.perf_counter() - start_time
         logger.exception(
-            "Publish action failed",
+            "Post-publish action failed",
             extra={
                 "page_id": page_id,
                 "bundle_id": bundle_id,
@@ -109,7 +108,7 @@ def run_action(
     else:
         duration = time.perf_counter() - start_time
         logger.info(
-            "Publish action successful",
+            "Post-publish action successful",
             extra={
                 "page_id": page_id,
                 "bundle_id": bundle_id,

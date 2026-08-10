@@ -350,7 +350,7 @@ class BundleStatusNotificationsTestCase(TestCase):
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
     def test_notify_slack_of_post_publish_end__failed_post_publish_actions(self, mock_send):
-        """A failed publish that errors on post publish actions must show red even if publish succeeds."""
+        """A failed publish that errors on post-publish actions must show red even if publish succeeds."""
         start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
         end_time = datetime(2026, 2, 17, 10, 0, 1, 234000, tzinfo=UTC)
         message_timestamp = "1503435956.000247"

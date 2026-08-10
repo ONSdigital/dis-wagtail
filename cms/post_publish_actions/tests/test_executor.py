@@ -112,7 +112,7 @@ class ExecutorTestCase(TestCase):
         with self.assertLogs("cms.post_publish_actions.executor", level=logging.ERROR) as logs:
             executor.run_in_executor(raises).result(timeout=10)
 
-        self.assertIn("Unhandled exception in post publish actions", logs.output[0])
+        self.assertIn("Unhandled exception in post-publish actions", logs.output[0])
         self.assertIn("ValueError: Failed", logs.output[0])
 
         # executor still works

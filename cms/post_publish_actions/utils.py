@@ -61,7 +61,7 @@ def as_completed_actions_by_bundle(
 
 @force_write_db()
 def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_failed: bool = False) -> None:
-    """Notifies slack when all post publish actions are completed."""
+    """Notifies slack when all post-publish actions are completed."""
     as_completed_collector = GeneratorCollector(as_completed_actions_by_bundle([bundle], start_time))
 
     # Consume the generator
@@ -71,7 +71,7 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_f
     if as_completed_collector.value:
         outstanding_actions = PostPublishAction.objects.pending().filter(bundle=bundle).mark_timed_out()
         logger.error(
-            "Post publish actions timeout",
+            "Post-publish actions timeout",
             extra={
                 "unfinished_bundles": [bundle.pk],
                 "outstanding_actions": outstanding_actions,
