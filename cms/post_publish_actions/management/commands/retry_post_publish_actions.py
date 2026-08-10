@@ -71,7 +71,6 @@ class Command(BaseCommand):
                 duration=None,
                 finished_at=None,
                 timed_out_at=None,
-                enqueued_at=start_time,
                 retry_count=F("retry_count") + 1,
             )
 

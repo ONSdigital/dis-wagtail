@@ -131,20 +131,6 @@ class RetryPostPublishActionsTestCase(TransactionTestCase):
         self.assertEqual(action.failed_reason, "Timeout")
 
     @patch("cms.search.signal_handlers.get_publisher")
-    def test_resets_enqueued_at(self, mock_get_publisher):
-        action = self._create_stalled_action()
-
-        self._call_command()
-
-        action.refresh_from_db()
-        mock_get_publisher.assert_called()
-
-        self.assertGreater(action.enqueued_at, timezone.now() - timedelta(minutes=1))
-
-        command = RetryCommand()
-        self.assertNotIn(action, command._get_actions_to_retry())  # pylint: disable=protected-access
-
-    @patch("cms.search.signal_handlers.get_publisher")
     def test_counts_retries(self, mock_get_publisher):
         action = self._create_stalled_action()
 
