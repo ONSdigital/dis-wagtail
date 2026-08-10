@@ -20,7 +20,6 @@ from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STAT
 from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.datasets.models import ONSDataset
 from cms.datasets.utils import get_dataset_for_published_state, update_dataset_metadata
-from cms.workflows.models import ReadyToPublishGroupTask
 from cms.workflows.utils import is_page_ready_to_publish
 
 from .bundle_api_sync_service import BundleAPISyncService
@@ -302,12 +301,8 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             if page := form.clean().get("page"):
                 has_pages = True
                 page = page.specific
-                workflow_state = page.current_workflow_state
 
-                if not (
-                    workflow_state
-                    and isinstance(workflow_state.current_task_state.task.specific, ReadyToPublishGroupTask)
-                ):
+                if not is_page_ready_to_publish(page):
                     form.add_error("page", "This page is not ready to be published")
                     num_pages_not_ready += 1
 
