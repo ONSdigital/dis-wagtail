@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
+from cms.core.db_router import force_write_db
 from cms.post_publish_actions.models import PostPublishAction, PostPublishActionQuerySet, PostPublishActionStatus
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ class Command(BaseCommand):
             status__in=[PostPublishActionStatus.RUNNING, PostPublishActionStatus.FAILED, PostPublishActionStatus.READY],
         )
 
+    @force_write_db
     def handle(self, *args: Any, **options: Any) -> None:
         actions_to_retry = self._get_actions_to_retry()
 
