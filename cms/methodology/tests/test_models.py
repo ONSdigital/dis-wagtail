@@ -162,6 +162,26 @@ class MethodologyPageCSVDownloadTestCase(WagtailTestUtils, TestCase):
         table = self.page.get_table("test-table-id-2")
         self.assertEqual(table["title"], "Test Table 2")
 
+    def test_get_cached_paths(self):
+        """Test get_cached_paths includes downloadable table/chart block paths."""
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Table Section",
+                    "content": [
+                        {
+                            "type": "table",
+                            "value": make_table_block_value(title="Test Table 1"),
+                            "id": "test-table-id",
+                        },
+                    ],
+                },
+            }
+        ]
+
+        self.assertEqual(self.page.get_cached_paths(), ["/", "/download-table/test-table-id"])
+
     def test_get_table_returns_empty_dict_when_not_found(self):
         """Test get_table returns empty dict when table_id is not found."""
         self.page.content = [
