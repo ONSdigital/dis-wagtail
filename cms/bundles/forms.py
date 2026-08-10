@@ -21,6 +21,7 @@ from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.datasets.models import ONSDataset
 from cms.datasets.utils import get_dataset_for_published_state, update_dataset_metadata
 from cms.workflows.models import ReadyToPublishGroupTask
+from cms.workflows.utils import is_page_ready_to_publish
 
 from .bundle_api_sync_service import BundleAPISyncService
 
@@ -319,6 +320,15 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 f"page{pluralize(num_pages_not_ready)} not ready to be published."
             )
 
+    def _validate_release_calendar_page_status(self) -> None:
+        release_calendar_page = self.cleaned_data["release_calendar_page"]
+        if not release_calendar_page:
+            return
+
+        if not is_page_ready_to_publish(release_calendar_page):
+            error = "This page is not ready to be published"
+            raise ValidationError({"release_calendar_page": error})
+
     def _validate_publication_date(self) -> None:
         release_calendar_page = self.cleaned_data["release_calendar_page"]
         publication_date = self.cleaned_data["publication_date"]
@@ -373,6 +383,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
             # ensure all bundled pages are ready to publish
             self._validate_bundled_pages_status()
+
+            # enusure the release calendar page is ready to publish
+            self._validate_release_calendar_page_status()
 
             # ensure all bundled datasets are approved (the function will check if the API is enabled)
             self._validate_bundled_datasets_status()

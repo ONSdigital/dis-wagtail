@@ -242,12 +242,17 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     def can_be_approved(self) -> bool:
         """Determines whether the bundle can be approved.
 
-        That is, the bundle is in review and all the bundled pages are ready to publish.
+        That is, the bundle is in review, all the bundled pages and the release calendar page are ready to publish.
         """
         if self.status != BundleStatus.IN_REVIEW:
             return False
 
-        return all(is_page_ready_to_publish(page) for page in self.get_bundled_pages())
+        bundled_pages_ready = all(is_page_ready_to_publish(page) for page in self.get_bundled_pages())
+        release_calendar_page_ready = not self.release_calendar_page or is_page_ready_to_publish(
+            self.release_calendar_page
+        )
+
+        return bundled_pages_ready and release_calendar_page_ready
 
     @property
     def is_ready_to_be_published(self) -> bool:
