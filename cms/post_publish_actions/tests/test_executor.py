@@ -4,6 +4,7 @@ import time
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
+from django.test.utils import override_settings
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.tests.factories import BundleFactory
@@ -130,6 +131,20 @@ class ExecutorTestCase(TestCase):
 
         # executor still works
         executor.run_in_executor(lambda: None).result(timeout=10)
+
+    @override_settings(BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS=executor.SHUTDOWN_MESSAGE_BUFFER_SECONDS)
+    def test_stop_and_wait_reports_actions_running_at_timeout(self):
+        executor.run_in_executor(time.sleep, 1)
+
+        with self.assertLogs("cms.post_publish_actions.executor", level=logging.ERROR) as logs:
+            executor.executor_stop_and_wait()
+
+        self.assertEqual(len(logs.output), 1)
+        self.assertIn("Post-publish actions still running at shutdown", logs.output[0])
+
+        # should keep waiting for the difference between BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS
+        # and SHUTDOWN_MESSAGE_BUFFER_SECONDS
+        self.assertFalse(any(t.is_alive() for t in executor._executor._threads))
 
 
 class RunActionTestCase(TransactionTestCase):

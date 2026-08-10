@@ -17,6 +17,8 @@ from cms.core.db_router import force_write_db
 from .models import PostPublishAction, PostPublishActionStatus, PostPublishActionType
 from .registry import ActionHandler
 
+SHUTDOWN_MESSAGE_BUFFER_SECONDS = 5
+
 
 def _build_executor() -> ThreadPoolExecutor:
     return ThreadPoolExecutor(
@@ -196,6 +198,11 @@ def executor_stop_and_wait(progress: bool = False) -> None:
     # Add 1 to force a print the first time around
     last_running_threads = len(executor_threads) + 1
 
+    shutdown_notify_at = time.monotonic() + max(
+        settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS - SHUTDOWN_MESSAGE_BUFFER_SECONDS, 0
+    )
+    shutdown_notified = False
+
     while running_threads := [t for t in executor_threads if t.is_alive()]:
         if progress and last_running_threads > len(running_threads):
             logger.info(
@@ -207,5 +214,17 @@ def executor_stop_and_wait(progress: bool = False) -> None:
                 },
             )
             last_running_threads = len(running_threads)
+
+            if not shutdown_notified and time.monotonic() >= shutdown_notify_at:
+                logger.warning(
+                    "Post-publish actions still running at shutdown",
+                    extra={
+                        "event": "post_publish_action_shutdown_timeout",
+                        "thread_count": len(running_threads),
+                        "thread_ids": [t.native_id for t in running_threads],
+                        "thread_names": [t.name for t in running_threads],
+                    },
+                )
+                shutdown_notified = True
 
         time.sleep(0.1)
