@@ -24,8 +24,7 @@ from cms.bundles.notifications.slack import (
 from cms.core.fields import StreamField
 from cms.post_publish_actions.executor import run_bundle_notification_in_support_executor, run_in_support_executor
 from cms.post_publish_actions.models import PostPublishAction
-from cms.post_publish_actions.signal_handlers import suppress_post_publish_actions_signal
-from cms.post_publish_actions.utils import run_post_publish_actions_for
+from cms.post_publish_actions.signal_handlers import enqueue_post_publish_actions_for_bundle
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.utils import get_translated_string
 
@@ -446,12 +445,9 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:  # py
             with transaction.atomic(durable=True):
                 PostPublishAction.objects.filter(bundle=bundle, page=page).delete()
                 if workflow_state := page.current_workflow_state:
-                    with suppress_post_publish_actions_signal():
+                    with enqueue_post_publish_actions_for_bundle(bundle):
                         # finish the workflow
                         workflow_state.current_task_state.approve()
-
-                        # Run post-publish actions manually to sure the correct bundle is detected.
-                        run_post_publish_actions_for(page, bundle)
 
                     pages_published += 1
                     logger.info(
@@ -459,12 +455,9 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:  # py
                         extra={"bundle_id": bundle.pk, "page_id": page.pk, "event": "publish_bundle_page"},
                     )
                 elif page.latest_revision:
-                    with suppress_post_publish_actions_signal():
+                    with enqueue_post_publish_actions_for_bundle(bundle):
                         # just run publish
                         page.latest_revision.publish(log_action="wagtail.publish.scheduled")
-
-                        # Run post-publish actions manually to sure the correct bundle is detected.
-                        run_post_publish_actions_for(page, bundle)
 
                     pages_published += 1
                     logger.info(
@@ -639,11 +632,3 @@ def in_active_bundle(item: Model) -> bool:
 def in_bundle_ready_to_be_published(item: Model) -> bool:
     active_bundle: Bundle | None = getattr(item, "active_bundle", None)
     return active_bundle is not None and active_bundle.is_ready_to_be_published
-
-
-def get_active_bundle_for_page(item: Page) -> Bundle | None:
-    from .mixins import BundledPageMixin  # pylint: disable=import-outside-toplevel
-
-    if isinstance(item, BundledPageMixin):
-        return item.active_bundle
-    return None
