@@ -22,6 +22,10 @@ from cms.bundles.notifications.slack import (
     notify_slack_of_publish_end,
 )
 from cms.core.fields import StreamField
+from cms.post_publish_actions.executor import run_bundle_notification_in_support_executor, run_in_support_executor
+from cms.post_publish_actions.models import PostPublishAction
+from cms.post_publish_actions.signal_handlers import suppress_post_publish_actions_signal
+from cms.post_publish_actions.utils import run_post_publish_actions_for
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.utils import get_translated_string
 
@@ -400,9 +404,13 @@ def update_bundle_linked_release_calendar_page(bundle: Bundle) -> None:
         page.status = ReleaseStatus.PUBLISHED
         revision = page.save_revision(log_action=True)
         revision.publish()
+        logger.info(
+            "Updated release calendar page linked to bundle",
+            extra={"bundle_id": bundle.pk, "page_id": page.pk, "event": "release_calendar_page_updated"},
+        )
 
 
-def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
+def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:  # pylint: disable=too-many-statements # noqa
     """Publishes a given bundle.
 
     This means it publishes the related pages, as well as updates the linked release calendar.
@@ -420,7 +428,9 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     start_time = timezone.now()
 
     # Send publishing started notification
-    notify_slack_of_publication_start(
+    run_bundle_notification_in_support_executor(
+        bundle.pk,
+        notify_slack_of_publication_start,
         bundle=bundle,
         start_time=bundle.scheduled_publication_date or start_time,
         url=bundle.full_inspect_url,
@@ -434,14 +444,33 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
         try:
             # Durable ensures no other savepoint will roll back the publish
             with transaction.atomic(durable=True):
+                PostPublishAction.objects.filter(bundle=bundle, page=page).delete()
                 if workflow_state := page.current_workflow_state:
-                    # finish the workflow
-                    workflow_state.current_task_state.approve()
+                    with suppress_post_publish_actions_signal():
+                        # finish the workflow
+                        workflow_state.current_task_state.approve()
+
+                        # Run post-publish actions manually to sure the correct bundle is detected.
+                        run_post_publish_actions_for(page, bundle)
+
                     pages_published += 1
+                    logger.info(
+                        "Published page by approving its workflow",
+                        extra={"bundle_id": bundle.pk, "page_id": page.pk, "event": "publish_bundle_page"},
+                    )
                 elif page.latest_revision:
-                    # just run publish
-                    page.latest_revision.publish(log_action="wagtail.publish.scheduled")
+                    with suppress_post_publish_actions_signal():
+                        # just run publish
+                        page.latest_revision.publish(log_action="wagtail.publish.scheduled")
+
+                        # Run post-publish actions manually to sure the correct bundle is detected.
+                        run_post_publish_actions_for(page, bundle)
+
                     pages_published += 1
+                    logger.info(
+                        "Published page from its latest revision",
+                        extra={"bundle_id": bundle.pk, "page_id": page.pk, "event": "publish_bundle_page"},
+                    )
                 else:
                     failed_pages.append(page.pk)
                     logger.error(
@@ -452,7 +481,8 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                             "event": "publish_page_failed",
                         },
                     )
-                    alert_slack_of_bundle_content_failure(
+                    run_in_support_executor(
+                        alert_slack_of_bundle_content_failure,
                         bundle=bundle,
                         exception_message=f"<{page.full_edit_url}|Page (ID: {page.pk})> in the bundle did not "
                         "publish because it is not in a workflow or has no revisions",
@@ -468,7 +498,8 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
                     "event": "publish_page_failed",
                 },
             )
-            alert_slack_of_bundle_content_failure(
+            run_in_support_executor(
+                alert_slack_of_bundle_content_failure,
                 bundle=bundle,
                 exception_message=f"<{page.full_edit_url}|Page (ID: {page.pk})> in the bundle failed to publish",
             )
@@ -497,17 +528,23 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
             failure_status = BundleStatus.PARTIALLY_PUBLISHED
             alert_type = BundleAlertType.FAIL
 
+            logger.error(
+                "Some pages failed to publish",
+                extra={"bundle_id": bundle.pk, "event": "bundle_publish_partial_failure"},
+            )
+
         # Always update status on failures
         bundle.status = failure_status
         bundle.save(update_fields=["status"])
 
         # Send failure notification
         end_time = timezone.now()
-        notify_slack_of_bundle_failure(
+        run_bundle_notification_in_support_executor(
+            bundle.pk,
+            notify_slack_of_bundle_failure,
             bundle=bundle,
             start_time=start_time,
             end_time=end_time,
-            pages_published=pages_published,
             exception_message=f"{len(failed_pages)} of {total_pages} page(s) failed to publish",
             alert_type=alert_type,
         )
@@ -530,17 +567,27 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:
     if update_status and (pages_published > 0 or bundle.has_datasets):
         bundle.status = BundleStatus.PUBLISHED
         bundle.save(update_fields=["status"])
+        logger.info(
+            "Bundle status set to published", extra={"bundle_id": bundle.pk, "event": "bundle_status_published"}
+        )
 
     # Send publishing ended notification
-    notify_slack_of_publish_end(
+    end_time = timezone.now()
+    run_bundle_notification_in_support_executor(
+        bundle.pk,
+        notify_slack_of_publish_end,
         bundle=bundle,
         start_time=start_time,
-        end_time=timezone.now(),
-        pages_published=pages_published,
+        end_time=end_time,
         url=bundle.full_inspect_url,
     )
 
+    publish_duration = (end_time - start_time).total_seconds()
     log(action="wagtail.publish.scheduled", instance=bundle)
+    logger.info(
+        "Bundle published",
+        extra={"bundle_id": bundle.pk, "duration": round(publish_duration * 1000, 3), "event": "publish_succeeded"},
+    )
     return True
 
 
@@ -592,3 +639,11 @@ def in_active_bundle(item: Model) -> bool:
 def in_bundle_ready_to_be_published(item: Model) -> bool:
     active_bundle: Bundle | None = getattr(item, "active_bundle", None)
     return active_bundle is not None and active_bundle.is_ready_to_be_published
+
+
+def get_active_bundle_for_page(item: Page) -> Bundle | None:
+    from .mixins import BundledPageMixin  # pylint: disable=import-outside-toplevel
+
+    if isinstance(item, BundledPageMixin):
+        return item.active_bundle
+    return None

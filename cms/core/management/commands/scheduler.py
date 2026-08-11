@@ -33,7 +33,9 @@ class Command(BaseCommand):
     def shutdown(self, _signum: int | None = None, _frame: Any | None = None) -> None:
         """Shutdown handler."""
         if self.scheduler.running:
-            self.scheduler.shutdown(wait=False)
+            # Don't abandon running bundle publishes
+            # Bounded by runtime termination grace period
+            self.scheduler.shutdown(wait=True)
 
     def add_management_command(self, command_name: str, trigger: CronTrigger, **kwargs: Any) -> None:
         """Adds the given management command to the list of scheduled jobs."""

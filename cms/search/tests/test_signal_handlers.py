@@ -6,11 +6,12 @@ from wagtail.models import Locale, Page, PageViewRestriction
 from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
+from cms.bundles.tests.factories import BundleFactory
 from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.release_calendar.models import ReleaseCalendarIndex
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
-from cms.search.signal_handlers import build_old_descendant_path
+from cms.search.signal_handlers import build_old_descendant_path, update_index_post_publish_action
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.themes.tests.factories import ThemePageFactory
 from cms.topics.tests.factories import TopicPageFactory
@@ -671,3 +672,33 @@ class SearchSignalsTest(TestCase):
                 call(cy_alias, old_url_path=en_before.url_path),
             ]
         )
+
+
+class UpdateIndexPostPublishActionTests(TestCase):
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_bundle_publish_indexes_aliases(self, mock_get_publisher):
+        page = StatisticalArticlePageFactory()
+        alias = page.create_alias(parent=page.get_parent(), update_slug="aliased_article")
+        bundle = BundleFactory()
+
+        update_index_post_publish_action(page, bundle)
+
+        published_ids = sorted(
+            c.args[0].pk for c in mock_get_publisher.return_value.publish_created_or_updated.call_args_list
+        )
+        self.assertEqual(published_ids, [page.pk, alias.pk])
+
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_non_bundle_publish_does_not_walk_aliases(self, mock_get_publisher):
+        """Sync publishing indexes aliases via their own page_published signal,
+        so we don't walk the alias tree for non-bundle publishes.
+        """
+        page = StatisticalArticlePageFactory()
+        page.create_alias(parent=page.get_parent(), update_slug="aliased_article")
+
+        update_index_post_publish_action(page, None)
+
+        published_ids = sorted(
+            c.args[0].pk for c in mock_get_publisher.return_value.publish_created_or_updated.call_args_list
+        )
+        self.assertEqual(published_ids, [page.pk])
