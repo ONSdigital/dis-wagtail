@@ -16,10 +16,11 @@ from cms.core.blocks import (
 from cms.core.blocks.embeddable import ImageBlock
 from cms.core.blocks.equation import EquationBlock
 from cms.core.blocks.markup import ONSTableBlock
+from cms.core.blocks.stream_blocks import StoryBlockMixin
 from cms.datavis.blocks import IframeBlock
 
 if TYPE_CHECKING:
-    from wagtail.blocks import StreamValue, StructValue
+    from wagtail.blocks import StructValue
 
 
 class CoreSectionContentBlock(StreamBlock):
@@ -63,14 +64,10 @@ class CoreSectionBlock(StructBlock):
         return [{"url": "#" + slugify(value["title"]), "text": value["title"]}]
 
 
-class CoreStoryBlock(StreamBlock):
+class CoreStoryBlock(StoryBlockMixin, StreamBlock):
     """The core section StreamField block definition."""
 
     section = CoreSectionBlock()
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"
-
-    def has_equations(self, value: StreamValue) -> bool:
-        """Checks if there are any equation blocks."""
-        return any(block.value["content"].first_block_by_name(block_name="equation") is not None for block in value)
