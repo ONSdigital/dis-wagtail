@@ -201,6 +201,23 @@ class BundleAdminFormTestCase(TestCase):
         self.assertIsNone(form.cleaned_data["approved_by"])
         self.assertIsNone(form.cleaned_data["approved_at"])
 
+    def test_clean__validates_release_calendar_must_be_ready_for_review(self):
+        nowish = timezone.now() + timedelta(minutes=5)
+        release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish)
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.save(update_fields=["release_calendar_page"])
+
+        data = self._setup_bundle()
+        data["release_calendar_page"] = release_calendar_page.id
+        data["status"] = BundleStatus.APPROVED
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(data), for_user=self.approver)
+
+        self.assertFalse(form.is_valid())
+
+        error = "This page is not ready to be published"
+        self.assertFormError(form, "release_calendar_page", [error])
+
     def test_clean__validates_release_calendar_page_or_publication_date(self):
         nowish = timezone.now() + timedelta(minutes=5)
         release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish)

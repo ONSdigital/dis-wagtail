@@ -57,6 +57,16 @@ class BundleModelTestCase(TestCase):
         mark_page_as_ready_to_publish(self.statistical_article, UserFactory())
         self.assertTrue(self.bundle.can_be_approved)
 
+    def test_can_be_approved__with_release_calendar_page(self):
+        release_calendar_page = ReleaseCalendarPageFactory()
+        self.bundle.release_calendar_page = release_calendar_page
+
+        self.bundle.status = BundleStatus.IN_REVIEW
+        self.assertFalse(self.bundle.can_be_approved)
+
+        mark_page_as_ready_to_publish(release_calendar_page, UserFactory())
+        self.assertTrue(self.bundle.can_be_approved)
+
     def test_get_bundled_pages(self):
         """Test get_bundled_pages returns correct queryset."""
         BundlePageFactory(parent=self.bundle, page=self.statistical_article)
