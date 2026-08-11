@@ -22,7 +22,10 @@ def look_up_and_select_published_dataset(context: Context) -> None:
     dataset_displayed_fields = {
         "title": mock_dataset["title"],
         "description": mock_dataset["description"],
+        # The two destinations a looked up dataset can resolve to. Which one is correct depends on
+        # the page doing the linking, so scenarios assert it with one of the steps below.
         "url": f"/datasets/{mock_dataset['dataset_id']}",
+        "latest_version_url": (f"/datasets/{mock_dataset['dataset_id']}/editions/{mock_dataset['edition']}/versions/"),
     }
 
     context.selected_datasets = [
@@ -137,6 +140,24 @@ def check_selected_datasets_are_displayed(context: Context) -> None:
     for dataset in context.selected_datasets:
         expect(context.page.get_by_role("link", name=dataset["title"])).to_be_visible()
         expect(context.page.get_by_text(dataset["description"])).to_be_visible()
+
+
+@then("the looked up dataset links to the dataset series page")
+def check_dataset_links_to_series_page(context: Context) -> None:
+    """The series page shows the most recent edition, so no edition appears in the link."""
+    dataset = context.selected_datasets[0]
+    expect(context.page.get_by_role("link", name=dataset["title"])).to_have_attribute("href", dataset["url"])
+
+
+@then("the looked up dataset links to the latest version of the edition")
+def check_dataset_links_to_latest_version_of_edition(context: Context) -> None:
+    """The link names the edition and stops at "versions/", which the website resolves to the
+    latest published version of that edition.
+    """
+    dataset = context.selected_datasets[0]
+    expect(context.page.get_by_role("link", name=dataset["title"])).to_have_attribute(
+        "href", dataset["latest_version_url"]
+    )
 
 
 @then("unpublished datasets are shown by default in the dataset chooser")
