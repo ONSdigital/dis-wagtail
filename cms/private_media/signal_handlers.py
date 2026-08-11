@@ -7,6 +7,9 @@ from django.db.models.functions import Cast
 from wagtail.models import Page, ReferenceIndex
 from wagtail.signals import published, unpublished
 
+from cms.bundles.models import Bundle
+from cms.post_publish_actions.models import PostPublishActionType
+from cms.post_publish_actions.registry import register_post_publish_action
 from cms.private_media.constants import Privacy
 from cms.private_media.models import PrivateImageMixin
 from cms.private_media.utils import get_private_media_models
@@ -15,12 +18,7 @@ if TYPE_CHECKING:
     from django.db.models import Model
 
 
-def publish_media_on_publish(instance: Model, **kwargs: Any) -> None:
-    """Signal handler to be connected to the 'page_published' and 'published'
-    signals for all publishable models. It is responsible for identifying any
-    privacy-controlled media used by the object, and ensuring that it is also
-    made public.
-    """
+def _publish_media(instance: Model) -> None:
     for model_class in get_private_media_models():
         model_ct = ContentType.objects.get_for_model(model_class)
         referenced_pks = (
@@ -41,6 +39,20 @@ def publish_media_on_publish(instance: Model, **kwargs: Any) -> None:
                 f"The manager for {model_class.__name__} is missing a bulk_make_public() method implementation. "
                 "Did you override the manager class and forget to subclass PrivateMediaModelManager?",
             )
+
+
+def publish_media_on_publish(instance: Model, **kwargs: Any) -> None:
+    """Signal handler to be connected to the 'published' signal for all
+    publishable models. It is responsible for identifying any privacy-controlled
+    media used by the object, and ensuring that it is also made public.
+    """
+    # NB: Pages are handled by post-publish actions.
+    if not isinstance(instance, Page):
+        _publish_media(instance)
+
+
+def publish_media_post_publish_action(page: Page, _bundle: Bundle | None) -> None:
+    _publish_media(page)
 
 
 def unpublish_media_on_unpublish(instance: Model, **kwargs: Any) -> None:
@@ -108,3 +120,5 @@ def register_signal_handlers() -> None:
     """Register signal handlers for models using the private media system."""
     published.connect(publish_media_on_publish, dispatch_uid="publish_media")
     unpublished.connect(unpublish_media_on_unpublish, dispatch_uid="unpublish_media")
+
+    register_post_publish_action(PostPublishActionType.S3_ACL, publish_media_post_publish_action)
