@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from wagtail.models import Page
-from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move
+from wagtail.signals import page_slug_changed, page_unpublished, post_page_move
 
 from cms.bundles.models import Bundle
 from cms.post_publish_actions.models import PostPublishActionType
@@ -18,15 +18,9 @@ logger = logging.getLogger(__name__)
 
 @post_publish_action(PostPublishActionType.SEARCH_UPDATED)
 def update_index_post_publish_action(page: Page, _bundle: Bundle | None) -> None:
+    
     if is_indexable_page(page):
         get_publisher().publish_created_or_updated(page)
-
-
-@receiver(page_published)
-def on_page_published(sender: type[Page], instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
-    """Called whenever a Wagtail Page is published (UI or code).
-    instance is the published Page object.
-    """
 
 
 @receiver(page_unpublished)
