@@ -31,19 +31,19 @@ class Command(BaseCommand):
         )
 
     def _get_failed_actions(self) -> PostPublishActionQuerySet:
+        """Find the actions that failed:
+            - It was enqueued 2x the timeout ago.
+            - It is marked as currently running (because of the above, it probably isn't).
+            - It hasn't run yet (also unlikely).
+            - It is marked as failed.
+        """
         return PostPublishAction.objects.active().filter(
             enqueued_at__lte=timezone.now() - timedelta(seconds=settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS * 2),
             status__in=[PostPublishActionStatus.RUNNING, PostPublishActionStatus.FAILED, PostPublishActionStatus.READY],
         )
 
     def _get_actions_to_retry(self) -> PostPublishActionQuerySet:
-        """Find the actions to be retried.
-        An action should be retried if:
-            - It was enqueued 2x the timeout ago.
-            - It is marked as currently running (because of the above, it probably isn't).
-            - It hasn't run yet (also unlikely).
-            - It is marked as failed.
-        """
+        # Get all failed actions (see _get_failed_actions) that have not reached the max retry count
         return self._get_failed_actions().filter(
             retry_count__lt=settings.BUNDLE_POST_PUBLISH_MAX_RETRIES,
         )
