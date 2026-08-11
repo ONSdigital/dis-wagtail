@@ -50,17 +50,24 @@ class DatasetStoryBlock(StreamBlock):
         label="Manually Linked Dataset",
     )
 
-    def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
+    class Meta:
+        # Overridden per field: release calendar pages pass True so that looked up datasets link to
+        # the latest published version of the chosen edition rather than the dataset series page.
+        link_to_latest_version = False
+
+    def clean(self, value: StreamValue) -> StreamValue:
         cleaned_value = super().clean(value)
 
         # Validate there are no duplicate datasets,
         # including between manual and looked up datasets referencing the same URL
 
-        # For each dataset URL path, record the indices of the blocks it appears in
+        # For each dataset URL path, record the indices of the blocks it appears in.
+        # Looked up datasets are compared by the destination they resolve to for this page rather
+        # than by dataset ID, because the same dataset can resolve to different destinations.
         url_paths = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
             url_path = (
-                block.value.url_path
+                block.value.get_url_path(link_to_latest_version=self.meta.link_to_latest_version)
                 if block.block_type == "dataset_lookup"
                 else extract_url_path(block.value["url"]).lower()
             )
