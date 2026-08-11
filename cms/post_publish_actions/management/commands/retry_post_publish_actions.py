@@ -32,10 +32,10 @@ class Command(BaseCommand):
 
     def _get_failed_actions(self) -> PostPublishActionQuerySet:
         """Find the actions that failed:
-            - It was enqueued 2x the timeout ago.
-            - It is marked as currently running (because of the above, it probably isn't).
-            - It hasn't run yet (also unlikely).
-            - It is marked as failed.
+        - It was enqueued 2x the timeout ago.
+        - It is marked as currently running (because of the above, it probably isn't).
+        - It hasn't run yet (also unlikely).
+        - It is marked as failed.
         """
         return PostPublishAction.objects.active().filter(
             enqueued_at__lte=timezone.now() - timedelta(seconds=settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS * 2),
