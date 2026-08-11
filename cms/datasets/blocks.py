@@ -21,6 +21,15 @@ DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
     name="DatasetChooserBlock", module_path="cms.datasets.blocks"
 )
 
+DUPLICATE_DATASET_ERROR = 'Duplicate datasets are not allowed. Another entry links to "{url_path}".'
+
+# Added for pages whose links resolve to an edition. The chooser lists the dataset version, so an
+# editor who picked two versions of one edition needs telling why that counts as a duplicate.
+LATEST_VERSION_DUPLICATE_HINT = (
+    " Links from this page point to the latest published version of an edition, so the dataset "
+    "version does not affect the destination."
+)
+
 
 class ManualDatasetBlock(StructBlock):
     title = CharBlock(required=True, required_on_save=True)
@@ -77,12 +86,15 @@ class DatasetStoryBlock(StreamBlock):
             url_paths[extract_url_path(url).lower()].add(block_index)
 
         block_errors = {}
-        for block_indices in url_paths.values():
+        for url_path, block_indices in url_paths.items():
             # Add a block error for any index which contains a duplicate URL,
             # so that the validation error messages appear on the actual duplicate entries
             if len(block_indices) > 1:
+                message = DUPLICATE_DATASET_ERROR.format(url_path=url_path)
+                if self.meta.link_to_latest_version:
+                    message += LATEST_VERSION_DUPLICATE_HINT
                 for index in block_indices:
-                    block_errors[index] = ValidationError("Duplicate datasets are not allowed")
+                    block_errors[index] = ValidationError(message)
 
         if block_errors:
             raise StreamBlockValidationError(block_errors=block_errors)
