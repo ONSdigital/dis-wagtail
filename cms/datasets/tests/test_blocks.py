@@ -223,6 +223,63 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
         self.assertEqual(len(validation_error.exception.block_errors), 2)
 
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_validation_fails_for_a_manual_link_to_the_resolved_url(self):
+        """A manually typed link is a duplicate of a lookup that resolves to the same place.
+
+        Editors can reach the same dataset either through the chooser or by typing the URL, so
+        both sides of the comparison are normalised first: the host is dropped and the trailing
+        slash is ignored. Each case below is the same destination as the March lookup, written a
+        different way.
+        """
+        block = DatasetStoryBlock(link_to_latest_version=True)
+        manual_url_cases = [
+            "/datasets/ds/editions/march/versions/",
+            "/datasets/ds/editions/march/versions",
+            "https://example.com/datasets/ds/editions/march/versions/",
+        ]
+
+        for manual_url in manual_url_cases:
+            with self.subTest(manual_url=manual_url):
+                value = StreamValue(
+                    block,
+                    stream_data=[
+                        ("dataset_lookup", self.march_v1.id),
+                        ("manual_link", {"title": "Dataset Title", "url": manual_url}),
+                    ],
+                )
+
+                with self.assertRaises(ValidationError) as validation_error:
+                    block.clean(value)
+
+                self.assertEqual(len(validation_error.exception.block_errors), 2)
+                for error in validation_error.exception.block_errors.values():
+                    self.assertEqual(error.message, "Duplicate datasets are not allowed")
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_validation_fails_for_manual_links_differing_only_by_a_trailing_slash(self):
+        """Two manually typed URLs that differ only by a trailing slash are duplicates.
+
+        TestDatasetStoryBlock already covers this for arbitrary paths. It is repeated here with
+        dataset edition URLs because those now end in a slash, which is the case most likely to
+        be broken by a change to how destinations are normalised.
+        """
+        block = DatasetStoryBlock(link_to_latest_version=True)
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("manual_link", {"title": "Dataset Title", "url": "/datasets/ds/editions/march/versions/"}),
+                ("manual_link", {"title": "Dataset Title", "url": "/datasets/ds/editions/march/versions"}),
+            ],
+        )
+
+        with self.assertRaises(ValidationError) as validation_error:
+            block.clean(value)
+
+        self.assertEqual(len(validation_error.exception.block_errors), 2)
+        for error in validation_error.exception.block_errors.values():
+            self.assertEqual(error.message, "Duplicate datasets are not allowed")
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_validation_passes_for_a_manual_link_to_the_series_page(self):
         """A manual link to the series page is allowed alongside a lookup for the same dataset.
 
