@@ -55,7 +55,31 @@ class TestDatasetStoryBlock(TestCase):
 
                 self.assertEqual(len(validation_error.exception.block_errors), len(stream_data))
                 for error in validation_error.exception.block_errors.values():
-                    self.assertEqual(error.message, "Duplicate datasets are not allowed")
+                    self.assertIn("Duplicate datasets are not allowed", error.message)
+
+    def test_duplicate_error_message_names_the_shared_destination(self):
+        """The message says where the entries point, so the editor can see why they collide.
+
+        On these pages the destination is the series page, so the note about versions that release
+        calendar pages get would not apply and is left out.
+        """
+        block = DatasetStoryBlock()
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("dataset_lookup", self.lookup_dataset.id),
+                ("dataset_lookup", self.lookup_dataset.id),
+            ],
+        )
+
+        with self.assertRaises(ValidationError) as validation_error:
+            block.clean(value)
+
+        for error in validation_error.exception.block_errors.values():
+            self.assertEqual(
+                error.message,
+                'Duplicate datasets are not allowed. Another entry links to "/datasets/1".',
+            )
 
     def test_validation_fails_for_different_editions_of_the_same_dataset(self):
         """Topic and related data pages link to the dataset series page, which has no edition in
@@ -201,6 +225,34 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
         # Expect clean to not raise any errors
         block.clean(value)
 
+    def test_duplicate_error_message_explains_that_the_version_is_not_in_the_link(self):
+        """Two versions of one edition look different in the chooser but link to the same place.
+
+        The chooser lists the version, so an editor who picked version 9 and version 10 has no
+        reason to expect a duplicate. The message therefore names the shared destination, which
+        visibly has no version in it, and spells out why the version makes no difference.
+        """
+        block = DatasetStoryBlock(link_to_latest_version=True)
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("dataset_lookup", self.march_v1.id),
+                ("dataset_lookup", self.march_v2.id),
+            ],
+        )
+
+        with self.assertRaises(ValidationError) as validation_error:
+            block.clean(value)
+
+        for error in validation_error.exception.block_errors.values():
+            self.assertEqual(
+                error.message,
+                "Duplicate datasets are not allowed. Another entry links to "
+                '"/datasets/ds/editions/march/versions". Links from this page point to the latest '
+                "published version of an edition, so the dataset version does not affect the "
+                "destination.",
+            )
+
     def test_validation_fails_for_two_versions_of_the_same_edition(self):
         """Two versions of one edition resolve to the same URL, so they are duplicates.
 
@@ -253,7 +305,7 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
 
                 self.assertEqual(len(validation_error.exception.block_errors), 2)
                 for error in validation_error.exception.block_errors.values():
-                    self.assertEqual(error.message, "Duplicate datasets are not allowed")
+                    self.assertIn("Duplicate datasets are not allowed", error.message)
 
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_validation_fails_for_manual_links_differing_only_by_a_trailing_slash(self):
@@ -277,7 +329,7 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
 
         self.assertEqual(len(validation_error.exception.block_errors), 2)
         for error in validation_error.exception.block_errors.values():
-            self.assertEqual(error.message, "Duplicate datasets are not allowed")
+            self.assertIn("Duplicate datasets are not allowed", error.message)
 
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_validation_passes_for_a_manual_link_to_the_series_page(self):
