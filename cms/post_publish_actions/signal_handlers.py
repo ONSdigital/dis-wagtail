@@ -3,7 +3,6 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any
 
-from asgiref.local import Local
 from wagtail.models import Page
 from wagtail.signals import page_published
 
@@ -11,8 +10,6 @@ from .utils import run_post_publish_actions_for
 
 if TYPE_CHECKING:
     from cms.bundles.models import Bundle
-
-_suppress_post_publish_actions_signal = Local()
 
 _publishing_bundle: ContextVar[Bundle | None] = ContextVar("_publishing_bundle", default=None)
 
