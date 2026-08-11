@@ -13,12 +13,22 @@ EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
 COMPOUND_ID_PARTS_COUNT = 4
 
 
-def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, Any]]:
+def format_datasets_as_document_list(
+    datasets: StreamValue, *, link_to_latest_version: bool = False
+) -> list[dict[str, Any]]:
     """Takes a StreamValue of dataset blocks (the value of a StreamField of DatasetStoryBlocks).
 
     Returns the datasets in a list of dictionaries in the format required for the ONS Document List design system
     component.
     See: https://service-manual.ons.gov.uk/design-system/components/document-list
+
+    Args:
+        datasets: The value of a StreamField of DatasetStoryBlocks.
+        link_to_latest_version: Link looked up datasets to the latest published version of their
+            edition instead of to the dataset series page. Callers tied to a specific edition, such
+            as release calendar pages, pass True. Topic and related data pages are not tied to an
+            edition, so they use the series page and leave this as False.
+            Manually entered links are unaffected: their URL is always used as given.
     """
     dataset_documents: list = []
     for dataset in datasets:
@@ -33,7 +43,7 @@ def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, An
         else:
             dataset_document = format_as_document_list_item(
                 title=block_value.title,
-                url=block_value.url_path,
+                url=block_value.get_url_path(link_to_latest_version=link_to_latest_version),
                 content_type="Dataset",
                 description=dataset.value.description,
             )
