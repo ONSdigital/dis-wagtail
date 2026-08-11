@@ -146,10 +146,12 @@ def create_data_csv_download_response_from_data(data: list[list[str | int | floa
     Returns:
         A Django HttpResponse object configured for CSV file download.
     """
+    safe_filename = filename.translate({ord(char): None for char in '\r\n"'})
+
     response = HttpResponse(
         content_type="text/csv",
         headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Disposition": f'attachment; filename="{safe_filename}"',
         },
     )
     response.write(codecs.BOM_UTF8)

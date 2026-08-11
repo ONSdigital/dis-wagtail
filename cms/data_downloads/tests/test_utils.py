@@ -572,6 +572,13 @@ class CreateDataCsvDownloadResponseFromDataTests(SimpleTestCase):
         response = create_data_csv_download_response_from_data([["a", "b"]], filename="my-chart.csv")
         self.assertEqual(response["Content-Disposition"], 'attachment; filename="my-chart.csv"')
 
+    def test_strips_crlf_and_quotes_from_filename(self):
+        response = create_data_csv_download_response_from_data(
+            [["a", "b"]],
+            filename='my\r\n"chart".csv',
+        )
+        self.assertEqual(response["Content-Disposition"], 'attachment; filename="mychart.csv"')
+
     def test_writes_data_rows_to_csv(self):
         data = [
             ["Category", "Value 1", "Value 2"],
