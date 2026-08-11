@@ -5,21 +5,39 @@ from django.conf import settings
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from wagtail.models import Page
-from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move
+from wagtail.signals import page_slug_changed, page_unpublished, post_page_move
 
+from cms.bundles.models import Bundle
+from cms.post_publish_actions.models import PostPublishActionType
+from cms.post_publish_actions.registry import post_publish_action
 from cms.search.publishers import get_publisher
 from cms.search.utils import get_model_by_name, is_indexable_page
 
 logger = logging.getLogger(__name__)
 
 
-@receiver(page_published)
-def on_page_published(sender: type[Page], instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
-    """Called whenever a Wagtail Page is published (UI or code).
-    instance is the published Page object.
-    """
-    if is_indexable_page(instance):
-        get_publisher().publish_created_or_updated(instance)
+@post_publish_action(PostPublishActionType.SEARCH_UPDATED)
+def update_index_post_publish_action(page: Page, bundle: Bundle | None) -> None:
+    publisher = get_publisher()
+    if is_indexable_page(page):
+        publisher.publish_created_or_updated(page)
+
+    if bundle is None:
+        # During bundle publishing wagtail's page_published signal is suppressed
+        # outside of bundle publishing it will handle descendants and aliases
+        return
+
+    # mimic update_aliases behaviour to walk alias tree
+    seen_ids: set[int] = set()
+    aliases = list(page.aliases.specific())
+    while aliases:
+        alias = aliases.pop()
+        if alias.id in seen_ids:
+            continue
+        seen_ids.add(alias.id)
+        if is_indexable_page(alias):
+            publisher.publish_created_or_updated(alias)
+        aliases.extend(alias.aliases.specific())
 
 
 @receiver(page_unpublished)
