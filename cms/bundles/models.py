@@ -242,7 +242,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     def can_be_approved(self) -> bool:
         """Determines whether the bundle can be approved.
 
-        That is, the bundle is in review, all the bundled pages and the release calendar page are ready to publish.
+        That is, the bundle is in review, and all the bundled pages and the release calendar page are ready to publish.
         """
         if self.status != BundleStatus.IN_REVIEW:
             return False
