@@ -2,11 +2,13 @@ import json
 import urllib.parse
 from unittest.mock import Mock
 
+from django.db import connection, transaction
 from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils.datastructures import CaseInsensitiveMapping
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.core.tests import TransactionTestCase
 from cms.core.utils import (
     UNWANTED_CONTROL_CHARACTERS,
     GeneratorCollector,
@@ -16,6 +18,7 @@ from cms.core.utils import (
     latex_formula_to_svg,
     redirect,
     redirect_to_parent_listing,
+    release_db_connections,
     strip_unwanted_control_chars_from_json,
 )
 from cms.home.models import HomePage
@@ -286,3 +289,19 @@ class GeneratorCollectorTestCase(SimpleTestCase):
 
         with self.assertRaises(StopIteration):
             next(gen)
+
+
+class ReleaseDBConnectionsTestCase(TransactionTestCase):
+    def test_closes_idle_connection(self):
+        connection.ensure_connection()
+        self.assertIsNotNone(connection.connection)
+
+        release_db_connections()
+
+        self.assertIsNone(connection.connection)
+
+    def test_preserves_connection_in_atomic_block(self):
+        with transaction.atomic():
+            release_db_connections()
+
+            self.assertIsNotNone(connection.connection)

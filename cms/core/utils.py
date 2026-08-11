@@ -8,6 +8,7 @@ from threading import Lock
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
+from django.db import connections
 from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import redirect as _redirect
 
@@ -165,3 +166,13 @@ class GeneratorCollector[T, R]:
     def consume(self) -> None:
         for _ in iter(self):
             pass
+
+
+def release_db_connections() -> None:
+    """Releases current thread's database connections to the pool.
+
+    Unline Django's `close_old_connections`, this is safe to use inside a transaction block.
+    """
+    for conn in connections.all(initialized_only=True):
+        if not conn.in_atomic_block:
+            conn.close()
