@@ -109,7 +109,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         blank=True,
         help_text=("This is usually through the bundle release process, but can also be manually set."),
     )
-    datasets = StreamField(DatasetStoryBlock(), blank=True, default=list)
+    datasets = StreamField(DatasetStoryBlock(link_to_latest_version=True), blank=True, default=list)
 
     contact_details = models.ForeignKey(
         "core.ContactDetails",
