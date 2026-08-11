@@ -28,5 +28,6 @@ class ContextProcessorTestCase(TestCase):
             "CONTACT_US_URL": settings.CONTACT_US_URL,
             "BACKUP_SITE_URL": settings.BACKUP_SITE_URL,
             "COOKIES_PAGE_URL": f"/{settings.ONS_COOKIES_PAGE_SLUG}",
+            "ONS_CDN_BASE_URL": settings.ONS_CDN_URL,
         }
         self.assertEqual(global_vars(self.request), expected)
