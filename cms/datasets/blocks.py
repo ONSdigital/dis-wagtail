@@ -64,14 +64,16 @@ class DatasetStoryBlock(StreamBlock):
         # For each dataset URL path, record the indices of the blocks it appears in.
         # Looked up datasets are compared by the destination they resolve to for this page rather
         # than by dataset ID, because the same dataset can resolve to different destinations.
+        # Both kinds of block are then normalised the same way, so that a URL typed by hand is
+        # recognised as a duplicate of a lookup resolving to the same place however it was written.
         url_paths = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
-            url_path = (
+            url = (
                 block.value.get_url_path(link_to_latest_version=self.meta.link_to_latest_version)
                 if block.block_type == "dataset_lookup"
-                else extract_url_path(block.value["url"]).lower()
+                else block.value["url"]
             )
-            url_paths[url_path].add(block_index)
+            url_paths[extract_url_path(url).lower()].add(block_index)
 
         block_errors = {}
         for block_indices in url_paths.values():
