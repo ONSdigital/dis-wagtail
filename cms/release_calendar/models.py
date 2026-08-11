@@ -243,7 +243,9 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
 
     @cached_property
     def dataset_document_list(self) -> list[dict[str, Any]]:
-        return format_datasets_as_document_list(self.datasets)
+        # A release is associated with a specific dataset edition, so its links resolve to the
+        # latest published version of that edition rather than to the dataset series page.
+        return format_datasets_as_document_list(self.datasets, link_to_latest_version=True)
 
     @cached_property
     def table_of_contents(self) -> list[dict[str, Any]]:

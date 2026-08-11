@@ -53,6 +53,36 @@ class TestUtils(TestCase):
             },
         )
 
+    def test_format_datasets_as_document_list_linking_to_latest_version(self):
+        """Callers linking to a specific edition opt in with link_to_latest_version.
+
+        Release calendar pages pass True here, while topic and related data pages use the default
+        and get the series page (covered by test_format_datasets_as_document_list above).
+        """
+        lookup_dataset = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="lookup_edition",
+            version=1,
+            title="test lookup",
+            description="lookup description",
+        )
+        manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
+
+        datasets = StreamValue(
+            DatasetStoryBlock(),
+            stream_data=[
+                ("dataset_lookup", lookup_dataset),
+                ("manual_link", manual_dataset),
+            ],
+        )
+
+        formatted_datasets = format_datasets_as_document_list(datasets, link_to_latest_version=True)
+
+        self.assertEqual(len(formatted_datasets), 2)
+        self.assertEqual(formatted_datasets[0]["title"]["url"], "/datasets/LOOKUP/editions/lookup_edition/versions/")
+        # Manually entered URLs are used as given, whatever the page context
+        self.assertEqual(formatted_datasets[1]["title"]["url"], manual_dataset["url"])
+
     def test_extract_edition_from_dataset_url(self):
         url = "/datasets/wellbeing-quarterly/editions/september/versions/9"
         extracted_edition = extract_edition_from_dataset_url(url)

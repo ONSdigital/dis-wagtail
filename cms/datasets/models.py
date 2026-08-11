@@ -251,6 +251,29 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
         return f"/datasets/{self.namespace}"
 
     @property
+    def latest_version_url_path(self) -> str:
+        """The path to the latest published version of this dataset's edition.
+
+        The path deliberately omits the version. The website resolves it to the latest published
+        version of the edition, so a link built from it follows any correction published for that
+        edition rather than pinning the version that was current when the link was created.
+        """
+        return f"/datasets/{self.namespace}/editions/{self.edition}/versions/"
+
+    def get_url_path(self, *, link_to_latest_version: bool = False) -> str:
+        """Return the public path this dataset should be linked to.
+
+        Which destination is correct depends on the page doing the linking rather than on the
+        dataset. Pages tied to a specific edition, such as release calendar entries, pass True.
+        Pages that are not tied to an edition, such as topic and related data pages, link to the
+        series page so that readers reach the most recent data.
+
+        Both rendering and duplicate validation resolve destinations through here, so that a page
+        cannot validate against one destination and then render another.
+        """
+        return self.latest_version_url_path if link_to_latest_version else self.url_path
+
+    @property
     def compound_id(self) -> str:
         """Return the compound ID for this local Dataset instance.
 

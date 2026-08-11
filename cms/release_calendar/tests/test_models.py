@@ -700,6 +700,36 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
 
                 self.assertContains(response, expected_url)
 
+    def test_rendered__datasets_link_to_the_latest_version_of_the_edition(self):
+        """The published page links datasets to the edition assigned to the release.
+
+        A release is associated with a specific dataset edition, so its links point at the latest
+        published version of that edition rather than at the series page. This is what makes the
+        release calendar differ from topic and related data pages, which keep linking to the
+        series page.
+        """
+        lookup_dataset = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="lookup_edition",
+            version=1,
+            title="test lookup",
+            description="lookup description",
+        )
+        # Assigned as raw StreamField data rather than as a StreamValue so that the field's own
+        # block definition is used. StreamBlock.to_python() hands a StreamValue straight back, so
+        # assigning StreamValue(DatasetStoryBlock(), ...) would keep that throwaway block and
+        # bypass the configuration this test is checking.
+        self.page.datasets = [{"type": "dataset_lookup", "value": lookup_dataset.pk}]
+        self.page.status = ReleaseStatus.PUBLISHED
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(response, 'href="/datasets/LOOKUP/editions/lookup_edition/versions/"')
+        # The series page URL is a prefix of the edition URL, so this checks the full href to
+        # confirm the series link is gone rather than merely absent as a substring.
+        self.assertNotContains(response, 'href="/datasets/LOOKUP"')
+
     def test_rendered__datasets(self):
         """Check datasets are shown only in a published state."""
         lookup_dataset = Dataset.objects.create(
