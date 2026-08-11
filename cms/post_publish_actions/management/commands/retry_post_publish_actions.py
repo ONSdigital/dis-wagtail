@@ -1,7 +1,7 @@
 import logging
 import time
 from datetime import timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -12,11 +12,23 @@ from django.utils import timezone
 from cms.core.db_router import force_write_db
 from cms.post_publish_actions.models import PostPublishAction, PostPublishActionQuerySet, PostPublishActionStatus
 
+if TYPE_CHECKING:
+    from django.core.management.base import CommandParser
+
 logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
     help = "Retry post-publish actions which have failed or timed out"
+
+    def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            dest="dry_run",
+            default=False,
+            help="Dry run -- don't change anything.",
+        )
 
     def _get_failed_actions(self) -> PostPublishActionQuerySet:
         return PostPublishAction.objects.active().filter(
@@ -44,6 +56,9 @@ class Command(BaseCommand):
 
     @force_write_db()
     def handle(self, *args: Any, **options: Any) -> None:
+        dry_run: bool = options.get("dry_run", False)
+        if dry_run:
+            logger.info("Running in dry-run mode. No changes will be made.")
         if exhausted_action_ids := list(self._get_exhausted_actions().values_list("pk", flat=True)):
             logger.error(
                 "Post-publish actions have exhausted their retries",
@@ -58,6 +73,13 @@ class Command(BaseCommand):
         actions_to_retry_ids: set[int] = set(actions_to_retry.values_list("pk", flat=True))
 
         start_time = timezone.now()
+
+        if dry_run:
+            logger.info(
+                "Dry run mode: would retry the following post-publish actions",
+                extra={"action_ids": list(actions_to_retry_ids)},
+            )
+            return
 
         with transaction.atomic(durable=True):
             for action in actions_to_retry:

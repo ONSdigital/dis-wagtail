@@ -27,8 +27,8 @@ class RetryPostPublishActionsTestCase(TransactionTestCase):
     def tearDown(self):
         flush_executor()
 
-    def _call_command(self):
-        call_command("retry_post_publish_actions")
+    def _call_command(self, dry_run=False):
+        call_command("retry_post_publish_actions", dry_run=dry_run)
 
     def _create_stalled_action(self, **kwargs) -> PostPublishAction:
         action = PostPublishAction.objects.create(
@@ -183,3 +183,17 @@ class RetryPostPublishActionsTestCase(TransactionTestCase):
 
         command = RetryCommand()
         self.assertNotIn(action, command._get_exhausted_actions())  # pylint: disable=protected-access
+
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_dry_run_does_not_modify_database(self, mock_get_publisher):
+        action = self._create_stalled_action()
+
+        with self.assertLogs(RETRY_COMMAND_LOGGER, level=logging.INFO) as logs:
+            self._call_command(dry_run=True)
+
+        mock_get_publisher.assert_not_called()
+
+        self.assertIn(action.id, logs.records[1].action_ids)
+
+        action.refresh_from_db()
+        self.assertEqual(action.retry_count, 0)
