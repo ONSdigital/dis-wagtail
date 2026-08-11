@@ -70,6 +70,10 @@ class Command(BaseCommand):
             )
         actions_to_retry = self._get_actions_to_retry()
 
+        if not actions_to_retry.exists():
+            logger.info("No post-publish actions to retry.")
+            return
+
         actions_to_retry_ids: set[int] = set(actions_to_retry.values_list("pk", flat=True))
 
         start_time = timezone.now()
