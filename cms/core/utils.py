@@ -171,7 +171,7 @@ class GeneratorCollector[T, R]:
 def release_db_connections() -> None:
     """Releases current thread's database connections to the pool.
 
-    Unline Django's `close_old_connections`, this is safe to use inside a transaction block.
+    Unlike Django's `close_old_connections`, this is safe to use inside a transaction block.
     """
     for conn in connections.all(initialized_only=True):
         if not conn.in_atomic_block:
