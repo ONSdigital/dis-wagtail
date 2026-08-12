@@ -308,12 +308,14 @@ if "read_replica" not in DATABASES:
 
 # Configure a connection pool to reduce connections when using threads.
 # The numbers are intentionally low, as contention on connections shouldn't be high.
-db_pool_options = {
-    "min_size": 1,
-    "max_size": int(env.get("DB_POOL_MAX_SIZE", 3)),
-}
-
-for db_config in DATABASES.values():
+# Read and write replicas can have their own pool sizes.
+db_pool_default_max_size = int(env.get("DB_POOL_MAX_SIZE", 3))
+for db_alias, db_config in DATABASES.items():
+    db_pool_alias_env_var = "DB_POOL_MAX_SIZE_READ" if db_alias == "read_replica" else "DB_POOL_MAX_SIZE_WRITE"
+    db_pool_options = {
+        "min_size": 1,
+        "max_size": int(env.get(db_pool_alias_env_var, db_pool_default_max_size)),
+    }
     db_config.setdefault("OPTIONS", {}).setdefault("pool", {}).update(db_pool_options)
 
 DATABASE_ROUTERS = [
