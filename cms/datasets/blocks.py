@@ -64,7 +64,10 @@ class DatasetStoryBlock(StreamBlock):
         # the latest published version of the chosen edition rather than the dataset series page.
         link_to_latest_version = False
 
-    def clean(self, value: StreamValue) -> StreamValue:
+    def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
+        # ignore_required_constraints is passed by BlockField.clean() and must be accepted, or
+        # saving a page with this field raises a TypeError. It is not forwarded to super(), which
+        # matches the behaviour of TimeSeriesPageStoryBlock.clean().
         cleaned_value = super().clean(value)
 
         # Validate there are no duplicate datasets,
