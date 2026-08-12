@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 
 from django.conf import settings
 
-from cms.core.utils import release_db_connections
 from cms.search.utils import build_page_uri, build_resource_dict
 
 logger = logging.getLogger(__name__)
@@ -46,7 +45,6 @@ class BasePublisher(ABC):
         Delegate sending to the subclass's _publish().
         """
         message = build_resource_dict(page, old_url_path=old_url_path)
-        release_db_connections()
         self._publish(self.CREATED_OR_UPDATED_CHANNEL, message)
 
     def publish_deleted(self, page: Page) -> None:
@@ -56,7 +54,6 @@ class BasePublisher(ABC):
         message = {
             "uri": build_page_uri(page),
         }
-        release_db_connections()
         self._publish(
             self.DELETED_CHANNEL,
             message,

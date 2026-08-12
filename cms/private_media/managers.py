@@ -91,7 +91,6 @@ class PrivateMediaModelManager(models.Manager):
                 all_files.append(file)
                 files_by_object[obj].append(file)
 
-        release_db_connections()
         results = bulk_set_file_permissions(all_files, privacy)
 
         now = timezone.now()

@@ -13,6 +13,7 @@ from django.utils import timezone
 from wagtail.models import Page
 
 from cms.core.db_router import force_write_db
+from cms.core.utils import release_db_connections
 
 from .models import PostPublishAction, PostPublishActionStatus, PostPublishActionType
 from .registry import ActionHandler
@@ -176,6 +177,7 @@ def run_bundle_notification_in_support_executor[**P](
     return future
 
 
+@release_db_connections
 def wait_for_bundle_notifications(bundle_id: int) -> None:
     if future := _bundle_notification_futures.pop(bundle_id, None):
         wait([future])

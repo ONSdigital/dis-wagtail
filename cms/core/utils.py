@@ -207,8 +207,8 @@ def release_db_connections(
         _release_db_connections()
         return None
 
-    release_before = False if before is None else before
-    release_after = True if after is None else after
+    release_before = True if before is None else before
+    release_after = False if after is None else after
 
     def decorate[**P, R](decorated: Callable[P, R]) -> Callable[P, R]:
         @wraps(decorated)
