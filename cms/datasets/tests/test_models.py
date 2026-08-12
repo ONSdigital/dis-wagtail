@@ -558,9 +558,12 @@ class TestDatasetUrlPaths(TestCase):
     def test_url_path_points_to_the_dataset_series_page(self):
         self.assertEqual(self.dataset.url_path, "/datasets/wellbeing-quarterly")
 
-    def test_latest_version_url_path_points_to_the_versions_of_the_edition(self):
+    def test_get_url_path_defaults_to_the_series_page(self):
+        self.assertEqual(self.dataset.get_url_path(), "/datasets/wellbeing-quarterly")
+
+    def test_get_url_path_linking_to_the_latest_version_names_the_edition(self):
         """The fixture is version 9, and no version appears in the URL."""
         self.assertEqual(
-            self.dataset.latest_version_url_path,
+            self.dataset.get_url_path(link_to_latest_version=True),
             "/datasets/wellbeing-quarterly/editions/september/versions/",
         )
