@@ -703,10 +703,9 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
     def test_rendered__datasets_link_to_the_latest_version_of_the_edition(self):
         """The published page links datasets to the edition assigned to the release.
 
-        A release is associated with a specific dataset edition, so its links point at the latest
-        published version of that edition rather than at the series page. This is what makes the
-        release calendar differ from topic and related data pages, which keep linking to the
-        series page.
+        A release is associated with a specific dataset edition, so its links point at that
+        edition rather than at the series page. Topic and related data pages are not tied to an
+        edition and link to the series page instead.
         """
         lookup_dataset = Dataset.objects.create(
             namespace="LOOKUP",

@@ -210,8 +210,7 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
     def test_validation_passes_for_different_editions_of_the_same_dataset(self):
         """Two editions of one dataset resolve to different URLs here, so both are allowed.
 
-        This is the main behaviour change: the old validation compared dataset IDs, which made
-        this pair a duplicate.
+        A release can legitimately relate to more than one edition of the same dataset.
         """
         block = DatasetStoryBlock(link_to_latest_version=True)
         value = StreamValue(
@@ -256,9 +255,9 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
     def test_validation_fails_for_two_versions_of_the_same_edition(self):
         """Two versions of one edition resolve to the same URL, so they are duplicates.
 
-        The chooser still lists the version, and the CMS still records which version was picked,
-        but the version is not part of the resolved URL. Picking March v1 and March v2 on the
-        same page therefore produces two identical links, which the editor is told about here.
+        The chooser lists the version, and the CMS records which version was picked, but the
+        version is not part of the resolved URL. Picking March v1 and March v2 on the same page
+        therefore produces two identical links, which the editor is told about here.
         """
         block = DatasetStoryBlock(link_to_latest_version=True)
         value = StreamValue(
@@ -311,9 +310,9 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
     def test_validation_fails_for_manual_links_differing_only_by_a_trailing_slash(self):
         """Two manually typed URLs that differ only by a trailing slash are duplicates.
 
-        TestDatasetStoryBlock already covers this for arbitrary paths. It is repeated here with
-        dataset edition URLs because those now end in a slash, which is the case most likely to
-        be broken by a change to how destinations are normalised.
+        TestDatasetStoryBlock covers this for arbitrary paths. It is repeated here with dataset
+        edition URLs, which end in a slash, since those are the most sensitive to how destinations
+        are normalised.
         """
         block = DatasetStoryBlock(link_to_latest_version=True)
         value = StreamValue(
@@ -336,8 +335,7 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
         """A manual link to the series page is allowed alongside a lookup for the same dataset.
 
         On this page type the lookup resolves to the edition URL, so the series page is a
-        genuinely different destination. Under the old dataset ID comparison this pair was
-        rejected.
+        genuinely different destination.
         """
         block = DatasetStoryBlock(link_to_latest_version=True)
         value = StreamValue(
