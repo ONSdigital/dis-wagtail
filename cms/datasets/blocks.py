@@ -66,21 +66,14 @@ class DatasetStoryBlock(StreamBlock):
         link_to_latest_version = False
 
     def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
-        # ignore_required_constraints is passed by BlockField.clean() and must be accepted, or
-        # saving a page with this field raises a TypeError. It is not forwarded to super(), which
-        # matches the behaviour of TimeSeriesPageStoryBlock.clean(). Page form tests that post a
-        # datasets field, such as those in cms/release_calendar/tests/test_forms.py, fail if it is
-        # removed.
         cleaned_value = super().clean(value)
 
         # Validate there are no duplicate datasets,
         # including between manual and looked up datasets referencing the same URL
 
         # For each dataset URL path, record the indices of the blocks it appears in.
-        # Looked up datasets are compared by the destination they resolve to for this page rather
-        # than by dataset ID, because the same dataset can resolve to different destinations.
-        # Both kinds of block are then normalised the same way, so that a URL typed by hand is
-        # recognised as a duplicate of a lookup resolving to the same place however it was written.
+        # Both kinds of block are normalised the same way, so a URL typed by hand is recognised as
+        # a duplicate of a lookup resolving to the same place, however it was written.
         url_paths = defaultdict(set)
         for block_index, block in enumerate(cleaned_value):
             url = (

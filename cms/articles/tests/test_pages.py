@@ -618,11 +618,8 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertIn(self.page.related_data_display_title, content)
         self.assertIn(lookup_dataset.title, content)
         self.assertIn(lookup_dataset.description, content)
-        # Related data pages link to the dataset series page, not to a specific edition.
-        # We assert on the full href rather than just the path because the series URL
-        # ("/datasets/LOOKUP") is a substring of the edition URL
-        # ("/datasets/LOOKUP/editions/lookup_edition/versions/"), so a looser check would still
-        # pass if this page ever started linking to a specific edition.
+        # The series URL is a prefix of the edition URL, so the full href is asserted to catch a
+        # related data page linking to an edition.
         self.assertIn(f'href="{lookup_dataset.url_path}"', content)
         self.assertIn(manual_dataset["title"], content)
         self.assertIn(manual_dataset["description"], content)
