@@ -205,6 +205,38 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
     @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     @patch("cms.search.signal_handlers.get_publisher")
+    def test_publish_bundle_clears_stale_actions(
+        self,
+        mock_get_publisher,  # pylint: disable=unused-argument
+        mock_notify_post_publish_end,  # pylint: disable=unused-argument
+        mock_notify_end,  # pylint: disable=unused-argument
+        mock_notify_start,  # pylint: disable=unused-argument
+    ):
+        """Test all actions from a previous publish are cleared before a new publish."""
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+
+        stale_alias_action = PostPublishAction.objects.create(
+            bundle=self.bundle,
+            page=self.methodology_article,
+            action_type=PostPublishActionType.SEARCH_UPDATED,
+            status=PostPublishActionStatus.FAILED,
+            finished_at=timezone.now(),
+        )
+
+        mark_page_as_ready_to_publish(self.statistical_article)
+
+        self.call_command()
+
+        executor_stop_and_wait()
+
+        self.assertFalse(PostPublishAction.objects.filter(pk=stale_alias_action.pk).exists())
+        self.assertFalse(PostPublishAction.objects.failed().filter(bundle=self.bundle).exists())
+
+    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
+    @patch("cms.search.signal_handlers.get_publisher")
     def test_publish_bundle_action_error(
         self, mock_get_publisher, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
     ):
