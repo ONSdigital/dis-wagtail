@@ -184,7 +184,7 @@ def release_db_connections[F: Callable[..., Any]](
     func: None = None, *, before: bool, after: bool = ...
 ) -> Callable[[F], F]: ...
 @overload
-def release_db_connections[F: Callable[..., Any]](func: None = None, *, after: bool) -> Callable[[F], F]: ...
+def release_db_connections[F: Callable[..., Any]](func: None = None, *, before: bool) -> Callable[[F], F]: ...
 
 
 def release_db_connections(
@@ -195,13 +195,13 @@ def release_db_connections(
     Unlike Django's `close_old_connections`, this is safe to use inside a transaction block.
 
     Can be called directly, or used as a decorator to release connections before and/or after the decorated
-    function is called. Defaults to releasing after.
+    function is called. Defaults to releasing before.
 
         release_db_connections()
 
-        @release_db_connections  # release after call
-        @release_db_connections(before=True)  # release before and after each decorated function call
-        @release_db_connections(before=True, after=False)  # release before each decorated function call
+        @release_db_connections  # release before call
+        @release_db_connections(after=True)  # release before and after each decorated function call
+        @release_db_connections(before=False, after=True)  # release after each decorated function call
     """
     if func is None and before is None and after is None:
         _release_db_connections()
