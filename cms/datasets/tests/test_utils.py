@@ -54,11 +54,7 @@ class TestUtils(TestCase):
         )
 
     def test_format_datasets_as_document_list_linking_to_latest_version(self):
-        """Callers linking to a specific edition opt in with link_to_latest_version.
-
-        Release calendar pages pass True here, while topic and related data pages use the default
-        and get the series page (covered by test_format_datasets_as_document_list above).
-        """
+        """The default, which gives the series page, is covered by the test above."""
         lookup_dataset = Dataset.objects.create(
             namespace="LOOKUP",
             edition="lookup_edition",

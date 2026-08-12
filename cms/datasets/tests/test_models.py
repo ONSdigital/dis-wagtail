@@ -544,11 +544,7 @@ class TestONSDataset(TestCase):
 
 
 class TestDatasetUrlPaths(TestCase):
-    """The two public destinations a looked up dataset can point at.
-
-    Which one is used depends on the page doing the linking, not on the dataset itself:
-    topic and related data pages use the series page, release calendar pages use the edition.
-    """
+    """The two public destinations a looked up dataset can point at."""
 
     def setUp(self):
         self.dataset = Dataset.objects.create(
@@ -560,16 +556,10 @@ class TestDatasetUrlPaths(TestCase):
         )
 
     def test_url_path_points_to_the_dataset_series_page(self):
-        """The series page shows the most recent edition, so it needs no edition or version."""
         self.assertEqual(self.dataset.url_path, "/datasets/wellbeing-quarterly")
 
     def test_latest_version_url_path_points_to_the_versions_of_the_edition(self):
-        """The edition destination names the edition but deliberately stops at "versions/".
-
-        Note the fixture is version 9 and no version appears in the URL. The website resolves the
-        version-less path to the latest published version of the edition, which is what makes a
-        correction published later show up in an old release calendar entry.
-        """
+        """The fixture is version 9, and no version appears in the URL."""
         self.assertEqual(
             self.dataset.latest_version_url_path,
             "/datasets/wellbeing-quarterly/editions/september/versions/",
