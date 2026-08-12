@@ -28,7 +28,7 @@ def _build_executor() -> ThreadPoolExecutor:
 
 def _build_support_executor() -> ThreadPoolExecutor:
     return ThreadPoolExecutor(
-        max_workers=settings.BUNDLE_POST_PUBLISH_CONCURRENCY, thread_name_prefix="post_publish_actions_support"
+        max_workers=settings.BUNDLE_POST_PUBLISH_SUPPORT_CONCURRENCY, thread_name_prefix="post_publish_actions_support"
     )
 
 
