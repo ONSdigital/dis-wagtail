@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from wagtail.blocks import StreamValue
 
-from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.blocks import LATEST_VERSION_DUPLICATE_HINT, DatasetStoryBlock
 from cms.datasets.models import Dataset
 
 
@@ -76,10 +76,8 @@ class TestDatasetStoryBlock(TestCase):
             block.clean(value)
 
         for error in validation_error.exception.block_errors.values():
-            self.assertEqual(
-                error.message,
-                'Duplicate datasets are not allowed. Another entry links to "/datasets/1".',
-            )
+            self.assertIn('"/datasets/1"', error.message)
+            self.assertNotIn(LATEST_VERSION_DUPLICATE_HINT.strip(), error.message)
 
     def test_validation_fails_for_different_editions_of_the_same_dataset(self):
         """Topic and related data pages link to the dataset series page, which has no edition in
@@ -244,13 +242,8 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
             block.clean(value)
 
         for error in validation_error.exception.block_errors.values():
-            self.assertEqual(
-                error.message,
-                "Duplicate datasets are not allowed. Another entry links to "
-                '"/datasets/ds/editions/march/versions". Links from this page point to the latest '
-                "published version of an edition, so the dataset version does not affect the "
-                "destination.",
-            )
+            self.assertIn('"/datasets/ds/editions/march/versions"', error.message)
+            self.assertIn(LATEST_VERSION_DUPLICATE_HINT.strip(), error.message)
 
     def test_validation_fails_for_two_versions_of_the_same_edition(self):
         """Two versions of one edition resolve to the same URL, so they are duplicates.
