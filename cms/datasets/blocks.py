@@ -23,7 +23,7 @@ DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
 
 DUPLICATE_DATASET_ERROR = 'Duplicate datasets are not allowed. Another entry links to "{url_path}".'
 
-# Added for pages whose links resolve to an edition. The chooser lists the dataset version, so an
+# Appended on pages whose links resolve to an edition. The chooser lists the dataset version, so an
 # editor who picked two versions of one edition needs telling why that counts as a duplicate.
 LATEST_VERSION_DUPLICATE_HINT = (
     " Links from this page point to the latest published version of an edition, so the dataset "
