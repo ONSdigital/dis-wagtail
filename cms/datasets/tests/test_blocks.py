@@ -16,6 +16,17 @@ class TestDatasetStoryBlock(TestCase):
             description="test_description",
         )
 
+    def test_clean_accepts_wagtails_ignore_required_constraints_argument(self):
+        """Wagtail's BlockField.clean() passes this argument, so clean() has to accept it.
+
+        Without it, saving any page with a datasets field raises a TypeError. Nothing else in the
+        suite calls clean() the way Wagtail does, so the argument otherwise looks unused.
+        """
+        block = DatasetStoryBlock()
+        value = StreamValue(block, stream_data=[("dataset_lookup", self.lookup_dataset.id)])
+
+        block.clean(value, ignore_required_constraints=True)
+
     @override_settings(ONS_WEBSITE_BASE_URL="https://example.com", ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_validation_fails_on_duplicate_datasets(self):
         block = DatasetStoryBlock()
