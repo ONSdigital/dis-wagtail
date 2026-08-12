@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from cms.core.db_router import force_write_db
 from cms.core.slack import send_or_update_slack_message
+from cms.core.utils import release_db_connections
 from cms.post_publish_actions.models import PostPublishAction
 
 if TYPE_CHECKING:
@@ -55,6 +56,7 @@ def send_bundle_notification(  # pylint: disable=too-many-arguments  # noqa: PLR
     """
     bundle_cls = bundle.__class__
     current_ts = bundle_cls.objects.values_list("slack_notification_ts", flat=True).get(pk=bundle.pk)
+    release_db_connections()
     message_ts = send_or_update_slack_message(
         text=text,
         color=color,
