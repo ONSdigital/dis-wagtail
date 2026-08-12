@@ -171,7 +171,7 @@ class GeneratorCollector[T, R]:
 
 def _release_db_connections() -> None:
     for conn in connections.all(initialized_only=True):
-        if not conn.in_atomic_block and conn.get_autocommit():
+        if conn.connection is not None and not conn.in_atomic_block and conn.get_autocommit():
             conn.close_if_unusable_or_obsolete()
 
 
