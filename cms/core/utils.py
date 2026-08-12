@@ -2,10 +2,11 @@ import io
 import json
 import re
 import string
-from collections.abc import Generator, Mapping
+from collections.abc import Callable, Generator, Mapping
+from functools import wraps
 from itertools import chain
 from threading import Lock
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, overload
 
 from django.conf import settings
 from django.db import connections
@@ -168,11 +169,61 @@ class GeneratorCollector[T, R]:
             pass
 
 
-def release_db_connections() -> None:
-    """Releases current thread's database connections to the pool.
-
-    Unlike Django's `close_old_connections`, this is safe to use inside a transaction block.
-    """
+def _release_db_connections() -> None:
     for conn in connections.all(initialized_only=True):
         if not conn.in_atomic_block and conn.get_autocommit():
             conn.close_if_unusable_or_obsolete()
+
+
+@overload
+def release_db_connections(func: None = None) -> None: ...
+@overload
+def release_db_connections[F: Callable[..., Any]](func: F) -> F: ...
+@overload
+def release_db_connections[F: Callable[..., Any]](
+    func: None = None, *, before: bool, after: bool = ...
+) -> Callable[[F], F]: ...
+@overload
+def release_db_connections[F: Callable[..., Any]](func: None = None, *, after: bool) -> Callable[[F], F]: ...
+
+
+def release_db_connections(
+    func: Callable[..., Any] | None = None, *, before: bool | None = None, after: bool | None = None
+) -> Any:
+    """Releases current thread's database connections to the pool.
+
+    Unlike Django's `close_old_connections`, this is safe to use inside a transaction block.
+
+    Can be called directly, or used as a decorator to release connections before and/or after the decorated
+    function is called. Defaults to releasing after.
+
+        release_db_connections()
+
+        @release_db_connections  # release after call
+        @release_db_connections(before=True)  # release before and after each decorated function call
+        @release_db_connections(before=True, after=False)  # release before each decorated function call
+    """
+    if func is None and before is None and after is None:
+        _release_db_connections()
+        return None
+
+    release_before = False if before is None else before
+    release_after = True if after is None else after
+
+    def decorate[**P, R](decorated: Callable[P, R]) -> Callable[P, R]:
+        @wraps(decorated)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            if release_before:
+                _release_db_connections()
+            try:
+                return decorated(*args, **kwargs)
+            finally:
+                if release_after:
+                    _release_db_connections()
+
+        return wrapper
+
+    if func is not None:
+        return decorate(func)
+
+    return decorate

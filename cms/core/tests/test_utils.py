@@ -305,3 +305,67 @@ class ReleaseDBConnectionsTestCase(TransactionTestCase):
             release_db_connections()
 
             self.assertIsNotNone(connection.connection)
+
+    def test_decorator_releases_after_by_default(self):
+        connection_at_entry = []
+
+        @release_db_connections
+        def task():
+            connection_at_entry.append(connection.connection)
+            connection.ensure_connection()
+
+        connection.ensure_connection()
+        task()
+
+        # The connection should be open when the task starts, but closed after it finishes.
+        self.assertIsNotNone(connection_at_entry[0])
+        self.assertIsNone(connection.connection)
+
+    def test_decorator_releases_after_on_exception(self):
+        @release_db_connections
+        def task():
+            connection.ensure_connection()
+            raise ValueError("Test exception")
+
+        with self.assertRaises(ValueError):
+            task()
+
+        self.assertIsNone(connection.connection)
+
+    def test_decorator_with_before_releases_on_both_sides(self):
+        connection_at_entry = []
+
+        @release_db_connections(before=True)
+        def task():
+            connection_at_entry.append(connection.connection)
+            connection.ensure_connection()
+
+        connection.ensure_connection()
+        task()
+
+        self.assertIsNone(connection_at_entry[0])
+        self.assertIsNone(connection.connection)
+
+    def test_decorator_with_before_only(self):
+        connection_at_entry = []
+
+        @release_db_connections(before=True, after=False)
+        def task():
+            connection_at_entry.append(connection.connection)
+            connection.ensure_connection()
+
+        connection.ensure_connection()
+        task()
+
+        self.assertIsNone(connection_at_entry[0])
+        self.assertIsNotNone(connection.connection)
+
+    def test_decorator_preserves_metadata_and_return_values(self):
+        @release_db_connections
+        def task(value):
+            """Task docstring."""
+            return value * 2
+
+        self.assertEqual(task(21), 42)
+        self.assertEqual(task.__name__, "task")
+        self.assertEqual(task.__doc__, "Task docstring.")
