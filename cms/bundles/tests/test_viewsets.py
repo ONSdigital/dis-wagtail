@@ -717,13 +717,15 @@ class BundleViewSetPublishTestCase(BundleViewSetTestCaseMixin, TransactionTestCa
         self.bundle.save(update_fields=["status", "publication_date"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
-        # Wait long enough for the timeout to occur
-        time.sleep(settings.BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS)
+        expected_action_count = 2
+        deadline = time.monotonic() + 2.5
+        while time.monotonic() < deadline and PostPublishAction.objects.finished().count() < expected_action_count:
+            time.sleep(0.1)
 
         mock_get_publisher.assert_called()
 
-        self.assertEqual(PostPublishAction.objects.count(), 2)
-        self.assertEqual(PostPublishAction.objects.finished().count(), 2)
+        self.assertEqual(PostPublishAction.objects.count(), expected_action_count)
+        self.assertEqual(PostPublishAction.objects.finished().count(), expected_action_count)
 
         action = PostPublishAction.objects.get(action_type=PostPublishActionType.SEARCH_UPDATED)
 
