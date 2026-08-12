@@ -174,5 +174,5 @@ def release_db_connections() -> None:
     Unlike Django's `close_old_connections`, this is safe to use inside a transaction block.
     """
     for conn in connections.all(initialized_only=True):
-        if not conn.in_atomic_block:
+        if not conn.in_atomic_block and conn.get_autocommit():
             conn.close_if_unusable_or_obsolete()
