@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from django.conf import settings
 
+from cms.core.utils import release_db_connections
 from cms.search.utils import build_page_uri, build_resource_dict
 
 logger = logging.getLogger(__name__)
@@ -44,17 +45,21 @@ class BasePublisher(ABC):
         """Build the message for the created/updated event.
         Delegate sending to the subclass's _publish().
         """
-        self._publish(self.CREATED_OR_UPDATED_CHANNEL, build_resource_dict(page, old_url_path=old_url_path))
+        message = build_resource_dict(page, old_url_path=old_url_path)
+        release_db_connections()
+        self._publish(self.CREATED_OR_UPDATED_CHANNEL, message)
 
     def publish_deleted(self, page: Page) -> None:
         """Build the message for the deleted event.
         Delegate sending to the subclass's _publish().
         """
+        message = {
+            "uri": build_page_uri(page),
+        }
+        release_db_connections()
         self._publish(
             self.DELETED_CHANNEL,
-            {
-                "uri": build_page_uri(page),
-            },
+            message,
         )
 
     @abstractmethod
