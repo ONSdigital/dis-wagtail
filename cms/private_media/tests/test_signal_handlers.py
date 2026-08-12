@@ -174,7 +174,9 @@ class SignalHandlersTestCase(TestCase):
     @patch("cms.private_media.signal_handlers._publish_media")
     def test_signal_early_returns_for_alias(self, mock_publish_media):
         """Tests that the signal handlers early return when the instance is an alias page."""
-        alias_page = self.test_page.create_alias(self.home_page)
-        alias_page.save_revision().publish()
+        self.test_page.create_alias(update_slug="test-information-page-alias")
 
-        mock_publish_media.assert_not_called()
+        self.test_page.save_revision().publish()
+
+        # should only run one time for the original page, not the alias
+        mock_publish_media.assert_called_once_with(self.test_page)
