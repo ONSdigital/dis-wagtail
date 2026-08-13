@@ -411,20 +411,20 @@ def register_bundle_log_change_actions(actions: LogActionRegistry) -> None:
                 context="Changed datasets in bundle",
             )
 
-        @actions.register_action("bundles.schedule_changed")
-        class ChangeBundleSchedule(LogFormatter):
-            """LogFormatter class for bundle publication date changes."""
+    @actions.register_action("bundles.schedule_changed")
+    class ChangeBundleSchedule(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for bundle publication date changes."""
 
-            label = "Change bundle schedule"
+        label = "Change bundle schedule"
 
-            def format_message(self, log_entry: ModelLogEntry) -> Any:
-                """Returns the formatted log message."""
-                try:
-                    old = log_entry.data.get("old") or "Not set"
-                    new = log_entry.data.get("new") or "Not set"
-                    return f"Changed publication date from '{old}' to '{new}'"
-                except KeyError:
-                    return "Changed publication date"
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            try:
+                old = log_entry.data.get("old") or "Not set"
+                new = log_entry.data.get("new") or "Not set"
+                return f"Changed publication date from '{old}' to '{new}'"
+            except KeyError:
+                return "Changed publication date"
 
     @actions.register_action("bundles.teams_changed")
     class ChangeBundleTeams(LogFormatter):  # pylint: disable=unused-variable
@@ -440,17 +440,17 @@ def register_bundle_log_change_actions(actions: LogActionRegistry) -> None:
                 context="Changed preview teams for bundle",
             )
 
-        @actions.register_action("bundles.pages_changed")
-        class ChangeBundlePages(LogFormatter):
-            """LogFormatter class for page changes to bundles."""
+    @actions.register_action("bundles.pages_changed")
+    class ChangeBundlePages(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for page changes to bundles."""
 
-            label = "Change pages in bundle"
+        label = "Change pages in bundle"
 
-            def format_message(self, log_entry: ModelLogEntry) -> Any:
-                """Returns the formatted log message."""
-                return format_added_removed_message(
-                    log_entry,
-                    added_key="added_pages",
-                    removed_key="removed_pages",
-                    context="Changed pages in bundle",
-                )
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            return format_added_removed_message(
+                log_entry,
+                added_key="added_pages",
+                removed_key="removed_pages",
+                context="Changed pages in bundle",
+            )
