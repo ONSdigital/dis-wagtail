@@ -71,27 +71,33 @@ class DatasetStoryBlock(StreamBlock):
     def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
         cleaned_value = super().clean(value)
 
-        # Validate there are no duplicate datasets,
-        # including between manual and looked up datasets referencing the same URL
-
-        # For each dataset URL path, record the indices of the blocks it appears in.
-        # Both kinds of block are normalised the same way, so a URL typed by hand is recognised as
-        # a duplicate of a lookup resolving to the same place, however it was written.
+        # Validate there are no duplicate datasets, including between manual and looked up datasets
+        # resolving to the same place, however each was written.
+        #
+        # url_paths maps a normalised comparison key to the blocks using it. That key is lowercased
+        # and has its trailing slash stripped, so it is not fit to show an editor: destinations
+        # holds the URL each group really links to, preferring a looked up dataset because the CMS
+        # resolves that one itself rather than taking it from whatever somebody typed.
         url_paths = defaultdict(set)
+        destinations: dict[str, str] = {}
         for block_index, block in enumerate(cleaned_value):
+            is_lookup = block.block_type == "dataset_lookup"
             url = (
                 block.value.get_url_path(link_to_latest_version=self.meta.link_to_latest_version)
-                if block.block_type == "dataset_lookup"
+                if is_lookup
                 else block.value["url"]
             )
-            url_paths[extract_url_path(url).lower()].add(block_index)
+            url_path = extract_url_path(url).lower()
+            url_paths[url_path].add(block_index)
+            if is_lookup or url_path not in destinations:
+                destinations[url_path] = url if is_lookup else extract_url_path(url)
 
         block_errors = {}
         for url_path, block_indices in url_paths.items():
             # Add a block error for any index which contains a duplicate URL,
             # so that the validation error messages appear on the actual duplicate entries
             if len(block_indices) > 1:
-                message = DUPLICATE_DATASET_ERROR.format(url_path=url_path)
+                message = DUPLICATE_DATASET_ERROR.format(url_path=destinations[url_path])
                 if self.meta.link_to_latest_version:
                     message += LATEST_VERSION_DUPLICATE_HINT
                 for index in block_indices:

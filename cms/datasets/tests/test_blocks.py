@@ -219,8 +219,40 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
 
         self.assertEqual(len(validation_error.exception.block_errors), 2)
         for error in validation_error.exception.block_errors.values():
-            self.assertIn('"/datasets/ds/editions/march/versions"', error.message)
+            # The destination the entries share, not the normalised key used to spot the collision,
+            # so the trailing slash the page actually links to is present.
+            self.assertIn('"/datasets/ds/editions/march/versions/"', error.message)
             self.assertIn(LATEST_VERSION_DUPLICATE_HINT.strip(), error.message)
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_duplicate_error_message_keeps_the_case_of_the_destination(self):
+        """Comparison is case insensitive, but the reported URL has to match the rendered href.
+
+        The namespace and edition are free text from the Dataset API, so an editor told to look for
+        a lowercased path would be hunting a link the page never produces.
+        """
+        mixed_case = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="Lookup_Edition",
+            version=1,
+            title="Mixed case namespace and edition",
+            description="test_description",
+        )
+        block = DatasetStoryBlock(link_to_latest_version=True)
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("dataset_lookup", mixed_case.id),
+                ("manual_link", {"title": "Dataset Title", "url": "/datasets/lookup/editions/lookup_edition/versions"}),
+            ],
+        )
+
+        with self.assertRaises(ValidationError) as validation_error:
+            block.clean(value)
+
+        self.assertEqual(len(validation_error.exception.block_errors), 2)
+        for error in validation_error.exception.block_errors.values():
+            self.assertIn('"/datasets/LOOKUP/editions/Lookup_Edition/versions/"', error.message)
 
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_validation_fails_for_a_manual_link_to_the_resolved_url(self):
