@@ -7,6 +7,7 @@ from kafka import KafkaProducer
 from kafka.sasl.oauth import AbstractTokenProvider
 
 from cms.core.cache import memory_cache
+from cms.core.utils import release_db_connections
 
 from . import BasePublisher
 
@@ -56,6 +57,7 @@ class KafkaPublisher(BasePublisher):
             **auth_config,
         )
 
+    @release_db_connections
     def _publish(self, channel: str | None, message: dict) -> None:
         """Send the message to Kafka."""
         logger.info("KafkaPublisher: Publishing to channel=%s, message=%s", channel, message)

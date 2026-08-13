@@ -308,12 +308,14 @@ if "read_replica" not in DATABASES:
 
 # Configure a connection pool to reduce connections when using threads.
 # The numbers are intentionally low, as contention on connections shouldn't be high.
-db_pool_options = {
-    "min_size": 1,
-    "max_size": int(env.get("DB_POOL_MAX_SIZE", 3)),
-}
-
-for db_config in DATABASES.values():
+# Read and write replicas can have their own pool sizes.
+db_pool_default_max_size = int(env.get("DB_POOL_MAX_SIZE", 3))
+for db_alias, db_config in DATABASES.items():
+    db_pool_alias_env_var = "DB_POOL_MAX_SIZE_READ" if db_alias == "read_replica" else "DB_POOL_MAX_SIZE_WRITE"
+    db_pool_options = {
+        "min_size": 1,
+        "max_size": int(env.get(db_pool_alias_env_var, db_pool_default_max_size)),
+    }
     db_config.setdefault("OPTIONS", {}).setdefault("pool", {}).update(db_pool_options)
 
 DATABASE_ROUTERS = [
@@ -970,7 +972,8 @@ SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE = env.get("SLACK_NOTIFY_ON_BUNDLE_STATUS_CH
 
 # 110 seconds is comfortably under the 2 minute cron interval
 BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS = float(env.get("BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS", 110))
-BUNDLE_POST_PUBLISH_CONCURRENCY = int(env.get("BUNDLE_POST_PUBLISH_CONCURRENCY", 4))
+BUNDLE_POST_PUBLISH_CONCURRENCY = int(env.get("BUNDLE_POST_PUBLISH_CONCURRENCY", 6))
+BUNDLE_POST_PUBLISH_SUPPORT_CONCURRENCY = int(env.get("BUNDLE_POST_PUBLISH_SUPPORT_CONCURRENCY", 3))
 BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT = True
 BUNDLE_POST_PUBLISH_POLL_FREQUENCY = float(env.get("BUNDLE_POST_PUBLISH_POLL_FREQUENCY", 5))
 BUNDLE_POST_PUBLISH_MAX_RETRIES = int(env.get("BUNDLE_POST_PUBLISH_MAX_RETRIES", 3))

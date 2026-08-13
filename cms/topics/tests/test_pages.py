@@ -57,6 +57,39 @@ class TopicPageTests(WagtailPageTestCase):
         self.assertContains(response, "Contents")
         self.assertContains(response, "Sections in this page")
 
+    def test_content_scripts_load_pym_for_featured_item_with_iframe(self):
+        """pym.js should load when the featured item has iframe visualisations."""
+        self.page.featured_series = self.series
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertNotContains(response, "pym.min.js")
+
+        self.statistical_article_page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Test Section",
+                    "content": [
+                        {
+                            "type": "iframe_visualisation",
+                            "value": {
+                                "iframe_source_url": "/visualisations/dvc/1",
+                                "accessible_label": "Bar chart of GDP per region",
+                                "audio_description": "GDP is highest in London and lowest in the North East.",
+                            },
+                        }
+                    ],
+                },
+            }
+        ]
+        self.statistical_article_page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, "pym.min.js")
+
     def test_topic_page_displays_headline_figures(self):
         self.page.headline_figures.extend(
             [
