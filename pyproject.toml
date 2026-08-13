@@ -104,6 +104,7 @@ select = [
     "C4",     # flake8-comprehensions
     "S",      # flake8-bandit
     "D",      # pydocstyle - Enforce existing docstrings only
+    "C90",    # mccabe
     "RUF",    # Ruff specific rules
 
     # PL - Pylint is only partially supported, we also use the pylint tool to catch all the rules.
@@ -122,6 +123,8 @@ ignore = [
     "W191",
     # Prefer explicit type rather than union (|) shorthand
     "UP007",
+    # Allow complex functions
+    "C901",
     # Allow non-top-level imports
     "PLC0415",
     # contextlib.suppress is slower
