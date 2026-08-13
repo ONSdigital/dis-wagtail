@@ -13,23 +13,24 @@ EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
 COMPOUND_ID_PARTS_COUNT = 4
 
 
-def format_datasets_as_document_list(
-    datasets: StreamValue, *, link_to_latest_version: bool = False
-) -> list[dict[str, Any]]:
+def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, Any]]:
     """Takes a StreamValue of dataset blocks (the value of a StreamField of DatasetStoryBlocks).
 
     Returns the datasets in a list of dictionaries in the format required for the ONS Document List design system
     component.
     See: https://service-manual.ons.gov.uk/design-system/components/document-list
 
-    Args:
-        datasets: The value of a StreamField of DatasetStoryBlocks.
-        link_to_latest_version: Link looked up datasets to the latest published version of their
-            edition instead of to the dataset series page. Callers tied to a specific edition, such
-            as release calendar pages, pass True. Topic and related data pages are not tied to an
-            edition, so they use the series page and leave this as False.
-            Manually entered links are unaffected: their URL is always used as given.
+    Where looked up datasets link to is declared once, by the DatasetStoryBlock the field was
+    built with, and is read back off the value here. Pages tied to a specific edition, such as
+    release calendar pages, set link_to_latest_version on the block; topic and related data pages
+    are not tied to an edition, so they keep the default and link to the dataset series page.
+    Taking the setting from the block rather than from an argument is what stops a page validating
+    against one destination and rendering another.
+
+    Manually entered links are unaffected: their URL is always used as given.
     """
+    link_to_latest_version = datasets.stream_block.meta.link_to_latest_version
+
     dataset_documents: list = []
     for dataset in datasets:
         block_value = dataset.value

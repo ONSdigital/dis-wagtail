@@ -65,14 +65,14 @@ class TestUtils(TestCase):
         manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
 
         datasets = StreamValue(
-            DatasetStoryBlock(),
+            DatasetStoryBlock(link_to_latest_version=True),
             stream_data=[
                 ("dataset_lookup", lookup_dataset),
                 ("manual_link", manual_dataset),
             ],
         )
 
-        formatted_datasets = format_datasets_as_document_list(datasets, link_to_latest_version=True)
+        formatted_datasets = format_datasets_as_document_list(datasets)
 
         self.assertEqual(len(formatted_datasets), 2)
         self.assertEqual(formatted_datasets[0]["title"]["url"], "/datasets/LOOKUP/editions/lookup_edition/versions/")

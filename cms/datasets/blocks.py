@@ -60,8 +60,11 @@ class DatasetStoryBlock(StreamBlock):
     )
 
     class Meta:
-        # Overridden per field: release calendar pages pass True so that looked up datasets link to
-        # the latest published version of the chosen edition rather than the dataset series page.
+        # Set per field, and the only place a page declares where its dataset links go. It drives
+        # both the duplicate check below and the URLs format_datasets_as_document_list renders,
+        # which is what stops a page validating against one destination and rendering another.
+        # Release calendar pages set True, so looked up datasets link to the latest published
+        # version of the chosen edition rather than to the dataset series page.
         link_to_latest_version = False
 
     def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
