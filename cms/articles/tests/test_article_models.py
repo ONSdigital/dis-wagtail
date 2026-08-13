@@ -274,6 +274,23 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         del self.page.has_iframe_visualisations  # clear cached property
         self.assertTrue(self.page.has_iframe_visualisations)
 
+    def test_has_iframe_visualisations_in_featured_chart(self):
+        """Test iframe visualisations in the featured chart are detected."""
+        self.assertFalse(self.page.has_iframe_visualisations)
+        self.page.featured_chart = [
+            {
+                "type": "iframe",
+                "value": {
+                    "title": "",
+                    "accessible_label": "Bar chart of GDP per region",
+                    "audio_description": "GDP is highest in London and lowest in the North East.",
+                    "iframe_source_url": "/visualisations/dvc/1",
+                },
+            }
+        ]
+        del self.page.has_iframe_visualisations  # clear cached property
+        self.assertTrue(self.page.has_iframe_visualisations)
+
     def test_next_date_must_be_after_release_date(self):
         """Tests the model validates next release date is after the release date."""
         self.page.next_release_date = self.page.release_date
@@ -1227,6 +1244,29 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(data["chart"]["theme"], "primary")
         self.assertEqual(data["chart"]["headingLevel"], 3)
 
+        self.assertNotIn("image", data)
+
+    def test_as_featured_article_child_macro_data_with_iframe(self):
+        """Test that an iframe is used when configured as the featured chart."""
+        self.page.featured_chart = [
+            {
+                "type": "iframe",
+                "value": {
+                    "title": "",
+                    "accessible_label": "Bar chart of GDP per region",
+                    "audio_description": "GDP is highest in London and lowest in the North East.",
+                    "iframe_source_url": "/visualisations/dvc/1",
+                },
+            }
+        ]
+        self.page.save()
+
+        data = self.page.as_featured_article_child_macro_data()
+
+        self.assertIn("iframe", data)
+        self.assertEqual(data["iframe"].block_type, "iframe")
+        self.assertEqual(data["iframe"].value["iframe_source_url"], "/visualisations/dvc/1")
+        self.assertNotIn("chart", data)
         self.assertNotIn("image", data)
 
     def test_as_featured_article_child_macro_data_without_chart(self):

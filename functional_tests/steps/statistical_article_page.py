@@ -618,6 +618,27 @@ def user_fills_in_chart_audio_description(context: Context) -> None:
     featured_chart_content.get_by_label("Accessible description*").fill("This is the audio description")
 
 
+@step('the user clicks "Iframe Visualisation" in the featured chart streamfield block selector')
+def user_clicks_iframe_visualisation_in_featured_chart_streamfield_block_selector(
+    context: Context,
+) -> None:
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    featured_chart_content.get_by_title("Insert a block").click()
+    featured_chart_content.get_by_text("Iframe Visualisation").click()
+
+
+@step("the user fills in the featured chart title")
+def user_fills_in_featured_chart_title(context: Context) -> None:
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    featured_chart_content.get_by_label("Featured chart title").fill("Test Featured Chart Title")
+
+
+@then("the featured chart title field contains the entered title")
+def the_featured_chart_title_field_contains_the_entered_title(context: Context) -> None:
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    expect(featured_chart_content.get_by_label("Featured chart title")).to_have_value("Test Featured Chart Title")
+
+
 @step("the user enters data into the chart table")
 def user_enters_data_into_chart_table(context: Context) -> None:
     """Fill the table with test data by clicking and typing in each cell."""

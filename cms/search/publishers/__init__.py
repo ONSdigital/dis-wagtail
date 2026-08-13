@@ -44,17 +44,19 @@ class BasePublisher(ABC):
         """Build the message for the created/updated event.
         Delegate sending to the subclass's _publish().
         """
-        self._publish(self.CREATED_OR_UPDATED_CHANNEL, build_resource_dict(page, old_url_path=old_url_path))
+        message = build_resource_dict(page, old_url_path=old_url_path)
+        self._publish(self.CREATED_OR_UPDATED_CHANNEL, message)
 
     def publish_deleted(self, page: Page) -> None:
         """Build the message for the deleted event.
         Delegate sending to the subclass's _publish().
         """
+        message = {
+            "uri": build_page_uri(page),
+        }
         self._publish(
             self.DELETED_CHANNEL,
-            {
-                "uri": build_page_uri(page),
-            },
+            message,
         )
 
     @abstractmethod
