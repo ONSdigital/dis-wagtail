@@ -1,5 +1,6 @@
 import uuid
 from typing import Any
+from unittest.mock import patch
 
 from django.test import TestCase
 from wagtail.models import Site
@@ -162,3 +163,20 @@ class SignalHandlersTestCase(TestCase):
         # because it is still referenced by the original live page
         new_page.unpublish()
         self.assertMediaPrivacy(Privacy.PUBLIC)
+
+    @patch("cms.private_media.signal_handlers._publish_media")
+    def test_signal_runs_for_regular_pages(self, mock_publish_media):
+        """Tests that the signal handlers run for regular page."""
+        self.test_page.save_revision().publish()
+
+        mock_publish_media.assert_called_once_with(self.test_page)
+
+    @patch("cms.private_media.signal_handlers._publish_media")
+    def test_signal_early_returns_for_alias(self, mock_publish_media):
+        """Tests that the signal handlers early return when the instance is an alias page."""
+        self.test_page.create_alias(update_slug="test-information-page-alias")
+
+        self.test_page.save_revision().publish()
+
+        # should only run one time for the original page, not the alias
+        mock_publish_media.assert_called_once_with(self.test_page)
