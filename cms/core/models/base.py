@@ -139,6 +139,17 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
 
         return False
 
+    @cached_property
+    def has_iframe_visualisations(self) -> bool:
+        """Checks if there are any iframe visualisation blocks."""
+        if (streamvalue := getattr(self, self.content_field_name)) and hasattr(
+            streamvalue.stream_block, "has_iframe_visualisations"
+        ):
+            # run the check on the StreamBlock itself, if it supports it
+            return bool(streamvalue.stream_block.has_iframe_visualisations(streamvalue))
+
+        return False
+
     @property
     def publication_date(self) -> date | datetime | None:
         """Return the publication date of the page."""

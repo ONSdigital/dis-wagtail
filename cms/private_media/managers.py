@@ -9,6 +9,8 @@ from wagtail.documents.models import DocumentQuerySet
 from wagtail.images.models import ImageQuerySet
 from wagtail.models import Site
 
+from cms.core.utils import release_db_connections
+
 from .bulk_operations import bulk_set_file_permissions
 from .constants import Privacy
 from .utils import get_frontend_cache_configuration
@@ -53,6 +55,7 @@ class PrivateMediaModelManager(models.Manager):
             for obj in to_update:
                 serve_url_batch.add_urls(obj.get_privacy_controlled_serve_urls(sites))
                 file_url_batch.add_urls(obj.get_privacy_controlled_file_urls())
+            release_db_connections()
             serve_url_batch.purge()
             file_url_batch.purge()
         return count

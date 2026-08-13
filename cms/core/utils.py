@@ -2,12 +2,14 @@ import io
 import json
 import re
 import string
-from collections.abc import Mapping
+from collections.abc import Callable, Generator, Mapping
+from functools import wraps
 from itertools import chain
 from threading import Lock
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, overload
 
 from django.conf import settings
+from django.db import connections
 from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import redirect as _redirect
 
@@ -147,3 +149,81 @@ def deep_merge_mapping(dict1: Mapping, dict2: Mapping) -> dict:
             result[key] = value
 
     return result
+
+
+class GeneratorCollector[T, R]:
+    """Wrap a generator in a convenient API to access both the yielded and returned values."""
+
+    value: R | None
+
+    def __init__(self, gen: Generator[T, None, R]) -> None:
+        self.gen = gen
+        self.value = None
+
+    def __iter__(self) -> Generator[T, None, R]:
+        self.value = yield from self.gen
+        return self.value
+
+    def consume(self) -> None:
+        for _ in iter(self):
+            pass
+
+
+def _release_db_connections() -> None:
+    for conn in connections.all(initialized_only=True):
+        if conn.connection is not None and not conn.in_atomic_block and conn.get_autocommit():
+            conn.close_if_unusable_or_obsolete()
+
+
+@overload
+def release_db_connections(func: None = None) -> None: ...
+@overload
+def release_db_connections[F: Callable[..., Any]](func: F) -> F: ...
+@overload
+def release_db_connections[F: Callable[..., Any]](
+    func: None = None, *, before: bool = ..., after: bool
+) -> Callable[[F], F]: ...
+@overload
+def release_db_connections[F: Callable[..., Any]](func: None = None, *, before: bool) -> Callable[[F], F]: ...
+
+
+def release_db_connections(
+    func: Callable[..., Any] | None = None, *, before: bool | None = None, after: bool | None = None
+) -> Any:
+    """Releases current thread's database connections to the pool.
+
+    Unlike Django's `close_old_connections`, this is safe to use inside a transaction block.
+
+    Can be called directly, or used as a decorator to release connections before and/or after the decorated
+    function is called. Defaults to releasing before.
+
+        release_db_connections()
+
+        @release_db_connections  # release before call
+        @release_db_connections(after=True)  # release before and after each decorated function call
+        @release_db_connections(before=False, after=True)  # release after each decorated function call
+    """
+    if func is None and before is None and after is None:
+        _release_db_connections()
+        return None
+
+    release_before = True if before is None else before
+    release_after = False if after is None else after
+
+    def decorate[**P, R](decorated: Callable[P, R]) -> Callable[P, R]:
+        @wraps(decorated)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            if release_before:
+                _release_db_connections()
+            try:
+                return decorated(*args, **kwargs)
+            finally:
+                if release_after:
+                    _release_db_connections()
+
+        return wrapper
+
+    if func is not None:
+        return decorate(func)
+
+    return decorate

@@ -619,6 +619,27 @@ def user_fills_in_chart_audio_description(context: Context) -> None:
     featured_chart_content.get_by_label("Accessible description*").fill("This is the audio description")
 
 
+@step('the user clicks "Iframe Visualisation" in the featured chart streamfield block selector')
+def user_clicks_iframe_visualisation_in_featured_chart_streamfield_block_selector(
+    context: Context,
+) -> None:
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    featured_chart_content.get_by_title("Insert a block").click()
+    featured_chart_content.get_by_text("Iframe Visualisation").click()
+
+
+@step("the user fills in the featured chart title")
+def user_fills_in_featured_chart_title(context: Context) -> None:
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    featured_chart_content.get_by_label("Featured chart title").fill("Test Featured Chart Title")
+
+
+@then("the featured chart title field contains the entered title")
+def the_featured_chart_title_field_contains_the_entered_title(context: Context) -> None:
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    expect(featured_chart_content.get_by_label("Featured chart title")).to_have_value("Test Featured Chart Title")
+
+
 @step("the user enters data into the chart table")
 def user_enters_data_into_chart_table(context: Context) -> None:
     """Fill the table with test data by clicking and typing in each cell."""
@@ -732,7 +753,11 @@ def a_statistical_article_page_with_configured_listing_image_exists(
 @then("the page has a CSV download link for the chart")
 def the_page_has_a_csv_download_link_for_the_chart(context: Context) -> None:
     """Check that the page has a CSV download link for the chart."""
-    context.page.get_by_role("button", name="Download: line chart").click()
+    download_details = context.page.locator('.ons-js-details[id^="figure-downloads--"]')
+    # Wait for this class as it signifies the design system js has loaded, initialised and updated
+    # element roles and styles
+    expect(download_details).to_contain_class("ons-details--initialised")
+    download_details.get_by_text("Download: line chart").click()
     csv_download_link = context.page.get_by_role("link", name="Download CSV")
     expect(csv_download_link).to_be_visible()
 

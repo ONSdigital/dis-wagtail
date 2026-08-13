@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.test import override_settings
 from wagtail.blocks.struct_block import StructValue
 
-from cms.datavis.blocks.charts import IframeBlock
+from cms.datavis.blocks.iframe import IframeBlock
 from cms.datavis.tests.test_chart_blocks_base import BaseVisualisationBlockTestCase
 
 
@@ -20,12 +20,13 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
 
     def setUp(self):
         super().setUp()
+        self.raw_data["accessible_label"] = "Bar chart of GDP per region"
         self.raw_data["iframe_source_url"] = "https://www.example.com/visualisations/dvc/1234567890"
 
-    def get_component_config(self, raw_data: dict[str, Any] | None = None):
-        """Helper method to get component config, following the pattern from BaseChartBlockTestCase."""
+    def get_figure_config(self, raw_data: dict[str, Any] | None = None):
+        """Helper method to get figure config, following the pattern from BaseChartBlockTestCase."""
         value = self.get_value(raw_data)
-        return self.block.get_component_config(value)
+        return self.block.get_figure_config(value)
 
     def test_generic_properties(self):
         self._test_generic_properties()
@@ -42,9 +43,9 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
     def test_invalid_data(self):
         """Validate that these tests can detect invalid data."""
         invalid_data = self.raw_data.copy()
-        invalid_data["title"] = ""  # Required field
+        invalid_data["accessible_label"] = ""  # Required field
         value = self.get_value(invalid_data)
-        with self.assertRaises(ValidationError, msg="Expected ValidationError for missing title"):
+        with self.assertRaises(ValidationError, msg="Expected ValidationError for missing accessible label"):
             self.block.clean(value)
 
     def test_invalid_url(self):
@@ -120,10 +121,11 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         """Test that all validation errors (required fields + invalid URL) are shown together."""
         invalid_data = {
             # All required fields are missing
-            "title": "",
+            "accessible_label": "",
             "audio_description": "",
             "iframe_source_url": "",
             # Optional fields
+            "title": "",
             "subtitle": "",
             "caption": "",
             "footnotes": "",
@@ -138,16 +140,17 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         errors = context.exception.block_errors
 
         # All required fields should have errors
-        self.assertIn("title", errors)
+        self.assertIn("accessible_label", errors)
         self.assertIn("audio_description", errors)
         self.assertIn("iframe_source_url", errors)
 
         # Check the error messages
-        self.assertEqual(errors["title"].message, "This field is required.")
+        self.assertEqual(errors["accessible_label"].message, "This field is required.")
         self.assertEqual(errors["audio_description"].message, "This field is required.")
         self.assertEqual(errors["iframe_source_url"].message, "Please enter a valid URL.")
 
         # Optional fields should not have errors
+        self.assertNotIn("title", errors)
         self.assertNotIn("subtitle", errors)
         self.assertNotIn("caption", errors)
         self.assertNotIn("footnotes", errors)
@@ -155,10 +158,11 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
     def test_partial_validation_errors(self):
         """Test that missing required fields are shown along with URL validation errors."""
         invalid_data = {
-            "title": "",  # Missing
-            "subtitle": "Test subtitle",  # Provided
+            "accessible_label": "",  # Missing
             "audio_description": "",  # Missing
             "iframe_source_url": "https://www.invalid-domain.com/visualisations/dvc/123",  # Invalid domain
+            "title": "",
+            "subtitle": "",
             "caption": "",
             "footnotes": "",
         }
@@ -174,21 +178,64 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         self.assertEqual(len(errors), 3)
 
         # Check which fields have errors
-        self.assertIn("title", errors)
+        self.assertIn("accessible_label", errors)
         self.assertIn("audio_description", errors)
         self.assertIn("iframe_source_url", errors)
 
         # Check error messages
-        self.assertEqual(errors["title"].message, "This field is required.")
+        self.assertEqual(errors["accessible_label"].message, "This field is required.")
         self.assertEqual(errors["audio_description"].message, "This field is required.")
         self.assertEqual(
             errors["iframe_source_url"].message, "The URL hostname is not in the list of allowed domains: example.com"
         )
 
+    def test_clean__subtitle_without_title_raises(self):
+        """A subtitle cannot be saved without a title."""
+        invalid_data = self.raw_data.copy()
+        invalid_data["title"] = ""
+        invalid_data["subtitle"] = "A subtitle"
+        value = self.get_value(invalid_data)
+
+        with self.assertRaises(ValidationError) as info:
+            self.block.clean(value)
+
+        self.assertEqual(
+            info.exception.block_errors["subtitle"].message,
+            "Please add a title if you want to add a subtitle.",
+        )
+
+    def test_clean__subtitle_error_shown_with_other_errors(self):
+        """The subtitle error is reported alongside other validation errors."""
+        invalid_data = self.raw_data.copy()
+        invalid_data["title"] = ""
+        invalid_data["subtitle"] = "A subtitle"
+        invalid_data["accessible_label"] = ""
+        value = self.get_value(invalid_data)
+
+        with self.assertRaises(ValidationError) as info:
+            self.block.clean(value)
+
+        self.assertIn("subtitle", info.exception.block_errors)
+        self.assertIn("accessible_label", info.exception.block_errors)
+
+    def test_clean__subtitle_with_title(self):
+        """A subtitle paired with a title is allowed."""
+        valid_data = self.raw_data.copy()
+        valid_data["subtitle"] = "A subtitle"
+        value = self.get_value(valid_data)
+        self.block.clean(value)
+
+    def test_clean__no_subtitle(self):
+        """No subtitle is allowed regardless of whether there is a title."""
+        valid_data = self.raw_data.copy()
+        valid_data["subtitle"] = ""
+        value = self.get_value(valid_data)
+        self.block.clean(value)
+
     def test_footnotes_configuration(self):
         """Test that footnotes are configured correctly in the component config when set."""
         self.raw_data["footnotes"] = "Important note: This is test footnote text"
-        config = self.get_component_config()
+        config = self.get_figure_config()
         self.assertEqual(
             config["footnotes"],
             {
@@ -200,21 +247,21 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
     def test_footnotes_not_in_config_when_not_set(self):
         """Footnotes should be omitted from the component config when no footnotes have been entered."""
         self.raw_data["footnotes"] = ""
-        config = self.get_component_config()
+        config = self.get_figure_config()
         self.assertNotIn("footnotes", config)
 
     def test_footnotes_html_only_omitted(self):
         for html in ("<p></p>", "<p> </p>"):
             with self.subTest(html=html):
                 self.raw_data["footnotes"] = html
-                config = self.get_component_config()
+                config = self.get_figure_config()
                 self.assertNotIn("footnotes", config)
                 rendered = self.block.render(self.raw_data)
                 self.assertNotIn("Footnotes", rendered)
         content = "Valid content"
         with self.subTest(content=content):
             self.raw_data["footnotes"] = content
-            config = self.get_component_config()
+            config = self.get_figure_config()
             self.assertIn("footnotes", config)
             rendered = self.block.render(self.raw_data)
             self.assertIn(content, rendered)
