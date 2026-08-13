@@ -379,7 +379,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             # ensure all bundled pages are ready to publish
             self._validate_bundled_pages_status()
 
-            # enusure the release calendar page is ready to publish
+            # ensure the release calendar page is ready to publish
             self._validate_release_calendar_page_status()
 
             # ensure all bundled datasets are approved (the function will check if the API is enabled)
