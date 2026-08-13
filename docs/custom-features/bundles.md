@@ -240,7 +240,6 @@ The main bundle model that orchestrates content publication.
 Key properties:
 
 - `scheduled_publication_date`: Returns publication_date or release_calendar_page.release_date
-- `can_be_approved`: Whether bundle can be approved (all pages ready to publish)
 - `is_ready_to_be_published`: Whether bundle status is `APPROVED`
 - `can_be_manually_published`: Whether bundle can be published manually
 - Useful manager methods:
