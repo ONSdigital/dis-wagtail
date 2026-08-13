@@ -1425,7 +1425,7 @@ class ChartBlockTypesTestCase(TestCase):
 
 
 class StatisticalArticlePageRelatedLinksRecursionTestCase(WagtailTestUtils, TestCase):
-    """Regression tests for CMS-1270.
+    """Regression tests for recursive article rendering issue.
 
     To compute a page's related links, we would previously compute the word count of its related articles.
     This in turn would compute the word count, which involved rendering the page content. This could result in
