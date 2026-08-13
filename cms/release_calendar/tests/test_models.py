@@ -4,7 +4,6 @@ from unittest.mock import patch
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from wagtail.blocks import StreamValue
 from wagtail.locks import BasicLock
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
@@ -15,7 +14,6 @@ from cms.core.custom_date_format import ons_date_format, ons_default_datetime
 from cms.core.models import ContactDetails
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.utils import rebuild_internal_search_index
-from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.locks import ReleasePageInBundleReadyToBePublishedLock
@@ -737,13 +735,11 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
             (ReleaseStatus.PUBLISHED, True),
             (ReleaseStatus.CANCELLED, False),
         ]
-        self.page.datasets = StreamValue(
-            DatasetStoryBlock(),
-            stream_data=[
-                ("dataset_lookup", lookup_dataset),
-                ("manual_link", manual_dataset),
-            ],
-        )
+        # Raw StreamField data, so the destination comes from the field's own block definition.
+        self.page.datasets = [
+            {"type": "dataset_lookup", "value": lookup_dataset.pk},
+            {"type": "manual_link", "value": manual_dataset},
+        ]
 
         rebuild_internal_search_index()
         for status, is_shown in cases:
@@ -757,7 +753,10 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
 
                 self.assertEqual(lookup_dataset.title in str(response.content), is_shown)
                 self.assertEqual(lookup_dataset.description in str(response.content), is_shown)
-                self.assertEqual(lookup_dataset.url_path in str(response.content), is_shown)
+                # The series URL is a prefix of the edition URL, so the full href is asserted to
+                # catch a release calendar page linking to the series page.
+                expected_href = 'href="/datasets/LOOKUP/editions/lookup_edition/versions/"'
+                self.assertEqual(expected_href in str(response.content), is_shown)
 
                 self.assertEqual(manual_dataset["title"] in str(response.content), is_shown)
                 self.assertEqual(manual_dataset["description"] in str(response.content), is_shown)
