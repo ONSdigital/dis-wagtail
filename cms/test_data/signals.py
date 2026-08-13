@@ -9,10 +9,10 @@ from wagtail.models import Page
 from wagtail.signal_handlers import update_reference_index_on_save
 from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move
 
+from cms.post_publish_actions.signal_handlers import run_post_publish_actions_handler
 from cms.search.signal_handlers import (
     on_page_deleted,
     on_page_moved,
-    on_page_published,
     on_page_slug_changed,
     on_page_unpublished,
 )
@@ -46,7 +46,7 @@ def index_receivers(models: Iterable[type[Model]]) -> list[Receiver]:
 
 def search_publisher_receivers() -> list[Receiver]:
     return [
-        (page_published, on_page_published, None),
+        (page_published, run_post_publish_actions_handler, None),
         (page_unpublished, on_page_unpublished, None),
         (page_slug_changed, on_page_slug_changed, None),
         (post_page_move, on_page_moved, None),
