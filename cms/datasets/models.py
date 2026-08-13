@@ -254,9 +254,10 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
         """Return the public path this dataset should be linked to.
 
         Which destination is correct depends on the page doing the linking rather than on the
-        dataset: pages tied to a specific edition, such as release calendar entries, pass True.
-        The edition path stops at "versions/", so the destination is not pinned to the version
-        recorded here.
+        dataset. Callers read link_to_latest_version off the DatasetStoryBlock the linking page's
+        field was built with, so pages tied to a specific edition, such as release calendar
+        entries, get the edition path. That path stops at "versions/", so the destination is not
+        pinned to the version recorded here.
         """
         if link_to_latest_version:
             return f"/datasets/{self.namespace}/editions/{self.edition}/versions/"
