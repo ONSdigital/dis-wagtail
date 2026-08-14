@@ -314,3 +314,18 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
 
         # Expect clean to not raise any errors
         block.clean(value)
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_validation_passes_for_a_manual_link_to_one_version_of_the_edition(self):
+        """A single version is a different destination to the edition the lookup resolves to."""
+        block = DatasetStoryBlock(link_to_latest_version=True)
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("dataset_lookup", self.march_v1.id),
+                ("manual_link", {"title": "Dataset Title", "url": "/datasets/ds/editions/march/versions/1"}),
+            ],
+        )
+
+        # Expect clean to not raise any errors
+        block.clean(value)
