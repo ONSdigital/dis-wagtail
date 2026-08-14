@@ -194,7 +194,7 @@ dev-init: load-design-system-templates npm-build collectstatic compilemessages m
 
 .PHONY: functional-tests-up
 functional-tests-up:  ## Start the functional tests docker compose dependencies
-	docker compose -f functional_tests/docker-compose.yml up -d
+	docker compose -f functional_tests/docker-compose.yml up -d --wait
 
 .PHONY: functional-tests-dev-up
 functional-tests-dev-up:  ## Start the functional tests docker compose dependencies and dev app
