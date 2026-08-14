@@ -4,6 +4,7 @@ from behave.runner import Context
 from playwright.sync_api import expect
 
 from cms.methodology.tests.factories import MethodologyIndexPageFactory
+from functional_tests.step_helpers.utils import fill_datetime_field
 
 
 @step("the user creates a methodology page as a child of the existing topic page")
@@ -22,7 +23,7 @@ def user_populates_the_methodology_page(context: Context) -> None:
     context.page.get_by_placeholder("Page title*").fill("Methodology page")
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Page summary")
 
-    context.page.get_by_label("Publication date*").fill("1950-01-01")
+    fill_datetime_field(context.page.get_by_label("Publication date*"), "1950-01-01")
 
     context.page.get_by_title("Insert a block").click()
 
@@ -94,8 +95,8 @@ def contact_details_are_visible_on_the_page(context: Context) -> None:
 
 @when("the Last revised date is set to be before the Publication date")
 def set_last_revised_date_before_publication_date(context: Context) -> None:
-    context.page.get_by_label("Publication date*").fill("1950-01-02")
-    context.page.get_by_label("Last revised date").fill("1950-01-01")
+    fill_datetime_field(context.page.get_by_label("Publication date*"), "1950-01-02")
+    fill_datetime_field(context.page.get_by_label("Last revised date"), "1950-01-01")
 
 
 @then("a validation error for the Last revised date is displayed")

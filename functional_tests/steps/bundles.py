@@ -24,7 +24,12 @@ from functional_tests.step_helpers.datasets import (
     TEST_UNPUBLISHED_DATASETS,
     register_dataset_detail_route,
 )
-from functional_tests.step_helpers.utils import dl_to_dict, get_bundle_approval_status, get_page_from_context
+from functional_tests.step_helpers.utils import (
+    dl_to_dict,
+    fill_datetime_field,
+    get_bundle_approval_status,
+    get_page_from_context,
+)
 from functional_tests.steps.information_page import create_information_page
 from functional_tests.steps.release_page import click_add_child_page, navigate_to_release_calendar_page
 
@@ -161,7 +166,7 @@ def user_manually_creates_future_release_calendar(context: Context, status: str)
     context.page.get_by_placeholder("Page title*").fill(title)
     context.page.get_by_label("Status*").select_option(status.upper())
     formatted_date = tomorrow.strftime("%Y-%m-%d %H:%M")
-    context.page.get_by_role("textbox", name="Release date*").fill(formatted_date)
+    fill_datetime_field(context.page.get_by_role("textbox", name="Release date*"), formatted_date)
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My example release page")
 
     # Save the values to access later
@@ -232,7 +237,7 @@ def user_updates_selected_release_calendar_page_title_release_date_status(contex
     context.page.get_by_placeholder("Page title*").fill("New title")
     context.page.get_by_label("Status*").select_option((status).upper())
     formatted_date = new_date.strftime("%Y-%m-%d %H:%M")
-    context.page.get_by_role("textbox", name="Release date*").fill(formatted_date)
+    fill_datetime_field(context.page.get_by_role("textbox", name="Release date*"), formatted_date)
     context.page.get_by_role("button", name="Save draft").click()
     # tracks new release date with ons date format
     context.saved_release_calendar_page_details["release_date_value"] = ons_date_format(new_date, "DATETIME_FORMAT")
