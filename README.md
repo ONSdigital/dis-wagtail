@@ -543,7 +543,7 @@ make compilemessages
 
 This will compile the .po files into .mo files, which are used by Django to display the translated text.
 
-### Test Data Management (*In Development)
+### Test Data Management (\*In Development)
 
 Management commands are provided to seed, inspect, and tear down test data for local development.
 
