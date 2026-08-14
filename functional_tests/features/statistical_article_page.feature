@@ -155,6 +155,14 @@ Feature: Statistical Article Page components
         And the user clicks the "Save draft" button
         Then the user can save the page
 
+    Scenario: A CMS user can add an iframe visualisation as a featured chart on a Statistical Article Page
+        When the user goes to add a new statistical article page
+        And the user adds basic statistical article page content
+        And the user switches to the Promote tab
+        And the user clicks "Iframe Visualisation" in the featured chart streamfield block selector
+        And the user fills in the featured chart title
+        Then the featured chart title field contains the entered title
+
     Scenario: A CMS user can preview a featured chart on a Statistical Article Page
         Given a statistical article page with a configured featured chart exists
         But the statistical article page is not a featured article on its containing topic page
