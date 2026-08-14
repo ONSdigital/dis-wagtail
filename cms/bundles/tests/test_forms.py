@@ -17,7 +17,7 @@ from cms.datasets.tests.factories import DatasetFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.tests.factories import TeamFactory
 from cms.users.tests.factories import UserFactory
-from cms.workflows.tests.utils import mark_page_as_ready_to_publish
+from cms.workflows.tests.utils import mark_page_as_ready_for_review, mark_page_as_ready_to_publish
 
 
 class AddToBundleFormTestCase(TestCase):
@@ -101,6 +101,16 @@ class BundleAdminFormTestCase(TestCase):
             ),
             "teams": inline_formset([{"id": bundled_team.id, "team": team.id, "ORDER": "1"}], initial=1),
         }
+
+    def _link_release_calendar_page(self, page):
+        self.bundle.release_calendar_page = page
+        self.bundle.save(update_fields=["release_calendar_page"])
+
+    def _build_bundle_approval_form(self, **overrides):
+        data = self._setup_bundle()
+        data["status"] = BundleStatus.APPROVED
+        data.update(overrides)
+        return self.form_class(instance=self.bundle, data=nested_form_data(data), for_user=self.approver)
 
     def test_form_init__status_choices(self):
         """Checks status choices variation."""
@@ -201,17 +211,16 @@ class BundleAdminFormTestCase(TestCase):
         self.assertIsNone(form.cleaned_data["approved_by"])
         self.assertIsNone(form.cleaned_data["approved_at"])
 
-    def test_clean__validates_release_calendar_must_be_ready_to_publish(self):
+    def test_clean__does_not_allow_approval_when_release_calendar_is_not_ready_to_publish(self):
+        """Check bundle cannot be approved when the linked release calendar page is in workflow but not ready
+        to publish.
+        """
         nowish = timezone.now() + timedelta(minutes=5)
-        release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish)
-        self.bundle.release_calendar_page = release_calendar_page
-        self.bundle.save(update_fields=["release_calendar_page"])
+        release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish, live=False)
+        mark_page_as_ready_for_review(release_calendar_page)
 
-        data = self._setup_bundle()
-        data["release_calendar_page"] = release_calendar_page.id
-        data["status"] = BundleStatus.APPROVED
-
-        form = self.form_class(instance=self.bundle, data=nested_form_data(data), for_user=self.approver)
+        self._link_release_calendar_page(release_calendar_page)
+        form = self._build_bundle_approval_form(release_calendar_page=release_calendar_page.id)
 
         self.assertFalse(form.is_valid())
 
@@ -219,17 +228,13 @@ class BundleAdminFormTestCase(TestCase):
         self.assertFormError(form, "release_calendar_page", [error])
 
     def test_clean__allows_approval_when_release_calendar_is_ready_to_publish(self):
+        """Check bundle can be approved when the linked release calendar page is ready to publish."""
         nowish = timezone.now() + timedelta(minutes=5)
-        release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish)
+        release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish, live=False)
         mark_page_as_ready_to_publish(release_calendar_page, self.approver)
-        self.bundle.release_calendar_page = release_calendar_page
-        self.bundle.save(update_fields=["release_calendar_page"])
 
-        data = self._setup_bundle()
-        data["release_calendar_page"] = release_calendar_page.id
-        data["status"] = BundleStatus.APPROVED
-
-        form = self.form_class(instance=self.bundle, data=nested_form_data(data), for_user=self.approver)
+        self._link_release_calendar_page(release_calendar_page)
+        form = self._build_bundle_approval_form(release_calendar_page=release_calendar_page.id)
 
         self.assertTrue(form.is_valid(), form.errors)
 
@@ -237,14 +242,9 @@ class BundleAdminFormTestCase(TestCase):
         """Check bundle can be approved when the linked release calendar page is live and has no unpublished changes."""
         nowish = timezone.now() + timedelta(minutes=5)
         release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish)
-        self.bundle.release_calendar_page = release_calendar_page
-        self.bundle.save(update_fields=["release_calendar_page"])
 
-        data = self._setup_bundle()
-        data["release_calendar_page"] = release_calendar_page.id
-        data["status"] = BundleStatus.APPROVED
-
-        form = self.form_class(instance=self.bundle, data=nested_form_data(data), for_user=self.approver)
+        self._link_release_calendar_page(release_calendar_page)
+        form = self._build_bundle_approval_form(release_calendar_page=release_calendar_page.id)
 
         self.assertTrue(form.is_valid(), form.errors)
 
@@ -255,14 +255,8 @@ class BundleAdminFormTestCase(TestCase):
         release_calendar_page.title = "Updated release calendar title"
         release_calendar_page.save_revision()
 
-        self.bundle.release_calendar_page = release_calendar_page
-        self.bundle.save(update_fields=["release_calendar_page"])
-
-        data = self._setup_bundle()
-        data["release_calendar_page"] = release_calendar_page.id
-        data["status"] = BundleStatus.APPROVED
-
-        form = self.form_class(instance=self.bundle, data=nested_form_data(data), for_user=self.approver)
+        self._link_release_calendar_page(release_calendar_page)
+        form = self._build_bundle_approval_form(release_calendar_page=release_calendar_page.id)
 
         self.assertFalse(form.is_valid())
 
