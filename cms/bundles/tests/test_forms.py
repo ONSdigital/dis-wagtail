@@ -233,6 +233,42 @@ class BundleAdminFormTestCase(TestCase):
 
         self.assertTrue(form.is_valid(), form.errors)
 
+    def test_clean__allows_approval_when_release_calendar_is_live_with_no_unpublished_changes(self):
+        """Check bundle can be approved when the linked release calendar page is live and has no unpublished changes."""
+        nowish = timezone.now() + timedelta(minutes=5)
+        release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish)
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.save(update_fields=["release_calendar_page"])
+
+        data = self._setup_bundle()
+        data["release_calendar_page"] = release_calendar_page.id
+        data["status"] = BundleStatus.APPROVED
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(data), for_user=self.approver)
+
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_clean__does_not_allow_approval_when_release_calendar_is_live_with_unpublished_changes(self):
+        """Check bundle cannot be approved when the linked release calendar page is live and has unpublished changes."""
+        nowish = timezone.now() + timedelta(minutes=5)
+        release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish)
+        release_calendar_page.title = "Updated release calendar title"
+        release_calendar_page.save_revision()
+
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.save(update_fields=["release_calendar_page"])
+
+        data = self._setup_bundle()
+        data["release_calendar_page"] = release_calendar_page.id
+        data["status"] = BundleStatus.APPROVED
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(data), for_user=self.approver)
+
+        self.assertFalse(form.is_valid())
+
+        error = "This page is not ready to be published"
+        self.assertFormError(form, "release_calendar_page", [error])
+
     def test_clean__validates_release_calendar_page_or_publication_date(self):
         nowish = timezone.now() + timedelta(minutes=5)
         release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish)

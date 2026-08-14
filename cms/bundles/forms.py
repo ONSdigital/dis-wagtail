@@ -320,7 +320,11 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         if not release_calendar_page:
             return
 
-        if not is_page_ready_to_publish(release_calendar_page):
+        is_live_with_no_unpublished_changes = (
+            release_calendar_page.live and not release_calendar_page.has_unpublished_changes
+        )
+
+        if not (is_page_ready_to_publish(release_calendar_page) or is_live_with_no_unpublished_changes):
             error = "This page is not ready to be published"
             raise ValidationError({"release_calendar_page": error})
 
