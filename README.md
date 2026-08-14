@@ -543,6 +543,75 @@ make compilemessages
 
 This will compile the .po files into .mo files, which are used by Django to display the translated text.
 
+### Test Data Management (*In Development)
+
+Management commands are provided to seed, inspect, and tear down test data for local development.
+
+#### Viewing the default configuration
+
+To see the default test data configuration (how many images, datasets, topics, etc. will be created):
+
+```bash
+make test-data-show-default-config
+```
+
+To view the full JSON schema of the configuration (useful when writing a custom config file):
+
+```bash
+make test-data-show-default-config SCHEMA=1
+```
+
+#### Creating test data
+
+To create test data using the defaults:
+
+```bash
+make test-data-create
+```
+
+The command supports the following options:
+
+- **`SEED`** – An integer seed for deterministic, reproducible output (default: `4`).
+- **`CONFIG`** – Path to a custom JSON configuration file. The file is validated against the config schema (see above).
+- **`NOINPUT`** – Skip the interactive confirmation prompt.
+
+Examples:
+
+```bash
+# Create test data with a specific seed
+make test-data-create SEED=42
+
+# Create test data from a custom config file
+make test-data-create CONFIG=path/to/config.json
+
+# Skip the confirmation prompt (useful in scripts / CI)
+make test-data-create NOINPUT=1
+```
+
+The config file lets you control the number of images, datasets, and topics created, as well as topic-specific settings such as published probability, number of revisions, dataset links, and explore-more links. Counts can be a fixed number or a `{"min": N, "max": M}` range for randomised variation.
+
+#### Deleting test data
+
+To preview what would be deleted (dry run):
+
+```bash
+make test-data-delete-dry-run
+```
+
+To delete all previously created test data:
+
+```bash
+make test-data-delete
+```
+
+To skip the confirmation prompt:
+
+```bash
+make test-data-delete NOINPUT=1
+```
+
+> **Note:** Test data is identified by a common prefix in its title/text fields. Only records created by `create_test_data` will be matched and removed.
+
 ### Lighthouse Audits
 
 You can then run [Lighthouse](https://github.com/GoogleChrome/lighthouse) audits against the application with the following command:
