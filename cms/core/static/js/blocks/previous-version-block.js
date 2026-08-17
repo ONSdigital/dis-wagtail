@@ -25,7 +25,6 @@ class PreviousVersionBlock {
     this.renderContent(state);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setError(_errorList) {}
 
   getState() {
