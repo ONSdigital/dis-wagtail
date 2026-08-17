@@ -4,7 +4,8 @@
     "module: esnext": "Webpack will convert ES modules to the required format.",
     "target: es5": "Setting a very low target for IE11 compatibility.",
     "allowJs: true": "Make it possible to gradually adopt TypeScript, or not use it at all.",
-    "strict: true": "Turn on stricter type checking."
+    "strict: true": "Turn on stricter type checking.",
+    "ignoreDeprecations: 6.0": "Temporarily silence 'target=ES5' and 'moduleResolution=node10' deprecation warnings until we migrate to TypeScript v7."
   },
   "compilerOptions": {
     "noEmit": true,
@@ -18,7 +19,8 @@
     "isolatedModules": true,
     "sourceMap": true,
     "jsx": "react",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0"
   },
   "include": ["cms/static_src"],
   "exclude": ["node_modules", "cms/static_compiled"]
