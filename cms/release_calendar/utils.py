@@ -96,12 +96,28 @@ def get_translated_string(string_to_translate: str, language_code: str) -> str:
     return translated_string
 
 
+def get_release_calendar_page_status(release_calendar_page: ReleaseCalendarPage) -> str:
+    """Returns the page status shown for a release calendar page in the chooser panel.
+
+    When the page is in workflow, this returns the current workflow task name.
+    Otherwise it returns the page status based on whether the page is live without unpublished changes or still a draft.
+    """
+    if workflow_state := release_calendar_page.current_workflow_state:
+        return workflow_state.current_task_state.task.name
+    if release_calendar_page.live and not release_calendar_page.has_unpublished_changes:
+        return "Live"
+    return "Draft"
+
+
 def get_release_calendar_page_details(
     release_calendar_page: ReleaseCalendarPage,
 ) -> str:
-    """Returns the release page title, status and release date."""
+    """Returns the release page title, release status, release date and page status."""
+    release_status = release_calendar_page.specific_deferred.get_status_display()
+    page_status = get_release_calendar_page_status(release_calendar_page)
     return (
         f"{release_calendar_page.title} "
-        f"({release_calendar_page.specific_deferred.get_status_display()}, "
-        f"{release_calendar_page.specific_deferred.release_date_value})"
+        f"({release_status}, "
+        f"{release_calendar_page.specific_deferred.release_date_value}) "
+        f"({page_status})"
     )
