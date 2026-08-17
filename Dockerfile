@@ -131,7 +131,7 @@ RUN poetry install --no-root --without dev && rm -rf /home/$USERNAME/.cache/
 # frontend stages #
 ###################
 
-FROM node:20-slim AS frontend-deps
+FROM node:24.11.0-slim AS frontend-deps
 
 # This stage is used to install the front-end build dependencies. It's separate
 # from the frontend-build stage so that we can initialise the node_modules
