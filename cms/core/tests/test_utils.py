@@ -2,11 +2,13 @@ import json
 import urllib.parse
 from unittest.mock import Mock
 
+from django.db import connection, transaction
 from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils.datastructures import CaseInsensitiveMapping
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.core.tests import TransactionTestCase
 from cms.core.utils import (
     UNWANTED_CONTROL_CHARACTERS,
     GeneratorCollector,
@@ -17,6 +19,7 @@ from cms.core.utils import (
     latex_formula_to_svg,
     redirect,
     redirect_to_parent_listing,
+    release_db_connections,
     strip_unwanted_control_chars_from_json,
 )
 from cms.home.models import HomePage
@@ -296,3 +299,83 @@ class GeneratorCollectorTestCase(SimpleTestCase):
 
         with self.assertRaises(StopIteration):
             next(gen)
+
+
+class ReleaseDBConnectionsTestCase(TransactionTestCase):
+    def test_closes_idle_connection(self):
+        connection.ensure_connection()
+        self.assertIsNotNone(connection.connection)
+
+        release_db_connections()
+
+        self.assertIsNone(connection.connection)
+
+    def test_preserves_connection_in_atomic_block(self):
+        with transaction.atomic():
+            release_db_connections()
+
+            self.assertIsNotNone(connection.connection)
+
+    def test_decorator_releases_before_by_default(self):
+        connection_at_entry = []
+
+        @release_db_connections
+        def task():
+            connection_at_entry.append(connection.connection)
+            connection.ensure_connection()
+
+        connection.ensure_connection()
+        task()
+
+        self.assertIsNone(connection_at_entry[0])
+        self.assertIsNotNone(connection.connection)
+
+    def test_decorator_releases_after_on_exception(self):
+        @release_db_connections(after=True, before=False)
+        def task():
+            connection.ensure_connection()
+            raise ValueError("Test exception")
+
+        with self.assertRaises(ValueError):
+            task()
+
+        self.assertIsNone(connection.connection)
+
+    def test_decorator_with_after_releases_on_both_sides(self):
+        connection_at_entry = []
+
+        @release_db_connections(after=True)
+        def task():
+            connection_at_entry.append(connection.connection)
+            connection.ensure_connection()
+
+        connection.ensure_connection()
+        task()
+
+        self.assertIsNone(connection_at_entry[0])
+        self.assertIsNone(connection.connection)
+
+    def test_decorator_with_after_only(self):
+        connection_at_entry = []
+
+        @release_db_connections(before=False, after=True)
+        def task():
+            connection_at_entry.append(connection.connection)
+            connection.ensure_connection()
+
+        connection.ensure_connection()
+        task()
+
+        # The connection should be open when the task starts, but closed after it finishes.
+        self.assertIsNotNone(connection_at_entry[0])
+        self.assertIsNone(connection.connection)
+
+    def test_decorator_preserves_metadata_and_return_values(self):
+        @release_db_connections
+        def task(value):
+            """Task docstring."""
+            return value * 2
+
+        self.assertEqual(task(21), 42)
+        self.assertEqual(task.__name__, "task")
+        self.assertEqual(task.__doc__, "Task docstring.")

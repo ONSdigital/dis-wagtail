@@ -131,7 +131,11 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
     @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     @patch("cms.search.signal_handlers.get_publisher")
     def test_publish_bundle_waits_for_action(
-        self, mock_get_publisher, mock_notify_post_publish_end, mock_notify_end, mock_notify_start
+        self,
+        mock_get_publisher,
+        mock_notify_post_publish_end,
+        mock_notify_end,
+        mock_notify_start,
     ):
         BundlePageFactory(parent=self.bundle, page=self.statistical_article)
 
@@ -156,6 +160,77 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
         mock_get_publisher.return_value.publish_created_or_updated.assert_called()
 
         self.assertEqual(PostPublishAction.objects.unfinished().count(), 0)
+
+    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_publish_bundle_runs_actions_for_aliases(
+        self,
+        mock_get_publisher,
+        mock_notify_post_publish_end,  # pylint: disable=unused-argument
+        mock_notify_end,  # pylint: disable=unused-argument
+        mock_notify_start,  # pylint: disable=unused-argument
+    ):
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+        alias = self.statistical_article.create_alias(
+            parent=self.statistical_article.get_parent(), update_slug="aliased-article"
+        )
+
+        mark_page_as_ready_to_publish(self.statistical_article)
+
+        self.call_command()
+
+        executor_stop_and_wait()
+
+        alias.refresh_from_db()
+        self.assertTrue(alias.live)
+
+        alias_actions = PostPublishAction.objects.filter(page=alias)
+        self.assertEqual(alias_actions.count(), 2)
+        for action in alias_actions:
+            self.assertEqual(action.bundle_id, self.bundle.pk)
+            self.assertEqual(action.status, PostPublishActionStatus.SUCCESSFUL)
+
+        published_page_ids = {
+            page_call.args[0].pk
+            for page_call in mock_get_publisher.return_value.publish_created_or_updated.call_args_list
+        }
+
+        self.assertIn(alias.pk, published_page_ids)
+
+    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_publish_bundle_clears_stale_actions(
+        self,
+        mock_get_publisher,  # pylint: disable=unused-argument
+        mock_notify_post_publish_end,  # pylint: disable=unused-argument
+        mock_notify_end,  # pylint: disable=unused-argument
+        mock_notify_start,  # pylint: disable=unused-argument
+    ):
+        """Test all actions from a previous publish are cleared before a new publish."""
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+
+        stale_alias_action = PostPublishAction.objects.create(
+            bundle=self.bundle,
+            page=self.methodology_article,
+            action_type=PostPublishActionType.SEARCH_UPDATED,
+            status=PostPublishActionStatus.FAILED,
+            finished_at=timezone.now(),
+        )
+
+        mark_page_as_ready_to_publish(self.statistical_article)
+
+        self.call_command()
+
+        executor_stop_and_wait()
+
+        self.assertFalse(PostPublishAction.objects.filter(pk=stale_alias_action.pk).exists())
+        self.assertFalse(PostPublishAction.objects.failed().filter(bundle=self.bundle).exists())
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")

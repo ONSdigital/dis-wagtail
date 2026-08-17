@@ -52,6 +52,9 @@ def publish_media_on_publish(instance: Model, **kwargs: Any) -> None:
 
 
 def publish_media_post_publish_action(page: Page, _bundle: Bundle | None) -> None:
+    if page.alias_of_id is not None:
+        # Don't publish media for alias pages, as they don't have their own content.
+        return
     _publish_media(page)
 
 

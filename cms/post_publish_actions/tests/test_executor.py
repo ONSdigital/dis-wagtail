@@ -47,6 +47,11 @@ class ExecutorTestCase(TestCase):
         self.assertFalse(original_executor._shutdown)
         self.assertFalse(original_support_executor._shutdown)
 
+    @override_settings(BUNDLE_POST_PUBLISH_CONCURRENCY=7, BUNDLE_POST_PUBLISH_SUPPORT_CONCURRENCY=2)
+    def test_executor_sizes_are_independently_configurable(self):
+        self.assertEqual(executor._build_executor()._max_workers, 7)
+        self.assertEqual(executor._build_support_executor()._max_workers, 2)
+
     def test_stop_and_wait(self):
         executor.run_in_executor(time.sleep, 1)
 

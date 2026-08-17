@@ -481,15 +481,15 @@ class CoreBlocksTestCase(TestCase):
         # Attributes specific to articles
         self.assertEqual(
             related_link["attributes"]["data-ga-click-output-series"],
-            article_page.cached_analytics_values["outputSeries"],
+            article_page.cached_link_analytics_values["outputSeries"],
         )
         self.assertEqual(
             related_link["attributes"]["data-ga-click-output-edition"],
-            article_page.cached_analytics_values["outputEdition"],
+            article_page.cached_link_analytics_values["outputEdition"],
         )
         self.assertEqual(
             related_link["attributes"]["data-ga-click-release-date"],
-            article_page.cached_analytics_values["releaseDate"],
+            article_page.cached_link_analytics_values["releaseDate"],
         )
 
     def test_relatedlinksblock__internal_link_attributes(self):

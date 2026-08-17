@@ -7,7 +7,6 @@ from django.utils import timezone
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.tests.factories import BundleFactory
-from cms.bundles.utils import get_active_bundle_for_page
 from cms.home.models import HomePage
 from cms.post_publish_actions import registry
 from cms.post_publish_actions.models import PostPublishAction, PostPublishActionStatus, PostPublishActionType
@@ -27,13 +26,6 @@ class RunPostPublishActionsForTestCase(TestCase):
 
         self.handler.assert_called_with(self.page, None)
         self.assertEqual(PostPublishAction.objects.count(), 0)
-
-
-class GetActiveBundleForPageTestCase(TestCase):
-    def test_returns_none_for_a_page_that_cannot_be_bundled(self):
-        home_page = HomePage.objects.first()
-
-        self.assertIsNone(get_active_bundle_for_page(home_page))
 
 
 class PostPublishNotifySlackTestCase(TestCase):

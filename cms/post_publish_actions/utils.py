@@ -11,7 +11,7 @@ from wagtail.models import Page
 
 from cms.bundles.notifications.slack import notify_slack_of_post_publish_end
 from cms.core.db_router import force_write_db
-from cms.core.utils import GeneratorCollector
+from cms.core.utils import GeneratorCollector, release_db_connections
 
 from .executor import wait_for_bundle_notifications
 from .models import PostPublishAction, PostPublishActionStatus
@@ -53,6 +53,7 @@ def as_completed_actions_by_bundle(
 
         # Only wait if there are bundles to check
         if bundles_to_check:
+            release_db_connections()
             time.sleep(settings.BUNDLE_POST_PUBLISH_POLL_FREQUENCY)
 
     # Any remaining bundles will have timed out.
