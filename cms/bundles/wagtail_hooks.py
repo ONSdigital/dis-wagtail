@@ -314,7 +314,7 @@ def add_media_summary_item(request: HttpRequest, items: list[SummaryItem]) -> No
 
 
 @hooks.register("register_log_actions")
-def register_bundle_log_actions(actions: LogActionRegistry) -> None:
+def register_bundle_log_standard_actions(actions: LogActionRegistry) -> None:
     """Registers custom logging actions.
 
     @see https://docs.wagtail.org/en/stable/extending/audit_log.html
@@ -383,35 +383,19 @@ def register_bundle_log_actions(actions: LogActionRegistry) -> None:
             except KeyError:
                 return "Attempted to preview an item."
 
-    @actions.register_action("bundles.teams_changed")
-    class ChangeBundleTeams(LogFormatter):  # pylint: disable=unused-variable
-        """LogFormatter class for preview team changes to bundles."""
+    @actions.register_action("bundles.inspect")
+    class InspectBundle(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for viewing the bundle inspect page."""
 
-        label = "Change preview teams"
-
-        def format_message(self, log_entry: ModelLogEntry) -> Any:
-            return format_added_removed_message(
-                log_entry,
-                added_key="added_teams",
-                removed_key="removed_teams",
-                context="Changed preview teams for bundle",
-            )
-
-    @actions.register_action("bundles.pages_changed")
-    class ChangeBundlePages(LogFormatter):  # pylint: disable=unused-variable
-        """LogFormatter class for page changes to bundles."""
-
-        label = "Change pages in bundle"
+        label = "View bundle details"
 
         def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
-            return format_added_removed_message(
-                log_entry,
-                added_key="added_pages",
-                removed_key="removed_pages",
-                context="Changed pages in bundle",
-            )
+            return "Viewed bundle inspect page"
 
+
+@hooks.register("register_log_actions")
+def register_bundle_log_change_actions(actions: LogActionRegistry) -> None:
     @actions.register_action("bundles.datasets_changed")
     class ChangeBundleDatasets(LogFormatter):  # pylint: disable=unused-variable
         """LogFormatter class for dataset changes to bundles."""
@@ -442,12 +426,31 @@ def register_bundle_log_actions(actions: LogActionRegistry) -> None:
             except KeyError:
                 return "Changed publication date"
 
-    @actions.register_action("bundles.inspect")
-    class InspectBundle(LogFormatter):  # pylint: disable=unused-variable
-        """LogFormatter class for viewing the bundle inspect page."""
+    @actions.register_action("bundles.teams_changed")
+    class ChangeBundleTeams(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for preview team changes to bundles."""
 
-        label = "View bundle details"
+        label = "Change preview teams"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            return format_added_removed_message(
+                log_entry,
+                added_key="added_teams",
+                removed_key="removed_teams",
+                context="Changed preview teams for bundle",
+            )
+
+    @actions.register_action("bundles.pages_changed")
+    class ChangeBundlePages(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for page changes to bundles."""
+
+        label = "Change pages in bundle"
 
         def format_message(self, log_entry: ModelLogEntry) -> Any:
             """Returns the formatted log message."""
-            return "Viewed bundle inspect page"
+            return format_added_removed_message(
+                log_entry,
+                added_key="added_pages",
+                removed_key="removed_pages",
+                context="Changed pages in bundle",
+            )
