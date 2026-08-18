@@ -21,7 +21,7 @@ New action types can be added by defining a handler that accepts `(page: Page, b
 
 Publishing is initiated by the `publish_bundles` management command, which runs on a cron schedule. When a bundle's pages are published, Wagtail's `page_published` signal fires. A context manager (`enqueue_post_publish_actions_for_bundle`) sets the active bundle via a `ContextVar`, so the signal handler knows which bundle to associate with each action.
 
-We allow the `page_published` signal to fire for each page and enqueue the action as this allows wagtail to handle crawling for aliases. This ensures we won't have undue maintenance burden if future updates move more logic into signals.
+We allow the `page_published` signal to fire for each page and enqueue the action as this allows Wagtail to handle crawling for aliases. This ensures we won't have undue maintenance burden if future updates move more logic into signals.
 
 ```
 publish_bundles command
