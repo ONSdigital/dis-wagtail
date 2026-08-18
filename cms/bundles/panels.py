@@ -194,7 +194,9 @@ class CustomReleaseCalendarPageChooser(FutureReleaseCalendarChooserWidget):
 
 
 class ReleaseChooserWithDetailsPanel(BundleFieldPanel):
-    """A custom page chooser panel that includes the release calendar page title, status and release date."""
+    """A custom page chooser panel that includes the release calendar page title, release status, release date
+    and page status.
+    """
 
     def get_form_options(self) -> dict[str, list | dict]:
         opts: dict[str, list | dict] = super().get_form_options()
