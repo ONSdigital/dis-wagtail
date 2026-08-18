@@ -103,7 +103,7 @@ def get_release_calendar_page_status(release_calendar_page: ReleaseCalendarPage)
     Otherwise it returns the page status based on whether the page is live without unpublished changes or still a draft.
     """
     if workflow_state := release_calendar_page.current_workflow_state:
-        return workflow_state.current_task_state.task.name
+        return workflow_state.current_task_state.task.name  # type: ignore[no-any-return]
     if release_calendar_page.live and not release_calendar_page.has_unpublished_changes:
         return "Live"
     return "Draft"
