@@ -68,6 +68,7 @@ RUN apt --quiet --yes update \
 # Create an unprivileged user and virtual environment for the app
 ARG UID=1000
 ARG GID=1000
+# hadolint ignore=DL3064
 ARG USERNAME=cms
 ARG VIRTUAL_ENV=/venv
 # TODO: when moving to ONS infrastructure, replace the RUN command with
@@ -184,7 +185,8 @@ FROM base AS dev
 
 # Switch to the root user and Install extra OS-level dependencies for
 # development, including Node.js
-USER root
+# 0=root
+USER 0
 # TODO: when moving to ONS infrastructure, replace RUN with
 # RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
 #     --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -202,6 +204,7 @@ COPY .docker/install-docker-dev-deps.sh ./install-docker-dev-deps.sh
 RUN ./install-docker-dev-deps.sh && rm ./install-docker-dev-deps.sh
 
 # Give the unprivileged user passwordless sudo access
+# hadolint ignore=DL3064
 ARG USERNAME=cms
 RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
@@ -265,6 +268,7 @@ ARG UID=1000
 # ARG GID
 ARG GID=1000
 
+# hadolint ignore=DL3064
 ARG USERNAME=cms
 
 # Explicitly set the runtime user
