@@ -129,10 +129,6 @@ class BundleViewSetTestCaseMixin(WagtailTestUtils):
 
         return nested_form_data(data)
 
-    @staticmethod
-    def chooser_panel_display(page) -> str:
-        return f"{page.title} ({page.get_status_display()}, {page.release_date_value})"
-
     def _create_release_calendar_page(self, title, status):
         """Assigns a release calendar page to the bundle."""
         release_date = timezone.now() + timedelta(days=1)
@@ -344,7 +340,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
         self.post_with_action_and_test("action-return-to-draft", BundleStatus.DRAFT, self.edit_url)
 
     def test_bundle_edit_view__shows_release_calendar_page_details(self):
-        """Release calendar page's title, status and release date are displayed when selected in bundles."""
+        """Release calendar page's title, release status, release date and page status are displayed."""
         for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
             with self.subTest(title=title, status=status):
                 release_calendar_page = self._create_release_calendar_page(title=title, status=status)
@@ -352,7 +348,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
                 # test for cancelled pages should fail
                 self._assign_release_calendar_page_to_bundle(release_calendar_page=release_calendar_page)
                 response = self.client.get(self.edit_url)
-                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value})"
+                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value}) (Live)"
                 self.assertContains(response, expected_display_panel)
 
     def test_bundle_edit_view__shows_updated_release_calendar_page_details(self):
@@ -363,7 +359,10 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
             title="Future Release calendar Page", status=ReleaseStatus.PROVISIONAL
         )
         self._assign_release_calendar_page_to_bundle(release_calendar_page=release_calendar_page)
-        original_text = self.chooser_panel_display(release_calendar_page)
+        original_text = (
+            f"{release_calendar_page.title} ({release_calendar_page.get_status_display()}, "
+            f"{release_calendar_page.release_date_value}) (Live)"
+        )
 
         for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
             with self.subTest(title=title, status=status):
@@ -374,7 +373,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
                 self.bundle.save()
 
                 response = self.client.get(self.edit_url)
-                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value})"
+                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value}) (Live)"
 
                 self.assertContains(response, expected_display_panel)
                 self.assertNotContains(response, original_text)
