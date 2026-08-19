@@ -188,6 +188,8 @@ The `retry_post_publish_actions` management command (intended to run on a separa
 
 These actions are re-enqueued up to `BUNDLE_POST_PUBLISH_MAX_RETRIES` times (default: `3`). Actions that exhaust their retries are logged as errors for manual investigation.
 
+If a bundle is re-published, any actions are deleted and re-created so we don't leave stale actions (linked to removed pages, at their retry limit etc.).
+
 ## Configuration reference
 
 | Setting                                       | Default                            | Description                                                      |
