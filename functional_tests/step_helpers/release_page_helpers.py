@@ -5,6 +5,7 @@ from playwright.sync_api import expect
 
 from cms.release_calendar.enums import ReleaseStatus
 from functional_tests.step_helpers.navigation_menus_helpers import choose_page_link
+from functional_tests.step_helpers.utils import fill_datetime_field
 
 RELEASE_DATE = "#id_release_date"
 RELEASE_DATE_TEXT = "#id_release_date_text"
@@ -110,11 +111,11 @@ def add_feature(the_page: PlaywrightPage, feature: str) -> None:
         "an invalid release date text": lambda page: fill_locator(page, RELEASE_DATE_TEXT, "Invalid 5555"),
         "an invalid next release date text": lambda page: fill_locator(page, NEXT_RELEASE_DATE_TEXT, "Invalid 5555"),
         "the next release date is set to a date earlier than the release date": lambda page: (
-            fill_locator(page, RELEASE_DATE, "2025-12-25"),
-            fill_locator(page, NEXT_RELEASE_DATE, "2024-12-25"),
+            fill_datetime_field(page.locator(RELEASE_DATE), "2025-12-25"),
+            fill_datetime_field(page.locator(NEXT_RELEASE_DATE), "2024-12-25"),
         ),
         "both next release date and next release date text": lambda page: (
-            fill_locator(page, NEXT_RELEASE_DATE, "2025-12-25"),
+            fill_datetime_field(page.locator(NEXT_RELEASE_DATE), "2025-12-25"),
             fill_locator(page, NEXT_RELEASE_DATE_TEXT, "December 2024"),
         ),
     }
@@ -238,9 +239,9 @@ def handle_changes_to_release_date_feature(page: PlaywrightPage, feature: str) -
             add_feature(page, "a date change log"),
             add_another_release_date_change(page),
         ),
-        "a release date change with no date change log": lambda page: page.get_by_role(
-            "textbox", name="Release date*"
-        ).fill("2025-01-25"),
+        "a release date change with no date change log": lambda page: fill_datetime_field(
+            page.get_by_role("textbox", name="Release date*"), "2025-01-25"
+        ),
         "a date change log with no release date change": lambda page: add_feature(page, "a date change log"),
         "another date change log": add_another_release_date_change,
     }
