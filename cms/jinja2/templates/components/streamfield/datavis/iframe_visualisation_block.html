@@ -1,0 +1,23 @@
+{% from "components/figure/_macro.njk" import onsFigure %}
+
+{# fmt:off #}
+{% call onsFigure(figure_config) %}
+    {# pym.js replaces this div with the iframe #}
+    <div
+        data-chart-iframe
+        {# id needs prefix to be different from figure id #}
+        id="iframe--{{ block_id }}"
+        data-url="{{ iframe_config.iframeUrl }}"
+        data-title="{{ iframe_config.iframeTitle }}">
+    </div>
+    <noscript>
+       {# Load the iframe directly if JS is disabled #}
+        <iframe
+            src="{{ iframe_config.iframeUrl }}"
+            title="{{ iframe_config.iframeTitle }}"
+            class="chart-embed"
+        >
+        </iframe>
+    </noscript>
+{% endcall %}
+{# fmt:on #}

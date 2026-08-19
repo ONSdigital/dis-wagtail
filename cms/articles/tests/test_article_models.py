@@ -2,12 +2,15 @@
 import math
 from datetime import datetime
 from http import HTTPStatus
+from unittest.mock import patch
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import connection
 from django.test import RequestFactory, TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -246,6 +249,47 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         ]
         del self.page.has_equations  # clear cached property
         self.assertTrue(self.page.has_equations)
+
+    def test_has_iframe_visualisations(self):
+        """Test has_iframe_visualisations property."""
+        self.assertFalse(self.page.has_iframe_visualisations)
+        self.page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Test Section",
+                    "content": [
+                        {
+                            "type": "iframe_visualisation",
+                            "value": {
+                                "iframe_source_url": "/visualisations/dvc/1",
+                                "accessible_label": "Bar chart of GDP per region",
+                                "audio_description": "GDP is highest in London and lowest in the North East.",
+                            },
+                        }
+                    ],
+                },
+            }
+        ]
+        del self.page.has_iframe_visualisations  # clear cached property
+        self.assertTrue(self.page.has_iframe_visualisations)
+
+    def test_has_iframe_visualisations_in_featured_chart(self):
+        """Test iframe visualisations in the featured chart are detected."""
+        self.assertFalse(self.page.has_iframe_visualisations)
+        self.page.featured_chart = [
+            {
+                "type": "iframe",
+                "value": {
+                    "title": "",
+                    "accessible_label": "Bar chart of GDP per region",
+                    "audio_description": "GDP is highest in London and lowest in the North East.",
+                    "iframe_source_url": "/visualisations/dvc/1",
+                },
+            }
+        ]
+        del self.page.has_iframe_visualisations  # clear cached property
+        self.assertTrue(self.page.has_iframe_visualisations)
 
     def test_next_date_must_be_after_release_date(self):
         """Tests the model validates next release date is after the release date."""
@@ -533,7 +577,30 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(analytics_values.get("outputSeries"), self.page.get_parent().slug)
         self.assertEqual(analytics_values.get("latestRelease"), "yes")
         self.assertEqual(analytics_values.get("releaseDate"), format_date_for_gtm(self.page.release_date))
-        self.assertEqual(analytics_values.get("wordCount"), self.page.word_count)
+        self.assertEqual(analytics_values.get("wordCount"), str(self.page.word_count))
+
+    def test_cached_analytics_values(self):
+        self.assertEqual(
+            self.page.cached_link_analytics_values,
+            {
+                "outputSeries": self.page.get_parent().slug,
+                "outputEdition": self.page.slug,
+                "releaseDate": format_date_for_gtm(self.page.release_date),
+            },
+        )
+
+    def test_cached_analytics_values_does_not_compute_word_count(self):
+        with patch.object(StatisticalArticlePage, "word_count") as mock_word_count:
+            link_analytics_values = self.page.cached_link_analytics_values
+
+        mock_word_count.assert_not_called()
+        self.assertEqual(link_analytics_values.get("outputEdition"), self.page.slug)
+
+    def test_cached_analytics_values_includes_link_analytics_values(self):
+        analytics_values = self.page.cached_analytics_values
+        for key, value in self.page.cached_link_analytics_values.items():
+            with self.subTest(key=key):
+                self.assertEqual(analytics_values.get(key), value)
 
     def test_get_analytics_values_for_latest_via_non_evergreen_url(self):
         """Test that that page analytics values contains the evergreen series URL if the page is requested from it's
@@ -1179,6 +1246,29 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
 
         self.assertNotIn("image", data)
 
+    def test_as_featured_article_child_macro_data_with_iframe(self):
+        """Test that an iframe is used when configured as the featured chart."""
+        self.page.featured_chart = [
+            {
+                "type": "iframe",
+                "value": {
+                    "title": "",
+                    "accessible_label": "Bar chart of GDP per region",
+                    "audio_description": "GDP is highest in London and lowest in the North East.",
+                    "iframe_source_url": "/visualisations/dvc/1",
+                },
+            }
+        ]
+        self.page.save()
+
+        data = self.page.as_featured_article_child_macro_data()
+
+        self.assertIn("iframe", data)
+        self.assertEqual(data["iframe"].block_type, "iframe")
+        self.assertEqual(data["iframe"].value["iframe_source_url"], "/visualisations/dvc/1")
+        self.assertNotIn("chart", data)
+        self.assertNotIn("image", data)
+
     def test_as_featured_article_child_macro_data_without_chart(self):
         """Test that a listing image is used when there is no chart."""
         data = self.page.as_featured_article_child_macro_data()
@@ -1332,3 +1422,78 @@ class ChartBlockTypesTestCase(TestCase):
 
     def test_known_non_chart_type_not_in_chart_block_types(self):
         self.assertNotIn("rich_text", CHART_BLOCK_TYPES)
+
+
+class StatisticalArticlePageRelatedLinksRecursionTestCase(WagtailTestUtils, TestCase):
+    """Regression tests for recursive article rendering issue.
+
+    To compute a page's related links, we would previously compute the word count of its related articles.
+    This in turn would compute the word count, which involved rendering the page content. This could result in
+    recursively rendering all connected related articles, which would add a large amount of page render time or
+    in the worst case a RecursionError if the related articles formed a cycle.
+    """
+
+    @staticmethod
+    def _content_with_related_link_to_page(page):
+        return [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Related",
+                    "content": [
+                        {
+                            "type": "related_links",
+                            "value": [
+                                {
+                                    "page": page.pk,
+                                    "external_url": None,
+                                    "title": "",
+                                    "description": "",
+                                    "content_type": None,
+                                    "release_page": None,
+                                }
+                            ],
+                        }
+                    ],
+                },
+            }
+        ]
+
+    def test_pages_with_cyclic_related_links_render_with_expected_query_count(self):
+        page_a = StatisticalArticlePageFactory(parent__title="Series A")
+        page_b = StatisticalArticlePageFactory(parent__title="Series B")
+
+        page_a.content = self._content_with_related_link_to_page(page_b)
+        page_a.save_revision().publish()
+        page_b.content = self._content_with_related_link_to_page(page_a)
+        page_b.save_revision().publish()
+
+        for page in (page_a, page_b):
+            with self.subTest(page=page.slug):
+                with CaptureQueriesContext(connection) as ctx:
+                    response = self.client.get(page.url)
+                self.assertEqual(response.status_code, 200)
+                self.assertLess(len(ctx), 55, "Too many queries executed.")
+
+    def test_page_with_self_referencing_related_link_renders(self):
+        page = StatisticalArticlePageFactory(parent__title="Series A")
+        page.content = self._content_with_related_link_to_page(page)
+        page.save_revision().publish()
+
+        response = self.client.get(page.url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_word_count_with_cyclic_related_links(self):
+        page_a = StatisticalArticlePageFactory(parent__title="Series A")
+        page_b = StatisticalArticlePageFactory(parent__title="Series B")
+
+        page_a.content = self._content_with_related_link_to_page(page_b)
+        page_a.save_revision().publish()
+        page_b.content = self._content_with_related_link_to_page(page_a)
+        page_b.save_revision().publish()
+
+        for page in (page_a, page_b):
+            with self.subTest(page=page.slug):
+                word_count = page.word_count
+                self.assertIsInstance(word_count, int)
+                self.assertGreaterEqual(word_count, 0)
