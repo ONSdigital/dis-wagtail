@@ -1,5 +1,24 @@
 # Data Creation Scripts
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Supported Models](#supported-models)
+- [Prerequisites](#prerequisites)
+- [Usage](#usage)
+  - [Viewing the Default Configuration](#viewing-the-default-configuration)
+  - [Creating Test Data](#creating-test-data)
+  - [Deleting Test Data](#deleting-test-data)
+- [Configuration](#configuration)
+  - [Configuration Reference](#configuration-reference)
+  - [Validation Rules](#validation-rules)
+- [How It Works](#how-it-works)
+  - [Prefixed Records](#prefixed-records)
+  - [Deterministic Seeding](#deterministic-seeding)
+  - [Signal Disconnection](#signal-disconnection)
+  - [Tree Repair](#tree-repair)
+- [Todos](#todos)
+
 ## Overview
 
 The `cms.test_data` app provides management commands for seeding and cleaning up test data during local development. It uses factory-boy and Faker to generate reproducible CMS content, and Pydantic to validate configuration.
@@ -27,7 +46,7 @@ Ensure the app is enabled. In local development this is the default; otherwise, 
 CMS_TEST_DATA_ENABLED=true
 ```
 
-The `CMS_TEST_DATA_PREFIX` setting (defined in `cms/settings/base.py`) controls the prefix string added to all generated records. This prefix is how the delete command identifies test data.
+The `CMS_TEST_DATA_PREFIX` setting (defined in `cms/settings/base.py`, defaults to `Z-RANDOM`) controls the prefix string added to all generated records. This prefix is how the delete command identifies test data.
 
 ## Usage
 
@@ -156,15 +175,51 @@ The `--seed` option seeds both factory-boy's random generator and a dedicated Fa
 
 ### Signal Disconnection
 
-During both creation and deletion, search index and publish-action signal receivers are temporarily disconnected to avoid unnecessary work. They are automatically reconnected when the operation completes, even if an error occurs. This includes:
+During creation and deletion, certain signal receivers are temporarily disconnected to avoid unnecessary work (e.g. search indexing and post-publish side-effects). They are automatically reconnected when the operation completes, even if an error occurs.
 
-- Search index `post_save` handlers
-- Wagtail reference index update handlers
-- Page published / unpublished / moved / deleted handlers
-- Post-publish action handlers
+#### Signals disconnected during creation
+
+The `search_publisher_receivers` are disconnected:
+
+| Signal             | Receiver                             | Sender |
+| ------------------ | ------------------------------------ | ------ |
+| `page_published`   | `run_post_publish_actions_handler`   | —      |
+| `page_unpublished` | `on_page_unpublished`                | —      |
+| `page_slug_changed`| `on_page_slug_changed`               | —      |
+| `post_page_move`   | `on_page_moved`                      | —      |
+| `post_delete`      | `on_page_deleted`                    | `Page` |
+
+#### Signals disconnected during deletion
+
+The `index_receivers` (for each model being deleted) **and** the `search_publisher_receivers` are disconnected:
+
+| Signal             | Receiver                             | Sender              |
+| ------------------ | ------------------------------------ | -------------------- |
+| `post_save`        | `post_save_signal_handler`           | each collected model |
+| `post_save`        | `update_reference_index_on_save`     | each collected model |
+| `page_published`   | `run_post_publish_actions_handler`   | —                    |
+| `page_unpublished` | `on_page_unpublished`                | —                    |
+| `page_slug_changed`| `on_page_slug_changed`               | —                    |
+| `post_page_move`   | `on_page_moved`                      | —                    |
+| `post_delete`      | `on_page_deleted`                    | `Page`               |
 
 ### Tree Repair
 
-The Wagtail topic tree (`Topic`, a treebeard `MP_Node`) can become inconsistent after bulk inserts or deletes. The commands call `Topic.fix_tree()` before creation and after deletion to ensure the tree remains valid.
+The Wagtail topic tree (`Topic`, a treebeard `MP_Node`) can become inconsistent after bulk inserts or deletes. The commands call `Topic.fix_tree()` before creating topics, and after all deletion to ensure the tree remains valid.
 
 This may be able to change after [PR 758](https://github.com/ONSdigital/dis-wagtail/pull/758) merges.
+
+## Todos
+
+Currently, this supports several core models, but there are plans to expand this to cover
+
+- All page types
+- Bundles
+- Page workflows (draft, review, publish)
+- Snippets
+- Locales: converted aliases to supported languages e.g. welsh. Only english is currently supported.
+
+Other future changes include
+
+- Refactoring to avoid need to call `fix_tree()`
+- Configurability of signal disconnection
