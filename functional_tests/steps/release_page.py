@@ -18,6 +18,7 @@ from functional_tests.step_helpers.release_page_helpers import (
     handle_pre_release_access_feature,
     handle_release_calendar_page_errors,
 )
+from functional_tests.step_helpers.utils import fill_datetime_field
 from functional_tests.steps.page_editor import user_clicks_publish
 
 
@@ -133,7 +134,7 @@ def user_enters_example_content_on_release_page(context: Context, page_status: s
 
     context.page.get_by_placeholder("Page title*").fill("My Release")
 
-    context.page.get_by_role("textbox", name="Release date*").fill("2024-12-25 09:30")
+    fill_datetime_field(context.page.get_by_role("textbox", name="Release date*"), "2024-12-25 09:30")
 
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My example release page")
 
@@ -160,7 +161,7 @@ def add_datetime(context: Context, meridiem_indicator: str) -> None:
         value = valid_times[meridiem_indicator]
     except KeyError as exc:
         raise ValueError(f"Unsupported MeridiemIndicator: {meridiem_indicator}") from exc
-    context.page.get_by_role("textbox", name="Release date*").fill(value)
+    fill_datetime_field(context.page.get_by_role("textbox", name="Release date*"), value)
 
 
 @then('the datetime is displayed with "{meridiem_indicator}"')
@@ -261,12 +262,12 @@ def pre_release_access_info(context: Context, feature: str) -> None:
 
 @when("the user changes the release date to a new date")
 def user_changes_release_date_to_new_date(context: Context) -> None:
-    context.page.get_by_role("textbox", name="Release date*").fill("2024-12-21 15:00")
+    fill_datetime_field(context.page.get_by_role("textbox", name="Release date*"), "2024-12-21 15:00")
 
 
 @when("the user changes the release date to a new date again")
 def user_changes_release_date_to_new_date_again(context: Context) -> None:
-    context.page.get_by_role("textbox", name="Release date*").fill("2025-01-21 15:00")
+    fill_datetime_field(context.page.get_by_role("textbox", name="Release date*"), "2025-01-21 15:00")
 
 
 @then("the previous date field is pre-populated with the old release date")

@@ -105,7 +105,7 @@ megalint:  ## Run the mega-linter. Use LINTER=NAME to run only one.
 		-v /var/run/docker.sock:/var/run/docker.sock:rw \
 		-v $(shell pwd):/tmp/lint:rw \
 		$(if $(LINTER),-e ENABLE_LINTERS=$(LINTER),) \
-		ghcr.io/oxsecurity/megalinter-cupcake:v9
+		ghcr.io/oxsecurity/megalinter-cupcake@sha256:266c8d80f74b3308d71078f9f1e5426c6f012eb71c126eadd69960d5ccb770ed # v10.0.0
 
 .PHONY: load-design-system-templates
 load-design-system-templates:  ## Load the design system templates
@@ -194,7 +194,7 @@ dev-init: load-design-system-templates npm-build collectstatic compilemessages m
 
 .PHONY: functional-tests-up
 functional-tests-up:  ## Start the functional tests docker compose dependencies
-	docker compose -f functional_tests/docker-compose.yml up -d
+	docker compose -f functional_tests/docker-compose.yml up -d --wait
 
 .PHONY: functional-tests-dev-up
 functional-tests-dev-up:  ## Start the functional tests docker compose dependencies and dev app
