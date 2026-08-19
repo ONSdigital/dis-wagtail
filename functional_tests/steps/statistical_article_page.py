@@ -15,7 +15,7 @@ from cms.articles.tests.factories import (
 )
 from cms.datavis.tests.factories import TableDataFactory
 from cms.topics.models import TopicPage
-from functional_tests.step_helpers.utils import get_page_from_context
+from functional_tests.step_helpers.utils import fill_datetime_field, get_page_from_context
 
 if TYPE_CHECKING:
     from wagtail.models import Revision
@@ -164,7 +164,7 @@ def user_populates_the_statistical_article_page(context: Context) -> None:
     page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Page summary")
     page.locator('[data-contentpath="main_points_summary"] [role="textbox"]').fill("Main points summary")
 
-    page.get_by_label("Release date*").fill("2025-01-11")
+    fill_datetime_field(page.get_by_label("Release date*"), "2025-01-11")
 
     page.wait_for_timeout(50)  # added to allow JS to be ready
     page.get_by_role("textbox", name="Release Edition").focus()  # focus up to prevent any overlap with the action menu
@@ -341,7 +341,7 @@ def user_adds_a_correction(context: Context) -> None:
     page.locator("#panel-child-corrections_and_notices-corrections-content").get_by_role(
         "button", name="Insert a block"
     ).click()
-    page.get_by_label("When*").fill("2025-03-13 13:59")
+    fill_datetime_field(page.get_by_label("When*"), "2025-03-13 13:59")
     page.locator('[data-contentpath="text"] [role="textbox"]').fill("Correction text")
     page.wait_for_timeout(500)
 
@@ -381,7 +381,9 @@ def user_adds_a_correction_using_bottom_add_button(context: Context) -> None:
     )
 
     block_area.locator("div:last-child").get_by_role("button", name="Insert a block").click()
-    block_area.locator("[name='corrections-1-id']+section").get_by_label("When*").fill("2025-03-14 13:59")
+    fill_datetime_field(
+        block_area.locator("[name='corrections-1-id']+section").get_by_label("When*"), "2025-03-14 13:59"
+    )
     block_area.locator("[name='corrections-1-id']+section").locator(
         '[data-contentpath="text"] [role="textbox"]'
     ).scroll_into_view_if_needed()
@@ -401,7 +403,7 @@ def user_adds_a_notice(context: Context) -> None:
         "#panel-child-corrections_and_notices-notices-content [data-streamfield-stream-container]"
     )
     block_area.get_by_role("button", name="Insert a block").click()
-    block_area.get_by_label("When*").fill("2025-03-15 13:59")
+    fill_datetime_field(block_area.get_by_label("When*"), "2025-03-15 13:59")
     block_area.locator('[data-contentpath="text"] [role="textbox"]').fill("Notice text")
     page.wait_for_timeout(500)
 

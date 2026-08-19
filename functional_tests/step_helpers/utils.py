@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.utils import timezone
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+from playwright.sync_api import expect
 
 from cms.bundles.enums import BundleStatus
 from cms.core.custom_date_format import ons_date_format
@@ -15,6 +17,25 @@ if TYPE_CHECKING:
     from cms.bundles.models import Bundle
     from cms.taxonomy.models import Topic
     from cms.users.models import User
+
+DATETIME_PICKER_SELECTOR = ".xdsoft_datetimepicker:visible"
+DATETIME_PICKER_OPEN_TIMEOUT = 3_000
+
+
+def fill_datetime_field(field: Locator, value: str) -> None:
+    """Fill a datetime field, and wait for the datetime picker to close."""
+    field.fill(value)
+
+    picker = field.page.locator(DATETIME_PICKER_SELECTOR)
+
+    try:
+        picker.first.wait_for(timeout=DATETIME_PICKER_OPEN_TIMEOUT)
+    except PlaywrightTimeoutError:
+        field.blur()
+        return
+
+    field.blur()
+    expect(picker).to_have_count(0)
 
 
 def get_or_create_topic(topic_name: str, topic_cache: dict[str, Topic] | None = None) -> Topic:
