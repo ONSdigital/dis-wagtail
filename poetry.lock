@@ -812,14 +812,14 @@ django = ">=4.2"
 
 [[package]]
 name = "django"
-version = "6.0.7"
+version = "6.0.8"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 optional = false
 python-versions = ">=3.12"
 groups = ["main", "dev"]
 files = [
-    {file = "django-6.0.7-py3-none-any.whl", hash = "sha256:a037427c2288443a8c02a1b02295a31c239663aa682bc50b1976afb7cf6a769e"},
-    {file = "django-6.0.7.tar.gz", hash = "sha256:2998503fc083124fb58037084bfa00de323c7c743f05f1b4284e77bff0ab8890"},
+    {file = "django-6.0.8-py3-none-any.whl", hash = "sha256:9b98b7e1902e0e575ea4f42c175fc9512784f7f2580898286aee3388b322219d"},
+    {file = "django-6.0.8.tar.gz", hash = "sha256:cb0bd962d27fc866f3c514b20aae6a7df56ec80b488f9899da46d675cd051526"},
 ]
 
 [package.dependencies]
@@ -3833,4 +3833,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "46050578874328484a8e1113ae6e9f1fdd6dd9dc29b2bd78dc99900b546be764"
+content-hash = "7adf8e8bed11fc336aa105f9b4a28cb6f9eef191b6ebcbcd6844f06930f4bf01"
