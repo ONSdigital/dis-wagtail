@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 13:41+0100\n"
+"POT-Creation-Date: 2026-08-19 16:21+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -182,7 +182,6 @@ msgstr ", ac eithrio lle y nodir fel arall"
 
 #: cms/datavis/blocks/table.py:58
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:91
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:91
 #: cms/jinja2/templates/pages/topic_page.html:102
 #: cms/release_calendar/models.py:258 cms/topics/models.py:328
 msgid "Data"
@@ -210,8 +209,6 @@ msgid ""
 "This page is currently not available %(in_language)s. It is displayed in its "
 "original language."
 msgstr ""
-"Nid yw’r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe’i "
-"harddangosir yn ei hiaith wreiddiol."
 "Nid yw’r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe’i "
 "harddangosir yn ei hiaith wreiddiol."
 
@@ -319,7 +316,6 @@ msgstr "Gosodiadau cwcis"
 msgid "You can try:"
 msgstr "Gallwch roi cynnig ar:"
 
-#: cms/jinja2/templates/pages/cookies.html:64
 #: cms/jinja2/templates/pages/cookies.html:63
 msgid "turning on JavaScript in your browser"
 msgstr "droi JavaScript ymlaen yn eich porwr"
@@ -333,8 +329,6 @@ msgid ""
 "We use four types of cookie. You can choose which cookies you’re happy for "
 "us to use."
 msgstr ""
-"Rydym yn defnyddio pedwar math o gwcis. Gallwch ddewis pa gwcis rydych yn "
-"hapus i ni eu defnyddio"
 "Rydym yn defnyddio pedwar math o gwcis. Gallwch ddewis pa gwcis rydych yn "
 "hapus i ni eu defnyddio"
 
@@ -354,12 +348,10 @@ msgid ""
 msgstr ""
 "Rydym yn defnyddio cwcis Google Analytics a Hotjar i fesur sut rydych yn "
 "defnyddio’r wefan."
-"Rydym yn defnyddio cwcis Google Analytics a Hotjar i fesur sut rydych yn "
-"defnyddio’r wefan."
 
 #: cms/jinja2/templates/pages/cookies.html:77
 msgid "These cookies collect information about:"
-msgstr ""
+msgstr "Mae’r cwcis hyn yn casglu gwybodaeth am:"
 
 #: cms/jinja2/templates/pages/cookies.html:79
 msgid "how you got to the site"
@@ -375,7 +367,6 @@ msgstr ""
 msgid "what you click on while you are visiting the site"
 msgstr "beth rydych yn clicio arno wrth ymweld â’r safle"
 
-#: cms/jinja2/templates/pages/cookies.html:83
 #: cms/jinja2/templates/pages/cookies.html:82
 msgid "the way in which you interact with a page"
 msgstr "sut rydych yn rhyngweithio â thudalen"
@@ -389,14 +380,13 @@ msgid ""
 "We do not allow Google or Hotjar to use or share this data for their own "
 "purposes."
 msgstr ""
-"Nid ydym yn caniatáu i Google na Hotjar defnyddio na rhannu’r data hwn at eu "
-"dibenion eu hunain"
+"Nid ydym yn caniatáu i Google na Hotjar defnyddio na rhannu’r data hwn "
+"at eu dibenion eu hunain"
 
 #: cms/jinja2/templates/pages/cookies.html:87
 msgid "Do you want to allow cookies that measure website use?"
 msgstr "Ydych chi am ganiatáu cwcis sy’n mesur defnydd y wefan?"
 
-#: cms/jinja2/templates/pages/cookies.html:89
 #: cms/jinja2/templates/pages/cookies.html:88
 msgid "Use cookies that measure my website use"
 msgstr "Defnyddiwch gwcis sy’n mesur fy nefnydd o’r wefan"
@@ -415,16 +405,15 @@ msgid ""
 "They do things like measure how you view YouTube videos that are on the ONS "
 "website."
 msgstr ""
-"Gall y cwcis hyn gael eu gosod gan wefannau trydydd parti, fel YouTube a "
-"Vimeo.  Maent yn gwneud pethau fel mesur sut rydych yn gwylio fideos YouTube "
-"sydd ar  wefan y SYG."
+"Gall y cwcis hyn gael eu gosod gan wefannau trydydd parti, fel YouTube a Vimeo. "
+" Maent yn gwneud pethau fel mesur sut rydych yn gwylio fideos YouTube sydd ar "
+" wefan y SYG."
 
-#: cms/jinja2/templates/pages/cookies.html:121
-#: cms/jinja2/templates/pages/cookies.html:121
 #: cms/jinja2/templates/pages/cookies.html:121
 msgid ""
 "Do you want to allow cookies that help with communications and marketing?"
-msgstr "Ydych chi am ganiatáu cwcis sy’n helpu gyda chyfathrebu a marchnata?"
+msgstr ""
+"Ydych chi am ganiatáu cwcis sy’n helpu gyda chyfathrebu a marchnata?"
 
 #: cms/jinja2/templates/pages/cookies.html:122
 msgid "Use cookies that help with communications and marketing"
@@ -443,22 +432,21 @@ msgid ""
 "These cookies do things like remember your preferences and the choices you "
 "make, to personalise your experience of using the site."
 msgstr ""
-"Mae’r cwcis hyn yn gwneud pethau fel cofio eich dewisiadau i bersonoli eich "
-"profiad o ddefnyddio’r safle."
+"Mae’r cwcis hyn yn gwneud pethau fel cofio eich dewisiadau "
+"i bersonoli eich profiad o ddefnyddio’r safle."
 
 #: cms/jinja2/templates/pages/cookies.html:155
 msgid ""
 "We currently do not use these cookies but do store your choice to accept or "
 "reject them. You can change your selection at any time."
 msgstr ""
-"Nid ydym yn defnyddio’r cwcis hyn ar hyn o bryd, ond rydym yn storio eich "
-"dewis i'w derbyn neu eu gwrthod. Gallwch newid eich dewis ar unrhyw adeg."
+"Nid ydym yn defnyddio’r cwcis hyn ar hyn o bryd, ond rydym yn storio eich dewis i'w derbyn neu "
+"eu gwrthod. Gallwch newid eich dewis ar unrhyw adeg."
 
 #: cms/jinja2/templates/pages/cookies.html:158
 msgid "Do you want to allow cookies that remember your settings?"
 msgstr "Ydych chi am ganiatáu cwcis sy’n cofio eich gosodiadau?"
 
-#: cms/jinja2/templates/pages/cookies.html:160
 #: cms/jinja2/templates/pages/cookies.html:159
 msgid "Use cookies that remember my settings on the site"
 msgstr "Defnyddiwch gwcis sy’n cofio fy ngosodiadau ar y safle"
@@ -467,7 +455,6 @@ msgstr "Defnyddiwch gwcis sy’n cofio fy ngosodiadau ar y safle"
 msgid "Do not use cookies that remember my settings on the site"
 msgstr "Peidiwch â defnyddio cwcis sy’n cofio fy ngosodiadau ar y safle"
 
-#: cms/jinja2/templates/pages/cookies.html:188
 #: cms/jinja2/templates/pages/cookies.html:187
 msgid "Strictly necessary cookies"
 msgstr "Cwcis sy’n angenrheidiol"
@@ -481,10 +468,9 @@ msgid ""
 "remember your cookie settings and the notifications you’ve seen so we do not "
 "show them to you again"
 msgstr ""
-"cofio eich gosodiadau cwcis a’r hysbysiadau rydych wedi eu gweld fel nad "
-"ydym yn eu dangos i chi eto"
+"cofio eich gosodiadau cwcis a’r hysbysiadau rydych wedi eu gweld fel nad ydym "
+"yn eu dangos i chi eto"
 
-#: cms/jinja2/templates/pages/cookies.html:192
 #: cms/jinja2/templates/pages/cookies.html:191
 msgid "remember your progress through a form (for example, an ONS study)"
 msgstr "cofio eich cynnydd drwy ffurflen (er enghraifft, astudiaeth SYG)"
@@ -521,9 +507,7 @@ msgstr "Os gwnaethoch chi roi cyfeiriad gwe, gwiriwch ei fod yn gywir."
 
 #: cms/jinja2/templates/pages/errors/404.html:18
 msgid "If you pasted the web address, check you copied the whole address."
-msgstr ""
-"Os gwnaethoch chi gludo’r cyfeiriad gwe, gwiriwch eich bod wedi copïo’r "
-"cyfeiriad cyfan."
+msgstr "Os gwnaethoch chi gludo’r cyfeiriad gwe, gwiriwch eich bod wedi copïo’r cyfeiriad cyfan."
 
 #: cms/jinja2/templates/pages/errors/404.html:19
 #: cms/jinja2/templates/pages/errors/500.html:7
@@ -532,10 +516,8 @@ msgid ""
 "If the web address is correct, or you selected a link or button, <a "
 "href=\"%(contact_url)s\">contact us</a>."
 msgstr ""
-"Os yw’r cyfeiriad gwe yn gywir, neu os oeddech chi wedi dewis dolen neu "
-"fotwm,<a href=\"%(contact_url)s\">cysylltwch â ni</a>."
-"Os yw’r cyfeiriad gwe yn gywir, neu os oeddech chi wedi dewis dolen neu "
-"fotwm,<a href=\"%(contact_url)s\">cysylltwch â ni</a>."
+"Os yw’r cyfeiriad gwe yn gywir, neu os oeddech chi wedi dewis dolen neu fotwm,<a "
+"href=\"%(contact_url)s\">cysylltwch â ni</a>."
 
 #: cms/jinja2/templates/pages/errors/500.html:2
 msgid "Sorry, there’s a problem with the service"
@@ -547,7 +529,7 @@ msgid ""
 "Our scheduled publications can also be found on our <a "
 "href=\"%(backup_url)s\">backup site</a>."
 msgstr ""
-"Mae ein cyhoeddiadau wedi’u trefnu hefyd ar gael   ar ein <a "
+"Mae ein cyhoeddiadau wedi’u trefnu hefyd ar gael ar ein <a "
 "href=\"%(backup_url)s\">gwefan wrth gefn</a>."
 
 #: cms/jinja2/templates/pages/information_page.html:14
@@ -558,18 +540,10 @@ msgstr "Diweddarwyd Diwethaf:"
 #: cms/jinja2/templates/pages/methodology_page.html:81
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:68
 #: cms/jinja2/templates/pages/statistical_article_page.html:206
-#: cms/jinja2/templates/pages/information_page.html:48
-#: cms/jinja2/templates/pages/methodology_page.html:81
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:68
-#: cms/jinja2/templates/pages/statistical_article_page.html:206
 #: cms/jinja2/templates/pages/topic_page.html:53
 msgid "Contents"
 msgstr "Cynnwys"
 
-#: cms/jinja2/templates/pages/information_page.html:48
-#: cms/jinja2/templates/pages/methodology_page.html:81
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:68
-#: cms/jinja2/templates/pages/statistical_article_page.html:206
 #: cms/jinja2/templates/pages/information_page.html:48
 #: cms/jinja2/templates/pages/methodology_page.html:81
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:68
@@ -628,11 +602,8 @@ msgstr "Dyddiad rhyddhau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:8
 msgid "Cancelled"
-msgstr "Wedi’i ganscms/jinja2/templates/pages/release_calendar/release_calendar_page.htmllo"
+msgstr "Wedi’i ganslo"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:45
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:43
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:108
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:45
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:43
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:108
@@ -654,18 +625,15 @@ msgid "Next release date:"
 msgstr "Dyddiad rhyddhau nesaf:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:82
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:82
 #: cms/release_calendar/models.py:251
 msgid "Summary"
 msgstr "Crynodeb"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:119
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:119
 #: cms/release_calendar/models.py:273
 msgid "About the data"
 msgstr "Ynglyn â’r data"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:130
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:130
 #, python-format
 msgid ""
@@ -682,32 +650,26 @@ msgstr ""
 "yn golygu'n fras bod yr ystadegau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:135
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:135
 msgid "meet user needs"
 msgstr "yn diwallu anghenion defnyddwyr"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:136
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:136
 msgid "are presented clearly and accessibly"
 msgstr "yn cael eu cyflwyno’n glir ac yn hygyrch"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:137
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:137
 msgid "are produced using appropriate data and sound methods"
 msgstr "yn cael eu cynhyrchu gan ddefnyddio data priodol a dulliau cadarn"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:138
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:138
 msgid "are managed impartially and objectively in the public interest"
 msgstr "yn cael eu rheoli yn ddiduedd ac yn wrthrychol er budd y cyhoedd"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:147
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:147
 #: cms/release_calendar/models.py:278
 msgid "Pre-release access list"
 msgstr "Rhestr mynediad cyn-rhyddhau"
 
-#: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:154
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:154
 #: cms/release_calendar/models.py:282
 msgid "You might also be interested in"
@@ -812,8 +774,6 @@ msgid ""
 "Office for National Statistics (ONS), released %(release_date)s, ONS "
 "website, statistical article, %(cite_link)s"
 msgstr ""
-"Y Swyddfa Ystadegau Gwladol (SYG), cyhoeddwyd %(release_date)s, gwefan y "
-"SYG   erthygl ystadegol, %(cite_link)s"
 "Y Swyddfa Ystadegau Gwladol (SYG), cyhoeddwyd %(release_date)s, gwefan y "
 "SYG   erthygl ystadegol, %(cite_link)s"
 
