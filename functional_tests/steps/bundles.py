@@ -192,14 +192,16 @@ def user_creates_bundle_with_future_release_calendar_page(context: Context) -> N
     context.page.get_by_text(title).click()
 
 
-@step("the user sees the release calendar page title, status and release date")
-def user_sees_release_calendar_page_title_status_release_date(
+@step("the user sees the release calendar page title, release status, release date and page status")
+def user_sees_release_calendar_page_title_release_status_date_page_status(
     context: Context,
 ) -> None:
+    # The page is non-live and only saved as a revision, so its status is Draft.
+    expected_page_status = "Draft"
     expect(
         context.page.get_by_text(
             f"{context.release_calendar_page.title} ({context.release_calendar_page.status},"
-            f" {context.release_calendar_page.release_date_value})"
+            f" {context.release_calendar_page.release_date_value}) ({expected_page_status})"
         )
     ).to_be_visible()
 
@@ -255,15 +257,20 @@ def returns_to_bundle_edit_page(
     context.page = bundle_admin_view.value
 
 
-@then('the user sees the updated release calendar page\'s title, release date and the status "{status}"')
+@then('the user sees the updated release calendar page\'s title, release date and release status "{status}"')
 def user_sees_updated_release_calendar_page_title_release_date_status(context: Context, status: str) -> None:
+    # The page remains non-live here, so its displayed status is still Draft.
+    expected_page_status = "Draft"
     expect(
         context.page.get_by_text(
-            f"New title ({status}, {context.saved_release_calendar_page_details['release_date_value']})"
+            f"New title ({status}, {context.saved_release_calendar_page_details['release_date_value']}) "
+            f"({expected_page_status})"
         )
     ).to_be_visible()
     expect(
-        context.page.get_by_text(f"{context.original_title} ({context.original_status}, {context.original_date})")
+        context.page.get_by_text(
+            f"{context.original_title} ({context.original_status}, {context.original_date}) ({expected_page_status})"
+        )
     ).not_to_be_visible()
 
 
