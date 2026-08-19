@@ -28,11 +28,6 @@ services:
       service: db
     ports: !override
       - '15432:5432'
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -q']
-      interval: 2s
-      timeout: 5s
-      retries: 30
 
   redis:
     extends:
@@ -40,11 +35,6 @@ services:
       service: redis
     ports: !override
       - '16379:6379'
-    healthcheck:
-      test: ['CMD-SHELL', 'redis-cli ping']
-      interval: 2s
-      timeout: 5s
-      retries: 30
 
   broker:
     extends:
@@ -54,15 +44,6 @@ services:
       KAFKA_CFG_ADVERTISED_LISTENERS: 'PLAINTEXT://broker:9092,EXTERNAL://localhost:19094'
     ports: !override
       - '19094:9094'
-    healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          '/opt/bitnami/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9094',
-        ]
-      interval: 5s
-      timeout: 20s
-      retries: 20
 
 volumes:
   node_modules:
