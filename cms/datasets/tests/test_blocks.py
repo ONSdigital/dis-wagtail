@@ -219,9 +219,9 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
 
         self.assertEqual(len(validation_error.exception.block_errors), 2)
         for error in validation_error.exception.block_errors.values():
-            # The destination the entries share, not the normalised key used to spot the collision,
-            # so the trailing slash the page actually links to is present.
-            self.assertIn('"/datasets/ds/editions/march/versions/"', error.message)
+            # The destination the entries share, not the normalised key used to spot the
+            # collision, so this is the href an editor can go and look for on the page.
+            self.assertIn('"/datasets/ds/editions/march/versions"', error.message)
             self.assertIn(LATEST_VERSION_DUPLICATE_HINT.strip(), error.message)
 
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
@@ -252,7 +252,7 @@ class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
 
         self.assertEqual(len(validation_error.exception.block_errors), 2)
         for error in validation_error.exception.block_errors.values():
-            self.assertIn('"/datasets/LOOKUP/editions/Lookup_Edition/versions/"', error.message)
+            self.assertIn('"/datasets/LOOKUP/editions/Lookup_Edition/versions"', error.message)
 
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_validation_fails_for_a_manual_link_to_the_resolved_url(self):
