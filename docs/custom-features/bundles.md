@@ -377,6 +377,8 @@ Configuration:
 
 Automated command for scheduled bundle publication.
 
+The command uses Python's `sched.scheduler` to fire each bundle's publish at its exact release_date, allowing multiple bundles scheduled within the same cron interval to be published in sequence.
+
 ```bash
 python manage.py publish_bundles [--dry-run] [--include-future SECONDS]
 ```
