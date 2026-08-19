@@ -120,7 +120,16 @@ class ImageBlock(blocks.StructBlock):
 
         return {
             "title": _("Download this image"),
-            "itemsList": [{"text": link_text, "url": large_image.url, "download": "file", "attributes": attributes}],
+            "itemsList": [
+                {
+                    "text": link_text,
+                    # Public images resolve to the media URL and private ones to the serve view.
+                    # Both honour force_download, so the response is always an attachment.
+                    "url": large_image.url + "?force_download=true",
+                    "download": "file",
+                    "attributes": attributes,
+                }
+            ],
         }
 
     class Meta:
