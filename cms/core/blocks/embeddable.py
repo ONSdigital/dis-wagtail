@@ -14,8 +14,13 @@ from wagtail.blocks import StructBlockValidationError
 from wagtail.documents.blocks import DocumentChooserBlock
 from wagtail.images.blocks import ImageChooserBlock
 
+from cms.core.analytics_utils import get_gtm_attributes_file_download
+from cms.core.utils import format_file_size_kb
+
 if TYPE_CHECKING:
+    from django.http import HttpRequest
     from wagtail.blocks import StreamValue, StructValue
+    from wagtail.images.models import AbstractRendition
 
 
 class ImageBlock(blocks.StructBlock):
@@ -67,11 +72,6 @@ class ImageBlock(blocks.StructBlock):
         small = image.get_rendition("width-1024")
         large = image.get_rendition("width-2048")
 
-        _base, ext = os.path.splitext(large.file.name)
-        file_type = ext.lstrip(".").upper() or "IMG"
-        size_bytes = getattr(large.file, "size", None)
-        file_size_human = filesizeformat(size_bytes) if size_bytes is not None else None
-
         options = {
             "id": f"image-{context.get('block_id') or uuid.uuid4().hex[:8]}",
             "headingLevel": 3,
@@ -90,14 +90,38 @@ class ImageBlock(blocks.StructBlock):
             options["footnotes"] = {"title": _("Footnotes"), "content": notes}
 
         if value.get("download"):
-            size_text = f" ({file_size_human})" if file_size_human else ""
-            options["download"] = {
-                "title": _("Download this image"),
-                "itemsList": [{"text": f"{file_type}{size_text}", "url": large.url, "download": "file"}],
-            }
+            options["download"] = self._get_download_options(large, context.get("request"))
 
         context["options"] = options
         return context
+
+    def _get_download_options(self, large_image: AbstractRendition, request: HttpRequest | None) -> dict:
+        """Build the download payload for the image."""
+        _base, ext = os.path.splitext(large_image.file.name)
+        file_type = ext.lstrip(".").upper() or "IMG"
+        size_bytes = getattr(large_image.file, "size", None)
+        size_kb = format_file_size_kb(size_bytes) if size_bytes is not None else None
+
+        file_size_human = filesizeformat(size_bytes) if size_bytes is not None else None
+        size_text = f" ({file_size_human})" if file_size_human else ""
+        link_text = f"{file_type}{size_text}"
+
+        # Build an absolute URL when possible so GTM attributes include the link domain
+        absolute_url = request.build_absolute_uri(large_image.url) if request else large_image.url
+        file_name = os.path.basename(urlparse(large_image.url).path)
+
+        attributes = get_gtm_attributes_file_download(
+            text=link_text,
+            url=absolute_url,
+            file_extension=ext.lstrip("."),
+            file_name=file_name,
+            file_size_kb=size_kb,
+        )
+
+        return {
+            "title": _("Download this image"),
+            "itemsList": [{"text": link_text, "url": large_image.url, "download": "file", "attributes": attributes}],
+        }
 
     class Meta:
         icon = "image"
@@ -118,8 +142,11 @@ class ImageBlock(blocks.StructBlock):
 class DocumentBlockStructValue(blocks.StructValue):
     """Bespoke StructValue to convert a struct block value to DS macro data."""
 
-    def as_macro_data(self) -> dict[str, str | bool | dict]:
+    def as_macro_data(self, request: HttpRequest | None = None) -> dict[str, str | bool | dict]:
         """Return the value as a macro data dict."""
+        # Build an absolute URL when possible so GTM attributes include the link domain
+        document_url = self["document"].url
+        absolute_url = request.build_absolute_uri(document_url) if request else document_url
         return {
             "thumbnail": False,
             "title": {
@@ -133,15 +160,13 @@ class DocumentBlockStructValue(blocks.StructValue):
                     "fileSize": filesizeformat(self["document"].get_file_size()),
                 }
             },
-            "attributes": {
-                "data-ga-event": "file-download",
-                "data-ga-file-extension": self["document"].file_extension.lower(),
-                "data-ga-file-name": self["document"].title,
-                "data-ga-link-text": self["title"] or self["document"].title,
-                "data-ga-link-url": self["document"].url,
-                "data-ga-link-domain": urlparse(self["document"].url).hostname,
-                "data-ga-file-size": str(self["document"].get_file_size() / 1000),  # Convert from Bytes to KB
-            },
+            "attributes": get_gtm_attributes_file_download(
+                text=self["title"] or self["document"].title,
+                url=absolute_url,
+                file_extension=self["document"].file_extension.lower(),
+                file_name=self["document"].title,
+                file_size_kb=format_file_size_kb(self["document"].get_file_size()),
+            ),
         }
 
 
@@ -166,7 +191,8 @@ class DocumentsBlock(blocks.StreamBlock):
     def get_context(self, value: StreamValue, parent_context: dict | None = None) -> dict:
         """Inject the document list as DS component macros data."""
         context: dict = super().get_context(value, parent_context)
-        context["macro_data"] = [document.value.as_macro_data() for document in value]
+        request = context.get("request")
+        context["macro_data"] = [document.value.as_macro_data(request=request) for document in value]
         return context
 
     class Meta:
