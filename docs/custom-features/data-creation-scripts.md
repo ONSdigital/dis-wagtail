@@ -6,17 +6,17 @@
 - [Supported Models](#supported-models)
 - [Prerequisites](#prerequisites)
 - [Usage](#usage)
-  - [Viewing the Default Configuration](#viewing-the-default-configuration)
-  - [Creating Test Data](#creating-test-data)
-  - [Deleting Test Data](#deleting-test-data)
+    - [Viewing the Default Configuration](#viewing-the-default-configuration)
+    - [Creating Test Data](#creating-test-data)
+    - [Deleting Test Data](#deleting-test-data)
 - [Configuration](#configuration)
-  - [Configuration Reference](#configuration-reference)
-  - [Validation Rules](#validation-rules)
+    - [Configuration Reference](#configuration-reference)
+    - [Validation Rules](#validation-rules)
 - [How It Works](#how-it-works)
-  - [Prefixed Records](#prefixed-records)
-  - [Deterministic Seeding](#deterministic-seeding)
-  - [Signal Disconnection](#signal-disconnection)
-  - [Tree Repair](#tree-repair)
+    - [Prefixed Records](#prefixed-records)
+    - [Deterministic Seeding](#deterministic-seeding)
+    - [Signal Disconnection](#signal-disconnection)
+    - [Tree Repair](#tree-repair)
 - [Todos](#todos)
 
 ## Overview
@@ -181,27 +181,27 @@ During creation and deletion, certain signal receivers are temporarily disconnec
 
 The `search_publisher_receivers` are disconnected:
 
-| Signal             | Receiver                             | Sender |
-| ------------------ | ------------------------------------ | ------ |
-| `page_published`   | `run_post_publish_actions_handler`   | —      |
-| `page_unpublished` | `on_page_unpublished`                | —      |
-| `page_slug_changed`| `on_page_slug_changed`               | —      |
-| `post_page_move`   | `on_page_moved`                      | —      |
-| `post_delete`      | `on_page_deleted`                    | `Page` |
+| Signal              | Receiver                           | Sender |
+| ------------------- | ---------------------------------- | ------ |
+| `page_published`    | `run_post_publish_actions_handler` | —      |
+| `page_unpublished`  | `on_page_unpublished`              | —      |
+| `page_slug_changed` | `on_page_slug_changed`             | —      |
+| `post_page_move`    | `on_page_moved`                    | —      |
+| `post_delete`       | `on_page_deleted`                  | `Page` |
 
 #### Signals disconnected during deletion
 
 The `index_receivers` (for each model being deleted) **and** the `search_publisher_receivers` are disconnected:
 
-| Signal             | Receiver                             | Sender              |
-| ------------------ | ------------------------------------ | -------------------- |
-| `post_save`        | `post_save_signal_handler`           | each collected model |
-| `post_save`        | `update_reference_index_on_save`     | each collected model |
-| `page_published`   | `run_post_publish_actions_handler`   | —                    |
-| `page_unpublished` | `on_page_unpublished`                | —                    |
-| `page_slug_changed`| `on_page_slug_changed`               | —                    |
-| `post_page_move`   | `on_page_moved`                      | —                    |
-| `post_delete`      | `on_page_deleted`                    | `Page`               |
+| Signal              | Receiver                           | Sender               |
+| ------------------- | ---------------------------------- | -------------------- |
+| `post_save`         | `post_save_signal_handler`         | each collected model |
+| `post_save`         | `update_reference_index_on_save`   | each collected model |
+| `page_published`    | `run_post_publish_actions_handler` | —                    |
+| `page_unpublished`  | `on_page_unpublished`              | —                    |
+| `page_slug_changed` | `on_page_slug_changed`             | —                    |
+| `post_page_move`    | `on_page_moved`                    | —                    |
+| `post_delete`       | `on_page_deleted`                  | `Page`               |
 
 ### Tree Repair
 
