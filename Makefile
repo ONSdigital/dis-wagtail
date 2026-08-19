@@ -120,7 +120,7 @@ test-data-create:  ## Seed test data
 	poetry run python ./manage.py create_test_data \
 		$(if $(SEED), --seed $(SEED)) \
 		$(if $(CONFIG), --config $(CONFIG)) \
-		$(if $(NOINPUT), --config) \
+		$(if $(NOINPUT), --noinput) \
 
 .PHONY: test-data-delete-dry-run
 test-data-delete-dry-run:  ## Dry run for deleting test data
