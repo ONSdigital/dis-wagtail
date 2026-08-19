@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 13:26+0100\n"
+"POT-Creation-Date: 2026-08-19 08:40+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -347,7 +347,7 @@ msgid ""
 "website."
 msgstr ""
 "Rydym yn defnyddio cwcis Google Analytics a Hotjar i fesur sut rydych yn "
-"defnyddio’rwefan."
+"defnyddio’r wefan."
 
 #: cms/jinja2/templates/pages/cookies.html:77
 msgid "These cookies collect information about:"
@@ -407,7 +407,7 @@ msgid ""
 msgstr ""
 "Gall y cwcis hyn gael eu gosod gan wefannau trydydd parti, fel YouTube a "
 "Vimeo.  Maent yn gwneud pethau fel mesur sut rydych yn gwylio fideos YouTube "
-"sydd ar  wefan y SYG "
+"sydd ar  wefan y SYG."
 
 #: cms/jinja2/templates/pages/cookies.html:121
 msgid ""
@@ -431,7 +431,7 @@ msgid ""
 "These cookies do things like remember your preferences and the choices you "
 "make, to personalise your experience of using the site."
 msgstr ""
-"Mae’r cwcis hyn yn gwneud pethau fel cofio eich dewisiadaui bersonoli eich "
+"Mae’r cwcis hyn yn gwneud pethau fel cofio eich dewisiadau i bersonoli eich "
 "profiad o ddefnyddio’r safle."
 
 #: cms/jinja2/templates/pages/cookies.html:155
@@ -440,7 +440,7 @@ msgid ""
 "reject them. You can change your selection at any time."
 msgstr ""
 "Nid ydym yn defnyddio’r cwcis hyn ar hyn o bryd, ond rydym yn storio eich "
-"dewis i'w derbyn neueu gwrthod. Gallwch newid eich dewis ar unrhyw adeg."
+"dewis i'w derbyn neu eu gwrthod. Gallwch newid eich dewis ar unrhyw adeg."
 
 #: cms/jinja2/templates/pages/cookies.html:158
 msgid "Do you want to allow cookies that remember your settings?"
@@ -601,7 +601,7 @@ msgstr "Dyddiad rhyddhau:"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:8
 msgid "Cancelled"
-msgstr "Wedi’i ganslo"
+msgstr "Wedi’i ganscms/jinja2/templates/pages/release_calendar/release_calendar_page.htmllo"
 
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--cancelled.html:45
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page--confirmed.html:43
@@ -672,7 +672,7 @@ msgstr "Rhestr mynediad cyn-rhyddhau"
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:152
 #: cms/release_calendar/models.py:282
 msgid "You might also be interested in"
-msgstr "Efallai y bydd gennych ddiddordeb hefyd yn"
+msgstr "Efallai y bydd gennych ddiddordeb hefyd yn "
 
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:8
 #, python-format
