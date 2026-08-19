@@ -1,6 +1,36 @@
-# Post Publish Actions
+# Post-publish Actions
+
+## Table of Contents
+
+- [Overview](#overview)
+  - [Action types](#action-types)
+- [Architecture](#architecture)
+  - [Signal-driven triggering](#signal-driven-triggering)
+  - [Registry](#registry)
+  - [Model](#model)
+  - [Pages published outside a bundle](#pages-published-outside-a-bundle)
+- [Parallel execution](#parallel-execution)
+  - [Thread pool executor](#thread-pool-executor)
+  - [Submission via `transaction.on_commit`](#submission-via-transactionon_commit)
+  - [Fork safety](#fork-safety)
+  - [Bundle notification sequencing](#bundle-notification-sequencing)
+- [Connection pool management](#connection-pool-management)
+  - [psycopg connection pooling](#psycopg-connection-pooling)
+  - [Releasing connections between operations](#releasing-connections-between-operations)
+  - [Write database routing](#write-database-routing)
+- [Timeout and graceful shutdown](#timeout-and-graceful-shutdown)
+  - [Timeout](#timeout)
+  - [Gunicorn timeout](#gunicorn-timeout)
+  - [Shutdown procedure](#shutdown-procedure)
+- [Retry mechanism](#retry-mechanism)
+- [Configuration reference](#configuration-reference)
+- [Key files](#key-files)
+- [Todos](#todos)
 
 Post-publish actions are tasks that run asynchronously after pages are published as part of a bundle. They allow side effects such as updating search indexes or changing S3 ACLs to happen in parallel, without blocking the publishing process.
+
+> [!IMPORTANT]
+> Currently, all functionality described here applies to **pages published as part of bundles**. See [Pages published outside a bundle](#pages-published-outside-a-bundle) and [Todos](#todos) for more details.
 
 ## Overview
 
@@ -19,13 +49,15 @@ New action types can be added by defining a handler that accepts `(page: Page, b
 
 ### Signal-driven triggering
 
-Publishing is initiated by the `publish_bundles` management command, which runs on a cron schedule. When a bundle's pages are published, Wagtail's `page_published` signal fires. A context manager (`enqueue_post_publish_actions_for_bundle`) sets the active bundle via a `ContextVar`, so the signal handler knows which bundle to associate with each action.
+Publishing is initiated either by the `publish_bundles` management command, which runs on a cron schedule, or via a manual publish via the Wagtail admin.
+
+When a bundle's pages are published, Wagtail's `page_published` signal fires. A context manager (`enqueue_post_publish_actions_for_bundle`) sets the active bundle via a `ContextVar`, so the signal handler knows which bundle to associate with each action.
 
 We allow the `page_published` signal to fire for each page and enqueue the action as this allows Wagtail to handle crawling for aliases. This ensures we won't have undue maintenance burden if future updates move more logic into signals.
 
 ```
-publish_bundles command
-  └─ publish_bundle(bundle)
+publish_bundles command / manual publish in wagtail admin
+  └─ publish_bundle(bundle) # clear any possible previous actions for bundle
        └─ enqueue_post_publish_actions_for_bundle(bundle)  # ContextManager, sets bundle in ContextVar
             └─ page.save_revision().publish()
                  └─ page_published signal
@@ -55,13 +87,30 @@ publish_bundles command
 | `timed_out_at`  | Set if the action was marked as timed out                  |
 | `retry_count`   | Number of retry attempts                                   |
 
-A unique constraint ensures only one action per `(bundle, page, action_type)` combination.
+There are two unique constraints on the model as the bundle field is nullable.
+
+| Constraint | Condition | Guarantee |
+|`post_publish_actions_bundle_page_type`| `bundle IS NOT NULL` | One action per `(bundle, page, action_type)` |
+|`post_publish_actions_page_type`| `bundle IS NULL` | One action per `(page, action_type)` |
+
+
+### Pages published outside a bundle
+
+When a page is published without an active bundle context, all registered handlers are called synchronously in the `page_published` signal handler.
+
+This means that currently for non-bundle publishes
+
+- Actions are blocking and sequential
+- There is no status tracking, timeout or retry mechanism
+
+
+This is consistent with existing behaviour, and planned to be worked on in future (see [Todos](#todos)).
 
 ## Parallel execution
 
 ### Thread pool executor
 
-Post-publish actions run in a `ThreadPoolExecutor` rather than sequentially. This reduces total time taken for bundle publishing with larger numbers of pages, as we can concurrently run multiple IO bound actions.
+Post-publish actions for bundles run in a `ThreadPoolExecutor` rather than sequentially. This reduces total time taken for bundle publishing with larger numbers of pages, as we can concurrently run multiple IO bound actions.
 
 Two separate thread pools are used:
 
@@ -154,7 +203,7 @@ These actions are re-enqueued up to `BUNDLE_POST_PUBLISH_MAX_RETRIES` times (def
 ## Key files
 
 | File                                                                         | Purpose                                               |
-| ---------------------------------------------------------------------------- | ----------------------------------------------------- |
+|------------------------------------------------------------------------------|-------------------------------------------------------|
 | `cms/post_publish_actions/models.py`                                         | `PostPublishAction` model and status/type enums       |
 | `cms/post_publish_actions/executor.py`                                       | Thread pool executors, task wrappers, shutdown logic  |
 | `cms/post_publish_actions/registry.py`                                       | Action handler registry                               |
@@ -162,7 +211,17 @@ These actions are re-enqueued up to `BUNDLE_POST_PUBLISH_MAX_RETRIES` times (def
 | `cms/post_publish_actions/utils.py`                                          | Completion polling, Slack notification orchestration  |
 | `cms/post_publish_actions/management/commands/retry_post_publish_actions.py` | Retry management command                              |
 | `cms/bundles/management/commands/publish_bundles.py`                         | Bundle publishing orchestration                       |
+| `cms/bundles/utils.py`                                                        |                                                       |
 | `cms/search/signal_handlers.py`                                              | `SEARCH_UPDATED` action handler                       |
 | `cms/private_media/signal_handlers.py`                                       | `S3_ACL` action handler                               |
 | `cms/core/utils.py`                                                          | `release_db_connections` utility                      |
 | `gunicorn.conf.py`                                                           | Graceful timeout configuration                        |
+
+## Todos
+
+Bundles were the first use case for concurrent post-publish actions, but in future we intend to support the following.
+
+- Individual page publishes (outside of bundles)
+- Page unpublishes (both inside and outside of bundles)
+
+This will also include new registry actions for custom cache purging (in development on feature branch `feature-frontend-cache-invalidation`).
