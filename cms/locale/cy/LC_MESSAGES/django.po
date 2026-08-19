@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 06:44+0100\n"
+"POT-Creation-Date: 2026-08-19 13:41+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -228,6 +228,8 @@ msgid ""
 msgstr ""
 "Nid yw’r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe’i "
 "harddangosir yn ei hiaith wreiddiol."
+"Nid yw’r dudalen hon ar gael %(in_language)s ar hyn o bryd. Fe’i "
+"harddangosir yn ei hiaith wreiddiol."
 
 #: cms/jinja2/templates/components/accredited/accredited-information.html:7
 msgid "Accredited Official Statistics"
@@ -238,6 +240,8 @@ msgid ""
 "Accredited official statistics. Find out more about types of official "
 "statistics."
 msgstr ""
+"Ystadegau swyddogol achrededig. Darganfyddwch fwy am fathau oystadegau "
+"swyddogol"
 "Ystadegau swyddogol achrededig. Darganfyddwch fwy am fathau oystadegau "
 "swyddogol"
 
@@ -294,6 +298,8 @@ msgid ""
 msgstr ""
 "Gall rhai rhannau o’r wefan hon ddefnyddio cwcis ychwanegol ac, os felly, "
 "bydd ganddynt eu polisi a’u baner cwcis eu hunain"
+"Gall rhai rhannau o’r wefan hon ddefnyddio cwcis ychwanegol ac, os felly, "
+"bydd ganddynt eu polisi a’u baner cwcis eu hunain"
 
 #: cms/jinja2/templates/pages/cookies.html:46
 #: cms/jinja2/templates/pages/cookies.html:46
@@ -317,6 +323,8 @@ msgid ""
 msgstr ""
 "Rydym yn defnyddio cwcis i gasglu a storio gwybodaeth ynghylch sut yr ydych "
 "yn defnyddio gwefan y SYG, megis y tudalennau yr ydych yn ymweld â nhw."
+"Rydym yn defnyddio cwcis i gasglu a storio gwybodaeth ynghylch sut yr ydych "
+"yn defnyddio gwefan y SYG, megis y tudalennau yr ydych yn ymweld â nhw."
 
 #: cms/jinja2/templates/pages/cookies.html:52
 #: cms/jinja2/templates/pages/cookies.html:52
@@ -330,6 +338,10 @@ msgstr ""
 "ddefnyddio. Os hoffech gael rhagor o fanylion, <a "
 "href=\"%(help_cookies_url)s\">  darllenwch ein gwybodaeth fanwl am gwcis </"
 "a>. "
+"Mae’r dudalen hon yn rhoi esboniad byr o bob math o gwci rydym yn ei "
+"ddefnyddio. Os hoffech gael rhagor o fanylion, <a "
+"href=\"%(help_cookies_url)s\">  darllenwch ein gwybodaeth fanwl am gwcis </"
+"a>. "
 
 #: cms/jinja2/templates/pages/cookies.html:54
 #: cms/jinja2/templates/pages/cookies.html:54
@@ -337,10 +349,10 @@ msgid "Cookie settings"
 msgstr "Gosodiadau cwcis"
 
 #: cms/jinja2/templates/pages/cookies.html:61
-#: cms/jinja2/templates/pages/cookies.html:61
 msgid "You can try:"
 msgstr ""
 
+#: cms/jinja2/templates/pages/cookies.html:63
 #: cms/jinja2/templates/pages/cookies.html:63
 msgid "turning on JavaScript in your browser"
 msgstr ""
@@ -357,10 +369,14 @@ msgid ""
 msgstr ""
 "Rydym yn defnyddio pedwar math o gwcis. Gallwch ddewis pa gwcis rydych yn "
 "hapus i ni eu defnyddio"
+"Rydym yn defnyddio pedwar math o gwcis. Gallwch ddewis pa gwcis rydych yn "
+"hapus i ni eu defnyddio"
 
 #: cms/jinja2/templates/pages/cookies.html:70
 #: cms/jinja2/templates/pages/cookies.html:70
 msgid "You can change your settings at any time by returning to this page."
+msgstr ""
+"Gallwch newid eish gosodiadau unrhyw bryd drwy ddychwelyd i'r dudalen hon"
 msgstr ""
 "Gallwch newid eish gosodiadau unrhyw bryd drwy ddychwelyd i'r dudalen hon"
 
@@ -377,8 +393,9 @@ msgid ""
 msgstr ""
 "Rydym yn defnyddio cwcis Google Analytics a Hotjar i fesur sut rydych yn "
 "defnyddio’r wefan."
+"Rydym yn defnyddio cwcis Google Analytics a Hotjar i fesur sut rydych yn "
+"defnyddio’r wefan."
 
-#: cms/jinja2/templates/pages/cookies.html:77
 #: cms/jinja2/templates/pages/cookies.html:77
 msgid "These cookies collect information about:"
 msgstr ""
@@ -390,11 +407,15 @@ msgstr ""
 #: cms/jinja2/templates/pages/cookies.html:80
 msgid "the pages you visit and how long you spend on each page"
 msgstr ""
+"y tudalennau rydych yn ymweld â nhw a pha mor hir yr ydych chi’n treulio ar "
+"bob tudalen"
 
+#: cms/jinja2/templates/pages/cookies.html:81
 #: cms/jinja2/templates/pages/cookies.html:81
 msgid "what you click on while you are visiting the site"
 msgstr ""
 
+#: cms/jinja2/templates/pages/cookies.html:82
 #: cms/jinja2/templates/pages/cookies.html:82
 msgid "the way in which you interact with a page"
 msgstr ""
@@ -409,11 +430,15 @@ msgid ""
 "We do not allow Google or Hotjar to use or share this data for their own "
 "purposes."
 msgstr ""
+"Nid ydym yn caniatáu i Google na Hotjar defnyddio na rhannu’r data hwn at eu "
+"dibenion eu hunain"
 
+#: cms/jinja2/templates/pages/cookies.html:87
 #: cms/jinja2/templates/pages/cookies.html:87
 msgid "Do you want to allow cookies that measure website use?"
 msgstr ""
 
+#: cms/jinja2/templates/pages/cookies.html:88
 #: cms/jinja2/templates/pages/cookies.html:88
 msgid "Use cookies that measure my website use"
 msgstr ""
@@ -437,13 +462,17 @@ msgstr ""
 "Gall y cwcis hyn gael eu gosod gan wefannau trydydd parti, fel YouTube a "
 "Vimeo.  Maent yn gwneud pethau fel mesur sut rydych yn gwylio fideos YouTube "
 "sydd ar  wefan y SYG."
+"Gall y cwcis hyn gael eu gosod gan wefannau trydydd parti, fel YouTube a "
+"Vimeo.  Maent yn gwneud pethau fel mesur sut rydych yn gwylio fideos YouTube "
+"sydd ar  wefan y SYG."
 
 #: cms/jinja2/templates/pages/cookies.html:121
 #: cms/jinja2/templates/pages/cookies.html:121
 msgid ""
 "Do you want to allow cookies that help with communications and marketing?"
-msgstr ""
+msgstr "Ydych chi am ganiatáu cwcis sy’n helpu gyda chyfathrebu a marchnata?"
 
+#: cms/jinja2/templates/pages/cookies.html:122
 #: cms/jinja2/templates/pages/cookies.html:122
 msgid "Use cookies that help with communications and marketing"
 msgstr ""
@@ -465,6 +494,8 @@ msgid ""
 msgstr ""
 "Mae’r cwcis hyn yn gwneud pethau fel cofio eich dewisiadau i bersonoli eich "
 "profiad o ddefnyddio’r safle."
+"Mae’r cwcis hyn yn gwneud pethau fel cofio eich dewisiadau i bersonoli eich "
+"profiad o ddefnyddio’r safle."
 
 #: cms/jinja2/templates/pages/cookies.html:155
 #: cms/jinja2/templates/pages/cookies.html:155
@@ -472,11 +503,14 @@ msgid ""
 "We currently do not use these cookies but do store your choice to accept or "
 "reject them. You can change your selection at any time."
 msgstr ""
+"Nid ydym yn defnyddio’r cwcis hyn ar hyn o bryd, ond rydym yn storio eich "
+"dewis i'w derbyn neu eu gwrthod. Gallwch newid eich dewis ar unrhyw adeg."
 
 #: cms/jinja2/templates/pages/cookies.html:158
 msgid "Do you want to allow cookies that remember your settings?"
 msgstr ""
 
+#: cms/jinja2/templates/pages/cookies.html:159
 #: cms/jinja2/templates/pages/cookies.html:159
 msgid "Use cookies that remember my settings on the site"
 msgstr ""
@@ -485,6 +519,7 @@ msgstr ""
 msgid "Do not use cookies that remember my settings on the site"
 msgstr ""
 
+#: cms/jinja2/templates/pages/cookies.html:187
 #: cms/jinja2/templates/pages/cookies.html:187
 msgid "Strictly necessary cookies"
 msgstr ""
@@ -499,7 +534,10 @@ msgid ""
 "remember your cookie settings and the notifications you’ve seen so we do not "
 "show them to you again"
 msgstr ""
+"cofio eich gosodiadau cwcis a’r hysbysiadau rydych wedi eu gweld fel nad "
+"ydym yn eu dangos i chi eto"
 
+#: cms/jinja2/templates/pages/cookies.html:191
 #: cms/jinja2/templates/pages/cookies.html:191
 msgid "remember your progress through a form (for example, an ONS study)"
 msgstr ""
@@ -552,6 +590,8 @@ msgid ""
 msgstr ""
 "Os yw’r cyfeiriad gwe yn gywir, neu os oeddech chi wedi dewis dolen neu "
 "fotwm,<a href=\"%(contact_url)s\">cysylltwch â ni</a>."
+"Os yw’r cyfeiriad gwe yn gywir, neu os oeddech chi wedi dewis dolen neu "
+"fotwm,<a href=\"%(contact_url)s\">cysylltwch â ni</a>."
 
 #: cms/jinja2/templates/pages/errors/500.html:2
 msgid "Sorry, there’s a problem with the service"
@@ -563,6 +603,8 @@ msgid ""
 "Our scheduled publications can also be found on our <a "
 "href=\"%(backup_url)s\">backup site</a>."
 msgstr ""
+"Mae ein cyhoeddiadau wedi’u trefnu hefyd ar gael   ar ein <a "
+"href=\"%(backup_url)s\">gwefan wrth gefn</a>."
 "Mae ein cyhoeddiadau wedi’u trefnu hefyd ar gael   ar ein <a "
 "href=\"%(backup_url)s\">gwefan wrth gefn</a>."
 
@@ -857,6 +899,8 @@ msgid ""
 "Office for National Statistics (ONS), released %(release_date)s, ONS "
 "website, statistical article, %(cite_link)s"
 msgstr ""
+"Y Swyddfa Ystadegau Gwladol (SYG), cyhoeddwyd %(release_date)s, gwefan y "
+"SYG   erthygl ystadegol, %(cite_link)s"
 "Y Swyddfa Ystadegau Gwladol (SYG), cyhoeddwyd %(release_date)s, gwefan y "
 "SYG   erthygl ystadegol, %(cite_link)s"
 
