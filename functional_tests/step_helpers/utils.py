@@ -31,6 +31,7 @@ def fill_datetime_field(field: Locator, value: str) -> None:
     try:
         picker.first.wait_for(timeout=DATETIME_PICKER_OPEN_TIMEOUT)
     except PlaywrightTimeoutError:
+        field.blur()
         return
 
     field.blur()
