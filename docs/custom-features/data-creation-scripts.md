@@ -1,29 +1,11 @@
 # Data Creation Scripts
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Supported Models](#supported-models)
-- [Prerequisites](#prerequisites)
-- [Usage](#usage)
-    - [Viewing the Default Configuration](#viewing-the-default-configuration)
-    - [Creating Test Data](#creating-test-data)
-    - [Deleting Test Data](#deleting-test-data)
-- [Configuration](#configuration)
-    - [Configuration Reference](#configuration-reference)
-    - [Validation Rules](#validation-rules)
-- [How It Works](#how-it-works)
-    - [Prefixed Records](#prefixed-records)
-    - [Deterministic Seeding](#deterministic-seeding)
-    - [Signal Disconnection](#signal-disconnection)
-    - [Tree Repair](#tree-repair)
-- [Todos](#todos)
 
 ## Overview
 
 The `cms.test_data` app provides management commands for seeding and cleaning up test data during local development. It uses factory-boy and Faker to generate reproducible CMS content, and Pydantic to validate configuration.
 
-The app is **not intended for production environments**.
+The app is **not intended for production environments**. It may be used in non-production test environments, for example during load testing.
 
 It is controlled by the `CMS_TEST_DATA_ENABLED` environment variable and is enabled locally by default in `dev` and `test` settings. The environment variable can be used to enable it for load testing in a test environment.
 
