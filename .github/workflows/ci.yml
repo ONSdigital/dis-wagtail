@@ -124,6 +124,7 @@ jobs:
 
   test-python:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [lint, lint-front-end, compile-static]
     env:
       DJANGO_SETTINGS_MODULE: cms.settings.test
@@ -186,10 +187,24 @@ jobs:
           python-version-file: .python-version
           cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
 
+      - name: Cache apt archives
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 # zizmor: ignore[cache-poisoning]
+        with:
+          path: ~/apt-archives
+          key: ${{ runner.os }}-apt-tex-v1
+
       - name: Install dependencies
+        timeout-minutes: 10
         run: |
           poetry install --no-root
-          sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
+          # Download TeX Live packages into cached, runner owned directory
+          mkdir -p ~/apt-archives/partial
+          sudo apt-get install -y --no-install-recommends \
+            -o Dir::Cache::archives="$HOME/apt-archives" \
+            -o APT::Sandbox::User=root \
+            -o Acquire::Retries=3 \
+            gettext cm-super texlive-latex-extra
+          sudo chown -R "$USER" ~/apt-archives
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -248,6 +263,7 @@ jobs:
   functional-tests:
     needs: [lint, lint-front-end, compile-static]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false # Allow all shards to run even if one fails
       matrix:
@@ -279,21 +295,39 @@ jobs:
           python-version-file: .python-version
           cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
 
+      - name: Cache apt archives
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 # zizmor: ignore[cache-poisoning]
+        with:
+          path: ~/apt-archives
+          key: ${{ runner.os }}-apt-tex-v1
+
       - name: Install dependencies
+        timeout-minutes: 10
         run: |
           poetry install --no-root
-          sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
+          # Download TeX Live packages into cached, runner owned directory
+          mkdir -p ~/apt-archives/partial
+          sudo apt-get install -y --no-install-recommends \
+            -o Dir::Cache::archives="$HOME/apt-archives" \
+            -o APT::Sandbox::User=root \
+            -o Acquire::Retries=3 \
+            gettext cm-super texlive-latex-extra
+          sudo chown -R "$USER" ~/apt-archives
 
       - name: Cache Playwright binaries
         if: "!contains(github.head_ref || github.ref, 'release')"
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 # zizmor: ignore[cache-poisoning]
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-pw-${{ matrix.browser }}
+          # Pins to playwright version also, so we don't try to restore stale browsers
+          # which then requires a reinstall
+          key: ${{ runner.os }}-pw-${{ matrix.browser }}-${{ hashFiles('poetry.lock') }}
           lookup-only: false
 
+      # Runner already ships the required browsers, so don't add --with-deps
       - name: Playwright Install
-        run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
+        timeout-minutes: 10
+        run: poetry run python -m playwright install ${{ matrix.browser }}
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
