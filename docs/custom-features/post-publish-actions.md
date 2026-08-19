@@ -1,32 +1,5 @@
 # Post-publish Actions
 
-## Table of Contents
-
-- [Overview](#overview)
-    - [Action types](#action-types)
-- [Architecture](#architecture)
-    - [Signal-driven triggering](#signal-driven-triggering)
-    - [Registry](#registry)
-    - [Model](#model)
-    - [Pages published outside a bundle](#pages-published-outside-a-bundle)
-- [Parallel execution](#parallel-execution)
-    - [Thread pool executor](#thread-pool-executor)
-    - [Submission via `transaction.on_commit`](#submission-via-transactionon_commit)
-    - [Fork safety](#fork-safety)
-    - [Bundle notification sequencing](#bundle-notification-sequencing)
-- [Connection pool management](#connection-pool-management)
-    - [psycopg connection pooling](#psycopg-connection-pooling)
-    - [Releasing connections between operations](#releasing-connections-between-operations)
-    - [Write database routing](#write-database-routing)
-- [Timeout and graceful shutdown](#timeout-and-graceful-shutdown)
-    - [Timeout](#timeout)
-    - [Gunicorn timeout](#gunicorn-timeout)
-    - [Shutdown procedure](#shutdown-procedure)
-- [Retry mechanism](#retry-mechanism)
-- [Configuration reference](#configuration-reference)
-- [Key files](#key-files)
-- [Todos](#todos)
-
 Post-publish actions are tasks that run asynchronously after pages are published as part of a bundle. They allow side effects such as updating search indexes or changing S3 ACLs to happen in parallel, without blocking the publishing process.
 
 > [!IMPORTANT]
