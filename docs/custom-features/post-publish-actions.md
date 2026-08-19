@@ -131,7 +131,11 @@ The executors are rebuilt in child processes after a `fork()` via `os.register_a
 
 ### Bundle notification sequencing
 
-Although actions run in parallel, Slack notifications for a given bundle are sequenced. `run_bundle_notification_in_support_executor` chains notification futures per bundle ID, so messages arrive in the correct order even when multiple bundles are published in the same run.
+Although actions run in parallel, Slack notifications for a given bundle are sequenced.
+
+For scheduled publishes, `run_bundle_notification_in_support_executor` chains notification futures per bundle ID, so messages arrive in the correct order even when multiple bundles are published in the same run.
+
+For manual publishes `run_after_hook` is used to enqueue a notification to the support executor after the publish runs.
 
 ## Connection pool management
 
