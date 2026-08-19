@@ -1,6 +1,5 @@
 # Data Creation Scripts
 
-
 ## Overview
 
 The `cms.test_data` app provides management commands for seeding and cleaning up test data during local development. It uses factory-boy and Faker to generate reproducible CMS content, and Pydantic to validate configuration.
