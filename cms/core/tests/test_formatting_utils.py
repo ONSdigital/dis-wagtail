@@ -1,6 +1,8 @@
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from datetime import timezone as tz
 from types import SimpleNamespace
+from typing import Any
 
 from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
@@ -45,11 +47,11 @@ class DummyPageWithNoReleaseDate(DummyPage):
         abstract = True
 
 
+@dataclass
 class DummyStatusPage:
-    def __init__(self, *, current_workflow_state=None, live=False, has_unpublished_changes=True):
-        self.current_workflow_state = current_workflow_state
-        self.live = live
-        self.has_unpublished_changes = has_unpublished_changes
+    current_workflow_state: Any | None = None
+    live: bool = False
+    has_unpublished_changes: bool = True
 
 
 class GetFormattedPagesListTests(TestCase):
