@@ -25,6 +25,7 @@ To work on this project, see the [README](../README.md).
     - [Migration-friendly StreamFields](custom-features/migration_friendly_streamfields.md)
     - [Media privacy](custom-features/media_privacy.md)
     - [Bundles](custom-features/bundles.md)
+    - [Post-publish Actions](custom-features/post-publish-actions.md)
     - [Scheduled jobs](custom-features/scheduled-jobs.md)
     - [Locked migrate](custom-features/locked-migrate.md)
     - [Page privacy](custom-features/page_privacy.md)
