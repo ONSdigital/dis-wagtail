@@ -75,7 +75,7 @@ class TestUtils(TestCase):
         formatted_datasets = format_datasets_as_document_list(datasets)
 
         self.assertEqual(len(formatted_datasets), 2)
-        self.assertEqual(formatted_datasets[0]["title"]["url"], "/datasets/LOOKUP/editions/lookup_edition/versions/")
+        self.assertEqual(formatted_datasets[0]["title"]["url"], "/datasets/LOOKUP/editions/lookup_edition/versions")
         # Manually entered URLs are used as given, whatever the page context
         self.assertEqual(formatted_datasets[1]["title"]["url"], manual_dataset["url"])
 

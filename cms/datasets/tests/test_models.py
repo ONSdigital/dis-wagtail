@@ -565,5 +565,5 @@ class TestDatasetUrlPaths(TestCase):
         """The fixture is version 9, and no version appears in the URL."""
         self.assertEqual(
             self.dataset.get_url_path(link_to_latest_version=True),
-            "/datasets/wellbeing-quarterly/editions/september/versions/",
+            "/datasets/wellbeing-quarterly/editions/september/versions",
         )

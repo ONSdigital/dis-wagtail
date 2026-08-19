@@ -714,7 +714,7 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
 
         response = self.client.get(self.page.url)
 
-        self.assertContains(response, 'href="/datasets/LOOKUP/editions/lookup_edition/versions/"')
+        self.assertContains(response, 'href="/datasets/LOOKUP/editions/lookup_edition/versions"')
         # The series URL is a prefix of the edition URL, hence the full href.
         self.assertNotContains(response, 'href="/datasets/LOOKUP"')
 
@@ -754,7 +754,7 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
                 self.assertEqual(lookup_dataset.title in str(response.content), is_shown)
                 self.assertEqual(lookup_dataset.description in str(response.content), is_shown)
                 # The series URL is a prefix of the edition URL, hence the full href.
-                expected_href = 'href="/datasets/LOOKUP/editions/lookup_edition/versions/"'
+                expected_href = 'href="/datasets/LOOKUP/editions/lookup_edition/versions"'
                 self.assertEqual(expected_href in str(response.content), is_shown)
 
                 self.assertEqual(manual_dataset["title"] in str(response.content), is_shown)

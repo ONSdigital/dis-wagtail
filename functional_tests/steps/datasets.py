@@ -25,7 +25,7 @@ def look_up_and_select_published_dataset(context: Context) -> None:
         # The two destinations a looked up dataset can resolve to. Which one is correct depends on
         # the page doing the linking, so scenarios assert it with one of the steps below.
         "url": f"/datasets/{mock_dataset['dataset_id']}",
-        "latest_version_url": (f"/datasets/{mock_dataset['dataset_id']}/editions/{mock_dataset['edition']}/versions/"),
+        "latest_version_url": (f"/datasets/{mock_dataset['dataset_id']}/editions/{mock_dataset['edition']}/versions"),
     }
 
     context.selected_datasets = [
@@ -151,7 +151,7 @@ def check_dataset_links_to_series_page(context: Context) -> None:
 
 @then("the looked up dataset links to the latest version of the edition")
 def check_dataset_links_to_latest_version_of_edition(context: Context) -> None:
-    """The link names the edition and stops at "versions/", which the website resolves to the
+    """The link names the edition and stops at "versions", which the website resolves to the
     latest published version of that edition.
     """
     dataset = context.selected_datasets[0]
