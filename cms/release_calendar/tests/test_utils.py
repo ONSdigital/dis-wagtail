@@ -9,11 +9,9 @@ from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.release_calendar.utils import (
     get_release_calendar_page_details,
-    get_release_calendar_page_status,
     get_translated_string,
     parse_month_year,
 )
-from cms.workflows.tests.utils import mark_page_as_ready_for_review
 
 
 class ParseMonthYearTestCase(TestCase):
@@ -130,35 +128,6 @@ class GetTranslatedStringTestCase(TranslationResetMixin, TestCase):
         result = get_translated_string(test_string, "cy")
         # Should still return a string even when i18n is disabled
         self.assertEqual(result, "Hello world")
-
-
-class GetReleaseCalendarPageStatusTestCase(TestCase):
-    def test_returns_current_workflow_task_name_when_in_workflow(self):
-        page = ReleaseCalendarPageFactory(title="Workflow page")
-        mark_page_as_ready_for_review(page)
-
-        self.assertEqual(get_release_calendar_page_status(page), "In Preview")
-
-    def test_returns_live_when_live_without_unpublished_changes(self):
-        page = ReleaseCalendarPageFactory(title="Live page")
-        page.live = True
-        page.has_unpublished_changes = False
-
-        self.assertEqual(get_release_calendar_page_status(page), "Live")
-
-    def test_returns_draft_when_not_live_and_not_in_workflow(self):
-        page = ReleaseCalendarPageFactory(title="Draft page")
-        page.live = False
-        page.has_unpublished_changes = True
-
-        self.assertEqual(get_release_calendar_page_status(page), "Draft")
-
-    def test_returns_draft_for_live_page_with_unpublished_changes(self):
-        page = ReleaseCalendarPageFactory(title="Live draft page")
-        page.live = True
-        page.has_unpublished_changes = True
-
-        self.assertEqual(get_release_calendar_page_status(page), "Draft")
 
 
 class GetReleaseCalendarPageDetailsTestCase(TestCase):

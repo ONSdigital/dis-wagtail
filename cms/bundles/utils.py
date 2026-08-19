@@ -22,6 +22,7 @@ from cms.bundles.notifications.slack import (
     notify_slack_of_publish_end,
 )
 from cms.core.fields import StreamField
+from cms.core.formatting_utils import get_page_display_status
 from cms.post_publish_actions.executor import run_bundle_notification_in_support_executor, run_in_support_executor
 from cms.post_publish_actions.models import PostPublishAction
 from cms.post_publish_actions.signal_handlers import enqueue_post_publish_actions_for_bundle
@@ -374,11 +375,8 @@ def _normalise_date(value: str | datetime | None) -> str | None:
 
 def get_page_title_with_workflow_status(page: Page) -> str:
     title: str = page.specific_deferred.get_admin_display_title()
-
-    if workflow_state := page.current_workflow_state:
-        return f"{title} ({workflow_state.current_task_state.task.name})"
-
-    return f"{title} (Draft)"
+    page_status = get_page_display_status(page)
+    return f"{title} ({page_status})"
 
 
 def get_language_code_from_page(page: Page) -> str:

@@ -393,6 +393,12 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
         response = self.client.get(self.edit_url)
         self.assertContains(response, f"{page_title} (Ready to publish)")
 
+        self.statistical_article_page.save_revision().publish()
+        self.statistical_article_page.title = "The updated article"
+        self.statistical_article_page.save_revision()
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, f"{self.statistical_article_page.get_admin_display_title()} (Live + Draft)")
+
     @mock.patch("cms.bundles.viewsets.bundle.notify_slack_of_status_change")
     def test_bundle_approval__cannot__approve_if_pages_are_not_ready_to_publish(self, mock_notify_slack):
         """Test bundle approval workflow."""
