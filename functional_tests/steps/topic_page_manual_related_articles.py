@@ -8,6 +8,7 @@ from cms.articles.tests.factories import (
     ArticleSeriesPageFactory,
     StatisticalArticlePageFactory,
 )
+from functional_tests.step_helpers.utils import fill_datetime_field
 from functional_tests.steps.page_editor import click_the_given_button
 
 
@@ -74,7 +75,7 @@ def user_adds_external_related_article(context: Context, title: str) -> None:
     context.page.locator(title_field).fill(title)
     context.page.locator(description_field).fill(f"This is a short description for {title}.")
     context.page.locator(content_type_field).select_option("Article")
-    context.page.locator(release_date_field).fill("2025-01-01")
+    fill_datetime_field(context.page.locator(release_date_field), "2025-01-01")
 
     # Increment the counter
     context.manual_article_index += 1

@@ -6,6 +6,7 @@ from playwright.sync_api import expect
 
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.topics.tests.factories import TopicPageRelatedMethodologyFactory
+from functional_tests.step_helpers.utils import fill_datetime_field
 
 
 @given("the topic page has at least 3 child methodologies")
@@ -187,7 +188,7 @@ def user_adds_external_related_methodology_with_description_and_release_date(con
     if description:
         context.page.locator(f"#id_related_methodologies-{index}-description").fill(description)
     if release_date:
-        context.page.locator(f"#id_related_methodologies-{index}-release_date").fill(release_date)
+        fill_datetime_field(context.page.locator(f"#id_related_methodologies-{index}-release_date"), release_date)
 
     context.manual_methodology_index += 1
 
