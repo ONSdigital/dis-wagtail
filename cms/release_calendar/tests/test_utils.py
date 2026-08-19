@@ -1,10 +1,17 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from django.utils.translation import gettext
 
 from cms.core.tests.utils import TranslationResetMixin
-from cms.release_calendar.utils import get_translated_string, parse_month_year
+from cms.release_calendar.enums import ReleaseStatus
+from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.release_calendar.utils import (
+    get_release_calendar_page_details,
+    get_translated_string,
+    parse_month_year,
+)
 
 
 class ParseMonthYearTestCase(TestCase):
@@ -121,3 +128,19 @@ class GetTranslatedStringTestCase(TranslationResetMixin, TestCase):
         result = get_translated_string(test_string, "cy")
         # Should still return a string even when i18n is disabled
         self.assertEqual(result, "Hello world")
+
+
+class GetReleaseCalendarPageDetailsTestCase(TestCase):
+    def test_returns_release_status_release_date_and_page_status(self):
+        release_calendar_page = ReleaseCalendarPageFactory(
+            title="Future release",
+            status=ReleaseStatus.PROVISIONAL,
+            release_date=timezone.now() + timedelta(days=3),
+        )
+        release_calendar_page.live = True
+        release_calendar_page.has_unpublished_changes = False
+
+        self.assertEqual(
+            get_release_calendar_page_details(release_calendar_page),
+            f"Future release (Provisional, {release_calendar_page.release_date_value}) (Live)",
+        )
