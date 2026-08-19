@@ -547,6 +547,7 @@ This will compile the .po files into .mo files, which are used by Django to disp
 
 Management commands are provided to seed, inspect, and tear down test data for local development.
 
+
 #### Viewing the default configuration
 
 To see the default test data configuration (how many images, datasets, topics, etc. will be created):
@@ -611,6 +612,8 @@ make test-data-delete NOINPUT=1
 ```
 
 > **Note:** Test data is identified by a common prefix in its title/text fields. Only records created by `create_test_data` will be matched and removed.
+
+For more details, see the [Data Creation Scripts documentation](docs/custom-features/data-creation-scripts.md).
 
 ### Lighthouse Audits
 
