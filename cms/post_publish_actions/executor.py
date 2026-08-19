@@ -129,6 +129,11 @@ def run_action(
 
 
 def flush_executor() -> None:
+    """Shutdown the executors and rebuild them.
+
+    Indended for tests: stops threads leaking between test cases and ensures actions submitted in tests have completed
+    before assertions run.
+    """
     global _executor, _support_executor  # noqa: PLW0603 # pylint: disable=global-statement
     _executor.shutdown(wait=True)
     _support_executor.shutdown(wait=True)
