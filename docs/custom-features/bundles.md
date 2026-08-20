@@ -240,7 +240,6 @@ The main bundle model that orchestrates content publication.
 Key properties:
 
 - `scheduled_publication_date`: Returns publication_date or release_calendar_page.release_date
-- `can_be_approved`: Whether bundle can be approved (all pages ready to publish)
 - `is_ready_to_be_published`: Whether bundle status is `APPROVED`
 - `can_be_manually_published`: Whether bundle can be published manually
 - Useful manager methods:
@@ -377,6 +376,8 @@ Configuration:
 ### `publish_bundles`
 
 Automated command for scheduled bundle publication.
+
+The command uses Python's `sched.scheduler` to fire each bundle's publish at its exact release_date, allowing multiple bundles scheduled within the same cron interval to be published in sequence.
 
 ```bash
 python manage.py publish_bundles [--dry-run] [--include-future SECONDS]
