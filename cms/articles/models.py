@@ -928,10 +928,9 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
     def get_cached_paths(self) -> Generator[str]:
         yield "/"
         yield "/related-data"  # always include, should a correction remove related datasets
-        if self.datasets:
-            pages = ceil(len(self.datasets) / settings.RELATED_DATASETS_PER_PAGE)
-            # over-purge trailing pages so pages orphaned by shrinking pagination are invalidated too
-            for page_number in range(1, pages + settings.CMS_PAGINATION_OVER_PURGE + 1):
-                yield f"/related-data?page={page_number}"
+        pages = ceil(len(self.datasets or []) / settings.RELATED_DATASETS_PER_PAGE)
+        # over-purge trailing pages so pages orphaned by shrinking pagination are invalidated too
+        for page_number in range(1, pages + settings.CMS_PAGINATION_OVER_PURGE + 1):
+            yield f"/related-data?page={page_number}"
 
         yield from self.get_downloadable_block_paths()

@@ -583,7 +583,10 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(self.page.analytics_content_type, "articles")
 
     def test_get_cached_paths(self):
-        self.assertEqual(list(self.page.get_cached_paths()), ["/", "/related-data"])
+        self.assertEqual(
+            list(self.page.get_cached_paths()),
+            ["/", "/related-data", "/related-data?page=1", "/related-data?page=2"],
+        )
 
     def test_get_cached_paths__with_related_data_pages(self):
         dataset = DatasetFactory()
@@ -644,7 +647,14 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(
             list(self.page.get_cached_paths()),
-            ["/", "/related-data", "/download-table/test-table-id", "/download-chart/test-chart-id"],
+            [
+                "/",
+                "/related-data",
+                "/related-data?page=1",
+                "/related-data?page=2",
+                "/download-table/test-table-id",
+                "/download-chart/test-chart-id",
+            ],
         )
 
 
