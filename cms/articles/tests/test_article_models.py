@@ -583,7 +583,10 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(self.page.analytics_content_type, "articles")
 
     def test_get_cached_paths(self):
-        self.assertEqual(list(self.page.get_cached_paths()), ["/", "/related-data"])
+        self.assertEqual(
+            list(self.page.get_cached_paths()),
+            ["/", "/related-data", "/related-data?page=1", "/related-data?page=2"],
+        )
 
     def test_get_cached_paths__with_related_data_pages(self):
         dataset = DatasetFactory()
@@ -592,11 +595,22 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
             stream_data=[("dataset_lookup", dataset)] * 6,
         )
 
-        expected = ["/", "/related-data", "/related-data?page=1"]
-        self.assertEqual(list(self.page.get_cached_paths()), expected)
+        with override_settings(CMS_PAGINATION_OVER_PURGE=2):
+            expected = ["/", "/related-data", "/related-data?page=1", "/related-data?page=2", "/related-data?page=3"]
+            self.assertEqual(list(self.page.get_cached_paths()), expected)
 
-        with override_settings(RELATED_DATASETS_PER_PAGE=3):
-            self.assertEqual(list(self.page.get_cached_paths()), [*expected, "/related-data?page=2"])
+            with override_settings(RELATED_DATASETS_PER_PAGE=3):
+                self.assertEqual(
+                    list(self.page.get_cached_paths()),
+                    [
+                        "/",
+                        "/related-data",
+                        "/related-data?page=1",
+                        "/related-data?page=2",
+                        "/related-data?page=3",
+                        "/related-data?page=4",
+                    ],
+                )
 
     def test_get_cached_paths__with_downloadable_blocks(self):
         self.page.content = [
@@ -633,7 +647,14 @@ class StatisticalArticlePageTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(
             list(self.page.get_cached_paths()),
-            ["/", "/related-data", "/download-table/test-table-id", "/download-chart/test-chart-id"],
+            [
+                "/",
+                "/related-data",
+                "/related-data?page=1",
+                "/related-data?page=2",
+                "/download-table/test-table-id",
+                "/download-chart/test-chart-id",
+            ],
         )
 
 
