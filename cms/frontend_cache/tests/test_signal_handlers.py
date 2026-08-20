@@ -84,6 +84,8 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
         urls = {
             self.article_url,
             self.article_related_data_url,
+            f"{self.article_related_data_url}?page=1",
+            f"{self.article_related_data_url}?page=2",
             self.series_url,
             f"{self.series_url}/related-data",
             self.series_edition_url,
@@ -218,6 +220,8 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                 # the usual urls
                 new_article_url,
                 f"{new_article_url}/related-data",
+                f"{new_article_url}/related-data?page=1",
+                f"{new_article_url}/related-data?page=2",
                 self.series_url,
                 f"{self.series_url}/related-data",
                 self.series_edition_url,
@@ -296,8 +300,12 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                     {
                         self.article_url,
                         self.article_related_data_url,
+                        f"{self.article_related_data_url}?page=1",
+                        f"{self.article_related_data_url}?page=2",
                         article_translation_url,
                         f"{article_translation_url}/related-data",
+                        f"{article_translation_url}/related-data?page=1",
+                        f"{article_translation_url}/related-data?page=2",
                     }
                 ),
             ]
@@ -389,6 +397,8 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                 self.index_page_url,
                 self.article_url,
                 self.article_related_data_url,
+                f"{self.article_related_data_url}?page=1",
+                f"{self.article_related_data_url}?page=2",
             }
         )
 
@@ -542,6 +552,8 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
             {
                 self.article_url,
                 self.article_related_data_url,
+                f"{self.article_related_data_url}?page=1",
+                f"{self.article_related_data_url}?page=2",
                 # the old series and topic
                 self.series_url,
                 f"{self.series_url}/related-data",
@@ -583,6 +595,8 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                 f"{self.series_edition_url}?page=3",
                 self.article_url,
                 self.article_related_data_url,
+                f"{self.article_related_data_url}?page=1",
+                f"{self.article_related_data_url}?page=2",
                 # the old topic
                 self.topic_page_url,
                 self.topic_page_translation_url,
@@ -707,42 +721,72 @@ class PageViaSnippetFrontEndCacheInvalidationTestCase(TestCase):
         self.contact.save_revision().publish()
 
         mocked_purge_urls.assert_called_once_with(
-            {self.statistical_article_url, self.statistical_article_related_data_url}
+            {
+                self.statistical_article_url,
+                self.statistical_article_related_data_url,
+                f"{self.statistical_article_related_data_url}?page=1",
+                f"{self.statistical_article_related_data_url}?page=2",
+            }
         )
 
     def test_unpublish__contact_details(self, mocked_purge_urls):
         self.contact.unpublish()
 
         mocked_purge_urls.assert_called_once_with(
-            {self.statistical_article_url, self.statistical_article_related_data_url}
+            {
+                self.statistical_article_url,
+                self.statistical_article_related_data_url,
+                f"{self.statistical_article_related_data_url}?page=1",
+                f"{self.statistical_article_related_data_url}?page=2",
+            }
         )
 
     def test_publish__definition(self, mocked_purge_urls):
         self.definition.save_revision().publish()
 
         mocked_purge_urls.assert_called_once_with(
-            {self.statistical_article_url, self.statistical_article_related_data_url}
+            {
+                self.statistical_article_url,
+                self.statistical_article_related_data_url,
+                f"{self.statistical_article_related_data_url}?page=1",
+                f"{self.statistical_article_related_data_url}?page=2",
+            }
         )
 
     def test_unpublish__definition(self, mocked_purge_urls):
         self.definition.unpublish()
 
         mocked_purge_urls.assert_called_once_with(
-            {self.statistical_article_url, self.statistical_article_related_data_url}
+            {
+                self.statistical_article_url,
+                self.statistical_article_related_data_url,
+                f"{self.statistical_article_related_data_url}?page=1",
+                f"{self.statistical_article_related_data_url}?page=2",
+            }
         )
 
     def test_delete__contact(self, mocked_purge_urls):
         self.contact.delete()
 
         mocked_purge_urls.assert_called_once_with(
-            {self.statistical_article_url, self.statistical_article_related_data_url}
+            {
+                self.statistical_article_url,
+                self.statistical_article_related_data_url,
+                f"{self.statistical_article_related_data_url}?page=1",
+                f"{self.statistical_article_related_data_url}?page=2",
+            }
         )
 
     def test_delete__definition(self, mocked_purge_urls):
         self.definition.delete()
 
         mocked_purge_urls.assert_called_once_with(
-            {self.statistical_article_url, self.statistical_article_related_data_url}
+            {
+                self.statistical_article_url,
+                self.statistical_article_related_data_url,
+                f"{self.statistical_article_related_data_url}?page=1",
+                f"{self.statistical_article_related_data_url}?page=2",
+            }
         )
 
 
@@ -776,7 +820,12 @@ class GetPageCachedUrlsTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(
             get_page_cached_urls(self.statistical_article),
-            [article_url, f"{article_url}/related-data"],
+            [
+                article_url,
+                f"{article_url}/related-data",
+                f"{article_url}/related-data?page=1",
+                f"{article_url}/related-data?page=2",
+            ],
         )
 
     @override_settings(WAGTAIL_APPEND_SLASH=True)
@@ -785,7 +834,12 @@ class GetPageCachedUrlsTestCase(WagtailTestUtils, TestCase):
 
         self.assertEqual(
             get_page_cached_urls(self.statistical_article),
-            [f"{article_url}/", f"{article_url}/related-data/"],
+            [
+                f"{article_url}/",
+                f"{article_url}/related-data/",
+                f"{article_url}/related-data/?page=1",
+                f"{article_url}/related-data/?page=2",
+            ],
         )
 
     @override_settings(WAGTAIL_APPEND_SLASH=True)
