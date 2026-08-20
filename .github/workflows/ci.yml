@@ -187,24 +187,14 @@ jobs:
           python-version-file: .python-version
           cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
 
-      - name: Cache apt archives
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 # zizmor: ignore[cache-poisoning]
-        with:
-          path: ~/apt-archives
-          key: ${{ runner.os }}-apt-tex-v1
-
-      - name: Install dependencies
+      - name: Install Python dependencies
         timeout-minutes: 10
-        run: |
-          poetry install --no-root
-          # Download TeX Live packages into cached, runner owned directory
-          mkdir -p ~/apt-archives/partial
-          sudo apt-get install -y --no-install-recommends \
-            -o Dir::Cache::archives="$HOME/apt-archives" \
-            -o APT::Sandbox::User=root \
-            -o Acquire::Retries=3 \
-            gettext cm-super texlive-latex-extra
-          sudo chown -R "$USER" ~/apt-archives
+        run: poetry install --no-root
+
+      - name: Install system dependencies
+        id: system-deps
+        timeout-minutes: 10
+        uses: ./.github/actions/install-system-deps
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -295,24 +285,24 @@ jobs:
           python-version-file: .python-version
           cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
 
-      - name: Cache apt archives
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 # zizmor: ignore[cache-poisoning]
-        with:
-          path: ~/apt-archives
-          key: ${{ runner.os }}-apt-tex-v1
-
-      - name: Install dependencies
+      - name: Install Python dependencies
         timeout-minutes: 10
+        run: poetry install --no-root
+
+      - name: Install system dependencies
+        id: system-deps
+        timeout-minutes: 10
+        uses: ./.github/actions/install-system-deps
+
+      - name: Build playwright cache key
+        id: playwright-cache-key
+        env:
+          OS_ID: ${{ steps.system-deps.outputs.os-id }}
+          BROWSER: ${{ matrix.browser }}
         run: |
-          poetry install --no-root
-          # Download TeX Live packages into cached, runner owned directory
-          mkdir -p ~/apt-archives/partial
-          sudo apt-get install -y --no-install-recommends \
-            -o Dir::Cache::archives="$HOME/apt-archives" \
-            -o APT::Sandbox::User=root \
-            -o Acquire::Retries=3 \
-            gettext cm-super texlive-latex-extra
-          sudo chown -R "$USER" ~/apt-archives
+          VERSION=$(awk '/^name = "playwright"/{f=1} f && /^version = /{gsub(/"/,"",$3); print $3; exit}' poetry.lock)
+          [ -n "$VERSION" ] || { echo 'Could not read the playwright version from poetry.lock'; exit 1; }
+          echo "key=$OS_ID-pw-$BROWSER-$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright binaries
         if: "!contains(github.head_ref || github.ref, 'release')"
@@ -321,7 +311,7 @@ jobs:
           path: ~/.cache/ms-playwright
           # Pins to playwright version also, so we don't try to restore stale browsers
           # which then requires a reinstall
-          key: ${{ runner.os }}-pw-${{ matrix.browser }}-${{ hashFiles('poetry.lock') }}
+          key: ${{ steps.playwright-cache-key.outputs.key }}
           lookup-only: false
 
       # Runner already ships the required browsers, so don't add --with-deps
