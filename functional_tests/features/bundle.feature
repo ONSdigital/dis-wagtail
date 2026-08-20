@@ -14,14 +14,14 @@ Feature: CMS users can manage bundles
         And the user opens the release calendar page chooser
         Then the locale column is displayed in the chooser
 
-    Scenario Outline: A content editor can see the release calendar page title, status and release date when it has been selected under scheduling
+    Scenario Outline: A content editor can see the release calendar page title, release status, release date and page status when it has been selected under scheduling
         Given a release calendar page with a "<Release Status>" status and future release date exists
         When the user navigates to the bundle creation page
         And the user enters a bundle title
         And the user opens the release calendar page chooser
         And the user selects the existing release calendar page
         And the user saves the bundle as draft
-        Then the user sees the release calendar page title, status and release date
+        Then the user sees the release calendar page title, release status, release date and page status
 
         Examples:
             | Release Status |
@@ -44,7 +44,7 @@ Feature: CMS users can manage bundles
         And  the user saves the bundle as draft
         And  the user updates the selected release calendar page's title, release date and sets the status to "<New Status>"
         And  returns to the bundle edit page
-        Then the user sees the updated release calendar page's title, release date and the status "<New Status>"
+        Then the user sees the updated release calendar page's title, release date and release status "<New Status>"
 
         Examples:
             | New Status  |

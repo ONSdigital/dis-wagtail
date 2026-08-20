@@ -3,6 +3,8 @@ from typing import Any, cast
 from django.forms import FloatField, TextInput
 from wagtail import blocks
 
+from cms.core.utils import format_file_size_kb
+
 
 class TextInputIntegerBlock(blocks.IntegerBlock):
     """A text input widget that only allows numeric input.
@@ -65,5 +67,4 @@ def get_approximate_file_size_in_kb(data: Any, *, minimum: int = 1) -> str:
     """
     # CSV exports will use UTF-8 encoding, so we calculate the size accordingly
     size_in_bytes = len(bytes(str(data), "utf-8"))
-    size_in_kb = max(minimum, round(size_in_bytes / 1024))
-    return f"{size_in_kb}KB"
+    return f"{format_file_size_kb(size_in_bytes, decimal_places=0, minimum=minimum)}KB"
