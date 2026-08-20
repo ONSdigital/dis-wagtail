@@ -192,7 +192,7 @@ This may be able to change after [PR 758](https://github.com/ONSdigital/dis-wagt
 
 ## Todos
 
-Currently, this supports several core models, but there are plans to expand this to cover
+Currently, this supports several core models, but there are plans to expand this to cover:
 
 - All page types
 - Bundles
@@ -200,7 +200,7 @@ Currently, this supports several core models, but there are plans to expand this
 - Snippets
 - Locales: converted aliases to supported languages e.g. welsh. Only english is currently supported.
 
-Other future changes include
+Other future changes include:
 
 - Refactoring to avoid need to call `fix_tree()`
 - Configurability of signal disconnection
