@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING
 
 from django.utils.translation import gettext, override
 
+from cms.core.formatting_utils import get_page_display_status
+
 if TYPE_CHECKING:
     from .models import ReleaseCalendarPage
 FULL_ENGLISH_MONTHS = [
@@ -99,9 +101,12 @@ def get_translated_string(string_to_translate: str, language_code: str) -> str:
 def get_release_calendar_page_details(
     release_calendar_page: ReleaseCalendarPage,
 ) -> str:
-    """Returns the release page title, status and release date."""
+    """Returns the release page title, release status, release date and page status."""
+    release_status = release_calendar_page.specific_deferred.get_status_display()
+    page_status = get_page_display_status(release_calendar_page)
     return (
         f"{release_calendar_page.title} "
-        f"({release_calendar_page.specific_deferred.get_status_display()}, "
-        f"{release_calendar_page.specific_deferred.release_date_value})"
+        f"({release_status}, "
+        f"{release_calendar_page.specific_deferred.release_date_value}) "
+        f"({page_status})"
     )

@@ -20,7 +20,7 @@ from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STAT
 from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.datasets.models import ONSDataset
 from cms.datasets.utils import get_dataset_for_published_state, update_dataset_metadata
-from cms.workflows.models import ReadyToPublishGroupTask
+from cms.workflows.utils import is_page_ready_to_publish
 
 from .bundle_api_sync_service import BundleAPISyncService
 
@@ -301,12 +301,8 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             if page := form.clean().get("page"):
                 has_pages = True
                 page = page.specific
-                workflow_state = page.current_workflow_state
 
-                if not (
-                    workflow_state
-                    and isinstance(workflow_state.current_task_state.task.specific, ReadyToPublishGroupTask)
-                ):
+                if not is_page_ready_to_publish(page):
                     form.add_error("page", "This page is not ready to be published")
                     num_pages_not_ready += 1
 
@@ -318,6 +314,19 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 f"Cannot approve the bundle with {num_pages_not_ready} "
                 f"page{pluralize(num_pages_not_ready)} not ready to be published."
             )
+
+    def _validate_release_calendar_page_status(self) -> None:
+        release_calendar_page = self.cleaned_data["release_calendar_page"]
+        if not release_calendar_page:
+            return
+
+        is_live_with_no_unpublished_changes = (
+            release_calendar_page.live and not release_calendar_page.has_unpublished_changes
+        )
+
+        if not (is_live_with_no_unpublished_changes or is_page_ready_to_publish(release_calendar_page)):
+            error = "This page is not ready to be published"
+            raise ValidationError({"release_calendar_page": error})
 
     def _validate_publication_date(self) -> None:
         release_calendar_page = self.cleaned_data["release_calendar_page"]
@@ -373,6 +382,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
             # ensure all bundled pages are ready to publish
             self._validate_bundled_pages_status()
+
+            # ensure the release calendar page is ready to publish
+            self._validate_release_calendar_page_status()
 
             # ensure all bundled datasets are approved (the function will check if the API is enabled)
             self._validate_bundled_datasets_status()

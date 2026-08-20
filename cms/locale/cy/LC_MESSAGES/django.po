@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 06:44+0100\n"
+"POT-Creation-Date: 2026-08-19 12:10+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -73,28 +73,28 @@ msgstr "Dangos popeth"
 msgid "Hide all"
 msgstr "Cuddio popeth"
 
-#: cms/core/blocks/embeddable.py:86 cms/core/blocks/markup.py:222
-#: cms/datavis/blocks/base.py:148 cms/datavis/blocks/iframe.py:153
+#: cms/core/blocks/embeddable.py:86 cms/core/blocks/markup.py:227
+#: cms/datavis/blocks/base.py:151 cms/datavis/blocks/iframe.py:153
 msgid "Source"
 msgstr "Ffynhonnell"
 
-#: cms/core/blocks/embeddable.py:90 cms/core/blocks/markup.py:227
-#: cms/datavis/blocks/base.py:165 cms/datavis/blocks/iframe.py:160
+#: cms/core/blocks/embeddable.py:90 cms/core/blocks/markup.py:232
+#: cms/datavis/blocks/base.py:168 cms/datavis/blocks/iframe.py:160
 msgid "Footnotes"
 msgstr "Troednodiadau"
 
-#: cms/core/blocks/embeddable.py:95
+#: cms/core/blocks/embeddable.py:122
 msgid "Download this image"
 msgstr "Lawrlwythwch y ddelwedd hon"
 
-#: cms/core/blocks/markup.py:262
-msgid "Download this table"
-msgstr "Lawrlwythwch y tabl hwn"
-
-#: cms/core/blocks/markup.py:263
+#: cms/core/blocks/markup.py:270 cms/datavis/blocks/base.py:356
 #, python-format
 msgid "Download CSV %(size)s"
 msgstr "Lawrlwythwch CSV %(size)s"
+
+#: cms/core/blocks/markup.py:287
+msgid "Download this table"
+msgstr "Lawrlwythwch y tabl hwn"
 
 #: cms/core/blocks/related.py:60
 msgid "Related links"

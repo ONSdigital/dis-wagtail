@@ -115,6 +115,25 @@ load-design-system-templates:  ## Load the design system templates
 load-topics:  ## Load our fixture of taxonomy topics
 	poetry run python ./manage.py loaddata cms/taxonomy/fixtures/topics.json
 
+.PHONY: test-data-create
+test-data-create:  ## Seed test data
+	poetry run python ./manage.py create_test_data \
+		$(if $(SEED), --seed $(SEED)) \
+		$(if $(CONFIG), --config $(CONFIG)) \
+		$(if $(NOINPUT), --noinput) \
+
+.PHONY: test-data-delete-dry-run
+test-data-delete-dry-run:  ## Dry run for deleting test data
+	poetry run python ./manage.py delete_test_data --dry-run
+
+.PHONY: test-data-delete
+test-data-delete:  ## Delete test data. Use NOINPUT=1 to skip confirmation prompt.
+	poetry run python ./manage.py delete_test_data $(if $(NOINPUT), --noinput)
+
+.PHONY: test-data-show-default-config
+test-data-show-default-config:  ## Show default config. Use SCHEMA=1 to show JSON schema.
+	poetry run python ./manage.py show_default_test_data_config $(if $(SCHEMA), --schema)
+
 # Docker and docker compose make commands
 
 .PHONY: compose-build
