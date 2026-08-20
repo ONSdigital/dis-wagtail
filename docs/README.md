@@ -29,6 +29,7 @@ To work on this project, see the [README](../README.md).
     - [Scheduled jobs](custom-features/scheduled-jobs.md)
     - [Locked migrate](custom-features/locked-migrate.md)
     - [Page privacy](custom-features/page_privacy.md)
+    - [Data creation scripts](custom-features/data-creation-scripts.md)
 
 - Troubleshooting
     - [Troubleshooting guide](troubleshooting.md)
