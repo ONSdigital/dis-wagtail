@@ -48,6 +48,8 @@ cryptography = [
     { version = "^50.0.0", markers = "sys_platform != 'darwin' or platform_machine != 'x86_64'" }
 ]
 django-pglock = "^1.8.0"
+wagtail-factories = "^4.5.0"
+pydantic = "^2.12.5"
 wagtail-schema-org = "5.0.0"
 django-permissions-policy = "^4.32.0"
 
@@ -61,7 +63,6 @@ pylint = "^4.0.6"
 pylint-django = "^2.7.0"
 ruff = "0.14.14"  # keep version in sync with .pre-commit-config.yaml
 
-wagtail-factories = "^4.5.0"
 coverage = "^7.15.0"
 responses = "^0.25.8"
 
