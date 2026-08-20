@@ -18,7 +18,7 @@ from cms.articles.models import ArticleSeriesPage
 from cms.core.widgets import ONSAdminDateTimeInput
 from cms.home.models import HomePage
 from cms.topics.models import TopicPage
-from cms.workflows.utils import is_page_ready_to_preview, is_page_ready_to_publish
+from cms.workflows.utils import is_page_ready_to_preview
 
 from .enums import (
     ACTIVE_BUNDLE_STATUSES,
@@ -237,17 +237,6 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     @property
     def has_unpublished_changes(self) -> bool:
         return self.status not in PUBLISHED_BUNDLE_STATUSES
-
-    @property
-    def can_be_approved(self) -> bool:
-        """Determines whether the bundle can be approved.
-
-        That is, the bundle is in review and all the bundled pages are ready to publish.
-        """
-        if self.status != BundleStatus.IN_REVIEW:
-            return False
-
-        return all(is_page_ready_to_publish(page) for page in self.get_bundled_pages())
 
     @property
     def is_ready_to_be_published(self) -> bool:

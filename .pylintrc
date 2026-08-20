@@ -432,6 +432,9 @@ disable=raw-checker-failed,
         fixme,
         too-many-public-methods,
         cyclic-import,
+        line-too-long,
+        unspecified-encoding,
+        too-many-instance-attributes,
 
 # note:
 # - wrong-import-order: covered by ruff

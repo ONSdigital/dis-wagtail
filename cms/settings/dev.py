@@ -3,6 +3,9 @@ import os
 # Force logs to not be JSON in dev for easier debugging
 os.environ.setdefault("LOG_AS_JSON", "false")
 
+# Enable test data loading app for dev
+os.environ.setdefault("CMS_TEST_DATA_ENABLED", "true")
+
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
 env = os.environ.copy()
