@@ -13,6 +13,7 @@ from cms.core.utils import (
     UNWANTED_CONTROL_CHARACTERS,
     GeneratorCollector,
     deep_merge_mapping,
+    format_file_size_kb,
     get_client_ip,
     get_content_type_for_page,
     latex_formula_to_svg,
@@ -252,6 +253,15 @@ class DeepMergeMappingTestCase(SimpleTestCase):
             deep_merge_mapping(CaseInsensitiveMapping({"a": 1}), CaseInsensitiveMapping({"a": 2})),
             CaseInsensitiveMapping({"a": 2}),
         )
+
+
+class FormatFileSizeKbTestCase(SimpleTestCase):
+    def test_format_file_size_kb(self):
+        self.assertEqual(format_file_size_kb(25), "0.024")
+        self.assertEqual(format_file_size_kb(1024), "1.000")
+        self.assertEqual(format_file_size_kb(1536), "1.500")
+        self.assertEqual(format_file_size_kb(100, decimal_places=0, minimum=1), "1")
+        self.assertEqual(format_file_size_kb(1792, decimal_places=0, minimum=1), "2")
 
 
 class GeneratorCollectorTestCase(SimpleTestCase):

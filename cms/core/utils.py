@@ -211,6 +211,29 @@ def deep_merge_mapping(dict1: Mapping, dict2: Mapping) -> dict:
     return result
 
 
+def format_file_size_kb(
+    size_bytes: int,
+    *,
+    decimal_places: int = 3,
+    minimum: int | None = None,
+) -> str:
+    """Format a byte size as a kilobyte string.
+    Returns fixed-width decimal output unless ``decimal_places`` is zero.
+    """
+    size_in_kb = size_bytes / 1024
+
+    if decimal_places == 0:
+        rounded_size = round(size_in_kb)
+        if minimum is not None:
+            rounded_size = max(minimum, rounded_size)
+        return str(rounded_size)
+
+    if minimum is not None:
+        size_in_kb = max(minimum, size_in_kb)
+
+    return f"{size_in_kb:.{decimal_places}f}"
+
+
 class GeneratorCollector[T, R]:
     """Wrap a generator in a convenient API to access both the yielded and returned values."""
 
