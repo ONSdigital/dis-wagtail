@@ -21,6 +21,15 @@ DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
     name="DatasetChooserBlock", module_path="cms.datasets.blocks"
 )
 
+DUPLICATE_DATASET_ERROR = 'Duplicate datasets are not allowed. Another entry links to "{url_path}".'
+
+# Appended on pages whose links resolve to an edition. The chooser lists the dataset version, so an
+# editor who picked two versions of one edition needs telling why that counts as a duplicate.
+LATEST_VERSION_DUPLICATE_HINT = (
+    " Links from this page point to the latest published version of an edition, so the dataset "
+    "version does not affect the destination."
+)
+
 
 class ManualDatasetBlock(StructBlock):
     title = CharBlock(required=True)
@@ -50,29 +59,48 @@ class DatasetStoryBlock(StreamBlock):
         label="Manually Linked Dataset",
     )
 
+    class Meta:
+        # Set per field, and the only place a page declares where its dataset links go. It drives
+        # both the duplicate check below and the URLs format_datasets_as_document_list renders,
+        # which is what stops a page validating against one destination and rendering another.
+        # Release calendar pages set True, so looked up datasets link to the latest published
+        # version of the chosen edition rather than to the dataset series page.
+        link_to_latest_version = False
+
     def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
         cleaned_value = super().clean(value)
 
-        # Validate there are no duplicate datasets,
-        # including between manual and looked up datasets referencing the same URL
-
-        # For each dataset URL path, record the indices of the blocks it appears in
+        # Validate there are no duplicate datasets, including between manual and looked up datasets
+        # resolving to the same place, however each was written.
+        #
+        # url_paths maps a normalised comparison key to the blocks using it. That key is lowercased
+        # and has its trailing slash stripped, so it is not fit to show an editor: destinations
+        # holds the URL each group really links to, preferring a looked up dataset because the CMS
+        # resolves that one itself rather than taking it from whatever somebody typed.
         url_paths = defaultdict(set)
+        destinations: dict[str, str] = {}
         for block_index, block in enumerate(cleaned_value):
-            url_path = (
-                block.value.url_path
-                if block.block_type == "dataset_lookup"
-                else extract_url_path(block.value["url"]).lower()
+            is_lookup = block.block_type == "dataset_lookup"
+            url = (
+                block.value.get_url_path(link_to_latest_version=self.meta.link_to_latest_version)
+                if is_lookup
+                else block.value["url"]
             )
+            url_path = extract_url_path(url).lower()
             url_paths[url_path].add(block_index)
+            if is_lookup or url_path not in destinations:
+                destinations[url_path] = url if is_lookup else extract_url_path(url)
 
         block_errors = {}
-        for block_indices in url_paths.values():
+        for url_path, block_indices in url_paths.items():
             # Add a block error for any index which contains a duplicate URL,
             # so that the validation error messages appear on the actual duplicate entries
             if len(block_indices) > 1:
+                message = DUPLICATE_DATASET_ERROR.format(url_path=destinations[url_path])
+                if self.meta.link_to_latest_version:
+                    message += LATEST_VERSION_DUPLICATE_HINT
                 for index in block_indices:
-                    block_errors[index] = ValidationError("Duplicate datasets are not allowed")
+                    block_errors[index] = ValidationError(message)
 
         if block_errors:
             raise StreamBlockValidationError(block_errors=block_errors)
