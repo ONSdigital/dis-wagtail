@@ -2,7 +2,7 @@
 set -euo pipefail
 
 bypass_label="${BYPASS_LABEL:-no-jira}"
-jira_issue_key_pattern='(^|[^[:alnum:]_])(CMS|DPD)-[0-9]+([^[:alnum:]_]|$)'
+jira_issue_key_pattern='(^|[^[:alnum:]_])(CMS|DPD|cms|dpd)-[0-9]+([^[:alnum:]_]|$)'
 branch_name="${BRANCH_NAME:-$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)}"
 
 if [[ -z "${branch_name}" ]]; then
