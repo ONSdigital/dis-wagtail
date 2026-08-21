@@ -13,6 +13,7 @@ from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.datasets.models import Dataset, ONSDatasetApiQuerySet
 from cms.datasets.tests.factories import DatasetFactory
+from cms.taxonomy.tests.factories import TopicFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
@@ -411,6 +412,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             item.next = None
             item.title = data.get("title", "")
             item.description = data.get("description", "")
+            item.primary_topic_id = data.get("topic_id", None)
             return item
 
         self.ons_dataset_patcher = patch("cms.bundles.forms.ONSDataset")
@@ -488,6 +490,70 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
 
         dataset.refresh_from_db()
         self.assertEqual(dataset.description, "Updated Description")
+
+    def test_topic_drift_blocks_approval_and_updates_local_dataset(self):
+        topic = TopicFactory(id="7779", slug="economy")
+        new_topic = TopicFactory(id="7755", slug="business")
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=topic)
+        self.api_metadata[dataset.namespace] = {
+            "title": dataset.title,
+            "description": dataset.description,
+            "topic_id": new_topic.pk,
+        }
+
+        form = self._get_approve_form(dataset)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("'Original Title': topic has changed", form.non_field_errors())
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.topic_id, "7755")
+
+    def test_newly_available_topic_is_backfilled_on_approval(self):
+        topic = TopicFactory(id="7779", slug="economy")
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=None)
+        self.api_metadata[dataset.namespace] = {
+            "title": dataset.title,
+            "description": dataset.description,
+            "topic_id": topic.pk,
+        }
+
+        form = self._get_approve_form(dataset)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("'Original Title': topic has changed", form.non_field_errors())
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.topic_id, "7779")
+
+    def test_unchanged_topic_does_not_block_approval(self):
+        topic = TopicFactory(id="7779", slug="economy")
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=topic)
+        self.api_metadata[dataset.namespace] = {
+            "title": dataset.title,
+            "description": dataset.description,
+            "topic_id": topic.pk,
+        }
+
+        form = self._get_approve_form(dataset)
+
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_topic_missing_from_the_taxonomy_does_not_block_approval(self):
+        topic = TopicFactory(id="7779", slug="economy")
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=topic)
+        self.api_metadata[dataset.namespace] = {
+            "title": dataset.title,
+            "description": dataset.description,
+            "topic_id": "not-synced-yet",
+        }
+
+        with self.assertLogs("cms.datasets.utils", level="WARNING"):
+            form = self._get_approve_form(dataset)
+            self.assertTrue(form.is_valid(), form.errors)
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.topic_id, "7779")
 
     def test_reapproval_after_drift_refresh_succeeds(self):
         """After a first failed approve refreshes the local Dataset, a second approve passes."""

@@ -3,6 +3,7 @@ from wagtail.blocks import StreamValue
 
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset, ONSDataset
+from cms.datasets.tests.factories import DatasetFactory
 from cms.datasets.utils import (
     construct_chooser_dataset_compound_id,
     convert_old_dataset_format,
@@ -10,8 +11,11 @@ from cms.datasets.utils import (
     extract_edition_from_dataset_url,
     format_datasets_as_document_list,
     get_dataset_for_published_state,
+    get_local_topic_ids,
     get_published_from_state,
+    update_dataset_metadata,
 )
+from cms.taxonomy.tests.factories import TopicFactory
 
 
 class TestUtils(TestCase):
@@ -22,6 +26,7 @@ class TestUtils(TestCase):
             version=1,
             title="test lookup",
             description="lookup description",
+            topic=TopicFactory(id="7779", slug="economy"),
         )
         manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
 
@@ -36,6 +41,7 @@ class TestUtils(TestCase):
         formatted_datasets = format_datasets_as_document_list(datasets)
 
         self.assertEqual(len(formatted_datasets), 2)
+        self.assertEqual(formatted_datasets[0]["title"]["url"], "/economy/datasets/LOOKUP")
         self.assertEqual(
             formatted_datasets[0],
             {
@@ -106,6 +112,7 @@ class TestUtils(TestCase):
             },
             "state": "published",
             "title": "Quarterly personal well-being estimates",
+            "topics": ["7779", "7755"],
         }
 
         new_format_dataset = {
@@ -119,10 +126,21 @@ class TestUtils(TestCase):
             },
             "release_date": "2023-12-13T09:40:24.204Z",
             "state": "published",
+            "topics": ["7779", "7755"],
         }
 
         converted_dataset = convert_old_dataset_format(old_format_dataset)
         self.assertEqual(converted_dataset, new_format_dataset)
+
+    def test_convert_old_dataset_format_falls_back_to_canonical_topic(self):
+        converted_dataset = convert_old_dataset_format({"title": "Foobar", "canonical_topic": "1234"})
+        self.assertEqual(converted_dataset["topics"], ["1234"])
+
+    def test_convert_old_dataset_prefers_topics_over_canonical_topic(self):
+        converted_dataset = convert_old_dataset_format(
+            {"title": "Foobar", "canonical_topic": "1234", "topics": ["5678"]}
+        )
+        self.assertEqual(converted_dataset["topics"], ["5678"])
 
     def test_convert_old_dataset_format_with_bad_data(self):
         new_format_dataset = {
@@ -133,6 +151,7 @@ class TestUtils(TestCase):
             "latest_version": None,
             "release_date": None,
             "state": None,
+            "topics": [],
         }
         converted_dataset = convert_old_dataset_format({})
         self.assertEqual(converted_dataset, new_format_dataset)
@@ -147,6 +166,7 @@ class TestUtils(TestCase):
             "latest_version": None,
             "release_date": None,
             "state": None,
+            "topics": [],
         }
 
         self.assertEqual(converted_dataset, partially_formed_dataset)
@@ -224,3 +244,72 @@ class TestUtils(TestCase):
         unpublished_dataset = get_dataset_for_published_state(dataset, False)
         # Since there's no 'next', it should return the original dataset
         self.assertEqual(unpublished_dataset, dataset)
+
+
+class TestGetLocalTopicIds(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.topic = TopicFactory(id="7779", slug="economy")
+        cls.other_topic = TopicFactory(id="7755", slug="business")
+
+    def test_returns_the_ids_that_exist_locally(self):
+        self.assertEqual(get_local_topic_ids(["7779", "7755"]), {"7779", "7755"})
+
+    def test_drops_ids_missing_from_local_taxonomy(self):
+        with self.assertLogs("cms.datasets.utils", level="WARNING") as logs:
+            self.assertEqual(get_local_topic_ids(["7779", "9999"]), {"7779"})
+
+        self.assertIn("Dataset API returned topic IDs not found in local taxonomy", logs.output[0])
+
+    def test_ignores_falsy_values(self):
+        self.assertEqual(get_local_topic_ids(["7779", None, ""]), {"7779"})
+
+    def test_makes_no_query_for_an_empty_input(self):
+        with self.assertNumQueries(0):
+            self.assertEqual(get_local_topic_ids([]), set())
+            self.assertEqual(get_local_topic_ids([None]), set())
+
+    def test_resolves_the_whole_batch_in_one_query(self):
+        with self.assertNumQueries(1):
+            self.assertEqual(get_local_topic_ids(["7779", "7755"]), {"7779", "7755"})
+
+
+class TestUpdateDatasetMetadata(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.topic = TopicFactory(id="7779", slug="economy")
+
+    def test_sets_the_topic_and_reports_the_field_name(self):
+        dataset = DatasetFactory(title="Title", description="Description", topic=None)
+
+        updated_fields = update_dataset_metadata(dataset, title="Title", description="Description", topic_id="7779")
+
+        self.assertEqual(updated_fields, ["topic_id"])
+        self.assertEqual(dataset.topic_id, "7779")
+
+    def test_leaves_an_unchanged_topic_alone(self):
+        dataset = DatasetFactory(title="Title", description="Description", topic=self.topic)
+
+        updated_fields = update_dataset_metadata(dataset, title="Title", description="Description", topic_id="7779")
+
+        self.assertEqual(updated_fields, [])
+        self.assertEqual(dataset.topic_id, "7779")
+
+    def test_does_not_clear_the_topic_when_the_api_omits_one(self):
+        dataset = DatasetFactory(title="Title", description="Description", topic=self.topic)
+
+        updated_fields = update_dataset_metadata(dataset, title="Title", description="Description")
+
+        self.assertEqual(updated_fields, [])
+        self.assertEqual(dataset.topic_id, "7779")
+
+    def test_saving_with_the_returned_fields_persists_topic(self):
+        dataset = DatasetFactory(title="Title", description="Description", topic=None)
+
+        updated_fields = update_dataset_metadata(dataset, title="New Title", description="Description", topic_id="7779")
+        dataset.save(update_fields=updated_fields)
+        dataset.refresh_from_db()
+
+        self.assertEqual(set(updated_fields), {"title", "topic_id"})
+        self.assertEqual(dataset.topic_id, "7779")
+        self.assertEqual(dataset.title, "New Title")

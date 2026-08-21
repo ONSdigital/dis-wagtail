@@ -1,4 +1,6 @@
+import logging
 import re
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
 from wagtail.blocks import StreamValue
@@ -7,6 +9,8 @@ from cms.core.formatting_utils import format_as_document_list_item
 
 if TYPE_CHECKING:
     from cms.datasets.models import Dataset, ONSDataset
+
+logger = logging.getLogger(__name__)
 
 EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
 
@@ -116,7 +120,38 @@ def convert_old_dataset_format(data: dict[str, Any]) -> dict[str, Any]:
         "latest_version": latest_version,
         "release_date": data.get("last_updated"),
         "state": data.get("state"),
+        "topics": extract_topic_ids(data),
     }
+
+
+def extract_topic_ids(data: dict[str, Any]) -> list[str]:
+    """Extract the dataset's topic IDs from an API payload.
+
+    The old schema used a `canonical_topic` field with subtopics.
+    Now there is one, ordered, `topics` list.
+    """
+    if topics := data.get("topics"):
+        return [str(topic_id) for topic_id in topics if topic_id]
+    if canonical_topic := data.get("canonical_topic"):
+        return [str(canonical_topic)]
+    return []
+
+
+def get_local_topic_ids(topic_ids: Iterable[str | None]) -> set[str]:
+    """Return a set of topic IDs that exist in local taxonomy."""
+    # Import locally to avoid app-loading cycle
+    from cms.taxonomy.models import Topic  # pylint: disable=import-outside-toplevel
+
+    wanted = {str(topic_id) for topic_id in topic_ids if topic_id}
+    if not wanted:
+        return set()
+
+    found = set(Topic.objects.filter(id__in=wanted).values_list("id", flat=True))
+    if missing := wanted - found:
+        logger.warning(
+            "Dataset API returned topic IDs not found in local taxonomy", extra={"topic_ids": sorted(missing)}
+        )
+    return found
 
 
 def construct_chooser_dataset_compound_id(*, dataset_id: str, edition: str, version_id: str, published: bool) -> str:
@@ -151,13 +186,16 @@ def get_dataset_for_published_state(dataset: ONSDataset, published: bool) -> ONS
     return dataset if published else dataset.next or dataset
 
 
-def update_dataset_metadata(dataset: Dataset, *, title: str, description: str) -> list[str]:
+def update_dataset_metadata(
+    dataset: Dataset, *, title: str, description: str, topic_id: str | None = None
+) -> list[str]:
     """Apply API metadata to a Dataset instance and return the updated field names.
 
     Args:
         dataset: The Dataset instance to update
         title: The new title from the API
         description: The new description from the API
+        topic_id: The primary topic ID from the API
 
     Returns:
         List of field names that were updated
@@ -169,4 +207,7 @@ def update_dataset_metadata(dataset: Dataset, *, title: str, description: str) -
     if description and dataset.description != description:
         dataset.description = description
         updated_fields.append("description")
+    if topic_id and dataset.topic_id != topic_id:
+        dataset.topic_id = topic_id
+        updated_fields.append("topic_id")
     return updated_fields

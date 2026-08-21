@@ -5,6 +5,7 @@ from playwright.sync_api import expect
 
 from cms.settings.base import ONS_ALLOWED_LINK_DOMAINS
 from functional_tests.step_helpers.datasets import (
+    TEST_DATASET_TOPIC_SLUG,
     TEST_MIXED_STATES_DATASETS,
     TEST_UNPUBLISHED_DATASETS,
     mock_datasets_responses,
@@ -24,7 +25,7 @@ def look_up_and_select_published_dataset(context: Context) -> None:
         "description": mock_dataset["description"],
         # The two destinations a looked up dataset can resolve to. Which one is correct depends on
         # the page doing the linking, so scenarios assert it with one of the steps below.
-        "url": f"/datasets/{mock_dataset['dataset_id']}",
+        "url": f"/{TEST_DATASET_TOPIC_SLUG}/datasets/{mock_dataset['dataset_id']}",
         "latest_version_url": (f"/datasets/{mock_dataset['dataset_id']}/editions/{mock_dataset['edition']}/versions"),
     }
 
@@ -179,3 +180,10 @@ def check_published_state_filter_not_displayed(context: Context) -> None:
     expect(context.page.get_by_role("button", name="Confirm selection")).to_be_visible()
 
     expect(context.page.get_by_label("Published status")).not_to_be_visible()
+
+
+@then("the dataset links include the topic slug")
+def check_dataset_links_are_topic_scoped(context: Context) -> None:
+    for dataset in context.selected_datasets:
+        link = context.page.get_by_role("link", name=dataset["title"])
+        expect(link).to_have_attribute("href", dataset["url"])
