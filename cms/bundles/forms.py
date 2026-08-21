@@ -275,11 +275,11 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                             f"Could not verify the latest metadata for '{dataset.title}'. Please try again."
                         ) from None
 
-                    api_dataset = get_dataset_for_published_state(
-                        api_items_by_namespace[dataset.namespace], published=False
-                    )
+                api_dataset = get_dataset_for_published_state(
+                    api_items_by_namespace[dataset.namespace], published=False
+                )
 
-                    drift_messages.extend(self._refresh_dataset_from_api(dataset, api_dataset))
+                drift_messages.extend(self._refresh_dataset_from_api(dataset, api_dataset))
 
         if drift_messages:
             errors = [
