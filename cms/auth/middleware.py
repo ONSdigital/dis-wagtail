@@ -146,10 +146,16 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
 
     @staticmethod
     def _handle_unauthenticated_user(request: HttpRequest) -> None:
-        """Logs out the user if JWT tokens are missing and the session configuration is unsuitable."""
-        if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED or (
-            request.user.is_authenticated and request.user.is_external_user
-        ):
+        """Logs out the user if JWT tokens are missing and the session configuration is unsuitable.
+
+        Anonymous sessions are left untouched: logout() flushes the whole session, which would
+        destroy unrelated state such as passed page view restrictions (password-protected pages)
+        on every request.
+        """
+        if not request.user.is_authenticated:
+            return
+
+        if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED or request.user.is_external_user:
             logger.info(
                 "Terminating session due to missing JWT tokens or insufficient login configuration.",
                 extra={"external_user_id": getattr(request.user, "external_user_id", None)},

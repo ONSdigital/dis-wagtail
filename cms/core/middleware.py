@@ -9,11 +9,7 @@ from cms.core.utils import redirect
 NON_TRAILING_SLASH_METHODS = {"GET", "HEAD"}
 CLOUDFLARE_CACHE_TAG_HEADER = "Cache-Tag"
 
-ALLOWED_REQUEST_PATHS = {
-    settings.DJANGO_ADMIN_HOME_PATH,
-    settings.WAGTAILADMIN_HOME_PATH,
-    "/__debug__/",
-}
+ALLOWED_REQUEST_PATHS = {settings.DJANGO_ADMIN_HOME_PATH, settings.WAGTAILADMIN_HOME_PATH, "/__debug__/", "/_util/"}
 
 
 class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
