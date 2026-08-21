@@ -1280,7 +1280,7 @@ class TestDatasetChooserTopicResolution(TestCase):
 
         mock_resolve.assert_called_once()
 
-    def test_get_objects_updates_the_topic_on_an_existing_datset(self):
+    def test_get_objects_updates_the_topic_on_an_existing_dataset(self):
         DatasetFactory(namespace="dataset-a", edition="2021", version=1, topic=None)
         self.mock_retrieve.return_value = self._api_dataset("7779")
         view = DatasetChosenMultipleViewMixin()

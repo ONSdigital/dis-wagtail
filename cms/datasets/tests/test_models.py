@@ -614,7 +614,7 @@ class TestONSDataset(TestCase):
         self.assertEqual(dataset.next.description, "Description 2 Unpublished")
 
 
-class TestDatUrlPath(TestCase):
+class TestDatasetUrlPath(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.topic = TopicFactory(id="7779", slug="inflationandpricesindices")
