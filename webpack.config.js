@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const path = require('path');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
+const ESLintPlugin = require('eslint-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const sass = require('sass');
-const ESLintPlugin = require('eslint-webpack-plugin');
 const StylelintPlugin = require('stylelint-webpack-plugin');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 const projectRoot = 'cms';
 
@@ -15,7 +15,7 @@ const options = {
     auth: `./${projectRoot}/static_src/javascript/auth.js`,
   },
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.js'],
   },
   output: {
     path: path.resolve(`./${projectRoot}/static_compiled/`),
@@ -57,11 +57,13 @@ const options = {
   module: {
     rules: [
       {
-        test: /\.(js|ts)$/,
+        test: /\.js$/,
         exclude: /node_modules/,
         use: {
-          loader: 'ts-loader',
-          options: { compilerOptions: { noEmit: false } },
+          loader: 'babel-loader',
+          options: {
+            cacheDirectory: true,
+          },
         },
       },
       {
@@ -97,9 +99,10 @@ const options = {
             options: {
               sourceMap: true,
               implementation: sass,
+              api: 'modern',
               sassOptions: {
                 outputStyle: 'compressed',
-                includePaths: [path.resolve(`${projectRoot}/static_src/sass`)],
+                loadPaths: [path.resolve(`${projectRoot}/static_src/sass`)],
               },
             },
           },

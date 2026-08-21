@@ -1,4 +1,5 @@
 /* global pym */
+/* eslint-disable @typescript-eslint/no-extraneous-class */
 
 class IframeResize {
   static selector() {
