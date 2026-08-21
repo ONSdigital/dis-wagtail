@@ -642,6 +642,82 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
             }
         )
 
+    def test_page_move__articles_index_page(self, patched_purge_urls):
+        self.client.force_login(self.superuser)
+        articles_index = ArticlesIndexPage.objects.child_of(self.topic_page).first()
+        # the target topic (and its translation) already has its own auto-created index page which would clash on slug
+        ArticlesIndexPage.objects.child_of(self.another_topic_page).delete()
+        ArticlesIndexPage.objects.child_of(self.another_topic_page_translation).delete()
+
+        self.client.post(
+            reverse(
+                "wagtailadmin_pages:move_confirm",
+                args=(articles_index.pk, self.another_topic_page.pk),
+            )
+        )
+
+        # note: there are two calls as the second call is for the old translation alias
+        patched_purge_urls.assert_has_calls(
+            [
+                call(
+                    {
+                        # old paths for the index and everything under it
+                        f"{self.topic_page_url}/articles",
+                        self.series_url,
+                        f"{self.series_url}/related-data",
+                        self.series_edition_url,
+                        f"{self.series_edition_url}?page=1",
+                        self.article_url,
+                        self.article_related_data_url,
+                        # old and new topics related to the series (both linked to topic_2)
+                        self.topic_page_url,
+                        self.topic_page_translation_url,
+                        self.another_topic_page_url,
+                        self.another_topic_page_translation_url,
+                    }
+                ),
+                call({f"{self.topic_page_translation_url}/articles"}),
+            ]
+        )
+
+    def test_page_move__methodology_index_page(self, patched_purge_urls):
+        self.client.force_login(self.superuser)
+        methodology_index = MethodologyIndexPage.objects.child_of(self.topic_page).first()
+        # the target topic (and its translation) already has its own auto-created index page which would clash on slug
+        MethodologyIndexPage.objects.child_of(self.another_topic_page).delete()
+        MethodologyIndexPage.objects.child_of(self.another_topic_page_translation).delete()
+
+        self.client.post(
+            reverse(
+                "wagtailadmin_pages:move_confirm",
+                args=(methodology_index.pk, self.another_topic_page.pk),
+            )
+        )
+
+        # note: there are two calls as the second call is for the old translation alias
+        patched_purge_urls.assert_has_calls(
+            [
+                call(
+                    {
+                        # old paths for the index and the methodology page under it
+                        f"{self.topic_page_url}/methodologies",
+                        self.methodology_page_url,
+                        # old and new topics related to the methodology page (both linked to topic_2)
+                        self.topic_page_url,
+                        self.topic_page_translation_url,
+                        self.another_topic_page_url,
+                        self.another_topic_page_translation_url,
+                    }
+                ),
+                call(
+                    {
+                        f"{self.topic_page_translation_url}/methodologies",
+                        self.methodology_page_translation_url,
+                    }
+                ),
+            ]
+        )
+
 
 @override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
 @patch("cms.frontend_cache.cache.purge_urls_from_cache")
