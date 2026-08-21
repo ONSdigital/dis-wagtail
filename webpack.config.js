@@ -15,7 +15,7 @@ const options = {
     auth: `./${projectRoot}/static_src/javascript/auth.js`,
   },
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.js'],
   },
   output: {
     path: path.resolve(`./${projectRoot}/static_compiled/`),
@@ -57,11 +57,13 @@ const options = {
   module: {
     rules: [
       {
-        test: /\.(js|ts)$/,
+        test: /\.js$/,
         exclude: /node_modules/,
         use: {
-          loader: 'ts-loader',
-          options: { compilerOptions: { noEmit: false } },
+          loader: 'babel-loader',
+          options: {
+            cacheDirectory: true,
+          },
         },
       },
       {
