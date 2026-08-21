@@ -209,7 +209,7 @@ class ONSDataset(APIModel):
         latest_version = data.get("latest_version", {})
         version_id = latest_version.get("id", "1") if isinstance(latest_version, dict) else "1"
 
-        topics = [str(topic_id) for topic_id in data.get("topics", []) if topic_id]
+        topics = [str(topic_id) for topic_id in data.get("topics") or [] if topic_id]
 
         return cls(
             # We construct the compound ID here. Note that we append the published state only as a
