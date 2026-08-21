@@ -28,6 +28,20 @@ class DocumentListItem(TypedDict):
 PageDataCollection = Iterable[Union["ArticleDict", "MethodologyDict"]]
 
 
+def get_page_display_status(page: Page) -> str:
+    """Returns display text for a page's current workflow or publication state.
+
+    When the page is in workflow, this returns the current workflow task name.
+    Otherwise it returns a derived status based on whether the page is live and
+    whether it has unpublished changes.
+    """
+    if workflow_state := page.current_workflow_state:
+        return workflow_state.current_task_state.task.name  # type: ignore[no-any-return]
+    if page.live:
+        return "Live + Draft" if page.has_unpublished_changes else "Live"
+    return "Draft"
+
+
 def format_as_document_list_item(
     title: str, url: str, content_type: StrOrPromise | None, description: str, release_date: date | None = None
 ) -> DocumentListItem:

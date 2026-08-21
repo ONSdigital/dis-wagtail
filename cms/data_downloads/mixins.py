@@ -7,7 +7,12 @@ from django.http import Http404, HttpResponse
 from wagtail.contrib.routable_page.models import path
 
 from cms.core.blocks.constants import CHART_BLOCK_TYPES, TABLE_BLOCK_TYPES
-from cms.data_downloads.utils import create_data_csv_download_response_from_data, flatten_table_data
+from cms.data_downloads.utils import (
+    create_data_csv_download_response_from_data,
+    flatten_table_data,
+    get_csv_download_filename,
+    get_table_csv_download_title,
+)
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -122,8 +127,9 @@ class DataDownloadMixin:
             )
             raise Http404 from e
         table_data = self.get_table(table_id)
-        title = table_data.get("title") or table_data.get("caption") or "table"
-        return create_data_csv_download_response_from_data(csv_data, title=title)
+        title = get_table_csv_download_title(title=table_data.get("title"), caption=table_data.get("caption"))
+        filename = get_csv_download_filename(title=title, fallback_stem="table")
+        return create_data_csv_download_response_from_data(csv_data, filename=filename)
 
     def get_chart(self, chart_id: str) -> dict[str, Any]:
         """Finds a chart block by its unique block ID in content sections.
@@ -164,4 +170,5 @@ class DataDownloadMixin:
             )
             raise Http404 from e
 
-        return create_data_csv_download_response_from_data(data, title=chart_data.get("title", "chart"))
+        filename = get_csv_download_filename(title=chart_data.get("title"), fallback_stem="chart")
+        return create_data_csv_download_response_from_data(data, filename=filename)
