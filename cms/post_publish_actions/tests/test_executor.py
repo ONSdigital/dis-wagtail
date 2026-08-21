@@ -113,7 +113,7 @@ class ExecutorTestCase(TestCase):
         order = []
 
         executor.run_bundle_notification_in_support_executor(1, lambda: (time.sleep(0.5), order.append("first")))
-        executor.run_bundle_notification_in_support_executor(2, lambda: (order.append("second")))
+        executor.run_bundle_notification_in_support_executor(2, lambda: order.append("second"))
         executor.wait_for_bundle_notifications(2)
 
         self.assertEqual(order, ["second"])

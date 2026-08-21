@@ -233,7 +233,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 if dataset.namespace not in api_items_by_namespace:
                     try:
                         api_items_by_namespace[dataset.namespace] = queryset.get(pk=dataset.namespace)
-                    except (requests.exceptions.RequestException, ValueError):
+                    except requests.exceptions.RequestException, ValueError:
                         logger.exception(
                             "Failed to fetch dataset %s for metadata validation on approval", dataset.namespace
                         )

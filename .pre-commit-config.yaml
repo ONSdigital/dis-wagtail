@@ -15,7 +15,7 @@ repos:
 
   # Python linting and formatting
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: 'v0.14.14' # keep version in sync with pyproject.toml
+    rev: 'v0.16.1' # keep version in sync with pyproject.toml
     hooks:
       - id: ruff-check
         args: [--fix]
