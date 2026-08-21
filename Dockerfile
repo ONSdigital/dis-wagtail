@@ -160,7 +160,7 @@ FROM frontend-deps AS frontend-build
 # build dependencies installed.
 
 # Compile static files
-COPY eslint.config.mjs .stylelintrc.js webpack.config.js ./
+COPY babel.config.js eslint.config.mjs .stylelintrc.js webpack.config.js ./
 COPY ./cms/static_src/ ./cms/static_src/
 RUN npm run build:prod
 
