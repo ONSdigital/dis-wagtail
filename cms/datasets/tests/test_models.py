@@ -6,7 +6,9 @@ import responses
 from django.conf import settings
 from django.test import TestCase, override_settings
 
-from cms.datasets.models import ONSDataset, ONSDatasetApiQuerySet
+from cms.datasets.models import Dataset, ONSDataset, ONSDatasetApiQuerySet
+from cms.datasets.tests.factories import DatasetFactory
+from cms.taxonomy.tests.factories import SimpleTopicFactory, TopicFactory
 
 
 class TestONSDatasetApiQuerySet(TestCase):
@@ -332,6 +334,20 @@ class TestONSDataset(TestCase):
         self.assertEqual(dataset.edition, "march")  # pylint: disable=no-member
         self.assertEqual(dataset.version, "66")  # pylint: disable=no-member
 
+    def test_from_query_data_extracts_topics(self):
+        dataset = ONSDataset.from_query_data(
+            {"dataset_id": "test-dataset", "edition": "q1", "topics": ["7779", 7755, "", None]}
+        )
+
+        self.assertEqual(dataset.topics, ["7779", "7755"])  # pylint: disable=no-member
+        self.assertEqual(dataset.primary_topic_id, "7779")
+
+    def test_from_query_data_without_topics(self):
+        dataset = ONSDataset.from_query_data({"dataset_id": "test-dataset", "edition": "q1"})
+
+        self.assertEqual(dataset.topics, [])  # pylint: disable=no-member
+        self.assertIsNone(dataset.primary_topic_id)
+
     def test_from_query_data_with_missing_title(self):
         """Test from_query_data() provides fallback for missing title."""
         response_dataset = {
@@ -509,6 +525,61 @@ class TestONSDataset(TestCase):
         self.assertEqual(dataset.next.version, "2")
 
     @responses.activate
+    def test_old_dataset_format_carries_canonical_topic(self):
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_BASE_URL + "/dataset1,2024,2,false",
+            json={
+                "current": {
+                    "id": "dataset1",
+                    "title": "Dataset 1",
+                    "state": "published",
+                    "canonical_topic": "7779",
+                    "links": {"latest_topic": {"href": "/datasets/dataset1/editions/2024/versions/1", "id": "1"}},
+                },
+                "next": {
+                    "id": "dataset1",
+                    "title": "Dataset 1 Unpublished",
+                    "state": "unpublished",
+                    "links": {"latest_topic": {"href": "/datasets/dataset1/editions/2024/versions/2", "id": "2"}},
+                },
+            },
+        )
+
+        dataset = ONSDataset.objects.get(pk="dataset1,2024,2,false")  # pylint: disable=no-member
+
+        self.assertEqual(dataset.primary_topic_id, "7779")
+        self.assertEqual(dataset.next.primary_topic_id, "7779")
+
+    @responses.activate
+    def test_old_dataset_format_next_version_keeps_its_own_topic(self):
+        responses.add(
+            responses.GET,
+            settings.DATASETS_API_BASE_URL + "/dataset1,2024,2,false",
+            json={
+                "current": {
+                    "id": "dataset1",
+                    "title": "Dataset 1",
+                    "state": "published",
+                    "topics": ["7779"],
+                    "links": {"latest_topic": {"href": "/datasets/dataset1/editions/2024/versions/1", "id": "1"}},
+                },
+                "next": {
+                    "id": "dataset1",
+                    "title": "Dataset 1 Unpublished",
+                    "state": "unpublished",
+                    "topics": ["1234"],
+                    "links": {"latest_topic": {"href": "/datasets/dataset1/editions/2024/versions/2", "id": "2"}},
+                },
+            },
+        )
+
+        dataset = ONSDataset.objects.get(pk="dataset1,2024,2,false")  # pylint: disable=no-member
+
+        self.assertEqual(dataset.primary_topic_id, "7779")
+        self.assertEqual(dataset.next.primary_topic_id, "1234")
+
+    @responses.activate
     def test_response_with_only_next_version(self):
         """Test that the queryset can handle response with only 'next' version (no published version)."""
         only_next_response = {
@@ -541,3 +612,44 @@ class TestONSDataset(TestCase):
         # The unpublished version should be in the 'next' field
         self.assertEqual(dataset.next.title, "Dataset 2 Unpublished")
         self.assertEqual(dataset.next.description, "Description 2 Unpublished")
+
+
+class TestDatasetUrlPath(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.topic = TopicFactory(id="7779", slug="inflationandpricesindices")
+
+    def test_url_path_includes_topic_slug(self):
+        dataset = DatasetFactory(namespace="cpih01", topic=self.topic)
+        self.assertEqual(dataset.url_path, "/inflationandpricesindices/datasets/cpih01")
+
+    def test_url_path_uses_the_leaf_slug_for_a_nested_topic(self):
+        """Dataset topics should always be the leaf topic, but test here that we can handle a nested topic structure."""
+        child_topic = SimpleTopicFactory(id="7755", slug="consumerpriceinflation", parent=self.topic)
+        dataset = DatasetFactory(namespace="cpih01", topic=child_topic)
+
+        self.assertEqual(dataset.url_path, "/consumerpriceinflation/datasets/cpih01")
+
+    def test_url_path_falls_back_when_there_is_no_topic(self):
+        dataset = DatasetFactory(namespace="cpih01", topic=None)
+
+        self.assertEqual(dataset.url_path, "/datasets/cpih01")
+
+    def test_url_path_falls_back_when_the_topic_is_deleted(self):
+        dataset = DatasetFactory(namespace="cpih01", topic=None)
+
+        self.assertEqual(dataset.url_path, "/datasets/cpih01")
+
+    def test_deprecated_url_path_ignores_the_topic(self):
+        with_topic = DatasetFactory(namespace="cpih01", topic=self.topic)
+        without_topic = DatasetFactory(namespace="cpih01", topic=None)
+
+        self.assertEqual(without_topic.deprecated_url_path, "/datasets/cpih01")
+        self.assertEqual(with_topic.deprecated_url_path, "/datasets/cpih01")
+
+    def test_default_manager_eager_loads_topic(self):
+        DatasetFactory(namespace="cpih01", topic=self.topic)
+
+        dataset = Dataset.objects.get(namespace="cpih01")
+        with self.assertNumQueries(0):
+            self.assertEqual(dataset.url_path, "/inflationandpricesindices/datasets/cpih01")

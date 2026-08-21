@@ -17,11 +17,14 @@ from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, Bun
 from cms.core.custom_date_format import ons_date_format
 from cms.datasets.models import Dataset
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.taxonomy.tests.factories import TopicFactory
 from cms.teams.models import Team
 from cms.teams.tests.factories import TeamFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 from functional_tests.step_helpers.datasets import (
+    TEST_DATASET_TOPIC_ID,
     TEST_UNPUBLISHED_DATASETS,
+    ensure_dataset_topic,
     register_dataset_detail_route,
 )
 from functional_tests.step_helpers.utils import (
@@ -521,6 +524,7 @@ def bundle_with_dataset_and_page_ready(context: Context) -> None:
         version=int(test_dataset["latest_version"]["id"]),
         title=test_dataset["title"],
         description=test_dataset["description"],
+        topic=ensure_dataset_topic(),
     )
 
     context.statistical_article_page = StatisticalArticlePageFactory(
@@ -551,6 +555,28 @@ def dataset_title_changed_in_api(context: Context) -> None:
         {**test_dataset, "title": context.api_updated_title},
         replace=True,
     )
+
+
+@given("the dataset's topic has changed in the source API")
+def dataset_topic_changed_in_api(context: Context) -> None:
+    test_dataset = TEST_UNPUBLISHED_DATASETS[0]
+    context.api_updated_topic = TopicFactory(id="9002", slug="updatedtopic", title="Updated Topic")
+
+    register_dataset_detail_route(
+        context.bundle_api_mock,
+        {**test_dataset, "topics": [context.api_updated_topic.pk]},
+        replace=True,
+    )
+
+
+@then("the local dataset record reflects the new topic")
+def local_dataset_reflects_new_topic(context: Context) -> None:
+    context.dataset.refresh_from_db()
+    assert context.dataset.topic_id == context.api_updated_topic.pk, (
+        f"Expected the dataset topic to be updated to {context.api_updated_topic.pk}, "
+        f"but it is {context.dataset.topic_id}"
+    )
+    assert context.dataset.topic_id != TEST_DATASET_TOPIC_ID
 
 
 @step('the user clicks the "Approve" action')
