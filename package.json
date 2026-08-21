@@ -47,6 +47,7 @@
     "cssnano": "^8.0.4",
     "eslint": "^9.39.5",
     "eslint-webpack-plugin": "^6.0.0",
+    "globals": "^17.11.0",
     "lighthouse": "^13.4.1",
     "mini-css-extract-plugin": "^2.10.2",
     "postcss": "^8.5.26",
@@ -62,8 +63,7 @@
     "webpack-dev-server": "^6.0.0"
   },
   "dependencies": {
-    "dis-authorisation-client-js": "^1.1.0",
-    "globals": "^17.11.0"
+    "dis-authorisation-client-js": "^1.1.0"
   },
   "overrides": {
     "sockjs": {
