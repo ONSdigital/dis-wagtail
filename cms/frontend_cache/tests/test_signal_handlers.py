@@ -4,6 +4,7 @@ from unittest.mock import call, patch
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.blocks import StreamValue
+from wagtail.contrib.redirects.models import Redirect
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale, Page, Site
 from wagtail.test.utils import WagtailTestUtils
@@ -507,6 +508,28 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                 call({old_index_url, self.information_page_url}),
                 call({old_index_translation_url, information_page_translation_url}),
             ]
+        )
+
+    def test_page_slug_changed__creates_redirect(self, _patched_purge_urls):
+        with self.captureOnCommitCallbacks(execute=True):
+            self.index_page.slug = "new-index-slug"
+            self.index_page.save_revision().publish()
+
+        self.assertTrue(Redirect.objects.filter(redirect_page=self.index_page, automatically_created=True).exists())
+
+    def test_page_move__creates_redirect(self, _patched_purge_urls):
+        self.client.force_login(self.superuser)
+        another_index = IndexPageFactory(title="Another index")
+
+        self.client.post(
+            reverse(
+                "wagtailadmin_pages:move_confirm",
+                args=(self.information_page.pk, another_index.pk),
+            )
+        )
+
+        self.assertTrue(
+            Redirect.objects.filter(redirect_page=self.information_page, automatically_created=True).exists()
         )
 
     def test_page_move__statistical_article_page(self, patched_purge_urls):
