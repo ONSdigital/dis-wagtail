@@ -10,8 +10,8 @@ class ThemeLinkBlock(LinkBlock):
     page = PageChooserBlock(required=False, page_type="themes.ThemePage")
 
     # TODO: day 2, remove external_url, title overrides when allowing Theme page creation
-    external_url = RelativeOrAbsoluteURLBlock(required=True, label="External Link")
-    title = CharBlock(required=True)
+    external_url = RelativeOrAbsoluteURLBlock(required=True, label="External Link", required_on_save=True)
+    title = CharBlock(required=True, required_on_save=True)
 
     # TODO: day 2, remove this __init__ when we allow creating Theme pages
     def __init__(self, **kwargs: Any) -> None:
@@ -33,7 +33,10 @@ class TopicLinkBlock(LinkBlock):
 
 class MainMenuHighlightsBlock(LinkBlock):
     description = CharBlock(
-        required=True, max_length=50, help_text="For example: 'View our latest and upcoming releases.'"
+        required=True,
+        max_length=50,
+        help_text="For example: 'View our latest and upcoming releases.'",
+        required_on_save=True,
     )
 
     class Meta:
@@ -63,7 +66,7 @@ class MainMenuColumnBlock(StructBlock):
 
 
 class LinksColumn(StructBlock):
-    title = CharBlock(required=True, label="Column title")
+    title = CharBlock(required=True, label="Column title", required_on_save=True)
     links = ListBlock(
         LinkBlock(),
         help_text="Links for this column (pages or external URLs).",
