@@ -16,7 +16,6 @@ export default [
       '.venv/**',
       '.coverage',
       '**/vendor/*',
-      '!.stylelintrc.js',
     ],
   },
 
@@ -43,9 +42,8 @@ export default [
     },
 
     settings: {
-      react: {
-        version: 'detect',
-      },
+      // Manually set the version to disable automated detection of the "react" dependency.
+      react: { version: '999.999.999' },
     },
   },
 ];
