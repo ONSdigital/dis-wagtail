@@ -61,7 +61,7 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
 
         # Check the breadcrumbs include the home page link
         self.assertIsNotNone(
-            soup.find("a", class_="ons-breadcrumbs__link", href=self.welsh_site.root_url, string="Cartref")
+            soup.find("a", class_="ons-breadcrumbs__link", href=self.welsh_site.root_url, string="Hafan")
         )
 
     # TODO: Remove skip when translations for Cookies page are available
