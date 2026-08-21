@@ -195,9 +195,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
     @staticmethod
     def _refresh_dataset_from_api(dataset: Dataset, api_dataset: ONSDataset) -> list[str]:
-        """Compare one local Datset against the API, importing any drift.
+        """Compare one local Dataset against the API, importing any drift.
 
-        Returns human readable description of each field that had drifted.
+        Returns human-readable description of each field that had drifted.
         Prefixed with dataset's title prior to refresh so the approver recognises it.
         Empty means stored metadata hasn't changed.
         """

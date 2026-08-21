@@ -24,12 +24,12 @@ Dataset links on pages should now be served under their topic, e.g. `/inflationa
 The dataset detail endpoint should contain a list of topic IDs under the `topics` key. This should always have the primary topic as the first item in the list.
 Older dataset schema had a single `canonical_topic` field, which we can check as a fallback in the event the new field is not present or is empty.
 
-In the event we either recieve no topic, or the topic does not exist in our local database we fall back to the previous, deprecated `/datasets/cpih01` url style.
+In the event we either receive no topic, or the topic does not exist in our local database we fall back to the previous, deprecated `/datasets/cpih01` url style.
 
 ### Bundles
 
 When a dataset is associated with a bundle, the CMS will attempt to verify the local dataset metadata against the bundle API.
-If the local data is stale vs the API we will update the local data, block approval and show a message to the user warning them of the change and asking them to re-confirm the approval with the udpated metadata.
+If the local data is stale vs the API we will update the local data, block approval and show a message to the user warning them of the change and asking them to re-confirm the approval with the updated metadata.
 
 ### Links
 
