@@ -32,6 +32,8 @@ class ElastiCacheIAMCredentialProvider(redis.CredentialProvider):
 
         self._session = botocore.session.get_session()
         credentials = self._session.get_credentials()
+        if credentials is None:
+            raise RuntimeError("Unable to resolve AWS credentials for ElastiCache IAM authentication")
         event_emitter = self._session.get_component("event_emitter")
 
         self._request_signer = RequestSigner(
