@@ -8,9 +8,11 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from moto import mock_aws
 from wagtail.documents import get_document_model
 from wagtail.images import get_image_model
 from wagtail.images.models import Filter
+from wagtail.images.tests.utils import get_test_image_file
 from wagtail.models import Collection
 from wagtail_factories import DocumentFactory, ImageFactory
 
@@ -19,6 +21,7 @@ from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import create_bundle_viewer
 from cms.core.tests.utils import rebuild_references_index
 from cms.private_media.constants import Privacy
+from cms.private_media.storages import AccessControlledS3Storage
 from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.teams.tests.factories import TeamFactory
 from cms.workflows.tests.utils import mark_page_as_ready_for_review
@@ -162,6 +165,125 @@ class TestImageServeView(TestCase):
         # Test the view using the generated `serve_url`
         response = self.client.get(serve_url)
         self.assertEqual(response.status_code, 400)
+
+    def test_force_download_public_image(self):
+        """Public image with force_download=true serves the file directly as an attachment."""
+        rendition = self.public_image_renditions[0]
+        url = rendition.serve_url + "?force_download=true"
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("attachment", response.get("Content-Disposition", ""))
+
+    def test_content_disposition_not_set_without_exact_true_value(self):
+        """Content-Disposition is not set when force_download is absent or not exactly 'true'."""
+        rendition = self.public_image_renditions[0]
+        cases = [
+            ("no query param", rendition.serve_url),
+            ("force_download=false", rendition.serve_url + "?force_download=false"),
+            ("force_download=1", rendition.serve_url + "?force_download=1"),
+        ]
+        for label, url in cases:
+            with self.subTest(label):
+                response = self.client.get(url)
+                self.assertNotIn("attachment", response.get("Content-Disposition", ""))
+
+    def test_force_download_filename_is_slugified(self):
+        """Filename in Content-Disposition is slugified to strip OS-forbidden characters."""
+        rendition = self.public_image_renditions[0]
+        self.public_image.title = "Hello/World:?"
+        self.public_image.save()
+
+        url = rendition.serve_url + "?force_download=true"
+        response = self.client.get(url)
+
+        disposition = response.get("Content-Disposition", "")
+        self.assertIn("helloworld", disposition)
+        self.assertNotIn("Hello/World:?", disposition)
+
+    def test_force_download_ignored_on_external_env(self):
+        """force_download=true is ignored in external environments; the normal redirect is returned."""
+        rendition = self.public_image_renditions[0]
+        url = rendition.serve_url + "?force_download=true"
+
+        with override_settings(IS_EXTERNAL_ENV=True):
+            response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 302)
+
+    def test_force_download_respects_permission_checks(self):
+        """force_download=true does not bypass permission checks for private images."""
+        rendition = self.private_image_renditions[0]
+        url = rendition.serve_url + "?force_download=true"
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 403)
+
+
+@mock_aws
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "cms.private_media.storages.AccessControlledS3Storage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    }
+)
+class TestImageServeViewS3ForceDownload(TestCase):
+    """Verify force_download behaviour when media is stored in S3 (mocked)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        # @override_settings on the class takes effect here but @mock_aws does not,
+        # so we avoid any file operations that would hit S3 without moto intercepting.
+        cls.root_collection = Collection.objects.get(depth=1)
+        cls.superuser = get_user_model().objects.create(username="superuser_s3", is_superuser=True)
+
+    def setUp(self):
+        super().setUp()
+        storage = AccessControlledS3Storage()
+        storage.connection.Bucket(settings.AWS_STORAGE_BUCKET_NAME).create()
+
+        image_model = get_image_model()
+        self.public_image = image_model.objects.create(
+            title="Public image",
+            file=get_test_image_file(),
+            _privacy=Privacy.PUBLIC,
+        )
+        self.public_rendition = self.public_image.get_rendition("width-2048")
+
+        self.private_image = image_model.objects.create(
+            title="Private image",
+            file=get_test_image_file(),
+        )
+        self.private_rendition = self.private_image.get_rendition("width-2048")
+
+    def test_force_download_public_image_serves_as_attachment(self):
+        """Public image: force_download=true serves the file from origin as an attachment, not an S3 redirect."""
+        url = self.public_rendition.serve_url + "?force_download=true"
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("attachment", response.get("Content-Disposition", ""))
+
+    def test_force_download_private_image_serves_as_attachment_for_authorised_user(self):
+        """Private image: force_download=true serves the file as an attachment for a user with permission."""
+        self.client.force_login(self.superuser)
+        url = self.private_rendition.serve_url + "?force_download=true"
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("attachment", response.get("Content-Disposition", ""))
+
+    def test_force_download_private_image_blocked_for_unauthenticated_user(self):
+        """Private image: force_download=true still enforces permission checks."""
+        url = self.private_rendition.serve_url + "?force_download=true"
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 403)
 
 
 class TestDocumentServeView(TestCase):
