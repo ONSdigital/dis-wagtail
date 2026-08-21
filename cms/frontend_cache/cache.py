@@ -154,12 +154,11 @@ def get_topic_pages_featuring_series(
     return urls
 
 
-def _get_other_language_alias_urls(source_page_ids: set) -> set[str]:
+def _get_alias_urls(source_page_ids: set) -> set[str]:
     urls = set()
-    # Include other language aliases in this too.
-    # Also, since we don't have a request here, get a dummy one for the other language pages.
-    other_locale_ids = Locale.objects.exclude(pk=Locale.get_default().pk).values_list("pk", flat=True)
-    for locale_id in other_locale_ids:
+    # Include aliases in any locale (same-locale copies as well as other-language translations).
+    # Since we don't have a request here, get a dummy one for each locale's site.
+    for locale_id in Locale.objects.values_list("pk", flat=True):
         cache_object = get_dummy_request(site=Site.objects.filter(root_page__locale=locale_id).first())
         if cache_object is None:
             # If no site exists for this locale, skip it
@@ -271,7 +270,7 @@ def purge_series_children_from_cache(page: ArticleSeriesPage) -> None:
         source_page_ids.add(child.pk)
         urls.update(get_page_cached_urls(child))
 
-    urls |= _get_other_language_alias_urls(source_page_ids)
+    urls |= _get_alias_urls(source_page_ids)
 
     if urls:
         purge_urls_from_cache(urls)
