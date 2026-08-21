@@ -278,7 +278,7 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
         """The path to the dataset landing page.
         Note that this may also direct to the latest version if the landing page doesn't exist.
         """
-        if self.topic_id and (topic := self.topic) and topic.slug:
+        if (topic := self.topic) and topic.slug:
             return f"/{topic.slug}/datasets/{self.namespace}"
         return self.deprecated_url_path
 
