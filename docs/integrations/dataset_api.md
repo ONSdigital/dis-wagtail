@@ -24,7 +24,7 @@ Dataset links on pages should now be served under their topic, e.g. `/inflationa
 The dataset detail endpoint should contain a list of topic IDs under the `topics` key. This should always have the primary topic as the first item in the list.
 Older dataset schema had a single `canonical_topic` field, which we can check as a fallback in the event the new field is not present or is empty.
 
-In the event we either receive no topic, or the topic does not exist in our local database we fall back to the previous, deprecated `/datasets/cpih01` url style.
+In the event we either receive no topic, or the topic does not exist in our local database we fall back to the previous, deprecated `/datasets/cpih01` URL style.
 
 ### Bundles
 
