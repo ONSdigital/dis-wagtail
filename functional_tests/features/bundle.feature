@@ -119,7 +119,7 @@ Feature: CMS users can manage bundles
         When the user goes to edit the bundle
         And the user clicks the "Approve" action
         Then the user sees a validation error explaining the dataset metadata has changed
-        And the local dataset record reflects the new topic
+        And the validation error identifies the dataset topic as the changed field
         When the user clicks the "Approve" action
         Then the bundle is approved successfully
 

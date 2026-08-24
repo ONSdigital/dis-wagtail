@@ -22,7 +22,6 @@ from cms.teams.models import Team
 from cms.teams.tests.factories import TeamFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 from functional_tests.step_helpers.datasets import (
-    TEST_DATASET_TOPIC_ID,
     TEST_UNPUBLISHED_DATASETS,
     ensure_dataset_topic,
     register_dataset_detail_route,
@@ -560,23 +559,18 @@ def dataset_title_changed_in_api(context: Context) -> None:
 @given("the dataset's topic has changed in the source API")
 def dataset_topic_changed_in_api(context: Context) -> None:
     test_dataset = TEST_UNPUBLISHED_DATASETS[0]
-    context.api_updated_topic = TopicFactory(id="9002", slug="updatedtopic", title="Updated Topic")
+    updated_topic = TopicFactory(id="9002", slug="updatedtopic", title="Updated Topic")
 
     register_dataset_detail_route(
         context.bundle_api_mock,
-        {**test_dataset, "topics": [context.api_updated_topic.pk]},
+        {**test_dataset, "topics": [updated_topic.pk]},
         replace=True,
     )
 
 
-@then("the local dataset record reflects the new topic")
-def local_dataset_reflects_new_topic(context: Context) -> None:
-    context.dataset.refresh_from_db()
-    assert context.dataset.topic_id == context.api_updated_topic.pk, (
-        f"Expected the dataset topic to be updated to {context.api_updated_topic.pk}, "
-        f"but it is {context.dataset.topic_id}"
-    )
-    assert context.dataset.topic_id != TEST_DATASET_TOPIC_ID
+@then("the validation error identifies the dataset topic as the changed field")
+def validation_error_identifies_topic(context: Context) -> None:
+    expect(context.page.get_by_text("'Looked Up Dataset': topic has changed")).to_be_visible()
 
 
 @step('the user clicks the "Approve" action')
