@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 16:21+0100\n"
+"POT-Creation-Date: 2026-08-20 14:49+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -55,11 +55,11 @@ msgstr "Hysbysiad"
 msgid "View superseded version"
 msgstr "Gweld fersiwn wedi’i disodli"
 
-#: cms/bundles/utils.py:38
+#: cms/bundles/utils.py:39
 msgid "Publications"
 msgstr "Cyhoeddiadau"
 
-#: cms/bundles/utils.py:39
+#: cms/bundles/utils.py:40
 msgid "Quality and methodology"
 msgstr "Ansawdd a methodoleg"
 
@@ -139,7 +139,7 @@ msgstr "Mynegai"
 msgid "Theme"
 msgstr "Thema"
 
-#: cms/core/formatting_utils.py:117
+#: cms/core/formatting_utils.py:131
 #: cms/jinja2/templates/pages/statistical_article_page--previous-releases.html:33
 msgid "Released"
 msgstr "Rhyddhawyd"
@@ -221,8 +221,8 @@ msgid ""
 "Accredited official statistics. Find out more about types of official "
 "statistics."
 msgstr ""
-"Ystadegau swyddogol achrededig. Darganfyddwch fwy am fathau oystadegau "
-"swyddogol"
+"Ystadegau swyddogol achrededig. Darganfyddwch fwy am fathau o ystadegau "
+"swyddogol."
 
 #: cms/jinja2/templates/components/census/census-information.html:6
 msgid "This release includes data from Census 2021"
@@ -274,7 +274,7 @@ msgid ""
 "own cookie policy and banner."
 msgstr ""
 "Gall rhai rhannau o’r wefan hon ddefnyddio cwcis ychwanegol ac, os felly, "
-"bydd ganddynt eu polisi a’u baner cwcis eu hunain"
+"bydd ganddynt eu polisi a’u baner cwcis eu hunain."
 
 #: cms/jinja2/templates/pages/cookies.html:46
 msgid "Return to previous page"
@@ -330,12 +330,12 @@ msgid ""
 "us to use."
 msgstr ""
 "Rydym yn defnyddio pedwar math o gwcis. Gallwch ddewis pa gwcis rydych yn "
-"hapus i ni eu defnyddio"
+"hapus i ni eu defnyddio."
 
 #: cms/jinja2/templates/pages/cookies.html:70
 msgid "You can change your settings at any time by returning to this page."
 msgstr ""
-"Gallwch newid eish gosodiadau unrhyw bryd drwy ddychwelyd i'r dudalen hon"
+"Gallwch newid eish gosodiadau unrhyw bryd drwy ddychwelyd i'r dudalen hon."
 
 #: cms/jinja2/templates/pages/cookies.html:73
 msgid "Cookies that measure website use"
@@ -380,8 +380,8 @@ msgid ""
 "We do not allow Google or Hotjar to use or share this data for their own "
 "purposes."
 msgstr ""
-"Nid ydym yn caniatáu i Google na Hotjar defnyddio na rhannu’r data hwn "
-"at eu dibenion eu hunain"
+"Nid ydym yn caniatáu i Google na Hotjar defnyddio na rhannu’r data hwn at eu "
+"dibenion eu hunain."
 
 #: cms/jinja2/templates/pages/cookies.html:87
 msgid "Do you want to allow cookies that measure website use?"
@@ -405,15 +405,14 @@ msgid ""
 "They do things like measure how you view YouTube videos that are on the ONS "
 "website."
 msgstr ""
-"Gall y cwcis hyn gael eu gosod gan wefannau trydydd parti, fel YouTube a Vimeo. "
-" Maent yn gwneud pethau fel mesur sut rydych yn gwylio fideos YouTube sydd ar "
-" wefan y SYG."
+"Gall y cwcis hyn gael eu gosod gan wefannau trydydd parti, fel YouTube a "
+"Vimeo.  Maent yn gwneud pethau fel mesur sut rydych yn gwylio fideos YouTube "
+"sydd ar  wefan y SYG."
 
 #: cms/jinja2/templates/pages/cookies.html:121
 msgid ""
 "Do you want to allow cookies that help with communications and marketing?"
-msgstr ""
-"Ydych chi am ganiatáu cwcis sy’n helpu gyda chyfathrebu a marchnata?"
+msgstr "Ydych chi am ganiatáu cwcis sy’n helpu gyda chyfathrebu a marchnata?"
 
 #: cms/jinja2/templates/pages/cookies.html:122
 msgid "Use cookies that help with communications and marketing"
@@ -432,16 +431,16 @@ msgid ""
 "These cookies do things like remember your preferences and the choices you "
 "make, to personalise your experience of using the site."
 msgstr ""
-"Mae’r cwcis hyn yn gwneud pethau fel cofio eich dewisiadau "
-"i bersonoli eich profiad o ddefnyddio’r safle."
+"Mae’r cwcis hyn yn gwneud pethau fel cofio eich dewisiadau i bersonoli eich "
+"profiad o ddefnyddio’r safle."
 
 #: cms/jinja2/templates/pages/cookies.html:155
 msgid ""
 "We currently do not use these cookies but do store your choice to accept or "
 "reject them. You can change your selection at any time."
 msgstr ""
-"Nid ydym yn defnyddio’r cwcis hyn ar hyn o bryd, ond rydym yn storio eich dewis i'w derbyn neu "
-"eu gwrthod. Gallwch newid eich dewis ar unrhyw adeg."
+"Nid ydym yn defnyddio’r cwcis hyn ar hyn o bryd, ond rydym yn storio eich "
+"dewis i'w derbyn neu eu gwrthod. Gallwch newid eich dewis ar unrhyw adeg."
 
 #: cms/jinja2/templates/pages/cookies.html:158
 msgid "Do you want to allow cookies that remember your settings?"
@@ -468,8 +467,8 @@ msgid ""
 "remember your cookie settings and the notifications you’ve seen so we do not "
 "show them to you again"
 msgstr ""
-"cofio eich gosodiadau cwcis a’r hysbysiadau rydych wedi eu gweld fel nad ydym "
-"yn eu dangos i chi eto"
+"cofio eich gosodiadau cwcis a’r hysbysiadau rydych wedi eu gweld fel nad "
+"ydym yn eu dangos i chi eto"
 
 #: cms/jinja2/templates/pages/cookies.html:191
 msgid "remember your progress through a form (for example, an ONS study)"
@@ -507,7 +506,9 @@ msgstr "Os gwnaethoch chi roi cyfeiriad gwe, gwiriwch ei fod yn gywir."
 
 #: cms/jinja2/templates/pages/errors/404.html:18
 msgid "If you pasted the web address, check you copied the whole address."
-msgstr "Os gwnaethoch chi gludo’r cyfeiriad gwe, gwiriwch eich bod wedi copïo’r cyfeiriad cyfan."
+msgstr ""
+"Os gwnaethoch chi gludo’r cyfeiriad gwe, gwiriwch eich bod wedi copïo’r "
+"cyfeiriad cyfan."
 
 #: cms/jinja2/templates/pages/errors/404.html:19
 #: cms/jinja2/templates/pages/errors/500.html:7
@@ -516,8 +517,8 @@ msgid ""
 "If the web address is correct, or you selected a link or button, <a "
 "href=\"%(contact_url)s\">contact us</a>."
 msgstr ""
-"Os yw’r cyfeiriad gwe yn gywir, neu os oeddech chi wedi dewis dolen neu fotwm,<a "
-"href=\"%(contact_url)s\">cysylltwch â ni</a>."
+"Os yw’r cyfeiriad gwe yn gywir, neu os oeddech chi wedi dewis dolen neu "
+"fotwm,<a href=\"%(contact_url)s\">cysylltwch â ni</a>."
 
 #: cms/jinja2/templates/pages/errors/500.html:2
 msgid "Sorry, there’s a problem with the service"
@@ -829,11 +830,11 @@ msgstr "I’w gadarnhau"
 msgid "Release calendar page"
 msgstr "Tudalen amserlen datganiadau"
 
-#: cms/settings/base.py:441
+#: cms/settings/base.py:449
 msgid "English"
 msgstr "Saesneg"
 
-#: cms/settings/base.py:442
+#: cms/settings/base.py:450
 msgid "Welsh"
 msgstr "Cymraeg"
 
