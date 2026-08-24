@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from wagtail.blocks import StreamValue
 
 from cms.datasets.blocks import DatasetStoryBlock
@@ -13,6 +13,7 @@ from cms.datasets.utils import (
     get_dataset_for_published_state,
     get_local_topic_ids,
     get_published_from_state,
+    normalise_dataset_url,
     update_dataset_metadata,
 )
 from cms.taxonomy.tests.factories import TopicFactory
@@ -313,3 +314,26 @@ class TestUpdateDatasetMetadata(TestCase):
         self.assertEqual(set(updated_fields), {"title", "topic_id"})
         self.assertEqual(dataset.topic_id, "7779")
         self.assertEqual(dataset.title, "New Title")
+
+
+class TestNormaliseDatasetUrlPath(SimpleTestCase):
+    def test_strips_the_leading_topic_segment(self):
+        cases = [
+            ("/economy/datasets/cpih01", "/datasets/cpih01"),
+            ("/economy/datasets/cpih01/editions/2024/versions/1", "/datasets/cpih01/editions/2024/versions/1"),
+            ("/Economy/Datasets/CPIH01/", "/datasets/cpih01"),
+        ]
+        for url_path, expected in cases:
+            with self.subTest(url_path=url_path):
+                self.assertEqual(normalise_dataset_url(url_path), expected)
+
+    def test_leaves_paths_without_single_topic_segment_unchanged(self):
+        cases = [
+            ("/datasets/cpih01", "/datasets/cpih01"),
+            ("/datasets/cpih01/editions/2024/versions/1", "/datasets/cpih01/editions/2024/versions/1"),
+            ("/economy/inflation/datasets/cpih01", "/economy/inflation/datasets/cpih01"),
+            ("/Datasets/CPIH01/", "/datasets/cpih01"),
+        ]
+        for url_path, expected in cases:
+            with self.subTest(url_path=url_path):
+                self.assertEqual(normalise_dataset_url(url_path), expected)

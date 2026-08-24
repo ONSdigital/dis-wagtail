@@ -15,6 +15,7 @@ from wagtail.blocks import (
 
 from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
 from cms.core.url_utils import extract_url_path, validate_ons_url_struct_block
+from cms.datasets.utils import normalise_dataset_url
 from cms.datasets.views import dataset_chooser_viewset
 
 DatasetChooserBlock = dataset_chooser_viewset.get_block_class(
@@ -90,7 +91,7 @@ class DatasetStoryBlock(StreamBlock):
                 else block.value["url"]
             )
             url_path = extract_url_path(url).lower()
-            url_paths[url_path].add(block_index)
+            url_paths[normalise_dataset_url(url_path)].add(block_index)
             if is_lookup or url_path not in destinations:
                 destinations[url_path] = url if is_lookup else extract_url_path(url)
 

@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 EDITIONS_PATTERN = re.compile(r"/editions/([^/]+)/")
+TOPIC_PREFIXED_DATASET_PATTERN = re.compile(r"^/[^/]+(/datasets/.+)$")
 
 COMPOUND_ID_PARTS_COUNT = 4
 
@@ -211,3 +212,8 @@ def update_dataset_metadata(
         dataset.topic_id = topic_id
         updated_fields.append("topic_id")
     return updated_fields
+
+
+def normalise_dataset_url(url_path: str) -> str:
+    """Reduce dataset URL to topic-agnostic form so we can compare new and old URLs."""
+    return TOPIC_PREFIXED_DATASET_PATTERN.sub(r"\1", url_path.rstrip("/").lower())
