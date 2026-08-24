@@ -3,18 +3,6 @@
 The bundles app is a feature that allows coordinated publishing of multiple pages and datasets as a single unit. And
 controls the workflows around pre-publication.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Models](#models)
-- [Bundle lifecycle](#bundle-lifecycle)
-- [Permissions & Security](#permissions--security)
-- [Notifications](#notifications)
-- [Management commands](#management-commands)
-- [UI Reference](#ui-reference)
-- [Troubleshooting](#troubleshooting)
-
 ## Overview
 
 The bundles app orchestrates the publication of related content by grouping pages and datasets under one umbrella, giving access to them to with specific preview teams.
