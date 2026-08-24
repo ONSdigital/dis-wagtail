@@ -248,9 +248,8 @@ def purge_old_page_paths_from_cache_after_move(
         for series in page.get_children().live().type(ArticleSeriesPage).specific():
             urls.update(get_related_topic_page_urls(series))
             urls.update(get_related_topic_page_urls(parent_page_before, topic_ids=series.topic_ids))
-            for article in series.get_children().live().type(StatisticalArticlePage).specific():
-                if article.is_latest:
-                    urls.update(get_topic_pages_featuring_series(article, series))
+            if latest := StatisticalArticlePage.objects.child_of(series).live().order_by("-release_date").first():
+                urls.update(get_topic_pages_featuring_series(latest, series))
     elif isinstance(page, MethodologyIndexPage):
         # the index itself moved between topics, taking its methodology pages with it
         for methodology_page in page.get_children().live().type(MethodologyPage).specific():
