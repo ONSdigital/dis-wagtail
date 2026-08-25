@@ -113,6 +113,8 @@
 
 {% block postMainContent %}
     {# used in small viewports #}
+    {# The empty div here is to account for an edge case with the DS backToTop component where there might not be a previous sibling with content. This is temporary until we can make the DS back-to-top code more robust. #}
+    <div></div>
     {# fmt:off #}
     {{ onsBackToTop({
         "description": back_to_top,
