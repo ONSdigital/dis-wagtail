@@ -568,6 +568,25 @@ def dataset_topic_changed_in_api(context: Context) -> None:
     )
 
 
+@given("the source API has no topic for the dataset")
+def dataset_has_no_topic_in_api(context: Context) -> None:
+    test_dataset = {key: value for key, value in TEST_UNPUBLISHED_DATASETS[0].items() if key != "topics"}
+
+    register_dataset_detail_route(context.bundle_api_mock, test_dataset, replace=True)
+
+
+@then("the user sees a validation error explaining the dataset topic could not be determined")
+def validation_error_for_unresolvable_topic(context: Context) -> None:
+    expect(
+        context.page.get_by_text("Cannot approve the bundle with 1 dataset whose topic could not be resolved.")
+    ).to_be_visible()
+
+
+@then("the validation error identifies the dataset the topic is missing for")
+def validation_error_identifies_dataset_missing_a_topic(context: Context) -> None:
+    expect(context.page.get_by_text("'Looked Up Dataset': no topic is set in the dataset service")).to_be_visible()
+
+
 @then("the validation error identifies the dataset topic as the changed field")
 def validation_error_identifies_topic(context: Context) -> None:
     expect(context.page.get_by_text("'Looked Up Dataset': topic has changed")).to_be_visible()

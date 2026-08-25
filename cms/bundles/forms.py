@@ -194,7 +194,31 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             raise ValidationError(errors)
 
     @staticmethod
-    def _refresh_dataset_from_api(dataset: Dataset, api_dataset: ONSDataset) -> list[str]:
+    def _resolve_api_topic_id(api_dataset: ONSDataset) -> tuple[str | None, str | None]:
+        """Resolve the topic ID from the API dataset.
+
+        Returns the resolved topic ID, or `None` along with the reason it could not be resolved.
+        """
+        api_topic_id: str = api_dataset.primary_topic_id
+        if not api_topic_id:
+            logger.info(
+                "No topic for dataset",
+                extra={"dataset": api_dataset.dataset_id},
+            )
+            return None, "no topic is set in the dataset service"
+        if api_topic_id not in get_local_topic_ids([api_topic_id]):
+            logger.info(
+                "Topic returned that is not in local taxonomy",
+                extra={
+                    "dataset": api_dataset.dataset_id,
+                    "topic_id": api_topic_id,
+                },
+            )
+            return None, "no matching topic in local taxonomy"
+        return api_topic_id, None
+
+    @staticmethod
+    def _refresh_dataset_from_api(dataset: Dataset, api_dataset: ONSDataset, api_topic_id: str | None) -> list[str]:
         """Compare one local Dataset against the API, importing any drift.
 
         Returns human-readable description of each field that had drifted.
@@ -203,17 +227,6 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         """
         api_title = api_dataset.title
         api_description = api_dataset.description
-
-        api_topic_id = api_dataset.primary_topic_id
-        if api_topic_id not in get_local_topic_ids([api_topic_id]):
-            logger.info(
-                "Topic returned that is not in local taxonomy",
-                extra={
-                    "dataset": dataset.namespace,
-                    "topic_id": api_topic_id,
-                },
-            )
-            api_topic_id = None
 
         old_title = dataset.title
         changes: list[str] = []
@@ -261,6 +274,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         )
 
         drift_messages: list[str] = []
+        unresolved_topics: list[str] = []
         api_items_by_namespace: dict[str, Any] = {}
         with transaction.atomic():
             for form in self.formsets["bundled_datasets"].forms:
@@ -286,14 +300,26 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                     api_items_by_namespace[dataset.namespace], published=False
                 )
 
-                drift_messages.extend(self._refresh_dataset_from_api(dataset, api_dataset))
+                api_topic_id, topic_error = self._resolve_api_topic_id(api_dataset)
+                if topic_error:
+                    unresolved_topics.append(f"'{dataset.title}': {topic_error}")
+                drift_messages.extend(self._refresh_dataset_from_api(dataset, api_dataset, api_topic_id))
 
+        errors: list[str] = []
+        if unresolved_topics:
+            num_unresolved = len(unresolved_topics)
+            errors += [
+                f"Cannot approve the bundle with {num_unresolved} dataset{pluralize(num_unresolved)} whose topic "
+                "could not be resolved.",
+                *unresolved_topics,
+            ]
         if drift_messages:
-            errors = [
+            errors += [
                 "Approval could not be completed because dataset metadata has changed since they were added. "
                 "The latest metadata has been imported. Please review the changes below and approve the bundle again.",
                 *drift_messages,
             ]
+        if errors:
             raise ValidationError(errors)
 
     def _validate_bundled_pages(self) -> None:

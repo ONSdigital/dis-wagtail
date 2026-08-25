@@ -123,6 +123,21 @@ Feature: CMS users can manage bundles
         When the user clicks the "Approve" action
         Then the bundle is approved successfully
 
+    @bundle_api_enabled
+    Scenario: An approver is blocked when the source API has no topic for the dataset
+        Given the user is authenticated
+        And a bundle has been created with a dataset and a page ready to publish
+        And the source API has no topic for the dataset
+        And the bundle is ready for approval
+        When the user goes to edit the bundle
+        And the user clicks the "Approve" action
+        Then the user sees a validation error explaining the dataset topic could not be determined
+        And the validation error identifies the dataset the topic is missing for
+        When the user clicks the "Approve" action
+        Then the user sees a validation error explaining the dataset topic could not be determined
+
+
+
     # Bundle E2E scenarios
     Scenario: A CMS user can create a draft bundle with approved information pages and preview teams
         Given the following approved information pages exist:
