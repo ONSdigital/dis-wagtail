@@ -206,6 +206,13 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
         api_topic_id = api_dataset.primary_topic_id
         if api_topic_id not in get_local_topic_ids([api_topic_id]):
+            logger.info(
+                "Topic returned that is not in local taxonomy",
+                extra={
+                    "dataset": dataset.namespace,
+                    "topic_id": api_topic_id,
+                },
+            )
             api_topic_id = None
 
         old_title = dataset.title
