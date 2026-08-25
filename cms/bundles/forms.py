@@ -199,7 +199,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
         Returns the resolved topic ID, or `None` along with the reason it could not be resolved.
         """
-        api_topic_id: str = api_dataset.primary_topic_id
+        api_topic_id: str | None = api_dataset.primary_topic_id
         if not api_topic_id:
             logger.info(
                 "No topic for dataset",
