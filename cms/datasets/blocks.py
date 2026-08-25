@@ -69,10 +69,13 @@ class DatasetStoryBlock(StreamBlock):
         link_to_latest_version = False
 
     def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
+        # pylint: disable=unused-argument
         cleaned_value = super().clean(value)
 
         # Validate there are no duplicate datasets, including between manual and looked up datasets
-        # resolving to the same place, however each was written.
+        # that point at the same place, however each was written. Destination resolution only
+        # happens for looked up datasets: a manual link's URL is not resolved, so the version it
+        # names is not dropped from it.
         #
         # url_paths maps a normalised comparison key to the blocks using it. That key is lowercased
         # and has its trailing slash stripped, so it is not fit to show an editor: destinations
