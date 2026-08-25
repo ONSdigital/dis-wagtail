@@ -49,6 +49,7 @@ class BackfillDatasetTopicsTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.topic = TopicFactory(id="7779", slug="inflationandpriceindices")
+        cls.other_topic = TopicFactory(id="1234", slug="economy")
 
     def call_command(self, *args: str) -> str:
         stdout = StringIO()
@@ -67,10 +68,32 @@ class BackfillDatasetTopicsTests(TestCase):
         self.assertEqual(dataset.url_path, "/inflationandpriceindices/datasets/cpih01")
 
     @responses.activate
+    def test_updates_a_topic_that_changed_in_the_api(self):
+        dataset = DatasetFactory(namespace="cpih01", edition="time-series", version=1, topic=self.other_topic)
+        add_detail_response("cpih01", topics=["7779"])
+
+        self.call_command()
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.topic_id, "7779")
+        self.assertEqual(dataset.url_path, "/inflationandpriceindices/datasets/cpih01")
+
+    @responses.activate
+    def test_leaves_datasets_whose_topic_still_matches(self):
+        dataset = DatasetFactory(namespace="cpih01", edition="time-series", version=1, topic=self.topic)
+        add_detail_response("cpih01", topics=["7779"])
+
+        self.call_command()
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.topic_id, "7779")
+        self.assertEqual(dataset.url_path, "/inflationandpriceindices/datasets/cpih01")
+
+    @responses.activate
     def test_backfills_all_editions_and_versions_with_a_single_api_call(self):
         datasets = [
             DatasetFactory(namespace="cpih01", edition="time-series", version=1),
-            DatasetFactory(namespace="cpih01", edition="time-series", version=2),
+            DatasetFactory(namespace="cpih01", edition="time-series", version=2, topic=self.other_topic),
             DatasetFactory(namespace="cpih01", edition="monthly", version=1),
         ]
         add_detail_response("cpih01", topics=["7779"])
@@ -84,7 +107,6 @@ class BackfillDatasetTopicsTests(TestCase):
 
     @responses.activate
     def test_uses_the_first_topic_as_the_primary(self):
-        TopicFactory(id="1234", slug="economy")
         dataset = DatasetFactory(namespace="cpih01", edition="time-series", version=1)
         add_detail_response("cpih01", topics=["7779", "1234"])
 
@@ -137,7 +159,7 @@ class BackfillDatasetTopicsTests(TestCase):
         self.assertIsNone(dataset.topic_id)
 
     @responses.activate
-    def test_api_failure_does_not_stop_the_backfill(self):
+    def test_api_failure_does_not_stop_the_run(self):
         failing = DatasetFactory(namespace="failing", edition="time-series", version=1)
         succeeding = DatasetFactory(namespace="cpih01", edition="time-series", version=1)
 
@@ -177,24 +199,48 @@ class BackfillDatasetTopicsTests(TestCase):
 
     @responses.activate
     def test_dry_run_does_not_update_database(self):
-        dataset = DatasetFactory(namespace="cpih01", edition="time-series", version=1)
+        backfilled = DatasetFactory(namespace="cpih01", edition="time-series", version=1)
+        changed = DatasetFactory(namespace="other", edition="time-series", version=1, topic=self.other_topic)
+        add_detail_response("other", topics=["7779"])
         add_detail_response("cpih01", topics=["7779"])
 
         self.call_command("--dry-run")
 
-        dataset.refresh_from_db()
-        self.assertIsNone(dataset.topic_id)
+        backfilled.refresh_from_db()
+        changed.refresh_from_db()
+        self.assertIsNone(backfilled.topic_id)
+        self.assertEqual(changed.topic_id, "1234")
 
     @responses.activate
-    def test_leaves_datasets_that_already_have_a_topic_alone(self):
-        other_topic = TopicFactory(id="1234", slug="economy")
-        dataset = DatasetFactory(namespace="cpih01", edition="time-series", version=1, topic=other_topic)
+    def test_missing_only_leaves_datasets_that_have_a_topic_alone(self):
+        without_topic = DatasetFactory(namespace="cpih01", edition="time-series", version=1)
+        with_topic = DatasetFactory(namespace="other", edition="time-series", version=1, topic=self.other_topic)
+        add_detail_response("cpih01", topics=["7779"])
+        add_detail_response("other", topics=["7779"])
 
-        self.call_command()
+        self.call_command("--missing-only")
 
-        dataset.refresh_from_db()
-        self.assertEqual(dataset.topic_id, "1234")
-        self.assertEqual(len(responses.calls), 0)
+        without_topic.refresh_from_db()
+        with_topic.refresh_from_db()
+        self.assertEqual(without_topic.topic_id, "7779")
+        self.assertEqual(with_topic.topic_id, "1234")
+        self.assertEqual(len(responses.calls), 1)
+
+    @responses.activate
+    def test_namespace_option_limits_the_run(self):
+        included = DatasetFactory(namespace="cpih01", edition="time-series", version=1)
+        excluded = DatasetFactory(namespace="other", edition="time-series", version=1)
+        add_detail_response("cpih01", topics=["7779"])
+        add_detail_response("other", topics=["7779"])
+
+        self.call_command("--namespace", "cpih01")
+
+        included.refresh_from_db()
+        excluded.refresh_from_db()
+
+        self.assertEqual(included.topic_id, "7779")
+        self.assertIsNone(excluded.topic_id)
+        self.assertEqual(len(responses.calls), 1)
 
     @responses.activate
     def test_access_token_is_sent_to_api(self):

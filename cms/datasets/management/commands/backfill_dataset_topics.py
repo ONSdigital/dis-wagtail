@@ -19,10 +19,10 @@ BULK_UPDATE_BATCH_SIZE = 100
 
 
 class Command(BaseCommand):
-    """Backfill topics for locally stored datasets that are missing them."""
+    """Backfill or refresh topics for locally stored datasets against dataset API."""
 
     help = (
-        "Best-effort backfill of topic for locally stored datasets that are missing them. "
+        "Best-effort backfill and refresh of topic for locally stored datasets. "
         "Datasets that cannot be looked up or have a topic we can't resolve are left untouched. "
         f"Unpublished datasets require an access token, given via --access-token or {ACCESS_TOKEN_VAR_NAME} env var."
     )
@@ -36,7 +36,14 @@ class Command(BaseCommand):
             action="append",
             dest="namespace",
             metavar="NAMESPACE",
-            help="Only backfill datasets in the given namespace (can be specified multiple times)",
+            help="Only lookup datasets in the given namespace (can be specified multiple times)",
+        )
+        parser.add_argument(
+            "--missing-only",
+            action="store_true",
+            dest="missing_only",
+            default=False,
+            help="Only lookup datasets that have no topic, skipping those that already have one",
         )
         parser.add_argument(
             "--access-token",
@@ -54,13 +61,15 @@ class Command(BaseCommand):
         if dry_run:
             logger.info("This is a dry run, no changes will be made.")
 
-        datasets_by_namespace = self._get_datasets_missing_a_topic(options["namespace"])
+        datasets_by_namespace = self._get_datasets_by_namespace(
+            namespaces=options["namespace"], missing_only=options["missing_only"]
+        )
         if not datasets_by_namespace:
-            logger.info("No datasets missing a topic found.")
+            logger.info("No datasets to check.")
             return
 
         dataset_count = sum(len(datasets) for datasets in datasets_by_namespace.values())
-        logger.info("Found %d datasets missing a topic, grouped by namespace:", dataset_count)
+        logger.info("checking topic of %d dataset(s) across %d namespace(s)", dataset_count, len(datasets_by_namespace))
 
         topic_ids_by_namespace, unresolved = self._fetch_topic_ids(
             datasets_by_namespace, access_token=options["access_token"] or os.environ.get(ACCESS_TOKEN_VAR_NAME)
@@ -68,24 +77,33 @@ class Command(BaseCommand):
 
         local_topic_ids = get_local_topic_ids(topic_ids_by_namespace.values())
 
-        datasets_to_update: list[Dataset] = []
+        updates: list[tuple[Dataset, str | None]] = []
         for namespace, topic_id in topic_ids_by_namespace.items():
             if topic_id not in local_topic_ids:
                 unresolved["topic not in the local taxonomy"].append(namespace)
                 continue
             for dataset in datasets_by_namespace[namespace]:
-                dataset.topic_id = topic_id
-                datasets_to_update.append(dataset)
+                if dataset.topic_id == topic_id:
+                    continue
 
-        self._apply_updates(datasets_to_update, dry_run=dry_run)
+                previous_topic_id = dataset.topic_id
+                dataset.topic_id = topic_id
+                updates.append((dataset, previous_topic_id))
+
+        self._apply_updates(updates, dry_run=dry_run)
         self._report_unresolved(unresolved)
 
-    def _get_datasets_missing_a_topic(self, namespaces: list[str] | None) -> dict[str, list[Dataset]]:
-        """Return a dict of datasets missing a topic, grouped by namespace."""
-        datasets_by_namespace = defaultdict(list)
-        queryset = Dataset.objects.filter(topic__isnull=True)
+    def _get_datasets_by_namespace(
+        self, *, namespaces: list[str] | None, missing_only: bool
+    ) -> dict[str, list[Dataset]]:
+        """Return datasets to check, grouped by namespace."""
+        queryset = Dataset.objects.all()
+        if missing_only:
+            queryset = queryset.filter(topic__isnull=True)
         if namespaces:
             queryset = queryset.filter(namespace__in=namespaces)
+
+        datasets_by_namespace = defaultdict(list)
         for dataset in queryset:
             datasets_by_namespace[dataset.namespace].append(dataset)
         return datasets_by_namespace
@@ -111,7 +129,7 @@ class Command(BaseCommand):
                 continue
 
             if not topic_id:
-                unresolved["no topic returned by the datet API"].append(namespace)
+                unresolved["no topic returned by the dataset API"].append(namespace)
                 continue
 
             topic_ids_by_namespace[namespace] = topic_id
@@ -128,22 +146,35 @@ class Command(BaseCommand):
             return primary_topic_id
         return None
 
-    def _apply_updates(self, datasets_to_update: list[Dataset], *, dry_run: bool) -> None:
-        if not datasets_to_update:
+    def _apply_updates(self, updates: list[tuple[Dataset, str | None]], *, dry_run: bool) -> None:
+        if not updates:
             logger.info("No dataset topics could be resolved")
             return
 
+        backfilled = sum(1 for _, previous_topic_id in updates if previous_topic_id is None)
+        summary = f"{len(updates)} dataset(s) backfilled, {len(updates) - backfilled} updated"
+
         if dry_run:
-            logger.info("Would have backfilled topic for %d datasets", len(datasets_to_update))
-            for dataset in datasets_to_update:
-                logger.info("\t%s -> %s", dataset.compound_id, dataset.topic_id)
+            logger.info("Would have updated topic for %d datasets", len(updates))
+            for dataset, previous_topic_id in updates:
+                logger.info("\t%s: %s -> %s", dataset.compound_id, previous_topic_id or "no topic", dataset.topic_id)
             return
 
-        Dataset.objects.bulk_update(datasets_to_update, ["topic"], batch_size=BULK_UPDATE_BATCH_SIZE)
+        Dataset.objects.bulk_update([dataset for dataset, _ in updates], ["topic"], batch_size=BULK_UPDATE_BATCH_SIZE)
         logger.info(
-            "Backfilled dataset topics",
-            extra={"count": len(datasets_to_update), "dataset_ids": [dataset.pk for dataset in datasets_to_update]},
+            "Updated dataset topics",
+            extra={
+                "count": len(updates),
+                "backfill_count": backfilled,
+                "modified_count": len(updates) - backfilled,
+                "changes": [
+                    {"dataset_id": dataset.pk, "previous_topic_id": previous_topic_id, "topic_id": dataset.topic_id}
+                    for dataset, previous_topic_id in updates
+                ],
+            },
         )
+
+        logger.info(summary)
 
     def _report_unresolved(self, unresolved: dict[str, list[str]]) -> None:
         for reason, namespaces in unresolved.items():
