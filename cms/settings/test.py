@@ -121,6 +121,8 @@ URL_CONFIG_SETTINGS = {
     "WAGTAILADMIN_LOGIN_URL",
 }
 
+CMS_PAGINATION_OVER_PURGE = 2
+
 
 def _reset_url_caches_on_setting_changed_signal_handler(*, setting: str, **_: Any) -> None:
     """Resets the url cache if `setting` is any of URL_CONFIG_SETTINGS.
