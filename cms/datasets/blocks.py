@@ -69,7 +69,6 @@ class DatasetStoryBlock(StreamBlock):
         link_to_latest_version = False
 
     def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
-        # pylint: disable=unused-argument
         cleaned_value = super().clean(value)
 
         # Validate there are no duplicate datasets, including between manual and looked up datasets
