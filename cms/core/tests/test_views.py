@@ -231,6 +231,9 @@ class HealthProbeTestCase(TestCase):
             self.assertIsNone(check["last_success"])
             self.assertEqual(check["last_failure"], "2000-01-02T00:00:00+00:00")
 
+    # "redis:///does-not-exist" is not actually broken: with no host to parse, redis-py falls back to
+    # its localhost:6379 default and reaches the real Redis, so ping() succeeds. Closed ports refuse
+    # the connection, which is the failure this test needs.
     @override_settings(
         CACHES={
             "default": {
