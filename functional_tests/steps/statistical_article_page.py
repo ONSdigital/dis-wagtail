@@ -265,7 +265,7 @@ def user_adds_table_with_pasted_content(context: Context) -> None:
     page.get_by_role("region", name="Table", exact=True).get_by_label("Source text").fill("The source")
     page.get_by_role("region", name="Table", exact=True).get_by_label("Accessible label").fill("The accessible label")
 
-    tinymce = page.get_by_role("region", name="Table", exact=True).locator("iframe.tox-edit-area__iframe").content_frame
+    tinymce = page.get_by_role("region", name="Table", exact=True).locator("iframe").content_frame
     tinymce.get_by_role("cell").nth(0).click()
     tinymce.get_by_role("cell").nth(0).fill("cell1")
     tinymce.get_by_role("cell").nth(1).fill("cell2")
