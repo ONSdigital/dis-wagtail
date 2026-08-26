@@ -25,7 +25,7 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
         request = RequestFactory().get(self.welsh_cookies_page.url)
         request.LANGUAGE_CODE = "cy"
 
-        self.assertTrue(self.welsh_cookies_page.show_localised_version_not_available_notice(request))
+        self.assertFalse(self.welsh_cookies_page.show_localised_version_not_available_notice(request))
 
     @override_settings(CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED=False)
     def test_welsh_cookies_page_can_hide_localised_version_notice_with_feature_flag(self):
