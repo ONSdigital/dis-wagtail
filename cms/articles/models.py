@@ -257,7 +257,8 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         yield "/editions"
         # ensure we always account for ?page=1
         pages = max(1, ceil(self.get_children().live().public().count() / settings.PREVIOUS_RELEASES_PER_PAGE))
-        for page_number in range(1, pages + 1):
+        # over-purge trailing pages so pages orphaned by shrinking pagination are invalidated too
+        for page_number in range(1, pages + settings.CMS_PAGINATION_OVER_PURGE + 1):
             yield f"/editions?page={page_number}"
 
 
@@ -927,8 +928,9 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
     def get_cached_paths(self) -> Generator[str]:
         yield "/"
         yield "/related-data"  # always include, should a correction remove related datasets
-        if self.datasets:
-            for page_number in range(1, ceil(len(self.datasets) / settings.RELATED_DATASETS_PER_PAGE) + 1):
-                yield f"/related-data?page={page_number}"
+        pages = ceil(len(self.datasets or []) / settings.RELATED_DATASETS_PER_PAGE)
+        # over-purge trailing pages so pages orphaned by shrinking pagination are invalidated too
+        for page_number in range(1, pages + settings.CMS_PAGINATION_OVER_PURGE + 1):
+            yield f"/related-data?page={page_number}"
 
         yield from self.get_downloadable_block_paths()
