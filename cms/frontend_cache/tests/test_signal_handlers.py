@@ -322,6 +322,15 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
         self.assertNotIn(self.article_url, purged)
         self.assertNotIn(self.methodology_page_url, purged)
 
+    def test_page_save_revision__title_change_without_publish_skips_descendants(self, patched_purge_urls):
+        # Changing the title on a draft (without publishing) must not purge the cache,
+        # as the live `title` field is untouched until publish.
+        with self.captureOnCommitCallbacks(execute=True):
+            self.topic_page.title = "New draft topic title"
+            self.topic_page.save_revision()
+
+        patched_purge_urls.assert_not_called()
+
     def test_page_publish__index_title_change_purges_descendants(self, patched_purge_urls):
         with self.captureOnCommitCallbacks(execute=True):
             self.index_page.title = "New index title"

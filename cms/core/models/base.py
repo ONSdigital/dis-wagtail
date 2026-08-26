@@ -121,8 +121,12 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     def save(  # type: ignore[override]
         self, clean: bool = True, user: User | None = None, log_action: bool = False, **kwargs: Any
     ) -> Self | None:
+        update_fields = kwargs.get("update_fields")
+        title_is_persisted = update_fields is None or "title" in update_fields
         original_title = (
-            type(self).objects.values_list("title", flat=True).filter(pk=self.pk).first() if self.pk else None
+            type(self).objects.values_list("title", flat=True).filter(pk=self.pk).first()
+            if self.pk and title_is_persisted
+            else None
         )
 
         instance: Self | None = super().save(  # type: ignore[call-arg]
