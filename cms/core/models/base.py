@@ -121,15 +121,15 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     def save(  # type: ignore[override]
         self, clean: bool = True, user: User | None = None, log_action: bool = False, **kwargs: Any
     ) -> Self | None:
-        original_values = type(self).objects.values("title", "slug").filter(pk=self.pk).first() if self.pk else None
+        original_title = (
+            type(self).objects.values_list("title", flat=True).filter(pk=self.pk).first() if self.pk else None
+        )
 
         instance: Self | None = super().save(  # type: ignore[call-arg]
             clean=clean, user=user, log_action=log_action, **kwargs
         )
 
-        if original_values and self.title != original_values["title"] and self.slug == original_values["slug"]:
-            # The title has changed, but not the slug.
-            # The slug change is already handled by the `page_slug_changed` signal.
+        if original_title is not None and self.title != original_title:
             transaction.on_commit(lambda: page_title_changed.send(sender=type(self), instance=self))
 
         return instance
