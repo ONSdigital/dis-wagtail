@@ -701,8 +701,12 @@ class PageFrontEndCacheInvalidationTestCase(WagtailTestUtils, TestCase):
                         f"{self.series_url}/related-data",
                         self.series_edition_url,
                         f"{self.series_edition_url}?page=1",
+                        f"{self.series_edition_url}?page=2",
+                        f"{self.series_edition_url}?page=3",
                         self.article_url,
                         self.article_related_data_url,
+                        f"{self.article_related_data_url}?page=1",
+                        f"{self.article_related_data_url}?page=2",
                         # old and new topics related to the series (both linked to topic_2)
                         self.topic_page_url,
                         self.topic_page_translation_url,
