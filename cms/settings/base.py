@@ -894,6 +894,8 @@ RELATED_DATASETS_PER_PAGE = int(env.get("RELATED_DATASETS_PER_PAGE", DEFAULT_PER
 
 # Number of extra trailing pages to purge from the front-end cache beyond the current page count,
 # so that pages orphaned by shrinking pagination (e.g. after a correction removes items) get invalidated too.
+# This is a workaround until Wagtail supports prefix-based cache purging:
+# https://github.com/wagtail/wagtail/pull/13773
 CMS_PAGINATION_OVER_PURGE = int(env.get("CMS_PAGINATION_OVER_PURGE", 2))
 
 # Google Tag Manager ID from env
