@@ -695,6 +695,7 @@ WAGTAILADMIN_NOTIFICATION_INCLUDE_SUPERUSERS = False
 # default to the list of defined content languages if this is not defined.
 WAGTAILFRONTENDCACHE_LANGUAGES: list[str] = []
 if "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env or "FRONTEND_CACHE_CLOUDFLARE_BEARER_TOKEN" in env:
+    # Apps need to be installed in this order so that any signal disconnects work as intended
     INSTALLED_APPS += ["wagtail.contrib.frontend_cache", "cms.frontend_cache"]
     WAGTAILFRONTENDCACHE = {
         "default": {
@@ -891,6 +892,12 @@ DEFAULT_PER_PAGE = 20
 PREVIOUS_RELEASES_PER_PAGE = int(env.get("PREVIOUS_RELEASES_PER_PAGE", 10))
 CMS_RELEASES_INDEX_REDIRECT_ENABLED = env.get("CMS_RELEASES_INDEX_REDIRECT_ENABLED", "true").lower() == "true"
 RELATED_DATASETS_PER_PAGE = int(env.get("RELATED_DATASETS_PER_PAGE", DEFAULT_PER_PAGE))
+
+# Number of extra trailing pages to purge from the front-end cache beyond the current page count,
+# so that pages orphaned by shrinking pagination (e.g. after a correction removes items) get invalidated too.
+# This is a workaround until Wagtail supports prefix-based cache purging:
+# https://github.com/wagtail/wagtail/pull/13773
+CMS_PAGINATION_OVER_PURGE = int(env.get("CMS_PAGINATION_OVER_PURGE", 2))
 
 # Google Tag Manager ID from env
 GOOGLE_TAG_MANAGER_CONTAINER_ID = env.get("GOOGLE_TAG_MANAGER_CONTAINER_ID", "")

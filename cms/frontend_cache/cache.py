@@ -7,8 +7,8 @@ from wagtail.contrib.frontend_cache.utils import purge_urls_from_cache
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale, Page, ReferenceIndex, Site
 
-from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
-from cms.methodology.models import MethodologyPage
+from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage, StatisticalArticlePage
+from cms.methodology.models import MethodologyIndexPage, MethodologyPage
 from cms.standard_pages.models import InformationPage
 from cms.topics.models import TopicPage
 
@@ -108,7 +108,9 @@ def get_related_topic_page_urls(page: Page, topic_ids: list[str] | None = None) 
         # via their source page, which then accounts for related topics and their aliases.
         return set()
 
-    parent_topic = TopicPage.objects.ancestor_of(page).only("pk", "url_path").first()
+    # inclusive=True so this also works when `page` is itself the TopicPage (e.g. when an index page
+    # moved directly between topics and `page` here is the old/new topic parent)
+    parent_topic = TopicPage.objects.ancestor_of(page, inclusive=True).only("pk", "url_path").first()
     urls = set(get_page_cached_urls(parent_topic))
 
     topic_terms = topic_ids or getattr(page, "topic_ids", [])
@@ -152,12 +154,11 @@ def get_topic_pages_featuring_series(
     return urls
 
 
-def _get_other_language_alias_urls(source_page_ids: set) -> set[str]:
+def _get_alias_urls(source_page_ids: set) -> set[str]:
     urls = set()
-    # Include other language aliases in this too.
-    # Also, since we don't have a request here, get a dummy one for the other language pages.
-    other_locale_ids = Locale.objects.exclude(pk=Locale.get_default().pk).values_list("pk", flat=True)
-    for locale_id in other_locale_ids:
+    # Include aliases in any locale (same-locale copies as well as other-language translations).
+    # Since we don't have a request here, get a dummy one for each locale's site.
+    for locale_id in Locale.objects.values_list("pk", flat=True):
         cache_object = get_dummy_request(site=Site.objects.filter(root_page__locale=locale_id).first())
         if cache_object is None:
             # If no site exists for this locale, skip it
@@ -242,6 +243,18 @@ def purge_old_page_paths_from_cache_after_move(
     elif isinstance(page, InformationPage):
         urls.update(get_page_cached_urls(parent_page_before))
         urls.update(get_page_cached_urls(parent_page_after))
+    elif isinstance(page, ArticlesIndexPage):
+        # the index itself moved between topics, taking its series/articles with it
+        for series in page.get_children().live().type(ArticleSeriesPage).specific():
+            urls.update(get_related_topic_page_urls(series))
+            urls.update(get_related_topic_page_urls(parent_page_before, topic_ids=series.topic_ids))
+            if latest := StatisticalArticlePage.objects.child_of(series).live().order_by("-release_date").first():
+                urls.update(get_topic_pages_featuring_series(latest, series))
+    elif isinstance(page, MethodologyIndexPage):
+        # the index itself moved between topics, taking its methodology pages with it
+        for methodology_page in page.get_children().live().type(MethodologyPage).specific():
+            urls.update(get_related_topic_page_urls(methodology_page))
+            urls.update(get_related_topic_page_urls(parent_page_before, topic_ids=methodology_page.topic_ids))
 
     if urls:
         purge_urls_from_cache(urls)
@@ -257,7 +270,7 @@ def purge_descendants_from_cache(page: Page) -> None:
         source_page_ids.add(child.pk)
         urls.update(get_page_cached_urls(child))
 
-    urls |= _get_other_language_alias_urls(source_page_ids)
+    urls |= _get_alias_urls(source_page_ids)
 
     if urls:
         purge_urls_from_cache(urls)

@@ -5,10 +5,6 @@ from wagtail.contrib.frontend_cache.signal_handlers import (
     page_published_signal_handler,
     page_unpublished_signal_handler,
 )
-from wagtail.contrib.redirects.signal_handlers import (
-    autocreate_redirects_on_page_move,
-    autocreate_redirects_on_slug_change,
-)
 from wagtail.models import Page, get_page_models
 from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move, published, unpublished
 
@@ -93,12 +89,15 @@ def _get_tracked_page_models() -> set[Page]:
 
 
 def disconnect_signal_handlers() -> None:
-    """Disconnect the core front-end cache signal handlers as we handle them with specific logic."""
+    """Disconnect the core front-end cache signal handlers as we handle them with specific logic.
+
+    Note: wagtail.contrib.redirects connects its autocreate_redirects_on_* handlers without a
+    sender filter, so disconnecting them here with sender=model would be a no-op; they're left
+    connected intentionally so redirects keep being auto-created on slug change/page move.
+    """
     for model in get_page_models():
         page_published.disconnect(page_published_signal_handler, sender=model)
         page_unpublished.disconnect(page_unpublished_signal_handler, sender=model)
-        post_page_move.disconnect(autocreate_redirects_on_page_move, sender=model)
-        page_slug_changed.disconnect(autocreate_redirects_on_slug_change, sender=model)
 
 
 def register_signal_handlers() -> None:
