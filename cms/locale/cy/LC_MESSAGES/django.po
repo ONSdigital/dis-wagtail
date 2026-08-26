@@ -305,7 +305,7 @@ msgid ""
 msgstr ""
 "Mae’r dudalen hon yn rhoi esboniad byr o bob math o gwci rydym yn ei "
 "ddefnyddio. Os hoffech gael rhagor o fanylion, <a "
-"href=\"%(help_cookies_url)s\">  darllenwch ein gwybodaeth fanwl am gwcis </"
+"href=\"%(help_cookies_url)s\"> darllenwch ein gwybodaeth fanwl am gwcis </"
 "a>. "
 
 #: cms/jinja2/templates/pages/cookies.html:54
@@ -407,12 +407,13 @@ msgid ""
 msgstr ""
 "Gall y cwcis hyn gael eu gosod gan wefannau trydydd parti, fel YouTube a "
 "Vimeo.  Maent yn gwneud pethau fel mesur sut rydych yn gwylio fideos YouTube "
-"sydd ar  wefan y SYG."
+"sydd ar wefan y SYG."
 
 #: cms/jinja2/templates/pages/cookies.html:121
 msgid ""
 "Do you want to allow cookies that help with communications and marketing?"
-msgstr "Ydych chi am ganiatáu cwcis sy’n helpu gyda chyfathrebu a marchnata?"
+msgstr ""
+"Ydych chi am ganiatáu cwcis sy’n helpu gyda chyfathrebu a marchnata?"
 
 #: cms/jinja2/templates/pages/cookies.html:122
 msgid "Use cookies that help with communications and marketing"
@@ -518,7 +519,8 @@ msgid ""
 "href=\"%(contact_url)s\">contact us</a>."
 msgstr ""
 "Os yw’r cyfeiriad gwe yn gywir, neu os oeddech chi wedi dewis dolen neu "
-"fotwm,<a href=\"%(contact_url)s\">cysylltwch â ni</a>."
+"fotwm, <a "
+"href=\"%(contact_url)s\">cysylltwch â ni</a>."
 
 #: cms/jinja2/templates/pages/errors/500.html:2
 msgid "Sorry, there’s a problem with the service"
@@ -776,7 +778,7 @@ msgid ""
 "website, statistical article, %(cite_link)s"
 msgstr ""
 "Y Swyddfa Ystadegau Gwladol (SYG), cyhoeddwyd %(release_date)s, gwefan y "
-"SYG   erthygl ystadegol, %(cite_link)s"
+"SYG erthygl ystadegol, %(cite_link)s"
 
 #: cms/jinja2/templates/pages/theme_index_page.html:20
 msgid "Browse"
