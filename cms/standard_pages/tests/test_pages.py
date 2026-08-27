@@ -1,5 +1,3 @@
-from unittest import skip
-
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.test import RequestFactory, override_settings
@@ -64,20 +62,21 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
             soup.find("a", class_="ons-breadcrumbs__link", href=self.welsh_site.root_url, string="Hafan")
         )
 
-    # TODO: Remove skip when translations for Cookies page are available
-    @skip("Welsh cookies page content translations temporarily disabled until full translations are available")
     def test_welsh_cookies_page_renders_translated_content(self):
         response = self.client.get(self.welsh_cookies_page.url, headers={"host": "cy.ons.localhost"})
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            f"<title>Cwcis ar {settings.ONS_COOKIE_BANNER_SERVICE_NAME} - Swyddfa Ystadegau Gwladol</title>",
+            "<title>Newid eich dewisiadau cwcis - Swyddfa Ystadegau Gwladol</title>",
             html=True,
         )
         self.assertContains(
             response,
-            f'<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Cwcis ar'
-            f" {settings.ONS_COOKIE_BANNER_SERVICE_NAME}</h1>",
+            (
+                '<h1 class="ons-u-fs-3xl ons-u-mb-xl '
+                'common-header__heading">\n            '
+                "Newid eich dewisiadau cwcis\n        </h1>"
+            ),
             html=True,
         )
         self.assertContains(response, "Gosodiadau cwcis")
