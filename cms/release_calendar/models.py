@@ -109,7 +109,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         blank=True,
         help_text=("This is usually through the bundle release process, but can also be manually set."),
     )
-    datasets = StreamField(DatasetStoryBlock(), blank=True, default=list)
+    datasets = StreamField(DatasetStoryBlock(link_to_latest_version=True), blank=True, default=list)
 
     contact_details = models.ForeignKey(
         "core.ContactDetails",
@@ -243,6 +243,9 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
 
     @cached_property
     def dataset_document_list(self) -> list[dict[str, Any]]:
+        # A release is associated with a specific dataset edition, so its links resolve to the
+        # latest published version of that edition rather than to the dataset series page. That
+        # is declared on the datasets field above, and read back off the value when formatting.
         return format_datasets_as_document_list(self.datasets)
 
     @cached_property

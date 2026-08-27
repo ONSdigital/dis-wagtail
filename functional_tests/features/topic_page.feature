@@ -97,6 +97,7 @@ Feature: CMS users can draft, edit, and publish topic pages
         And the user clicks the "Save draft" button
         And the user views the topic page draft
         Then the selected datasets are displayed on the page
+        And the looked up dataset links to the dataset series page
         And the user sees the 'View all related data' link
 
     Scenario: A CMS user can add a time series section to a topic page

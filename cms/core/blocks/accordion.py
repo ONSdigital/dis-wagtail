@@ -8,9 +8,11 @@ from wagtail import blocks
 class AccordionSectionBlock(blocks.StructBlock):
     """A single accordion section with a title and content."""
 
-    title = blocks.CharBlock(max_length=200, help_text="The title for this accordion section")
+    title = blocks.CharBlock(max_length=200, help_text="The title for this accordion section", required_on_save=True)
     content = blocks.RichTextBlock(
-        features=settings.RICH_TEXT_BASIC, help_text="The content for this accordion section"
+        features=settings.RICH_TEXT_BASIC,
+        help_text="The content for this accordion section",
+        required_on_save=True,
     )
 
     class Meta:
