@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 class DefinitionsBlock(ListBlock):
     def __init__(self, search_index: bool = True, **kwargs: Any) -> None:
-        super().__init__(SnippetChooserBlock(Definition), search_index=search_index, **kwargs)
+        super().__init__(SnippetChooserBlock(Definition, required_on_save=True), search_index=search_index, **kwargs)
 
     class Meta:
         template = "templates/components/streamfield/definitions_block.html"

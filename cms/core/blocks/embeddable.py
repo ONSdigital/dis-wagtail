@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class ImageBlock(blocks.StructBlock):
     """Image block with caption."""
 
-    image = ImageChooserBlock()
+    image = ImageChooserBlock(required_on_save=True)
     alternative_text = blocks.CharBlock(
         required=False,
         label="Alternative text",
@@ -173,7 +173,7 @@ class DocumentBlockStructValue(blocks.StructValue):
 class DocumentBlock(blocks.StructBlock):
     """Defines a DS document block."""
 
-    document = DocumentChooserBlock()
+    document = DocumentChooserBlock(required_on_save=True)
     title = blocks.CharBlock(required=False)
     description = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC, required=False)
 
@@ -209,12 +209,18 @@ class VideoEmbedBlock(blocks.StructBlock):
             "The URL to the video hosted on YouTube or Vimeo, for example, "
             "https://www.youtube.com/watch?v={ video ID } or https://vimeo.com/video/{ video ID }. "
             "Used to link to the video when cookies are not enabled."
-        )
+        ),
+        required_on_save=True,
     )
-    image = ImageChooserBlock(help_text="The video cover image, used when cookies are not enabled.")
-    title = blocks.CharBlock(help_text="The descriptive title for the video used by screen readers.")
+    image = ImageChooserBlock(
+        help_text="The video cover image, used when cookies are not enabled.", required_on_save=True
+    )
+    title = blocks.CharBlock(
+        help_text="The descriptive title for the video used by screen readers.", required_on_save=True
+    )
     link_text = blocks.CharBlock(
-        help_text="The text to be shown when cookies are not enabled e.g. 'Watch the {title} on Youtube'."
+        help_text="The text to be shown when cookies are not enabled e.g. 'Watch the {title} on Youtube'.",
+        required_on_save=True,
     )
 
     def get_embed_url(self, link_url: str) -> str:
