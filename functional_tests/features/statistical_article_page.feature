@@ -111,6 +111,7 @@ Feature: Statistical Article Page components
         And  the user views the statistical article page
         And  the user clicks "View data used in this article" on the article page
         Then the related data page for the article is shown
+        And  the looked up dataset links to the dataset series page
 
     Scenario: The related data page is linked and accessible when there are datasets related to a statistical article in an internal environment
         Given the user is in an internal environment

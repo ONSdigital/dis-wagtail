@@ -19,7 +19,18 @@ def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, An
     Returns the datasets in a list of dictionaries in the format required for the ONS Document List design system
     component.
     See: https://service-manual.ons.gov.uk/design-system/components/document-list
+
+    Where looked up datasets link to is declared once, by the DatasetStoryBlock the field was
+    built with, and is read back off the value here. Pages tied to a specific edition, such as
+    release calendar pages, set link_to_latest_version on the block; topic and related data pages
+    are not tied to an edition, so they keep the default and link to the dataset series page.
+    Taking the setting from the block rather than from an argument is what stops a page validating
+    against one destination and rendering another.
+
+    Manually entered links are unaffected: their URL is always used as given.
     """
+    link_to_latest_version = datasets.stream_block.meta.link_to_latest_version
+
     dataset_documents: list = []
     for dataset in datasets:
         block_value = dataset.value
@@ -33,7 +44,7 @@ def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, An
         else:
             dataset_document = format_as_document_list_item(
                 title=block_value.title,
-                url=block_value.url_path,
+                url=block_value.get_url_path(link_to_latest_version=link_to_latest_version),
                 content_type="Dataset",
                 description=dataset.value.description,
             )
