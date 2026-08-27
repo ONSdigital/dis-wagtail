@@ -122,6 +122,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         self, clean: bool = True, user: User | None = None, log_action: bool = False, **kwargs: Any
     ) -> Self | None:
         update_fields = kwargs.get("update_fields")
+        # Determine if the title field is being updated and fetch the original title if it exists.
+        # If update_fields is None, no field restrictions are applied, so the title could be updated.
         title_is_persisted = update_fields is None or "title" in update_fields
         original_title = (
             type(self).objects.values_list("title", flat=True).filter(pk=self.pk).first()

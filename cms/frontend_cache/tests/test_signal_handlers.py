@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from datetime import timedelta
 from unittest.mock import call, patch
 
