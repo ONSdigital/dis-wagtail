@@ -68,7 +68,7 @@ class DatasetStoryBlock(StreamBlock):
         # version of the chosen edition rather than to the dataset series page.
         link_to_latest_version = False
 
-    def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
+    def clean(self, value: StreamValue) -> StreamValue:
         cleaned_value = super().clean(value)
 
         # Validate there are no duplicate datasets, including between manual and looked up datasets
