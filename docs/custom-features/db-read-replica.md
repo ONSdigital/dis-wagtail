@@ -16,7 +16,7 @@ In some situations, it may be necessary to force the write database instance to 
 ```python
 from cms.core.db_router import force_write_db_for
 
-obj = MyModel.objects.create(field='value')
+obj = MyModel.objects.create(field="value")
 
 # Read data from default (write) DB alias to avoid replication lag
 obj = force_write_db_for(MyModel.objects.all()).get(id=obj.id)
@@ -36,6 +36,7 @@ with force_write_db():
 
 # It can also be used as a decorator:
 
+
 @force_write_db()
 def get_obj():
     # Read data from default (write) DB alias
@@ -49,7 +50,6 @@ def get_obj():
 Note that `force_write_db` works only for queries executed within the block. Be careful when executing querysets, which are evaluated lazily:
 
 ```python
-
 with force_write_db():
     qs = MyModel.objects.all()
 
@@ -72,7 +72,7 @@ from cms.core.db_router import force_write_db_for
 
 
 with transaction.atomic():
-    obj = MyModel.objects.create(field='value')
+    obj = MyModel.objects.create(field="value")
 
     # This reads from the default (write) DB
     obj = MyModel.objects.get(id=obj.id)
