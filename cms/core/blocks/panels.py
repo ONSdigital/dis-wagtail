@@ -13,7 +13,7 @@ class BasePanelBlock(blocks.StructBlock):
     and define additional fields as needed.
     """
 
-    body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
+    body = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC, required_on_save=True)
 
     class Meta:
         abstract = True
@@ -39,8 +39,8 @@ class PreviousVersionBlock(blocks.IntegerBlock):
 
 
 class CorrectionOrNoticeBlock(blocks.StructBlock):
-    when = blocks.DateTimeBlock()
-    text = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
+    when = blocks.DateTimeBlock(required_on_save=True)
+    text = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC, required_on_save=True)
 
     class Meta:
         abstract = True
@@ -87,4 +87,4 @@ register(PreviousVersionBlockAdapter(), PreviousVersionBlock)
 
 
 class NoticeBlock(CorrectionOrNoticeBlock):
-    when = blocks.DateBlock()
+    when = blocks.DateBlock(required_on_save=True)

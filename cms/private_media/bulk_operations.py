@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
+from cms.core.utils import release_db_connections
 from cms.private_media.constants import Privacy
 
 if TYPE_CHECKING:
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@release_db_connections
 def bulk_set_file_permissions(files: Iterable[FieldFile], privacy: Privacy) -> dict[FieldFile, bool]:
     """Set file permissions for an iterable of FieldFile objects, using the
     make_private() or make_public() methods of the storage backend.

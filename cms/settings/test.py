@@ -8,6 +8,9 @@ from django.urls import clear_url_caches
 # Force logs to JSON in tests, to match production behaviour
 os.environ.setdefault("LOG_AS_JSON", "true")
 
+# Enable test data loading app for testing
+os.environ.setdefault("CMS_TEST_DATA_ENABLED", "true")
+
 from .base import *  # noqa: F403  # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
 env = os.environ.copy()
@@ -51,6 +54,10 @@ DATABASES["read_replica"].setdefault("TEST", {"MIRROR": "default"})  # noqa: F40
 # Force database connections to be read-only for the replica
 if "postgres" in DATABASES["read_replica"]["ENGINE"]:  # noqa: F405
     DATABASES["read_replica"]["ENGINE"] = "cms.core.database_backends.postgres_readonly"  # noqa: F405
+
+# Disable connection pool in tests
+DATABASES["default"]["OPTIONS"]["pool"] = False  # noqa: F405
+DATABASES["read_replica"]["OPTIONS"]["pool"] = False  # noqa: F405
 
 # Disable caches in tests
 CACHES["default"] = {  # noqa: F405
@@ -144,3 +151,7 @@ def _reset_url_caches_on_setting_changed_signal_handler(*, setting: str, **_: An
 
 
 setting_changed.connect(_reset_url_caches_on_setting_changed_signal_handler)
+
+BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS = 10
+BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT = False
+BUNDLE_POST_PUBLISH_POLL_FREQUENCY = 0.5

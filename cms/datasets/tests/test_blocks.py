@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from wagtail.blocks import StreamValue
 
-from cms.datasets.blocks import DatasetStoryBlock
+from cms.datasets.blocks import LATEST_VERSION_DUPLICATE_HINT, DatasetStoryBlock
 from cms.datasets.models import Dataset
 
 
@@ -55,7 +55,48 @@ class TestDatasetStoryBlock(TestCase):
 
                 self.assertEqual(len(validation_error.exception.block_errors), len(stream_data))
                 for error in validation_error.exception.block_errors.values():
-                    self.assertEqual(error.message, "Duplicate datasets are not allowed")
+                    self.assertIn("Duplicate datasets are not allowed", error.message)
+
+    def test_duplicate_error_message_names_the_shared_destination(self):
+        """The note about versions belongs only on pages linking to an edition, so not here."""
+        block = DatasetStoryBlock()
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("dataset_lookup", self.lookup_dataset.id),
+                ("dataset_lookup", self.lookup_dataset.id),
+            ],
+        )
+
+        with self.assertRaises(ValidationError) as validation_error:
+            block.clean(value)
+
+        for error in validation_error.exception.block_errors.values():
+            self.assertIn('"/datasets/1"', error.message)
+            self.assertNotIn(LATEST_VERSION_DUPLICATE_HINT.strip(), error.message)
+
+    def test_validation_fails_for_different_editions_of_the_same_dataset(self):
+        """Both editions resolve to the series page here, so they are duplicates."""
+        block = DatasetStoryBlock()
+        other_edition = Dataset.objects.create(
+            namespace=self.lookup_dataset.namespace,
+            edition="test2_edition",
+            version=1,
+            title="test_title",
+            description="test_description",
+        )
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("dataset_lookup", self.lookup_dataset.id),
+                ("dataset_lookup", other_edition.id),
+            ],
+        )
+
+        with self.assertRaises(ValidationError) as validation_error:
+            block.clean(value)
+
+        self.assertEqual(len(validation_error.exception.block_errors), 2)
 
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_successful_validation(self):
@@ -115,3 +156,176 @@ class TestDatasetStoryBlock(TestCase):
 
                 # Expect clean to not raise any errors
                 block.clean(value)
+
+
+class TestDatasetStoryBlockLinkingToLatestVersion(TestCase):
+    """Duplicate validation where links resolve to an edition rather than the series page.
+
+    What counts as a duplicate differs from the series page context in TestDatasetStoryBlock,
+    because the resolved URL names the edition but not the version.
+    """
+
+    def setUp(self):
+        # Only the edition affects the resolved URL, so two versions of one edition collide and
+        # the April edition does not.
+        self.march_v1 = Dataset.objects.create(
+            namespace="ds",
+            edition="march",
+            version=1,
+            title="March, version 1",
+            description="test_description",
+        )
+        self.march_v2 = Dataset.objects.create(
+            namespace="ds",
+            edition="march",
+            version=2,
+            title="March, version 2",
+            description="test_description",
+        )
+        self.april_v1 = Dataset.objects.create(
+            namespace="ds",
+            edition="april",
+            version=1,
+            title="April, version 1",
+            description="test_description",
+        )
+
+    def test_validation_passes_for_different_editions_of_the_same_dataset(self):
+        block = DatasetStoryBlock(link_to_latest_version=True)
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("dataset_lookup", self.march_v1.id),
+                ("dataset_lookup", self.april_v1.id),
+            ],
+        )
+
+        # Expect clean to not raise any errors
+        block.clean(value)
+
+    def test_validation_fails_for_two_versions_of_the_same_edition(self):
+        """The chooser lists the version, so the message has to explain why these collide."""
+        block = DatasetStoryBlock(link_to_latest_version=True)
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("dataset_lookup", self.march_v1.id),
+                ("dataset_lookup", self.march_v2.id),
+            ],
+        )
+
+        with self.assertRaises(ValidationError) as validation_error:
+            block.clean(value)
+
+        self.assertEqual(len(validation_error.exception.block_errors), 2)
+        for error in validation_error.exception.block_errors.values():
+            # The destination the entries share, not the normalised key used to spot the
+            # collision, so this is the href an editor can go and look for on the page.
+            self.assertIn('"/datasets/ds/editions/march/versions"', error.message)
+            self.assertIn(LATEST_VERSION_DUPLICATE_HINT.strip(), error.message)
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_duplicate_error_message_keeps_the_case_of_the_destination(self):
+        """Comparison is case insensitive, but the reported URL has to match the rendered href.
+
+        The namespace and edition are free text from the Dataset API, so an editor told to look for
+        a lowercased path would be hunting a link the page never produces.
+        """
+        mixed_case = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="Lookup_Edition",
+            version=1,
+            title="Mixed case namespace and edition",
+            description="test_description",
+        )
+        block = DatasetStoryBlock(link_to_latest_version=True)
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("dataset_lookup", mixed_case.id),
+                ("manual_link", {"title": "Dataset Title", "url": "/datasets/lookup/editions/lookup_edition/versions"}),
+            ],
+        )
+
+        with self.assertRaises(ValidationError) as validation_error:
+            block.clean(value)
+
+        self.assertEqual(len(validation_error.exception.block_errors), 2)
+        for error in validation_error.exception.block_errors.values():
+            self.assertIn('"/datasets/LOOKUP/editions/Lookup_Edition/versions"', error.message)
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_validation_fails_for_a_manual_link_to_the_resolved_url(self):
+        """Each case is the March lookup's destination, written a different way."""
+        block = DatasetStoryBlock(link_to_latest_version=True)
+        manual_url_cases = [
+            "/datasets/ds/editions/march/versions/",
+            "/datasets/ds/editions/march/versions",
+            "https://example.com/datasets/ds/editions/march/versions/",
+        ]
+
+        for manual_url in manual_url_cases:
+            with self.subTest(manual_url=manual_url):
+                value = StreamValue(
+                    block,
+                    stream_data=[
+                        ("dataset_lookup", self.march_v1.id),
+                        ("manual_link", {"title": "Dataset Title", "url": manual_url}),
+                    ],
+                )
+
+                with self.assertRaises(ValidationError) as validation_error:
+                    block.clean(value)
+
+                self.assertEqual(len(validation_error.exception.block_errors), 2)
+                for error in validation_error.exception.block_errors.values():
+                    self.assertIn("Duplicate datasets are not allowed", error.message)
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_validation_fails_for_manual_links_differing_only_by_a_trailing_slash(self):
+        """Covered for arbitrary paths in TestDatasetStoryBlock, repeated for edition URLs."""
+        block = DatasetStoryBlock(link_to_latest_version=True)
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("manual_link", {"title": "Dataset Title", "url": "/datasets/ds/editions/march/versions/"}),
+                ("manual_link", {"title": "Dataset Title", "url": "/datasets/ds/editions/march/versions"}),
+            ],
+        )
+
+        with self.assertRaises(ValidationError) as validation_error:
+            block.clean(value)
+
+        self.assertEqual(len(validation_error.exception.block_errors), 2)
+        for error in validation_error.exception.block_errors.values():
+            self.assertIn("Duplicate datasets are not allowed", error.message)
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_validation_passes_for_a_manual_link_to_the_series_page(self):
+        """Here the lookup resolves to the edition URL, so the series page is a different place."""
+        block = DatasetStoryBlock(link_to_latest_version=True)
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("dataset_lookup", self.march_v1.id),
+                ("manual_link", {"title": "Dataset Title", "url": "/datasets/ds"}),
+            ],
+        )
+
+        # Expect clean to not raise any errors
+        block.clean(value)
+
+    @override_settings(ONS_ALLOWED_LINK_DOMAINS=["example.com"])
+    def test_validation_passes_for_a_manual_link_to_one_version_of_the_edition(self):
+        """A single version is a different destination to the edition the lookup resolves to."""
+        block = DatasetStoryBlock(link_to_latest_version=True)
+        value = StreamValue(
+            block,
+            stream_data=[
+                ("dataset_lookup", self.march_v1.id),
+                ("manual_link", {"title": "Dataset Title", "url": "/datasets/ds/editions/march/versions/1"}),
+            ],
+        )
+
+        # Expect clean to not raise any errors
+        block.clean(value)

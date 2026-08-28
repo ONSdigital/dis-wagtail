@@ -15,7 +15,7 @@ from cms.articles.tests.factories import (
 )
 from cms.datavis.tests.factories import TableDataFactory
 from cms.topics.models import TopicPage
-from functional_tests.step_helpers.utils import get_page_from_context
+from functional_tests.step_helpers.utils import fill_datetime_field, get_page_from_context
 
 if TYPE_CHECKING:
     from wagtail.models import Revision
@@ -164,11 +164,12 @@ def user_populates_the_statistical_article_page(context: Context) -> None:
     page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Page summary")
     page.locator('[data-contentpath="main_points_summary"] [role="textbox"]').fill("Main points summary")
 
-    page.get_by_label("Release date*").fill("2025-01-11")
+    fill_datetime_field(page.get_by_label("Release date*"), "2025-01-11")
 
     page.wait_for_timeout(50)  # added to allow JS to be ready
     page.get_by_role("textbox", name="Release Edition").focus()  # focus up to prevent any overlap with the action menu
     page.locator("#panel-child-content-content-content").get_by_title("Insert a block").click()
+    page.wait_for_timeout(50)
     page.get_by_label("Section heading*").fill("Heading")
     page.locator("#panel-child-content-content-content").get_by_role("region").get_by_role(
         "button", name="Insert a block"
@@ -264,9 +265,7 @@ def user_adds_table_with_pasted_content(context: Context) -> None:
     page.get_by_role("region", name="Table", exact=True).get_by_label("Source text").fill("The source")
     page.get_by_role("region", name="Table", exact=True).get_by_label("Accessible label").fill("The accessible label")
 
-    tinymce = (
-        page.get_by_role("region", name="Table", exact=True).locator('iframe[title="Rich Text Area"]').content_frame
-    )
+    tinymce = page.get_by_role("region", name="Table", exact=True).locator("iframe").content_frame
     tinymce.get_by_role("cell").nth(0).click()
     tinymce.get_by_role("cell").nth(0).fill("cell1")
     tinymce.get_by_role("cell").nth(1).fill("cell2")
@@ -341,7 +340,7 @@ def user_adds_a_correction(context: Context) -> None:
     page.locator("#panel-child-corrections_and_notices-corrections-content").get_by_role(
         "button", name="Insert a block"
     ).click()
-    page.get_by_label("When*").fill("2025-03-13 13:59")
+    fill_datetime_field(page.get_by_label("When*"), "2025-03-13 13:59")
     page.locator('[data-contentpath="text"] [role="textbox"]').fill("Correction text")
     page.wait_for_timeout(500)
 
@@ -381,7 +380,9 @@ def user_adds_a_correction_using_bottom_add_button(context: Context) -> None:
     )
 
     block_area.locator("div:last-child").get_by_role("button", name="Insert a block").click()
-    block_area.locator("[name='corrections-1-id']+section").get_by_label("When*").fill("2025-03-14 13:59")
+    fill_datetime_field(
+        block_area.locator("[name='corrections-1-id']+section").get_by_label("When*"), "2025-03-14 13:59"
+    )
     block_area.locator("[name='corrections-1-id']+section").locator(
         '[data-contentpath="text"] [role="textbox"]'
     ).scroll_into_view_if_needed()
@@ -401,7 +402,7 @@ def user_adds_a_notice(context: Context) -> None:
         "#panel-child-corrections_and_notices-notices-content [data-streamfield-stream-container]"
     )
     block_area.get_by_role("button", name="Insert a block").click()
-    block_area.get_by_label("When*").fill("2025-03-15 13:59")
+    fill_datetime_field(block_area.get_by_label("When*"), "2025-03-15 13:59")
     block_area.locator('[data-contentpath="text"] [role="textbox"]').fill("Notice text")
     page.wait_for_timeout(500)
 
@@ -616,6 +617,27 @@ def user_fills_in_chart_title(context: Context) -> None:
 def user_fills_in_chart_audio_description(context: Context) -> None:
     featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
     featured_chart_content.get_by_label("Accessible description*").fill("This is the audio description")
+
+
+@step('the user clicks "Iframe Visualisation" in the featured chart streamfield block selector')
+def user_clicks_iframe_visualisation_in_featured_chart_streamfield_block_selector(
+    context: Context,
+) -> None:
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    featured_chart_content.get_by_title("Insert a block").click()
+    featured_chart_content.get_by_text("Iframe Visualisation").click()
+
+
+@step("the user fills in the featured chart title")
+def user_fills_in_featured_chart_title(context: Context) -> None:
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    featured_chart_content.get_by_label("Featured chart title").fill("Test Featured Chart Title")
+
+
+@then("the featured chart title field contains the entered title")
+def the_featured_chart_title_field_contains_the_entered_title(context: Context) -> None:
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    expect(featured_chart_content.get_by_label("Featured chart title")).to_have_value("Test Featured Chart Title")
 
 
 @step("the user enters data into the chart table")

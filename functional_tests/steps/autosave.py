@@ -11,9 +11,11 @@ def _fill_and_wait_for_autosave(context: Context, locator: Locator, value: str) 
     save that fires during Playwright's slow_mo delay.
     """
     with context.page.expect_response(
-        lambda response: response.request.method == "POST"
-        and "application/json" in response.request.headers.get("accept", "")
-        and "/edit" in response.request.url,
+        lambda response: (
+            response.request.method == "POST"
+            and "application/json" in response.request.headers.get("accept", "")
+            and "/edit" in response.request.url
+        ),
         timeout=15_000,
     ):
         locator.fill(value)

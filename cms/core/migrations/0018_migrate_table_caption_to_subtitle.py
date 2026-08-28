@@ -78,7 +78,7 @@ def _handle_revision(revision, field_name, mapper):
 
     try:
         stream_data = json.loads(raw_stream)
-    except (json.JSONDecodeError, TypeError):
+    except json.JSONDecodeError, TypeError:
         return
 
     if _process_blocks(stream_data, mapper):

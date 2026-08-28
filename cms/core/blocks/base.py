@@ -119,12 +119,12 @@ class LinkBlockStructValue(StructValue):
             attributes["data-ga-click-content-theme"] = content_theme
 
         if target_page.__class__.__name__ == "StatisticalArticlePage":
-            analytics_values = target_page.cached_analytics_values
+            link_analytics_values = target_page.cached_link_analytics_values
             attributes.update(
                 {
-                    "data-ga-click-output-series": analytics_values.get("outputSeries", ""),
-                    "data-ga-click-output-edition": analytics_values.get("outputEdition", ""),
-                    "data-ga-click-release-date": analytics_values.get("releaseDate", ""),
+                    "data-ga-click-output-series": link_analytics_values.get("outputSeries", ""),
+                    "data-ga-click-output-edition": link_analytics_values.get("outputEdition", ""),
+                    "data-ga-click-release-date": link_analytics_values.get("releaseDate", ""),
                 }
             )
 
