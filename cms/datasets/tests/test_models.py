@@ -6,7 +6,7 @@ import responses
 from django.conf import settings
 from django.test import TestCase, override_settings
 
-from cms.datasets.models import ONSDataset, ONSDatasetApiQuerySet
+from cms.datasets.models import Dataset, ONSDataset, ONSDatasetApiQuerySet
 
 
 class TestONSDatasetApiQuerySet(TestCase):
@@ -541,3 +541,29 @@ class TestONSDataset(TestCase):
         # The unpublished version should be in the 'next' field
         self.assertEqual(dataset.next.title, "Dataset 2 Unpublished")
         self.assertEqual(dataset.next.description, "Description 2 Unpublished")
+
+
+class TestDatasetUrlPaths(TestCase):
+    """The two public destinations a looked up dataset can point at."""
+
+    def setUp(self):
+        self.dataset = Dataset.objects.create(
+            namespace="wellbeing-quarterly",
+            edition="september",
+            version=9,
+            title="Quarterly personal well-being estimates",
+            description="Test description",
+        )
+
+    def test_url_path_points_to_the_dataset_series_page(self):
+        self.assertEqual(self.dataset.url_path, "/datasets/wellbeing-quarterly")
+
+    def test_get_url_path_defaults_to_the_series_page(self):
+        self.assertEqual(self.dataset.get_url_path(), "/datasets/wellbeing-quarterly")
+
+    def test_get_url_path_linking_to_the_latest_version_names_the_edition(self):
+        """The fixture is version 9, and no version appears in the URL."""
+        self.assertEqual(
+            self.dataset.get_url_path(link_to_latest_version=True),
+            "/datasets/wellbeing-quarterly/editions/september/versions",
+        )

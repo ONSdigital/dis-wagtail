@@ -58,7 +58,7 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
         """
         try:
             return json.dumps(record, cls=DjangoJSONEncoder)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             # NB: Care must be taken that this message is JSON serializable, to avoid recursion issues.
             logger.exception(
                 "Unable to serialize log message to JSON. Dropping message",

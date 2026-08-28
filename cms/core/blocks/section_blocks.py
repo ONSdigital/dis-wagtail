@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 class SectionContentBlock(StreamBlock):
     """The core section content block definition."""
 
-    rich_text = RichTextBlock()
+    rich_text = RichTextBlock(required_on_save=True)
     quote = QuoteBlock()
     warning_panel = WarningPanelBlock()
     information_panel = InformationPanelBlock()
@@ -62,7 +62,7 @@ class SectionContentBlock(StreamBlock):
 class SectionBlock(StructBlock):
     """The core section block definition with headers."""
 
-    title = HeadingBlock()
+    title = HeadingBlock(required_on_save=True)
     content = SectionContentBlock()
 
     class Meta:

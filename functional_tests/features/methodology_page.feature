@@ -36,6 +36,14 @@ Feature: A general use of Methodology Page
         And the user clicks the "Save draft" button
         Then the methodology page mandatory fields raise validation errors
 
+    Scenario: Required fields inside a content block raise validation errors when left empty on save
+        Given a topic page exists under the homepage
+        And a superuser logs into the admin site
+        When the user creates a methodology page as a child of the existing topic page
+        And the user adds an empty section to the methodology page content
+        And the user clicks the "Save draft" button
+        Then the methodology page section heading raises a validation error
+
     Scenario: The Last revised date field has appropriate validation on Methodology page.
         Given a topic page exists under the homepage
         And a superuser logs into the admin site
