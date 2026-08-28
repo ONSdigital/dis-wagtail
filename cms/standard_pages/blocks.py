@@ -32,7 +32,7 @@ class CoreSectionContentBlock(StreamBlock):
     and excludes other datavis blocks that are not used by standard pages.
     """
 
-    rich_text = RichTextBlock()
+    rich_text = RichTextBlock(required_on_save=True)
     quote = QuoteBlock()
     warning_panel = WarningPanelBlock()
     information_panel = InformationPanelBlock()
@@ -53,7 +53,7 @@ class CoreSectionContentBlock(StreamBlock):
 class CoreSectionBlock(StructBlock):
     """The core section block definition with headers."""
 
-    title = HeadingBlock()
+    title = HeadingBlock(required_on_save=True)
     content = CoreSectionContentBlock()
 
     class Meta:

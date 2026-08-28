@@ -68,6 +68,16 @@ Feature: CMS users can create, configure, and manage release calendar pages, inc
       | a related link                 |
       | pre-release access information |
 
+# A release is associated with a specific dataset edition, so its dataset links point at that
+# edition rather than at the dataset series page that topic and related data pages link to.
+  Scenario: Datasets on a release calendar page link to the edition assigned to the release
+    Given a sample release calendar page exists
+    When the user edits the release calendar page
+    And  looks up and selects a dataset
+    And  the user opens the preview in a new tab, using the "Published" preview mode
+    Then the selected dataset is displayed on the page
+    And  the looked up dataset links to the latest version of the edition
+
 
 # Checks visibility of release date text field based on page status (Provisional vs. others) in the admin interface.
   Scenario: A CMS user can see release date text field for a provisional release calendar page

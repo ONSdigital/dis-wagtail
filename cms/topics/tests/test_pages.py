@@ -206,7 +206,9 @@ class TopicPageTests(WagtailPageTestCase):
 
         self.assertContains(response, lookup_dataset.title)
         self.assertContains(response, lookup_dataset.description)
-        self.assertContains(response, lookup_dataset.url_path)
+        # The series URL is a prefix of the edition URL, so the full href is asserted to catch a
+        # topic page linking to an edition.
+        self.assertContains(response, f'href="{lookup_dataset.url_path}"')
 
         self.assertContains(response, manual_dataset["title"])
         self.assertContains(response, manual_dataset["description"])

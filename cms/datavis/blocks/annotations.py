@@ -58,12 +58,12 @@ class PointAnnotationStructValue(AnnotationStructValue):
 
 
 class BasePointAnnotationBlock(blocks.StructBlock):
-    label = blocks.CharBlock(required=True)
+    label = blocks.CharBlock(required=True, required_on_save=True)
     x_position = blocks.StaticBlock()
     y_position = blocks.StaticBlock()
     label_offsets = blocks.StaticBlock(admin_text="Offsets are measured in pixels")
-    label_offset_x = TextInputIntegerBlock(label="Offset X", default=0)
-    label_offset_y = TextInputIntegerBlock(label="Offset Y", default=0)
+    label_offset_x = TextInputIntegerBlock(label="Offset X", default=0, required_on_save=True)
+    label_offset_y = TextInputIntegerBlock(label="Offset Y", default=0, required_on_save=True)
 
     class Meta:
         icon = "location-crosshairs"
@@ -76,15 +76,17 @@ class PointAnnotationCategoricalStructValue(PointAnnotationStructValue):
 class PointAnnotationCategoricalBlock(BasePointAnnotationBlock):
     """Point annotation for when the x-axis is discrete/categorical."""
 
-    label = blocks.CharBlock(required=True)
+    label = blocks.CharBlock(required=True, required_on_save=True)
 
     x_position = TextInputIntegerBlock(
         label="Data point number",
         required=True,
+        required_on_save=True,
     )
     y_position = TextInputFloatBlock(
         label="Value",
         required=True,
+        required_on_save=True,
         help_text="The label will point to this location on the value axis.",
     )
 
@@ -99,10 +101,10 @@ class PointAnnotationLinearStructValue(PointAnnotationStructValue):
 class PointAnnotationLinearBlock(BasePointAnnotationBlock):
     """Point annotation for when the x-axis is continuous/linear."""
 
-    label = blocks.CharBlock(required=True)
+    label = blocks.CharBlock(required=True, required_on_save=True)
 
-    x_position = TextInputFloatBlock(label="X", required=True)
-    y_position = TextInputFloatBlock(label="Y", required=True)
+    x_position = TextInputFloatBlock(label="X", required=True, required_on_save=True)
+    y_position = TextInputFloatBlock(label="Y", required=True, required_on_save=True)
 
     class Meta:
         value_class = PointAnnotationLinearStructValue
@@ -150,11 +152,11 @@ class RangeAnnotationStructValue(AnnotationStructValue):
 
 
 class BaseRangeAnnotationBlock(blocks.StructBlock):
-    label = blocks.CharBlock(required=True)
+    label = blocks.CharBlock(required=True, required_on_save=True)
 
-    axis = blocks.ChoiceBlock(choices=AxisChoices.choices, default=AxisChoices.X)
-    start_position = TextInputFloatBlock(label="Start position")
-    end_position = TextInputFloatBlock(label="End position")
+    axis = blocks.ChoiceBlock(choices=AxisChoices.choices, default=AxisChoices.X, required_on_save=True)
+    start_position = TextInputFloatBlock(label="Start position", required_on_save=True)
+    end_position = TextInputFloatBlock(label="End position", required_on_save=True)
 
     label_inside = blocks.BooleanBlock(
         default=True, required=False, help_text="Adapt label width to fit the shaded area."
@@ -227,7 +229,9 @@ class RangeAnnotationCategoricalBlock(BaseRangeAnnotationBlock):
 class RangeAnnotationBarColumnBlock(RangeAnnotationCategoricalBlock):
     """As categorical, but with different axis labels."""
 
-    axis = blocks.ChoiceBlock(choices=BarColumnAxisChoices.choices, default=BarColumnAxisChoices.CATEGORY)
+    axis = blocks.ChoiceBlock(
+        choices=BarColumnAxisChoices.choices, default=BarColumnAxisChoices.CATEGORY, required_on_save=True
+    )
 
     class Meta:
         value_class = RangeAnnotationCategoricalStructValue
@@ -268,11 +272,11 @@ class LineAnnotationStructValue(AnnotationStructValue):
 class BaseLineAnnotationBlock(blocks.StructBlock):
     """Known as "Reference Line" in the Design System."""
 
-    label = blocks.CharBlock(required=True)
-    axis = blocks.ChoiceBlock(choices=AxisChoices.choices, default=AxisChoices.X)
-    value = TextInputFloatBlock(label="Value", required=True)
+    label = blocks.CharBlock(required=True, required_on_save=True)
+    axis = blocks.ChoiceBlock(choices=AxisChoices.choices, default=AxisChoices.X, required_on_save=True)
+    value = TextInputFloatBlock(label="Value", required=True, required_on_save=True)
 
-    label_width = TextInputIntegerBlock(label="Label width", default=150, required=True)
+    label_width = TextInputIntegerBlock(label="Label width", default=150, required=True, required_on_save=True)
     label_offsets = blocks.StaticBlock(admin_text="Offsets are measured in pixels")
     label_offset_x = TextInputIntegerBlock(label="Offset X", required=False)
     label_offset_y = TextInputIntegerBlock(label="Offset Y", required=False)
@@ -311,7 +315,9 @@ class LineAnnotationCategoricalBlock(BaseLineAnnotationBlock):
 class LineAnnotationBarColumnBlock(BaseLineAnnotationBlock):
     """As categorical, but with different axis labels."""
 
-    axis = blocks.ChoiceBlock(choices=BarColumnAxisChoices.choices, default=BarColumnAxisChoices.CATEGORY)
+    axis = blocks.ChoiceBlock(
+        choices=BarColumnAxisChoices.choices, default=BarColumnAxisChoices.CATEGORY, required_on_save=True
+    )
 
     class Meta:
         value_class = LineAnnotationCategoricalStructValue
