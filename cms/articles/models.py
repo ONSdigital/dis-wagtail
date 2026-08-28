@@ -136,8 +136,11 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
         if self.pk:
             original_values = ArticleSeriesPage.objects.values("title", "slug").filter(pk=self.pk).first()
 
-        instance: ArticleSeriesPage | None = super().save(  # type: ignore[call-arg]
-            clean=clean, user=user, log_action=log_action, **kwargs
+        instance: ArticleSeriesPage | None = super().save(
+            clean=clean,
+            user=user,
+            log_action=log_action,
+            **kwargs,
         )
 
         if original_values and self.title != original_values["title"] and self.slug == original_values["slug"]:
