@@ -88,12 +88,7 @@ class ImageServeView(View):
 
         # Serve file contents
         if force_download:
-            response = self.serve_private_rendition(rendition)
-            _, ext = os.path.splitext(rendition.file.name)
-            response["Content-Disposition"] = content_disposition_header(
-                as_attachment=True, filename=f"{slugify(image.title)}{ext}"
-            )
-            return response
+            return self.serve_rendition_as_download(rendition)
 
         if image.is_public:
             return self.serve_public_rendition(rendition)
@@ -141,6 +136,16 @@ class ImageServeView(View):
         """
         response = self._serve_rendition(rendition)
         add_never_cache_headers(response)
+        return response
+
+    def serve_rendition_as_download(self, rendition: AbstractRendition) -> FileResponse:
+        """Return a non-cachable FileResponse that prompts the browser to save the rendition."""
+        response = self._serve_rendition(rendition)
+        add_never_cache_headers(response)
+        _, ext = os.path.splitext(rendition.file.name)
+        response["Content-Disposition"] = content_disposition_header(
+            as_attachment=True, filename=f"{slugify(rendition.image.title)}{ext}"
+        )
         return response
 
     def _serve_rendition(self, rendition: AbstractRendition) -> FileResponse:

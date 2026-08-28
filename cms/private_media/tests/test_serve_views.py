@@ -175,6 +175,8 @@ class TestImageServeView(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("attachment", response.get("Content-Disposition", ""))
+        # Downloads are streamed from the origin, so they must never be cached
+        self.assertIn("no-cache", response.get("Cache-Control", ""))
 
     def test_content_disposition_not_set_without_exact_true_value(self):
         """Content-Disposition is not set when force_download is absent or not exactly 'true'."""
