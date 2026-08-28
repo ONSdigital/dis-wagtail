@@ -20,6 +20,7 @@ from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.post_publish_actions.executor import executor_stop_and_wait, flush_executor
 from cms.post_publish_actions.models import PostPublishAction, PostPublishActionStatus, PostPublishActionType
+from cms.post_publish_actions.registry import get_post_publish_actions
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.workflows.models import ReadyToPublishGroupTask
@@ -188,7 +189,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
         self.assertTrue(alias.live)
 
         alias_actions = PostPublishAction.objects.filter(page=alias)
-        self.assertEqual(alias_actions.count(), 2)
+        self.assertEqual(alias_actions.count(), len(get_post_publish_actions()))
         for action in alias_actions:
             self.assertEqual(action.bundle_id, self.bundle.pk)
             self.assertEqual(action.status, PostPublishActionStatus.SUCCESSFUL)
@@ -259,7 +260,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
         self.assertTrue(mock_notify_post_publish_end.called)
 
         self.assertEqual(PostPublishAction.objects.unfinished().count(), 0)
-        self.assertEqual(PostPublishAction.objects.finished().count(), 2)
+        self.assertEqual(PostPublishAction.objects.finished().count(), len(get_post_publish_actions()))
 
         failed_action = PostPublishAction.objects.finished().filter(status=PostPublishActionStatus.FAILED).get()
 
@@ -299,7 +300,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
         self.assertTrue(mock_notify_post_publish_end.called)
 
         self.assertEqual(PostPublishAction.objects.unfinished().count(), 0)
-        self.assertEqual(PostPublishAction.objects.finished().count(), 2)
+        self.assertEqual(PostPublishAction.objects.finished().count(), len(get_post_publish_actions()))
 
         action = PostPublishAction.objects.get(action_type=PostPublishActionType.SEARCH_UPDATED)
 
@@ -338,7 +339,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
         self.assertTrue(mock_notify_post_publish_end.called)
 
         self.assertEqual(PostPublishAction.objects.unfinished().count(), 0)
-        self.assertEqual(PostPublishAction.objects.finished().count(), 2)
+        self.assertEqual(PostPublishAction.objects.finished().count(), len(get_post_publish_actions()))
 
         action = PostPublishAction.objects.get(action_type=PostPublishActionType.SEARCH_UPDATED)
 

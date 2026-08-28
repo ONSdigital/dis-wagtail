@@ -15,10 +15,13 @@ from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.tests.factories import DatasetFactory
 from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
 from cms.frontend_cache.cache import get_page_cached_urls
-from cms.frontend_cache.signal_handlers import _get_tracked_page_models
+from cms.frontend_cache.signal_handlers import _get_tracked_page_models, purge_published_page_from_frontend_cache
 from cms.home.models import HomePage
 from cms.methodology.models import MethodologyIndexPage, MethodologyPage
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.post_publish_actions import registry
+from cms.post_publish_actions.models import PostPublishActionType
+from cms.post_publish_actions.registry import PostPublishActionPriority, get_post_publish_actions
 from cms.release_calendar.models import ReleaseCalendarPage
 from cms.standard_pages.models import CookiesPage, IndexPage, InformationPage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
@@ -791,3 +794,40 @@ class GetPageCachedUrlsTestCase(WagtailTestUtils, TestCase):
             get_page_cached_urls(self.statistical_article.get_parent()),
             [series_url, f"{series_url}/related-data", f"{series_url}/editions", f"{series_url}/editions?page=1"],
         )
+
+
+class PublishPurgeRunsAsPostPublishActionTestCase(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.index_page = IndexPageFactory()
+        cls.information_page = InformationPageFactory(parent=cls.index_page, title="Info page")
+
+    def test_registered_ast_the_frontend_cache_action(self):
+        self.assertIs(
+            get_post_publish_actions()[PostPublishActionType.CACHE_PURGE], purge_published_page_from_frontend_cache
+        )
+
+    def test_registered_with_medium_priority(self):
+        registered = registry._registry[PostPublishActionType.CACHE_PURGE]  # pylint: disable=protected-access
+        self.assertEqual(registered.priority, PostPublishActionPriority.MEDIUM)
+
+    @patch("cms.frontend_cache.cache.purge_urls_from_cache")
+    def test_publish_does_not_purge_outside_registry(self, patched_purge_urls):
+        with patch.dict(registry._registry, {}, clear=True):  # pylint: disable=protected-access
+            self.information_page.save_revision().publish()
+
+        patched_purge_urls.assert_not_called()
+
+    @patch("cms.frontend_cache.cache.purge_urls_from_cache")
+    def test_running_the_action_directly_purges_page(self, patched_purge_urls):
+        purge_published_page_from_frontend_cache(self.information_page, None)
+
+        patched_purge_urls.assert_called_once_with(
+            {self.information_page.get_full_url(get_dummy_request()), self.index_page.get_full_url(get_dummy_request())}
+        )
+
+    @patch("cms.frontend_cache.cache.purge_urls_from_cache")
+    def test_running_action_skips_untracked_page_types(self, patched_purge_urls):
+        purge_published_page_from_frontend_cache(HomePage.objects.first(), None)
+
+        patched_purge_urls.assert_not_called()

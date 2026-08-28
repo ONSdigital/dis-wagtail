@@ -17,6 +17,8 @@ from cms.articles.signals import series_title_changed
 from cms.core.models import BasePage, ContactDetails, Definition
 from cms.home.models import HomePage
 from cms.methodology.models import MethodologyIndexPage
+from cms.post_publish_actions.models import PostPublishActionType
+from cms.post_publish_actions.registry import PostPublishActionPriority, register_post_publish_action
 from cms.release_calendar.models import ReleaseCalendarIndex
 
 from .cache import (
@@ -30,12 +32,15 @@ from .cache import (
 if TYPE_CHECKING:
     from django.db.models import Model
 
+    from cms.bundles.models import Bundle
+
 
 EXCLUDED_PAGE_TYPES = frozenset({ArticlesIndexPage, HomePage, MethodologyIndexPage, ReleaseCalendarIndex})
 
 
-def purge_published_page_from_frontend_cache(instance: Page, **kwargs: Any) -> None:
-    purge_page_from_frontend_cache(instance)
+def purge_published_page_from_frontend_cache(page: Page, _bundle: Bundle | None) -> None:
+    if type(page) in _get_tracked_page_models():
+        purge_page_from_frontend_cache(page)
 
 
 def purge_unpublished_page_from_frontend_cache(instance: Page, **kwargs: Any) -> None:
@@ -102,8 +107,13 @@ def disconnect_signal_handlers() -> None:
 
 
 def register_signal_handlers() -> None:
+    register_post_publish_action(
+        PostPublishActionType.CACHE_PURGE,
+        purge_published_page_from_frontend_cache,
+        priority=PostPublishActionPriority.MEDIUM,
+    )
+
     for model in _get_tracked_page_models():
-        page_published.connect(purge_published_page_from_frontend_cache, sender=model)
         page_unpublished.connect(purge_unpublished_page_from_frontend_cache, sender=model)
         page_slug_changed.connect(purge_page_from_frontend_cache_after_slug_change, sender=model)
 
