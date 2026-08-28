@@ -26,7 +26,9 @@ def look_up_and_select_published_dataset(context: Context) -> None:
         # The two destinations a looked up dataset can resolve to. Which one is correct depends on
         # the page doing the linking, so scenarios assert it with one of the steps below.
         "url": f"/{TEST_DATASET_TOPIC_SLUG}/datasets/{mock_dataset['dataset_id']}",
-        "latest_version_url": (f"/datasets/{mock_dataset['dataset_id']}/editions/{mock_dataset['edition']}/versions"),
+        "latest_version_url": (
+            f"/{TEST_DATASET_TOPIC_SLUG}/datasets/{mock_dataset['dataset_id']}/editions/{mock_dataset['edition']}/versions"
+        ),
     }
 
     context.selected_datasets = [
