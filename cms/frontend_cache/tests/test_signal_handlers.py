@@ -1031,7 +1031,6 @@ class GetPageCachedUrlsTestCase(WagtailTestUtils, TestCase):
                 f"{series_url}/editions?page=2",
                 f"{series_url}/editions?page=3",
             ],
-            [series_url, f"{series_url}/related-data", f"{series_url}/editions", f"{series_url}/editions?page=1"],
         )
 
 

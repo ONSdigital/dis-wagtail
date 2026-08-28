@@ -5,15 +5,10 @@ from wagtail.contrib.frontend_cache.signal_handlers import (
     page_published_signal_handler,
     page_unpublished_signal_handler,
 )
-from wagtail.contrib.redirects.signal_handlers import (
-    autocreate_redirects_on_page_move,
-    autocreate_redirects_on_slug_change,
-)
 from wagtail.models import Page, get_page_models
 from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move, published, unpublished
 
-from cms.articles.models import ArticleSeriesPage, ArticlesIndexPage
-from cms.articles.signals import series_title_changed
+from cms.articles.models import ArticlesIndexPage
 from cms.core.models import BasePage, ContactDetails, Definition
 from cms.core.signals import page_title_changed
 from cms.home.models import HomePage
@@ -99,12 +94,9 @@ def _get_tracked_page_models() -> set[Page]:
 
 
 def disconnect_signal_handlers() -> None:
-    """Disconnect the core front-end cache signal handlers as we handle them with specific logic."""
     for model in get_page_models():
         page_published.disconnect(page_published_signal_handler, sender=model)
         page_unpublished.disconnect(page_unpublished_signal_handler, sender=model)
-        post_page_move.disconnect(autocreate_redirects_on_page_move, sender=model)
-        page_slug_changed.disconnect(autocreate_redirects_on_slug_change, sender=model)
 
 
 def register_signal_handlers() -> None:
@@ -119,7 +111,6 @@ def register_signal_handlers() -> None:
         page_slug_changed.connect(purge_page_from_frontend_cache_after_slug_change, sender=model)
         page_title_changed.connect(purge_descendants_from_frontend_cache, sender=model)
 
-    series_title_changed.connect(purge_descendants_from_frontend_cache, sender=ArticleSeriesPage)
     post_page_move.connect(purge_page_from_frontend_cache_after_move)
 
     for model in [ContactDetails, Definition]:
