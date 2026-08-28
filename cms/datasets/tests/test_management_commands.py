@@ -51,10 +51,62 @@ class BackfillDatasetTopicsTests(TestCase):
         cls.topic = TopicFactory(id="7779", slug="inflationandpriceindices")
         cls.other_topic = TopicFactory(id="1234", slug="economy")
 
-    def call_command(self, *args: str) -> str:
+    def call_command(self, *args: str, interactive: bool = False) -> str:
         stdout = StringIO()
+        if not interactive:
+            args = (*args, "--no-input")
         call_command("backfill_dataset_topics", *args, stdout=stdout, stderr=StringIO())
         return stdout.getvalue()
+
+    @responses.activate
+    def test_prompts_for_confirmation_before_updating_database(self):
+        dataset = DatasetFactory(namespace="cpih01", edition="time-series", version=1)
+        add_detail_response("cpih01", topics=["7779"])
+
+        with patch("builtins.input", return_value="y") as mocked_input:
+            output = self.call_command(interactive=True)
+
+        mocked_input.assert_called_once()
+        self.assertIn("Are you sure you want to continue? [y/N] ", output)
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.topic_id, "7779")
+
+    @responses.activate
+    def test_denying_prevents_db_update(self):
+        dataset = DatasetFactory(namespace="cpih01", edition="time-series", version=1)
+        add_detail_response("cpih01", topics=["7779"])
+
+        with patch("builtins.input", return_value="n") as mocked_input:
+            self.call_command(interactive=True)
+
+        mocked_input.assert_called_once()
+
+        dataset.refresh_from_db()
+        self.assertIsNone(dataset.topic_id)
+
+    @responses.activate
+    def test_no_input_skips_prompt(self):
+        dataset = DatasetFactory(namespace="cpih01", edition="time-series", version=1)
+        add_detail_response("cpih01", topics=["7779"])
+
+        with patch("builtins.input") as mocked_input:
+            self.call_command(interactive=False)
+
+        mocked_input.assert_not_called()
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.topic_id, "7779")
+
+    @responses.activate
+    def test_does_not_prompt_when_no_updates_are_needed(self):
+        DatasetFactory(namespace="cpih01", edition="time-series", version=1, topic=self.topic)
+        add_detail_response("cpih01", topics=["7779"])
+
+        with patch("builtins.input") as mocked_input:
+            self.call_command(interactive=True)
+
+        mocked_input.assert_not_called()
 
     @responses.activate
     def test_backfills_topic_from_the_api(self):
