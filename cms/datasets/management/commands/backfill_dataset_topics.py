@@ -69,7 +69,7 @@ class Command(BaseCommand):
             return
 
         dataset_count = sum(len(datasets) for datasets in datasets_by_namespace.values())
-        logger.info("checking topic of %d dataset(s) across %d namespace(s)", dataset_count, len(datasets_by_namespace))
+        logger.info("Checking topic of %d dataset(s) across %d namespace(s)", dataset_count, len(datasets_by_namespace))
 
         topic_ids_by_namespace, unresolved = self._fetch_topic_ids(
             datasets_by_namespace, access_token=options["access_token"] or os.environ.get(ACCESS_TOKEN_VAR_NAME)
