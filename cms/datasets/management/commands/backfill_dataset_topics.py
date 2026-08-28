@@ -151,14 +151,14 @@ class Command(BaseCommand):
             logger.info("No dataset topics could be resolved")
             return
 
-        backfilled = sum(1 for _, previous_topic_id in updates if previous_topic_id is None)
-        summary = f"{len(updates)} dataset(s) backfilled, {len(updates) - backfilled} updated"
-
         if dry_run:
             logger.info("Would have updated topic for %d datasets", len(updates))
             for dataset, previous_topic_id in updates:
                 logger.info("\t%s: %s -> %s", dataset.compound_id, previous_topic_id or "no topic", dataset.topic_id)
             return
+
+        backfilled = sum(1 for _, previous_topic_id in updates if previous_topic_id is None)
+        summary = f"{len(updates)} dataset(s) backfilled, {len(updates) - backfilled} updated"
 
         Dataset.objects.bulk_update([dataset for dataset, _ in updates], ["topic"], batch_size=BULK_UPDATE_BATCH_SIZE)
         logger.info(
