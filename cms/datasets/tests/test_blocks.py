@@ -70,7 +70,7 @@ class TestDatasetStoryBlock(TestCase):
                 ("manual_link", {"title": "Dataset Title", "url": "/economy/datasets/cpih01"}),
             ],
             [
-                # Two manual links, one in each style
+                # Two manual links, one in old style and one with topic slug
                 ("manual_link", {"title": "Dataset Title", "url": "/economy/datasets/cpih01"}),
                 (
                     "manual_link",
