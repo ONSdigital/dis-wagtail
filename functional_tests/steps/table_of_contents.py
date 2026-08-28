@@ -62,7 +62,7 @@ def user_sees_table_of_contents(context: Context) -> None:
     expect(toc.get_by_role("heading", name="Contents")).to_be_visible()
     expect(toc.get_by_role("link", name="Main findings", exact=True)).to_be_visible()
     expect(toc.get_by_role("link", name="Data sources", exact=True)).to_be_visible()
-    expect(toc.get_by_role("link", name="Cite this article", exact=True)).to_be_visible()
+    expect(toc.get_by_role("link", name="Cite this page", exact=True)).to_be_visible()
 
 
 @then("they should see the first item highlighted in the table of contents")

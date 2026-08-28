@@ -48,3 +48,7 @@ class BarColumnConfidenceIntervalChartTypeChoices(TextChoices):
 
 
 AXIS_TITLE_HELP_TEXT = "Only use axis titles if it is not clear from the title and subtitle what the axis represents."
+
+CATEGORY_AXIS_TICK_INTERVAL_HELP_TEXT = (
+    "Category axis tick intervals are available for column charts only, and must use whole numbers."
+)

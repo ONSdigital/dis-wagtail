@@ -23,6 +23,7 @@ from wagtail.images.blocks import ImageChooserBlock
 from cms.articles.models import ArticleSeriesPage
 from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
 from cms.core.url_utils import extract_url_path, validate_ons_url_struct_block
+from cms.core.utils import get_content_type_for_page
 
 from .viewsets import series_with_headline_figures_chooser_viewset
 
@@ -34,10 +35,10 @@ if TYPE_CHECKING:
 
 
 class ExploreMoreExternalLinkBlock(StructBlock):
-    url = URLBlock(label="External URL")
-    title = CharBlock()
-    description = CharBlock()
-    thumbnail = ImageChooserBlock()
+    url = URLBlock(label="External URL", required_on_save=True)
+    title = CharBlock(required_on_save=True)
+    description = CharBlock(required_on_save=True)
+    thumbnail = ImageChooserBlock(required_on_save=True)
 
     class Meta:
         icon = "link"
@@ -59,7 +60,7 @@ class ExploreMoreExternalLinkBlock(StructBlock):
 
 
 class ExploreMoreInternalLinkBlock(StructBlock):
-    page = PageChooserBlock()
+    page = PageChooserBlock(required_on_save=True)
     title = CharBlock(required=False, help_text="Use to override the chosen page title.")
     description = CharBlock(
         required=False,
@@ -86,6 +87,8 @@ class ExploreMoreInternalLinkBlock(StructBlock):
             },
             "description": value["description"] or getattr(page, "listing_summary", "") or getattr(page, "summary", ""),
         }
+        if content_type := get_content_type_for_page(page):
+            formatted_value["metadata"] = {"object": {"text": content_type}}
         if image := (value["thumbnail"] or getattr(page, "listing_image", None)):
             renditions = image.get_renditions("fill-144x100", "fill-288x200")
             formatted_value["thumbnail"] = {
@@ -147,8 +150,8 @@ class LinkedSeriesChooserBlock(SeriesChooserBlock):
 
 
 class TopicHeadlineFigureBlock(StructBlock):
-    series = LinkedSeriesChooserBlock()
-    figure_id = CharBlock()
+    series = LinkedSeriesChooserBlock(required_on_save=True)
+    figure_id = CharBlock(required_on_save=True)
 
     def get_context(self, value: StructValue, parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context=parent_context)
@@ -190,12 +193,13 @@ register(SeriesWithHeadlineChooserAdapter(), TopicHeadlineFigureBlock)
 
 
 class TimeSeriesPageLinkBlock(StructBlock):
-    title = CharBlock(required=True)
-    description = TextBlock(required=True)
+    title = CharBlock(required=True, required_on_save=True)
+    description = TextBlock(required=True, required_on_save=True)
     url = RelativeOrAbsoluteURLBlock(
         required=True,
         help_text="Enter a relative URL (e.g. /some/path) or a full URL starting with 'https://' "
         f"that matches one of the allowed domains or their subdomains: {', '.join(settings.ONS_ALLOWED_LINK_DOMAINS)}",
+        required_on_save=True,
     )
 
     class Meta:
@@ -214,7 +218,7 @@ class TimeSeriesPageLinkBlock(StructBlock):
 class TimeSeriesPageStoryBlock(StreamBlock):
     time_series_page_link = TimeSeriesPageLinkBlock()
 
-    def clean(self, value: StreamValue, ignore_required_constraints: bool = False) -> StreamValue:
+    def clean(self, value: StreamValue) -> StreamValue:
         cleaned_value = super().clean(value)
 
         # For each time series URL, record the indices of the blocks it appears in

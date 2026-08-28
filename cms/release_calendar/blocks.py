@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class ContentSectionBlock(blocks.StructBlock):
     """A content section with list of links."""
 
-    title = blocks.CharBlock(label="Section title")
+    title = blocks.CharBlock(label="Section title", required_on_save=True)
     links = blocks.ListBlock(LinkBlockWithDescription())
 
     class Meta:
@@ -39,8 +39,8 @@ class ContentSectionBlock(blocks.StructBlock):
 class ReleaseDateChangeBlock(blocks.StructBlock):
     """A block for logging release date changes."""
 
-    previous_date = blocks.DateTimeBlock()
-    reason_for_change = blocks.TextBlock()
+    previous_date = blocks.DateTimeBlock(required_on_save=True)
+    reason_for_change = blocks.TextBlock(required_on_save=True)
     frozen = blocks.BooleanBlock(required=False, default=False)
 
     class Meta:
@@ -88,8 +88,8 @@ class ReleaseCalendarChangesStoryBlock(blocks.StreamBlock):
 class ReleaseCalendarPreReleaseAccessStoryBlock(blocks.StreamBlock):
     """The pre-release access information StreamField definition."""
 
-    description = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC)
-    table = BasicTableBlock()
+    description = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC, required_on_save=True)
+    table = BasicTableBlock(required_on_save=True)
 
     class Meta:
         template = "templates/components/streamfield/stream_block.html"

@@ -2,22 +2,29 @@ import json
 import urllib.parse
 from unittest.mock import Mock
 
+from django.db import connection, transaction
 from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils.datastructures import CaseInsensitiveMapping
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.core.tests import TransactionTestCase
 from cms.core.utils import (
     UNWANTED_CONTROL_CHARACTERS,
+    GeneratorCollector,
     deep_merge_mapping,
+    format_file_size_kb,
     get_client_ip,
     get_content_type_for_page,
     latex_formula_to_svg,
     redirect,
     redirect_to_parent_listing,
+    release_db_connections,
     strip_unwanted_control_chars_from_json,
 )
+from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.topics.tests.factories import TopicPageFactory
 
 
@@ -114,6 +121,20 @@ class TestContentTypeForPage(TestCase):
         page = MethodologyPageFactory(title="Test Methodology")
         content_type = get_content_type_for_page(page)
         self.assertEqual(content_type, "Methodology")
+
+        page = InformationPageFactory(title="Test Information")
+        content_type = get_content_type_for_page(page)
+        self.assertEqual(content_type, "Information")
+
+        page = IndexPageFactory(title="Text Index")
+        content_type = get_content_type_for_page(page)
+        self.assertEqual(content_type, "Index")
+
+    def test_get_content_type_for_page__suppressed_returns_none(self):
+        """Page types with the label suppressed return None, so no label is shown."""
+        page = HomePage.objects.first()
+
+        self.assertIsNone(get_content_type_for_page(page))
 
 
 class RedirectToParentListingTestCase(SimpleTestCase):
@@ -232,3 +253,129 @@ class DeepMergeMappingTestCase(SimpleTestCase):
             deep_merge_mapping(CaseInsensitiveMapping({"a": 1}), CaseInsensitiveMapping({"a": 2})),
             CaseInsensitiveMapping({"a": 2}),
         )
+
+
+class FormatFileSizeKbTestCase(SimpleTestCase):
+    def test_format_file_size_kb(self):
+        self.assertEqual(format_file_size_kb(25), "0.024")
+        self.assertEqual(format_file_size_kb(1024), "1.000")
+        self.assertEqual(format_file_size_kb(1536), "1.500")
+        self.assertEqual(format_file_size_kb(100, decimal_places=0, minimum=1), "1")
+        self.assertEqual(format_file_size_kb(1792, decimal_places=0, minimum=1), "2")
+
+
+class GeneratorCollectorTestCase(SimpleTestCase):
+    def test_collects(self):
+        def test_gen():
+            yield from range(5)
+            return "five"
+
+        collector = GeneratorCollector(test_gen())
+
+        self.assertEqual(list(collector), list(range(5)))
+        self.assertEqual(collector.value, "five")
+
+    def test_no_return(self):
+        def test_gen():
+            yield from range(5)
+
+        collector = GeneratorCollector(test_gen())
+
+        self.assertEqual(list(collector), list(range(5)))
+        self.assertIsNone(collector.value)
+
+    def test_consume(self):
+        def test_gen():
+            yield from range(5)
+            return "five"
+
+        gen = test_gen()
+        collector = GeneratorCollector(gen)
+
+        collector.consume()
+
+        self.assertEqual(collector.value, "five")
+        self.assertEqual(list(collector), [])
+
+        with self.assertRaises(StopIteration):
+            next(gen)
+
+
+class ReleaseDBConnectionsTestCase(TransactionTestCase):
+    def test_closes_idle_connection(self):
+        connection.ensure_connection()
+        self.assertIsNotNone(connection.connection)
+
+        release_db_connections()
+
+        self.assertIsNone(connection.connection)
+
+    def test_preserves_connection_in_atomic_block(self):
+        with transaction.atomic():
+            release_db_connections()
+
+            self.assertIsNotNone(connection.connection)
+
+    def test_decorator_releases_before_by_default(self):
+        connection_at_entry = []
+
+        @release_db_connections
+        def task():
+            connection_at_entry.append(connection.connection)
+            connection.ensure_connection()
+
+        connection.ensure_connection()
+        task()
+
+        self.assertIsNone(connection_at_entry[0])
+        self.assertIsNotNone(connection.connection)
+
+    def test_decorator_releases_after_on_exception(self):
+        @release_db_connections(after=True, before=False)
+        def task():
+            connection.ensure_connection()
+            raise ValueError("Test exception")
+
+        with self.assertRaises(ValueError):
+            task()
+
+        self.assertIsNone(connection.connection)
+
+    def test_decorator_with_after_releases_on_both_sides(self):
+        connection_at_entry = []
+
+        @release_db_connections(after=True)
+        def task():
+            connection_at_entry.append(connection.connection)
+            connection.ensure_connection()
+
+        connection.ensure_connection()
+        task()
+
+        self.assertIsNone(connection_at_entry[0])
+        self.assertIsNone(connection.connection)
+
+    def test_decorator_with_after_only(self):
+        connection_at_entry = []
+
+        @release_db_connections(before=False, after=True)
+        def task():
+            connection_at_entry.append(connection.connection)
+            connection.ensure_connection()
+
+        connection.ensure_connection()
+        task()
+
+        # The connection should be open when the task starts, but closed after it finishes.
+        self.assertIsNotNone(connection_at_entry[0])
+        self.assertIsNone(connection.connection)
+
+    def test_decorator_preserves_metadata_and_return_values(self):
+        @release_db_connections
+        def task(value):
+            """Task docstring."""
+            return value * 2
+
+        self.assertEqual(task(21), 42)
+        self.assertEqual(task.__name__, "task")
+        self.assertEqual(task.__doc__, "Task docstring.")

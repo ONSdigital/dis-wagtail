@@ -47,7 +47,7 @@ npm-build: ## Build the front-end assets
 	@if [ -f "$$HOME/.nvm/nvm.sh" ]; then . $$HOME/.nvm/nvm.sh && nvm use; fi && npm run build
 
 .PHONY: lint
-lint: lint-py lint-html lint-frontend lint-migrations ## Run all linters (python, html, front-end, migrations)
+lint: lint-py lint-html lint-frontend lint-migrations check-poetry-version ## Run all linters (python, html, front-end, migrations)
 
 .PHONY: lint-py
 lint-py:  ## Run all Python linters (ruff/pylint/mypy).
@@ -68,10 +68,14 @@ lint-frontend:  ## Run front-end linters
 lint-migrations: ## Run django-migration-linter
 	poetry run python manage.py lintmigrations --quiet ignore ok
 
+.PHONY: check-poetry-version
+check-poetry-version: ## Check pyproject.toml and poetry.lock use the same Poetry version
+	./scripts/check-poetry-version.sh
+
 .PHONY: test
 test:  ## Run the tests and check coverage.
 	poetry run coverage erase
-	COVERAGE_CORE=sysmon poetry run coverage run ./manage.py test --settings=cms.settings.test --shuffle
+	COVERAGE_CORE=sysmon poetry run coverage run ./manage.py test --settings=cms.settings.test --shuffle --parallel
 	poetry run coverage combine
 	poetry run coverage report --fail-under=90
 
@@ -101,7 +105,7 @@ megalint:  ## Run the mega-linter. Use LINTER=NAME to run only one.
 		-v /var/run/docker.sock:/var/run/docker.sock:rw \
 		-v $(shell pwd):/tmp/lint:rw \
 		$(if $(LINTER),-e ENABLE_LINTERS=$(LINTER),) \
-		ghcr.io/oxsecurity/megalinter-cupcake:v9
+		ghcr.io/oxsecurity/megalinter-cupcake@sha256:266c8d80f74b3308d71078f9f1e5426c6f012eb71c126eadd69960d5ccb770ed # v10.0.0
 
 .PHONY: load-design-system-templates
 load-design-system-templates:  ## Load the design system templates
@@ -110,6 +114,29 @@ load-design-system-templates:  ## Load the design system templates
 .PHONY: load-topics
 load-topics:  ## Load our fixture of taxonomy topics
 	poetry run python ./manage.py loaddata cms/taxonomy/fixtures/topics.json
+
+.PHONY: delete-topics
+delete-topics: ## Delete all topics from the database (root is preserved via the model manager)
+	poetry run python ./manage.py shell -c "from cms.taxonomy.models import Topic; Topic.objects.all().delete(); Topic.fix_tree()"
+
+.PHONY: test-data-create
+test-data-create:  ## Seed test data
+	poetry run python ./manage.py create_test_data \
+		$(if $(SEED), --seed $(SEED)) \
+		$(if $(CONFIG), --config $(CONFIG)) \
+		$(if $(NOINPUT), --noinput) \
+
+.PHONY: test-data-delete-dry-run
+test-data-delete-dry-run:  ## Dry run for deleting test data
+	poetry run python ./manage.py delete_test_data --dry-run
+
+.PHONY: test-data-delete
+test-data-delete:  ## Delete test data. Use NOINPUT=1 to skip confirmation prompt.
+	poetry run python ./manage.py delete_test_data $(if $(NOINPUT), --noinput)
+
+.PHONY: test-data-show-default-config
+test-data-show-default-config:  ## Show default config. Use SCHEMA=1 to show JSON schema.
+	poetry run python ./manage.py show_default_test_data_config $(if $(SCHEMA), --schema)
 
 # Docker and docker compose make commands
 
@@ -190,7 +217,7 @@ dev-init: load-design-system-templates npm-build collectstatic compilemessages m
 
 .PHONY: functional-tests-up
 functional-tests-up:  ## Start the functional tests docker compose dependencies
-	docker compose -f functional_tests/docker-compose.yml up -d
+	docker compose -f functional_tests/docker-compose.yml up -d --wait
 
 .PHONY: functional-tests-dev-up
 functional-tests-dev-up:  ## Start the functional tests docker compose dependencies and dev app

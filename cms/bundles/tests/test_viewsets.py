@@ -1,5 +1,6 @@
 # pylint: disable=too-many-lines
 import textwrap
+import time
 from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from typing import ClassVar
@@ -8,6 +9,7 @@ from unittest.mock import patch
 
 import time_machine
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db.models import F, OrderBy
 from django.test import TestCase, override_settings
@@ -15,7 +17,7 @@ from django.urls import reverse
 from django.utils import timezone
 from wagtail.admin.panels import get_edit_handler
 from wagtail.coreutils import get_dummy_request
-from wagtail.models import Locale, Page
+from wagtail.models import Locale, ModelLogEntry, Page
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
@@ -27,9 +29,12 @@ from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, Bun
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
+from cms.core.tests import TransactionTestCase
 from cms.core.tests.utils import rebuild_internal_search_index
 from cms.datasets.tests.factories import DatasetFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.post_publish_actions.executor import executor_stop_and_wait, flush_executor
+from cms.post_publish_actions.models import PostPublishAction, PostPublishActionStatus, PostPublishActionType
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
@@ -45,7 +50,7 @@ from cms.workflows.tests.utils import (
 )
 
 
-class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
+class BundleViewSetTestCaseMixin(WagtailTestUtils):
     RELEASE_CALENDAR_PAGE_CASES: ClassVar[list[tuple[str, ReleaseStatus, str]]] = [
         ("Release Calendar Page 1", ReleaseStatus.PROVISIONAL, "Release Calendar Page 1 (Provisional,"),
         ("Release Calendar Page 2", ReleaseStatus.CONFIRMED, "Release Calendar Page 2 (Confirmed,"),
@@ -53,7 +58,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
     ]
 
     @classmethod
-    def setUpTestData(cls):
+    def setUpTestData(cls):  # pylint: disable=invalid-name
         cls.superuser = cls.create_superuser(username="admin")
 
         cls.publishing_group = GroupFactory(name="Publishing Officers", access_admin=True)
@@ -87,7 +92,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
 
         cls.another_in_review_bundle = BundleFactory(in_review=True, name="Another preview Bundle")
 
-    def setUp(self):
+    def setUp(self):  # pylint: disable=invalid-name
         self.bundle = BundleFactory(name="Original bundle", created_by=self.publishing_officer)
         self.statistical_article_page = StatisticalArticlePageFactory(
             title="The article", parent__title="PSF", live=False
@@ -97,6 +102,9 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         self.inspect_url = reverse("bundle:inspect", args=[self.bundle.id])
 
         self.client.force_login(self.publishing_officer)
+
+    def tearDown(self):  # pylint: disable=invalid-name
+        flush_executor()
 
     def get_base_form_data(self, status: BundleStatus | None = None):
         data = {
@@ -121,10 +129,6 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
 
         return nested_form_data(data)
 
-    @staticmethod
-    def chooser_panel_display(page) -> str:
-        return f"{page.title} ({page.get_status_display()}, {page.release_date_value})"
-
     def _create_release_calendar_page(self, title, status):
         """Assigns a release calendar page to the bundle."""
         release_date = timezone.now() + timedelta(days=1)
@@ -140,7 +144,7 @@ class BundleViewSetTestCaseBase(WagtailTestUtils, TestCase):
         self.bundle.save(update_fields=["release_calendar_page"])
 
 
-class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
+class BundleViewSetAddTestCase(BundleViewSetTestCaseMixin, TestCase):
     def test_bundle_add_view(self):
         """Test bundle creation."""
         self.assertFalse(Bundle.objects.filter(name="A New Bundle").exists())
@@ -228,7 +232,7 @@ class BundleViewSetAddTestCase(BundleViewSetTestCaseBase):
         self.assertEqual(response.context["form"].datasets_bundle_api_user_access_token, "the-access-token")
 
 
-class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
+class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
     def test_bundle_edit_view(self):
         """Test bundle editing."""
         response = self.client.post(
@@ -248,6 +252,27 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.assertEqual(response.status_code, 302)
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.name, "Updated Bundle")
+
+    def test_bundle_edit_view__logs_schedule_change_on_publication_date_update(self):
+        """Test that changing the publication date via form submission creates a schedule_changed log entry."""
+        original_date = timezone.now() + timedelta(days=1)
+        self.bundle.publication_date = original_date
+        self.bundle.save(update_fields=["publication_date"])
+
+        new_date = timezone.now() + timedelta(days=5)
+        data = self.get_base_form_data()
+        data["publication_date"] = new_date.strftime("%Y-%m-%d %H:%M")
+        data["action-edit"] = "action-edit"
+
+        response = self.client.post(self.edit_url, data)
+        self.assertEqual(response.status_code, 302)
+
+        log_entry = ModelLogEntry.objects.filter(
+            object_id=str(self.bundle.pk), action="bundles.schedule_changed"
+        ).first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.data["old"], original_date.strftime("%Y-%m-%d %H:%M"))
+        self.assertEqual(log_entry.data["new"], new_date.strftime("%Y-%m-%d %H:%M"))
 
     def test_bundle_edit_view__redirects_to_index_for_published_bundles(self):
         """Released bundles should no longer be editable."""
@@ -314,74 +339,8 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-return-to-draft", BundleStatus.DRAFT, self.edit_url)
 
-    def test_bundle_edit_view__publish__from_invalid_status__draft(self):
-        self.bundle.status = BundleStatus.DRAFT
-        self.bundle.save(update_fields=["status"])
-        response = self.post_with_action_and_test("action-publish", BundleStatus.DRAFT, self.dashboard_url)
-        self.assertEqual(response.context["message"], "Sorry, you do not have permission to access this area.")
-
-    def test_bundle_edit_view__publish__from_invalid_status__preview(self):
-        self.bundle.status = BundleStatus.IN_REVIEW
-        self.bundle.save(update_fields=["status"])
-        response = self.post_with_action_and_test("action-publish", BundleStatus.IN_REVIEW, self.dashboard_url)
-        self.assertEqual(response.context["message"], "Sorry, you do not have permission to access this area.")
-
-    def test_bundle_edit_view__manual_publish__disallowed_when_scheduled_and_date_in_future(self):
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.publication_date = timezone.now() + timedelta(days=1)
-        self.bundle.save(update_fields=["status", "publication_date"])
-        self.post_with_action_and_test("action-publish", BundleStatus.APPROVED, self.dashboard_url)
-
-    def test_bundle_edit_view__manual_publish__happy_path__when_scheduled_and_date_in_past(self):
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.publication_date = timezone.now()
-        self.bundle.save(update_fields=["status", "publication_date"])
-        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
-
-    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
-    @patch("cms.bundles.utils.notify_slack_of_publication_start")
-    @patch("cms.bundles.utils.notify_slack_of_publish_end")
-    def test_bundle_edit_view__manual_publish__happy_path__when_linked_with_past_release_calendar_entry(
-        self, mock_notify_end, mock_notify_start
-    ):
-        self.assertFalse(self.statistical_article_page.live)
-
-        BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)
-        release_calendar_page = ReleaseCalendarPageFactory(title="Past Release Calendar Page")
-        self.bundle.release_calendar_page = release_calendar_page
-        self.bundle.publication_date = None
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["release_calendar_page", "publication_date", "status"])
-
-        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
-
-        self.assertTrue(mock_notify_start.called)
-        self.assertTrue(mock_notify_end.called)
-
-        response = self.client.get(release_calendar_page.url)
-        self.assertContains(response, self.statistical_article_page.display_title)
-
-        self.statistical_article_page.refresh_from_db()
-        self.assertTrue(self.statistical_article_page.live)
-        self.assertIsNone(self.statistical_article_page.current_workflow_state)
-
-    def test_bundle_edit_view__manual_publish__happy_path(self):
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
-        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
-
-    def test_bundle_edit_view__manual_publish__sets_approved_by_and_approved_at(self):
-        """Publishing directly should populate approved_by and approved_at."""
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
-        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
-
-        self.bundle.refresh_from_db()
-        self.assertIsNotNone(self.bundle.approved_at)
-        self.assertIsNotNone(self.bundle.approved_by)
-
     def test_bundle_edit_view__shows_release_calendar_page_details(self):
-        """Release calendar page's title, status and release date are displayed when selected in bundles."""
+        """Release calendar page's title, release status, release date and page status are displayed."""
         for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
             with self.subTest(title=title, status=status):
                 release_calendar_page = self._create_release_calendar_page(title=title, status=status)
@@ -389,7 +348,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
                 # test for cancelled pages should fail
                 self._assign_release_calendar_page_to_bundle(release_calendar_page=release_calendar_page)
                 response = self.client.get(self.edit_url)
-                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value})"
+                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value}) (Live)"
                 self.assertContains(response, expected_display_panel)
 
     def test_bundle_edit_view__shows_updated_release_calendar_page_details(self):
@@ -400,7 +359,10 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
             title="Future Release calendar Page", status=ReleaseStatus.PROVISIONAL
         )
         self._assign_release_calendar_page_to_bundle(release_calendar_page=release_calendar_page)
-        original_text = self.chooser_panel_display(release_calendar_page)
+        original_text = (
+            f"{release_calendar_page.title} ({release_calendar_page.get_status_display()}, "
+            f"{release_calendar_page.release_date_value}) (Live)"
+        )
 
         for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
             with self.subTest(title=title, status=status):
@@ -411,7 +373,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
                 self.bundle.save()
 
                 response = self.client.get(self.edit_url)
-                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value})"
+                expected_display_panel = f"{expected_text} {release_calendar_page.release_date_value}) (Live)"
 
                 self.assertContains(response, expected_display_panel)
                 self.assertNotContains(response, original_text)
@@ -430,6 +392,12 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
         progress_page_workflow(workflow_state)
         response = self.client.get(self.edit_url)
         self.assertContains(response, f"{page_title} (Ready to publish)")
+
+        self.statistical_article_page.save_revision().publish()
+        self.statistical_article_page.title = "The updated article"
+        self.statistical_article_page.save_revision()
+        response = self.client.get(self.edit_url)
+        self.assertContains(response, f"{self.statistical_article_page.get_admin_display_title()} (Live + Draft)")
 
     @mock.patch("cms.bundles.viewsets.bundle.notify_slack_of_status_change")
     def test_bundle_approval__cannot__approve_if_pages_are_not_ready_to_publish(self, mock_notify_slack):
@@ -537,8 +505,287 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseBase):
                 self.assertNotContains(response, "status-sidebar-live")
                 self.assertContains(response, expected_id)
 
+    def test_edit_view__creates_audit_log_entry(self):
+        """Test that viewing the edit page creates an audit log entry."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
 
-class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseBase):
+        response = self.client.get(self.edit_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        log_entry = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.user, self.publishing_officer)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_cooldown_prevents_duplicate_entries(self):
+        """Test that viewing the edit page multiple times within the cooldown period
+        only creates one audit log entry.
+        """
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+        cache.clear()
+
+        # First visit - should create a log entry
+        self.client.get(self.edit_url)
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(first_count, 1)
+
+        # Second visit within cooldown - should NOT create another log entry
+        self.client.get(self.edit_url)
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(second_count, 1)
+
+        # Third visit within cooldown - still no new entry
+        self.client.get(self.edit_url)
+        third_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(third_count, 1)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_cooldown_allows_new_entry_after_expiry(self):
+        """Test that a new audit log entry is created after the cooldown expires."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+        cache.clear()
+
+        # First visit
+        self.client.get(self.edit_url)
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(first_count, 1)
+
+        # Clear cache to simulate cooldown expiry
+        cache.clear()
+
+        # Second visit after cooldown expiry - should create a new log entry
+        self.client.get(self.edit_url)
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").count()
+        self.assertEqual(second_count, 2)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_different_users_get_separate_cooldowns(self):
+        """Test that different users have separate cooldown periods."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view").delete()
+        cache.clear()
+
+        # First user views the page
+        self.client.force_login(self.publishing_officer)
+        self.client.get(self.edit_url)
+
+        # Second user views the same page - should also create a log entry
+        self.client.force_login(self.superuser)
+        self.client.get(self.edit_url)
+
+        log_entries = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.edit_view")
+        self.assertEqual(log_entries.count(), 2)
+
+        users = set(log_entries.values_list("user_id", flat=True))
+        self.assertEqual(users, {self.publishing_officer.pk, self.superuser.pk})
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_edit_view__audit_log_different_bundles_get_separate_cooldowns(self):
+        """Test that different bundles have separate cooldown periods for the same user."""
+        ModelLogEntry.objects.filter(action="bundles.edit_view").delete()
+        cache.clear()
+
+        # View first bundle
+        self.client.get(self.edit_url)
+
+        # View second bundle - should also create a log entry
+        another_bundle = BundleFactory(name="Another Bundle")
+        another_edit_url = reverse("bundle:edit", args=[another_bundle.id])
+        self.client.get(another_edit_url)
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.edit_view")
+        self.assertEqual(log_entries.count(), 2)
+
+        bundle_ids = set(log_entries.values_list("object_id", flat=True))
+        self.assertEqual(bundle_ids, {str(self.bundle.pk), str(another_bundle.pk)})
+
+
+@override_settings(BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT=True)
+class BundleViewSetPublishTestCase(BundleViewSetTestCaseMixin, TransactionTestCase):
+    def setUp(self):
+        self.setUpTestData()
+        super().setUp()
+
+    def tearDown(self):
+        flush_executor()
+
+    def post_with_action_and_test(self, action: str, expected_status: BundleStatus, redirects_to: str):
+        self.client.force_login(self.superuser)
+        mark_page_as_ready_to_publish(self.statistical_article_page, self.superuser)
+
+        data = self.get_base_form_data(status=expected_status)
+        data[action] = action
+        data["status"] = BundleStatus.PUBLISHED.value  # attempting to force it
+
+        response = self.client.post(self.edit_url, data)
+        self.assertRedirects(response, redirects_to)
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, expected_status)
+
+        return response
+
+    def test_bundle_edit_view__publish__from_invalid_status__draft(self):
+        self.bundle.status = BundleStatus.DRAFT
+        self.bundle.save(update_fields=["status"])
+        response = self.post_with_action_and_test("action-publish", BundleStatus.DRAFT, self.dashboard_url)
+        self.assertEqual(response.context["message"], "Sorry, you do not have permission to access this area.")
+
+    def test_bundle_edit_view__publish__from_invalid_status__preview(self):
+        self.bundle.status = BundleStatus.IN_REVIEW
+        self.bundle.save(update_fields=["status"])
+        response = self.post_with_action_and_test("action-publish", BundleStatus.IN_REVIEW, self.dashboard_url)
+        self.assertEqual(response.context["message"], "Sorry, you do not have permission to access this area.")
+
+    def test_bundle_edit_view__manual_publish__disallowed_when_scheduled_and_date_in_future(self):
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.publication_date = timezone.now() + timedelta(days=1)
+        self.bundle.save(update_fields=["status", "publication_date"])
+        self.post_with_action_and_test("action-publish", BundleStatus.APPROVED, self.dashboard_url)
+
+    def test_bundle_edit_view__manual_publish__happy_path__when_scheduled_and_date_in_past(self):
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.publication_date = timezone.now()
+        self.bundle.save(update_fields=["status", "publication_date"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.bundles.viewsets.bundle.post_publish_notify_slack")
+    def test_bundle_edit_view__manual_publish__happy_path__when_linked_with_past_release_calendar_entry(
+        self, mock_post_publish_notify_slack, mock_notify_end, mock_notify_start
+    ):
+        self.assertFalse(self.statistical_article_page.live)
+
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article_page)
+        release_calendar_page = ReleaseCalendarPageFactory(title="Past Release Calendar Page")
+        self.bundle.release_calendar_page = release_calendar_page
+        self.bundle.publication_date = None
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["release_calendar_page", "publication_date", "status"])
+
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        executor_stop_and_wait()
+
+        self.assertTrue(mock_notify_start.called)
+        self.assertTrue(mock_notify_end.called)
+        mock_post_publish_notify_slack.assert_called_once()
+        self.assertFalse(mock_post_publish_notify_slack.call_args.kwargs["publish_failed"])
+
+        response = self.client.get(release_calendar_page.url)
+        self.assertContains(response, self.statistical_article_page.display_title)
+
+        self.statistical_article_page.refresh_from_db()
+        self.assertTrue(self.statistical_article_page.live)
+        self.assertIsNone(self.statistical_article_page.current_workflow_state)
+
+    def test_bundle_edit_view__manual_publish__happy_path(self):
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+    def test_bundle_edit_view__manual_publish__sets_approved_by_and_approved_at(self):
+        """Publishing directly should populate approved_by and approved_at."""
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        self.bundle.refresh_from_db()
+        self.assertIsNotNone(self.bundle.approved_at)
+        self.assertIsNotNone(self.bundle.approved_by)
+
+    @patch("cms.bundles.viewsets.bundle.publish_bundle", return_value=False)
+    @patch("cms.bundles.viewsets.bundle.post_publish_notify_slack")
+    def test_bundle_edit_view__manual_publish__failed_publish_still_notifies(
+        self, mock_post_publish_notify_slack, mock_publish_bundle
+    ):
+        """A failed publish must still send the final notification, with colour red."""
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        executor_stop_and_wait()
+
+        mock_publish_bundle.assert_called_once()
+        mock_post_publish_notify_slack.assert_called_once()
+        self.assertTrue(mock_post_publish_notify_slack.call_args.kwargs["publish_failed"])
+
+    @override_settings(BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS=1)
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_bundle_edit_view__manual_publish__action_timeout(self, mock_get_publisher):
+        mock_get_publisher.return_value.publish_created_or_updated.side_effect = lambda *args, **kwargs: time.sleep(3)
+
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.publication_date = timezone.now()
+        self.bundle.save(update_fields=["status", "publication_date"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        expected_action_count = 2
+        deadline = time.monotonic() + 2.5
+        while time.monotonic() < deadline and PostPublishAction.objects.finished().count() < expected_action_count:
+            time.sleep(0.1)
+
+        mock_get_publisher.assert_called()
+
+        self.assertEqual(PostPublishAction.objects.count(), expected_action_count)
+        self.assertEqual(PostPublishAction.objects.finished().count(), expected_action_count)
+
+        action = PostPublishAction.objects.get(action_type=PostPublishActionType.SEARCH_UPDATED)
+
+        # Other attributes can't be reliably checked, in case the thread stopped before the assertion runs.
+        self.assertIsNotNone(action.timed_out_at)
+        self.assertEqual(action.status, PostPublishActionStatus.FAILED)
+
+    @override_settings(BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS=1)
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_bundle_edit_view__manual_publish__action_timeout_then_finish(self, mock_get_publisher):
+        mock_get_publisher.return_value.publish_created_or_updated.side_effect = lambda *args, **kwargs: time.sleep(3)
+
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.publication_date = timezone.now()
+        self.bundle.save(update_fields=["status", "publication_date"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        executor_stop_and_wait()
+
+        mock_get_publisher.assert_called()
+
+        self.assertEqual(PostPublishAction.objects.count(), 2)
+        self.assertEqual(PostPublishAction.objects.unfinished().count(), 0)
+        self.assertEqual(PostPublishAction.objects.finished().count(), 2)
+
+        action = PostPublishAction.objects.get(action_type=PostPublishActionType.SEARCH_UPDATED)
+
+        self.assertEqual(action.status, PostPublishActionStatus.SUCCESSFUL)
+        self.assertIsNotNone(action.timed_out_at)
+
+    @override_settings(BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS=1)
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_bundle_edit_view__manual_publish__action_error(self, mock_get_publisher):
+        mock_get_publisher.return_value.publish_created_or_updated.side_effect = ValueError("Something went wrong")
+
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.publication_date = timezone.now()
+        self.bundle.save(update_fields=["status", "publication_date"])
+        self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
+
+        executor_stop_and_wait()
+
+        mock_get_publisher.assert_called()
+
+        self.assertEqual(PostPublishAction.objects.count(), 2)
+        self.assertEqual(PostPublishAction.objects.unfinished().count(), 0)
+        self.assertEqual(PostPublishAction.objects.finished().count(), 2)
+
+        action = PostPublishAction.objects.get(action_type=PostPublishActionType.SEARCH_UPDATED)
+
+        self.assertEqual(action.status, PostPublishActionStatus.FAILED)
+        self.assertEqual(action.failed_reason, "ValueError: Something went wrong")
+
+
+class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseMixin, TestCase):
     LONG_TEXT = "Some long description to test truncation. " * 500
 
     def _build_api_error(self, has_detail_errors: bool) -> BundleAPIClientError:
@@ -615,7 +862,7 @@ class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseBase):
                 self.assertFormError(form=form, field=None, errors=expected_errors)
 
 
-class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
+class BundleViewSetInspectTestCase(BundleViewSetTestCaseMixin, TestCase):
     def test_inspect_view__previewers__access(self):
         self.client.force_login(self.bundle_viewer)
 
@@ -634,6 +881,24 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
                     self.assertEqual(
                         response.context["message"], "Sorry, you do not have permission to access this area."
                     )
+
+    def test_inspect_view__edit_link__shown_for_non_published_bundles(self):
+        scenarios = [self.in_review_bundle, self.approved_bundle]
+        for bundle in scenarios:
+            with self.subTest(bundle=bundle):
+                response = self.client.get(reverse("bundle:inspect", args=[bundle.pk]))
+                edit_url = reverse("bundle:edit", args=[bundle.pk])
+                self.assertContains(response, edit_url)
+
+    def test_inspect_view__edit_link__hidden_for_published_bundles(self):
+        partially_published_bundle = BundleFactory(status=BundleStatus.PARTIALLY_PUBLISHED)
+        failed_bundle = BundleFactory(status=BundleStatus.FAILED)
+        scenarios = [self.published_bundle, partially_published_bundle, failed_bundle]
+        for bundle in scenarios:
+            with self.subTest(bundle_status=bundle.status):
+                response = self.client.get(reverse("bundle:inspect", args=[bundle.pk]))
+                edit_url = reverse("bundle:edit", args=[bundle.pk])
+                self.assertNotContains(response, edit_url)
 
     def test_inspect_view__managers__contains_all_fields(self):
         response = self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
@@ -1297,8 +1562,100 @@ class BundleViewSetInspectTestCase(BundleViewSetTestCaseBase):
         # Make sure there's NO hyperlink to data-admin with this title
         self.assertNotContains(response, '<a href="/data-admin/series/test-456')
 
+    def test_inspect_view__creates_audit_log_entry(self):
+        """Test that viewing the inspect page creates an audit log entry."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").delete()
 
-class BundleIndexViewTestCase(BundleViewSetTestCaseBase):
+        response = self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        log_entry = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.user, self.publishing_officer)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_inspect_view__audit_log_cooldown_prevents_duplicate_entries(self):
+        """Test that viewing the inspect page multiple times within the cooldown period
+        only creates one audit log entry.
+        """
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").delete()
+        cache.clear()
+
+        # First visit - should create a log entry
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(first_count, 1)
+
+        # Second visit within cooldown - should NOT create another log entry
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(second_count, 1)
+
+        # Third visit within cooldown - still no new entry
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        third_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(third_count, 1)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_inspect_view__audit_log_cooldown_allows_new_entry_after_expiry(self):
+        """Test that a new audit log entry is created after the cooldown expires."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").delete()
+        cache.clear()
+
+        # First visit
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        first_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(first_count, 1)
+
+        # Clear cache to simulate cooldown expiry
+        cache.clear()
+
+        # Second visit after cooldown expiry - should create a new log entry
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+        second_count = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").count()
+        self.assertEqual(second_count, 2)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_inspect_view__audit_log_different_users_get_separate_cooldowns(self):
+        """Test that different users have separate cooldown periods."""
+        ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect").delete()
+        cache.clear()
+
+        # First user views the page
+        self.client.force_login(self.publishing_officer)
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # Second user views the same page - should also create a log entry
+        self.client.force_login(self.superuser)
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        log_entries = ModelLogEntry.objects.filter(object_id=str(self.bundle.pk), action="bundles.inspect")
+        self.assertEqual(log_entries.count(), 2)
+
+        users = set(log_entries.values_list("user_id", flat=True))
+        self.assertEqual(users, {self.publishing_officer.pk, self.superuser.pk})
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_inspect_view__audit_log_different_bundles_get_separate_cooldowns(self):
+        """Test that different bundles have separate cooldown periods for the same user."""
+        ModelLogEntry.objects.filter(action="bundles.inspect").delete()
+        cache.clear()
+
+        # View first bundle
+        self.client.get(reverse("bundle:inspect", args=[self.bundle.pk]))
+
+        # View second bundle - should also create a log entry
+        self.client.get(reverse("bundle:inspect", args=[self.in_review_bundle.pk]))
+
+        log_entries = ModelLogEntry.objects.filter(action="bundles.inspect")
+        self.assertEqual(log_entries.count(), 2)
+
+        bundle_ids = set(log_entries.values_list("object_id", flat=True))
+        self.assertEqual(bundle_ids, {str(self.bundle.pk), str(self.in_review_bundle.pk)})
+
+
+class BundleIndexViewTestCase(BundleViewSetTestCaseMixin, TestCase):
     def test_bundle_index__unhappy_paths(self):
         """Test bundle list view permissions."""
         self.client.logout()
@@ -1447,6 +1804,7 @@ class BundleDeleteTestCase(WagtailTestUtils, TestCase):
         cls.inspect_url = reverse("bundle:inspect", args=[cls.bundle.id])
 
     def setUp(self):
+        super().setUp()
         self.client.force_login(self.superuser)
 
     def test_bundle_deletable_in_draft(self):
@@ -1509,7 +1867,7 @@ class BundleDeleteTestCase(WagtailTestUtils, TestCase):
         self.assertNotContains(response, self.delete_url)
 
 
-class BundleChooserViewsetTestCase(BundleViewSetTestCaseBase):
+class BundleChooserViewsetTestCase(BundleViewSetTestCaseMixin, TestCase):
     def test_chooser_viewset(self):
         draft_bundle = BundleFactory(name="Draft")
         response = self.client.get(bundle_chooser_viewset.widget_class().get_chooser_modal_url())
@@ -1558,6 +1916,7 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         cls.chooser_results_url = reverse(bundle_page_chooser_viewset.get_url_name("choose_results"))
 
     def setUp(self):
+        super().setUp()
         self.client.force_login(self.superuser)
 
     def test_bundle_form_uses_bundle_page_chooser_widget(self):
@@ -1613,6 +1972,17 @@ class BundlePageChooserViewsetTestCase(WagtailTestUtils, TestCase):
         self.assertTemplateUsed(response, "wagtailadmin/generic/chooser/chooser.html")
 
         self.assertContains(response, self.page_draft_in_bundle.get_admin_display_title())
+
+    def test_choose_view__excludes_release_calendar_page_of_active_bundle(self):
+        """An RC page that is the release_calendar_page for an active bundle must not appear in the chooser."""
+        rc_page = ReleaseCalendarPageFactory(title="RC page set as schedule for active bundle")
+        rc_page.save_revision()
+        BundleFactory(release_calendar_page=rc_page)  # DRAFT = active
+
+        response = self.client.get(self.chooser_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, rc_page.get_admin_display_title())
 
     def test_choose_view__excludes_aliases(self):
         # create an alias for one of the pages

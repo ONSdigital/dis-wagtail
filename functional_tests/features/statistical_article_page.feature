@@ -111,6 +111,7 @@ Feature: Statistical Article Page components
         And  the user views the statistical article page
         And  the user clicks "View data used in this article" on the article page
         Then the related data page for the article is shown
+        And  the looked up dataset links to the dataset series page
 
     Scenario: The related data page is linked and accessible when there are datasets related to a statistical article in an internal environment
         Given the user is in an internal environment
@@ -154,6 +155,14 @@ Feature: Statistical Article Page components
         And the user enters data into the chart table
         And the user clicks the "Save draft" button
         Then the user can save the page
+
+    Scenario: A CMS user can add an iframe visualisation as a featured chart on a Statistical Article Page
+        When the user goes to add a new statistical article page
+        And the user adds basic statistical article page content
+        And the user switches to the Promote tab
+        And the user clicks "Iframe Visualisation" in the featured chart streamfield block selector
+        And the user fills in the featured chart title
+        Then the featured chart title field contains the entered title
 
     Scenario: A CMS user can preview a featured chart on a Statistical Article Page
         Given a statistical article page with a configured featured chart exists

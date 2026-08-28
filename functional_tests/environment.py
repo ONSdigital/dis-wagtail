@@ -190,6 +190,9 @@ def before_tag(context: Context, tag: str) -> None:
         # because our steps run within the scenario. We capture the yielded RequestsMock so steps
         # can register additional routes (e.g. dataset detail endpoints) on the same active mock.
         context.bundle_api_mock = context.bundle_api_cm.__enter__()  # pylint: disable=unnecessary-dunder-call
+    elif tag == "autosave_enabled":
+        context.autosave_override = override_settings(WAGTAIL_AUTOSAVE_INTERVAL=500)
+        context.autosave_override.enable()
 
 
 def after_tag(context: Context, tag: str) -> None:
@@ -203,3 +206,5 @@ def after_tag(context: Context, tag: str) -> None:
 
         # Exit the Bundle API mock context manager
         context.bundle_api_cm.__exit__(None, None, None)
+    elif tag == "autosave_enabled":
+        context.autosave_override.disable()

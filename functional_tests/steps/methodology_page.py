@@ -4,6 +4,7 @@ from behave.runner import Context
 from playwright.sync_api import expect
 
 from cms.methodology.tests.factories import MethodologyIndexPageFactory
+from functional_tests.step_helpers.utils import fill_datetime_field
 
 
 @step("the user creates a methodology page as a child of the existing topic page")
@@ -22,7 +23,7 @@ def user_populates_the_methodology_page(context: Context) -> None:
     context.page.get_by_placeholder("Page title*").fill("Methodology page")
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Page summary")
 
-    context.page.get_by_label("Publication date*").fill("1950-01-01")
+    fill_datetime_field(context.page.get_by_label("Publication date*"), "1950-01-01")
 
     context.page.get_by_title("Insert a block").click()
 
@@ -51,7 +52,7 @@ def the_methodology_page_is_displayed_with_the_populated_data(context: Context) 
     expect(context.page.get_by_role("heading", name="Methodology page")).to_be_visible()
     expect(context.page.get_by_text("Page summary")).to_be_visible()
     expect(context.page.get_by_text("Published: 1 January 1950")).to_be_visible()
-    expect(context.page.get_by_role("heading", name="Cite this methodology")).to_be_visible()
+    expect(context.page.get_by_role("heading", name="Cite this page")).to_be_visible()
 
     expect(context.page.get_by_role("heading", name="Heading")).to_be_visible()
     expect(context.page.get_by_role("heading", name="Content")).to_be_visible()
@@ -66,7 +67,7 @@ def the_user_selects_statistical_articles_as_related_publications(
     context.page.get_by_role(
         "cell",
         name=f"{context.article_series_page.title}: {context.statistical_article_page.title}",
-    ).click()
+    ).get_by_role("link").first.click()
 
 
 @then("the article is displayed correctly under the Related publication section")
@@ -94,8 +95,8 @@ def contact_details_are_visible_on_the_page(context: Context) -> None:
 
 @when("the Last revised date is set to be before the Publication date")
 def set_last_revised_date_before_publication_date(context: Context) -> None:
-    context.page.get_by_label("Publication date*").fill("1950-01-02")
-    context.page.get_by_label("Last revised date").fill("1950-01-01")
+    fill_datetime_field(context.page.get_by_label("Publication date*"), "1950-01-02")
+    fill_datetime_field(context.page.get_by_label("Last revised date"), "1950-01-01")
 
 
 @then("a validation error for the Last revised date is displayed")
@@ -103,17 +104,34 @@ def validation_error_displayed_when_incorrect_date_selected(context: Context) ->
     expect(context.page.get_by_text("The last revised date must be after the published date.")).to_be_visible()
 
 
+@when("the user adds an empty section to the methodology page content")
+def user_adds_an_empty_section(context: Context) -> None:
+    context.page.get_by_title("Insert a block").click()
+    expect(context.page.get_by_label("Section heading*")).to_be_visible()
+
+
 @then("the methodology page mandatory fields raise validation errors")
 def mandatory_fields_raise_validation_error_when_not_set(context: Context) -> None:
+    # Covers the top-level page fields only. An entirely empty content StreamField is not
+    # reported on save, because Wagtail defers a StreamField's own "this field is required"
+    # check to publish time. Required fields inside a block that has been added are covered
+    # by the section heading scenario below.
     expect(context.page.get_by_text("The page could not be created due to validation errors")).to_be_visible()
 
     for locator in [
         "#panel-child-content-title-content .error-message",
         "#panel-child-content-summary-content .error-message",
         "#panel-child-content-child-metadata-child-panel-child-publication_date-errors .error-message",
-        ".help-block.help-critical",
     ]:
         expect(context.page.locator(locator).get_by_text("This field is required")).to_be_visible()
+
+
+@then("the methodology page section heading raises a validation error")
+def section_heading_raises_validation_error(context: Context) -> None:
+    expect(context.page.get_by_text("The page could not be created due to validation errors")).to_be_visible()
+    expect(
+        context.page.locator("#panel-child-content-content-content").get_by_text("This field is required")
+    ).to_be_visible()
 
 
 @then("the preview of the methodology page is displayed with the populated data")
@@ -125,7 +143,7 @@ def preview_is_visible(context: Context) -> None:
     expect(iframe_locator.get_by_role("heading", name="Methodology page")).to_be_visible()
     expect(iframe_locator.get_by_text("Page summary")).to_be_visible()
     expect(iframe_locator.get_by_text("1 January 1950", exact=True)).to_be_visible()
-    expect(iframe_locator.get_by_role("heading", name="Cite this methodology")).to_be_visible()
+    expect(iframe_locator.get_by_role("heading", name="Cite this page")).to_be_visible()
     expect(iframe_locator.get_by_role("heading", name="Heading")).to_be_visible()
     expect(iframe_locator.get_by_role("heading", name="Content")).to_be_visible()
 

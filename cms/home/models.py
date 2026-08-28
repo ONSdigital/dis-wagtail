@@ -18,5 +18,7 @@ class HomePage(BasePage):  # type: ignore[django-manager-missing]
 
     _analytics_content_type: ClassVar[str] = "homepage"
 
+    label = None
+
     def permissions_for_user(self, user: User) -> StaticPagePermissionTester:
         return StaticPagePermissionTester(user, self)

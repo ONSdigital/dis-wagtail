@@ -1,11 +1,18 @@
 from typing import Any, ClassVar
 from unittest.mock import Mock
+from urllib.parse import urlparse
 
-from django.test import SimpleTestCase
+from bs4 import BeautifulSoup
+from django.test import SimpleTestCase, TestCase
+from wagtail.coreutils import get_dummy_request
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.core.utils import format_file_size_kb
+from cms.data_downloads.utils import get_csv_download_filename
 from cms.datavis.blocks.base import BaseChartBlock, BaseVisualisationBlock
 from cms.datavis.blocks.charts import LineChartBlock
+from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 from cms.datavis.tests.factories import TableDataFactory
 
 
@@ -21,6 +28,7 @@ class BaseVisualisationBlockTestCase(SimpleTestCase, WagtailTestUtils):
     def setUp(self):
         super().setUp()
         self.raw_data = {
+            "figure_number": "Figure 1",
             "title": "Test Chart",
             "subtitle": "Test Subtitle",
             "caption": "Test Caption",
@@ -37,6 +45,7 @@ class BaseVisualisationBlockTestCase(SimpleTestCase, WagtailTestUtils):
         value = self.get_value()
         pairs = [
             # `value` dict key, expected value
+            ("figure_number", "Figure 1"),
             ("title", "Test Chart"),
             ("subtitle", "Test Subtitle"),
             ("audio_description", "Test Audio Description"),
@@ -90,6 +99,7 @@ class BaseChartBlockTestCase(BaseVisualisationBlockTestCase):
         value = self.get_value()
         pairs = [
             # `value` dict key, expected value
+            ("figure_number", "Figure 1"),
             ("title", "Test Chart"),
             ("subtitle", "Test Subtitle"),
             ("audio_description", "Test Audio Description"),
@@ -143,7 +153,7 @@ class BuildChartDownloadUrlTests(SimpleTestCase):
         self.assertEqual(url, "/topics/economy/articles/gdp/download-chart/chart-789")
 
 
-class GetDownloadConfigTests(SimpleTestCase):
+class GetDownloadConfigTests(TestCase):
     """Tests for BaseChartBlock.get_download_config method."""
 
     def setUp(self):
@@ -250,6 +260,7 @@ class GetDownloadConfigTests(SimpleTestCase):
         page.url = "/articles/test/"
         request = Mock()
         request.is_preview = False
+        request.build_absolute_uri.side_effect = lambda url: f"http://testserver{url}"
 
         config = self.block.get_download_config(
             value,
@@ -259,3 +270,80 @@ class GetDownloadConfigTests(SimpleTestCase):
 
         csv_item = config["itemsList"][1]
         self.assertEqual(csv_item["url"], "/articles/test/download-chart/test-block-id")
+
+    def test_download_config_csv_download_data_attributes_in_config(self):
+        """Verify expected CSV download link GTM data attributes are present in download config data."""
+        page = StatisticalArticlePageFactory()
+        value = self.block.to_python(self.raw_data)
+        context = {
+            "block_id": "test-block-id",
+            "page": page,
+            "request": get_dummy_request(),
+        }
+
+        rows = [["a", "b"], ["1", "2"]]
+
+        config = self.block.get_download_config(
+            value,
+            parent_context=context,
+            block_id="test-block-id",
+            rows=rows,
+        )
+
+        # CSV item is at index 1 (image download is at index 0)
+        csv_item = config["itemsList"][1]
+        expected_url = f"{page.url.rstrip('/')}/download-chart/test-block-id"
+        absolute_expected_url = context["request"].build_absolute_uri(expected_url)
+        expected_file_size_with_unit = get_approximate_file_size_in_kb(rows)
+        expected_file_size = format_file_size_kb(len(bytes(str(rows), "utf-8")))
+        expected_link_text = f"Download CSV ({expected_file_size_with_unit})"
+
+        expected_attributes = {
+            "data-ga-event": "file-download",
+            "data-ga-file-extension": "csv",
+            "data-ga-file-name": get_csv_download_filename(title=self.raw_data.get("title"), fallback_stem="chart"),
+            "data-ga-link-text": expected_link_text,
+            "data-ga-link-url": urlparse(absolute_expected_url).path,
+            "data-ga-link-domain": urlparse(absolute_expected_url).hostname,
+            "data-ga-chart-title": self.raw_data.get("title"),
+            "data-ga-chart-type": "line",
+            "data-ga-file-size": expected_file_size,
+        }
+
+        self.assertEqual(csv_item["attributes"], expected_attributes)
+
+    def test_download_config_csv_download_data_attributes_in_rendered_html(self):
+        """Verify GTM data attributes are rendered correctly in the CSV download HTML."""
+        page = StatisticalArticlePageFactory()
+        page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Chart section",
+                    "content": [{"type": "line_chart", "value": self.raw_data, "id": "test-block-id"}],
+                },
+            }
+        ]
+        value = self.block.to_python(self.raw_data)
+        page.save_revision().publish()
+
+        response = self.client.get(page.url)
+        soup = BeautifulSoup(response.content, "html.parser")
+        download_csv_link = soup.find("a", href=f"{page.url.rstrip('/')}/download-chart/test-block-id")
+        download_csv_list_item = download_csv_link.find_parent(class_="ons-list__item")
+        absolute_download_url = response.wsgi_request.build_absolute_uri(download_csv_link.get("href"))
+
+        expected_file_size = format_file_size_kb(len(bytes(str(value["table"].rows), "utf-8")))
+
+        self.assertEqual(download_csv_list_item.get("data-ga-link-text"), download_csv_list_item.get_text(strip=True))
+        self.assertEqual(download_csv_list_item.get("data-ga-event"), "file-download")
+        self.assertEqual(download_csv_list_item.get("data-ga-file-extension"), "csv")
+        self.assertEqual(
+            download_csv_list_item.get("data-ga-file-name"),
+            get_csv_download_filename(title=self.raw_data.get("title"), fallback_stem="chart"),
+        )
+        self.assertEqual(download_csv_list_item.get("data-ga-link-url"), urlparse(download_csv_link.get("href")).path)
+        self.assertEqual(download_csv_list_item.get("data-ga-link-domain"), urlparse(absolute_download_url).hostname)
+        self.assertEqual(download_csv_list_item.get("data-ga-chart-title"), self.raw_data.get("title"))
+        self.assertEqual(download_csv_list_item.get("data-ga-chart-type"), "line")
+        self.assertEqual(download_csv_list_item.get("data-ga-file-size"), expected_file_size)

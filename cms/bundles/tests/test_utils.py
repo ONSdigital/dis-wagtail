@@ -2,6 +2,7 @@
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
+from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
 
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
@@ -20,12 +21,16 @@ from cms.bundles.utils import (
     in_active_bundle,
     in_bundle_ready_to_be_published,
     publish_bundle,
+    serialize_bundle_content_for_preview_release_calendar_page,
     serialize_bundle_content_for_published_release_calendar_page,
 )
 from cms.core.tests.utils import rebuild_internal_search_index
 from cms.methodology.models import MethodologyPage
 from cms.methodology.tests.factories import MethodologyPageFactory
+from cms.post_publish_actions.executor import flush_executor
+from cms.post_publish_actions.models import PostPublishAction, PostPublishActionType
 from cms.release_calendar.models import ReleaseCalendarPage
+from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.standard_pages.models import IndexPage, InformationPage
 from cms.topics.models import TopicPage
 
@@ -61,6 +66,13 @@ class BundlesUtilsTestCase(TestCase):
 
     def test_get_pages_in_active_bundles(self):
         self.assertEqual(get_pages_in_active_bundles(), [self.page_in_active_bundle.pk])
+
+    def test_get_pages_in_active_bundles__includes_release_calendar_page_of_active_bundle(self):
+        """An RC page set as release_calendar_page for an active bundle must also be excluded."""
+        rc_page = ReleaseCalendarPageFactory()
+        BundleFactory(release_calendar_page=rc_page)  # DRAFT = active
+
+        self.assertIn(rc_page.pk, get_pages_in_active_bundles())
 
     def test_in_active_bundle(self):
         self.assertTrue(in_active_bundle(self.page_in_active_bundle))
@@ -443,6 +455,10 @@ class SerializeBundleContentTranslationTests(TestCase):
 class PublishBundleFailureTests(TestCase):
     """Tests for publish_bundle failure handling."""
 
+    def setUp(self):
+        """Ensure executor threads don't outlive test lifetime."""
+        self.addCleanup(flush_executor)
+
     @patch("cms.bundles.utils.logger")
     @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
     @patch("cms.bundles.utils.alert_slack_of_bundle_content_failure")
@@ -629,3 +645,64 @@ class PublishBundleFailureTests(TestCase):
 
         # Failure notification should still be sent when update_status=False
         mock_notify_failure.assert_called_once()
+
+    @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    def test_publish_bundle__reset_post_publish_actions_before_publish(
+        self, _mock_notify_start, _mock_notify_end, _mock_notify_failure
+    ):
+        page_will_publish = StatisticalArticlePageFactory(title="Article 2", live=False)
+        page_will_publish.save_revision()
+
+        bundle = BundleFactory(approved=True, bundled_pages=[page_will_publish])
+
+        existing_action = PostPublishAction.objects.create(
+            bundle=bundle, page=page_will_publish, action_type=PostPublishActionType.S3_ACL
+        )
+
+        invalid_action = PostPublishAction.objects.create(
+            bundle=bundle, page=page_will_publish, action_type="DOES_NOT_EXIST"
+        )
+
+        publish_bundle(bundle)
+
+        bundle.refresh_from_db()
+        self.assertEqual(bundle.status, BundleStatus.PUBLISHED)
+
+        with self.assertRaises(PostPublishAction.DoesNotExist):
+            existing_action.refresh_from_db()
+
+        with self.assertRaises(PostPublishAction.DoesNotExist):
+            invalid_action.refresh_from_db()
+
+        self.assertEqual(PostPublishAction.objects.filter(bundle=bundle, page=page_will_publish).count(), 2)
+
+        self.assertTrue(
+            PostPublishAction.objects.filter(
+                bundle=existing_action.bundle, page=existing_action.page, action_type=existing_action.action_type
+            ).exists()
+        )
+
+
+class SerializePreviewBundleContentTests(TestCase):
+    """Tests for serialize_bundle_content_for_preview_release_calendar_page."""
+
+    def setUp(self):
+        series = ArticleSeriesPageFactory(title="Business demography, UK")
+        self.article = StatisticalArticlePageFactory(
+            parent=series,
+            title="2024",
+            news_headline="",
+        )
+        self.bundle = BundleFactory()
+        BundlePageFactory(parent=self.bundle, page=self.article)
+
+    def test_preview_publication_title_includes_series_name(self):
+        """Publication links in preview must show 'Series: Edition', not just 'Edition'."""
+        content = serialize_bundle_content_for_preview_release_calendar_page(self.bundle, AnonymousUser())
+
+        self.assertEqual(
+            content[0]["value"]["links"][0]["value"]["title"],
+            self.article.display_title + " (Draft)",
+        )

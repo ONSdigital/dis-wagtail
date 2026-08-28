@@ -1,9 +1,10 @@
 from http import HTTPStatus
+from unittest.mock import patch
 
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
-from wagtail.models import GroupPagePermission, Page
+from wagtail.models import GroupPagePermission, Page, PageLogEntry
 from wagtail.test.utils import WagtailTestUtils
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
@@ -13,6 +14,7 @@ from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import create_bundle_viewer
 from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
 from cms.teams.tests.factories import TeamFactory
+from cms.topics.tests.factories import TopicPageFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_for_review
 
@@ -213,6 +215,50 @@ class RevisionChartDownloadViewTestCase(WagtailTestUtils, TestCase):
         # Should NOT contain new data
         self.assertNotIn("Region", content)
         self.assertNotIn("London", content)
+
+    def test_download_creates_audit_log_entry(self):
+        """Test that downloading a chart creates an audit log entry."""
+        # Verify no log entries exist yet for this action
+        initial_count = PageLogEntry.objects.filter(action="content.chart_download").count()
+
+        # Download the chart
+        response = self.client.get(self.get_download_url())
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        # Verify audit log entry was created
+        log_entry = PageLogEntry.objects.filter(action="content.chart_download").latest("timestamp")
+        self.assertEqual(log_entry.object_id, self.article.pk)
+        self.assertEqual(log_entry.data["chart_id"], "test-chart-id")
+        self.assertEqual(log_entry.data["revision_id"], self.revision_id)
+
+        # Verify count increased
+        final_count = PageLogEntry.objects.filter(action="content.chart_download").count()
+        self.assertEqual(final_count, initial_count + 1)
+
+    def test_download_audit_log_mirrors_to_stdout(self):
+        """Test that chart download audit log entry is mirrored to stdout."""
+        with patch("cms.core.audit.audit_logger") as mock_logger:
+            # Download the chart
+            response = self.client.get(self.get_download_url())
+
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+
+            # Verify audit logger was called
+            mock_logger.info.assert_called_once()
+            call_args = mock_logger.info.call_args
+
+            # Verify the log message
+            self.assertEqual(call_args[0][0], "Audit event: %s")
+            self.assertEqual(call_args[0][1], "content.chart_download")
+
+            # Verify extra data
+            extra = call_args[1]["extra"]
+            self.assertEqual(extra["event"], "content.chart_download")
+            self.assertEqual(extra["object_id"], self.article.pk)
+            self.assertEqual(extra["data"]["chart_id"], "test-chart-id")
+            self.assertEqual(extra["data"]["revision_id"], self.revision_id)
+            self.assertIn("timestamp", extra)
 
 
 class RevisionChartDownloadBundlePermissionsTestCase(WagtailTestUtils, TestCase):
@@ -471,6 +517,29 @@ class RevisionTableDownloadViewTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response["Content-Type"], "text/csv")
 
+    def test_download_audit_log_mirrors_to_stdout(self):
+        """Test that table download audit log entry is mirrored to stdout."""
+        with patch("cms.core.audit.audit_logger") as mock_logger:
+            response = self.client.get(self.get_download_url())
+
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+
+            # Verify audit logger was called
+            mock_logger.info.assert_called_once()
+            call_args = mock_logger.info.call_args
+
+            # Verify the log message
+            self.assertEqual(call_args[0][0], "Audit event: %s")
+            self.assertEqual(call_args[0][1], "content.table_download")
+
+            # Verify extra data
+            extra = call_args[1]["extra"]
+            self.assertEqual(extra["event"], "content.table_download")
+            self.assertEqual(extra["object_id"], self.article.pk)
+            self.assertEqual(extra["data"]["table_id"], "test-table-id")
+            self.assertEqual(extra["data"]["revision_id"], self.revision_id)
+            self.assertIn("timestamp", extra)
+
 
 class ChartAndTableDownloadTestCase(WagtailTestUtils, TestCase):
     """Test downloading both chart and table CSVs from the same article."""
@@ -620,3 +689,62 @@ class ChartAndTableDownloadTestCase(WagtailTestUtils, TestCase):
 
         # Verify second table download matches first
         self.assertEqual(table_content, table_content_2)
+
+
+class StatisticalArticlePagePreviewAuditLogTestCase(WagtailTestUtils, TestCase):
+    """Tests for StatisticalArticlePage preview audit logging."""
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.page = StatisticalArticlePageFactory(title="Test Article")
+        cls.factory = RequestFactory()
+
+    def test_serve_preview_logs_for_default_mode(self) -> None:
+        """Test that serve_preview logs audit entry for default mode."""
+        PageLogEntry.objects.filter(page_id=self.page.pk, action="pages.preview_mode_used").delete()
+
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        with patch.object(self.page, "_log_preview") as mock_log_preview:
+            self.page.serve_preview(request, "default")
+            mock_log_preview.assert_called_once_with(request, "default")
+
+    def test_serve_preview_logs_for_related_data_mode(self) -> None:
+        """Test that serve_preview logs audit entry for related_data mode."""
+        PageLogEntry.objects.filter(page_id=self.page.pk, action="pages.preview_mode_used").delete()
+
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        with (
+            patch.object(self.page, "_log_preview") as mock_log_preview,
+            patch.object(self.page, "related_data"),
+        ):
+            # Mock the related_data method to avoid needing full setup
+            self.page.serve_preview(request, "related_data")
+            mock_log_preview.assert_called_once_with(request, "related_data")
+
+    def test_serve_preview_logs_for_featured_article_mode(self) -> None:
+        """Test that serve_preview logs audit entry for featured_article mode."""
+        PageLogEntry.objects.filter(page_id=self.page.pk, action="pages.preview_mode_used").delete()
+
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        with (
+            patch.object(self.page, "_log_preview") as mock_log_preview,
+            patch("cms.articles.models.resolve_model_string") as mock_resolve,
+        ):
+            # Mock the topic page resolution to avoid needing full page tree setup
+            topic = TopicPageFactory()
+            mock_topic_class = type(topic)
+            mock_resolve.return_value = mock_topic_class
+            with (
+                patch.object(mock_topic_class.objects, "ancestor_of") as mock_ancestor,
+                patch.object(topic, "serve"),
+            ):
+                mock_ancestor.return_value.first.return_value = topic
+                self.page.serve_preview(request, "featured_article")
+                mock_log_preview.assert_called_once_with(request, "featured_article")

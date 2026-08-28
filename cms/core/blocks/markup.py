@@ -1,16 +1,24 @@
+import uuid
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.urls import reverse
+from django.utils.html import strip_tags
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
+from wagtail.blocks import StructBlockValidationError
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
 
-from cms.core.utils import strip_unwanted_control_chars_from_json
-from cms.data_downloads.utils import flatten_table_data
+from cms.core.analytics_utils import get_gtm_attributes_file_download
+from cms.core.utils import format_file_size_kb, strip_unwanted_control_chars_from_json
+from cms.data_downloads.utils import (
+    flatten_table_data,
+    get_csv_download_filename,
+    get_table_csv_download_title,
+)
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 
 if TYPE_CHECKING:
@@ -56,7 +64,7 @@ class HeadingBlock(blocks.CharBlock):
 class QuoteBlock(blocks.StructBlock):
     """The quote block."""
 
-    quote = blocks.CharBlock(form_classname="title")
+    quote = blocks.CharBlock(form_classname="title", required_on_save=True)
     attribution = blocks.CharBlock(required=False)
 
     class Meta:
@@ -130,15 +138,37 @@ class BasicTableBlock(WagtailTableBlock):
 class ONSTableBlock(TinyTableBlock):
     """The ONS table block."""
 
-    source = blocks.CharBlock(label="Source", required=False)
+    table_number = blocks.CharBlock(
+        required=False, label="Table number", help_text="Include a label for the figure, for example Table 1."
+    )
+    subtitle = blocks.CharBlock(required=False)
+    source = blocks.CharBlock(label="Source text", required=False)
     footnotes = blocks.RichTextBlock(label="Footnotes", features=settings.RICH_TEXT_BASIC, required=False)
+    # Redeclare the inherited caption field
+    caption = blocks.CharBlock(
+        required=True,
+        required_on_save=True,
+        label="Accessible label",
+        help_text=("A short label to explain what this table is about for screen reader users."),
+    )
 
-    def __init__(
-        self, *, local_blocks: list[blocks.Block] | None = None, search_index: bool = True, **kwargs: Any
-    ) -> None:
-        super().__init__(local_blocks=local_blocks, search_index=search_index, **kwargs)
-        # relabeled to match the publishing team's terminology
-        self.child_blocks["caption"].label = "Sub-heading"
+    def clean(self, value: dict) -> dict:
+        """Validate that a subtitle is only present when a title is also provided."""
+        block_errors: dict = {}
+
+        try:
+            cleaned_value: dict = super().clean(value)
+        except StructBlockValidationError as e:
+            block_errors = dict(e.block_errors)
+            cleaned_value = value
+
+        if cleaned_value.get("subtitle") and not cleaned_value.get("title"):
+            block_errors["subtitle"] = ValidationError("Please add a title if you want to add a subtitle.")
+
+        if block_errors:
+            raise StructBlockValidationError(block_errors=block_errors)
+
+        return cleaned_value
 
     def _align_to_ons_classname(self, alignment: str) -> str:
         match alignment:
@@ -184,31 +214,51 @@ class ONSTableBlock(TinyTableBlock):
             return context
 
         options = {
+            # fallback is only when block_id is not available, which should not happen in normal usage
+            "id": f"table-{context.get('block_id') or uuid.uuid4().hex[:8]}",
+            # Note that headingLevel logic for subtitle, downloads and footnotes is handled in the design system
+            "headingLevel": 3,
+            "figureNumber": value.get("table_number"),
+            "title": value.get("title"),
+            "subtitle": value.get("subtitle"),
             "caption": value.get("caption"),
+            "hideCaption": True,
             "thList": [{"ths": self._prepare_header_cells(header_row)} for header_row in data.get("headers", [])],
             "trs": [{"tds": self._prepare_body_cells(row)} for row in data.get("rows", [])],
+            "sourceNote": _("Source") + ": " + source if (source := value.get("source")) else None,
         }
+
+        # Check for meaningful text before displaying footnotes
+        if (footnotes := value.get("footnotes")) and strip_tags(str(footnotes)).strip():
+            options["footnotes"] = {"title": _("Footnotes"), "content": footnotes}
 
         # Add download config if block_id and page context available
         block_id = context.get("block_id")
         if block_id and parent_context:
-            options["download"] = self._get_download_config(parent_context=parent_context, block_id=block_id, data=data)
-
-        # Used by footnotes and downloads sections
-        additional_sections_heading_level = 4 if value.get("title") else 3
+            options["download"] = self._get_download_config(
+                parent_context=parent_context,
+                block_id=block_id,
+                data=data,
+                table_title=value.get("title"),
+                table_caption=value.get("caption"),
+            )
 
         table_context = {
-            "title": value.get("title"),
             "options": options,
-            "source": value.get("source"),
-            "footnotes": value.get("footnotes"),
-            "additional_sections_heading_level": additional_sections_heading_level,
             **context,
         }
 
         return table_context
 
-    def _get_download_config(self, *, parent_context: dict, block_id: str, data: dict) -> dict[str, Any]:
+    def _get_download_config(
+        self,
+        *,
+        parent_context: dict,
+        block_id: str,
+        data: dict,
+        table_title: str | None,
+        table_caption: str | None,
+    ) -> dict[str, Any]:
         """Build download config for ONS Downloads component."""
         page = parent_context.get("page")
         if not page:
@@ -217,21 +267,34 @@ class ONSTableBlock(TinyTableBlock):
         # Flatten table data for size calculation
         csv_rows = flatten_table_data(data)
 
-        size_suffix = f" ({get_approximate_file_size_in_kb(csv_rows)})"
+        size_suffix = f"({get_approximate_file_size_in_kb(csv_rows)})"
+        link_text = _("Download CSV %(size)s") % {"size": size_suffix}
+        csv_title = get_table_csv_download_title(title=table_title, caption=table_caption)
 
-        # Build URL (preview vs published)
+        csv_url = self._get_table_download_url(parent_context=parent_context, page=page, block_id=block_id)
         request = parent_context.get("request")
-        is_preview = getattr(request, "is_preview", False) if request else False
-        csv_url = (
-            self._build_preview_table_download_url(page, block_id, request)
-            if is_preview
-            else self._build_table_download_url(page, block_id, parent_context.get("superseded_version"))
+        absolute_csv_url = (
+            request.build_absolute_uri(csv_url) if request and not getattr(request, "is_preview", False) else csv_url
+        )
+        attributes = get_gtm_attributes_file_download(
+            text=link_text,
+            url=absolute_csv_url,
+            file_extension="csv",
+            file_name=get_csv_download_filename(title=csv_title, fallback_stem="table"),
+            file_size_kb=format_file_size_kb(len(bytes(str(csv_rows), "utf-8"))),
         )
 
         return {
             "title": _("Download this table"),
-            "itemsList": [{"text": _("Download CSV %(size)s") % {"size": size_suffix}, "url": csv_url}],
+            "itemsList": [{"text": link_text, "url": csv_url, "attributes": attributes}],
         }
+
+    def _get_table_download_url(self, *, parent_context: dict, page: Any, block_id: str) -> str:
+        request = parent_context.get("request")
+        if getattr(request, "is_preview", False):
+            return self._build_preview_table_download_url(page, block_id, request)
+
+        return self._build_table_download_url(page, block_id, parent_context.get("superseded_version"))
 
     @staticmethod
     def _build_download_path_fragment(block_id: str, superseded_version: int | None = None) -> str:
@@ -265,3 +328,12 @@ class ONSTableBlock(TinyTableBlock):
     class Meta:
         icon = "table"
         template = "templates/components/streamfield/table_block.html"
+        form_layout = [  # noqa
+            "table_number",
+            "title",
+            "subtitle",
+            "caption",
+            "data",
+            "source",
+            "footnotes",
+        ]

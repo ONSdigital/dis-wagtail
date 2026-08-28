@@ -4,13 +4,13 @@ from django.urls import reverse
 from django.utils import timezone
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
-from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.models import Team
-from cms.users.tests.factories import UserFactory
+from cms.topics.tests.factories import TopicPageFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
 
@@ -33,28 +33,6 @@ class BundleModelTestCase(TestCase):
         release_page = ReleaseCalendarPageFactory()
         self.bundle.release_calendar_page = release_page
         self.assertEqual(self.bundle.scheduled_publication_date, release_page.release_date)
-
-    def test_can_be_approved__by_status_only(self):
-        test_cases = [
-            (BundleStatus.DRAFT, False),
-            (BundleStatus.IN_REVIEW, True),
-            (BundleStatus.APPROVED, False),
-            (BundleStatus.PUBLISHED, False),
-        ]
-
-        for status, expected in test_cases:
-            with self.subTest(status=status):
-                self.bundle.status = status
-                self.assertEqual(self.bundle.can_be_approved, expected)
-
-    def test_can_be_approved__with_pages(self):
-        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
-
-        self.bundle.status = BundleStatus.IN_REVIEW
-        self.assertFalse(self.bundle.can_be_approved)
-
-        mark_page_as_ready_to_publish(self.statistical_article, UserFactory())
-        self.assertTrue(self.bundle.can_be_approved)
 
     def test_get_bundled_pages(self):
         """Test get_bundled_pages returns correct queryset."""
@@ -135,6 +113,28 @@ class BundleModelTestCase(TestCase):
             with self.subTest(status=status):
                 self.bundle.status = status
                 self.assertEqual(self.bundle.has_unpublished_changes, expected)
+
+    def test_get_pages_for_previewers(self):
+        """Test that get_pages_for_previewers returns the correct pages."""
+        topic_page = TopicPageFactory()
+        article_series_page = ArticleSeriesPageFactory()
+
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+        BundlePageFactory(parent=self.bundle, page=topic_page)
+        BundlePageFactory(parent=self.bundle, page=article_series_page)
+
+        mark_page_as_ready_to_publish(self.statistical_article)
+        mark_page_as_ready_to_publish(topic_page)
+        mark_page_as_ready_to_publish(article_series_page)
+
+        pages_for_previewers = self.bundle.get_pages_for_previewers()
+
+        self.assertEqual(len(pages_for_previewers), 1)
+
+        self.assertIn(self.statistical_article, pages_for_previewers)
+
+        self.assertNotIn(topic_page, pages_for_previewers)
+        self.assertNotIn(article_series_page, pages_for_previewers)
 
 
 class BundledPageMixinTestCase(WagtailTestUtils, TestCase):

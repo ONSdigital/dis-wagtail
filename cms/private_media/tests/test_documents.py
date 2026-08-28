@@ -228,12 +228,17 @@ class TestPrivateDocumentManager(TestCase):
 
     def setUp(self):
         # Create six documents (a mix of private and public)
+        super().setUp()
         self.private_documents = []
         self.public_documents = []
         for _ in range(3):
             self.private_documents.append(DocumentFactory(collection=self.root_collection))
             self.public_documents.append(DocumentFactory(_privacy=Privacy.PUBLIC, collection=self.root_collection))
         PURGED_URLS.clear()
+
+    def tearDown(self):
+        PURGED_URLS.clear()
+        super().tearDown()
 
     def test_bulk_make_public(self):
         """Test the behaviour of PrivateDocumentManager.bulk_make_public()."""

@@ -6,17 +6,21 @@ import os
 import sys
 import warnings
 from copy import deepcopy
+from functools import partial
 from pathlib import Path
 from typing import cast
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.csp import CSP
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
 from wagtail.utils.deprecation import RemovedInWagtail80Warning
 
+from cms.core.db_iam_config import get_conninfo
 from cms.core.elasticache import ElastiCacheIAMCredentialProvider
 from cms.core.jinja2 import custom_json_dumps
+from cms.core.rds_client import create_rds_client
 
 # TODO: Remove once wagtailtables updates telepath import
 # https://github.com/overcastsoftware/wagtailtables/issues/7
@@ -94,6 +98,7 @@ INSTALLED_APPS = [
     "cms.taxonomy",
     "cms.search",
     "cms.workflows",
+    "cms.post_publish_actions",
     "wagtail.sites",
     "wagtail.users",
     "wagtail.snippets",
@@ -134,6 +139,14 @@ if not IS_EXTERNAL_ENV:
         ]
     )
 
+CMS_TEST_DATA_ENABLED = env.get("CMS_TEST_DATA_ENABLED", "false").lower() == "true"
+CMS_TEST_DATA_PREFIX = env.get("CMS_TEST_DATA_PREFIX", "Z-RANDOM ")
+
+if CMS_TEST_DATA_ENABLED:
+    if not CMS_TEST_DATA_PREFIX.strip():
+        raise ImproperlyConfigured("CMS_TEST_DATA_PREFIX must not be blank.")
+    INSTALLED_APPS.append("cms.test_data")
+
 
 # Middleware classes
 # https://docs.djangoproject.com/en/stable/ref/settings/#middleware
@@ -145,10 +158,10 @@ MIDDLEWARE = [
     # SecurityMiddleware.
     # http://whitenoise.evans.io/en/stable/#quickstart-for-django-apps
     "cms.core.whitenoise.CMSWhiteNoiseMiddleware",
+    "django_permissions_policy.PermissionsPolicyMiddleware",
     "cms.locale.middleware.SubdomainLocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Custom middleware to redirect trailing slash URLs to non-trailing-slash equivalent
     # which needs to be placed after CommonMiddleware to avoid double redirects.
     "cms.core.middleware.NonTrailingSlashRedirectMiddleware",
@@ -164,6 +177,15 @@ if not IS_EXTERNAL_ENV:
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
 
+CSP_ENABLED = env.get("CMS_CSP_ENABLED", "true").lower().strip() == "true"
+
+if CSP_ENABLED:
+    MIDDLEWARE.append("django.middleware.csp.ContentSecurityPolicyMiddleware")
+
+if IS_EXTERNAL_ENV:
+    MIDDLEWARE.append("cms.core.middleware.CloudflareWagtailCacheTagMiddleware")
+
+
 ROOT_URLCONF = "cms.urls"
 
 context_processors = [
@@ -174,6 +196,9 @@ context_processors = [
     # global variables to all the templates.
     "cms.core.context_processors.global_vars",
 ]
+
+if CSP_ENABLED:
+    context_processors.append("django.template.context_processors.csp")
 
 jinja2_extensions = [
     *DEFAULT_EXTENSIONS,
@@ -233,45 +258,49 @@ WSGI_APPLICATION = "cms.wsgi.application"
 
 AWS_REGION = env.get("AWS_REGION")
 
-
 # Database
 
-# None allows connections to be reused for longer, since opening them is expensive.
-# CONN_HEALTH_CHECK ensures they're still healthy before attempting to use them.
-db_conn_max_age = int(env["PG_CONN_MAX_AGE"]) if "PG_CONN_MAX_AGE" in env else None
-db_read_conn_max_age = int(env["PG_READ_CONN_MAX_AGE"]) if "PG_READ_CONN_MAX_AGE" in env else None
-
 if "PG_DB_ADDR" in env:
+    if AWS_REGION is None:
+        raise ImproperlyConfigured("AWS_REGION must be defined to use database IAM authentication.")
+    rds_client = create_rds_client(AWS_REGION)
+
     # Use IAM authentication to connect to the Database
-    DATABASES = {
-        "default": cast(
+    def _iam_database_config(host: str) -> dj_database_url.DBConfig:
+        return cast(
             dj_database_url.DBConfig,
             {
-                "ENGINE": "django_iam_dbauth.aws.postgresql",
+                "ENGINE": "django.db.backends.postgresql",
                 "NAME": env["PG_DB_DATABASE"],
                 "USER": env["PG_DB_USER"],
-                "HOST": env["PG_DB_ADDR"],
+                "HOST": host,
                 "PORT": env["PG_DB_PORT"],
-                "CONN_MAX_AGE": db_conn_max_age,
-                "CONN_HEALTH_CHECK": True,
-                "OPTIONS": {"use_iam_auth": True, "sslmode": "require", "region_name": AWS_REGION},
+                "CONN_MAX_AGE": 0,
+                "CONN_HEALTH_CHECKS": True,
+                "OPTIONS": {
+                    "sslmode": "require",
+                    "pool": {
+                        "conninfo": partial(
+                            get_conninfo,
+                            rds_client,
+                            host=host,
+                            port=int(env["PG_DB_PORT"]),
+                            user=env["PG_DB_USER"],
+                        )
+                    },
+                },
             },
         )
+
+    DATABASES = {
+        "default": _iam_database_config(env["PG_DB_ADDR"]),
+        "read_replica": _iam_database_config(env.get("PG_DB_READ_ADDR", env["PG_DB_ADDR"])),
     }
-
-    # Additionally configure a read-replica
-    if "PG_DB_READ_ADDR" in env:
-        DATABASES["read_replica"] = {
-            **deepcopy(DATABASES["default"]),
-            "HOST": env["PG_DB_READ_ADDR"],
-            "CONN_MAX_AGE": db_read_conn_max_age,
-        }
-
 else:
     # note: dj_database_url.config() expects an int, while dj_database_url.DBConfig accepts None
     DATABASES = {
         "default": dj_database_url.config(
-            conn_max_age=db_conn_max_age or 0, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
+            conn_max_age=0, conn_health_checks=True, default="postgres://ons:ons@localhost:5432/ons"
         ),
     }
 
@@ -280,12 +309,22 @@ else:
         DATABASES["default"]["PORT"] = env["DB_PORT"]
 
     if "READ_REPLICA_DATABASE_URL" in env:
-        DATABASES["read_replica"] = dj_database_url.config(
-            env="READ_REPLICA_DATABASE_URL", conn_max_age=db_read_conn_max_age or 0
-        )
+        DATABASES["read_replica"] = dj_database_url.config(env="READ_REPLICA_DATABASE_URL", conn_max_age=0)
 
 if "read_replica" not in DATABASES:
     DATABASES["read_replica"] = deepcopy(DATABASES["default"])
+
+# Configure a connection pool to reduce connections when using threads.
+# The numbers are intentionally low, as contention on connections shouldn't be high.
+# Read and write replicas can have their own pool sizes.
+db_pool_default_max_size = int(env.get("DB_POOL_MAX_SIZE", 3))
+for db_alias, db_config in DATABASES.items():
+    db_pool_alias_env_var = "DB_POOL_MAX_SIZE_READ" if db_alias == "read_replica" else "DB_POOL_MAX_SIZE_WRITE"
+    db_pool_options = {
+        "min_size": 1,
+        "max_size": int(env.get(db_pool_alias_env_var, db_pool_default_max_size)),
+    }
+    db_config.setdefault("OPTIONS", {}).setdefault("pool", {}).update(db_pool_options)
 
 DATABASE_ROUTERS = [
     "cms.core.db_router.ExternalEnvRouter",
@@ -572,6 +611,11 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "cms.audit": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
         "wagtail": {
             "handlers": ["console"],
             "level": "INFO",
@@ -746,34 +790,16 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = int(env.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 10_
 # Enabling this doesn't have any benefits but will make it harder to make
 # requests from javascript because the csrf cookie won't be easily accessible.
 # https://docs.djangoproject.com/en/stable/ref/settings/#csrf-cookie-httponly
-# CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_HTTPONLY = True
 
 # Custom view to handle CSRF failures.
 CSRF_FAILURE_VIEW = "cms.core.views.csrf_failure"
-
-# Force HTTPS redirect (enabled by default!)
-# https://docs.djangoproject.com/en/stable/ref/settings/#secure-ssl-redirect
-SECURE_SSL_REDIRECT = env.get("SECURE_SSL_REDIRECT", "true").lower().strip() == "true"
-
 
 # This will allow the cache to swallow the fact that the website is behind TLS
 # and inform the Django using "X-Forwarded-Proto" HTTP header.
 # https://docs.djangoproject.com/en/stable/ref/settings/#secure-proxy-ssl-header
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-
-# This is a setting activating the HSTS header. This will enforce the visitors to use
-# HTTPS for an amount of time specified in the header. Since we are expecting our apps
-# to run via TLS by default, this header is activated by default.
-# The header can be deactivated by setting this setting to 0, as it is done in the
-# dev and testing settings.
-# https://docs.djangoproject.com/en/stable/ref/settings/#secure-hsts-seconds
-DEFAULT_HSTS_SECONDS = 30 * 24 * 60 * 60  # 30 days
-SECURE_HSTS_SECONDS = int(env.get("SECURE_HSTS_SECONDS", DEFAULT_HSTS_SECONDS))
-
-# We don't enforce HSTS on subdomains as anything at subdomains is likely outside our control.
-# https://docs.djangoproject.com/en/3.2/ref/settings/#secure-hsts-include-subdomains
-SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#secure-content-type-nosniff
@@ -784,45 +810,14 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = env.get("SECURE_REFERRER_POLICY", "no-referrer-when-downgrade").strip()
 
 
-# Content Security policy settings
-# Most modern browsers don't honor the X-XSS-Protection HTTP header.
-# You can use Content-Security-Policy without allowing 'unsafe-inline' scripts instead.
-# https://django-csp.readthedocs.io/en/latest/configuration.html
-if "CSP_DEFAULT_SRC" in env:
-    MIDDLEWARE.append("csp.middleware.CSPMiddleware")
-
-    # The “special” source values of 'self', 'unsafe-inline', 'unsafe-eval', and 'none' must be quoted!
-    # e.g.: CSP_DEFAULT_SRC = "'self'" Without quotes they will not work as intended.
-    CSP_DEFAULT_SRC = env.get("CSP_DEFAULT_SRC", "").split(",")
-    CSP_DIRECTIVES = {
-        "default-src": CSP_DEFAULT_SRC,
-    }
-
-    if "CSP_SCRIPT_SRC" in env:
-        CSP_DIRECTIVES["script-src"] = env.get("CSP_SCRIPT_SRC", "").split(",")
-    if "CSP_STYLE_SRC" in env:
-        CSP_DIRECTIVES["style-src"] = env.get("CSP_STYLE_SRC", "").split(",")
-    if "CSP_IMG_SRC" in env:
-        CSP_DIRECTIVES["img-src"] = env.get("CSP_IMG_SRC", "").split(",")
-    if "CSP_CONNECT_SRC" in env:
-        CSP_DIRECTIVES["connect-src"] = env.get("CSP_CONNECT_SRC", "").split(",")
-    if "CSP_FONT_SRC" in env:
-        CSP_DIRECTIVES["font-src"] = env.get("CSP_FONT_SRC", "").split(",")
-    if "CSP_BASE_URI" in env:
-        CSP_DIRECTIVES["base-uri"] = env.get("CSP_BASE_URI", "").split(",")
-    if "CSP_OBJECT_SRC" in env:
-        CSP_DIRECTIVES["object-src"] = env.get("CSP_OBJECT_SRC", "").split(",")
-
-    if env.get("CSP_REPORT_ONLY", "false").lower() == "true":
-        CONTENT_SECURITY_POLICY_REPORT_ONLY = {"DIRECTIVES": CSP_DIRECTIVES}
-    else:
-        CONTENT_SECURITY_POLICY = {"DIRECTIVES": CSP_DIRECTIVES}
-
-
 # Django REST framework settings
 # Change default settings that enable basic auth.
 REST_FRAMEWORK = {"DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication",)}
 
+SILENCED_SYSTEM_CHECKS = [
+    "security.W004",  # Set HSTS at infrastructure level
+    "security.W008",  # Redirect to HTTPS at infrastructure level
+]
 
 AUTH_USER_MODEL = "users.User"
 
@@ -995,6 +990,13 @@ SLACK_ALARM_CHANNEL = env.get("SLACK_ALARM_CHANNEL", "")
 # Feature flag for sending slack messages on bundle status changes (before pre-publish, e.g. entering review)
 SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE = env.get("SLACK_NOTIFY_ON_BUNDLE_STATUS_CHANGE", "false").lower() == "true"
 
+# 110 seconds is comfortably under the 2 minute cron interval
+BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS = float(env.get("BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS", 110))
+BUNDLE_POST_PUBLISH_CONCURRENCY = int(env.get("BUNDLE_POST_PUBLISH_CONCURRENCY", 6))
+BUNDLE_POST_PUBLISH_SUPPORT_CONCURRENCY = int(env.get("BUNDLE_POST_PUBLISH_SUPPORT_CONCURRENCY", 3))
+BUNDLE_POST_PUBLISH_ACTION_SUBMIT_ON_COMMIT = True
+BUNDLE_POST_PUBLISH_POLL_FREQUENCY = float(env.get("BUNDLE_POST_PUBLISH_POLL_FREQUENCY", 5))
+BUNDLE_POST_PUBLISH_MAX_RETRIES = int(env.get("BUNDLE_POST_PUBLISH_MAX_RETRIES", 3))
 
 # API bases
 ONS_API_BASE_URL = env.get("ONS_API_BASE_URL", "https://api.beta.ons.gov.uk/v1")
@@ -1019,7 +1021,10 @@ BUNDLE_DATASET_METADATA_VALIDATION_ENABLED = (
 ONS_WEBSITE_BASE_URL = env.get("ONS_WEBSITE_BASE_URL", "https://www.ons.gov.uk")
 ONS_ORGANISATION_NAME = env.get("ONS_ORGANISATION_NAME", "Office for National Statistics")
 
-DEFAULT_OG_IMAGE_URL = env.get("DEFAULT_OG_IMAGE_URL", "https://cdn.ons.gov.uk/assets/images/ons-logo/v2/ons-logo.png")
+ONS_CDN_URL = "https://cdn.ons.gov.uk"
+
+DEFAULT_OG_IMAGE_URL = env.get("DEFAULT_OG_IMAGE_URL", f"{ONS_CDN_URL}/assets/images/ons-logo/v2/ons-logo.png")
+WAGTAIL_GRAVATAR_PROVIDER_URL = None
 
 WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE = True
 
@@ -1051,6 +1056,14 @@ if "IFRAME_VISUALISATION_ALLOWED_DOMAINS" in env:
     IFRAME_VISUALISATION_ALLOWED_DOMAINS = env["IFRAME_VISUALISATION_ALLOWED_DOMAINS"].split(",")
 else:  # Default to ONS allowed link domains if not set
     IFRAME_VISUALISATION_ALLOWED_DOMAINS = ONS_ALLOWED_LINK_DOMAINS
+
+# CSP wildcards do not match the apex domain, so include both `example.com`
+# and `*.example.com` to mirror iframe URL validation.
+IFRAME_VISUALISATION_CSP_SOURCES = [
+    host
+    for domain in IFRAME_VISUALISATION_ALLOWED_DOMAINS
+    for host in (domain, f"*.{domain}" if not domain.startswith(("www.", "*.", "http://", "https://")) else domain)
+]
 
 
 # Allowed path prefixes for iframe visualisations
@@ -1168,5 +1181,63 @@ WAGTAIL_FINISH_WORKFLOW_ACTION = "cms.workflows.workflows.finish_workflow_and_pu
 
 CMS_PAGE_PRIVACY_CONTROLS_ENABLED = env.get("CMS_PAGE_PRIVACY_CONTROLS_ENABLED", "false").lower() == "true"
 
-# Disable Wagtail's auto-saving feature
-WAGTAIL_AUTOSAVE_INTERVAL = 0
+# Use default autosave value if not specified. Set to 0 to disable
+WAGTAIL_AUTOSAVE_INTERVAL = int(env.get("WAGTAIL_AUTOSAVE_INTERVAL", 500))
+
+CMS_AUDIT_LOG_COOLDOWN_SECONDS = int(env.get("CMS_AUDIT_LOG_COOLDOWN_SECONDS", 30))
+
+# Content Security policy settings
+# https://docs.djangoproject.com/en/6.0/ref/csp/
+static_sources = [ONS_CDN_URL, "cdnjs.cloudflare.com"]
+SECURE_CSP: dict[str, list] = {
+    "default-src": [CSP.SELF],
+    "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_CSP_SOURCES],
+    # UNSAFE_INLINE is required by mathjax
+    "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE, "*.hotjar.com"],
+    "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com", "*.hotjar.com"],
+    # UNSAFE_INLINE is required by hotjar
+    "script-src": [CSP.SELF, *static_sources, "*.hotjar.com", "www.googletagmanager.com", CSP.UNSAFE_INLINE],
+    "font-src": [CSP.SELF, *static_sources, "*.hotjar.com"],
+    "connect-src": [
+        CSP.SELF,
+        "www.googletagmanager.com",
+        "www.google.com",
+        "*.hotjar.com",
+        "*.hotjar.io",
+        "wss://*.hotjar.com",
+    ],
+    "manifest-src": [CSP.SELF, ONS_CDN_URL],
+    "frame-ancestors": [CSP.NONE if IS_EXTERNAL_ENV else CSP.SELF],
+}
+# Google Fonts are only needed for the Wagtail admin.
+# The external site loads fonts directly from the ONS CDN, so these CSP sources
+# should not be allowed there.
+if not IS_EXTERNAL_ENV:
+    SECURE_CSP["style-src"].append("fonts.googleapis.com")
+    SECURE_CSP["font-src"].append("fonts.gstatic.com")
+
+if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
+    SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")
+
+WAGTAIL_CSP = deepcopy(SECURE_CSP)
+
+# Set a sensible permissions policy to disable privacy-invading or annoying features
+PERMISSIONS_POLICY: dict = {
+    "accelerometer": [],
+    "autoplay": [],
+    "camera": [],
+    "display-capture": [],
+    "encrypted-media": [],
+    "fullscreen": [],
+    "geolocation": [],
+    "gyroscope": [],
+    "interest-cohort": [],
+    "microphone": [],
+    "midi": [],
+    "payment": [],
+    "usb": [],
+}
+
+# Cloudflare cache tag applied to CMS responses.
+# Used to purge Wagtail CMS responses as a group.
+CMS_CLOUDFLARE_CACHE_TAG = env.get("CMS_CLOUDFLARE_CACHE_TAG", "wagtail").strip()

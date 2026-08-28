@@ -1,0 +1,34 @@
+name: Install system dependencies
+description: Installs apt packages matplotlib needs to render LaTeX equations and caches downloaded archives
+
+outputs:
+  os-id:
+    description: Distribution ID and version of the runner
+    value: ${{ steps.os-release.outputs.id }}
+
+runs:
+  using: composite
+  steps:
+    # ubuntu-latest changes version, and runner.os is always Linux, so cache keys
+    # need to be based on the distro version
+    - name: Get runner OS
+      id: os-release
+      shell: bash
+      run: echo "id=$(. /etc/os-release && echo "$ID-$VERSION_ID")" >> $GITHUB_OUTPUT
+
+    - name: Cache apt archives
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 # zizmor: ignore[cache-poisoning]
+      with:
+        path: ~/apt-archives
+        key: ${{ steps.os-release.outputs.id }}-apt-tex-v1
+
+    - name: Install apt packages
+      shell: bash
+      run: |
+        mkdir -p ~/apt-archives/partial
+        sudo apt-get install -y --no-install-recommends \
+          -o Dir::Cache::archives="$HOME/apt-archives" \
+          -o APT::Sandbox::User=root \
+          -o Acquire::Retries=3 \
+          gettext cm-super texlive-latex-extra
+        sudo chown -R "$USER" ~/apt-archives

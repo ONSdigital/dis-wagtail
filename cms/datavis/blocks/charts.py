@@ -1,16 +1,11 @@
 import json
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, ClassVar
-from urllib.parse import ParseResult, urlparse
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.forms import widgets
-from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 
-from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
-from cms.core.url_utils import is_hostname_in_domain
 from cms.datavis.blocks.annotations import (
     LineAnnotationBarColumnBlock,
     LineAnnotationCategoricalBlock,
@@ -21,11 +16,12 @@ from cms.datavis.blocks.annotations import (
     RangeAnnotationCategoricalBlock,
     RangeAnnotationLinearBlock,
 )
-from cms.datavis.blocks.base import BaseChartBlock, BaseVisualisationBlock
+from cms.datavis.blocks.base import BaseChartBlock
 from cms.datavis.blocks.table import SimpleTableBlock, TableDataType
 from cms.datavis.blocks.utils import TextInputFloatBlock, TextInputIntegerBlock
 from cms.datavis.constants import (
     AXIS_TITLE_HELP_TEXT,
+    CATEGORY_AXIS_TICK_INTERVAL_HELP_TEXT,
     AxisType,
     BarColumnChartTypeChoices,
     BarColumnConfidenceIntervalChartTypeChoices,
@@ -34,6 +30,34 @@ from cms.datavis.constants import (
 
 if TYPE_CHECKING:
     from wagtail.blocks.struct_block import StructValue
+
+
+def _validate_bar_chart_x_axis(
+    x_axis: StructValue,
+    *,
+    title_error_code: str,
+    tick_interval_error_code: str,
+) -> None:
+    """Validate that horizontal bar charts do not have x-axis titles or tick intervals."""
+    x_axis_errors: dict[str, ValidationError] = {}
+
+    if x_axis.get("title"):
+        x_axis_errors["title"] = ValidationError(
+            "Category axis title is not supported for horizontal bar charts.",
+            code=title_error_code,
+        )
+
+    for field_name in ("tick_interval_mobile", "tick_interval_desktop"):
+        if x_axis.get(field_name) is not None:
+            x_axis_errors[field_name] = ValidationError(
+                "Category axis tick interval is not supported for horizontal bar charts.",
+                code=tick_interval_error_code,
+            )
+
+    if x_axis_errors:
+        raise blocks.StructBlockValidationError(
+            {"x_axis": blocks.StructBlockValidationError(block_errors=x_axis_errors)}
+        )
 
 
 class LineChartBlock(BaseChartBlock):
@@ -87,6 +111,22 @@ class LineChartBlock(BaseChartBlock):
 
     class Meta:
         icon = "chart-line"
+        form_layout = [  # noqa
+            "figure_number",
+            "title",
+            "subtitle",
+            "audio_description",
+            "table",
+            "theme",
+            "show_legend",
+            "show_markers",
+            "x_axis",
+            "y_axis",
+            "options",
+            "annotations",
+            "caption",
+            "footnotes",
+        ]
 
 
 class BarColumnChartBlock(BaseChartBlock):
@@ -102,6 +142,7 @@ class BarColumnChartBlock(BaseChartBlock):
     ERROR_ALL_SERIES_SELECTED = "all_series_selected"
     ERROR_BAR_CHART_NO_ASPECT_RATIO = "bar_chart_no_aspect_ratio"
     ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE = "horizontal_bar_no_category_title"
+    ERROR_HORIZONTAL_BAR_NO_CATEGORY_TICK_INTERVAL = "horizontal_bar_no_category_tick_interval"
     ERROR_NON_STACKED_COLUMN_NO_LINE = "non_stacked_column_no_line_overlay"
     ERROR_HORIZONTAL_BAR_NO_CUSTOM_REFERENCE_LINE = "horizontal_bar_no_custom_reference_line"
     ERROR_MULTIPLE_SERIES_NO_REFERENCE_LINE = "multiple_series_no_reference_line"
@@ -124,6 +165,7 @@ class BarColumnChartBlock(BaseChartBlock):
         default=BarColumnChartTypeChoices.BAR,
         label="Display as",
         widget=widgets.RadioSelect,
+        required_on_save=True,
     )
     show_data_labels = blocks.BooleanBlock(
         default=False,
@@ -143,6 +185,22 @@ class BarColumnChartBlock(BaseChartBlock):
                 blocks.CharBlock(
                     required=False,
                     help_text=AXIS_TITLE_HELP_TEXT,
+                ),
+            ),
+            (
+                "tick_interval_mobile",
+                TextInputIntegerBlock(
+                    label="Tick interval (mobile)",
+                    required=False,
+                    help_text=CATEGORY_AXIS_TICK_INTERVAL_HELP_TEXT,
+                ),
+            ),
+            (
+                "tick_interval_desktop",
+                TextInputIntegerBlock(
+                    label="Tick interval (desktop)",
+                    required=False,
+                    help_text=CATEGORY_AXIS_TICK_INTERVAL_HELP_TEXT,
                 ),
             ),
         ],
@@ -186,7 +244,9 @@ class BarColumnChartBlock(BaseChartBlock):
         [
             (
                 SERIES_AS_LINE_OVERLAY_BLOCK,
-                TextInputIntegerBlock(help_text="The number of the series to display as a line overlay."),
+                TextInputIntegerBlock(
+                    help_text="The number of the series to display as a line overlay.", required_on_save=True
+                ),
             ),
         ],
         required=False,
@@ -194,6 +254,25 @@ class BarColumnChartBlock(BaseChartBlock):
 
     class Meta:
         icon = "chart-bar"
+        form_layout = [  # noqa
+            "figure_number",
+            "title",
+            "subtitle",
+            "audio_description",
+            "table",
+            "select_chart_type",
+            "theme",
+            "show_legend",
+            "show_data_labels",
+            "use_stacked_layout",
+            "x_axis",
+            "y_axis",
+            "options",
+            "series_customisation",
+            "annotations",
+            "caption",
+            "footnotes",
+        ]
 
     def get_series_customisation(self, value: StructValue, series_number: int) -> dict[str, Any]:
         for block in value.get("series_customisation", []):
@@ -258,19 +337,14 @@ class BarColumnChartBlock(BaseChartBlock):
             raise blocks.StructBlockValidationError(block_errors=errors)
 
     def validate_x_axis(self, value: StructValue) -> None:
-        if value.get("select_chart_type") == BarColumnChartTypeChoices.BAR and value.get("x_axis").get("title"):
-            raise blocks.StructBlockValidationError(
-                {
-                    "x_axis": blocks.StructBlockValidationError(
-                        block_errors={
-                            "title": ValidationError(
-                                "Category axis title is not supported for horizontal bar charts.",
-                                code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
-                            )
-                        }
-                    )
-                }
-            )
+        if value.get("select_chart_type") != BarColumnChartTypeChoices.BAR:
+            return
+
+        _validate_bar_chart_x_axis(
+            value.get("x_axis"),
+            title_error_code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+            tick_interval_error_code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TICK_INTERVAL,
+        )
 
     def validate_y_axis(self, value: StructValue) -> None:
         if value.get("y_axis").get("custom_reference_line"):
@@ -356,6 +430,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
     ERROR_INSUFFICIENT_COLUMNS = "insufficient_columns"
     ERROR_NON_NUMERIC_VALUE = "non_numeric_value"
     ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE = "horizontal_bar_no_category_title"
+    ERROR_HORIZONTAL_BAR_NO_CATEGORY_TICK_INTERVAL = "horizontal_bar_no_category_tick_interval"
 
     # Table data settings
     INITIAL_COLUMN_HEADINGS: tuple[str, ...] = ("Category", "Value", "Range min", "Range max")
@@ -396,10 +471,29 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
         default=BarColumnConfidenceIntervalChartTypeChoices.BAR,
         label="Display as",
         widget=widgets.RadioSelect,
+        required_on_save=True,
     )
     # NB X_axis is labelled "Category axis" for bar/column charts
     x_axis = blocks.StructBlock(
-        [("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT))],
+        [
+            ("title", blocks.CharBlock(required=False, help_text=AXIS_TITLE_HELP_TEXT)),
+            (
+                "tick_interval_mobile",
+                TextInputIntegerBlock(
+                    label="Tick interval (mobile)",
+                    required=False,
+                    help_text=CATEGORY_AXIS_TICK_INTERVAL_HELP_TEXT,
+                ),
+            ),
+            (
+                "tick_interval_desktop",
+                TextInputIntegerBlock(
+                    label="Tick interval (desktop)",
+                    required=False,
+                    help_text=CATEGORY_AXIS_TICK_INTERVAL_HELP_TEXT,
+                ),
+            ),
+        ],
         label="Category axis",
     )
     # NB Y_axis is labelled "Value axis" for bar/column charts
@@ -417,15 +511,34 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
     )
     estimate_line_label = blocks.CharBlock(
         required=True,
+        required_on_save=True,
         help_text="Label for the estimate line in the legend",
     )
     uncertainty_range_label = blocks.CharBlock(
         required=True,
+        required_on_save=True,
         help_text="Label for the uncertainty range in the legend",
     )
 
     class Meta:
         icon = "chart-column"
+        form_layout = [  # noqa
+            "figure_number",
+            "title",
+            "subtitle",
+            "audio_description",
+            "table",
+            "select_chart_type",
+            "x_axis",
+            "y_axis",
+            "estimate_line_label",
+            "uncertainty_range_label",
+            "options",
+            "series_customisation",
+            "annotations",
+            "caption",
+            "footnotes",
+        ]
 
     def get_component_config(
         self,
@@ -551,21 +664,14 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
             raise blocks.StructBlockValidationError(block_errors=errors)
 
     def validate_x_axis(self, value: StructValue) -> None:
-        if value.get("select_chart_type") == BarColumnConfidenceIntervalChartTypeChoices.BAR and value.get(
-            "x_axis"
-        ).get("title"):
-            raise blocks.StructBlockValidationError(
-                {
-                    "x_axis": blocks.StructBlockValidationError(
-                        block_errors={
-                            "title": ValidationError(
-                                "Category axis title is not supported for horizontal bar charts.",
-                                code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
-                            )
-                        }
-                    )
-                }
-            )
+        if value.get("select_chart_type") != BarColumnConfidenceIntervalChartTypeChoices.BAR:
+            return
+
+        _validate_bar_chart_x_axis(
+            value.get("x_axis"),
+            title_error_code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE,
+            tick_interval_error_code=self.ERROR_HORIZONTAL_BAR_NO_CATEGORY_TICK_INTERVAL,
+        )
 
 
 class ScatterPlotBlock(BaseChartBlock):
@@ -628,6 +734,21 @@ class ScatterPlotBlock(BaseChartBlock):
 
     class Meta:
         icon = "chart-line"
+        form_layout = [  # noqa
+            "figure_number",
+            "title",
+            "subtitle",
+            "audio_description",
+            "table",
+            "theme",
+            "show_legend",
+            "x_axis",
+            "y_axis",
+            "options",
+            "annotations",
+            "caption",
+            "footnotes",
+        ]
 
     def get_series_data(self, value: StructValue) -> tuple[list[list[str | int | float]], list[dict[str, Any]]]:
         rows: list[list[str | int | float]] = value["table"].rows
@@ -697,6 +818,21 @@ class AreaChartBlock(BaseChartBlock):
 
     class Meta:
         icon = "chart-area"
+        form_layout = [  # noqa
+            "figure_number",
+            "title",
+            "subtitle",
+            "audio_description",
+            "table",
+            "theme",
+            "show_legend",
+            "x_axis",
+            "y_axis",
+            "options",
+            "annotations",
+            "caption",
+            "footnotes",
+        ]
 
     def clean(self, value: StructValue) -> StructValue:
         value = super().clean(value)
@@ -716,122 +852,3 @@ class AreaChartBlock(BaseChartBlock):
                     )
                 }
             )
-
-
-class IframeBlock(BaseVisualisationBlock):
-    iframe_source_url = RelativeOrAbsoluteURLBlock(
-        required=True,
-        help_text=(
-            "Enter the full URL or relative URL path (preferred) of the visualisation you want to embed. "
-            "A full URL must start with <code>https://</code>, the hostname must match one of the allowed domains. "
-            "The URL path must start with an allowed prefix for both full or relative URLs. "
-            f"Allowed domains: "
-            f"{' or '.join(f'<code>{d}</code>' for d in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)}. "
-            f"Allowed path prefixes: "
-            f"{' or '.join(f'<code>{p}</code>' for p in settings.IFRAME_VISUALISATION_PATH_PREFIXES)}."
-        ),
-    )
-
-    class Meta:
-        icon = "code"
-
-    def clean(self, value: StructValue) -> StructValue:
-        errors = {}
-
-        for field_name, field in self.child_blocks.items():
-            if field.required and not value.get(field_name):
-                errors[field_name] = ValidationError("This field is required.")
-
-        errors |= self._validate_source_url(value)
-
-        if errors:
-            raise blocks.StructBlockValidationError(errors)
-
-        return super().clean(value)
-
-    def _validate_source_url(self, value: StructValue) -> dict[str, ValidationError]:
-        """Validate the source URL of the iframe. Validation errors are returned as an errors dict.
-        The URL can be either absolute (with scheme and hostname) or relative (path only).
-        """
-        source_url = value["iframe_source_url"]
-        if not source_url:
-            return {"iframe_source_url": ValidationError("Please enter a valid URL.")}
-
-        parsed_url = urlparse(source_url)
-
-        if parsed_url.scheme or parsed_url.netloc:
-            # If a scheme or netloc is present, validate as an absolute URL
-            return self._validate_absolute_source_url(parsed_url, source_url=source_url)
-
-        # Otherwise, validate as a relative URL path
-        return self._validate_source_url_path(parsed_url)
-
-    def _validate_absolute_source_url(self, parsed_url: ParseResult, *, source_url: str) -> dict[str, ValidationError]:
-        """Validate the absolute source URL of the iframe. Validation errors are returned as an errors dict."""
-        errors = {}
-        allowed_domains = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
-
-        # Check the original source_url string scheme here, as URL parse is permissive of malformed schemes
-        if not (source_url.startswith("https://") and parsed_url.hostname):
-            errors["iframe_source_url"] = ValidationError(
-                "Please enter a valid URL. Full URLs must start with 'https://'."
-            )
-        elif not any(
-            is_hostname_in_domain(parsed_url.hostname, allowed_domain)
-            for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
-        ):
-            errors["iframe_source_url"] = ValidationError(
-                f"The URL hostname is not in the list of allowed domains: {allowed_domains}"
-            )
-        else:
-            path_errors = self._validate_source_url_path(parsed_url)
-            errors.update(path_errors)
-
-        return errors
-
-    @staticmethod
-    def _validate_source_url_path(parsed_url: ParseResult) -> dict[str, ValidationError]:
-        """Validate the path of the iframe source URL. Validation errors are returned as an errors dict."""
-        errors = {}
-        url_path = parsed_url.path.rstrip("/")
-        allowed_prefixes = [prefix.rstrip("/") for prefix in settings.IFRAME_VISUALISATION_PATH_PREFIXES]
-
-        if not any(
-            url_path.startswith(prefix + "/") and len(url_path) > len(prefix) + 1 for prefix in allowed_prefixes
-        ):
-            readable_prefixes = " or ".join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)
-            errors["iframe_source_url"] = ValidationError(
-                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
-                "and include a subpath after the prefix."
-            )
-        return errors
-
-    def get_component_config(
-        self,
-        value: StructValue,
-        *,
-        # We don't call super() here, so these args are unused
-        parent_context: dict[str, Any] | None = None,  # pylint: disable=unused-argument
-        block_id: str | None = None,  # pylint: disable=unused-argument
-    ) -> dict[str, Any]:
-        config = {
-            "headingLevel": 3,
-            "title": value.get("title"),
-            "subtitle": value.get("subtitle"),
-            "caption": value.get("caption"),
-            "description": value.get("audio_description"),
-            "iframeUrl": value.get("iframe_source_url"),
-        }
-        if footnotes := value.get("footnotes"):
-            config["footnotes"] = {
-                "title": _("Footnotes"),
-                "content": str(footnotes),
-            }
-
-        return config
-
-    def get_context(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
-        context: dict[str, Any] = super().get_context(value, parent_context)
-
-        context["chart_config"] = self.get_component_config(value)
-        return context

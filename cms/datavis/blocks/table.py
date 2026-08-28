@@ -55,7 +55,7 @@ class SimpleTableStructValue(StructValue):
 
 
 class SimpleTableBlock(TableBlock):
-    table_data = blocks.TextBlock(label=_("Data"), default="[]")
+    table_data = blocks.TextBlock(label=_("Data"), default="[]", required_on_save=True)
     caption = None
     header_row = None
     header_col = None

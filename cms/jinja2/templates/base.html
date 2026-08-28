@@ -28,6 +28,7 @@
 
         <script>
             function loadGTM(){
+                // nonce-aware version of the GTM container
                 (function(w,d,s,l,i){
                     w[l]=w[l]||[];
                     w[l].push({
@@ -38,6 +39,8 @@
                         j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
                     j.async=true;
                     j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+                    var n=d.querySelector('[nonce]');
+                    n&&j.setAttribute('nonce',n.nonce||n.getAttribute('nonce'));
                     f.parentNode.insertBefore(j,f);
                 })
                 (window,document,'script','dataLayer', "{{ GOOGLE_TAG_MANAGER_CONTAINER_ID|escape }}");
@@ -60,35 +63,6 @@
     {% if not IS_EXTERNAL_ENV %}
         {{ wagtailuserbar() }}
     {% endif %}
-{% endblock %}
-
-{% block header %}
-{# fmt:off #}
-    {{
-        onsHeader({
-            "wide": pageConfig.wide,
-            "fullWidth": pageConfig.fullWidth,
-            "language": pageConfig.header.language,
-            "button": pageConfig.header.signoutButton,
-            "toggleNavigationButton": pageConfig.header.toggleNavigationButton,
-            "navigation": pageConfig.header.navigation,
-            "siteSearchAutosuggest": pageConfig.header.siteSearchAutosuggest,
-            "browserBanner": pageConfig.header.browserBanner,
-            "phase": pageConfig.header.phase,
-            "menuLinks": pageConfig.header.menuLinks,
-            "variants": pageConfig.header.variants,
-            "classes": pageConfig.header.classes,
-            "mastheadLogo": pageConfig.header.mastheadLogo,
-            "mastheadLogoUrl": pageConfig.header.mastheadLogoUrl,
-            "titleUrl": pageConfig.header.titleUrl,
-            "title": pageConfig.header.title | default(pageConfig.title),
-            "description": pageConfig.header.description,
-            "titleAsH1": pageConfig.header.titleAsH1,
-            "titleLogo": pageConfig.header.titleLogo,
-            "search": pageConfig.header.search
-        })
-    }}
-{# fmt:on #}
 {% endblock %}
 
 {% block scripts %}

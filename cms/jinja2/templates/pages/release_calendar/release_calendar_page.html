@@ -1,13 +1,12 @@
 {% extends "templates/base_page.html" %}
 
-{% from "components/breadcrumbs/_macro.njk" import onsBreadcrumbs %}
 {% from "components/hero/_macro.njk" import onsHero %}
 {% from "components/table-of-contents/_macro.njk" import onsTableOfContents %}
 {% from "components/document-list/_macro.njk" import onsDocumentList %}
 
 {%- set official_statistics_badge_url = "https://uksa.statisticsauthority.gov.uk/about-the-authority/uk-statistical-system/types-of-official-statistics/" -%}
 
-{% block header_area %}
+{% block hero %}
     {%- set hero_topic = _("Release") -%}
     {%- set release_date_label = _("Release date:") -%}
     {%- set next_release_date_label = _("Next release date:") -%}
@@ -40,13 +39,6 @@
 
     {# fmt:off #}
     {{
-        onsBreadcrumbs({
-            "ariaLabel": breadcrumbs_aria_label,
-            "itemsList": page.get_breadcrumbs(request=request),
-            "variant": 'grey'
-        })
-    }}
-    {{
         onsHero({
             "topic": hero_topic,
             "title": page.title,
@@ -64,21 +56,26 @@
         })
     }}
     {# fmt:on #}
+{% endblock %}
+
+{% block postHero %}
     {% block release_note %}{% endblock %}
 {% endblock %}
 
-{% block main %}
+{% block mainContent %}
     <div class="ons-grid ons-js-table-of-contents-container ons-u-ml-no">
         <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-u-p-no">
-        {# fmt:off #}
-        {{-
-            onsTableOfContents({
-                "title": 'Contents',
-                "ariaLabel": 'Sections in this page',
-                "itemsList": table_of_contents
-            })
-        }}
-        {# fmt:on #}
+            {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
+                {# fmt:off #}
+                {{-
+                    onsTableOfContents({
+                        "title": toc_title,
+                        "ariaLabel": toc_aria_label,
+                        "itemsList": table_of_contents
+                    })
+                -}}
+                {# fmt:on #}
+            {% endwith %}
         </div>
         <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@2xs@m">
             <section id="summary" class="spacing">

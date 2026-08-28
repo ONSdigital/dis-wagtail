@@ -57,6 +57,39 @@ class TopicPageTests(WagtailPageTestCase):
         self.assertContains(response, "Contents")
         self.assertContains(response, "Sections in this page")
 
+    def test_content_scripts_load_pym_for_featured_item_with_iframe(self):
+        """pym.js should load when the featured item has iframe visualisations."""
+        self.page.featured_series = self.series
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertNotContains(response, "pym.min.js")
+
+        self.statistical_article_page.content = [
+            {
+                "type": "section",
+                "value": {
+                    "title": "Test Section",
+                    "content": [
+                        {
+                            "type": "iframe_visualisation",
+                            "value": {
+                                "iframe_source_url": "/visualisations/dvc/1",
+                                "accessible_label": "Bar chart of GDP per region",
+                                "audio_description": "GDP is highest in London and lowest in the North East.",
+                            },
+                        }
+                    ],
+                },
+            }
+        ]
+        self.statistical_article_page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, "pym.min.js")
+
     def test_topic_page_displays_headline_figures(self):
         self.page.headline_figures.extend(
             [
@@ -173,7 +206,9 @@ class TopicPageTests(WagtailPageTestCase):
 
         self.assertContains(response, lookup_dataset.title)
         self.assertContains(response, lookup_dataset.description)
-        self.assertContains(response, lookup_dataset.url_path)
+        # The series URL is a prefix of the edition URL, so the full href is asserted to catch a
+        # topic page linking to an edition.
+        self.assertContains(response, f'href="{lookup_dataset.url_path}"')
 
         self.assertContains(response, manual_dataset["title"])
         self.assertContains(response, manual_dataset["description"])
@@ -205,7 +240,7 @@ class TopicPageTests(WagtailPageTestCase):
 
         response = self.client.get(self.page.url)
 
-        self.assertContains(response, "<h2>Time Series</h2>")
+        self.assertContains(response, "<h2>Time series</h2>")
         self.assertContains(response, '<section id="time-series"')
 
         self.assertContains(response, title)

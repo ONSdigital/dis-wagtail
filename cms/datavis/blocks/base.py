@@ -5,10 +5,14 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 from django.conf import settings
 from django.forms.widgets import RadioSelect
 from django.urls import reverse
+from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks.struct_block import StructValue
 
+from cms.core.analytics_utils import get_gtm_attributes_file_download
+from cms.core.utils import format_file_size_kb
+from cms.data_downloads.utils import get_csv_download_filename
 from cms.datavis.blocks.chart_options import AspectRatioBlock
 from cms.datavis.blocks.table import SimpleTableBlock
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
@@ -16,7 +20,6 @@ from cms.datavis.constants import AxisType, HighChartsChartType, HighchartsTheme
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
-    from django.utils.functional import _StrOrPromise
 
     from cms.core.models import BasePage
 
@@ -26,12 +29,16 @@ AnnotationsReturn = tuple[AnnotationsList, AnnotationsList, AnnotationsList]
 
 
 class BaseVisualisationBlock(blocks.StructBlock):
-    title = blocks.CharBlock()
-    subtitle = blocks.CharBlock()
+    figure_number = blocks.CharBlock(required=False, help_text="Include a label for the figure, for example Figure 1.")
+    title = blocks.CharBlock(required_on_save=True)
+    subtitle = blocks.CharBlock(required=False)
     audio_description = blocks.TextBlock(
-        required=True, help_text="An overview of what the chart shows for screen readers."
+        required=True,
+        required_on_save=True,
+        help_text="An overview of what the chart shows for screen reader users.",
+        label="Accessible description",
     )
-    caption = blocks.CharBlock(required=False)
+    caption = blocks.CharBlock(required=False, label="Source text")
     footnotes = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
 
     class Meta:
@@ -59,6 +66,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         choices=HighchartsTheme.choices,
         default=HighchartsTheme.PRIMARY,
         widget=RadioSelect,
+        required_on_save=True,
     )
     show_legend = blocks.BooleanBlock(default=True, required=False)
     show_data_labels = blocks.StaticBlock()
@@ -139,9 +147,10 @@ class BaseChartBlock(BaseVisualisationBlock):
             "theme": value.get("theme"),
             "headingLevel": 3,
             "description": value.get("audio_description"),
+            "figureNumber": value.get("figure_number"),
             "title": value.get("title"),
             "subtitle": value.get("subtitle"),
-            "caption": value.get("caption"),
+            "caption": _("Source") + ": " + value.get("caption") if value.get("caption") else None,
             "legend": value.get("show_legend", True),
             "xAxis": self.get_x_axis_config(value.get("x_axis"), rows),
             "yAxis": self.get_y_axis_config(value.get("y_axis")),
@@ -153,8 +162,14 @@ class BaseChartBlock(BaseVisualisationBlock):
                 block_id=block_id,
                 rows=rows,
             ),
-            "footnotes": self.get_footnotes_config(value),
         }
+
+        # Check for meaningful text before displaying footnotes
+        if (footnotes := value.get("footnotes")) and strip_tags(str(footnotes)).strip():
+            config["footnotes"] = {
+                "title": _("Footnotes"),
+                "content": str(footnotes),
+            }
 
         point_annotations, range_annotations, line_annotations = self.get_annotations_config(value)
         if point_annotations:
@@ -315,10 +330,11 @@ class BaseChartBlock(BaseVisualisationBlock):
     def _get_csv_download_item(
         self,
         *,
+        value: StructValue,
         parent_context: dict[str, Any] | None = None,
         block_id: str | None = None,
         rows: list[list[str | int | float]] | None = None,
-    ) -> dict[str, str] | None:
+    ) -> dict[str, Any] | None:
         # CSV download - only include if we have a valid URL
         if not (parent_context and block_id):
             # Check separately to placate mypy
@@ -326,7 +342,10 @@ class BaseChartBlock(BaseVisualisationBlock):
         page: BasePage | None = parent_context.get("page")
         if not page:
             return None
-        suffix = f" ({get_approximate_file_size_in_kb(rows or [])})"
+
+        size_suffix = f"({get_approximate_file_size_in_kb(rows or [])})"
+        file_size_kb = format_file_size_kb(len(bytes(str(rows or []), "utf-8")))
+
         request: HttpRequest | None = parent_context.get("request")
         is_preview = getattr(request, "is_preview", False) if request else False
 
@@ -336,9 +355,25 @@ class BaseChartBlock(BaseVisualisationBlock):
             superseded_version: int | None = parent_context.get("superseded_version")
             csv_url = self._build_chart_download_url(page, block_id, superseded_version)
 
+        link_text = _("Download CSV %(size)s") % {"size": size_suffix}
+        absolute_csv_url = request.build_absolute_uri(csv_url) if request and not is_preview else csv_url
+
         return {
-            "text": f"Download CSV{suffix}",
+            "text": link_text,
             "url": csv_url,
+            "attributes": self._get_gtm_attributes_csv_download(link_text, absolute_csv_url, file_size_kb, value),
+        }
+
+    def _get_gtm_attributes_csv_download(
+        self, text: str, url: str, file_size: str, value: StructValue
+    ) -> dict[str, str]:
+        file_name = get_csv_download_filename(title=value.get("title"), fallback_stem="chart")
+        return {
+            **get_gtm_attributes_file_download(
+                text=text, url=url, file_extension="csv", file_name=file_name, file_size_kb=file_size
+            ),
+            "data-ga-chart-title": value.get("title"),
+            "data-ga-chart-type": self.get_highcharts_chart_type(value),
         }
 
     def get_download_config(
@@ -349,9 +384,14 @@ class BaseChartBlock(BaseVisualisationBlock):
         block_id: str | None = None,
         rows: list[list[str | int | float]] | None = None,
     ) -> dict[str, Any]:
-        items_list: list[dict[str, str]] = []
+        items_list: list[dict[str, Any]] = []
         items_list.append(self._get_image_download_item())
-        if csv_item := self._get_csv_download_item(parent_context=parent_context, block_id=block_id, rows=rows):
+        if csv_item := self._get_csv_download_item(
+            value=value,
+            parent_context=parent_context,
+            block_id=block_id,
+            rows=rows,
+        ):
             items_list.append(csv_item)
 
         return {
@@ -412,8 +452,3 @@ class BaseChartBlock(BaseVisualisationBlock):
             "data_downloads:revision_chart_download",
             kwargs={"page_id": page.pk, "revision_id": revision_id, "chart_id": block_id},
         )
-
-    def get_footnotes_config(self, value: StructValue) -> dict[_StrOrPromise, Any]:
-        if footnotes := value.get("footnotes"):
-            return {"title": _("Footnotes"), "content": str(footnotes)}
-        return {}

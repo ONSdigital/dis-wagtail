@@ -4,7 +4,6 @@ from unittest.mock import patch
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from wagtail.blocks import StreamValue
 from wagtail.locks import BasicLock
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
@@ -15,7 +14,6 @@ from cms.core.custom_date_format import ons_date_format, ons_default_datetime
 from cms.core.models import ContactDetails
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.utils import rebuild_internal_search_index
-from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.locks import ReleasePageInBundleReadyToBePublishedLock
@@ -341,6 +339,11 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
     def test_get_lock_when_linked_with_bundle_ready_to_be_published(self):
         BundleFactory(release_calendar_page=self.page, status=BundleStatus.APPROVED)
         self.assertIsInstance(self.page.get_lock(), ReleasePageInBundleReadyToBePublishedLock)
+
+    def test_active_bundles__includes_bundle_when_added_as_bundled_page(self):
+        """active_bundles must cover the BundlePage path, not only the release_calendar_page FK."""
+        bundle = BundleFactory(bundled_pages=[self.page])
+        self.assertIn(bundle, self.page.active_bundles)
 
 
 class ReleaseCalendarPageAdminTests(WagtailTestUtils, TestCase):
@@ -695,6 +698,26 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
 
                 self.assertContains(response, expected_url)
 
+    def test_rendered__datasets_link_to_the_latest_version_of_the_edition(self):
+        lookup_dataset = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="lookup_edition",
+            version=1,
+            title="test lookup",
+            description="lookup description",
+        )
+        # Raw StreamField data, not a StreamValue: StreamBlock.to_python() hands a StreamValue
+        # straight back, which would bypass the field's own block definition.
+        self.page.datasets = [{"type": "dataset_lookup", "value": lookup_dataset.pk}]
+        self.page.status = ReleaseStatus.PUBLISHED
+        self.page.save_revision().publish()
+
+        response = self.client.get(self.page.url)
+
+        self.assertContains(response, 'href="/datasets/LOOKUP/editions/lookup_edition/versions"')
+        # The series URL is a prefix of the edition URL, hence the full href.
+        self.assertNotContains(response, 'href="/datasets/LOOKUP"')
+
     def test_rendered__datasets(self):
         """Check datasets are shown only in a published state."""
         lookup_dataset = Dataset.objects.create(
@@ -712,13 +735,11 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
             (ReleaseStatus.PUBLISHED, True),
             (ReleaseStatus.CANCELLED, False),
         ]
-        self.page.datasets = StreamValue(
-            DatasetStoryBlock(),
-            stream_data=[
-                ("dataset_lookup", lookup_dataset),
-                ("manual_link", manual_dataset),
-            ],
-        )
+        # Raw StreamField data, so the destination comes from the field's own block definition.
+        self.page.datasets = [
+            {"type": "dataset_lookup", "value": lookup_dataset.pk},
+            {"type": "manual_link", "value": manual_dataset},
+        ]
 
         rebuild_internal_search_index()
         for status, is_shown in cases:
@@ -732,7 +753,9 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
 
                 self.assertEqual(lookup_dataset.title in str(response.content), is_shown)
                 self.assertEqual(lookup_dataset.description in str(response.content), is_shown)
-                self.assertEqual(lookup_dataset.url_path in str(response.content), is_shown)
+                # The series URL is a prefix of the edition URL, hence the full href.
+                expected_href = 'href="/datasets/LOOKUP/editions/lookup_edition/versions"'
+                self.assertEqual(expected_href in str(response.content), is_shown)
 
                 self.assertEqual(manual_dataset["title"] in str(response.content), is_shown)
                 self.assertEqual(manual_dataset["description"] in str(response.content), is_shown)

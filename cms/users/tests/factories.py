@@ -31,7 +31,7 @@ class GroupFactory(DjangoModelFactory):
 
 
 class UserFactory(DjangoModelFactory):
-    username = factory.Faker("user_name")
+    username = factory.sequence(lambda n: f"user_{n}")
     email = factory.Faker("email")
     password = factory.LazyFunction(lambda: make_password("password"))
     first_name = factory.Faker("first_name")

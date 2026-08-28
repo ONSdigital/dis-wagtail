@@ -1,29 +1,63 @@
 import os
 import re
+import uuid
 from typing import TYPE_CHECKING, ClassVar
 from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import filesizeformat
+from django.utils.html import strip_tags
+from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.blocks import StructBlockValidationError
 from wagtail.documents.blocks import DocumentChooserBlock
 from wagtail.images.blocks import ImageChooserBlock
 
+from cms.core.analytics_utils import get_gtm_attributes_file_download
+from cms.core.utils import format_file_size_kb
+
 if TYPE_CHECKING:
+    from django.http import HttpRequest
     from wagtail.blocks import StreamValue, StructValue
+    from wagtail.images.models import AbstractRendition
 
 
 class ImageBlock(blocks.StructBlock):
     """Image block with caption."""
 
-    image = ImageChooserBlock()
-    figure_title = blocks.CharBlock(required=False)
-    figure_subtitle = blocks.CharBlock(required=False)
-    supporting_text = blocks.TextBlock(required=False, label="Supporting text (source)")
-    notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC)
-    download = blocks.BooleanBlock(required=False, label="Show download link for image")
+    image = ImageChooserBlock(required_on_save=True)
+    alternative_text = blocks.CharBlock(
+        required=False,
+        label="Alternative text",
+        help_text=(
+            "A description of what the image shows for screen reader users. "
+            "If this field is left blank, alt text will be sourced from the mandatory "
+            "'alternative text' field when the image was uploaded to Wagtail"
+        ),
+    )
+    figure_number = blocks.CharBlock(
+        required=False, label="Figure number", help_text="Include a label for the figure, for example Figure 1."
+    )
+    figure_title = blocks.CharBlock(required=False, label="Title")
+    figure_subtitle = blocks.CharBlock(required=False, label="Subtitle")
+    supporting_text = blocks.CharBlock(required=False, label="Source text")
+    notes_section = blocks.RichTextBlock(required=False, features=settings.RICH_TEXT_BASIC, label="Footnotes")
+    decorative_image = blocks.BooleanBlock(
+        required=False,
+        label="Image is decorative, so alt text should be empty",
+    )
+    download = blocks.BooleanBlock(required=False, label="Show image download link")
+
+    def clean(self, value: StructValue) -> StructValue:
+        errors = {}
+        if value.get("decorative_image") and value.get("alternative_text"):
+            errors["alternative_text"] = ValidationError(
+                "Alternative text must be empty when the image is marked as decorative."
+            )
+        if errors:
+            raise StructBlockValidationError(block_errors=errors)
+        return super().clean(value)
 
     def get_context(self, value: StreamValue, parent_context: dict | None = None) -> dict:
         context: dict = super().get_context(value, parent_context)
@@ -38,29 +72,81 @@ class ImageBlock(blocks.StructBlock):
         small = image.get_rendition("width-1024")
         large = image.get_rendition("width-2048")
 
-        context["small_src"] = small.url
-        context["large_src"] = large.url
+        options = {
+            "id": f"image-{context.get('block_id') or uuid.uuid4().hex[:8]}",
+            "headingLevel": 3,
+            "figureNumber": value.get("figure_number"),
+            "title": value.get("figure_title"),
+            "subtitle": value.get("figure_subtitle"),
+            "image": {
+                "smallSrc": small.url,
+                "largeSrc": large.url,
+            },
+            "alt": "" if value.get("decorative_image") else (value.get("alternative_text") or image.description),
+            "caption": _("Source") + ": " + value.get("supporting_text") if value.get("supporting_text") else None,
+        }
 
-        # Get file extension of the rendition being downloaded (uppercase, without the dot)
-        _, ext = os.path.splitext(large.file.name)
-        file_type = ext.lstrip(".").upper() or "IMG"
-        context["file_type"] = file_type
+        if (notes := value.get("notes_section")) and strip_tags(str(notes)).strip():
+            options["footnotes"] = {"title": _("Footnotes"), "content": notes}
 
-        size_bytes = getattr(large.file, "size", None)
-        context["file_size_human"] = filesizeformat(size_bytes) if size_bytes is not None else None
+        if value.get("download"):
+            options["download"] = self._get_download_options(large, context.get("request"))
 
+        context["options"] = options
         return context
+
+    def _get_download_options(self, large_image: AbstractRendition, request: HttpRequest | None) -> dict:
+        """Build the download payload for the image."""
+        _base, ext = os.path.splitext(large_image.file.name)
+        file_type = ext.lstrip(".").upper() or "IMG"
+        size_bytes = getattr(large_image.file, "size", None)
+        size_kb = format_file_size_kb(size_bytes) if size_bytes is not None else None
+
+        file_size_human = filesizeformat(size_bytes) if size_bytes is not None else None
+        size_text = f" ({file_size_human})" if file_size_human else ""
+        link_text = f"{file_type}{size_text}"
+
+        # Build an absolute URL when possible so GTM attributes include the link domain
+        absolute_url = request.build_absolute_uri(large_image.url) if request else large_image.url
+        file_name = os.path.basename(urlparse(large_image.url).path)
+
+        attributes = get_gtm_attributes_file_download(
+            text=link_text,
+            url=absolute_url,
+            file_extension=ext.lstrip("."),
+            file_name=file_name,
+            file_size_kb=size_kb,
+        )
+
+        return {
+            "title": _("Download this image"),
+            "itemsList": [{"text": link_text, "url": large_image.url, "download": "file", "attributes": attributes}],
+        }
 
     class Meta:
         icon = "image"
         template = "templates/components/streamfield/image_block.html"
+        form_layout = [  # noqa
+            "figure_number",
+            "figure_title",
+            "figure_subtitle",
+            "alternative_text",
+            "decorative_image",
+            "image",
+            "supporting_text",
+            "notes_section",
+            "download",
+        ]
 
 
 class DocumentBlockStructValue(blocks.StructValue):
     """Bespoke StructValue to convert a struct block value to DS macro data."""
 
-    def as_macro_data(self) -> dict[str, str | bool | dict]:
+    def as_macro_data(self, request: HttpRequest | None = None) -> dict[str, str | bool | dict]:
         """Return the value as a macro data dict."""
+        # Build an absolute URL when possible so GTM attributes include the link domain
+        document_url = self["document"].url
+        absolute_url = request.build_absolute_uri(document_url) if request else document_url
         return {
             "thumbnail": False,
             "title": {
@@ -74,22 +160,20 @@ class DocumentBlockStructValue(blocks.StructValue):
                     "fileSize": filesizeformat(self["document"].get_file_size()),
                 }
             },
-            "attributes": {
-                "data-ga-event": "file-download",
-                "data-ga-file-extension": self["document"].file_extension.lower(),
-                "data-ga-file-name": self["document"].title,
-                "data-ga-link-text": self["title"] or self["document"].title,
-                "data-ga-link-url": self["document"].url,
-                "data-ga-link-domain": urlparse(self["document"].url).hostname,
-                "data-ga-file-size": str(self["document"].get_file_size() / 1000),  # Convert from Bytes to KB
-            },
+            "attributes": get_gtm_attributes_file_download(
+                text=self["title"] or self["document"].title,
+                url=absolute_url,
+                file_extension=self["document"].file_extension.lower(),
+                file_name=self["document"].title,
+                file_size_kb=format_file_size_kb(self["document"].get_file_size()),
+            ),
         }
 
 
 class DocumentBlock(blocks.StructBlock):
     """Defines a DS document block."""
 
-    document = DocumentChooserBlock()
+    document = DocumentChooserBlock(required_on_save=True)
     title = blocks.CharBlock(required=False)
     description = blocks.RichTextBlock(features=settings.RICH_TEXT_BASIC, required=False)
 
@@ -107,7 +191,8 @@ class DocumentsBlock(blocks.StreamBlock):
     def get_context(self, value: StreamValue, parent_context: dict | None = None) -> dict:
         """Inject the document list as DS component macros data."""
         context: dict = super().get_context(value, parent_context)
-        context["macro_data"] = [document.value.as_macro_data() for document in value]
+        request = context.get("request")
+        context["macro_data"] = [document.value.as_macro_data(request=request) for document in value]
         return context
 
     class Meta:
@@ -124,12 +209,18 @@ class VideoEmbedBlock(blocks.StructBlock):
             "The URL to the video hosted on YouTube or Vimeo, for example, "
             "https://www.youtube.com/watch?v={ video ID } or https://vimeo.com/video/{ video ID }. "
             "Used to link to the video when cookies are not enabled."
-        )
+        ),
+        required_on_save=True,
     )
-    image = ImageChooserBlock(help_text="The video cover image, used when cookies are not enabled.")
-    title = blocks.CharBlock(help_text="The descriptive title for the video used by screen readers.")
+    image = ImageChooserBlock(
+        help_text="The video cover image, used when cookies are not enabled.", required_on_save=True
+    )
+    title = blocks.CharBlock(
+        help_text="The descriptive title for the video used by screen readers.", required_on_save=True
+    )
     link_text = blocks.CharBlock(
-        help_text="The text to be shown when cookies are not enabled e.g. 'Watch the {title} on Youtube'."
+        help_text="The text to be shown when cookies are not enabled e.g. 'Watch the {title} on Youtube'.",
+        required_on_save=True,
     )
 
     def get_embed_url(self, link_url: str) -> str:

@@ -15,7 +15,7 @@ from cms.articles.tests.factories import (
 )
 from cms.datavis.tests.factories import TableDataFactory
 from cms.topics.models import TopicPage
-from functional_tests.step_helpers.utils import get_page_from_context
+from functional_tests.step_helpers.utils import fill_datetime_field, get_page_from_context
 
 if TYPE_CHECKING:
     from wagtail.models import Revision
@@ -164,11 +164,12 @@ def user_populates_the_statistical_article_page(context: Context) -> None:
     page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("Page summary")
     page.locator('[data-contentpath="main_points_summary"] [role="textbox"]').fill("Main points summary")
 
-    page.get_by_label("Release date*").fill("2025-01-11")
+    fill_datetime_field(page.get_by_label("Release date*"), "2025-01-11")
 
     page.wait_for_timeout(50)  # added to allow JS to be ready
     page.get_by_role("textbox", name="Release Edition").focus()  # focus up to prevent any overlap with the action menu
     page.locator("#panel-child-content-content-content").get_by_title("Insert a block").click()
+    page.wait_for_timeout(50)
     page.get_by_label("Section heading*").fill("Heading")
     page.locator("#panel-child-content-content-content").get_by_role("region").get_by_role(
         "button", name="Insert a block"
@@ -246,8 +247,8 @@ def user_adds_chart_to_content(context: Context) -> None:
 
     chart_region = page.get_by_role("region", name="Line chart")
     chart_region.get_by_role("textbox", name="Title*", exact=True).fill("Test Chart Title")
-    chart_region.get_by_role("textbox", name="Subtitle*").fill("Test Chart Subtitle")
-    chart_region.get_by_label("Audio description*").fill("This is the chart audio description")
+    chart_region.get_by_role("textbox", name="Subtitle").fill("Test Chart Subtitle")
+    chart_region.get_by_label("Accessible description*").fill("This is the chart audio description")
 
     # Wait for the table editor to be ready and fill in chart data
     page.wait_for_timeout(500)
@@ -259,13 +260,12 @@ def user_adds_table_with_pasted_content(context: Context) -> None:
     page.locator("#panel-child-content-content-content").get_by_role("button", name="Insert a block").nth(2).click()
     page.get_by_text("Table").last.click()
     page.locator('[data-contentpath="footnotes"] [role="textbox"]').fill("some footnotes")
-    page.get_by_role("region", name="Table", exact=True).get_by_label("Title").fill("The table title")
-    page.get_by_role("region", name="Table", exact=True).get_by_label("Sub-heading").fill("The caption")
-    page.get_by_role("region", name="Table", exact=True).get_by_label("Source").fill("The source")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Title", exact=True).fill("The table title")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Subtitle").fill("The subtitle")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Source text").fill("The source")
+    page.get_by_role("region", name="Table", exact=True).get_by_label("Accessible label").fill("The accessible label")
 
-    tinymce = (
-        page.get_by_role("region", name="Table", exact=True).locator('iframe[title="Rich Text Area"]').content_frame
-    )
+    tinymce = page.get_by_role("region", name="Table", exact=True).locator("iframe").content_frame
     tinymce.get_by_role("cell").nth(0).click()
     tinymce.get_by_role("cell").nth(0).fill("cell1")
     tinymce.get_by_role("cell").nth(1).fill("cell2")
@@ -279,7 +279,7 @@ def check_populated_data(locator):
     expect(locator.get_by_role("heading", name="The article page")).to_be_visible()
     expect(locator.get_by_text("Page summary")).to_be_visible()
     expect(locator.get_by_text("11 January 2025", exact=True)).to_be_visible()
-    expect(locator.get_by_role("heading", name="Cite this analysis")).to_be_visible()
+    expect(locator.get_by_role("heading", name="Cite this page")).to_be_visible()
 
     expect(locator.get_by_role("heading", name="Heading")).to_be_visible()
     expect(locator.get_by_role("heading", name="Content")).to_be_visible()
@@ -340,7 +340,7 @@ def user_adds_a_correction(context: Context) -> None:
     page.locator("#panel-child-corrections_and_notices-corrections-content").get_by_role(
         "button", name="Insert a block"
     ).click()
-    page.get_by_label("When*").fill("2025-03-13 13:59")
+    fill_datetime_field(page.get_by_label("When*"), "2025-03-13 13:59")
     page.locator('[data-contentpath="text"] [role="textbox"]').fill("Correction text")
     page.wait_for_timeout(500)
 
@@ -380,7 +380,9 @@ def user_adds_a_correction_using_bottom_add_button(context: Context) -> None:
     )
 
     block_area.locator("div:last-child").get_by_role("button", name="Insert a block").click()
-    block_area.locator("[name='corrections-1-id']+section").get_by_label("When*").fill("2025-03-14 13:59")
+    fill_datetime_field(
+        block_area.locator("[name='corrections-1-id']+section").get_by_label("When*"), "2025-03-14 13:59"
+    )
     block_area.locator("[name='corrections-1-id']+section").locator(
         '[data-contentpath="text"] [role="textbox"]'
     ).scroll_into_view_if_needed()
@@ -400,7 +402,7 @@ def user_adds_a_notice(context: Context) -> None:
         "#panel-child-corrections_and_notices-notices-content [data-streamfield-stream-container]"
     )
     block_area.get_by_role("button", name="Insert a block").click()
-    block_area.get_by_label("When*").fill("2025-03-15 13:59")
+    fill_datetime_field(block_area.get_by_label("When*"), "2025-03-15 13:59")
     block_area.locator('[data-contentpath="text"] [role="textbox"]').fill("Notice text")
     page.wait_for_timeout(500)
 
@@ -614,7 +616,28 @@ def user_fills_in_chart_title(context: Context) -> None:
 @step("the user fills in the chart audio description")
 def user_fills_in_chart_audio_description(context: Context) -> None:
     featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
-    featured_chart_content.get_by_label("Audio Description*").fill("This is the audio description")
+    featured_chart_content.get_by_label("Accessible description*").fill("This is the audio description")
+
+
+@step('the user clicks "Iframe Visualisation" in the featured chart streamfield block selector')
+def user_clicks_iframe_visualisation_in_featured_chart_streamfield_block_selector(
+    context: Context,
+) -> None:
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    featured_chart_content.get_by_title("Insert a block").click()
+    featured_chart_content.get_by_text("Iframe Visualisation").click()
+
+
+@step("the user fills in the featured chart title")
+def user_fills_in_featured_chart_title(context: Context) -> None:
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    featured_chart_content.get_by_label("Featured chart title").fill("Test Featured Chart Title")
+
+
+@then("the featured chart title field contains the entered title")
+def the_featured_chart_title_field_contains_the_entered_title(context: Context) -> None:
+    featured_chart_content = context.page.locator("#panel-child-promote-featured_chart-content")
+    expect(featured_chart_content.get_by_label("Featured chart title")).to_have_value("Test Featured Chart Title")
 
 
 @step("the user enters data into the chart table")
@@ -730,6 +753,11 @@ def a_statistical_article_page_with_configured_listing_image_exists(
 @then("the page has a CSV download link for the chart")
 def the_page_has_a_csv_download_link_for_the_chart(context: Context) -> None:
     """Check that the page has a CSV download link for the chart."""
+    download_details = context.page.locator('.ons-js-details[id^="figure-downloads--"]')
+    # Wait for this class as it signifies the design system js has loaded, initialised and updated
+    # element roles and styles
+    expect(download_details).to_contain_class("ons-details--initialised")
+    download_details.get_by_text("Download: line chart").click()
     csv_download_link = context.page.get_by_role("link", name="Download CSV")
     expect(csv_download_link).to_be_visible()
 

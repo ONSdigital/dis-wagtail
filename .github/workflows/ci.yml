@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  POETRY_VERSION: '2.2.1' # keep in sync with pyproject.toml, Dockerfile
+  POETRY_VERSION: '2.4.1' # keep in sync with pyproject.toml, Dockerfile
   COVERAGE_CORE: 'sysmon'
 
 permissions:
@@ -23,7 +23,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: 'false'
       - name: Install Poetry
@@ -34,10 +34,12 @@ jobs:
         uses: ./.github/actions/setup-cache-flag
 
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0 # zizmor: ignore[cache-poisoning]
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version-file: .python-version
           cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
+      - name: Check poetry lock file version
+        run: make check-poetry-version
 
       - name: Install dependencies
         run: poetry install --no-root
@@ -55,7 +57,7 @@ jobs:
   lint-front-end:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: 'false'
 
@@ -63,14 +65,14 @@ jobs:
         id: cache-flag
         uses: ./.github/actions/setup-cache-flag
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0 # zizmor: ignore[cache-poisoning]
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0 # zizmor: ignore[cache-poisoning]
         with:
           node-version-file: '.nvmrc'
           cache: ${{ steps.cache-flag.outputs.npm-cache }} # disabled on release branches via setup-cache-flag action
 
       - id: node-cache
         if: "!contains(github.head_ref || github.ref, 'release')"
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5 # zizmor: ignore[cache-poisoning]
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 # zizmor: ignore[cache-poisoning]
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/.nvmrc') }}-${{ hashFiles('**/package-lock.json') }}
@@ -88,7 +90,7 @@ jobs:
   compile-static:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: 'false'
 
@@ -96,14 +98,14 @@ jobs:
         id: cache-flag
         uses: ./.github/actions/setup-cache-flag
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0 # zizmor: ignore[cache-poisoning]
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0 # zizmor: ignore[cache-poisoning]
         with:
           node-version-file: '.nvmrc'
           cache: ${{ steps.cache-flag.outputs.npm-cache }} # disabled on release branches via setup-cache-flag action
 
       - id: node-cache
         if: "!contains(github.head_ref || github.ref, 'release')"
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5 # zizmor: ignore[cache-poisoning]
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 # zizmor: ignore[cache-poisoning]
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/.nvmrc') }}-${{ hashFiles('**/package-lock.json') }}
@@ -123,6 +125,7 @@ jobs:
 
   test-python:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [lint, lint-front-end, compile-static]
     env:
       DJANGO_SETTINGS_MODULE: cms.settings.test
@@ -169,7 +172,7 @@ jobs:
         ports: ['9092:9092']
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: 'false'
       - name: Install Poetry
@@ -180,15 +183,19 @@ jobs:
         uses: ./.github/actions/setup-cache-flag
 
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0 # zizmor: ignore[cache-poisoning]
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version-file: .python-version
           cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
 
-      - name: Install dependencies
-        run: |
-          poetry install --no-root
-          sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
+      - name: Install Python dependencies
+        timeout-minutes: 10
+        run: poetry install --no-root
+
+      - name: Install system dependencies
+        id: system-deps
+        timeout-minutes: 10
+        uses: ./.github/actions/install-system-deps
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -225,7 +232,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: 'false'
       - name: Build Docker Image # Verify that the Dockerfile is valid and can build the web image
@@ -234,11 +241,11 @@ jobs:
   repository_checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: 'false'
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version-file: .python-version
       - name: Ensure .dockerignore (mostly) matches .gitignore
@@ -247,13 +254,14 @@ jobs:
   functional-tests:
     needs: [lint, lint-front-end, compile-static]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false # Allow all shards to run even if one fails
       matrix:
         browser: [chromium]
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8] # Must match TOTAL_SHARDS below
     env:
-      TOTAL_SHARDS: 6 # Must match the number of shards in the matrix above
+      TOTAL_SHARDS: 8 # Must match the number of shards in the matrix above
       SHUFFLE_SEED: ${{ github.run_id }}
       DJANGO_SETTINGS_MODULE: cms.settings.functional_test
       SECRET_KEY: fake_secret_key_to_run_tests # pragma: allowlist secret
@@ -262,7 +270,7 @@ jobs:
       PLAYWRIGHT_TRACE: 'true'
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: 'false'
       - name: Install Poetry
@@ -273,26 +281,44 @@ jobs:
         uses: ./.github/actions/setup-cache-flag
 
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0 # zizmor: ignore[cache-poisoning]
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version-file: .python-version
           cache: ${{ steps.cache-flag.outputs.poetry-cache }} # disabled on release branches via setup-cache-flag action
 
-      - name: Install dependencies
+      - name: Install Python dependencies
+        timeout-minutes: 10
+        run: poetry install --no-root
+
+      - name: Install system dependencies
+        id: system-deps
+        timeout-minutes: 10
+        uses: ./.github/actions/install-system-deps
+
+      - name: Build playwright cache key
+        id: playwright-cache-key
+        env:
+          OS_ID: ${{ steps.system-deps.outputs.os-id }}
+          BROWSER: ${{ matrix.browser }}
         run: |
-          poetry install --no-root
-          sudo apt-get install -y --no-install-recommends gettext cm-super texlive-latex-extra
+          VERSION=$(awk '/^name = "playwright"/{f=1} f && /^version = /{gsub(/"/,"",$3); print $3; exit}' poetry.lock)
+          [ -n "$VERSION" ] || { echo 'Could not read the playwright version from poetry.lock'; exit 1; }
+          echo "key=$OS_ID-pw-$BROWSER-$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright binaries
         if: "!contains(github.head_ref || github.ref, 'release')"
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5 # zizmor: ignore[cache-poisoning]
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 # zizmor: ignore[cache-poisoning]
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-pw-${{ matrix.browser }}
+          # Pins to playwright version also, so we don't try to restore stale browsers
+          # which then requires a reinstall
+          key: ${{ steps.playwright-cache-key.outputs.key }}
           lookup-only: false
 
+      # Runner already ships the required browsers, so don't add --with-deps
       - name: Playwright Install
-        run: poetry run python -m playwright install --with-deps ${{ matrix.browser }}
+        timeout-minutes: 10
+        run: poetry run python -m playwright install ${{ matrix.browser }}
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -310,7 +336,7 @@ jobs:
 
       - name: Select feature subset
         run: |
-          SHARD_INDEX=${{ matrix.shard }} ./.github/split_functional_test_features.sh > features.txt
+          SHARD_INDEX=${{ matrix.shard }} poetry run python .github/split_functional_test_features.py
 
       - name: Run functional tests
         run: |
