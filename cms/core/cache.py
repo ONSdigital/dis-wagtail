@@ -7,6 +7,7 @@ from cache_memoize import cache_memoize
 from django.conf import settings
 from django.core.cache import InvalidCacheBackendError, caches
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.cache import patch_cache_control
 from django.views.decorators.cache import cache_control
 from django_redis.cache import RedisCache
 from wagtail.contrib.frontend_cache.utils import purge_url_from_cache
@@ -56,26 +57,61 @@ def purge_cache_on_all_sites(path: str) -> None:
 
 
 def get_default_cache_control_kwargs() -> dict[str, int | bool]:
-    """Get cache control parameters used by the cache control decorators
-    used by default on most pages. These parameters are meant to be
-    sane defaults that can be applied to a standard content page.
+    """Get browser Cache-Control parameters for semi-static HTML pages that are not
+    covered by the 59 second publishing rule.
     """
-    s_maxage = getattr(settings, "CACHE_CONTROL_S_MAXAGE", None)
-    stale_while_revalidate = getattr(settings, "CACHE_CONTROL_STALE_WHILE_REVALIDATE", None)
-    cache_control_kwargs = {
-        "s_maxage": s_maxage,
-        "stale_while_revalidate": stale_while_revalidate,
+    return {
         "public": True,
+        "max_age": settings.CACHE_CONTROL_DEFAULT_MAX_AGE,
+        "stale_while_revalidate": 0,
+        "stale_if_error": settings.CACHE_CONTROL_DEFAULT_STALE_IF_ERROR,
     }
-    return {k: v for k, v in cache_control_kwargs.items() if v is not None}
+
+
+def get_publishing_rule_cache_control_kwargs() -> dict[str, int | bool]:
+    """Get browser Cache-Control parameters for semi-static HTML pages covered by the 59
+    second publishing rule.
+    """
+    return {
+        "public": True,
+        "max_age": settings.CACHE_CONTROL_PUBLISHING_RULE_MAX_AGE,
+        "stale_while_revalidate": 0,
+        "stale_if_error": settings.CACHE_CONTROL_PUBLISHING_RULE_STALE_IF_ERROR,
+    }
+
+
+def get_cdn_cache_control_header_value() -> str:
+    """Get the value of the Cloudflare-CDN-Cache-Control header, used to set the edge cache
+    TTL independently of the browser Cache-Control header. Same for all semi-static pages,
+    as purges on publish keep the edge cache up to date.
+    """
+    return (
+        f"max-age={settings.CACHE_CONTROL_CDN_MAX_AGE}, "
+        f"stale-while-revalidate={settings.CACHE_CONTROL_CDN_STALE_WHILE_REVALIDATE}, "
+        f"stale-if-error={settings.CACHE_CONTROL_CDN_STALE_IF_ERROR}"
+    )
 
 
 def get_default_cache_control_decorator() -> Callable:
     """Get cache control decorator that can be applied to views as a
     sane default for normal content pages.
     """
-    cache_control_kwargs = get_default_cache_control_kwargs()
-    return cache_control(**cache_control_kwargs)
+    return cache_control(**get_default_cache_control_kwargs())
+
+
+def apply_page_cache_headers(page: Any, response: Any) -> Any:
+    """Set the browser Cache-Control header and the edge Cloudflare-CDN-Cache-Control header
+    on a page response, using the publishing rule TTLs for pages with
+    `is_publishing_rule_page = True`, and the default semi-static TTLs otherwise.
+    """
+    cache_control_kwargs = (
+        get_publishing_rule_cache_control_kwargs()
+        if getattr(page, "is_publishing_rule_page", False)
+        else get_default_cache_control_kwargs()
+    )
+    patch_cache_control(response, **cache_control_kwargs)
+    response["Cloudflare-CDN-Cache-Control"] = get_cdn_cache_control_header_value()
+    return response
 
 
 memory_cache = partial(cache_memoize, cache_alias="memory")

@@ -4,7 +4,6 @@ from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpRequest
 from django.urls import reverse
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django_stubs_ext import StrOrPromise
@@ -16,7 +15,7 @@ from wagtail.utils.decorators import cached_classmethod
 from wagtailschemaorg.models import PageLDMixin
 
 from cms.core.analytics_utils import format_date_for_gtm
-from cms.core.cache import get_default_cache_control_decorator
+from cms.core.cache import apply_page_cache_headers
 from cms.core.forms import DeduplicateTopicsAdminForm, ONSCopyForm
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.query import order_by_pk_position
@@ -50,13 +49,16 @@ else:
 __all__ = ["BasePage", "BaseSiteSetting"]
 
 
-# Apply default cache headers on this page model's serve method.
-@method_decorator(get_default_cache_control_decorator(), name="serve")
 class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[django-manager-missing]
     """Base page class with listing and social fields additions as well as cache decorators."""
 
     base_form_class = DeduplicateTopicsAdminForm
     copy_form_class = ONSCopyForm
+
+    # Set to True on page types covered by the 59 second publishing rule to use
+    # a shorter browser Cache-Control TTL.
+    # See cms.core.cache.apply_page_cache_headers.
+    is_publishing_rule_page: ClassVar[bool] = False
 
     show_in_menus_default = True
     # Used to check for the existence of equation and ONS embed blocks.
@@ -427,6 +429,10 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         self._log_preview(request, mode_name)
         response: TemplateResponse = super().serve_preview(request, mode_name)
         return response
+
+    def serve(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
+        response: TemplateResponse = super().serve(request, *args, **kwargs)
+        return apply_page_cache_headers(self, response)
 
     def save_revision(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913,PLR0917
         self,

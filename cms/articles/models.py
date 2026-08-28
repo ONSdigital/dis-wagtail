@@ -239,6 +239,9 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
     schema_org_type = "Article"
 
+    # Set for appropriate caching based on the 59 second publishing rule.
+    is_publishing_rule_page = True
+
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
     search_index_content_type: ClassVar[str] = "statistical_article"
