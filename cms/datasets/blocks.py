@@ -90,11 +90,13 @@ class DatasetStoryBlock(StreamBlock):
                 if is_lookup
                 else block.value["url"]
             )
-            url_path = extract_url_path(url).lower()
-            url_paths[normalise_dataset_url(url_path)].add(block_index)
+            print(url)
+            url_path = normalise_dataset_url(extract_url_path(url).lower())
+            url_paths[url_path].add(block_index)
             if is_lookup or url_path not in destinations:
                 destinations[url_path] = url if is_lookup else extract_url_path(url)
 
+        print(url_paths)
         block_errors = {}
         for url_path, block_indices in url_paths.items():
             # Add a block error for any index which contains a duplicate URL,

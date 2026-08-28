@@ -624,7 +624,7 @@ class TestDatasetUrlPath(TestCase):
             version=9,
             title="Quarterly personal well-being estimates",
             description="Test description",
-            topic=cls.topic
+            topic=cls.topic,
         )
 
     def test_url_path_includes_topic_slug(self):
@@ -633,30 +633,27 @@ class TestDatasetUrlPath(TestCase):
     def test_url_path_uses_the_leaf_slug_for_a_nested_topic(self):
         """Dataset topics should always be the leaf topic, but test here that we can handle a nested topic structure."""
         child_topic = SimpleTopicFactory(id="7755", slug="consumerpriceinflation", parent=self.topic)
-        dataset = DatasetFactory(namespace="cpih01", topic=child_topic)
+        dataset = DatasetFactory(namespace="cpih02", topic=child_topic)
 
-        self.assertEqual(dataset.url_path, "/consumerpriceinflation/datasets/cpih01")
+        self.assertEqual(dataset.url_path, "/consumerpriceinflation/datasets/cpih02")
 
     def test_url_path_falls_back_when_there_is_no_topic(self):
-        dataset = DatasetFactory(namespace="cpih01", topic=None)
+        dataset = DatasetFactory(namespace="cpih02", topic=None)
 
-        self.assertEqual(dataset.url_path, "/datasets/cpih01")
+        self.assertEqual(dataset.url_path, "/datasets/cpih02")
 
     def test_url_path_falls_back_when_the_topic_is_deleted(self):
-        dataset = DatasetFactory(namespace="cpih01", topic=None)
+        dataset = DatasetFactory(namespace="cpih02", topic=None)
 
-        self.assertEqual(dataset.url_path, "/datasets/cpih01")
+        self.assertEqual(dataset.url_path, "/datasets/cpih02")
 
     def test_deprecated_url_path_ignores_the_topic(self):
-        with_topic = DatasetFactory(namespace="cpih01", topic=self.topic)
         without_topic = DatasetFactory(namespace="cpih01", topic=None)
 
         self.assertEqual(without_topic.deprecated_url_path, "/datasets/cpih01")
-        self.assertEqual(with_topic.deprecated_url_path, "/datasets/cpih01")
+        self.assertEqual(self.dataset.deprecated_url_path, "/datasets/cpih01")
 
     def test_default_manager_eager_loads_topic(self):
-        DatasetFactory(namespace="cpih01", topic=self.topic)
-
         dataset = Dataset.objects.get(namespace="cpih01")
         with self.assertNumQueries(0):
             self.assertEqual(dataset.url_path, "/inflationandpricesindices/datasets/cpih01")
@@ -665,6 +662,5 @@ class TestDatasetUrlPath(TestCase):
         """The fixture is version 9, and no version appears in the URL."""
         self.assertEqual(
             self.dataset.get_url_path(link_to_latest_version=True),
-            "/datasets/cpih01/editions/september/versions",
+            "/inflationandpricesindices/datasets/cpih01/editions/september/versions",
         )
-
