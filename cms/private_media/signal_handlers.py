@@ -137,5 +137,5 @@ def register_signal_handlers() -> None:
     unpublished.connect(unpublish_media_on_unpublish, dispatch_uid="unpublish_media")
 
     register_post_publish_action(
-        PostPublishActionType.S3_ACL, publish_media_post_publish_action, PostPublishActionPriority.HIGH
+        PostPublishActionType.S3_ACL, publish_media_post_publish_action, priority=PostPublishActionPriority.HIGH
     )

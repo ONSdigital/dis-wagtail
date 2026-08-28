@@ -33,9 +33,10 @@ _registry: dict[PostPublishActionType, RegisteredPostPublishAction] = {}
 
 
 def register_post_publish_action(
-    action_type: PostPublishActionType, action_handler: ActionHandler, *, priority: int = PostPublishActionPriority.MEDIUM
-) -> None:
-    action_type: PostPublishActionType, action_handler: ActionHandler, priority: int = PostPublishActionPriority.MEDIUM
+    action_type: PostPublishActionType,
+    action_handler: ActionHandler,
+    *,
+    priority: int = PostPublishActionPriority.MEDIUM,
 ) -> None:
     if action_type in _registry:
         raise ImproperlyConfigured(f"{action_type} is already configured: {_registry[action_type].handler}")
