@@ -7,6 +7,7 @@ from cache_memoize import cache_memoize
 from django.conf import settings
 from django.core.cache import InvalidCacheBackendError, caches
 from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpResponse
 from django.utils.cache import patch_cache_control
 from django.views.decorators.cache import cache_control
 from django_redis.cache import RedisCache
@@ -99,7 +100,7 @@ def get_default_cache_control_decorator() -> Callable:
     return cache_control(**get_default_cache_control_kwargs())
 
 
-def apply_page_cache_headers(page: Any, response: Any) -> Any:
+def apply_page_cache_headers(page: Any, response: HttpResponse) -> HttpResponse:
     """Set the browser Cache-Control header and the edge Cloudflare-CDN-Cache-Control header
     on a page response, using the publishing rule TTLs for pages with
     `is_publishing_rule_page = True`, and the default semi-static TTLs otherwise.

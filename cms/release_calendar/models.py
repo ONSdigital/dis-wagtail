@@ -59,7 +59,7 @@ class ReleaseCalendarIndex(BasePage):  # type: ignore[django-manager-missing]
 
     def serve(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         if not settings.CMS_RELEASES_INDEX_REDIRECT_ENABLED:
-            return super().serve(request, *args, **kwargs)  # type: ignore[no-any-return]
+            return super().serve(request, *args, **kwargs)
 
         location = RELEASE_CALENDAR_REDIRECT_PATH
         if settings.WAGTAIL_APPEND_SLASH:

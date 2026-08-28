@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
 
 from django.conf import settings
 from django.core.cache import cache
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from django.urls import reverse
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -430,8 +430,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         response: TemplateResponse = super().serve_preview(request, mode_name)
         return response
 
-    def serve(self, request: HttpRequest, *args: Any, **kwargs: Any) -> TemplateResponse:
-        response: TemplateResponse = super().serve(request, *args, **kwargs)
+    def serve(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        response: HttpResponse = super().serve(request, *args, **kwargs)
         return apply_page_cache_headers(self, response)
 
     def save_revision(  # pylint: disable=too-many-arguments,too-many-positional-arguments  # noqa: PLR0913,PLR0917

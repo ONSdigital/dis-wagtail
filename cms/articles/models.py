@@ -855,17 +855,17 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         if kwargs.pop("related_data", None):
             view, _view_args, view_kwargs = self.resolve_subpage("/related-data/")
             serve_kwargs = {**kwargs, **view_kwargs}
-            return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
+            return super().serve(request, view=view, args=args, kwargs=serve_kwargs)
 
         if version := kwargs.pop("version", None):
             view, _view_args, view_kwargs = self.resolve_subpage(f"/versions/{version}/")
             serve_kwargs = {**kwargs, **view_kwargs}
-            return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
+            return super().serve(request, view=view, args=args, kwargs=serve_kwargs)
 
         if version == 0:
             raise Http404
 
-        return cast("HttpResponse", super().serve(request, *args, **kwargs))
+        return super().serve(request, *args, **kwargs)
 
     @cached_property
     def cached_link_analytics_values(self) -> dict[str, str]:
