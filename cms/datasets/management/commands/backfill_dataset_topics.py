@@ -54,6 +54,13 @@ class Command(BaseCommand):
                 f"Defaults to the {ACCESS_TOKEN_VAR_NAME} environment variable."
             ),
         )
+        parser.add_argument(
+            "--noinput",
+            "--no-input",
+            action="store_false",
+            dest="interactive",
+            help="Tells Django to NOT prompt the user for input of any kind.",
+        )
 
     @force_write_db()
     def handle(self, *args: Any, **options: Any) -> None:
@@ -90,7 +97,7 @@ class Command(BaseCommand):
                 dataset.topic_id = topic_id
                 updates.append((dataset, previous_topic_id))
 
-        self._apply_updates(updates, dry_run=dry_run)
+        self._apply_updates(updates, dry_run=dry_run, interactive=options["interactive"])
         self._report_unresolved(unresolved)
 
     def _get_datasets_by_namespace(
@@ -146,7 +153,7 @@ class Command(BaseCommand):
             return primary_topic_id
         return None
 
-    def _apply_updates(self, updates: list[tuple[Dataset, str | None]], *, dry_run: bool) -> None:
+    def _apply_updates(self, updates: list[tuple[Dataset, str | None]], *, dry_run: bool, interactive: bool) -> None:
         if not updates:
             logger.info("No dataset topics could be resolved")
             return
@@ -155,6 +162,12 @@ class Command(BaseCommand):
             logger.info("Would have updated topic for %d datasets", len(updates))
             for dataset, previous_topic_id in updates:
                 logger.info("\t%s: %s -> %s", dataset.compound_id, previous_topic_id or "no topic", dataset.topic_id)
+            return
+
+        if interactive and not self._confirm_continue(
+            f"About to update topic for {len(updates)} dataset(s). This will modify the database.\n"
+        ):
+            logger.info("Aborting dataset topic refresh, no changes were made.")
             return
 
         backfilled = sum(1 for _, previous_topic_id in updates if previous_topic_id is None)
@@ -179,3 +192,9 @@ class Command(BaseCommand):
     def _report_unresolved(self, unresolved: dict[str, list[str]]) -> None:
         for reason, namespaces in unresolved.items():
             logger.warning("skipped %d namespaces for reason %s: %s", len(namespaces), reason, ", ".join(namespaces))
+
+    def _confirm_continue(self, message: str) -> bool:
+        """Prompt the user to confirm they want to continue."""
+        self.stdout.write(f"{message} Are you sure you want to continue? [y/N] ")
+        response = input()
+        return response.lower() in ("y", "yes")
