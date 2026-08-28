@@ -5,7 +5,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.models import CharField, IntegerField
 from django.db.models.functions import Cast
 from wagtail.models import Page, ReferenceIndex
-from wagtail.signals import published, unpublished
+from wagtail.signals import page_published, page_unpublished, published, unpublished
 
 from cms.bundles.models import Bundle
 from cms.post_publish_actions.models import PostPublishActionType
@@ -133,8 +133,10 @@ def unpublish_media_on_model_publish(instance: Model, **kwargs: Any) -> None:
 
 def register_signal_handlers() -> None:
     """Register signal handlers for models using the private media system."""
-    published.connect(publish_media_on_publish, dispatch_uid="publish_media")
-    unpublished.connect(unpublish_media_on_unpublish, dispatch_uid="unpublish_media")
+    page_published.connect(publish_media_on_publish, dispatch_uid="publish_media")
+    page_unpublished.connect(unpublish_media_on_unpublish, dispatch_uid="unpublish_media")
+    published.connect(publish_media_on_model_publish, dispatch_uid="publish_media")
+    unpublished.connect(unpublish_media_on_model_publish, dispatch_uid="unpublish_media")
 
     register_post_publish_action(
         PostPublishActionType.S3_ACL, publish_media_post_publish_action, PostPublishActionPriority.HIGH

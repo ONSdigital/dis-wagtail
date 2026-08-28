@@ -78,12 +78,12 @@ class InformationPage(  # type: ignore[django-manager-missing]
         context["table_of_contents"] = self.table_of_contents
         return context
 
+    def get_cached_paths(self) -> list[str]:
+        return ["/", *self.get_downloadable_block_paths()]
+
     def serve_preview(self, request: HttpRequest, mode_name: str) -> TemplateResponse:
         self._log_preview(request, mode_name)
         return super().serve_preview(request, mode_name)
-
-    def get_cached_paths(self) -> list[str]:
-        return ["/", *self.get_downloadable_block_paths()]
 
 
 class IndexPage(BundledPageMixin, BasePage):  # type: ignore[django-manager-missing]
