@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-20 14:49+0100\n"
+"POT-Creation-Date: 2026-08-27 16:13+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -191,19 +191,19 @@ msgstr "Data"
 msgid "Breadcrumbs"
 msgstr "Briwsion bara"
 
-#: cms/jinja2/templates/base_page.html:4
+#: cms/jinja2/templates/base_page.html:5
 msgid "Back to top"
 msgstr "Nôl i’r brig"
 
-#: cms/jinja2/templates/base_page.html:63
+#: cms/jinja2/templates/base_page.html:64
 msgid "in English"
 msgstr "yn Saesneg"
 
-#: cms/jinja2/templates/base_page.html:64
+#: cms/jinja2/templates/base_page.html:65
 msgid "in Welsh"
 msgstr "yn y Gymraeg"
 
-#: cms/jinja2/templates/base_page.html:71
+#: cms/jinja2/templates/base_page.html:72
 #, python-format
 msgid ""
 "This page is currently not available %(in_language)s. It is displayed in its "
@@ -412,8 +412,7 @@ msgstr ""
 #: cms/jinja2/templates/pages/cookies.html:121
 msgid ""
 "Do you want to allow cookies that help with communications and marketing?"
-msgstr ""
-"Ydych chi am ganiatáu cwcis sy’n helpu gyda chyfathrebu a marchnata?"
+msgstr "Ydych chi am ganiatáu cwcis sy’n helpu gyda chyfathrebu a marchnata?"
 
 #: cms/jinja2/templates/pages/cookies.html:122
 msgid "Use cookies that help with communications and marketing"
@@ -519,8 +518,7 @@ msgid ""
 "href=\"%(contact_url)s\">contact us</a>."
 msgstr ""
 "Os yw’r cyfeiriad gwe yn gywir, neu os oeddech chi wedi dewis dolen neu "
-"fotwm, <a "
-"href=\"%(contact_url)s\">cysylltwch â ni</a>."
+"fotwm, <a href=\"%(contact_url)s\">cysylltwch â ni</a>."
 
 #: cms/jinja2/templates/pages/errors/500.html:2
 msgid "Sorry, there’s a problem with the service"
@@ -778,7 +776,7 @@ msgid ""
 "website, statistical article, %(cite_link)s"
 msgstr ""
 "Y Swyddfa Ystadegau Gwladol (SYG), cyhoeddwyd %(release_date)s, gwefan y "
-"SYG erthygl ystadegol, %(cite_link)s"
+"SYG, erthygl ystadegol, %(cite_link)s"
 
 #: cms/jinja2/templates/pages/theme_index_page.html:20
 msgid "Browse"

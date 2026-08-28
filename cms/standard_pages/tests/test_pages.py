@@ -72,11 +72,7 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
         )
         self.assertContains(
             response,
-            (
-                '<h1 class="ons-u-fs-3xl ons-u-mb-xl '
-                'common-header__heading">\n            '
-                "Newid eich dewisiadau cwcis\n        </h1>"
-            ),
+            '<h1 class="ons-u-fs-3xl ons-u-mb-xl common-header__heading">Newid eich dewisiadau cwcis</h1>',
             html=True,
         )
         self.assertContains(response, "Gosodiadau cwcis")
