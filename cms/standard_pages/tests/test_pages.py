@@ -19,7 +19,7 @@ class CookiesPageTest(TranslationResetMixin, WagtailPageTestCase):
         cls.english_site = Site.objects.get(is_default_site=True)
         cls.welsh_site = Site.objects.get(root_page=cls.welsh_home)
 
-    def test_welsh_cookies_page_shows_localised_version_notice_by_default(self):
+    def test_welsh_cookies_page_does_not_show_localised_version_notice_by_default(self):
         request = RequestFactory().get(self.welsh_cookies_page.url)
         request.LANGUAGE_CODE = "cy"
 
