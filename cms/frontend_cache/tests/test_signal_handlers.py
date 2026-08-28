@@ -1040,7 +1040,7 @@ class PublishPurgeRunsAsPostPublishActionTestCase(WagtailTestUtils, TestCase):
         cls.index_page = IndexPageFactory()
         cls.information_page = InformationPageFactory(parent=cls.index_page, title="Info page")
 
-    def test_registered_ast_the_frontend_cache_action(self):
+    def test_registered_as_the_frontend_cache_action(self):
         self.assertIs(
             get_post_publish_actions()[PostPublishActionType.CACHE_PURGE], purge_published_page_from_frontend_cache
         )
