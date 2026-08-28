@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 
 class PostPublishActionType(models.TextChoices):
+    CACHE_PURGE = "CACHE_PURGE", "Frontend cache purge"
     S3_ACL = "S3_ACL", "Private Media ACLs"
     SEARCH_UPDATED = "SEARCH_UPDATED", "Search updated"
 
