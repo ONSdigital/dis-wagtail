@@ -115,7 +115,6 @@ def register_signal_handlers() -> None:
     )
 
     for model in _get_tracked_page_models():
-        page_published.connect(purge_published_page_from_frontend_cache, sender=model)
         page_unpublished.connect(purge_unpublished_page_from_frontend_cache, sender=model)
         page_slug_changed.connect(purge_page_from_frontend_cache_after_slug_change, sender=model)
         page_title_changed.connect(purge_descendants_from_frontend_cache, sender=model)
