@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import enum
 import logging
 from datetime import datetime
+from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
@@ -24,7 +24,7 @@ logger = logging.getLogger("cms.bundles")
 
 # Not migrated to enum.StrEnum: members are placed directly into Slack payloads, and StrEnum
 # changes what str() returns ("Fail" rather than "BundleAlertType.FAIL").
-class BundleAlertType(enum.StrEnum):
+class BundleAlertType(str, Enum):  # noqa: UP042
     """Alert severity levels for Slack bundle notifications."""
 
     CRITICAL = "Critical"
