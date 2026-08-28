@@ -643,7 +643,11 @@ class TestDatasetUrlPath(TestCase):
         self.assertEqual(dataset.url_path, "/datasets/cpih02")
 
     def test_url_path_falls_back_when_the_topic_is_deleted(self):
-        dataset = DatasetFactory(namespace="cpih02", topic=None)
+        topic_to_delete = SimpleTopicFactory(id="7755", slug="consumerpriceinflation")
+        dataset = DatasetFactory(namespace="cpih02", topic=topic_to_delete)
+
+        topic_to_delete.delete()
+        dataset.refresh_from_db()
 
         self.assertEqual(dataset.url_path, "/datasets/cpih02")
 
