@@ -1,6 +1,3 @@
-/* eslint-disable class-methods-use-this */
-/* eslint-disable max-classes-per-file */
-
 class PreviousVersionBlock {
   constructor(blockDef, placeholder, prefix, initialState) {
     this.blockDef = blockDef;
@@ -28,7 +25,6 @@ class PreviousVersionBlock {
     this.renderContent(state);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setError(_errorList) {}
 
   getState() {
