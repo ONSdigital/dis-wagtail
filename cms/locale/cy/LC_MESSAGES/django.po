@@ -306,7 +306,7 @@ msgstr ""
 "Mae’r dudalen hon yn rhoi esboniad byr o bob math o gwci rydym yn ei "
 "ddefnyddio. Os hoffech gael rhagor o fanylion, <a "
 "href=\"%(help_cookies_url)s\"> darllenwch ein gwybodaeth fanwl am gwcis </"
-"a>. "
+"a>."
 
 #: cms/jinja2/templates/pages/cookies.html:54
 msgid "Cookie settings"
