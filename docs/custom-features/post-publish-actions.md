@@ -1,3 +1,5 @@
+from post_publish_actions.registry import PostPublishActionPriorityfrom post_publish_actions.registry import PostPublishActionPriorityfrom post_publish_actions.models import PostPublishActionTypefrom post_publish_actions.models import PostPublishActionTypefrom post_publish_actions.registry import PostPublishActionPriorityfrom post_publish_actions.registry import PostPublishActionPriorityfrom post_publish_actions.models import PostPublishActionTypefrom post_publish_actions.models import PostPublishActionTypefrom post_publish_actions.registry import register_post_publish_action
+
 # Post-publish Actions
 
 Post-publish actions are tasks that run asynchronously after pages are published as part of a bundle. They allow side effects such as updating search indexes or changing S3 ACLs to happen in parallel, without blocking the publishing process.
@@ -13,10 +15,13 @@ When a bundle is published, each page triggers registered post-publish actions. 
 
 Actions are registered via a decorator or function call:
 
-- **`SEARCH_UPDATED`** — notifies the search service that a page has been created or updated (see `cms/search/signal_handlers.py`).
 - **`S3_ACL`** — updates S3 object ACLs for private media associated with the page (see `cms/private_media/signal_handlers.py`).
+- **`CACHE_PURGE`** -- purges urls specified for the page from the Cloudflare cache (see `cms/frontend_cache/signal_handlers.py`). Only registered when `cms.frontend_cache` app installed.
+- **`SEARCH_UPDATED`** — notifies the search service that a page has been created or updated (see `cms/search/signal_handlers.py`).
 
 New action types can be added by defining a handler that accepts `(page: Page, bundle: Bundle | None)` and registering it with `@post_publish_action(PostPublishActionType.MY_TYPE)` or `register_post_publish_action(...)`.
+
+Registration is conditional on the owning app being installed, so the set of registered actions can be smaller than the total list of action types defined here. `PostPublishAction.objects.active()` returns only actions for which a handler is registered, so they will be ignored by completion polling and retries.
 
 ## Architecture
 
@@ -42,6 +47,41 @@ publish_bundles command / manual publish in wagtail admin
 ### Registry
 
 `cms/post_publish_actions/registry.py` maintains a mapping of `PostPublishActionType` → handler callable. Handlers receive `(page, bundle)` and perform the side effect. Registration happens at app startup (in `signal_handlers.py` / `apps.py`).
+
+#### Priority
+
+Each handler is registered with a priority, `PostPublishActionPriority`.
+
+```python
+class PostPublishActionPriority(IntEnum):
+    HIGH = 1
+    MEDIUM = 2
+    LOW = 3
+```
+
+This determines the order in which actions are executed (sync path) or enqueued (thread pooling). Lower priority integer values run first, and equal numbers are run in registration order.
+
+```python
+register_post_publish_action(
+    PostPublishActionType.CACHE_PURGE,
+    purge_published_page_from_frontend_cache,
+    priority=PostPublishActionPriority.MEDIUM,
+)
+
+
+@post_publish_action(PostPublishActionType.SEARCH_UPDATED, PostPublishActionPriority.LOW)
+def update_index_post_publish_action(page: Page, bundle: Bundle | None) -> None: ...
+```
+
+Alternatively an integer can be passed directly as the priority, which may enable extra high or low values to guarantee a particular action runs first/last.
+
+For now the actions are registered in the following order
+
+| Action Type      | Priority |
+| ---------------- | -------- |
+| `S3_ACL`         | `HIGH`   |
+| `CACHE_PURGE`    | `MEDIUM` |
+| `SEARCH_UPDATED` | `LOW`    |
 
 ### Model
 
@@ -187,6 +227,7 @@ If a bundle is re-published, any actions are deleted and re-created so we don't 
 | `cms/post_publish_actions/signal_handlers.py`                                | Wagtail signal integration and bundle context manager |
 | `cms/post_publish_actions/utils.py`                                          | Completion polling, Slack notification orchestration  |
 | `cms/post_publish_actions/management/commands/retry_post_publish_actions.py` | Retry management command                              |
+| `cms/frontend_cache/signal_handlers.py`                                      | `CACHE_PURGE` action handler                          |
 | `cms/bundles/management/commands/publish_bundles.py`                         | Bundle publishing orchestration                       |
 | `cms/bundles/utils.py`                                                       |                                                       |
 | `cms/search/signal_handlers.py`                                              | `SEARCH_UPDATED` action handler                       |
@@ -200,5 +241,3 @@ Bundles were the first use case for concurrent post-publish actions, but in futu
 
 - Individual page publishes (outside of bundles)
 - Page unpublishes (both inside and outside of bundles)
-
-This will also include new registry actions for custom cache purging (in development on feature branch `feature-frontend-cache-invalidation`).
