@@ -1,6 +1,6 @@
 application:
   repo_name: dis-wagtail
-  branch: spike/work-return-to-draft-unlock-CMS-1274
+  branch: main
 helm:
   repo_name: dis-helm-cms-service-chart
   values_files:
