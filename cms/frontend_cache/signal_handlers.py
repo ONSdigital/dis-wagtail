@@ -113,6 +113,9 @@ def register_signal_handlers() -> None:
     )
 
     for model in _get_tracked_page_models():
+        # These were considered for post-publish actions but not implemented for now
+        # They are rare editor actions that are currently more effort than it's worth,
+        # and won't massively benefit from being tracked as post-publish actions in the DB
         page_unpublished.connect(purge_unpublished_page_from_frontend_cache, sender=model)
         page_slug_changed.connect(purge_page_from_frontend_cache_after_slug_change, sender=model)
         page_title_changed.connect(purge_descendants_from_frontend_cache, sender=model)
