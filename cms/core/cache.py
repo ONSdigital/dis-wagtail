@@ -104,10 +104,14 @@ def apply_page_cache_headers(page: Any, response: HttpResponse) -> HttpResponse:
     """Set the browser Cache-Control header and the edge Cloudflare-CDN-Cache-Control header
     on a page response, using the publishing rule TTLs for pages with
     `is_publishing_rule_page = True`, and the default semi-static TTLs otherwise.
+
+    Uses the page that was actually rendered (from the response's context) rather than the
+    routed page, since they can differ (e.g. an article series delegating to an edition).
     """
+    rendered_page = getattr(response, "context_data", {}).get("self", page)
     cache_control_kwargs = (
         get_publishing_rule_cache_control_kwargs()
-        if getattr(page, "is_publishing_rule_page", False)
+        if getattr(rendered_page, "is_publishing_rule_page", False)
         else get_default_cache_control_kwargs()
     )
     patch_cache_control(response, **cache_control_kwargs)

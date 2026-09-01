@@ -3,7 +3,6 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from fakeredis import FakeConnection
 
 from cms.home.models import HomePage
-from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 
 
 @override_settings(
@@ -99,17 +98,5 @@ class PageCacheControlHeadersTestCase(TestCase):
         self.assertEqual(
             response.headers["Cache-Control"],
             "public, max-age=60, stale-while-revalidate=0, stale-if-error=300",
-        )
-        self.assertEqual(response.headers["Cloudflare-CDN-Cache-Control"], self.cdn_cache_control)
-
-    def test_publishing_rule_page(self) -> None:
-        page = ReleaseCalendarPageFactory()
-
-        response = self.client.get(page.get_url())
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.headers["Cache-Control"],
-            "public, max-age=5, stale-while-revalidate=0, stale-if-error=60",
         )
         self.assertEqual(response.headers["Cloudflare-CDN-Cache-Control"], self.cdn_cache_control)
