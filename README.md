@@ -543,6 +543,12 @@ make compilemessages
 
 This will compile the .po files into .mo files, which are used by Django to display the translated text.
 
+### Test Data Management (\*In Development)
+
+Management commands are provided to seed, inspect, and tear down test data for local development.
+
+For usage and details, see the [Data Creation Scripts documentation](docs/custom-features/data-creation-scripts.md).
+
 ### Lighthouse Audits
 
 You can then run [Lighthouse](https://github.com/GoogleChrome/lighthouse) audits against the application with the following command:

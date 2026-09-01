@@ -24,7 +24,12 @@ from functional_tests.step_helpers.datasets import (
     TEST_UNPUBLISHED_DATASETS,
     register_dataset_detail_route,
 )
-from functional_tests.step_helpers.utils import dl_to_dict, get_bundle_approval_status, get_page_from_context
+from functional_tests.step_helpers.utils import (
+    dl_to_dict,
+    fill_datetime_field,
+    get_bundle_approval_status,
+    get_page_from_context,
+)
 from functional_tests.steps.information_page import create_information_page
 from functional_tests.steps.release_page import click_add_child_page, navigate_to_release_calendar_page
 
@@ -161,7 +166,7 @@ def user_manually_creates_future_release_calendar(context: Context, status: str)
     context.page.get_by_placeholder("Page title*").fill(title)
     context.page.get_by_label("Status*").select_option(status.upper())
     formatted_date = tomorrow.strftime("%Y-%m-%d %H:%M")
-    context.page.get_by_role("textbox", name="Release date*").fill(formatted_date)
+    fill_datetime_field(context.page.get_by_role("textbox", name="Release date*"), formatted_date)
     context.page.get_by_role("region", name="Summary*").get_by_role("textbox").fill("My example release page")
 
     # Save the values to access later
@@ -187,14 +192,16 @@ def user_creates_bundle_with_future_release_calendar_page(context: Context) -> N
     context.page.get_by_text(title).click()
 
 
-@step("the user sees the release calendar page title, status and release date")
-def user_sees_release_calendar_page_title_status_release_date(
+@step("the user sees the release calendar page title, release status, release date and page status")
+def user_sees_release_calendar_page_title_release_status_date_page_status(
     context: Context,
 ) -> None:
+    # The page is non-live and only saved as a revision, so its status is Draft.
+    expected_page_status = "Draft"
     expect(
         context.page.get_by_text(
             f"{context.release_calendar_page.title} ({context.release_calendar_page.status},"
-            f" {context.release_calendar_page.release_date_value})"
+            f" {context.release_calendar_page.release_date_value}) ({expected_page_status})"
         )
     ).to_be_visible()
 
@@ -232,7 +239,7 @@ def user_updates_selected_release_calendar_page_title_release_date_status(contex
     context.page.get_by_placeholder("Page title*").fill("New title")
     context.page.get_by_label("Status*").select_option((status).upper())
     formatted_date = new_date.strftime("%Y-%m-%d %H:%M")
-    context.page.get_by_role("textbox", name="Release date*").fill(formatted_date)
+    fill_datetime_field(context.page.get_by_role("textbox", name="Release date*"), formatted_date)
     context.page.get_by_role("button", name="Save draft").click()
     # tracks new release date with ons date format
     context.saved_release_calendar_page_details["release_date_value"] = ons_date_format(new_date, "DATETIME_FORMAT")
@@ -250,15 +257,20 @@ def returns_to_bundle_edit_page(
     context.page = bundle_admin_view.value
 
 
-@then('the user sees the updated release calendar page\'s title, release date and the status "{status}"')
+@then('the user sees the updated release calendar page\'s title, release date and release status "{status}"')
 def user_sees_updated_release_calendar_page_title_release_date_status(context: Context, status: str) -> None:
+    # The page remains non-live here, so its displayed status is still Draft.
+    expected_page_status = "Draft"
     expect(
         context.page.get_by_text(
-            f"New title ({status}, {context.saved_release_calendar_page_details['release_date_value']})"
+            f"New title ({status}, {context.saved_release_calendar_page_details['release_date_value']}) "
+            f"({expected_page_status})"
         )
     ).to_be_visible()
     expect(
-        context.page.get_by_text(f"{context.original_title} ({context.original_status}, {context.original_date})")
+        context.page.get_by_text(
+            f"{context.original_title} ({context.original_status}, {context.original_date}) ({expected_page_status})"
+        )
     ).not_to_be_visible()
 
 

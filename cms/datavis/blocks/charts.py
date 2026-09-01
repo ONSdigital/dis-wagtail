@@ -165,6 +165,7 @@ class BarColumnChartBlock(BaseChartBlock):
         default=BarColumnChartTypeChoices.BAR,
         label="Display as",
         widget=widgets.RadioSelect,
+        required_on_save=True,
     )
     show_data_labels = blocks.BooleanBlock(
         default=False,
@@ -243,7 +244,9 @@ class BarColumnChartBlock(BaseChartBlock):
         [
             (
                 SERIES_AS_LINE_OVERLAY_BLOCK,
-                TextInputIntegerBlock(help_text="The number of the series to display as a line overlay."),
+                TextInputIntegerBlock(
+                    help_text="The number of the series to display as a line overlay.", required_on_save=True
+                ),
             ),
         ],
         required=False,
@@ -468,6 +471,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
         default=BarColumnConfidenceIntervalChartTypeChoices.BAR,
         label="Display as",
         widget=widgets.RadioSelect,
+        required_on_save=True,
     )
     # NB X_axis is labelled "Category axis" for bar/column charts
     x_axis = blocks.StructBlock(
@@ -507,10 +511,12 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
     )
     estimate_line_label = blocks.CharBlock(
         required=True,
+        required_on_save=True,
         help_text="Label for the estimate line in the legend",
     )
     uncertainty_range_label = blocks.CharBlock(
         required=True,
+        required_on_save=True,
         help_text="Label for the uncertainty range in the legend",
     )
 

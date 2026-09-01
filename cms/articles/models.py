@@ -41,6 +41,7 @@ from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.utils import format_datasets_as_document_list
 from cms.datavis.blocks.base import BaseChartBlock
 from cms.datavis.blocks.featured_charts import FeaturedChartBlock
+from cms.datavis.blocks.iframe import IframeBlock
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -604,6 +605,18 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         )
         return corrections, notices
 
+    @cached_property
+    def has_iframe_visualisations(self) -> bool:
+        """Checks for iframe visualisations in the article content or featured chart."""
+        if super().has_iframe_visualisations:
+            return True
+
+        streamvalue = self.featured_chart
+        if not streamvalue or not hasattr(streamvalue.stream_block, "has_iframe_visualisations"):
+            return False
+
+        return bool(streamvalue.stream_block.has_iframe_visualisations(streamvalue))
+
     def as_featured_article_macro_data(self, request: HttpRequest) -> dict[str, Any]:
         """Returns data formatted for the onsFeaturedArticle Nunjucks/Jinja2 macro."""
         data = {
@@ -637,9 +650,14 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
             if isinstance(block_instance, BaseChartBlock):
                 data["chart"] = block_instance.get_component_config(block_value)
-                data["chart"]["id"] = self.featured_chart[0].id  # pylint: disable=unsubscriptable-object
+                data["chart"]["id"] = chart_block.id
                 # Featured article should not display downloads
                 data["chart"]["download"] = None
+            elif isinstance(block_instance, IframeBlock):
+                # Keep the bound block so the featured article can render the
+                # iframe using the same figure and resize behaviour as other
+                # IframeBlock instances.
+                data["iframe"] = chart_block
 
         elif self.listing_image:
             data["image"] = {
@@ -859,16 +877,20 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         return cast("HttpResponse", super().serve(request, *args, **kwargs))
 
     @cached_property
-    def cached_analytics_values(self) -> dict[str, str | bool]:
-        parent_series = self.get_parent()
-
-        values = {
-            "pageTitle": self.display_title,
-            "outputSeries": parent_series.slug,
+    def cached_link_analytics_values(self) -> dict[str, str]:
+        return {
+            "outputSeries": self.get_parent().slug,
             "outputEdition": self.slug,
             "releaseDate": format_date_for_gtm(self.release_date),
+        }
+
+    @cached_property
+    def cached_analytics_values(self) -> dict[str, str | bool]:
+        values: dict[str, str | bool] = {
+            "pageTitle": self.display_title,
             "latestRelease": bool_to_yes_no(self.is_latest),
-            "wordCount": self.word_count,
+            "wordCount": str(self.word_count),
+            **self.cached_link_analytics_values,
         }
 
         if self.next_release_date:

@@ -1,5 +1,8 @@
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from datetime import timezone as tz
+from types import SimpleNamespace
+from typing import Any
 
 from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
@@ -10,6 +13,7 @@ from cms.core.formatting_utils import (
     format_as_document_list_item,
     get_document_metadata,
     get_formatted_pages_list,
+    get_page_display_status,
     to_rfc3339_datetime,
 )
 from cms.core.models.base import BasePage
@@ -41,6 +45,13 @@ class DummyPageWithNoReleaseDate(DummyPage):
 
     class Meta:
         abstract = True
+
+
+@dataclass
+class DummyStatusPage:
+    current_workflow_state: Any | None = None
+    live: bool = False
+    has_unpublished_changes: bool = True
 
 
 class GetFormattedPagesListTests(TestCase):
@@ -274,3 +285,29 @@ class TestToRFC3339Datetime(SimpleTestCase):
 
     def test_returns_none_for_none_input(self):
         self.assertIsNone(to_rfc3339_datetime(None))
+
+
+class GetPageDisplayStatusTestCase(TestCase):
+    def test_returns_current_workflow_task_name_when_in_workflow(self):
+        page = DummyStatusPage(
+            current_workflow_state=SimpleNamespace(
+                current_task_state=SimpleNamespace(task=SimpleNamespace(name="In Preview"))
+            ),
+        )
+
+        self.assertEqual(get_page_display_status(page), "In Preview")
+
+    def test_returns_live_when_live_without_unpublished_changes(self):
+        page = DummyStatusPage(live=True, has_unpublished_changes=False)
+
+        self.assertEqual(get_page_display_status(page), "Live")
+
+    def test_returns_draft_when_not_live_and_not_in_workflow(self):
+        page = DummyStatusPage(live=False, has_unpublished_changes=True)
+
+        self.assertEqual(get_page_display_status(page), "Draft")
+
+    def test_returns_live_and_draft_for_live_page_with_unpublished_changes(self):
+        page = DummyStatusPage(live=True, has_unpublished_changes=True)
+
+        self.assertEqual(get_page_display_status(page), "Live + Draft")

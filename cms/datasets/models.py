@@ -250,6 +250,19 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
         """
         return f"/datasets/{self.namespace}"
 
+    def get_url_path(self, *, link_to_latest_version: bool = False) -> str:
+        """Return the public path this dataset should be linked to.
+
+        Which destination is correct depends on the page doing the linking rather than on the
+        dataset. Callers read link_to_latest_version off the DatasetStoryBlock the linking page's
+        field was built with, so pages tied to a specific edition, such as release calendar
+        entries, get the edition path. That path stops at "versions", so the destination is not
+        pinned to the version recorded here.
+        """
+        if link_to_latest_version:
+            return f"{self.url_path}/editions/{self.edition}/versions"
+        return self.url_path
+
     @property
     def compound_id(self) -> str:
         """Return the compound ID for this local Dataset instance.

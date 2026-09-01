@@ -12,8 +12,13 @@ from wagtail.blocks import StructBlockValidationError
 from wagtail.contrib.table_block.blocks import TableBlock as WagtailTableBlock
 from wagtail_tinytableblock.blocks import TinyTableBlock
 
-from cms.core.utils import strip_unwanted_control_chars_from_json
-from cms.data_downloads.utils import flatten_table_data
+from cms.core.analytics_utils import get_gtm_attributes_file_download
+from cms.core.utils import format_file_size_kb, strip_unwanted_control_chars_from_json
+from cms.data_downloads.utils import (
+    flatten_table_data,
+    get_csv_download_filename,
+    get_table_csv_download_title,
+)
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 
 if TYPE_CHECKING:
@@ -59,7 +64,7 @@ class HeadingBlock(blocks.CharBlock):
 class QuoteBlock(blocks.StructBlock):
     """The quote block."""
 
-    quote = blocks.CharBlock(form_classname="title")
+    quote = blocks.CharBlock(form_classname="title", required_on_save=True)
     attribution = blocks.CharBlock(required=False)
 
     class Meta:
@@ -142,6 +147,7 @@ class ONSTableBlock(TinyTableBlock):
     # Redeclare the inherited caption field
     caption = blocks.CharBlock(
         required=True,
+        required_on_save=True,
         label="Accessible label",
         help_text=("A short label to explain what this table is about for screen reader users."),
     )
@@ -229,7 +235,13 @@ class ONSTableBlock(TinyTableBlock):
         # Add download config if block_id and page context available
         block_id = context.get("block_id")
         if block_id and parent_context:
-            options["download"] = self._get_download_config(parent_context=parent_context, block_id=block_id, data=data)
+            options["download"] = self._get_download_config(
+                parent_context=parent_context,
+                block_id=block_id,
+                data=data,
+                table_title=value.get("title"),
+                table_caption=value.get("caption"),
+            )
 
         table_context = {
             "options": options,
@@ -238,7 +250,15 @@ class ONSTableBlock(TinyTableBlock):
 
         return table_context
 
-    def _get_download_config(self, *, parent_context: dict, block_id: str, data: dict) -> dict[str, Any]:
+    def _get_download_config(
+        self,
+        *,
+        parent_context: dict,
+        block_id: str,
+        data: dict,
+        table_title: str | None,
+        table_caption: str | None,
+    ) -> dict[str, Any]:
         """Build download config for ONS Downloads component."""
         page = parent_context.get("page")
         if not page:
@@ -247,21 +267,34 @@ class ONSTableBlock(TinyTableBlock):
         # Flatten table data for size calculation
         csv_rows = flatten_table_data(data)
 
-        size_suffix = f" ({get_approximate_file_size_in_kb(csv_rows)})"
+        size_suffix = f"({get_approximate_file_size_in_kb(csv_rows)})"
+        link_text = _("Download CSV %(size)s") % {"size": size_suffix}
+        csv_title = get_table_csv_download_title(title=table_title, caption=table_caption)
 
-        # Build URL (preview vs published)
+        csv_url = self._get_table_download_url(parent_context=parent_context, page=page, block_id=block_id)
         request = parent_context.get("request")
-        is_preview = getattr(request, "is_preview", False) if request else False
-        csv_url = (
-            self._build_preview_table_download_url(page, block_id, request)
-            if is_preview
-            else self._build_table_download_url(page, block_id, parent_context.get("superseded_version"))
+        absolute_csv_url = (
+            request.build_absolute_uri(csv_url) if request and not getattr(request, "is_preview", False) else csv_url
+        )
+        attributes = get_gtm_attributes_file_download(
+            text=link_text,
+            url=absolute_csv_url,
+            file_extension="csv",
+            file_name=get_csv_download_filename(title=csv_title, fallback_stem="table"),
+            file_size_kb=format_file_size_kb(len(bytes(str(csv_rows), "utf-8"))),
         )
 
         return {
             "title": _("Download this table"),
-            "itemsList": [{"text": _("Download CSV %(size)s") % {"size": size_suffix}, "url": csv_url}],
+            "itemsList": [{"text": link_text, "url": csv_url, "attributes": attributes}],
         }
+
+    def _get_table_download_url(self, *, parent_context: dict, page: Any, block_id: str) -> str:
+        request = parent_context.get("request")
+        if getattr(request, "is_preview", False):
+            return self._build_preview_table_download_url(page, block_id, request)
+
+        return self._build_table_download_url(page, block_id, parent_context.get("superseded_version"))
 
     @staticmethod
     def _build_download_path_fragment(block_id: str, superseded_version: int | None = None) -> str:

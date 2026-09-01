@@ -21,6 +21,7 @@ class IframeBlock(BaseVisualisationBlock):
     title = blocks.CharBlock(required=False)
     iframe_source_url = RelativeOrAbsoluteURLBlock(
         required=True,
+        required_on_save=True,
         help_text=(
             "Enter the full URL or relative URL path (preferred) of the visualisation you want to embed. "
             "A full URL must start with <code>https://</code>, the hostname must match one of the allowed domains. "
@@ -34,6 +35,7 @@ class IframeBlock(BaseVisualisationBlock):
     # Used in the iframe title attribute
     accessible_label = blocks.CharBlock(
         required=True,
+        required_on_save=True,
         help_text=(
             "A brief but descriptive label for the embed, for example "
             "“Bar chart of GDP per region” or “Interactive personal inflation calculator tool”"
@@ -42,6 +44,7 @@ class IframeBlock(BaseVisualisationBlock):
     # Overrides audio_description in BaseVisualisationBlock in order to update the help text
     audio_description = blocks.TextBlock(
         required=True,
+        required_on_save=True,
         help_text=(
             "An overview of what the embed shows for screen reader users, for example"
             " “GDP is the highest in London and lowest in the North East” or"

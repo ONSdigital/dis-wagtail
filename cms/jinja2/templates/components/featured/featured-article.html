@@ -11,6 +11,10 @@
         {{
             onsChart(article_child_data.chart)
         }}
+    {% elif article_child_data.iframe %}
+        {% with block_id = article_child_data.iframe.id %}
+            {% include_block article_child_data.iframe %}
+        {% endwith %}
     {% elif article_child_data.image %}
         {{
             onsImage(article_child_data.image)
