@@ -63,3 +63,12 @@ def get_post_publish_actions() -> dict[PostPublishActionType, ActionHandler]:
 
 def get_post_publish_action_for_type(action_type: PostPublishActionType) -> ActionHandler:
     return _registry[action_type].handler
+
+
+def get_registered_action_types() -> list[PostPublishActionType]:
+    """Returns a list of all registered post-publish action types.
+
+    Handlers can be conditionaly registered (e.g. `CACHE_PURGE` is only registered with `cms.frontend_cache`)
+    so this may only be a subset of all action types defined in `PostPublishActionType`.
+    """
+    return list(_registry)

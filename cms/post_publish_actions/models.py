@@ -24,10 +24,14 @@ class PostPublishActionStatus(models.TextChoices):
 
 class PostPublishActionQuerySet(models.QuerySet):
     def active(self) -> Self:
-        """Exclude stale action types.
-        These may be from previous deployments with different types.
+        """Exclude action types with no registered handler.
+
+        May be deprecated action types from previous versions, or handlers that are not currently
+        registered with the current configuration (e.g. `CACHE_PURGE` is only registered with `cms.frontend_cache`).
         """
-        return self.filter(action_type__in=PostPublishActionType.values)
+        from .registry import get_registered_action_types  # pylint: disable=import-outside-toplevel
+
+        return self.filter(action_type__in=get_registered_action_types())
 
     def finished(self) -> Self:
         return self.exclude(finished_at=None)

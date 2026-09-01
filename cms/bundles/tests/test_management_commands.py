@@ -16,6 +16,7 @@ from cms.bundles.management.commands.publish_bundles import Command as PublishBu
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.core.tests import TransactionTestCase
 from cms.datasets.tests.factories import DatasetFactory
+from cms.frontend_cache.cache import get_page_cached_urls
 from cms.home.models import HomePage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.post_publish_actions.executor import executor_stop_and_wait, flush_executor
@@ -200,6 +201,38 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
         }
 
         self.assertIn(alias.pk, published_page_ids)
+
+    @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
+    @patch("cms.frontend_cache.cache.purge_urls_from_cache")
+    @patch("cms.bundles.utils.notify_slack_of_publication_start")
+    @patch("cms.bundles.utils.notify_slack_of_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_publish_bundle_purges_the_frontend_cache(
+        self,
+        mock_get_publisher,  # pylint: disable=unused-argument
+        mock_notify_post_publish_end,  # pylint: disable=unused-argument
+        mock_notify_end,  # pylint: disable=unused-argument
+        mock_notify_start,  # pylint: disable=unused-argument
+        mock_purge_urls,
+    ):
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+        mark_page_as_ready_to_publish(self.statistical_article)
+
+        self.call_command()
+
+        executor_stop_and_wait()
+
+        action = PostPublishAction.objects.get(
+            page=self.statistical_article, action_type=PostPublishActionType.CACHE_PURGE
+        )
+        self.assertEqual(action.bundle_id, self.bundle.pk)
+        self.assertEqual(action.status, PostPublishActionStatus.SUCCESSFUL)
+
+        self.statistical_article.refresh_from_db()
+        purged_urls = set().union(*(call.args[0] for call in mock_purge_urls.call_args_list))
+
+        self.assertTrue(set(get_page_cached_urls(self.statistical_article)).issubset(purged_urls))
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
