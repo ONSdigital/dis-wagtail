@@ -14,7 +14,7 @@ When a bundle is published, each page triggers registered post-publish actions. 
 Actions are registered via a decorator or function call:
 
 - **`S3_ACL`** — updates S3 object ACLs for private media associated with the page (see `cms/private_media/signal_handlers.py`).
-- **`CACHE_PURGE`** -- purges urls specified for the page from the Cloudflare cache (see `cms/frontend_cache/signal_handlers.py`). Only registered when `cms.frontend_cache` app installed.
+- **`CACHE_PURGE`** — purges urls specified for the page from the Cloudflare cache (see `cms/frontend_cache/signal_handlers.py`). Only registered when `cms.frontend_cache` app installed.
 - **`SEARCH_UPDATED`** — notifies the search service that a page has been created or updated (see `cms/search/signal_handlers.py`).
 
 New action types can be added by defining a handler that accepts `(page: Page, bundle: Bundle | None)` and registering it with `@post_publish_action(PostPublishActionType.MY_TYPE)` or `register_post_publish_action(...)`.
