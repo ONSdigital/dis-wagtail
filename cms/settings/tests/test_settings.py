@@ -128,10 +128,14 @@ class CSPTestCase(TestCase):
 
                 csp = self._parse_csp(response.headers["Content-Security-Policy"])
 
-                self.assertIn("cdnjs.cloudflare.com", self._get_csp_expressions(csp, "style-src"))
+                # MathJax is served from the ONS CDN, so cdnjs is no longer an allowed source.
+                self.assertNotIn("cdnjs.cloudflare.com", self._get_csp_expressions(csp, "style-src"))
+                self.assertNotIn("cdnjs.cloudflare.com", self._get_csp_expressions(csp, "script-src"))
+                self.assertNotIn("cdnjs.cloudflare.com", self._get_csp_expressions(csp, "font-src"))
+
+                # MathJax loads its own webfonts and injects inline styles.
+                self.assertIn(settings.ONS_CDN_URL, self._get_csp_expressions(csp, "font-src"))
                 self.assertIn(CSP.UNSAFE_INLINE, self._get_csp_expressions(csp, "style-src"))
-                self.assertIn("cdnjs.cloudflare.com", self._get_csp_expressions(csp, "script-src"))
-                self.assertIn("cdnjs.cloudflare.com", self._get_csp_expressions(csp, "font-src"))
 
     def test_design_system_csp(self):
         for url in self.urls:

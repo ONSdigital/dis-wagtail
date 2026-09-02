@@ -1184,7 +1184,7 @@ WAGTAIL_POLYMATH = {
 
 # Content Security policy settings
 # https://docs.djangoproject.com/en/6.0/ref/csp/
-static_sources = [ONS_CDN_URL, "cdnjs.cloudflare.com"]
+static_sources = [ONS_CDN_URL]
 SECURE_CSP: dict[str, list] = {
     "default-src": [CSP.SELF],
     "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_CSP_SOURCES],
