@@ -183,6 +183,7 @@ class ONSAuthMiddlewareTests(TestCase):
     def test_invalid_client_ids_authentication_not_called(self):
         req = self._request()
         req.COOKIES = {"access": "tokA", "id": "tokI"}
+        user = User.objects.create(username="test", email="test@example.com")
 
         # client_id and aud do not match expected
         payload_access = {
@@ -200,6 +201,7 @@ class ONSAuthMiddlewareTests(TestCase):
         }
 
         with (
+            mock.patch("django.contrib.auth.get_user", return_value=user),
             mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
             mock.patch.object(ONSAuthMiddleware, "_authenticate_user") as m_auth,
             mock.patch("cms.auth.middleware.logout") as m_logout,
@@ -217,12 +219,38 @@ class ONSAuthMiddlewareTests(TestCase):
     def test_invalid_tokens_logout(self):
         req = self._request()
         req.COOKIES = {"access": "a", "id": "b"}
+        user = User.objects.create(username="test", email="test@example.com")
+
         with (
+            mock.patch("django.contrib.auth.get_user", return_value=user),
             mock.patch("cms.auth.middleware.validate_jwt", return_value=None),
             mock.patch("cms.auth.middleware.logout") as m_logout,
         ):
             self.middleware.process_request(req)
             m_logout.assert_called_once()
+
+    # Invalid tokens on an anonymous request -> session must NOT be flushed
+    @override_settings(
+        AWS_COGNITO_LOGIN_ENABLED=True,
+        ACCESS_TOKEN_COOKIE_NAME="access",
+        ID_TOKEN_COOKIE_NAME="id",
+    )
+    def test_invalid_tokens_anonymous_session_preserved(self):
+        """Stale or garbage JWT cookies on an anonymous request must not flush the
+        session, which may hold unrelated state such as passed page view restrictions.
+        """
+        req = self._request()
+        req.COOKIES = {"access": "a", "id": "b"}
+        req.session["passed_page_view_restrictions"] = [1]
+
+        with (
+            mock.patch("cms.auth.middleware.validate_jwt", return_value=None),
+            mock.patch("cms.auth.middleware.logout") as m_logout,
+        ):
+            self.middleware.process_request(req)
+
+            m_logout.assert_not_called()
+            self.assertEqual(req.session["passed_page_view_restrictions"], [1])
 
     # Authenticated but session missing jwt_session_id  -> authenticate and save
     @override_settings(
@@ -256,6 +284,35 @@ class ONSAuthMiddlewareTests(TestCase):
     def test_client_id_mismatch(self):
         req = self._request()
         req.COOKIES = {"access": "tokA", "id": "tokID"}
+        user = User.objects.create(username="test", email="test@example.com")
+        payload_access = {"client_id": "wrong", "username": "u1", "jti": "ja", "token_use": "access"}
+        payload_id = {
+            "aud": "wrong",
+            "cognito:username": "u1",
+            "jti": "jb",
+            "email": "e@example.com",
+            "token_use": "id",
+        }
+
+        with (
+            mock.patch("django.contrib.auth.get_user", return_value=user),
+            mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
+            mock.patch("cms.auth.middleware.logout") as m_logout,
+        ):
+            self.middleware.process_request(req)
+            m_logout.assert_called_once()
+
+    #  Client-ID mismatch on an anonymous request -> session must NOT be flushed
+    @override_settings(
+        AWS_COGNITO_LOGIN_ENABLED=True,
+        AWS_COGNITO_APP_CLIENT_ID="expected",
+        ACCESS_TOKEN_COOKIE_NAME="access",
+        ID_TOKEN_COOKIE_NAME="id",
+    )
+    def test_client_id_mismatch_anonymous_session_preserved(self):
+        req = self._request()
+        req.COOKIES = {"access": "tokA", "id": "tokID"}
+        req.session["passed_page_view_restrictions"] = [1]
         payload_access = {"client_id": "wrong", "username": "u1", "jti": "ja", "token_use": "access"}
         payload_id = {
             "aud": "wrong",
@@ -270,7 +327,9 @@ class ONSAuthMiddlewareTests(TestCase):
             mock.patch("cms.auth.middleware.logout") as m_logout,
         ):
             self.middleware.process_request(req)
-            m_logout.assert_called_once()
+
+            m_logout.assert_not_called()
+            self.assertEqual(req.session["passed_page_view_restrictions"], [1])
 
     # Session replay / skip re-auth
     @override_settings(
@@ -423,6 +482,7 @@ class ONSAuthMiddlewareTests(TestCase):
     def test_username_mismatch_across_tokens_logout(self):
         req = self._request()
         req.COOKIES = {"access": "tokA", "id": "tokID"}
+        user = User.objects.create(username="test", email="test@example.com")
 
         payload_access = {
             "client_id": "expected",
@@ -439,6 +499,7 @@ class ONSAuthMiddlewareTests(TestCase):
         }
 
         with (
+            mock.patch("django.contrib.auth.get_user", return_value=user),
             mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
             mock.patch("cms.auth.middleware.logout") as m_logout,
         ):
@@ -459,9 +520,14 @@ class ONSAuthMiddlewareTests(TestCase):
         uuid_a = str(uuid.uuid4())  # session user
         uuid_b = str(uuid.uuid4())  # token user (different)
 
+        session_user = User.objects.create(username="session-user", email="session@example.com")
+        session_user.external_user_id = uuid_a
+
+        # Both tokens carry the same (token) user, which differs from the session user,
+        # so the token-swap defence branch is the one that fires.
         payload_access = {
             "client_id": "expected",
-            "username": uuid_a,
+            "username": uuid_b,
             "jti": "ja",
             "token_use": "access",
         }
@@ -474,11 +540,11 @@ class ONSAuthMiddlewareTests(TestCase):
         }
 
         with (
+            mock.patch("django.contrib.auth.get_user", return_value=session_user),
             mock.patch("cms.auth.middleware.validate_jwt", side_effect=[payload_access, payload_id]),
             mock.patch("cms.auth.middleware.logout") as m_logout,
         ):
             self.middleware.process_request(req)
-            self.assertFalse(req.user.is_authenticated)
             m_logout.assert_called_once()
 
     # Existing user created=False -> update_details called
