@@ -9,7 +9,7 @@ from wagtail.signals import published, unpublished
 
 from cms.bundles.models import Bundle
 from cms.post_publish_actions.models import PostPublishActionType
-from cms.post_publish_actions.registry import register_post_publish_action
+from cms.post_publish_actions.registry import PostPublishActionPriority, register_post_publish_action
 from cms.private_media.constants import Privacy
 from cms.private_media.models import PrivateImageMixin
 from cms.private_media.utils import get_private_media_models
@@ -124,4 +124,6 @@ def register_signal_handlers() -> None:
     published.connect(publish_media_on_publish, dispatch_uid="publish_media")
     unpublished.connect(unpublish_media_on_unpublish, dispatch_uid="unpublish_media")
 
-    register_post_publish_action(PostPublishActionType.S3_ACL, publish_media_post_publish_action)
+    register_post_publish_action(
+        PostPublishActionType.S3_ACL, publish_media_post_publish_action, priority=PostPublishActionPriority.HIGH
+    )
