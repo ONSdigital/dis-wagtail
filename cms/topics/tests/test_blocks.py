@@ -253,6 +253,19 @@ class TimeSeriesPageStoryBlockTestCase(TestCase):
             block.clean(stream_value)
             self.assertEqual(error_context.exception.message, "Duplicate time series links are not allowed")
 
+    def test_clean_accepts_ignore_required_constraints(self):
+        """Wagtail's form machinery calls StreamBlock.clean() with the
+        ignore_required_constraints keyword. Regression test guarding against the
+        override dropping it, which raised:
+        TypeError: TimeSeriesPageStoryBlock.clean() got an unexpected keyword
+        argument 'ignore_required_constraints'.
+        """
+        block = TimeSeriesPageStoryBlock()
+        stream_value = StreamValue(block, [])
+
+        # Must not raise TypeError.
+        block.clean(stream_value, ignore_required_constraints=True)
+
 
 class TimeSeriesPageLinkBlockTestCase(TestCase):
     @override_settings(ONS_ALLOWED_LINK_DOMAINS=["domain1.com"])

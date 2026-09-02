@@ -16,6 +16,19 @@ class TestDatasetStoryBlock(TestCase):
             description="test_description",
         )
 
+    def test_clean_accepts_ignore_required_constraints(self):
+        """Wagtail's form machinery calls StreamBlock.clean() with the
+        ignore_required_constraints keyword. Regression test guarding against the
+        override dropping it, which raised:
+        TypeError: DatasetStoryBlock.clean() got an unexpected keyword argument
+        'ignore_required_constraints'.
+        """
+        block = DatasetStoryBlock()
+        value = StreamValue(block, stream_data=[])
+
+        # Must not raise TypeError.
+        block.clean(value, ignore_required_constraints=True)
+
     @override_settings(ONS_WEBSITE_BASE_URL="https://example.com", ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_validation_fails_on_duplicate_datasets(self):
         block = DatasetStoryBlock()
