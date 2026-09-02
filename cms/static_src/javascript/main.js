@@ -1,5 +1,5 @@
-import IframeResize from './components/iframe-resize';
 import detailsToggle from './components/details';
+import IframeResize from './components/iframe-resize';
 
 import '../sass/main.scss';
 

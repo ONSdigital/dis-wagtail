@@ -242,5 +242,5 @@ def increment_value(self, value: T) -> T:
 ## Useful links
 
 - <https://www.python.org/dev/peps/pep-0484/>
-- <https://www.pythonsheets.com/notes/basic/python-typing.html>
+- <https://docs.python.org/3/library/typing.html>
 - <https://google.github.io/styleguide/pyguide.html#319-type-annotations>

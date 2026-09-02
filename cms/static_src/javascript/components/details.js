@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-extraneous-class */
 class detailsToggle {
   static selector() {
     return 'details';
