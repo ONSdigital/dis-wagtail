@@ -90,8 +90,9 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_f
 
 
 def run_post_publish_actions_for(page: Page, bundle: Bundle | None) -> None:
-    # Gets actions in ascending priority
-    # Guarantees order of execution for individual pages, and order of enqueuing for pages in bundles
+    # Actions are returned in ascending priority order.
+    # Sync path (no bundle): runs strictly in priority order.
+    # Bundle path: enqueued in priority order, but execution order is not guaranteed (thread pool).
     registry = get_post_publish_actions()
 
     # TODO: Handle pages not in bundle.
