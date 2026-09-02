@@ -56,7 +56,7 @@ jobs:
             const branchName = context.payload.pull_request?.head?.ref ?? "";
 
             // Extract JIRA issue key
-            const jiraPattern = /\b(CMS|DPD)-(\d+)\b/;
+            const jiraPattern = /\b(CMS|DPD|cms|dpd)-(\d+)\b/;
             const match = branchName.match(jiraPattern);
 
             if (!match) {
@@ -64,7 +64,7 @@ jobs:
               return;
             }
 
-            const issueKey = match[0];
+            const issueKey = match[0].toUpperCase();
             const jiraUrl = `https://officefornationalstatistics.atlassian.net/browse/${issueKey}`;
             const prBody = context.payload.pull_request?.body ?? "";
 

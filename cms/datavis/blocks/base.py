@@ -30,10 +30,11 @@ AnnotationsReturn = tuple[AnnotationsList, AnnotationsList, AnnotationsList]
 
 class BaseVisualisationBlock(blocks.StructBlock):
     figure_number = blocks.CharBlock(required=False, help_text="Include a label for the figure, for example Figure 1.")
-    title = blocks.CharBlock()
+    title = blocks.CharBlock(required_on_save=True)
     subtitle = blocks.CharBlock(required=False)
     audio_description = blocks.TextBlock(
         required=True,
+        required_on_save=True,
         help_text="An overview of what the chart shows for screen reader users.",
         label="Accessible description",
     )
@@ -65,6 +66,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         choices=HighchartsTheme.choices,
         default=HighchartsTheme.PRIMARY,
         widget=RadioSelect,
+        required_on_save=True,
     )
     show_legend = blocks.BooleanBlock(default=True, required=False)
     show_data_labels = blocks.StaticBlock()

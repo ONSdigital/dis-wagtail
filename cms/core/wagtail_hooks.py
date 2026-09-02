@@ -245,7 +245,7 @@ def register_core_log_actions(actions: LogActionRegistry) -> None:
 
                 return message
 
-            except (KeyError, AttributeError):
+            except KeyError, AttributeError:
                 return "Downloaded chart CSV"
 
     @actions.register_action("content.table_download")
@@ -260,7 +260,7 @@ def register_core_log_actions(actions: LogActionRegistry) -> None:
                 table_id = log_entry.data.get("table_id", "unknown")
                 return f"Downloaded table CSV for table with ID {table_id}"
 
-            except (KeyError, AttributeError):
+            except KeyError, AttributeError:
                 return "Downloaded table CSV"
 
     @actions.register_action("pages.edit_view")
@@ -299,5 +299,5 @@ def register_core_log_actions(actions: LogActionRegistry) -> None:
             try:
                 preview_mode = log_entry.data.get("preview_mode", "unknown")
                 return f"Previewed page in mode: {preview_mode.replace('_', ' ')}"
-            except (KeyError, AttributeError):
+            except KeyError, AttributeError:
                 return "Previewed page"

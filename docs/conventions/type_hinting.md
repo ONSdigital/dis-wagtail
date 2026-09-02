@@ -58,6 +58,7 @@ If the key type is known, and the value types are deterministic, use TypedDict:
 ```python
 from typing import TypedDict
 
+
 class Movie(TypedDict):
     name: str
     year: int
@@ -155,7 +156,7 @@ others to lists, others to dicts) mypy will complain if you assume the type of a
 
 ```python
 def get_id_from_block(block: dict) -> str:
-    return block["id"] # Returning Any from function declared to return "str"
+    return block["id"]  # Returning Any from function declared to return "str"
 ```
 
 A type ignore can be avoided here, by changing the code to this...
@@ -223,6 +224,7 @@ Use `TypeVar` when the type returned by a function is the same as the type which
 ```python
 T = TypeVar("T")
 
+
 def increment_value(self, value: T) -> T:
     return value + 1
 ```
@@ -240,5 +242,5 @@ def increment_value(self, value: T) -> T:
 ## Useful links
 
 - <https://www.python.org/dev/peps/pep-0484/>
-- <https://www.pythonsheets.com/notes/basic/python-typing.html>
+- <https://docs.python.org/3/library/typing.html>
 - <https://google.github.io/styleguide/pyguide.html#319-type-annotations>

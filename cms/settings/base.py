@@ -959,7 +959,7 @@ ONS_COOKIES_PAGE_SLUG = "cookies"
 
 # Feature flag to suppress the untranslated-page notice on CookiesPage aliases.
 CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED = (
-    env.get("CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED", "true").lower() == "true"
+    env.get("CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED", "false").lower() == "true"
 )
 
 # Search redirect path
