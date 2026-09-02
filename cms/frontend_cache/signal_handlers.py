@@ -82,7 +82,7 @@ def purge_pages_containing_the_deleted_snippet_from_frontend_cache(
     purge_page_containing_snippet_from_cache(instance)
 
 
-def _get_tracked_page_models() -> set[Page]:
+def _get_tracked_page_models() -> set[type[Page]]:
     """Returns a list of page models that are included in the front-end cache purging.
 
     We're excluding the following page types:
