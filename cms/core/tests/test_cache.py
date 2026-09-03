@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from django.core.cache import caches
 from django.test import SimpleTestCase, TestCase, override_settings
 from fakeredis import FakeConnection
@@ -94,6 +96,27 @@ class PageCacheControlHeadersTestCase(TestCase):
         home_page = HomePage.objects.first()
 
         response = self.client.get(home_page.get_url())
+
+        self.assertEqual(
+            response.headers["Cache-Control"],
+            "public, max-age=60, stale-while-revalidate=0, stale-if-error=300",
+        )
+        self.assertEqual(response.headers["Cloudflare-CDN-Cache-Control"], self.cdn_cache_control)
+
+    def test_welsh_home_page_headers_with_subdomain(self) -> None:
+        response = self.client.get("/", headers={"host": "cy.ons.localhost"})
+
+        self.assertEqual(
+            response.headers["Cache-Control"],
+            "public, max-age=60, stale-while-revalidate=0, stale-if-error=300",
+        )
+        self.assertEqual(response.headers["Cloudflare-CDN-Cache-Control"], self.cdn_cache_control)
+
+    @override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
+    def test_welsh_home_page_with_path_based_routing(self) -> None:
+        response = self.client.get("/cy")
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
         self.assertEqual(
             response.headers["Cache-Control"],
