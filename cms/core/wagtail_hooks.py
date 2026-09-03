@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 from django.conf import settings
 from django.core.cache import cache
 from django.db.models import Model
+from django.http import Http404
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.html import format_html
@@ -47,6 +48,21 @@ def register_icons(icons: list[str]) -> list[str]:
         "wagtailfontawesomesvg/solid/location-crosshairs.svg",
         "wagtailfontawesomesvg/solid/square.svg",
     ]
+
+
+@hooks.register("before_serve_page")
+def block_restricted_pages_in_external_env(
+    page: Page,
+    request: HttpRequest,
+    serve_args: Any,  # pylint: disable=unused-argument
+    serve_kwargs: Any,  # pylint: disable=unused-argument
+) -> None:
+    """In the external environment there is no auth machinery (no sessions, users, or auth
+    backends), so page view restrictions can never be satisfied - evaluating them crashes
+    on the missing request attributes. Treat restricted pages as not existing instead.
+    """
+    if settings.IS_EXTERNAL_ENV and page.get_view_restrictions().exists():
+        raise Http404
 
 
 @hooks.register("insert_editor_js")

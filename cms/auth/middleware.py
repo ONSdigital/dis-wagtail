@@ -56,8 +56,12 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
         access_payload = validate_jwt(access_token, token_type="access")  # noqa: S106
         id_payload = validate_jwt(id_token, token_type="id")  # noqa: S106
         if not access_payload or not id_payload:
-            logger.info("Invalid or expired JWT tokens; logging out user.")
-            logout(request)
+            # Only terminate authenticated sessions: logout() flushes the whole session,
+            # which would destroy unrelated anonymous state (e.g. passed page view
+            # restrictions) on every request for visitors carrying stale or garbage cookies.
+            if request.user.is_authenticated:
+                logger.info("Invalid or expired JWT tokens; logging out user.")
+                logout(request)
             return
 
         # Token and session integrity checks.
@@ -68,7 +72,10 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
             request=request, access_payload=access_payload, id_payload=id_payload
         )
         if not is_valid:
-            logout(request)
+            # As above: only authenticated sessions are terminated; anonymous visitors
+            # with inconsistent tokens are simply never authenticated.
+            if request.user.is_authenticated:
+                logout(request)
             return
 
         # Check if the session is up-to-date.
@@ -146,10 +153,16 @@ class ONSAuthMiddleware(AuthenticationMiddleware):
 
     @staticmethod
     def _handle_unauthenticated_user(request: HttpRequest) -> None:
-        """Logs out the user if JWT tokens are missing and the session configuration is unsuitable."""
-        if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED or (
-            request.user.is_authenticated and request.user.is_external_user
-        ):
+        """Logs out the user if JWT tokens are missing and the session configuration is unsuitable.
+
+        Anonymous sessions are left untouched: logout() flushes the whole session, which would
+        destroy unrelated state such as passed page view restrictions (password-protected pages)
+        on every request.
+        """
+        if not request.user.is_authenticated:
+            return
+
+        if not settings.WAGTAIL_CORE_ADMIN_LOGIN_ENABLED or request.user.is_external_user:
             logger.info(
                 "Terminating session due to missing JWT tokens or insufficient login configuration.",
                 extra={"external_user_id": getattr(request.user, "external_user_id", None)},
