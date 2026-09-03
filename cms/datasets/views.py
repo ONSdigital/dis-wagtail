@@ -28,6 +28,7 @@ from cms.datasets.permissions import user_can_access_unpublished_datasets
 from cms.datasets.utils import (
     deconstruct_chooser_dataset_compound_id,
     get_dataset_for_published_state,
+    get_local_topic_ids,
     update_dataset_metadata,
 )
 
@@ -178,6 +179,11 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, DatasetRetrievalMi
 
         item_from_api = self.retrieve_dataset(dataset_id=dataset_id, published=published, access_token=access_token)
 
+        # Drop a topic if it's not in the local taxonomy
+        topic_id = item_from_api.primary_topic_id
+        if topic_id not in get_local_topic_ids([topic_id]):
+            topic_id = None
+
         dataset, created = Dataset.objects.get_or_create(
             namespace=dataset_id,
             edition=edition,
@@ -186,6 +192,7 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, DatasetRetrievalMi
                 # Use title and description from the API, the rest was grabbed from the compound ID
                 "title": item_from_api.title,
                 "description": item_from_api.description,
+                "topic_id": topic_id,
             },
         )
         if not created:
@@ -194,6 +201,7 @@ class DatasetChosenView(ChosenViewMixin, ChosenResponseMixin, DatasetRetrievalMi
                 dataset,
                 title=item_from_api.title,
                 description=item_from_api.description,
+                topic_id=topic_id,
             )
             if updated_fields:
                 dataset.save(update_fields=updated_fields)
@@ -230,9 +238,15 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
                     "description": item_from_api.description,
                     "edition": edition,
                     "version": version_int,
+                    "topic_id": item_from_api.primary_topic_id,
                 }
             )
             lookup_criteria.append((dataset_id, edition, version_int))
+
+        known_topic_ids = get_local_topic_ids(data["topic_id"] for data in api_data_for_datasets)
+        for data in api_data_for_datasets:
+            if data["topic_id"] not in known_topic_ids:
+                data["topic_id"] = None
 
         existing_query = Q()
         for namespace, edition, ver in lookup_criteria:
@@ -258,14 +272,13 @@ class DatasetChosenMultipleViewMixin(ChosenMultipleViewMixin, DatasetRetrievalMi
                         version=data["version"],
                         title=data["title"],
                         description=data["description"],
+                        topic_id=data["topic_id"],
                     )
                 )
             else:
                 # Dataset exists, check if metadata needs updating
                 updated_fields = update_dataset_metadata(
-                    existing_dataset,
-                    title=data["title"],
-                    description=data["description"],
+                    existing_dataset, title=data["title"], description=data["description"], topic_id=data["topic_id"]
                 )
                 if updated_fields:
                     datasets_to_update.append(existing_dataset)

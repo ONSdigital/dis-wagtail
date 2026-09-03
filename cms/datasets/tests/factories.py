@@ -17,6 +17,7 @@ class DatasetFactory(factory.django.DjangoModelFactory):
     description = factory.Faker("sentence", nb_words=16)
     version = factory.Sequence(lambda n: n)
     edition = factory.Sequence(lambda n: f"Edition {n}")
+    topic = None
 
 
 class DatasetChooserBlockFactory(wagtail_factories.blocks.ChooserBlockFactory):  # pylint: disable=no-member

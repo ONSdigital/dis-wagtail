@@ -5,6 +5,8 @@ module.exports = {
   rules: {
     // Allow union class names in selectors e.g. &__header
     'scss/selector-no-union-class-name': null,
+    // Override selector naming pattern rules
+    'scss/selector-class-pattern': null,
     // Override some wagtail specific rules relating to design tokens
     'scale-unlimited/declaration-strict-value': [
       ['color', 'fill', 'stroke', '/-color/'],

@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
 
 from django.conf import settings
 from django.core.cache import cache
+from django.db import transaction
 from django.http import HttpRequest
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -18,6 +19,7 @@ from cms.core.analytics_utils import format_date_for_gtm
 from cms.core.forms import DeduplicateTopicsAdminForm, ONSCopyForm
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.query import order_by_pk_position
+from cms.core.signals import page_title_changed
 from cms.locale.utils import get_mapped_site_root_paths
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
 
@@ -114,6 +116,29 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     def permissions_for_user(self, user: User) -> BasePagePermissionTester:
         """Override the permission tester class to use for our page models."""
         return BasePagePermissionTester(user, self)
+
+    @transaction.atomic
+    def save(  # type: ignore[override]
+        self, clean: bool = True, user: User | None = None, log_action: bool = False, **kwargs: Any
+    ) -> Self | None:
+        update_fields = kwargs.get("update_fields")
+        # Determine if the title field is being updated and fetch the original title if it exists.
+        # If update_fields is None, no field restrictions are applied, so the title could be updated.
+        title_is_persisted = update_fields is None or "title" in update_fields
+        original_title = (
+            type(self).objects.values_list("title", flat=True).filter(pk=self.pk).first()
+            if self.pk and title_is_persisted
+            else None
+        )
+
+        instance: Self | None = super().save(  # type: ignore[call-arg]
+            clean=clean, user=user, log_action=log_action, **kwargs
+        )
+
+        if original_title is not None and self.title != original_title:
+            transaction.on_commit(lambda: page_title_changed.send(sender=type(self), instance=self))
+
+        return instance
 
     @cached_property
     def related_pages(self) -> PageQuerySet:

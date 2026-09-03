@@ -29,6 +29,7 @@ from cms.methodology.models import MethodologyPage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.post_publish_actions.executor import flush_executor
 from cms.post_publish_actions.models import PostPublishAction, PostPublishActionType
+from cms.post_publish_actions.registry import get_post_publish_actions
 from cms.release_calendar.models import ReleaseCalendarPage
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.standard_pages.models import IndexPage, InformationPage
@@ -676,7 +677,10 @@ class PublishBundleFailureTests(TestCase):
         with self.assertRaises(PostPublishAction.DoesNotExist):
             invalid_action.refresh_from_db()
 
-        self.assertEqual(PostPublishAction.objects.filter(bundle=bundle, page=page_will_publish).count(), 2)
+        self.assertEqual(
+            PostPublishAction.objects.filter(bundle=bundle, page=page_will_publish).count(),
+            len(get_post_publish_actions()),
+        )
 
         self.assertTrue(
             PostPublishAction.objects.filter(

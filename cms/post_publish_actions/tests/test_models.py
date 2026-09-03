@@ -1,10 +1,12 @@
 from datetime import datetime
+from unittest.mock import patch
 
 from django.db.utils import IntegrityError
 from django.test import TestCase
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.tests.factories import BundleFactory
+from cms.post_publish_actions import registry
 from cms.post_publish_actions.models import PostPublishAction, PostPublishActionStatus, PostPublishActionType
 
 
@@ -54,3 +56,14 @@ class PostPublishActionTestCase(TestCase):
 
         self.assertIn(action, PostPublishAction.objects.active())
         self.assertNotIn(invalid_action, PostPublishAction.objects.active())
+
+    def test_active_excludes_action_types_without_a_registered_handler(self):
+        action = PostPublishAction.objects.create(
+            bundle=self.bundle, page=self.page, action_type=PostPublishActionType.CACHE_PURGE
+        )
+
+        with patch.dict(registry._registry) as patched_registry:  # pylint: disable=protected-access
+            del patched_registry[PostPublishActionType.CACHE_PURGE]
+            self.assertNotIn(action, PostPublishAction.objects.active())
+
+        self.assertIn(action, PostPublishAction.objects.active())

@@ -132,7 +132,7 @@ RUN poetry install --no-root --without dev && rm -rf /home/$USERNAME/.cache/
 # frontend stages #
 ###################
 
-FROM node:20-slim AS frontend-deps
+FROM node:24.11.0-slim AS frontend-deps
 
 # This stage is used to install the front-end build dependencies. It's separate
 # from the frontend-build stage so that we can initialise the node_modules
@@ -160,7 +160,7 @@ FROM frontend-deps AS frontend-build
 # build dependencies installed.
 
 # Compile static files
-COPY .eslintignore .eslintrc.js .stylelintrc.js tsconfig.json webpack.config.js ./
+COPY babel.config.js eslint.config.mjs .stylelintrc.js webpack.config.js ./
 COPY ./cms/static_src/ ./cms/static_src/
 RUN npm run build:prod
 
@@ -202,6 +202,12 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 COPY .docker/install-docker-dev-deps.sh ./install-docker-dev-deps.sh
 RUN ./install-docker-dev-deps.sh && rm ./install-docker-dev-deps.sh
+
+# Copy node from the frontend-deps stage so the node version stays in sync
+COPY --from=frontend-deps /usr/local/bin/node /usr/local/bin/node
+COPY --from=frontend-deps /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # Give the unprivileged user passwordless sudo access
 # hadolint ignore=DL3064

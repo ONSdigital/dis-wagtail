@@ -11,10 +11,10 @@ from django.http import HttpResponse
 from django.utils.cache import patch_cache_control
 from django.views.decorators.cache import cache_control
 from django_redis.cache import RedisCache
-from wagtail.contrib.frontend_cache.utils import purge_url_from_cache
-from wagtail.models import Site
 
 logger = logging.getLogger(__name__)
+
+memory_cache = partial(cache_memoize, cache_alias="memory")
 
 
 class InvalidateReplayRedisCache(RedisCache):
@@ -46,15 +46,6 @@ class InvalidateReplayRedisCache(RedisCache):
             logger.exception("Unable to replay delete_many", extra={"keys": keys, "version": version})
 
         super().delete_many(keys, version)
-
-
-def purge_cache_on_all_sites(path: str) -> None:
-    """Purge the given path on all defined sites."""
-    if settings.DEBUG:
-        return
-
-    for site in Site.objects.all():
-        purge_url_from_cache(site.root_url.rstrip("/") + path)
 
 
 def get_default_cache_control_kwargs() -> dict[str, int | bool]:
@@ -117,6 +108,3 @@ def apply_page_cache_headers(page: Any, response: HttpResponse) -> HttpResponse:
     patch_cache_control(response, **cache_control_kwargs)
     response["Cloudflare-CDN-Cache-Control"] = get_cdn_cache_control_header_value()
     return response
-
-
-memory_cache = partial(cache_memoize, cache_alias="memory")

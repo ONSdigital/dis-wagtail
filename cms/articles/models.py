@@ -1,4 +1,6 @@
 import logging
+from collections.abc import Generator
+from math import ceil
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from bs4 import BeautifulSoup
@@ -221,6 +223,16 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
     def download_table_with_version(self, request: HttpRequest, slug: str, version: int, table_id: str) -> HttpResponse:
         response: HttpResponse = self.release(request, slug, version=version, table_id=table_id)
         return response
+
+    def get_cached_paths(self) -> Generator[str]:
+        yield "/"
+        yield "/related-data"
+        yield "/editions"
+        # ensure we always account for ?page=1
+        pages = max(1, ceil(self.get_children().live().public().count() / settings.PREVIOUS_RELEASES_PER_PAGE))
+        # over-purge trailing pages so pages orphaned by shrinking pagination are invalidated too
+        for page_number in range(1, pages + settings.CMS_PAGINATION_OVER_PURGE + 1):
+            yield f"/editions?page={page_number}"
 
 
 # pylint: disable=too-many-public-methods
@@ -912,3 +924,13 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         summary_word_count = len(strip_tags(self.summary).split())
 
         return title_word_count + summary_word_count + content_word_count
+
+    def get_cached_paths(self) -> Generator[str]:
+        yield "/"
+        yield "/related-data"  # always include, should a correction remove related datasets
+        pages = ceil(len(self.datasets or []) / settings.RELATED_DATASETS_PER_PAGE)
+        # over-purge trailing pages so pages orphaned by shrinking pagination are invalidated too
+        for page_number in range(1, pages + settings.CMS_PAGINATION_OVER_PURGE + 1):
+            yield f"/related-data?page={page_number}"
+
+        yield from self.get_downloadable_block_paths()

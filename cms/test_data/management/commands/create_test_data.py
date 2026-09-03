@@ -92,6 +92,8 @@ class TestDataFactory:
         )
 
     def _create_datasets(self) -> None:
+        topic_ids = list(Topic.objects.values_list("pk", flat=True))
+
         for index in range(self.get_config_count(self.config.datasets.count)):
             self.create_from_factory(
                 DatasetFactory,
@@ -99,6 +101,7 @@ class TestDataFactory:
                     "title": self.title_factory,
                     "edition": f"{settings.CMS_TEST_DATA_PREFIX}edition-{index}",
                     "version": index,
+                    "topic_id": self.faker.random_element(topic_ids) if topic_ids else None,
                 },
             )
 

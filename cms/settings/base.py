@@ -717,8 +717,12 @@ WAGTAILADMIN_NOTIFICATION_INCLUDE_SUPERUSERS = False
 # The backend can be configured to use an account-wide API key, or an API token with
 # restricted access.
 
+# Deliberately set to an empty list as cms.frontend_cache uses purge_urls_from_cache which will
+# default to the list of defined content languages if this is not defined.
+WAGTAILFRONTENDCACHE_LANGUAGES: list[str] = []
 if "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env or "FRONTEND_CACHE_CLOUDFLARE_BEARER_TOKEN" in env:
-    INSTALLED_APPS.append("wagtail.contrib.frontend_cache")
+    # Apps need to be installed in this order so that any signal disconnects work as intended
+    INSTALLED_APPS += ["wagtail.contrib.frontend_cache", "cms.frontend_cache"]
     WAGTAILFRONTENDCACHE = {
         "default": {
             "BACKEND": "wagtail.contrib.frontend_cache.backends.CloudflareBackend",
@@ -919,6 +923,12 @@ PREVIOUS_RELEASES_PER_PAGE = int(env.get("PREVIOUS_RELEASES_PER_PAGE", 10))
 CMS_RELEASES_INDEX_REDIRECT_ENABLED = env.get("CMS_RELEASES_INDEX_REDIRECT_ENABLED", "true").lower() == "true"
 RELATED_DATASETS_PER_PAGE = int(env.get("RELATED_DATASETS_PER_PAGE", DEFAULT_PER_PAGE))
 
+# Number of extra trailing pages to purge from the front-end cache beyond the current page count,
+# so that pages orphaned by shrinking pagination (e.g. after a correction removes items) get invalidated too.
+# This is a workaround until Wagtail supports prefix-based cache purging:
+# https://github.com/wagtail/wagtail/pull/13773
+CMS_PAGINATION_OVER_PURGE = int(env.get("CMS_PAGINATION_OVER_PURGE", 2))
+
 # Google Tag Manager ID from env
 GOOGLE_TAG_MANAGER_CONTAINER_ID = env.get("GOOGLE_TAG_MANAGER_CONTAINER_ID", "")
 
@@ -944,6 +954,15 @@ WAGTAIL_ENABLE_WHATS_NEW_BANNER = False
 # from third-party applications like PayPal or Zoom as needed
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 
+
+# Explicitly set the ImmediateBackend for tasks (even though it is the default at the time of writing)
+# We do this to ensure certain tasks, such as updating the reference index, happen sequentially.
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
+    }
+}
+
 #
 # ONS CMS specific-settings
 #
@@ -963,7 +982,7 @@ ONS_COOKIES_PAGE_SLUG = "cookies"
 
 # Feature flag to suppress the untranslated-page notice on CookiesPage aliases.
 CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED = (
-    env.get("CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED", "true").lower() == "true"
+    env.get("CMS_COOKIES_PAGE_UNTRANSLATED_NOTICE_ENABLED", "false").lower() == "true"
 )
 
 # Search redirect path
