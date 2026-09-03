@@ -17,11 +17,13 @@ from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, Bun
 from cms.core.custom_date_format import ons_date_format
 from cms.datasets.models import Dataset
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.taxonomy.tests.factories import TopicFactory
 from cms.teams.models import Team
 from cms.teams.tests.factories import TeamFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 from functional_tests.step_helpers.datasets import (
     TEST_UNPUBLISHED_DATASETS,
+    ensure_dataset_topic,
     register_dataset_detail_route,
 )
 from functional_tests.step_helpers.utils import (
@@ -521,6 +523,7 @@ def bundle_with_dataset_and_page_ready(context: Context) -> None:
         version=int(test_dataset["latest_version"]["id"]),
         title=test_dataset["title"],
         description=test_dataset["description"],
+        topic=ensure_dataset_topic(),
     )
 
     context.statistical_article_page = StatisticalArticlePageFactory(
@@ -551,6 +554,42 @@ def dataset_title_changed_in_api(context: Context) -> None:
         {**test_dataset, "title": context.api_updated_title},
         replace=True,
     )
+
+
+@given("the dataset's topic has changed in the source API")
+def dataset_topic_changed_in_api(context: Context) -> None:
+    test_dataset = TEST_UNPUBLISHED_DATASETS[0]
+    updated_topic = TopicFactory(id="9002", slug="updatedtopic", title="Updated Topic")
+
+    register_dataset_detail_route(
+        context.bundle_api_mock,
+        {**test_dataset, "topics": [updated_topic.pk]},
+        replace=True,
+    )
+
+
+@given("the source API has no topic for the dataset")
+def dataset_has_no_topic_in_api(context: Context) -> None:
+    test_dataset = {key: value for key, value in TEST_UNPUBLISHED_DATASETS[0].items() if key != "topics"}
+
+    register_dataset_detail_route(context.bundle_api_mock, test_dataset, replace=True)
+
+
+@then("the user sees a validation error explaining the dataset topic could not be determined")
+def validation_error_for_unresolvable_topic(context: Context) -> None:
+    expect(
+        context.page.get_by_text("Cannot approve the bundle with 1 dataset whose topic could not be resolved.")
+    ).to_be_visible()
+
+
+@then("the validation error identifies the dataset the topic is missing for")
+def validation_error_identifies_dataset_missing_a_topic(context: Context) -> None:
+    expect(context.page.get_by_text("'Looked Up Dataset': no topic is set in the dataset service")).to_be_visible()
+
+
+@then("the validation error identifies the dataset topic as the changed field")
+def validation_error_identifies_topic(context: Context) -> None:
+    expect(context.page.get_by_text("'Looked Up Dataset': topic has changed")).to_be_visible()
 
 
 @step('the user clicks the "Approve" action')

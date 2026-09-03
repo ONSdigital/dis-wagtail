@@ -11,6 +11,7 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.datasets.tests.factories import DatasetFactory
 from cms.datasets.views import (
     DatasetChooserPermissionMixin,
     DatasetChosenMultipleViewMixin,
@@ -19,6 +20,7 @@ from cms.datasets.views import (
     DatasetSearchFilterForm,
     ONSDatasetBaseChooseView,
 )
+from cms.taxonomy.tests.factories import TopicFactory
 
 User = get_user_model()
 
@@ -163,6 +165,7 @@ class TestDatasetRetrievalMixin(TestCase):
 
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Test Dataset"
+        mock_api_dataset.primary_topic_id = None
         mock_queryset = MagicMock()
         mock_ons_dataset.objects = mock_queryset
         mock_queryset.get.return_value = mock_api_dataset
@@ -188,6 +191,7 @@ class TestDatasetRetrievalMixin(TestCase):
         """Test that retrieving published datasets does not require permission check."""
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Test Dataset"
+        mock_api_dataset.primary_topic_id = None
         mock_queryset = MagicMock()
         mock_ons_dataset.objects = mock_queryset
         mock_queryset.get.return_value = mock_api_dataset
@@ -214,6 +218,7 @@ class TestDatasetRetrievalMixin(TestCase):
 
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Test Dataset"
+        mock_api_dataset.primary_topic_id = None
         mock_queryset = MagicMock()
         mock_ons_dataset.objects = mock_queryset
         mock_queryset.with_token.return_value = mock_queryset
@@ -376,6 +381,7 @@ class TestDatasetChosenView(TestCase):
         # Mock the API dataset
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Test Dataset"
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = "Test Description"
 
         mock_queryset = MagicMock()
@@ -409,6 +415,7 @@ class TestDatasetChosenView(TestCase):
         # Mock the API dataset
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Test Dataset"
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = "Test Description"
 
         mock_queryset = MagicMock()
@@ -440,6 +447,7 @@ class TestDatasetChosenView(TestCase):
         # Mock the API dataset
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Test Dataset"
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = "Test Description"
 
         mock_queryset = MagicMock()
@@ -472,6 +480,7 @@ class TestDatasetChosenView(TestCase):
         # Mock the API dataset
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Test Dataset"
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = "Test Description"
 
         mock_queryset = MagicMock()
@@ -532,7 +541,7 @@ class TestDatasetChosenView(TestCase):
             namespace="dataset-123",
             edition="2021",
             version=1,
-            defaults={"title": "Updated Title", "description": "Updated Description"},
+            defaults={"title": "Updated Title", "description": "Updated Description", "topic_id": None},
         )
 
         # Verify metadata was updated
@@ -553,6 +562,7 @@ class TestDatasetChosenView(TestCase):
         # Mock the API dataset
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Same Title"
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = "Same Description"
 
         mock_queryset = MagicMock()
@@ -587,6 +597,7 @@ class TestDatasetChosenView(TestCase):
         # Mock the API dataset with one field changed
         mock_api_dataset = Mock()
         mock_api_dataset.title = "New Title"
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = "Same Description"
 
         mock_queryset = MagicMock()
@@ -624,6 +635,7 @@ class TestDatasetChosenView(TestCase):
         # Mock the API dataset
         mock_api_dataset = Mock()
         mock_api_dataset.title = "New Dataset"
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = "New Description"
 
         mock_queryset = MagicMock()
@@ -655,6 +667,7 @@ class TestDatasetChosenView(TestCase):
         # Mock the API dataset with empty values
         mock_api_dataset = Mock()
         mock_api_dataset.title = ""
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = None
 
         mock_queryset = MagicMock()
@@ -727,6 +740,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         # Mock the API dataset
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Test Dataset"
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = "Test Description"
 
         mock_queryset = MagicMock()
@@ -874,6 +888,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         # Mock the API dataset
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Test Dataset"
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = "Test Description"
 
         mock_queryset = MagicMock()
@@ -909,6 +924,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         # Mock the API dataset with updated metadata
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Updated Title"
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = "Updated Description"
 
         mock_queryset = MagicMock()
@@ -964,6 +980,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         # Mock the API dataset
         mock_api_dataset = Mock()
         mock_api_dataset.title = "Same Title"
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = "Same Description"
 
         mock_queryset = MagicMock()
@@ -1132,6 +1149,7 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         # Mock API dataset with empty values
         mock_api_dataset = Mock()
         mock_api_dataset.title = None
+        mock_api_dataset.primary_topic_id = None
         mock_api_dataset.description = ""
 
         mock_queryset = MagicMock()
@@ -1175,3 +1193,99 @@ class TestDatasetChosenMultipleViewMixin(TestCase):
         self.assertEqual(mock_dataset.objects.all.call_count, 0)
         # Only the matching existing dataset should be returned.
         self.assertEqual(result, [existing_dataset])
+
+
+class TestDatasetChooserTopicResolution(TestCase):
+    """The chooser records the dataset's primary topic against the local taxonomy."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.topic = TopicFactory(id="7779", slug="economy")
+        cls.user = User.objects.create_superuser(username="topicadmin", password="password")
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.patcher = patch("cms.datasets.views.DatasetRetrievalMixin.retrieve_dataset")
+        self.mock_retrieve = self.patcher.start()
+        self.addCleanup(self.patcher.stop)
+
+    def _api_dataset(self, topic_id):
+        api_dataset = Mock()
+        api_dataset.title = "Test Dataset"
+        api_dataset.description = "Test Description"
+        api_dataset.primary_topic_id = topic_id
+        return api_dataset
+
+    def _request(self):
+        request = self.factory.get("/chooser/")
+        request.user = self.user
+        request.COOKIES = {}
+        return request
+
+    def test_get_object_sets_the_topic_on_a_new_dataset(self):
+        self.mock_retrieve.return_value = self._api_dataset("7779")
+        view = DatasetChosenView()
+        view.request = self._request()
+
+        dataset = view.get_object("dataset-123,2021,1,true")
+
+        self.assertEqual(dataset.topic_id, "7779")
+        self.assertEqual(dataset.url_path, "/economy/datasets/dataset-123")
+
+    def test_get_object_sets_the_topic_on_an_existing_dataset(self):
+        DatasetFactory(namespace="dataset-123", edition="2021", version=1, topic=None)
+        self.mock_retrieve.return_value = self._api_dataset("7779")
+        view = DatasetChosenView()
+        view.request = self._request()
+
+        dataset = view.get_object("dataset-123,2021,1,true")
+
+        self.assertEqual(dataset.topic_id, "7779")
+
+    def test_get_object_drops_a_topic_missing_from_the_local_taxonomy(self):
+        self.mock_retrieve.return_value = self._api_dataset("not-synced-yet")  # Non-existent topic
+        view = DatasetChosenView()
+        view.request = self._request()
+
+        with self.assertLogs("cms.datasets.utils", level="WARNING"):
+            dataset = view.get_object("dataset-123,2021,1,true")
+
+        self.assertIsNone(dataset.topic_id)
+        self.assertEqual(dataset.url_path, "/datasets/dataset-123")
+
+    def test_get_objects_sets_topics_for_a_batch(self):
+        other_topic = TopicFactory(id="7755", slug="business")
+        self.mock_retrieve.side_effect = [
+            self._api_dataset("7779"),
+            self._api_dataset(other_topic.pk),
+            self._api_dataset("not-synced-yet"),
+        ]
+
+        view = DatasetChosenMultipleViewMixin()
+        view.request = self._request()
+
+        with self.assertLogs("cms.datasets.utils", level="WARNING"):
+            datasets = view.get_objects(["dataset-a,2021,1,true", "dataset-b,2021,1,true", "dataset-c,2021,1,true"])
+
+        topics_by_namespace = {dataset.namespace: dataset.topic_id for dataset in datasets}
+        self.assertEqual(topics_by_namespace, {"dataset-a": "7779", "dataset-b": other_topic.pk, "dataset-c": None})
+
+    def test_get_objects_resolves_the_whole_batch_in_one_taxonomy_query(self):
+        self.mock_retrieve.side_effect = [self._api_dataset("7779"), self._api_dataset("7779")]
+        view = DatasetChosenMultipleViewMixin()
+        view.request = self._request()
+
+        with patch("cms.datasets.views.get_local_topic_ids", return_value={"7779"}) as mock_resolve:
+            view.get_objects(["dataset-a,2021,1,true", "dataset-b,2021,1,true"])
+
+        mock_resolve.assert_called_once()
+
+    def test_get_objects_updates_the_topic_on_an_existing_dataset(self):
+        DatasetFactory(namespace="dataset-a", edition="2021", version=1, topic=None)
+        self.mock_retrieve.return_value = self._api_dataset("7779")
+        view = DatasetChosenMultipleViewMixin()
+        view.request = self._request()
+
+        datasets = view.get_objects(["dataset-a,2021,1,true"])
+
+        self.assertEqual(datasets[0].topic_id, "7779")

@@ -8,6 +8,7 @@ from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
+from cms.taxonomy.tests.factories import TopicFactory
 from cms.topics.blocks import TimeSeriesPageStoryBlock
 from cms.topics.tests.factories import TopicPageFactory
 
@@ -187,6 +188,7 @@ class TopicPageTests(WagtailPageTestCase):
             version=1,
             title="test lookup",
             description="lookup description",
+            topic=TopicFactory(id="7779", slug="economy"),
         )
         manual_dataset = {"title": "test manual", "description": "manual description", "url": "https://example.com"}
 
@@ -209,6 +211,7 @@ class TopicPageTests(WagtailPageTestCase):
         # The series URL is a prefix of the edition URL, so the full href is asserted to catch a
         # topic page linking to an edition.
         self.assertContains(response, f'href="{lookup_dataset.url_path}"')
+        self.assertContains(response, "/economy/datasets/LOOKUP")
 
         self.assertContains(response, manual_dataset["title"])
         self.assertContains(response, manual_dataset["description"])

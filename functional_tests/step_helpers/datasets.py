@@ -1,12 +1,19 @@
 import re
 from collections.abc import Generator, Mapping
 from contextlib import contextmanager
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import responses
 from django.conf import settings
 
 from cms.datasets.tests.utils import convert_dataset_to_old_format
+
+if TYPE_CHECKING:
+    from cms.taxonomy.models import Topic
+
+TEST_DATASET_TOPIC_ID = "9001"
+TEST_DATASET_TOPIC_SLUG = "exampledatasettopic"
+TEST_DATASET_TOPIC_TITLE = "Example Dataset Topic"
 
 TEST_UNPUBLISHED_DATASETS = (
     {
@@ -21,6 +28,7 @@ TEST_UNPUBLISHED_DATASETS = (
         },
         "release_date": "2025-01-01T00:00:00.000Z",
         "state": "associated",
+        "topics": [TEST_DATASET_TOPIC_ID],
     },
     {
         "dataset_id": "example2",
@@ -34,6 +42,7 @@ TEST_UNPUBLISHED_DATASETS = (
         },
         "release_date": "2025-01-02T00:00:00.000Z",
         "state": "unpublished",
+        "topics": [TEST_DATASET_TOPIC_ID],
     },
     {
         "dataset_id": "example3",
@@ -47,6 +56,7 @@ TEST_UNPUBLISHED_DATASETS = (
         },
         "release_date": "2025-01-03T00:00:00.000Z",
         "state": "associated",
+        "topics": [TEST_DATASET_TOPIC_ID],
     },
 )
 
@@ -63,6 +73,7 @@ TEST_MIXED_STATES_DATASETS = (
         },
         "release_date": "2025-01-01T00:00:00.000Z",
         "state": "published",
+        "topics": [TEST_DATASET_TOPIC_ID],
     },
     {
         "dataset_id": "example1",
@@ -76,6 +87,7 @@ TEST_MIXED_STATES_DATASETS = (
         },
         "release_date": "2025-01-01T00:00:00.000Z",
         "state": "unpublished",
+        "topics": [TEST_DATASET_TOPIC_ID],
     },
 )
 
@@ -86,6 +98,19 @@ def _prepare_datasets_response(datasets: list[Mapping[str, Any]]) -> dict[str, A
         "items": datasets,
         "total_count": len(datasets),
     }
+
+
+def ensure_dataset_topic() -> Topic:
+    from cms.taxonomy.models import Topic  # pylint: disable=import-outside-toplevel
+    from cms.taxonomy.tests.factories import TopicFactory  # pylint: disable=import-outside-toplevel
+
+    if topic := Topic.objects.filter(pk=TEST_DATASET_TOPIC_ID).first():
+        return topic
+    return TopicFactory(
+        id=TEST_DATASET_TOPIC_ID,
+        slug=TEST_DATASET_TOPIC_SLUG,
+        title=TEST_DATASET_TOPIC_TITLE,
+    )
 
 
 def register_dataset_detail_route(
@@ -129,6 +154,8 @@ def mock_datasets_responses(
         "state": "associated",
     }]
     """
+    ensure_dataset_topic()
+
     with responses.RequestsMock(assert_all_requests_are_fired=False) as mock_responses:
         # Mock the list endpoint - need to match with any query parameters
         unpublished_datasets = [d for d in datasets if d["state"] != "published"]
