@@ -35,6 +35,7 @@ from cms.datasets.tests.factories import DatasetFactory
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.post_publish_actions.executor import executor_stop_and_wait, flush_executor
 from cms.post_publish_actions.models import PostPublishAction, PostPublishActionStatus, PostPublishActionType
+from cms.post_publish_actions.registry import get_post_publish_actions
 from cms.release_calendar.enums import ReleaseStatus
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.release_calendar.viewsets import FutureReleaseCalendarChooserWidget
@@ -722,7 +723,7 @@ class BundleViewSetPublishTestCase(BundleViewSetTestCaseMixin, TransactionTestCa
         self.bundle.save(update_fields=["status", "publication_date"])
         self.post_with_action_and_test("action-publish", BundleStatus.PUBLISHED, self.bundle_index_url)
 
-        expected_action_count = 2
+        expected_action_count = len(get_post_publish_actions())
         deadline = time.monotonic() + 2.5
         while time.monotonic() < deadline and PostPublishAction.objects.finished().count() < expected_action_count:
             time.sleep(0.1)
@@ -752,9 +753,9 @@ class BundleViewSetPublishTestCase(BundleViewSetTestCaseMixin, TransactionTestCa
 
         mock_get_publisher.assert_called()
 
-        self.assertEqual(PostPublishAction.objects.count(), 2)
+        self.assertEqual(PostPublishAction.objects.count(), len(get_post_publish_actions()))
         self.assertEqual(PostPublishAction.objects.unfinished().count(), 0)
-        self.assertEqual(PostPublishAction.objects.finished().count(), 2)
+        self.assertEqual(PostPublishAction.objects.finished().count(), len(get_post_publish_actions()))
 
         action = PostPublishAction.objects.get(action_type=PostPublishActionType.SEARCH_UPDATED)
 
@@ -775,9 +776,9 @@ class BundleViewSetPublishTestCase(BundleViewSetTestCaseMixin, TransactionTestCa
 
         mock_get_publisher.assert_called()
 
-        self.assertEqual(PostPublishAction.objects.count(), 2)
+        self.assertEqual(PostPublishAction.objects.count(), len(get_post_publish_actions()))
         self.assertEqual(PostPublishAction.objects.unfinished().count(), 0)
-        self.assertEqual(PostPublishAction.objects.finished().count(), 2)
+        self.assertEqual(PostPublishAction.objects.finished().count(), len(get_post_publish_actions()))
 
         action = PostPublishAction.objects.get(action_type=PostPublishActionType.SEARCH_UPDATED)
 
