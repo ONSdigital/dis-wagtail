@@ -6,6 +6,7 @@ from unittest import mock
 import time_machine
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.documents import get_document_model
@@ -14,10 +15,13 @@ from wagtail.images.models import Filter
 from wagtail.models import Collection
 from wagtail_factories import DocumentFactory, ImageFactory
 
+from cms.articles.models import StatisticalArticlePage
+from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.models import BundleTeam
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import create_bundle_viewer
 from cms.core.tests.utils import rebuild_references_index
+from cms.datavis.tests.factories import RenderedChartImageFactory, TableDataFactory
 from cms.private_media.constants import Privacy
 from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.teams.tests.factories import TeamFactory
@@ -222,6 +226,122 @@ class TestDocumentServeView(TestCase):
 
         response = self.client.get(serve_url)
         self.assertEqual(response.status_code, 404)
+
+
+class TestRenderedChartImageServeView(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.private_chart_image = RenderedChartImageFactory(file=ContentFile(b"fake-png-bytes", name="chart.png"))
+        cls.public_chart_image = RenderedChartImageFactory(
+            _privacy=Privacy.PUBLIC, file=ContentFile(b"fake-png-bytes", name="chart-public.png")
+        )
+        cls.superuser = get_user_model().objects.create(username="chart-superuser", is_superuser=True)
+
+    def test_serve_private_chart_image(self):
+        """Test the serve view behaviour for private chart images."""
+        serve_url = self.private_chart_image.url
+
+        # If not authenticated, permission checks should fail and a Forbidden response returned
+        for is_external_env in [True, False]:
+            with self.subTest(is_external_env=is_external_env) and override_settings(IS_EXTERNAL_ENV=is_external_env):
+                response = self.client.get(serve_url)
+                self.assertEqual(response.status_code, 403)
+
+        # If authenticated as a superuser, the view should serve the file
+        self.client.force_login(self.superuser)
+        for is_external_env in [True, False]:
+            with self.subTest(is_external_env=is_external_env) and override_settings(IS_EXTERNAL_ENV=is_external_env):
+                response = self.client.get(serve_url)
+                self.assertEqual(response.status_code, 403 if is_external_env else 200)
+
+    def test_serve_public_chart_image(self):
+        """Test the serve view behaviour for public chart images: it should redirect to the file."""
+        for is_external_env in [True, False]:
+            with self.subTest(is_external_env=is_external_env) and override_settings(IS_EXTERNAL_ENV=is_external_env):
+                response = self.client.get(self.public_chart_image.serve_url)
+                self.assertEqual(response.status_code, 302)
+
+    def test_serve_with_invalid_chart_image_id(self):
+        """Test the serve view behaviour when the chart image ID is not recognised."""
+        serve_url = self.private_chart_image.url
+        serve_url = serve_url.replace(f"/{self.private_chart_image.id}", "/9999999")
+
+        response = self.client.get(serve_url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_user_without_document_permissions_is_denied(self):
+        """A logged-in user with no document permissions and no bundle-preview grant is denied."""
+        non_editor = get_user_model().objects.create(username="chart-no-perms")
+        self.client.force_login(non_editor)
+        response = self.client.get(self.private_chart_image.url)
+        self.assertEqual(response.status_code, 403)
+
+
+class TestRenderedChartImageServeViewInBundlePreviewContext(TestCase):
+    """Verifies a previewer can access a private chart image via the bundle-preview cookie,
+    exercising the full path: chooser-block reference -> reference index -> preview cookie ->
+    RenderedChartImagePermissionPolicy -> serve view.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.private_chart_image = RenderedChartImageFactory(file=ContentFile(b"fake-png-bytes", name="chart.png"))
+
+        page = StatisticalArticlePageFactory()
+        page.content = [
+            {
+                "type": "section",
+                "id": str(uuid.uuid4()),
+                "value": {
+                    "title": "Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "id": str(uuid.uuid4()),
+                            "value": {
+                                "title": "Test Chart",
+                                "audio_description": "Description",
+                                "table": TableDataFactory(),
+                                "theme": "primary",
+                                "x_axis": {"title": ""},
+                                "y_axis": {"title": ""},
+                                "rendered_chart_image": cls.private_chart_image.pk,
+                            },
+                        }
+                    ],
+                },
+            }
+        ]
+        page.save()
+        cls.page = StatisticalArticlePage.objects.get(pk=page.pk)
+        mark_page_as_ready_for_review(cls.page)
+
+        cls.preview_team = TeamFactory(name="Chart Preview Team")
+        cls.bundle = BundleFactory(in_review=True)
+        BundlePageFactory(parent=cls.bundle, page=cls.page)
+        BundleTeam.objects.create(parent=cls.bundle, team=cls.preview_team)
+
+        cls.viewer = create_bundle_viewer("chart.bundle.viewer")
+        cls.viewer.teams.add(cls.preview_team)
+
+    def setUp(self):
+        rebuild_references_index()
+
+    def test_direct_request_denied_without_preview_cookie(self):
+        self.client.force_login(self.viewer)
+        response = self.client.get(self.private_chart_image.serve_url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_access_via_bundle_preview_for_viewer_in_bundle_team(self):
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(reverse("bundles:preview", args=[self.bundle.pk, self.page.pk]))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertIn("bundle-preview", self.client.cookies)
+        self.assertContains(response, self.private_chart_image.serve_url)
+
+        response = self.client.get(self.private_chart_image.serve_url)
+        self.assertEqual(response.status_code, 200)
 
 
 class TestPrivateMediaServeViewInBundlePreviewContext(TestCase):

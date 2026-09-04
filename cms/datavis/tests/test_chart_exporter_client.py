@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 
 from cms.datavis.clients.chart_exporter import (
     ChartExporterClient,
+    ChartExporterError,
     ChartExporterMalformedRequest,
     ChartExporterUnavailable,
     ChartObjectResponse,
@@ -92,3 +93,43 @@ class ChartExporterClientTests(TestCase):
             result = self.client.create_chart(self.chart_config)
 
         self.assertEqual(result, ChartObjectResponse(**self.mock_response_data))
+
+    @responses.activate
+    def test_create_chart_payload_too_large_not_retried(self):
+        responses.post(f"{BASE_URL}/charts", status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+
+        with self.assertRaises(ChartExporterMalformedRequest):
+            self.client.create_chart(self.chart_config)
+
+        self.assertEqual(len(responses.calls), 1)
+
+    @responses.activate
+    def test_create_chart_unsupported_media_type_not_retried(self):
+        responses.post(f"{BASE_URL}/charts", status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+
+        with self.assertRaises(ChartExporterMalformedRequest):
+            self.client.create_chart(self.chart_config)
+
+        self.assertEqual(len(responses.calls), 1)
+
+    @responses.activate
+    def test_create_chart_connection_error_is_retried_then_raises(self):
+        responses.post(f"{BASE_URL}/charts", body=requests.exceptions.ConnectionError("boom"))
+        responses.post(f"{BASE_URL}/charts", body=requests.exceptions.ConnectionError("boom"))
+        responses.post(f"{BASE_URL}/charts", body=requests.exceptions.ConnectionError("boom"))
+
+        with patch("cms.datavis.clients.chart_exporter.time.sleep"), self.assertRaises(ChartExporterUnavailable):
+            self.client.create_chart(self.chart_config)
+
+        self.assertEqual(len(responses.calls), 3)
+
+    @responses.activate
+    def test_create_chart_unexpected_status_raises_generic_error_and_is_not_retried(self):
+        responses.post(f"{BASE_URL}/charts", status=HTTPStatus.NOT_FOUND)
+
+        with self.assertRaises(ChartExporterError) as ctx:
+            self.client.create_chart(self.chart_config)
+
+        self.assertNotIsInstance(ctx.exception, ChartExporterMalformedRequest)
+        self.assertNotIsInstance(ctx.exception, ChartExporterUnavailable)
+        self.assertEqual(len(responses.calls), 1)
