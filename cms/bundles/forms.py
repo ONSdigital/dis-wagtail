@@ -20,6 +20,7 @@ from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STAT
 from cms.core.forms import DeduplicateInlinePanelAdminForm
 from cms.datasets.models import Dataset, ONSDataset
 from cms.datasets.utils import get_dataset_for_published_state, get_local_topic_ids, update_dataset_metadata
+from cms.datavis.services import render_charts_for_page
 from cms.workflows.utils import is_page_ready_to_publish
 
 from .bundle_api_sync_service import BundleAPISyncService
@@ -423,6 +424,36 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 "Please save your changes first, then Approve the bundle in a separate step."
             )
 
+    def _validate_charts_render_for_review(self) -> None:
+        """Renders charts for every bundled page when the bundle moves into review.
+
+        Runs synchronously; a failed render blocks the transition to IN_REVIEW so a page never
+        enters review with a stale or missing chart image.
+        """
+        moving_into_review = (
+            self.cleaned_data.get("status") == BundleStatus.IN_REVIEW.value
+            and self.original_status != BundleStatus.IN_REVIEW.value
+        )
+        if not moving_into_review:
+            return
+        if "bundled_pages" not in self.formsets:
+            return
+
+        render_errors: list[str] = []
+        for form in self.formsets["bundled_pages"].forms:
+            if not form.is_valid() or form.cleaned_data.get("DELETE"):
+                continue
+
+            if page := form.clean().get("page"):
+                for result in render_charts_for_page(page.specific):
+                    if result.error:
+                        render_errors.append(f"'{page}': {result.error}")
+
+        if render_errors:
+            # revert the status change back to original to prevent the transition from applying
+            self.cleaned_data["status"] = self.instance.status
+            raise ValidationError(["Could not render charts for one or more pages in this bundle:", *render_errors])
+
     def _validate_approval(self) -> None:
         if self.cleaned_data.get("status") != BundleStatus.APPROVED.value:
             return
@@ -463,6 +494,9 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
         # On approval, this must run before any other validation
         self._validate_approval()
+
+        # On moving into review, render charts for every bundled page before anything else
+        self._validate_charts_render_for_review()
 
         self._validate_publication_date()
 
