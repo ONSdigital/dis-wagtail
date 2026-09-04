@@ -1015,6 +1015,12 @@ TOPIC_API_BASE_URL = env.get("TOPIC_API_BASE_URL", f"{ONS_API_BASE_URL}/topics")
 # Feature flag to enable/disable interaction with the ONS Bundle API
 DIS_DATASETS_BUNDLE_API_ENABLED = env.get("DIS_DATASETS_BUNDLE_API_ENABLED", "false").lower() == "true"
 
+CMS_CHART_EXPORTER_API_BASE_URL = env.get("CMS_CHART_EXPORTER_API_BASE_URL", "")
+
+# Feature flag to enable/disable interaction with the Chart Exporter API
+CMS_CHART_EXPORTER_API_ENABLED = env.get("CMS_CHART_EXPORTER_API_ENABLED", "false").lower() == "true"
+CMS_CHART_EXPORTER_API_MAX_RETRIES = int(env.get("CMS_CHART_EXPORTER_API_MAX_RETRIES", 2))
+
 # Feature flag to enable/disable validation of bundled datasets status on bundle approval
 BUNDLE_DATASET_STATUS_VALIDATION_ENABLED = (
     env.get("BUNDLE_DATASET_STATUS_VALIDATION_ENABLED", "false").lower() == "true"
@@ -1181,6 +1187,10 @@ if CMS_USE_SUBDOMAIN_LOCALES and (config_string := env.get("CMS_HOSTNAME_LOCALE_
 # This must remain lower than the Gunicorn worker timeout.
 # Note, the Gunicorn timeout may itself be overridden in deployment config (e.g. gunicorn.conf.py, Helm chart values).
 HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS = int(env.get("HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS", 10))
+
+CMS_CHART_EXPORTER_API_TIMEOUT_SECONDS = int(
+    env.get("CMS_CHART_EXPORTER_API_TIMEOUT_SECONDS", HTTP_REQUEST_DEFAULT_TIMEOUT_SECONDS)
+)
 
 DATASETS_API_DEFAULT_PAGE_SIZE = int(env.get("DATASETS_API_DEFAULT_PAGE_SIZE", "100"))
 

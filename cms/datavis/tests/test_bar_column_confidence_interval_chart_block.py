@@ -34,6 +34,9 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
     def test_get_component_config(self):
         self._test_get_component_config()
 
+    def test_get_export_config(self):
+        self._test_get_export_config()
+
     def test_selectable_chart_type(self):
         with self.assertRaises(AttributeError):
             self.block.highcharts_chart_type  # noqa: B018, pylint: disable=pointless-statement
