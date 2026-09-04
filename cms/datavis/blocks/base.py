@@ -130,9 +130,14 @@ class BaseChartBlock(BaseVisualisationBlock):
     def get_context(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
 
-        context["chart_config"] = self.get_component_config(
-            value, parent_context=parent_context, block_id=context.get("block_id")
-        )
+        chart_config = self.get_component_config(value, parent_context=parent_context, block_id=context.get("block_id"))
+        # Image added here rather than in get_component_config, since get_export_config reuses that
+        # method to build the chart exporter API payload: including the rendered image's own
+        # URL there would make the config self-referential, changing on every render and
+        # defeating the config_hash idempotency check.
+        if rendered_chart_image := value.get("rendered_chart_image"):
+            chart_config["fallbackImageUrl"] = rendered_chart_image.url
+        context["chart_config"] = chart_config
         return context
 
     def get_highcharts_chart_type(self, value: StructValue) -> str:
