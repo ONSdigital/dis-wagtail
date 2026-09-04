@@ -182,6 +182,13 @@ class BaseChartBlock(BaseVisualisationBlock):
         config.update(self.get_additional_options(value))
         return config
 
+    def get_export_config(self, value: StructValue) -> dict[str, Any]:
+        """Build the chart config sent to the chart exporter API."""
+        config = self.get_component_config(value)
+        del config["download"]
+        config["caption"] = value.get("caption") or None
+        return config
+
     def get_x_axis_config(
         self,
         attrs: StructValue,
