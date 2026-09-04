@@ -3,17 +3,21 @@ from contextlib import suppress
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
+from django.forms import Media
 from django.forms.widgets import RadioSelect
 from django.urls import reverse
+from django.utils.functional import cached_property
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
-from wagtail.blocks.struct_block import StructValue
+from wagtail.admin.telepath import register
+from wagtail.blocks.struct_block import StructBlockAdapter, StructValue
 
 from cms.core.analytics_utils import get_gtm_attributes_file_download
 from cms.core.utils import format_file_size_kb
 from cms.data_downloads.utils import get_csv_download_filename
 from cms.datavis.blocks.chart_options import AspectRatioBlock
+from cms.datavis.blocks.rendered_chart_image import RenderedChartImageChooserBlock
 from cms.datavis.blocks.table import SimpleTableBlock
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 from cms.datavis.constants import AxisType, HighChartsChartType, HighchartsTheme
@@ -118,6 +122,10 @@ class BaseChartBlock(BaseVisualisationBlock):
     )
 
     series_customisation = blocks.StaticBlock()
+
+    # Hidden field populated by the chart render pipeline; see RenderedChartImageChooserBlock
+    # and the tamper-protection form mixin in cms.core.forms for why it must stay off-form.
+    rendered_chart_image = RenderedChartImageChooserBlock(required=False)
 
     def get_context(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
@@ -459,3 +467,26 @@ class BaseChartBlock(BaseVisualisationBlock):
             "data_downloads:revision_chart_download",
             kwargs={"page_id": page.pk, "revision_id": revision_id, "chart_id": block_id},
         )
+
+
+class BaseChartBlockAdapter(StructBlockAdapter):
+    """Hides the rendered_chart_image field from the chart block form.
+
+    The field is populated only by the chart render pipeline, not by editors, so it is hidden
+    client-side here and any submitted value is discarded server-side (see
+    cms.core.forms.PageWithProtectedChartImagesAdminForm). Registering against BaseChartBlock
+    covers every chart block subclass, including the Featured* variants.
+    """
+
+    js_constructor = "cms.datavis.blocks.base.BaseChartBlock"
+
+    @cached_property
+    def media(self) -> Media:
+        structblock_media = super().media
+        return Media(
+            js=[*structblock_media._js, "js/blocks/chart-block.js"],  # pylint: disable=protected-access
+            css=structblock_media._css,  # pylint: disable=protected-access
+        )
+
+
+register(BaseChartBlockAdapter(), BaseChartBlock)
