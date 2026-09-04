@@ -242,7 +242,7 @@ class PageWithProtectedChartImagesAdminForm(WagtailAdminPageForm):
             raise ImproperlyConfigured(f"{cls.__name__} must define protected_chart_image_fields")
 
     def clean(self) -> dict[str, Any] | None:
-        cleaned_data = super().clean()
+        cleaned_data: dict[str, Any] | None = super().clean()
 
         for field_name in self.protected_chart_image_fields:
             if field_name not in self.cleaned_data:
