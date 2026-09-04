@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import Any
+from unittest.mock import patch
 
 from django import forms
 from django.test import TestCase
@@ -14,6 +15,7 @@ from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory, BundleTeamFactory
 from cms.bundles.viewsets.bundle_chooser import BundleChooserWidget
 from cms.datasets.tests.factories import DatasetFactory
+from cms.datavis.services import ChartRenderResult
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
 from cms.teams.tests.factories import TeamFactory
 from cms.users.tests.factories import UserFactory
@@ -601,3 +603,64 @@ class BundleAdminFormTestCase(TestCase):
 
         # assert bundled_pages not in formsets
         self.assertEqual(form.formsets, {})
+
+
+class BundleChartRenderTriggerTestCase(TestCase):
+    """Covers the bundle trigger: rendering charts for every bundled page on DRAFT -> IN_REVIEW."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.bundle = BundleFactory(name="Chart Bundle")
+        cls.form_class = get_edit_handler(Bundle).get_form_class()
+        cls.page = StatisticalArticlePageFactory(title="Chart Page")
+
+    def raw_form_data(self) -> dict[str, Any]:
+        return {
+            "name": self.bundle.name,
+            "status": BundleStatus.IN_REVIEW,
+            "bundled_pages": inline_formset([{"page": self.page.id}]),
+            "teams": inline_formset([]),
+            "bundled_datasets": inline_formset([]),
+        }
+
+    @patch("cms.bundles.forms.render_charts_for_page")
+    def test_moving_to_in_review_renders_charts_for_every_bundled_page(self, mock_render):
+        mock_render.return_value = [ChartRenderResult(block_id="x", changed=True)]
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(self.raw_form_data()))
+
+        self.assertTrue(form.is_valid(), form.errors)
+        mock_render.assert_called_once()
+        self.assertEqual(mock_render.call_args.args[0].pk, self.page.pk)
+
+    @patch("cms.bundles.forms.render_charts_for_page")
+    def test_render_failure_blocks_the_transition_to_in_review(self, mock_render):
+        mock_render.return_value = [ChartRenderResult(block_id="x", changed=False, error="Something went wrong")]
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(self.raw_form_data()))
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(
+            form,
+            None,
+            ["Could not render charts for one or more pages in this bundle:", "'Chart Page': Something went wrong"],
+        )
+        self.assertEqual(form.cleaned_data["status"], self.bundle.status)
+
+    @patch("cms.bundles.forms.render_charts_for_page")
+    def test_unchanged_config_does_not_block_the_transition(self, mock_render):
+        mock_render.return_value = [ChartRenderResult(block_id="x", changed=False, error=None)]
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(self.raw_form_data()))
+
+        self.assertTrue(form.is_valid(), form.errors)
+
+    @patch("cms.bundles.forms.render_charts_for_page")
+    def test_does_not_render_again_when_already_in_review(self, mock_render):
+        self.bundle.status = BundleStatus.IN_REVIEW
+        self.bundle.save(update_fields=["status"])
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(self.raw_form_data()))
+        form.is_valid()
+
+        mock_render.assert_not_called()

@@ -53,3 +53,11 @@ class RenderedChartImageReferenceTests(TestCase):
 
     def test_image_in_content_is_returned_by_get_referenced_asset_ids(self):
         self.assertIn(str(self.image.pk), self.page.get_referenced_asset_ids(RenderedChartImage))
+
+    def test_publishing_page_makes_referenced_image_public(self):
+        self.assertTrue(self.image.is_private)
+
+        self.page.save_revision().publish()
+
+        self.image.refresh_from_db()
+        self.assertTrue(self.image.is_public)
