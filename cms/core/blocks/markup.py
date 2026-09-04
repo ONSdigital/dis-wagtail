@@ -83,6 +83,14 @@ class BasicTableBlock(WagtailTableBlock):
     def value_from_form(self, value: str) -> dict:
         return super().value_from_form(strip_unwanted_control_chars_from_json(value))  # type: ignore[no-any-return]
 
+    def _first_row_is_table_header(self, value: dict) -> bool:
+        """Return whether the first row should be rendered as table headers."""
+        return value.get("first_row_is_table_header", False) or value.get("table_header_choice") in {"row", "both"}
+
+    def _first_col_is_header(self, value: dict) -> bool:
+        """Return whether the first column should be rendered as row headers."""
+        return value.get("first_col_is_header", False) or value.get("table_header_choice") in {"column", "both"}
+
     def _get_header(self, value: dict) -> list[dict[str, str]]:
         """Prepares the table header for the Design System."""
         table_header = []
@@ -99,6 +107,8 @@ class BasicTableBlock(WagtailTableBlock):
 
         for row in data:
             tds = [{"value": cell} for cell in row]
+            if tds and value.get("first_col_is_header", False):
+                tds[0]["heading"] = True
             trs.append({"tds": tds})
 
         return trs
