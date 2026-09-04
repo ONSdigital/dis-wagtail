@@ -22,9 +22,13 @@ class TopicModelTest(TestCase):
         self.assertEqual(root_again.pk, self.root_topic.pk)
         self.assertEqual(root_again.depth, 1)  # Root node typically has depth=1
 
-    def test_filtered_manager_excludes_root_topic(self):
-        """Topic.objects should exclude the dummy root."""
-        self.assertNotIn(self.root_topic, Topic.objects.all())
+    def test_default_manager_includes_root_topic(self):
+        """Topic.objects must expose the dummy root, because treebeard resolves the tree through it."""
+        self.assertIn(self.root_topic, Topic.objects.all())
+
+    def test_topics_excludes_root_topic(self):
+        """Topic.objects.topics() is what callers should use anywhere topics are shown or enumerated."""
+        self.assertNotIn(self.root_topic, Topic.objects.topics())
 
     def test_save_topic_with_no_parent_uses_root_topic(self):
         """If we call Topic.save_new(...) without specifying parent_topic,
@@ -35,8 +39,7 @@ class TopicModelTest(TestCase):
         self.assertEqual(t1.depth, 2)  # Root is depth=1, so child is depth=2
         self.assertIsNone(t1.get_parent())
 
-        # Because of the custom manager, we expect to see it in Topic.objects
-        self.assertIn(t1, Topic.objects.all())
+        self.assertIn(t1, Topic.objects.topics())
 
     def test_save_topic_with_explicit_parent(self):
         """If we call Topic.save_new(...) with a parent_topic, it will become that node's child."""
