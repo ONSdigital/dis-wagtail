@@ -1,6 +1,8 @@
 import logging
-from typing import Any
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any, ClassVar
 
+from django.core.exceptions import ImproperlyConfigured
 from django.forms import ValidationError
 from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.admin.forms.choosers import BaseFilterForm, SearchFilterMixin
@@ -8,7 +10,11 @@ from wagtail.admin.forms.pages import CopyForm
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import PageLogEntry
 
+from cms.core.blocks.constants import CHART_BLOCK_TYPES
 from cms.core.utils import FORMULA_INDICATORS, latex_formula_to_svg
+
+if TYPE_CHECKING:
+    from wagtail.blocks.stream_block import StreamChild
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +211,51 @@ class PageWithEquationsAdminForm(WagtailAdminPageForm):
                 self._process_content_block(block)
 
         return content
+
+
+def _iter_chart_blocks(value: StreamValue | None) -> Iterator[StreamChild]:
+    """Recursively yield chart blocks from a StreamValue, including those nested in sections."""
+    if not value:
+        return
+    for block in value:
+        if block.block_type == "section":
+            yield from _iter_chart_blocks(block.value.get("content"))
+        elif block.block_type in CHART_BLOCK_TYPES:
+            yield block
+
+
+class PageWithProtectedChartImagesAdminForm(WagtailAdminPageForm):
+    """Discards client-submitted rendered_chart_image references on chart blocks.
+
+    That field is hidden in the editor and populated only by the chart render pipeline, so any
+    value present in submitted form data must be treated as tampering. It is replaced here with
+    whatever is already persisted for the matching block (matched by block id), or with None for
+    blocks that have no persisted match.
+    """
+
+    protected_chart_image_fields: ClassVar[tuple[str, ...]] = ()
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        # If protected_chart_image_fields is empty, the whole thing is redundant
+        if not cls.protected_chart_image_fields:
+            raise ImproperlyConfigured(f"{cls.__name__} must define protected_chart_image_fields")
+
+    def clean(self) -> dict[str, Any] | None:
+        cleaned_data: dict[str, Any] | None = super().clean()
+
+        for field_name in self.protected_chart_image_fields:
+            if field_name not in self.cleaned_data:
+                continue
+
+            persisted_images = {
+                block.id: block.value.get("rendered_chart_image")
+                for block in _iter_chart_blocks(getattr(self.instance, field_name, None))
+            }
+            for block in _iter_chart_blocks(self.cleaned_data[field_name]):
+                block.value["rendered_chart_image"] = persisted_images.get(block.id)
+
+        return cleaned_data
 
 
 class ONSCopyForm(CopyForm):
