@@ -19,6 +19,8 @@ from wagtail.images.permissions import permission_policy as image_permission_pol
 from wagtail.images.utils import verify_signature
 
 from cms.core.utils import redirect
+from cms.datavis.models import RenderedChartImage
+from cms.datavis.permissions import rendered_chart_image_permission_policy
 from cms.private_media.utils import user_can_access_asset
 
 if TYPE_CHECKING:
@@ -239,6 +241,83 @@ class DocumentServeView(View):
         response["Content-Length"] = document.file.size
 
         # Prevent browsers from auto-detecting the content-type of a document
+        response["X-Content-Type-Options"] = "nosniff"
+
+        return response
+
+
+class RenderedChartImageServeView(View):
+    http_method_names: Sequence[str] = ["get"]
+
+    @method_decorator(csp_override({"default-src": [CSP.NONE]}))
+    def get(self, request: HttpRequest, chart_image_id: int) -> HttpResponseBase:
+        """This method mirrors `DocumentServeView.get()`, but for `RenderedChartImage`: a
+        permission check, a redirect to the file URL once the object is public, otherwise a
+        streamed response with cache headers varied by scenario.
+        """
+        chart_image = self.get_chart_image(chart_image_id)
+
+        # Block access to a private chart image if the user has insufficient permissions
+        if not user_can_access_asset(
+            request=self.request,
+            user=self.request.user,
+            asset=chart_image,
+            permission_policy=rendered_chart_image_permission_policy,
+        ):
+            raise PermissionDenied
+
+        # If there's no reason (within our control) for the file not to be served by
+        # media infrastructure, redirect
+        if chart_image.is_public and not chart_image.has_outdated_file_permissions():
+            try:
+                file_url = chart_image.file.url
+            except NotImplementedError:
+                file_url = chart_image.file.path
+            return self.redirect_to_file(file_url)
+
+        # Serve file contents
+        if chart_image.is_public:
+            return self.serve_public_chart_image(chart_image)
+        return self.serve_private_chart_image(chart_image)
+
+    def get_chart_image(self, chart_image_id: int) -> RenderedChartImage:
+        """Return a `RenderedChartImage` matching the provided `chart_image_id`, or raise a
+        `Http404` exception if no such object exists.
+        """
+        return get_object_or_404(RenderedChartImage, id=chart_image_id)
+
+    def redirect_to_file(self, url: str) -> HttpResponseRedirect | HttpResponsePermanentRedirect:
+        """Return a cachable temporary redirect to the file URL.
+
+        The redirect response is cached for 1 hour to alleviate load on the web server. If the
+        chart image's privacy changes in the meantime, a purge request for this URL will be
+        submitted to the active edge-cache provider.
+        """
+        response = redirect(url, preserve_request=False)
+        patch_cache_control(response, max_age=3600, public=True)
+        return response
+
+    def serve_public_chart_image(self, chart_image: RenderedChartImage) -> FileResponse:
+        """Return a cachable FileResponse for the requested chart image file."""
+        response = self._serve_chart_image(chart_image)
+        patch_cache_control(response, max_age=3600, public=True)
+        return response
+
+    def serve_private_chart_image(self, chart_image: RenderedChartImage) -> FileResponse:
+        """Return a non-cachable FileResponse for the requested chart image file.
+
+        While a chart image is still private, access is dependant on the current user's
+        permissions, so responses are not suitable for reuse.
+        """
+        response = self._serve_chart_image(chart_image)
+        add_never_cache_headers(response)
+        return response
+
+    def _serve_chart_image(self, chart_image: RenderedChartImage) -> FileResponse:
+        chart_image.file.open("rb")
+        response = FileResponse(chart_image.file, content_type=chart_image.content_type)
+
+        # Prevent browsers from auto-detecting the content-type
         response["X-Content-Type-Options"] = "nosniff"
 
         return response
