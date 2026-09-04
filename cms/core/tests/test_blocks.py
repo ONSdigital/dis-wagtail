@@ -6,8 +6,10 @@ from unittest.mock import Mock
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
+from django.conf import settings
 from django.template.defaultfilters import filesizeformat
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from moto import mock_aws
 from wagtail.blocks import StreamBlockValidationError, StructBlockValidationError
 from wagtail.coreutils import get_dummy_request
 from wagtail.images import get_image_model
@@ -36,6 +38,7 @@ from cms.core.utils import UNWANTED_CONTROL_CHARACTERS, format_file_size_kb
 from cms.data_downloads.utils import flatten_table_data, get_csv_download_filename
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 from cms.home.models import HomePage
+from cms.private_media.storages import AccessControlledS3Storage
 from cms.standard_pages.models import InformationPage
 
 
@@ -1382,7 +1385,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         # Appears twice in the response - once in the image srcset attribute and once in the download url rendered by
         # DS figure macro
         self.assertIn(self.large.file.url, image["srcset"])
-        self.assertEqual(download_link.get("href"), self.large.file.url)
+        self.assertEqual(download_link.get("href"), self.large.file.url + "?force_download=true")
 
         # Small rendition
         # Appears twice in the response - once in the image src attribute and once in the image srcset attribute
@@ -1391,6 +1394,37 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
 
         expected = filesizeformat(self.large.file.size)
         self.assertIn(f"({expected})", download_link.get_text(strip=True))
+
+    def test_download_link_targets_media_url_for_public_image(self):
+        """Public images keep pointing at media infrastructure."""
+        page = self._make_information_page(download=True)
+
+        response = self.client.get(page.url)
+        soup = BeautifulSoup(response.content.decode(), "html.parser")
+        download_anchor = soup.select_one("a[download]")
+        self.assertIsNotNone(download_anchor, "No download anchor found on page")
+
+        href = download_anchor["href"]
+        self.assertEqual(href, self.large.file.url + "?force_download=true")
+        self.assertNotIn(self.large.serve_url, href)
+
+    def test_download_link_targets_serve_view_for_private_image(self):
+        """Private images route the download link through the serve view."""
+        image_model = get_image_model()
+        private_image = image_model.objects.create(
+            title="Private image title",
+            file=get_test_image_file(),
+            description="Meaningful alt text",
+        )
+        large = private_image.get_rendition("width-2048")
+        self.assertFalse(private_image.is_public)
+
+        block = ImageBlock()
+        value = block.to_python({"image": private_image.id, "figure_number": "Figure 1", "download": True})
+        context = block.get_context(value)
+        href = context["options"]["download"]["itemsList"][0]["url"]
+
+        self.assertEqual(href, large.serve_url + "?force_download=true")
 
     def test_does_not_render_download_link_when_disabled(self):
         page = self._make_information_page(download=False)
@@ -1478,7 +1512,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         response = self.client.get(page.url)
 
         soup = BeautifulSoup(response.content, "html.parser")
-        download_link = soup.find("a", href=self.large.file.url)
+        download_link = soup.find("a", href=self.large.file.url + "?force_download=true")
         download_list_item = download_link.find_parent(class_="ons-list__item")
         absolute_download_url = response.wsgi_request.build_absolute_uri(download_link.get("href"))
         expected_file_name = urlparse(download_link.get("href")).path.rsplit("/", maxsplit=1)[-1]
@@ -1490,3 +1524,80 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertEqual(download_list_item.get("data-ga-link-url"), urlparse(download_link.get("href")).path)
         self.assertEqual(download_list_item.get("data-ga-link-domain"), urlparse(absolute_download_url).hostname)
         self.assertEqual(download_list_item.get("data-ga-file-size"), format_file_size_kb(self.large.file.size))
+
+
+# Verifies the download link routing against a mocked S3 backend, to confirm the behaviour holds
+# in production where media is served from S3 rather than the local filesystem.
+@mock_aws
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "cms.private_media.storages.AccessControlledS3Storage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    }
+)
+class InformationPageImageBlockS3DownloadTests(WagtailPageTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        # @override_settings on the class takes effect here but @mock_aws does not,
+        # so we avoid any file operations that would hit S3 without moto intercepting.
+        cls.home = HomePage.objects.first()
+
+    def setUp(self):
+        super().setUp()
+        storage = AccessControlledS3Storage()
+        storage.connection.Bucket(settings.AWS_STORAGE_BUCKET_NAME).create()
+
+        image_model = get_image_model()
+        self.image = image_model.objects.create(
+            title="Test image title",
+            file=get_test_image_file(),
+            description="Meaningful alt text",
+        )
+        self.small = self.image.get_rendition("width-1024")
+        self.large = self.image.get_rendition("width-2048")
+
+    def _make_information_page(self) -> InformationPage:
+        page = InformationPage(
+            title="Info page with image",
+            summary="<p>Summary</p>",
+            content=[
+                {
+                    "type": "section",
+                    "value": {
+                        "title": "A section heading",
+                        "content": [
+                            {
+                                "type": "image",
+                                "value": {
+                                    "image": self.image.id,
+                                    "figure_title": "Figure 1",
+                                    "figure_subtitle": "Figure subtitle",
+                                    "supporting_text": "Office for National Statistics",
+                                    "download": True,
+                                },
+                                "id": str(uuid.uuid4()),
+                            }
+                        ],
+                    },
+                    "id": str(uuid.uuid4()),
+                }
+            ],
+        )
+        self.home.add_child(instance=page)
+        page.save_revision().publish()
+        return page
+
+    def test_download_link_targets_s3_url_for_public_image(self):
+        """Public images on S3 link straight to the bucket, carrying the force_download flag."""
+        page = self._make_information_page()
+
+        page_response = self.client.get(page.url)
+        soup = BeautifulSoup(page_response.content.decode(), "html.parser")
+        download_anchor = soup.select_one("a[download]")
+        self.assertIsNotNone(download_anchor, "No download anchor found on page")
+
+        href = download_anchor["href"]
+        self.image.refresh_from_db()
+        self.assertTrue(self.image.is_public)
+        self.assertTrue(href.startswith("http"), f"Expected an absolute S3 URL, got {href}")
+        self.assertIn("force_download=true", href)
