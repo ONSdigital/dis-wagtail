@@ -1,6 +1,10 @@
+from http import HTTPStatus
+
 from django.core.cache import caches
-from django.test import SimpleTestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from fakeredis import FakeConnection
+
+from cms.home.models import HomePage
 
 
 @override_settings(
@@ -81,3 +85,41 @@ class InvalidateReplayRedisCacheTestCase(SimpleTestCase):
 
         self.assertIsNone(caches["default"].get("key"))
         self.assertIsNone(caches["invalidate_replay"].get("key"))
+
+
+class PageCacheControlHeadersTestCase(TestCase):
+    """Test the Cache-Control and Cloudflare-CDN-Cache-Control headers set on page responses."""
+
+    cdn_cache_control = "max-age=31536000, stale-while-revalidate=86400, stale-if-error=432000"
+
+    def test_default_semi_static_page(self) -> None:
+        home_page = HomePage.objects.first()
+
+        response = self.client.get(home_page.get_url())
+
+        self.assertEqual(
+            response.headers["Cache-Control"],
+            "public, max-age=60, stale-while-revalidate=0, stale-if-error=300",
+        )
+        self.assertEqual(response.headers["Cloudflare-CDN-Cache-Control"], self.cdn_cache_control)
+
+    def test_welsh_home_page_headers_with_subdomain(self) -> None:
+        response = self.client.get("/", headers={"host": "cy.ons.localhost"})
+
+        self.assertEqual(
+            response.headers["Cache-Control"],
+            "public, max-age=60, stale-while-revalidate=0, stale-if-error=300",
+        )
+        self.assertEqual(response.headers["Cloudflare-CDN-Cache-Control"], self.cdn_cache_control)
+
+    @override_settings(CMS_USE_SUBDOMAIN_LOCALES=False)
+    def test_welsh_home_page_with_path_based_routing(self) -> None:
+        response = self.client.get("/cy")
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        self.assertEqual(
+            response.headers["Cache-Control"],
+            "public, max-age=60, stale-while-revalidate=0, stale-if-error=300",
+        )
+        self.assertEqual(response.headers["Cloudflare-CDN-Cache-Control"], self.cdn_cache_control)

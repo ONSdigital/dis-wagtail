@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 from django.conf import settings
 from django.core.cache import cache
 from django.db.models import Model
+from django.http import HttpResponse
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.html import format_html
@@ -14,16 +15,28 @@ from wagtail.log_actions import LogFormatter, log
 from wagtail.models import Page
 from wagtail.snippets.models import register_snippet
 
+from cms.core.cache import apply_page_cache_headers
 from cms.core.utils import redirect
 from cms.core.viewsets import ContactDetailsViewSet, DefinitionViewSet
 from cms.release_calendar.models import ReleaseCalendarIndex, ReleaseCalendarPage
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     from django.http import HttpRequest, HttpResponsePermanentRedirect, HttpResponseRedirect
     from wagtail.admin.views.bulk_action import BulkAction, ModelLogEntry
     from wagtail.log_actions import LogActionRegistry
+
+
+@hooks.register("on_serve_page")
+def apply_cache_headers_on_serve(next_serve_page: Callable) -> Callable:
+    """Applies Cache-Control headers to page responses."""
+
+    def wrapper(page: Page, request: HttpRequest, args: tuple, kwargs: dict) -> HttpResponse:
+        response: HttpResponse = next_serve_page(page, request, args, kwargs)
+        return apply_page_cache_headers(page, response)
+
+    return wrapper
 
 
 @hooks.register("register_icons")

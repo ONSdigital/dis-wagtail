@@ -251,6 +251,9 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
 
     schema_org_type = "Article"
 
+    # Set for appropriate caching based on the 59 second publishing rule.
+    is_publishing_rule_page = True
+
     parent_page_types: ClassVar[list[str]] = ["ArticleSeriesPage"]
     subpage_types: ClassVar[list[str]] = []
     search_index_content_type: ClassVar[str] = "statistical_article"
@@ -864,17 +867,20 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
         if kwargs.pop("related_data", None):
             view, _view_args, view_kwargs = self.resolve_subpage("/related-data/")
             serve_kwargs = {**kwargs, **view_kwargs}
-            return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
+            response: HttpResponse = super().serve(request, view=view, args=args, kwargs=serve_kwargs)
+            return response
 
         if version := kwargs.pop("version", None):
             view, _view_args, view_kwargs = self.resolve_subpage(f"/versions/{version}/")
             serve_kwargs = {**kwargs, **view_kwargs}
-            return cast("HttpResponse", super().serve(request, view=view, args=args, kwargs=serve_kwargs))
+            response = super().serve(request, view=view, args=args, kwargs=serve_kwargs)
+            return response
 
         if version == 0:
             raise Http404
 
-        return cast("HttpResponse", super().serve(request, *args, **kwargs))
+        response = super().serve(request, *args, **kwargs)
+        return response
 
     @cached_property
     def cached_link_analytics_values(self) -> dict[str, str]:

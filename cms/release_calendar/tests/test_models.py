@@ -38,6 +38,19 @@ class ReleaseCalendarPageModelTestCase(WagtailTestUtils, TestCase):
     def test_permission_tester_inherits_from_basepagepermissiontester(self):
         self.assertIsInstance(self.page.permissions_for_user(self.superuser), BasePagePermissionTester)
 
+    def test_publishing_rule_cache_headers(self):
+        """Release calendar pages are covered by the 59 second publishing rule."""
+        response = self.client.get(self.page.get_url())
+
+        self.assertEqual(
+            response.headers["Cache-Control"],
+            "public, max-age=5, stale-while-revalidate=0, stale-if-error=60",
+        )
+        self.assertEqual(
+            response.headers["Cloudflare-CDN-Cache-Control"],
+            "max-age=31536000, stale-while-revalidate=86400, stale-if-error=432000",
+        )
+
     def test_template(self):
         """Check the template used."""
         cases = [
