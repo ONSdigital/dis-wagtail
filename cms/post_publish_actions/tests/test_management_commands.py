@@ -175,7 +175,11 @@ class RetryPostPublishActionsTestCase(TransactionTestCase):
     def test_republishing_restores_retry_budget(self):
         action = self._create_stalled_action(retry_count=2, status=PostPublishActionStatus.FAILED)
 
-        with patch.dict(registry._registry, {PostPublishActionType.SEARCH_UPDATED: MagicMock()}, clear=True):  # pylint: disable=protected-access
+        with patch.dict(
+            registry._registry,  # pylint: disable=protected-access
+            {PostPublishActionType.SEARCH_UPDATED: registry.RegisteredPostPublishAction(handler=MagicMock())},
+            clear=True,
+        ):
             run_post_publish_actions_for(self.page, self.bundle)
 
         action.refresh_from_db()

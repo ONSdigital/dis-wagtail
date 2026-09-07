@@ -717,8 +717,12 @@ WAGTAILADMIN_NOTIFICATION_INCLUDE_SUPERUSERS = False
 # The backend can be configured to use an account-wide API key, or an API token with
 # restricted access.
 
+# Deliberately set to an empty list as cms.frontend_cache uses purge_urls_from_cache which will
+# default to the list of defined content languages if this is not defined.
+WAGTAILFRONTENDCACHE_LANGUAGES: list[str] = []
 if "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env or "FRONTEND_CACHE_CLOUDFLARE_BEARER_TOKEN" in env:
-    INSTALLED_APPS.append("wagtail.contrib.frontend_cache")
+    # Apps need to be installed in this order so that any signal disconnects work as intended
+    INSTALLED_APPS += ["wagtail.contrib.frontend_cache", "cms.frontend_cache"]
     WAGTAILFRONTENDCACHE = {
         "default": {
             "BACKEND": "wagtail.contrib.frontend_cache.backends.CloudflareBackend",
@@ -915,6 +919,12 @@ PREVIOUS_RELEASES_PER_PAGE = int(env.get("PREVIOUS_RELEASES_PER_PAGE", 10))
 CMS_RELEASES_INDEX_REDIRECT_ENABLED = env.get("CMS_RELEASES_INDEX_REDIRECT_ENABLED", "true").lower() == "true"
 RELATED_DATASETS_PER_PAGE = int(env.get("RELATED_DATASETS_PER_PAGE", DEFAULT_PER_PAGE))
 
+# Number of extra trailing pages to purge from the front-end cache beyond the current page count,
+# so that pages orphaned by shrinking pagination (e.g. after a correction removes items) get invalidated too.
+# This is a workaround until Wagtail supports prefix-based cache purging:
+# https://github.com/wagtail/wagtail/pull/13773
+CMS_PAGINATION_OVER_PURGE = int(env.get("CMS_PAGINATION_OVER_PURGE", 2))
+
 # Google Tag Manager ID from env
 GOOGLE_TAG_MANAGER_CONTAINER_ID = env.get("GOOGLE_TAG_MANAGER_CONTAINER_ID", "")
 
@@ -939,6 +949,15 @@ WAGTAIL_ENABLE_WHATS_NEW_BANNER = False
 # Set to "same-origin-allow-popups" to allow popups
 # from third-party applications like PayPal or Zoom as needed
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+
+
+# Explicitly set the ImmediateBackend for tasks (even though it is the default at the time of writing)
+# We do this to ensure certain tasks, such as updating the reference index, happen sequentially.
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
+    }
+}
 
 #
 # ONS CMS specific-settings
@@ -1174,9 +1193,17 @@ WAGTAIL_AUTOSAVE_INTERVAL = int(env.get("WAGTAIL_AUTOSAVE_INTERVAL", 500))
 
 CMS_AUDIT_LOG_COOLDOWN_SECONDS = int(env.get("CMS_AUDIT_LOG_COOLDOWN_SECONDS", 30))
 
+# For Wagtail Math (soon to be Polymath) Serve MathJax from the ONS CDN rather than a third-party one.
+WAGTAIL_POLYMATH = {
+    "mathjax_url": f"{ONS_CDN_URL}/vendor/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML",
+    # This is a public Subresource Integrity hash, not a credential.
+    # pragma: allowlist nextline secret
+    "mathjax_sri": "sha512-M36RUChWzAh1veeenRZFql7HydLEnkYmoloiCvVrhz402UZgKI93qkV7SsaxtVKdN95Wzajh39ysrXCq34NTsg==",
+}
+
 # Content Security policy settings
 # https://docs.djangoproject.com/en/6.0/ref/csp/
-static_sources = [ONS_CDN_URL, "cdnjs.cloudflare.com"]
+static_sources = [ONS_CDN_URL]
 SECURE_CSP: dict[str, list] = {
     "default-src": [CSP.SELF],
     "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_CSP_SOURCES],

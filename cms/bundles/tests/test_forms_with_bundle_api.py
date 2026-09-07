@@ -13,6 +13,7 @@ from cms.bundles.models import Bundle
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.datasets.models import Dataset, ONSDatasetApiQuerySet
 from cms.datasets.tests.factories import DatasetFactory
+from cms.taxonomy.tests.factories import TopicFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
@@ -395,6 +396,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         cls.bundle = BundleFactory(name="Test Bundle", bundle_api_bundle_id="test-bundle-123")
         cls.form_class = get_edit_handler(Bundle).get_form_class()
         cls.approver = UserFactory()
+        cls.topic = TopicFactory(id="7779", slug="economy")
 
     def setUp(self):
         self.bundle_api_client_patcher = patch("cms.bundles.forms.BundleAPIClient")
@@ -411,6 +413,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
             item.next = None
             item.title = data.get("title", "")
             item.description = data.get("description", "")
+            item.primary_topic_id = data.get("topic_id", self.topic.pk)
             return item
 
         self.ons_dataset_patcher = patch("cms.bundles.forms.ONSDataset")
@@ -421,14 +424,18 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         self.bundle_api_client_patcher.stop()
         self.ons_dataset_patcher.stop()
 
-    def _get_approve_form(self, dataset: Dataset) -> Any:
-        bundle_dataset = BundleDatasetFactory(parent=self.bundle, dataset=dataset)
+    def _get_approve_form(self, *datasets: Dataset) -> Any:
+        bundle_datasets = [BundleDatasetFactory(parent=self.bundle, dataset=dataset) for dataset in datasets]
         raw_data = {
             "name": self.bundle.name,
             "status": BundleStatus.APPROVED,
             "bundled_pages": inline_formset([]),
             "bundled_datasets": inline_formset(
-                [{"id": bundle_dataset.id, "dataset": bundle_dataset.dataset_id, "ORDER": "1"}], initial=1
+                [
+                    {"id": bundle_dataset.id, "dataset": bundle_dataset.dataset_id, "ORDER": str(order)}
+                    for order, bundle_dataset in enumerate(bundle_datasets, start=1)
+                ],
+                initial=len(datasets),
             ),
             "teams": inline_formset([]),
         }
@@ -440,7 +447,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         )
 
     def test_metadata_matches_passes(self):
-        dataset = DatasetFactory(title="Original Title", description="Original Description")
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=self.topic)
         self.api_metadata[dataset.namespace] = {"title": dataset.title, "description": dataset.description}
 
         form = self._get_approve_form(dataset)
@@ -448,7 +455,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_title_drift_blocks_approval_and_updates_local_dataset(self):
-        dataset = DatasetFactory(title="Original Title", description="Original Description")
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=self.topic)
         self.api_metadata[dataset.namespace] = {
             "title": "Updated Title",
             "description": dataset.description,
@@ -472,7 +479,7 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         self.assertEqual(dataset.title, "Updated Title")
 
     def test_description_drift_blocks_approval_and_updates_local_dataset(self):
-        dataset = DatasetFactory(title="Original Title", description="Original Description")
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=self.topic)
         self.api_metadata[dataset.namespace] = {
             "title": dataset.title,
             "description": "Updated Description",
@@ -489,9 +496,145 @@ class BundleDatasetMetadataValidationTestCase(TestCase):
         dataset.refresh_from_db()
         self.assertEqual(dataset.description, "Updated Description")
 
+    def test_topic_drift_blocks_approval_and_updates_local_dataset(self):
+        new_topic = TopicFactory(id="7755", slug="business")
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=self.topic)
+        self.api_metadata[dataset.namespace] = {
+            "title": dataset.title,
+            "description": dataset.description,
+            "topic_id": new_topic.pk,
+        }
+
+        form = self._get_approve_form(dataset)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("'Original Title': topic has changed", form.non_field_errors())
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.topic_id, "7755")
+
+    def test_newly_available_topic_is_backfilled_on_approval(self):
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=None)
+        self.api_metadata[dataset.namespace] = {
+            "title": dataset.title,
+            "description": dataset.description,
+            "topic_id": self.topic.pk,
+        }
+
+        form = self._get_approve_form(dataset)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("'Original Title': topic has changed", form.non_field_errors())
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.topic_id, "7779")
+
+    def test_unchanged_topic_does_not_block_approval(self):
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=self.topic)
+        self.api_metadata[dataset.namespace] = {
+            "title": dataset.title,
+            "description": dataset.description,
+            "topic_id": self.topic.pk,
+        }
+
+        form = self._get_approve_form(dataset)
+
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_topic_missing_from_the_taxonomy_blocks_approval(self):
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=self.topic)
+        self.api_metadata[dataset.namespace] = {
+            "title": dataset.title,
+            "description": dataset.description,
+            "topic_id": "not-synced-yet",
+        }
+
+        with self.assertLogs("cms.datasets.utils", level="WARNING"):
+            form = self._get_approve_form(dataset)
+            self.assertFalse(form.is_valid())
+
+        non_field_errors = form.non_field_errors()
+        self.assertIn("Cannot approve the bundle with 1 dataset whose topic could not be resolved.", non_field_errors)
+        self.assertIn("'Original Title': no matching topic in local taxonomy", non_field_errors)
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.topic_id, "7779")
+
+    def test_no_topic_in_the_api_blocks_approval(self):
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=self.topic)
+        self.api_metadata[dataset.namespace] = {
+            "title": dataset.title,
+            "description": dataset.description,
+            "topic_id": None,
+        }
+
+        form = self._get_approve_form(dataset)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("'Original Title': no topic is set in the dataset service", form.non_field_errors())
+
+        dataset.refresh_from_db()
+        self.assertEqual(dataset.topic_id, "7779")
+
+    def test_drift_is_detected_for_every_row_sharing_namespace(self):
+        """The API response is cached per namespace, but every row needs to be checked."""
+        first = DatasetFactory(namespace="shared-ns", edition="2024", version=1, title="First Row", topic=self.topic)
+        second = DatasetFactory(namespace="shared-ns", edition="2025", version=1, title="Second Row", topic=self.topic)
+        self.api_metadata["shared-ns"] = {"title": "Updated title", "description": first.description}
+
+        form = self._get_approve_form(first, second)
+
+        self.assertFalse(form.is_valid())
+        non_field_errors = form.non_field_errors()
+        self.assertIn("'First Row': title changed from 'First Row' to 'Updated title'", non_field_errors)
+        self.assertIn("'Second Row': title changed from 'Second Row' to 'Updated title'", non_field_errors)
+
+        first.refresh_from_db()
+        second.refresh_from_db()
+
+        self.assertEqual(first.title, "Updated title")
+        self.assertEqual(second.title, "Updated title")
+
+        # API should have only been called once
+        self.assertEqual(self.mock_ons_dataset_class.objects.with_token.return_value.get.call_count, 1)
+
+    def test_unresolved_topics_are_reported_for_every_dataset(self):
+        first = DatasetFactory(title="First Dataset", topic=self.topic)
+        second = DatasetFactory(title="Second Dataset", topic=None)
+        for dataset in (first, second):
+            self.api_metadata[dataset.namespace] = {
+                "title": dataset.title,
+                "description": dataset.description,
+                "topic_id": None,
+            }
+
+        form = self._get_approve_form(first, second)
+
+        self.assertFalse(form.is_valid())
+        non_field_errors = form.non_field_errors()
+        self.assertIn("Cannot approve the bundle with 2 datasets whose topic could not be resolved.", non_field_errors)
+
+        self.assertIn("'First Dataset': no topic is set in the dataset service", non_field_errors)
+        self.assertIn("'Second Dataset': no topic is set in the dataset service", non_field_errors)
+
+    def test_unresolved_topic_is_reported_alongside_metadata_drift(self):
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=self.topic)
+        self.api_metadata[dataset.namespace] = {
+            "title": "Updated Title",
+            "description": dataset.description,
+            "topic_id": None,
+        }
+
+        form = self._get_approve_form(dataset)
+
+        self.assertFalse(form.is_valid())
+        non_field_errors = form.non_field_errors()
+        self.assertIn("'Original Title': no topic is set in the dataset service", non_field_errors)
+        self.assertIn("'Original Title': title changed from 'Original Title' to 'Updated Title'", non_field_errors)
+
     def test_reapproval_after_drift_refresh_succeeds(self):
         """After a first failed approve refreshes the local Dataset, a second approve passes."""
-        dataset = DatasetFactory(title="Original Title", description="Original Description")
+        dataset = DatasetFactory(title="Original Title", description="Original Description", topic=self.topic)
         self.api_metadata[dataset.namespace] = {
             "title": "Updated Title",
             "description": "Updated Description",

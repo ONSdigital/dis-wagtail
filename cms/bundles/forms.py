@@ -18,8 +18,8 @@ from cms.bundles.clients.api import (
 from cms.bundles.decorators import datasets_bundle_api_enabled
 from cms.bundles.enums import ACTIVE_BUNDLE_STATUS_CHOICES, EDITABLE_BUNDLE_STATUSES, BundleStatus
 from cms.core.forms import DeduplicateInlinePanelAdminForm
-from cms.datasets.models import ONSDataset
-from cms.datasets.utils import get_dataset_for_published_state, update_dataset_metadata
+from cms.datasets.models import Dataset, ONSDataset
+from cms.datasets.utils import get_dataset_for_published_state, get_local_topic_ids, update_dataset_metadata
 from cms.workflows.utils import is_page_ready_to_publish
 
 from .bundle_api_sync_service import BundleAPISyncService
@@ -193,6 +193,60 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
             raise ValidationError(errors)
 
+    @staticmethod
+    def _resolve_api_topic_id(api_dataset: ONSDataset) -> tuple[str | None, str | None]:
+        """Resolve the topic ID from the API dataset.
+
+        Returns the resolved topic ID, or `None` along with the reason it could not be resolved.
+        """
+        api_topic_id: str | None = api_dataset.primary_topic_id
+        if not api_topic_id:
+            logger.info(
+                "No topic for dataset",
+                extra={"dataset": api_dataset.dataset_id},
+            )
+            return None, "no topic is set in the dataset service"
+        if api_topic_id not in get_local_topic_ids([api_topic_id]):
+            logger.info(
+                "Topic returned that is not in local taxonomy",
+                extra={
+                    "dataset": api_dataset.dataset_id,
+                    "topic_id": api_topic_id,
+                },
+            )
+            return None, "no matching topic in local taxonomy"
+        return api_topic_id, None
+
+    @staticmethod
+    def _refresh_dataset_from_api(dataset: Dataset, api_dataset: ONSDataset, api_topic_id: str | None) -> list[str]:
+        """Compare one local Dataset against the API, importing any drift.
+
+        Returns human-readable description of each field that had drifted.
+        Prefixed with dataset's title prior to refresh so the approver recognises it.
+        Empty means stored metadata hasn't changed.
+        """
+        api_title = api_dataset.title
+        api_description = api_dataset.description
+
+        old_title = dataset.title
+        changes: list[str] = []
+        if api_title and old_title != api_title:
+            changes.append(f"title changed from '{old_title}' to '{api_title}'")
+        if api_description and dataset.description != api_description:
+            changes.append("description has changed")
+        if api_topic_id and dataset.topic_id != api_topic_id:
+            changes.append("topic has changed")
+
+        if not changes:
+            return []
+
+        if updated_fields := update_dataset_metadata(
+            dataset, title=api_title, description=api_description, topic_id=api_topic_id
+        ):
+            dataset.save(update_fields=updated_fields)
+
+        return [f"'{old_title}': {change}" for change in changes]
+
     @datasets_bundle_api_enabled
     def _validate_bundled_datasets_metadata(self) -> None:
         """Compare bundled datasets' stored metadata against the dataset API and
@@ -220,6 +274,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         )
 
         drift_messages: list[str] = []
+        unresolved_topics: list[str] = []
         api_items_by_namespace: dict[str, Any] = {}
         with transaction.atomic():
             for form in self.formsets["bundled_datasets"].forms:
@@ -241,34 +296,30 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                             f"Could not verify the latest metadata for '{dataset.title}'. Please try again."
                         ) from None
 
-                item_from_api = api_items_by_namespace[dataset.namespace]
+                api_dataset = get_dataset_for_published_state(
+                    api_items_by_namespace[dataset.namespace], published=False
+                )
 
-                api_dataset = get_dataset_for_published_state(item_from_api, published=False)
-                api_title = api_dataset.title
-                api_description = api_dataset.description
+                api_topic_id, topic_error = self._resolve_api_topic_id(api_dataset)
+                if topic_error:
+                    unresolved_topics.append(f"'{dataset.title}': {topic_error}")
+                drift_messages.extend(self._refresh_dataset_from_api(dataset, api_dataset, api_topic_id))
 
-                old_title = dataset.title
-                changes: list[str] = []
-                if api_title and old_title != api_title:
-                    changes.append(f"title changed from '{old_title}' to '{api_title}'")
-                if api_description and dataset.description != api_description:
-                    changes.append("description has changed")
-
-                if not changes:
-                    continue
-
-                updated_fields = update_dataset_metadata(dataset, title=api_title, description=api_description)
-                if updated_fields:
-                    dataset.save(update_fields=updated_fields)
-                for change in changes:
-                    drift_messages.append(f"'{old_title}': {change}")
-
+        errors: list[str] = []
+        if unresolved_topics:
+            num_unresolved = len(unresolved_topics)
+            errors += [
+                f"Cannot approve the bundle with {num_unresolved} dataset{pluralize(num_unresolved)} whose topic "
+                "could not be resolved.",
+                *unresolved_topics,
+            ]
         if drift_messages:
-            errors = [
+            errors += [
                 "Approval could not be completed because dataset metadata has changed since they were added. "
                 "The latest metadata has been imported. Please review the changes below and approve the bundle again.",
                 *drift_messages,
             ]
+        if errors:
             raise ValidationError(errors)
 
     def _validate_bundled_pages(self) -> None:
