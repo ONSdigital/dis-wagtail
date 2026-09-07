@@ -76,7 +76,14 @@ class Command(BaseCommand):
             return
 
         dataset_count = sum(len(datasets) for datasets in datasets_by_namespace.values())
-        logger.info("Checking topic of %d dataset(s) across %d namespace(s)", dataset_count, len(datasets_by_namespace))
+        logger.info(
+            "Checking dataset topic",
+            extra={
+                "dataset_count": dataset_count,
+                "namespace_count": len(datasets_by_namespace),
+                "namespaces": list(datasets_by_namespace.keys()),
+            },
+        )
 
         topic_ids_by_namespace, unresolved = self._fetch_topic_ids(
             datasets_by_namespace, access_token=options["access_token"] or os.environ.get(ACCESS_TOKEN_VAR_NAME)
@@ -155,13 +162,20 @@ class Command(BaseCommand):
 
     def _apply_updates(self, updates: list[tuple[Dataset, str | None]], *, dry_run: bool, interactive: bool) -> None:
         if not updates:
-            logger.info("No dataset topics could be resolved")
+            logger.info("No updates to apply")
             return
 
         if dry_run:
-            logger.info("Would have updated topic for %d datasets", len(updates))
-            for dataset, previous_topic_id in updates:
-                logger.info("\t%s: %s -> %s", dataset.compound_id, previous_topic_id or "no topic", dataset.topic_id)
+            logger.info(
+                "Skipping applying updates",
+                extra={
+                    "count": len(updates),
+                    "changes": [
+                        {"dataset_id": dataset.pk, "previous_topic_id": previous_topic_id, "topic_id": dataset.topic_id}
+                        for dataset, previous_topic_id in updates
+                    ],
+                },
+            )
             return
 
         if interactive and not self._confirm_continue(
@@ -171,7 +185,7 @@ class Command(BaseCommand):
             return
 
         backfilled = sum(1 for _, previous_topic_id in updates if previous_topic_id is None)
-        summary = f"{len(updates)} dataset(s) backfilled, {len(updates) - backfilled} updated"
+        summary = f"{backfilled} dataset(s) backfilled, {len(updates) - backfilled} updated"
 
         Dataset.objects.bulk_update([dataset for dataset, _ in updates], ["topic"], batch_size=BULK_UPDATE_BATCH_SIZE)
         logger.info(
@@ -191,7 +205,14 @@ class Command(BaseCommand):
 
     def _report_unresolved(self, unresolved: dict[str, list[str]]) -> None:
         for reason, namespaces in unresolved.items():
-            logger.warning("skipped %d namespaces for reason %s: %s", len(namespaces), reason, ", ".join(namespaces))
+            logger.warning(
+                "skipped namespaces",
+                extra={
+                    "reason": reason,
+                    "count": len(namespaces),
+                    "namespaces": namespaces,
+                },
+            )
 
     def _confirm_continue(self, message: str) -> bool:
         """Prompt the user to confirm they want to continue."""
