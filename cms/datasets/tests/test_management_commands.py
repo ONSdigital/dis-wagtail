@@ -318,7 +318,7 @@ class BackfillDatasetTopicsTests(TestCase):
             match=[responses.matchers.header_matcher({"Authorization": "Bearer env-token"})],
         )
 
-        with patch.dict(os.environ, {"DATASETS_API_ACCESS_TOKEN": "Bearer env-token"}):
+        with patch.dict(os.environ, {"DATASET_API_ACCESS_TOKEN": "Bearer env-token"}):
             self.call_command()
 
         self.assertEqual(len(responses.calls), 1)
