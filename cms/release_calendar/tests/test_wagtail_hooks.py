@@ -85,11 +85,21 @@ class ReleaseCalendarHooksTestCase(WagtailTestUtils, TestCase):
         """Explorer results with an active filter should use Wagtail's default ordering."""
         response = self.client.get(
             reverse("wagtailadmin_explore_results", args=[self.home_page.id]),
-            {"content_type": str(self.older_topic_page.content_type_id)},
+            {
+                "content_type": [
+                    str(self.release_calendar_index.content_type_id),
+                    str(self.older_topic_page.content_type_id),
+                ]
+            },
         )
         pages = list(response.context["pages"])
 
-        self.assertNotEqual(pages[0], self.release_calendar_index, "Filtered results should not be pinned")
+        # Expect pages to be orderded by most recently updated
+        expected_page_order = [self.newer_topic_page, self.older_topic_page, self.release_calendar_index]
+
+        self.assertEqual(
+            pages, expected_page_order, "Release calendar index page should not be pinned in filtered results"
+        )
 
     def test_release_calendar_index_is_first_in_explorer_results_after_filter_is_cleared(self):
         """Explorer results with only blank filter values should pin the release calendar again."""
