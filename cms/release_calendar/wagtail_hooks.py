@@ -56,20 +56,36 @@ def hide_release_date_text_field_for_non_provisional_release_pages() -> str:
     return format_html('<script src="{}"></script>', static("js/hide-date-text-on-non-provisional-releases.js"))
 
 
+def _explorer_has_active_query(request: HttpRequest) -> bool:
+    """Return whether the explorer request has any non-empty user query values."""
+    # Ignore pagination and internal Wagtail fragment-refresh params which are left after a filter is removed.
+    ignored_query_keys = {"_w_filter_fragment", "p"}
+
+    for key, values in request.GET.lists():
+        if key in ignored_query_keys:
+            continue
+
+        if any(value.strip() for value in values):
+            return True
+
+    return False
+
+
 @hooks.register("construct_explorer_page_queryset")
 def pin_release_calendar_page(parent_page: Page, pages: PageQuerySet, request: HttpRequest) -> PageQuerySet:
-    """Pin the Release Calendar index to the top of the explorer page and explorer menu."""
-    # Respect any existing user-selected ordering.
-    if request.GET.get("ordering"):
-        return pages
-
+    """Pin the Release Calendar index to the top of the homepage explorer page."""
     # Only apply to the homepage Explorer view.
     resolver_match = getattr(request, "resolver_match", None)
-    is_homepage_explorer = getattr(resolver_match, "view_name", "") == "wagtailadmin_explore" and isinstance(
-        parent_page.specific_deferred, HomePage
-    )
+    is_homepage_explorer = getattr(resolver_match, "view_name", "") in {
+        "wagtailadmin_explore",
+        "wagtailadmin_explore_results",
+    } and isinstance(parent_page.specific_deferred, HomePage)
 
     if not is_homepage_explorer:
+        return pages
+
+    # Only pin on the default explorer view. Searches, filters, and sorting should use Wagtail's default ordering.
+    if _explorer_has_active_query(request):
         return pages
 
     return pages.order_by(
