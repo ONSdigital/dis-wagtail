@@ -3,7 +3,7 @@ import uuid
 from unittest import mock
 
 from django.conf import settings
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from cms.datavis.clients.chart_exporter import ChartObjectResponse
 from cms.datavis.models import RenderedChartImage
@@ -78,3 +78,18 @@ class RenderedChartImageManagerTests(TestCase):
     def test_create_from_export_response_no_error_logged_when_bucket_matches(self):
         with self.assertNoLogs("cms.datavis.models.rendered_chart_image", level="ERROR"):
             RenderedChartImage.objects.create_from_export_response(self.response, config_hash="a" * 64)
+
+    def test_create_from_export_response_without_configured_bucket(self):
+        """AWS_STORAGE_BUCKET_NAME is only defined when the project is configured for S3, so the
+        bucket check must not blow up on a filesystem-storage setup.
+        """
+        response = dataclasses.replace(self.response, bucket="some-other-bucket")
+
+        with (
+            override_settings(),
+            self.assertNoLogs("cms.datavis.models.rendered_chart_image", level="ERROR"),
+        ):
+            del settings.AWS_STORAGE_BUCKET_NAME
+            instance = RenderedChartImage.objects.create_from_export_response(response, config_hash="a" * 64)
+
+        self.assertEqual(instance.file.name, response.key)

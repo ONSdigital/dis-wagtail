@@ -23,14 +23,17 @@ class RenderedChartImageManager(PrivateDocumentManager):
         The exporter has already written the file to S3, so we point the FieldFile at the
         existing key rather than uploading anything ourselves.
         """
-        if response.bucket != settings.AWS_STORAGE_BUCKET_NAME:
+        # Unset when the project isn't configured for S3 (e.g. local development on filesystem
+        # storage), in which case there is no ACL toggling to misdirect and nothing to check.
+        configured_bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", None)
+        if configured_bucket and response.bucket != configured_bucket:
             # ACL toggling resolves the object against the configured bucket, not the
             # response's, so a mismatch here means privacy changes would silently target
             # the wrong bucket.
             logger.error(
                 "Chart exporter response bucket '%s' does not match configured bucket '%s' for export id '%s'",
                 response.bucket,
-                settings.AWS_STORAGE_BUCKET_NAME,
+                configured_bucket,
                 response.id,
             )
 
