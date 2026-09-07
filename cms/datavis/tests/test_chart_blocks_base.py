@@ -1,3 +1,4 @@
+import json
 from typing import Any, ClassVar
 from unittest.mock import Mock
 from urllib.parse import urlparse
@@ -140,6 +141,13 @@ class BaseChartBlockTestCase(BaseVisualisationBlockTestCase):
 
         # Must be deterministic, since it's used for hashing.
         self.assertEqual(hash_chart_config(config), hash_chart_config(self.get_export_config()))
+
+        # The footnotes title is translated, and a gettext_lazy proxy would break both the
+        # hashing above and the JSON request body.
+        config_with_footnotes = self.get_export_config(self.raw_data | {"footnotes": "<p>Note</p>"})
+        self.assertEqual(config_with_footnotes["footnotes"]["title"], "Footnotes")
+        json.dumps(config_with_footnotes)
+        hash_chart_config(config_with_footnotes)
 
 
 class BuildChartDownloadUrlTests(SimpleTestCase):

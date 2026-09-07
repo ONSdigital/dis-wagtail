@@ -187,6 +187,10 @@ class BaseChartBlock(BaseVisualisationBlock):
         config = self.get_component_config(value)
         del config["download"]
         config["caption"] = value.get("caption") or None
+        if footnotes := config.get("footnotes"):
+            # gettext_lazy proxies are not JSON-serialisable, and this config is both hashed
+            # and POSTed as JSON.
+            footnotes["title"] = str(footnotes["title"])
         return config
 
     def get_x_axis_config(
