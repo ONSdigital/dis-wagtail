@@ -258,7 +258,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
                 items += block.block.to_table_of_contents_items(block.value)
 
             if self.dataset_document_list:
-                items += [{"url": "#datasets", "text": _("Data")}]
+                items += [{"url": "#data", "text": _("Data")}]
 
         if self.status in NON_PROVISIONAL_STATUSES and self.changes_to_release_date:
             items += [
