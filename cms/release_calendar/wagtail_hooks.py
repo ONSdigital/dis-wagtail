@@ -19,6 +19,15 @@ if TYPE_CHECKING:
 
     from .viewsets import FutureReleaseCalendarPageChooserViewSet
 
+# Query keys that do not represent an active user-applied search or filter.
+EXPLORER_IGNORED_QUERY_KEYS = {"_w_filter_fragment", "p"}
+
+# Explorer views where the release calendar index should be pinned by default.
+EXPLORER_VIEW_NAMES = {
+    "wagtailadmin_explore",
+    "wagtailadmin_explore_results",
+}
+
 
 @hooks.register("before_delete_page")
 def before_delete_page(request: HttpRequest, page: Page) -> HttpResponseRedirect | HttpResponsePermanentRedirect | None:
@@ -58,11 +67,8 @@ def hide_release_date_text_field_for_non_provisional_release_pages() -> str:
 
 def _explorer_has_active_query(request: HttpRequest) -> bool:
     """Return whether the explorer request has any non-empty user query values."""
-    # Ignore pagination and internal Wagtail fragment-refresh params which are left after a filter is removed.
-    ignored_query_keys = {"_w_filter_fragment", "p"}
-
     for key, values in request.GET.lists():
-        if key in ignored_query_keys:
+        if key in EXPLORER_IGNORED_QUERY_KEYS:
             continue
 
         if any(value.strip() for value in values):
@@ -76,10 +82,9 @@ def pin_release_calendar_page(parent_page: Page, pages: PageQuerySet, request: H
     """Pin the Release Calendar index to the top of the homepage explorer page."""
     # Only apply to the homepage Explorer view.
     resolver_match = getattr(request, "resolver_match", None)
-    is_homepage_explorer = getattr(resolver_match, "view_name", "") in {
-        "wagtailadmin_explore",
-        "wagtailadmin_explore_results",
-    } and isinstance(parent_page.specific_deferred, HomePage)
+    is_homepage_explorer = getattr(resolver_match, "view_name", "") in EXPLORER_VIEW_NAMES and isinstance(
+        parent_page.specific_deferred, HomePage
+    )
 
     if not is_homepage_explorer:
         return pages
