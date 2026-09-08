@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import requests
 import responses
+import stamina
 from django.test import TestCase, override_settings
 
 from cms.datavis.clients.chart_exporter import (
@@ -15,7 +16,7 @@ from cms.datavis.clients.chart_exporter import (
 BASE_URL = "https://chart-exporter.example.com"
 
 
-@override_settings(CMS_CHART_EXPORTER_API_ENABLED=True, CMS_CHART_EXPORTER_API_MAX_RETRIES=2)
+@override_settings(CMS_CHART_EXPORTER_API_ENABLED=True)
 class ChartExporterClientTests(TestCase):
     def setUp(self):
         self.client = ChartExporterClient(base_url=BASE_URL)
@@ -30,6 +31,26 @@ class ChartExporterClientTests(TestCase):
             "width": 1200,
             "height": 640,
         }
+        # Testing mode caps the attempts passed by the client and removes the backoff waits.
+        stamina.set_testing(True, attempts=3)
+
+    def tearDown(self):
+        stamina.set_testing(False)
+
+    @override_settings(CMS_CHART_EXPORTER_API_MAX_RETRIES=123)
+    @patch("cms.datavis.clients.chart_exporter.stamina.retry_context", wraps=stamina.retry_context)
+    @responses.activate
+    def test_attempts_derived_from_settings(self, mock_retry_context):
+        responses.post(f"{BASE_URL}/charts", json=self.mock_response_data, status=HTTPStatus.CREATED)
+        test_client = ChartExporterClient(base_url=BASE_URL)
+        self.assertEqual(test_client.max_retries, 123)
+
+        # The real number of attempts will be 3 due to the set_testing() call above
+        # so we don't need to worry about using a large number for testing
+        test_client.create_chart(self.chart_config)
+
+        # The number of attempts passed to stamina.retry_context should be initial attempt + max_retries
+        mock_retry_context.assert_called_once_with(on=ChartExporterUnavailable, attempts=124)
 
     @override_settings(CMS_CHART_EXPORTER_API_ENABLED=False)
     def test_create_chart_noop_when_disabled(self):
@@ -63,11 +84,10 @@ class ChartExporterClientTests(TestCase):
         responses.post(f"{BASE_URL}/charts", status=HTTPStatus.SERVICE_UNAVAILABLE)
         responses.post(f"{BASE_URL}/charts", status=HTTPStatus.SERVICE_UNAVAILABLE)
 
-        # Skip the real backoff delay between retries.
-        with patch("cms.datavis.clients.chart_exporter.time.sleep"), self.assertRaises(ChartExporterUnavailable):
+        with self.assertRaises(ChartExporterUnavailable):
             self.client.create_chart(self.chart_config)
 
-        # initial attempt + CMS_CHART_EXPORTER_API_MAX_RETRIES retries
+        # every attempt allowed by stamina.set_testing is used up
         self.assertEqual(len(responses.calls), 3)
 
     @responses.activate
@@ -75,9 +95,7 @@ class ChartExporterClientTests(TestCase):
         responses.post(f"{BASE_URL}/charts", status=HTTPStatus.INTERNAL_SERVER_ERROR)
         responses.post(f"{BASE_URL}/charts", json=self.mock_response_data, status=HTTPStatus.CREATED)
 
-        # Skip the real backoff delay between retries.
-        with patch("cms.datavis.clients.chart_exporter.time.sleep"):
-            result = self.client.create_chart(self.chart_config)
+        result = self.client.create_chart(self.chart_config)
 
         self.assertEqual(result, ChartObjectResponse(**self.mock_response_data))
         self.assertEqual(len(responses.calls), 2)
@@ -87,8 +105,6 @@ class ChartExporterClientTests(TestCase):
         responses.post(f"{BASE_URL}/charts", body=requests.exceptions.Timeout("boom"))
         responses.post(f"{BASE_URL}/charts", json=self.mock_response_data, status=HTTPStatus.CREATED)
 
-        # Skip the real backoff delay between retries.
-        with patch("cms.datavis.clients.chart_exporter.time.sleep"):
-            result = self.client.create_chart(self.chart_config)
+        result = self.client.create_chart(self.chart_config)
 
         self.assertEqual(result, ChartObjectResponse(**self.mock_response_data))

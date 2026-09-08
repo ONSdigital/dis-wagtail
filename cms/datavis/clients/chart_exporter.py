@@ -1,10 +1,10 @@
 import logging
-import time
 from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Any
 
 import requests
+import stamina
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -83,24 +83,11 @@ class ChartExporterClient:
             height=data["height"],
         )
 
-    def _request_with_retries(self, method: str, path: str, json_payload: dict[str, Any]) -> dict[str, Any]:
+    def _request_with_retries(self, method: str, path: str, json_payload: dict[str, Any]) -> dict[str, Any]:  # type: ignore[return-value]
         """Retry with exponential backoff, but only for retryable (unavailable) failures."""
-        attempt = 0
-        while True:
-            try:
+        for attempt in stamina.retry_context(on=ChartExporterUnavailable, attempts=1 + self.max_retries):
+            with attempt:
                 return self._make_request(method, path, json_payload)
-            except ChartExporterUnavailable:
-                attempt += 1
-                if attempt > self.max_retries:
-                    raise
-                backoff_seconds = 0.5 * (2 ** (attempt - 1))
-                logger.warning(
-                    "Retrying chart exporter API request (attempt %d/%d) after %.1fs",
-                    attempt,
-                    self.max_retries,
-                    backoff_seconds,
-                )
-                time.sleep(backoff_seconds)
 
     def _make_request(self, method: str, path: str, json_payload: dict[str, Any]) -> dict[str, Any]:
         url = f"{self.base_url}/{path.lstrip('/')}"
