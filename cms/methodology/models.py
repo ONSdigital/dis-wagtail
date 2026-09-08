@@ -16,13 +16,13 @@ from cms.bundles.mixins import BundledPageMixin
 from cms.core.analytics_utils import add_table_of_contents_gtm_attributes, format_date_for_gtm
 from cms.core.blocks.stream_blocks import SectionStoryBlock
 from cms.core.fields import StreamField
-from cms.core.forms import PageWithEquationsAdminForm
 from cms.core.models import BasePage
 from cms.core.models.mixins import NoTrailingSlashRoutablePageMixin
 from cms.core.query import order_by_pk_position
 from cms.core.utils import redirect_to_parent_listing
 from cms.core.widgets import date_widget
 from cms.data_downloads.mixins import DataDownloadMixin
+from cms.methodology.forms import MethodologyPageAdminForm
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -88,7 +88,7 @@ class MethodologyPage(  # type: ignore[django-manager-missing]
     GenericTaxonomyMixin,
     BasePage,
 ):
-    base_form_class = PageWithEquationsAdminForm
+    base_form_class = MethodologyPageAdminForm
     parent_page_types: ClassVar[list[str]] = ["MethodologyIndexPage"]
     search_index_content_type: ClassVar[str] = "static_methodology"
     template = "templates/pages/methodology_page.html"

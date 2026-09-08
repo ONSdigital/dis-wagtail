@@ -7,6 +7,8 @@ from wagtail.blocks.stream_block import StreamValue
 from cms.articles.models import StatisticalArticlePage
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.datavis.tests.factories import RenderedChartImageFactory, TableDataFactory
+from cms.methodology.models import MethodologyPage
+from cms.methodology.tests.factories import MethodologyPageFactory
 
 CONTENT_CHART_ID = "11111111-1111-1111-1111-111111111111"
 FEATURED_CHART_ID = "22222222-2222-2222-2222-222222222222"
@@ -91,3 +93,43 @@ class TamperProtectionTests(TestCase):
         form.clean()
 
         self.assertIsNone(form.cleaned_data["featured_chart"][0].value["rendered_chart_image"])
+
+
+class MethodologyPageTamperProtectionTests(TestCase):
+    def setUp(self):
+        self.persisted = RenderedChartImageFactory()
+        self.forged = RenderedChartImageFactory()
+
+        page = MethodologyPageFactory()
+        page.content = [
+            {
+                "type": "section",
+                "id": str(uuid.uuid4()),
+                "value": {
+                    "title": "Section",
+                    "content": [
+                        {
+                            "type": "line_chart",
+                            "id": CONTENT_CHART_ID,
+                            "value": chart_block_value(self.persisted.pk),
+                        }
+                    ],
+                },
+            }
+        ]
+        page.save()
+
+        self.page = MethodologyPage.objects.get(pk=page.pk)
+
+    def test_forged_id_is_replaced_with_persisted_value(self):
+        form_class = self.page.get_edit_handler().get_form_class()
+        raw = copy.deepcopy(self.page.content.get_prep_value())
+        raw[0]["value"]["content"][0]["value"]["rendered_chart_image"] = self.forged.pk
+
+        form = form_class(instance=self.page)
+        form.cleaned_data = {"content": StreamValue(self.page.content.stream_block, raw, is_lazy=True)}
+
+        form.clean()
+
+        chart = form.cleaned_data["content"][0].value["content"][0]
+        self.assertEqual(chart.value["rendered_chart_image"], self.persisted)
