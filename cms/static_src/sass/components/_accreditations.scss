@@ -4,6 +4,13 @@
     width: 100%;
     display: flex;
     gap: rem-sizing(24);
+    flex-direction: column;
+    margin-bottom: 1em;
+
+    @include media-query('m') {
+        // desktop only
+        flex-direction: row;
+    }
 
     &__block {
         flex-basis: 50%;
