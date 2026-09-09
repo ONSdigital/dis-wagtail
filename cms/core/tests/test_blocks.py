@@ -609,11 +609,9 @@ class CoreBlocksTestCase(TestCase):
 class BasicTableBlockGetRowsTestCase(TestCase):
     """Test for BasicTableBlock._get_rows method."""
 
-    def setUp(self):
-        self.block = BasicTableBlock()
-
     def test_get_rows_with_no_header(self):
-        """Test _get_rows when first_row_is_table_header is False."""
+        """Test _get_rows when first_row_is_table_header is False and first_col_is_header is False."""
+        block = BasicTableBlock()
         value = {
             "data": [
                 ["R1C1", "R1C2", "R1C3"],
@@ -622,72 +620,52 @@ class BasicTableBlockGetRowsTestCase(TestCase):
             ],
             "first_row_is_table_header": False,
             "first_col_is_header": False,
+            "table_caption": "Caption",
         }
-        result = self.block._get_rows(value)  # pylint: disable=W0212
-        expected = [
+
+        context = block.get_context(value)
+        self.assertDictEqual(
+            context["options"],
             {
-                "tds": [
-                    {"value": "R1C1", "heading": False},
-                    {"value": "R1C2", "heading": False},
-                    {"value": "R1C3", "heading": False},
-                ]
+                "caption": "Caption",
+                "ths": [],
+                "trs": [
+                    {"tds": [{"value": "R1C1"}, {"value": "R1C2"}, {"value": "R1C3"}]},
+                    {"tds": [{"value": "R2C1"}, {"value": "R2C2"}, {"value": "R2C3"}]},
+                    {"tds": [{"value": "R3C1"}, {"value": "R3C2"}, {"value": "R3C3"}]},
+                ],
             },
-            {
-                "tds": [
-                    {"value": "R2C1", "heading": False},
-                    {"value": "R2C2", "heading": False},
-                    {"value": "R2C3", "heading": False},
-                ]
-            },
-            {
-                "tds": [
-                    {"value": "R3C1", "heading": False},
-                    {"value": "R3C2", "heading": False},
-                    {"value": "R3C3", "heading": False},
-                ]
-            },
-        ]
-        self.assertEqual(result, expected)
+        )
 
     def test_get_rows_with_first_row_as_header(self):
-        """Test _get_rows when first_row_is_table_header is True."""
+        """Test _get_rows when first_row_is_table_header is True and first_col_is_header is False."""
+        block = BasicTableBlock()
         value = {
             "data": [
                 ["R1C1", "R1C2", "R1C3"],
-                #   ["R2C1", "R2C2", "R2C3"],
-                #   ["R3C1", "R3C2", "R3C3"],
+                ["R2C1", "R2C2", "R2C3"],
+                ["R3C1", "R3C2", "R3C3"],
             ],
             "first_row_is_table_header": True,
             "first_col_is_header": False,
+            "table_caption": "Caption",
         }
-        result = self.block._get_rows(value)  # pylint: disable=W0212
-        expected = [
+
+        context = block.get_context(value)
+        self.assertDictEqual(
+            context["options"],
             {
-                "tds": [
-                    {"value": "R1C1", "heading": True},
-                    {"value": "R1C2", "heading": True},
-                    {"value": "R1C3", "heading": True},
-                ]
+                "caption": "Caption",
+                "ths": [{"value": "R1C1"}, {"value": "R1C2"}, {"value": "R1C3"}],
+                "trs": [
+                    {"tds": [{"value": "R2C1"}, {"value": "R2C2"}, {"value": "R2C3"}]},
+                    {"tds": [{"value": "R3C1"}, {"value": "R3C2"}, {"value": "R3C3"}]},
+                ],
             },
-            {
-                "tds": [
-                    {"value": "R2C1", "heading": False},
-                    {"value": "R2C2", "heading": False},
-                    {"value": "R2C3", "heading": False},
-                ]
-            },
-            {
-                "tds": [
-                    {"value": "R3C1", "heading": False},
-                    {"value": "R3C2", "heading": False},
-                    {"value": "R3C3", "heading": False},
-                ]
-            },
-        ]
-        self.assertEqual(result, expected)
+        )
 
     def test_get_rows_with_first_column_as_header(self):
-        """Test _get_rows when first_col_is_table_header is True."""
+        """Test _get_rows when first_col_is_header is True and first_row_is_table_header is False."""
         value = {
             "data": [
                 ["R1C1", "R1C2", "R1C3"],
@@ -696,32 +674,20 @@ class BasicTableBlockGetRowsTestCase(TestCase):
             ],
             "first_row_is_table_header": False,
             "first_col_is_header": True,
+            "table_caption": "Caption",
         }
-        result = self.block._get_rows(value)  # pylint: disable=W0212
-        expected = [
-            {
-                "tds": [
-                    {"value": "R1C1", "heading": True},
-                    {"value": "R1C2", "heading": False},
-                    {"value": "R1C3", "heading": False},
-                ]
-            },
-            {
-                "tds": [
-                    {"value": "R2C1", "heading": True},
-                    {"value": "R2C2", "heading": False},
-                    {"value": "R2C3", "heading": False},
-                ]
-            },
-            {
-                "tds": [
-                    {"value": "R3C1", "heading": True},
-                    {"value": "R3C2", "heading": False},
-                    {"value": "R3C3", "heading": False},
-                ]
-            },
-        ]
-        self.assertEqual(result, expected)
+        block = BasicTableBlock()
+        context = block.get_context(value)
+        self.assertEqual(context["options"]["caption"], "Caption")
+        self.assertEqual(context["options"]["ths"], [])
+        self.assertEqual(
+            context["options"]["trs"],
+            [
+                {"tds": [{"value": "R1C1", "heading": True}, {"value": "R1C2"}, {"value": "R1C3"}]},
+                {"tds": [{"value": "R2C1", "heading": True}, {"value": "R2C2"}, {"value": "R2C3"}]},
+                {"tds": [{"value": "R3C1", "heading": True}, {"value": "R3C2"}, {"value": "R3C3"}]},
+            ],
+        )
 
     def test_get_rows_with_first_row_and_first_column_as_header(self):
         """Test _get_rows when first_row_is_table_header is True and first_col_is_header is True."""
@@ -733,32 +699,19 @@ class BasicTableBlockGetRowsTestCase(TestCase):
             ],
             "first_row_is_table_header": True,
             "first_col_is_header": True,
+            "table_caption": None,
         }
-        result = self.block._get_rows(value)  # pylint: disable=W0212
-        expected = [
-            {
-                "tds": [
-                    {"value": "R1C1", "heading": True},
-                    {"value": "R1C2", "heading": True},
-                    {"value": "R1C3", "heading": True},
-                ]
-            },
-            {
-                "tds": [
-                    {"value": "R2C1", "heading": True},
-                    {"value": "R2C2", "heading": False},
-                    {"value": "R2C3", "heading": False},
-                ]
-            },
-            {
-                "tds": [
-                    {"value": "R3C1", "heading": True},
-                    {"value": "R3C2", "heading": False},
-                    {"value": "R3C3", "heading": False},
-                ]
-            },
-        ]
-        self.assertEqual(result, expected)
+        block = BasicTableBlock()
+        context = block.get_context(value)
+        self.assertIsNone(context["options"]["caption"])
+        self.assertEqual(context["options"]["ths"], [{"value": "R1C1"}, {"value": "R1C2"}, {"value": "R1C3"}])
+        self.assertEqual(
+            context["options"]["trs"],
+            [
+                {"tds": [{"value": "R2C1", "heading": True}, {"value": "R2C2"}, {"value": "R2C3"}]},
+                {"tds": [{"value": "R3C1", "heading": True}, {"value": "R3C2"}, {"value": "R3C3"}]},
+            ],
+        )
 
 
 class DefinitionsBlockTestCase(TestCase):
