@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import requests
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from requests import HTTPError
 
 from cms.taxonomy.management.commands import sync_topics
@@ -508,6 +508,79 @@ class SyncTopicsTests(TestCase):
 
         # When, then raises
         self.assertRaises(RuntimeError, sync_topics.Command().handle)
+
+    @override_settings(CMS_TOPIC_SYNC_EXCLUDED_SLUGS=["census"])
+    def test_excluded_topic_and_subtopics_are_not_synced(self):
+        """A top-level topic with an excluded slug, and its subtopics, should be skipped entirely."""
+        # Given
+        included_topic = create_topic("0001")
+        included_topic.slug = "economy"
+
+        excluded_topic = create_topic("4445")
+        excluded_topic.slug = "census"
+        excluded_subtopic = create_topic("6694")
+        excluded_subtopic.slug = "ageing"
+
+        mock_root_response = mock_successful_json_response(
+            [
+                build_topic_api_json(included_topic),
+                build_topic_api_json(excluded_topic, subtopics=[excluded_subtopic]),
+            ]
+        )
+        mock_subtopic_response = mock_successful_json_response([build_topic_api_json(excluded_subtopic)])
+        self.mock_requests.get.side_effect = [mock_root_response, mock_subtopic_response]
+
+        # When
+        call_command("sync_topics")
+
+        # Then
+        self.assertEqual(self.mock_requests.get.call_count, 1, "Expect no subtopic fetch for the excluded topic")
+        self.assertEqual(Topic.objects.count(), 1, "Expect only the included topic to be saved")
+        self.assertTrue(Topic.objects.filter(id=included_topic.id).exists())
+        self.assertFalse(Topic.objects.filter(id=excluded_topic.id).exists(), "Excluded topic should not be synced")
+        self.assertFalse(
+            Topic.objects.filter(id=excluded_subtopic.id).exists(), "Excluded subtopic should not be synced"
+        )
+
+    @override_settings(CMS_TOPIC_SYNC_EXCLUDED_SLUGS=["census"])
+    def test_existing_excluded_subtree_is_marked_removed_even_when_api_returns_it(self):
+        """Even when the API returns an excluded topic, exclusion drops it from the fetched set,
+        so an existing DB copy is marked removed. This isolates exclusion (not API-absence) as the cause.
+        """
+        # Given existing topics in the DB: an excluded subtree and an included topic
+        excluded_topic = create_topic("4445")
+        excluded_topic.slug = "census"
+        Topic.save_new(excluded_topic)
+        excluded_subtopic = create_topic("6694")
+        excluded_subtopic.slug = "ageing"
+        Topic.save_new(excluded_subtopic, parent_topic=excluded_topic)
+
+        included_topic = create_topic("0001")
+        included_topic.slug = "economy"
+        Topic.save_new(included_topic)
+
+        # The API DOES return the excluded topic (and its subtopic), plus the included topic. If exclusion
+        # were not applied, the excluded topic would be synced and kept; removal here can only be due to
+        # the exclusion list.
+        mock_root_response = mock_successful_json_response(
+            [
+                build_topic_api_json(included_topic),
+                build_topic_api_json(excluded_topic, subtopics=[excluded_subtopic]),
+            ]
+        )
+        mock_subtopic_response = mock_successful_json_response([build_topic_api_json(excluded_subtopic)])
+        self.mock_requests.get.side_effect = [mock_root_response, mock_subtopic_response]
+
+        # When
+        call_command("sync_topics")
+
+        # Then the excluded subtree is marked removed despite being present in the API response.
+        self.assertTrue(Topic.objects.get(id=excluded_topic.id).removed, "Excluded topic should be marked removed")
+        self.assertTrue(
+            Topic.objects.get(id=excluded_subtopic.id).removed, "Excluded subtopic should be marked removed"
+        )
+        # The included topic remains active.
+        self.assertFalse(Topic.objects.get(id=included_topic.id).removed, "Included topic should remain active")
 
 
 def create_topic(topic_id: str, include_description: bool = True, include_slug: bool = True) -> Topic:

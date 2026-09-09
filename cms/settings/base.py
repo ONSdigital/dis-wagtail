@@ -1012,6 +1012,12 @@ DATASETS_API_EDITIONS_URL = env.get("DATASETS_API_EDITIONS_URL", f"{ONS_API_BASE
 DIS_DATASETS_BUNDLE_API_BASE_URL = env.get("DIS_DATASETS_BUNDLE_API_BASE_URL", ONS_API_BASE_URL)
 TOPIC_API_BASE_URL = env.get("TOPIC_API_BASE_URL", f"{ONS_API_BASE_URL}/topics")  # used to sync topics
 
+# Comma-separated list of top-level topic slugs to exclude when syncing topics.
+# Excluded topics and all of their subtopics are skipped during sync.
+CMS_TOPIC_SYNC_EXCLUDED_SLUGS = {
+    slug.strip() for slug in env.get("CMS_TOPIC_SYNC_EXCLUDED_SLUGS", "census").split(",") if slug.strip()
+}
+
 # Feature flag to enable/disable interaction with the ONS Bundle API
 DIS_DATASETS_BUNDLE_API_ENABLED = env.get("DIS_DATASETS_BUNDLE_API_ENABLED", "false").lower() == "true"
 
