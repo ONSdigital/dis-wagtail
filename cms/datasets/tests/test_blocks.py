@@ -4,6 +4,8 @@ from wagtail.blocks import StreamValue
 
 from cms.datasets.blocks import LATEST_VERSION_DUPLICATE_HINT, DatasetStoryBlock
 from cms.datasets.models import Dataset
+from cms.datasets.tests.factories import DatasetFactory
+from cms.taxonomy.tests.factories import TopicFactory
 
 
 class TestDatasetStoryBlock(TestCase):
@@ -15,11 +17,19 @@ class TestDatasetStoryBlock(TestCase):
             title="test_title",
             description="test_description",
         )
+        self.topic = TopicFactory(id="7779", slug="inflationandpricesindices")
+        self.lookup_dataset_with_topic = DatasetFactory(namespace="cpih01", topic=self.topic)
 
     @override_settings(ONS_WEBSITE_BASE_URL="https://example.com", ONS_ALLOWED_LINK_DOMAINS=["example.com"])
     def test_validation_fails_on_duplicate_datasets(self):
         block = DatasetStoryBlock()
         dataset_duplicate_url = f"https://example.com/datasets/{self.lookup_dataset.namespace}"
+        drifted_dataset = DatasetFactory(
+            namespace=self.lookup_dataset_with_topic.namespace,
+            edition="2024",
+            version=2,
+            topic=TopicFactory(id="7780", slug="economy"),
+        )
         stream_data_cases = [
             [
                 ("dataset_lookup", self.lookup_dataset.id),
@@ -40,6 +50,37 @@ class TestDatasetStoryBlock(TestCase):
             [
                 ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url}),
                 ("manual_link", {"title": "Dataset Title", "url": dataset_duplicate_url}),
+            ],
+            [
+                # A topic-scoped lookup alongside a manual link using topic-less URL
+                ("dataset_lookup", self.lookup_dataset_with_topic.id),
+                ("manual_link", {"title": "Dataset Title", "url": "/datasets/cpih01"}),
+            ],
+            [
+                # Topic-scoped lookup alongside manual link with topic URL
+                ("dataset_lookup", self.lookup_dataset_with_topic.id),
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "https://example.com/inflationandpricesindices/datasets/cpih01"},
+                ),
+            ],
+            [
+                # A manual link naming a different topic still points at same dataset
+                ("dataset_lookup", self.lookup_dataset_with_topic.id),
+                ("manual_link", {"title": "Dataset Title", "url": "/economy/datasets/cpih01"}),
+            ],
+            [
+                # Two manual links, one in old style and one with topic slug
+                ("manual_link", {"title": "Dataset Title", "url": "/economy/datasets/cpih01"}),
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "/datasets/cpih01"},
+                ),
+            ],
+            [
+                # Rows sharing namespace but with drifted topics
+                ("dataset_lookup", self.lookup_dataset_with_topic.id),
+                ("dataset_lookup", drifted_dataset.id),
             ],
         ]
 
@@ -143,6 +184,23 @@ class TestDatasetStoryBlock(TestCase):
                 (
                     "manual_link",
                     {"title": "Dataset Title", "url": "/datasets/foo/editions/bar/versions/1"},
+                ),
+            ],
+            [
+                ("dataset_lookup", self.lookup_dataset_with_topic.id),
+                (
+                    "manual_link",
+                    {"title": "Dataset Title", "url": "/inflationandpricesindices/datasets/cpih02"},
+                ),
+            ],
+            [
+                ("dataset_lookup", self.lookup_dataset_with_topic.id),
+                (
+                    "manual_link",
+                    {
+                        "title": "Dataset Title",
+                        "url": "/inflationandpricesindices/datasets/cpih01/editions/2024/versions/1",
+                    },
                 ),
             ],
         ]

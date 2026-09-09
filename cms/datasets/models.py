@@ -12,6 +12,7 @@ from queryish.rest import APIModel, APIQuerySet
 from cms.datasets.utils import (
     construct_chooser_dataset_compound_id,
     convert_old_dataset_format,
+    extract_topic_ids,
     get_published_from_state,
 )
 
@@ -153,9 +154,17 @@ class ONSDatasetApiQuerySet(APIQuerySet):
         current = response.get("current")
         next_converted = convert_old_dataset_format(next_entry) if (next_entry := response.get("next")) else {}
 
+        # Some responses in the schema have topics as a top level field rather than inside "current" or "next".
+        top_level_topics = extract_topic_ids(response)
+
         if current:
             dataset = convert_old_dataset_format(current)
+            if not dataset["topics"]:
+                dataset["topics"] = top_level_topics
             # Store the next version info if available (this becomes our unpublished version)
+            if next_converted and not next_converted["topics"]:
+                # If an unpublished version omits topics, inherit from previous version
+                next_converted["topics"] = dataset["topics"]
             dataset["next"] = next_converted
             return dataset
 
@@ -163,6 +172,8 @@ class ONSDatasetApiQuerySet(APIQuerySet):
             # Return a minimal structure indicating no published version - this is necessary
             # if someone constructs a request for an unpublished version directly but indicating
             # they want the published one.
+            if not next_converted["topics"]:
+                next_converted["topics"] = top_level_topics
             return {"title": "No published version", "description": "", "next": next_converted}
 
         return response
@@ -176,7 +187,7 @@ class ONSDataset(APIModel):
     class Meta:
         base_url: str = settings.DATASETS_API_EDITIONS_URL
         detail_url: str = f"{settings.DATASETS_API_BASE_URL}/%s"
-        fields: ClassVar = ["id", "dataset_id", "description", "title", "version", "edition", "next"]
+        fields: ClassVar = ["id", "dataset_id", "description", "title", "version", "edition", "next", "topics"]
         pagination_style = "offset-limit"
         verbose_name_plural = "ONS Datasets"
 
@@ -198,6 +209,8 @@ class ONSDataset(APIModel):
         latest_version = data.get("latest_version", {})
         version_id = latest_version.get("id", "1") if isinstance(latest_version, dict) else "1"
 
+        topics = [str(topic_id) for topic_id in data.get("topics") or [] if topic_id]
+
         return cls(
             # We construct the compound ID here. Note that we append the published state only as a
             # workaround so that the published state can be determined from the id alone.
@@ -212,6 +225,7 @@ class ONSDataset(APIModel):
             version=version_id,
             edition=edition,
             next=next_version,
+            topics=topics,
         )
 
     @property
@@ -219,9 +233,20 @@ class ONSDataset(APIModel):
         edition: str = self.edition.replace("-", " ").title()  # pylint: disable=no-member
         return edition
 
+    @property
+    def primary_topic_id(self) -> str | None:
+        """The primary topic, or None if no topics are associated with this dataset."""
+        topics: list[str] = self.topics  # pylint: disable=no-member
+        return topics[0] if topics else None
+
     def __str__(self) -> str:
         title: str = self.title  # pylint: disable=no-member
         return title
+
+
+class DatasetManager(models.Manager["Dataset"]):
+    def get_queryset(self) -> models.QuerySet[Dataset]:
+        return super().get_queryset().select_related("topic")
 
 
 class Dataset(models.Model):  # type: ignore[django-manager-missing]
@@ -230,6 +255,11 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
     description = models.TextField()
     edition = models.CharField(max_length=255)
     version = models.IntegerField()
+    topic = models.ForeignKey(
+        "taxonomy.Topic", null=True, blank=True, on_delete=models.SET_NULL, related_name="datasets"
+    )
+
+    objects = DatasetManager()
 
     class Meta:
         constraints: ClassVar[list[models.BaseConstraint]] = [
@@ -247,6 +277,15 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
     def url_path(self) -> str:
         """The path to the dataset landing page.
         Note that this may also direct to the latest version if the landing page doesn't exist.
+        """
+        if (topic := self.topic) and topic.slug:
+            return f"/{topic.slug}/datasets/{self.namespace}"
+        return self.deprecated_url_path
+
+    @property
+    def deprecated_url_path(self) -> str:
+        """Fallback url for datasets that either don't have a topic associated or the topic doesn't exist
+        in the local taxonomy.
         """
         return f"/datasets/{self.namespace}"
 

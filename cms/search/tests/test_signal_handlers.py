@@ -144,8 +144,14 @@ class SearchSignalsTest(TestCase):
         """Test all non excluded pages trigger publish_created_or_updated on move."""
         for page in self.included_pages:
             with self.subTest(page=page):
+                parent = page.get_parent()
                 post_page_move.send(
-                    sender=Page, instance=page, url_path_before="/old-path/", url_path_after="/new-path/"
+                    sender=Page,
+                    instance=page,
+                    parent_page_before=parent,
+                    parent_page_after=parent,
+                    url_path_before="/old-path/",
+                    url_path_after="/new-path/",
                 )
                 self.mock_publisher.publish_created_or_updated.assert_called_once_with(page, old_url_path="/old-path/")
                 self.mock_publisher.publish_created_or_updated.reset_mock()
@@ -155,7 +161,15 @@ class SearchSignalsTest(TestCase):
         page = StatisticalArticlePageFactory()
         page.live = False
         page.save()
-        post_page_move.send(sender=Page, instance=page, url_path_before="/old-path/", url_path_after="/new-path/")
+        parent = page.get_parent()
+        post_page_move.send(
+            sender=Page,
+            instance=page,
+            parent_page_before=parent,
+            parent_page_after=parent,
+            url_path_before="/old-path/",
+            url_path_after="/new-path/",
+        )
         self.mock_publisher.publish_created_or_updated.assert_not_called()
 
     def test_on_page_moved_ignores_draft_descendant_page(self):
@@ -164,28 +178,58 @@ class SearchSignalsTest(TestCase):
         descendant_page = StatisticalArticlePageFactory(parent=parent_page)
         descendant_page.live = False
         descendant_page.save()
+        parent = parent_page.get_parent()
         post_page_move.send(
-            sender=Page, instance=parent_page, url_path_before="/old-path/", url_path_after="/new-path/"
+            sender=Page,
+            instance=parent_page,
+            parent_page_before=parent,
+            parent_page_after=parent,
+            url_path_before="/old-path/",
+            url_path_after="/new-path/",
         )
         self.mock_publisher.publish_created_or_updated.assert_not_called()
 
     def test_on_page_moved_no_url_change(self):
         """Moves that do not change the URL path should not trigger publish_created_or_updated."""
         page = StatisticalArticlePageFactory()
-        post_page_move.send(sender=Page, instance=page, url_path_before="/old-path/", url_path_after="/old-path/")
+        parent = page.get_parent()
+        post_page_move.send(
+            sender=Page,
+            instance=page,
+            parent_page_before=parent,
+            parent_page_after=parent,
+            url_path_before="/old-path/",
+            url_path_after="/old-path/",
+        )
         self.mock_publisher.publish_created_or_updated.assert_not_called()
 
     def test_on_page_moved_excluded_page(self):
         """Excluded pages should not trigger publish_created_or_updated on move."""
         page = ArticleSeriesPageFactory()
-        post_page_move.send(sender=Page, instance=page, url_path_before="/old-path/", url_path_after="/new-path/")
+        parent = page.get_parent()
+        post_page_move.send(
+            sender=Page,
+            instance=page,
+            parent_page_before=parent,
+            parent_page_after=parent,
+            url_path_before="/old-path/",
+            url_path_after="/new-path/",
+        )
         self.mock_publisher.publish_created_or_updated.assert_not_called()
 
     def test_on_page_moved_private_page(self):
         """Pages with view restrictions should not trigger publish_created_or_updated on move."""
         page = StatisticalArticlePageFactory()
         PageViewRestriction.objects.create(page=page, restriction_type=PageViewRestriction.LOGIN)
-        post_page_move.send(sender=Page, instance=page, url_path_before="/old-path/", url_path_after="/new-path/")
+        parent = page.get_parent()
+        post_page_move.send(
+            sender=Page,
+            instance=page,
+            parent_page_before=parent,
+            parent_page_after=parent,
+            url_path_before="/old-path/",
+            url_path_after="/new-path/",
+        )
         self.mock_publisher.publish_created_or_updated.assert_not_called()
 
     def test_on_page_moved_private_descendant_page(self):
@@ -194,8 +238,14 @@ class SearchSignalsTest(TestCase):
         descendant_page = StatisticalArticlePageFactory(parent=parent_page)
         PageViewRestriction.objects.create(page=descendant_page, restriction_type=PageViewRestriction.LOGIN)
 
+        parent = parent_page.get_parent()
         post_page_move.send(
-            sender=Page, instance=parent_page, url_path_before="/old-path/", url_path_after="/new-path/"
+            sender=Page,
+            instance=parent_page,
+            parent_page_before=parent,
+            parent_page_after=parent,
+            url_path_before="/old-path/",
+            url_path_after="/new-path/",
         )
 
         # Expect no search update events published since the descendant is private
@@ -208,8 +258,14 @@ class SearchSignalsTest(TestCase):
         article_page = StatisticalArticlePageFactory(parent=series_page)
         url_path_before = "/home/old-path/"
 
+        parent = topic_page.get_parent()
         post_page_move.send(
-            sender=Page, instance=topic_page, url_path_before=url_path_before, url_path_after=topic_page.url_path
+            sender=Page,
+            instance=topic_page,
+            parent_page_before=parent,
+            parent_page_after=parent,
+            url_path_before=url_path_before,
+            url_path_after=topic_page.url_path,
         )
 
         # Expect the topic and article page to have search update events published, the series pages are excluded
@@ -462,37 +518,71 @@ class SearchSignalsTest(TestCase):
 
     @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb"])
     def test_move_only_english_locale(self):
+        parent = self.en_page.get_parent()
         post_page_move.send(
-            sender=Page, instance=self.en_page, url_path_before="/old-path/", url_path_after="/new-path/"
+            sender=Page,
+            instance=self.en_page,
+            parent_page_before=parent,
+            parent_page_after=parent,
+            url_path_before="/old-path/",
+            url_path_after="/new-path/",
         )
         self.mock_publisher.publish_created_or_updated.assert_called_once_with(self.en_page, old_url_path="/old-path/")
         self.mock_publisher.publish_created_or_updated.reset_mock()
 
         post_page_move.send(
-            sender=Page, instance=self.cy_page, url_path_before="/old-path/", url_path_after="/new-path/"
+            sender=Page,
+            instance=self.cy_page,
+            parent_page_before=parent,
+            parent_page_after=parent,
+            url_path_before="/old-path/",
+            url_path_after="/new-path/",
         )
         self.mock_publisher.publish_created_or_updated.assert_not_called()
 
     @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["cy"])
     def test_move_only_welsh_locale(self):
+        parent = self.cy_page.get_parent()
         post_page_move.send(
-            sender=Page, instance=self.cy_page, url_path_before="/old-path/", url_path_after="/new-path/"
+            sender=Page,
+            instance=self.cy_page,
+            parent_page_before=parent,
+            parent_page_after=parent,
+            url_path_before="/old-path/",
+            url_path_after="/new-path/",
         )
         self.mock_publisher.publish_created_or_updated.assert_called_once_with(self.cy_page, old_url_path="/old-path/")
         self.mock_publisher.publish_created_or_updated.reset_mock()
 
         post_page_move.send(
-            sender=Page, instance=self.en_page, url_path_before="/old-path/", url_path_after="/new-path/"
+            sender=Page,
+            parent_page_before=parent,
+            parent_page_after=parent,
+            instance=self.en_page,
+            url_path_before="/old-path/",
+            url_path_after="/new-path/",
         )
         self.mock_publisher.publish_created_or_updated.assert_not_called()
 
     @override_settings(SEARCH_INDEX_INCLUDED_LANGUAGES=["en-gb", "cy"])
     def test_move_both_locales(self):
+        parent = self.en_page.get_parent()
         post_page_move.send(
-            sender=Page, instance=self.en_page, url_path_before="/old-path/", url_path_after="/new-path/"
+            sender=Page,
+            instance=self.en_page,
+            parent_page_before=parent,
+            parent_page_after=parent,
+            url_path_before="/old-path/",
+            url_path_after="/new-path/",
         )
+        cy_parent = self.cy_page.get_parent()
         post_page_move.send(
-            sender=Page, instance=self.cy_page, url_path_before="/old-path/", url_path_after="/new-path/"
+            sender=Page,
+            instance=self.cy_page,
+            parent_page_before=cy_parent,
+            parent_page_after=cy_parent,
+            url_path_before="/old-path/",
+            url_path_after="/new-path/",
         )
         self.assertEqual(self.mock_publisher.publish_created_or_updated.call_count, 2)
         self.mock_publisher.publish_created_or_updated.assert_has_calls(

@@ -32,4 +32,6 @@ def convert_dataset_to_old_format(dataset: dict[str, Any]) -> dict[str, Any]:
         "state": dataset.get("state", "created"),
         "title": dataset.get("title", "Title not provided"),
     }
+    if topics := dataset.get("topics"):
+        old_format["canonical_topic"] = topics[0]
     return old_format

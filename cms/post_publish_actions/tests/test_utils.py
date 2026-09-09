@@ -21,7 +21,11 @@ class RunPostPublishActionsForTestCase(TestCase):
 
     def test_without_bundle_runs_handlers_synchronously(self):
         """Test that pages published without a bundle publish synchronously for now."""
-        with patch.dict(registry._registry, {PostPublishActionType.S3_ACL: self.handler}, clear=True):
+        with patch.dict(
+            registry._registry,
+            {PostPublishActionType.S3_ACL: registry.RegisteredPostPublishAction(handler=self.handler)},
+            clear=True,
+        ):
             run_post_publish_actions_for(self.page, None)
 
         self.handler.assert_called_with(self.page, None)

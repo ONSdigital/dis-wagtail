@@ -110,6 +110,12 @@ CMS_HOSTNAME_LOCALE_MAP = {
 }
 CMS_HOSTNAME_ALTERNATIVES = {"ons.localhost": "pub.ons.localhost", "cy.ons.localhost": "cy.pub.ons.localhost"}
 
+# Ensure cms.frontend_cache is installed
+if "cms.frontend_cache" not in INSTALLED_APPS:  # noqa: F405
+    INSTALLED_APPS += ["wagtail.contrib.frontend_cache", "cms.frontend_cache"]  # noqa: F405
+
+    WAGTAILFRONTENDCACHE = {"default": {"BACKEND": "cms.frontend_cache.tests.backends.DummyFrontEndCacheBackend"}}
+
 URL_CONFIG_SETTINGS = {
     "IS_EXTERNAL_ENV",
     "CMS_USE_SUBDOMAIN_LOCALES",
@@ -123,6 +129,8 @@ URL_CONFIG_SETTINGS = {
     "CMS_PAGE_PRIVACY_CONTROLS_ENABLED",
     "CMS_COLLECTION_PRIVACY_CONTROLS_ENABLED",
 }
+
+CMS_PAGINATION_OVER_PURGE = 2
 
 
 def _reset_url_caches_on_setting_changed_signal_handler(*, setting: str, **_: Any) -> None:
