@@ -87,7 +87,7 @@ class SettingsTestCase(TestCase):
             )
 
 
-class CSPTestCase(TestCase):
+class SecurityHeadersTestCase(TestCase):
     urls = frozenset(["/", "/test404", reverse_lazy("wagtailadmin_login")])
 
     def _parse_csp(self, header_value: str) -> dict[str, list[str]]:
@@ -102,6 +102,15 @@ class CSPTestCase(TestCase):
     def _get_csp_expressions(self, policy: dict[str, list[str]], directive: str) -> list[str]:
         # Fall back to default-src if directive is not present
         return policy.get(directive, policy.get("default-src", []))
+
+    def _parse_permissions_policy(self, header_value: str) -> dict[str, list[str]]:
+        directives = {}
+
+        for directive in header_value.split(","):
+            feature, allow_list = directive.strip().split("=", 1)
+            directives[feature] = [value.strip('"') for value in allow_list.strip()[1:-1].split()]
+
+        return directives
 
     def test_self_in_all_expressions(self):
         for url in self.urls:
@@ -211,6 +220,22 @@ class CSPTestCase(TestCase):
 
                 self.assertIn("www.youtube.com", self._get_csp_expressions(csp, "frame-src"))
                 self.assertIn("player.vimeo.com", self._get_csp_expressions(csp, "frame-src"))
+
+    def test_video_embed_permissions_policy(self):
+        for url in self.urls:
+            with self.subTest(url):
+                response = self.client.get(url)
+
+                permissions_policy = self._parse_permissions_policy(response.headers["Permissions-Policy"])
+
+                self.assertEqual(
+                    permissions_policy["encrypted-media"],
+                    ["self", "https://www.youtube.com", "https://player.vimeo.com"],
+                )
+                self.assertEqual(
+                    permissions_policy["fullscreen"],
+                    ["self", "https://www.youtube.com", "https://player.vimeo.com"],
+                )
 
     def test_wagtail_csp(self):
         """https://github.com/wagtail/wagtail/issues?q=is%3Aissue%20state%3Aopen%20csp."""

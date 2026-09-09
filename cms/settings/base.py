@@ -1206,6 +1206,7 @@ GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED = (
 )
 
 VIDEO_EMBED_CSP_SOURCES = ["www.youtube.com", "player.vimeo.com"]
+VIDEO_EMBED_PERMISSIONS_POLICY_SOURCES = ["self", "https://www.youtube.com", "https://player.vimeo.com"]
 
 # Content Security policy settings
 # https://docs.djangoproject.com/en/6.0/ref/csp/
@@ -1259,8 +1260,8 @@ PERMISSIONS_POLICY: dict = {
     "autoplay": [],
     "camera": [],
     "display-capture": [],
-    "encrypted-media": [],
-    "fullscreen": [],
+    "encrypted-media": VIDEO_EMBED_PERMISSIONS_POLICY_SOURCES,
+    "fullscreen": VIDEO_EMBED_PERMISSIONS_POLICY_SOURCES,
     "geolocation": [],
     "gyroscope": [],
     "interest-cohort": [],
