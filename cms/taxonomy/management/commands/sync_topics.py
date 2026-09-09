@@ -83,10 +83,28 @@ def _request_topics(url: str) -> list[dict[str, Any]]:
     - the item wraps the topic under a `current` key, alongside `id` and `next` (internal env).
     Items are normalised to the topic representation so downstream processing is unchanged.
     """
-    topics_response = requests.get(url, timeout=30)
+    topics_response = requests.get(url, headers=_get_auth_headers(), timeout=30)
     topics_response.raise_for_status()
     raw_items: list[dict[str, Any]] = topics_response.json().get("items", [])
     return [_normalise_topic_item(item) for item in raw_items]
+
+
+def _get_auth_headers() -> dict[str, str]:
+    """Get request headers for the topic API.
+
+    Authentication via `SERVICE_AUTH_TOKEN` is optional: when the setting is unset or empty,
+    no auth headers are sent and requests are made unauthenticated (external env).
+    When set (internal env), send both the standard `Authorization` header and the legacy
+    `X-Florence-Token` header, mirroring the teams sync.
+    """
+    service_auth_token = getattr(settings, "SERVICE_AUTH_TOKEN", None)
+    if not service_auth_token:
+        return {}
+
+    return {
+        "Authorization": f"Bearer {service_auth_token}",
+        "X-Florence-Token": f"Bearer {service_auth_token}",
+    }
 
 
 def _normalise_topic_item(item: Mapping[str, Any]) -> dict[str, Any]:

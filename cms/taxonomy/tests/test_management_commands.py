@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import requests
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from requests import HTTPError
 
 from cms.taxonomy.management.commands import sync_topics
@@ -547,6 +547,42 @@ class SyncTopicsTests(TestCase):
         self.assertEqual(
             saved_subtopic.get_parent().id, root_topic.id, "Expect the subtopic to have the correct parent"
         )
+
+    @override_settings(SERVICE_AUTH_TOKEN="test-token")
+    def test_sync_sends_auth_headers_when_token_set(self):
+        """When SERVICE_AUTH_TOKEN is set, requests carry both auth headers."""
+        # Given
+        topic = create_topic("1234")
+        self.mock_requests.get.return_value = mock_successful_json_response([build_topic_api_json(topic)])
+
+        # When
+        call_command("sync_topics")
+
+        # Then
+        self.mock_requests.get.assert_called_once()
+        _, kwargs = self.mock_requests.get.call_args
+        self.assertEqual(
+            kwargs.get("headers"),
+            {
+                "Authorization": "Bearer test-token",
+                "X-Florence-Token": "Bearer test-token",
+            },
+        )
+
+    @override_settings(SERVICE_AUTH_TOKEN=None)
+    def test_sync_sends_no_auth_headers_when_token_unset(self):
+        """When SERVICE_AUTH_TOKEN is unset, no auth headers are sent (optional)."""
+        # Given
+        topic = create_topic("1234")
+        self.mock_requests.get.return_value = mock_successful_json_response([build_topic_api_json(topic)])
+
+        # When
+        call_command("sync_topics")
+
+        # Then
+        self.mock_requests.get.assert_called_once()
+        _, kwargs = self.mock_requests.get.call_args
+        self.assertEqual(kwargs.get("headers"), {})
 
 
 def create_topic(topic_id: str, include_description: bool = True, include_slug: bool = True) -> Topic:
