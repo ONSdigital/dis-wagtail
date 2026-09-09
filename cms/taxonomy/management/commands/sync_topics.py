@@ -76,11 +76,29 @@ def _fetch_all_topics() -> list[dict[str, str]]:
 
 
 def _request_topics(url: str) -> list[dict[str, Any]]:
-    """Fetch topics from the API and return the items from the response."""
+    """Fetch topics from the API and return the items from the response.
+
+    Supports two response shapes for each item, depending on the environment:
+    - the item *is* the topic, with fields at the top level (external env), or
+    - the item wraps the topic under a `current` key, alongside `id` and `next` (internal env).
+    Items are normalised to the topic representation so downstream processing is unchanged.
+    """
     topics_response = requests.get(url, timeout=30)
     topics_response.raise_for_status()
-    raw_topics: list[dict[str, Any]] = topics_response.json().get("items", [])
-    return raw_topics
+    raw_items: list[dict[str, Any]] = topics_response.json().get("items", [])
+    return [_normalise_topic_item(item) for item in raw_items]
+
+
+def _normalise_topic_item(item: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the topic representation for an item.
+
+    Internal environments wrap the topic under a `current` key; external put the topic
+    fields at the top level. Unwrap `current` when present, otherwise use the item as-is.
+    """
+    current = item.get("current")
+    if isinstance(current, Mapping):
+        return dict(current)
+    return dict(item)
 
 
 def _extract_subtopic_links(raw_topics: Iterable[Mapping[str, Any]]) -> list[tuple[str, str | None]]:

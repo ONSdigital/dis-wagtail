@@ -509,6 +509,45 @@ class SyncTopicsTests(TestCase):
         # When, then raises
         self.assertRaises(RuntimeError, sync_topics.Command().handle)
 
+    def test_sync_valid_topic_current_wrapped(self):
+        """A topic delivered in the internal-env shape (wrapped under `current`) should sync."""
+        # Given
+        topic = create_topic("1234")
+        mock_response = mock_successful_json_response([build_topic_api_json_wrapped(topic)])
+        self.mock_requests.get.return_value = mock_response
+
+        # When
+        call_command("sync_topics")
+
+        # Then
+        self.mock_requests.get.assert_called_once()
+        self.assertEqual(Topic.objects.all().count(), 1, "Expect one topic to be saved")
+        saved_topic = Topic.objects.first()
+        self.assertEqual(saved_topic, topic, "Expect the saved topic to match")
+
+    def test_sync_topic_with_subtopic_current_wrapped(self):
+        """Subtopic traversal should work when items are wrapped under `current`."""
+        # Given
+        root_topic = create_topic("0001")
+        subtopic = create_topic("0002")
+        mock_root_response = mock_successful_json_response(
+            [build_topic_api_json_wrapped(root_topic, subtopics=[subtopic])]
+        )
+        mock_subtopic_response = mock_successful_json_response([build_topic_api_json_wrapped(subtopic)])
+
+        self.mock_requests.get.side_effect = [mock_root_response, mock_subtopic_response]
+
+        # When
+        call_command("sync_topics")
+
+        # Then
+        self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
+        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
+        saved_subtopic = Topic.objects.get(id=subtopic.id)
+        self.assertEqual(
+            saved_subtopic.get_parent().id, root_topic.id, "Expect the subtopic to have the correct parent"
+        )
+
 
 def create_topic(topic_id: str, include_description: bool = True, include_slug: bool = True) -> Topic:
     """Create a topic (without saving it to the database)."""
@@ -542,6 +581,16 @@ def build_topic_api_json(topic: Topic, subtopics: Iterable[Topic] = ()) -> dict[
         "slug": topic.slug,
         "links": links,
         "subtopics_ids": subtopics_ids,
+    }
+
+
+def build_topic_api_json_wrapped(topic: Topic, subtopics: Iterable[Topic] = ()) -> dict[str, Any]:
+    """Return the topic in the internal-env format, wrapped under ``current`` (and ``next``)."""
+    topic_json = build_topic_api_json(topic, subtopics=subtopics)
+    return {
+        "id": topic.id,
+        "current": topic_json,
+        "next": topic_json,
     }
 
 
