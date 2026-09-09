@@ -1205,12 +1205,14 @@ GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED = (
     not IS_EXTERNAL_ENV or env.get("GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED", "false").lower() == "true"
 )
 
+VIDEO_EMBED_CSP_SOURCES = ["www.youtube.com", "player.vimeo.com"]
+
 # Content Security policy settings
 # https://docs.djangoproject.com/en/6.0/ref/csp/
 static_sources = [ONS_CDN_URL]
 SECURE_CSP: dict[str, list] = {
     "default-src": [CSP.SELF],
-    "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_CSP_SOURCES],
+    "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_CSP_SOURCES, *VIDEO_EMBED_CSP_SOURCES],
     # UNSAFE_INLINE is required by mathjax
     "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE, "*.hotjar.com"],
     "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com", "*.google-analytics.com", "*.hotjar.com"],

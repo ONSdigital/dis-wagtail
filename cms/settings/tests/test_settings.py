@@ -202,6 +202,16 @@ class CSPTestCase(TestCase):
                     with self.subTest(allowed_source):
                         self.assertIn(allowed_source, self._get_csp_expressions(csp, "frame-src"))
 
+    def test_video_embed_csp(self):
+        for url in self.urls:
+            with self.subTest(url):
+                response = self.client.get(url)
+
+                csp = self._parse_csp(response.headers["Content-Security-Policy"])
+
+                self.assertIn("www.youtube.com", self._get_csp_expressions(csp, "frame-src"))
+                self.assertIn("player.vimeo.com", self._get_csp_expressions(csp, "frame-src"))
+
     def test_wagtail_csp(self):
         """https://github.com/wagtail/wagtail/issues?q=is%3Aissue%20state%3Aopen%20csp."""
         response = self.client.get(reverse("wagtailadmin_login"))
