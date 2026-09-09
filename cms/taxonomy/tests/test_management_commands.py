@@ -509,6 +509,19 @@ class SyncTopicsTests(TestCase):
         # When, then raises
         self.assertRaises(RuntimeError, sync_topics.Command().handle)
 
+    def test_already_removed_topic_not_reprocessed(self):
+        """A topic already marked as removed, and still absent from the API, should not be re-saved."""
+        # Given an already-removed topic that the API still does not return
+        TopicFactory(id="9999", title="Gone", removed=True, slug="gone")
+        self.mock_requests.get.return_value = mock_successful_json_response([])
+
+        # When
+        with patch.object(sync_topics, "_set_topic_as_removed") as mock_set_removed:
+            call_command("sync_topics")
+
+        # Then it should not be re-marked/re-saved
+        mock_set_removed.assert_not_called()
+
 
 def create_topic(topic_id: str, include_description: bool = True, include_slug: bool = True) -> Topic:
     """Create a topic (without saving it to the database)."""
