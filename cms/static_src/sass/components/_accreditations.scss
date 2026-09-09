@@ -23,9 +23,13 @@
 
         &--full-width {
             flex-basis: 100%;
-            flex-direction: row;
+            flex-direction: column;
             gap: rem-sizing(24);
             justify-content: flex-start;
+
+            @include media-query('m') {
+                flex-direction: row;
+            }
         }
 
         @media (forced-colors: active) {
