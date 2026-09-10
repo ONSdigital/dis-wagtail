@@ -98,3 +98,4 @@ repos:
               .*\.env.*|
               .*local\.py
           )$
+
