@@ -5,8 +5,7 @@ on: # yamllint disable-line rule:truthy
   push:
     branches: [main, 'release/v*']
   pull_request:
-    # TODO: Remove 'CMS-724-feature-frontend-cache-invalidation' from the list of branches once the feature branch is merged.
-    branches: [main, 'release/v*', 'CMS-724-feature-frontend-cache-invalidation']
+    branches: [main, 'release/v*']
 
 concurrency:
   group: '${{ github.head_ref || github.ref }}-${{ github.workflow }}'
