@@ -50,7 +50,9 @@ class SettingsTestCase(TestCase):
     def test_external_env_csp_settings(self):
         self.addCleanup(importlib.reload, base)
 
-        with mock.patch.dict(os.environ, {"IS_EXTERNAL_ENV": "true"}, clear=False):
+        with mock.patch.dict(
+            os.environ, {"IS_EXTERNAL_ENV": "true", "GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED": "false"}, clear=False
+        ):
             reloaded_base = importlib.reload(base)
             self.assertFalse(reloaded_base.GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED)
             self.assertNotIn("fonts.googleapis.com", reloaded_base.SECURE_CSP["style-src"])
@@ -142,7 +144,11 @@ class SecurityHeadersTestCase(TestCase):
     def test_gtm_preview_mode_csp(self):
         self.addCleanup(importlib.reload, base)
 
-        with mock.patch.dict(os.environ, {"GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED": "true"}, clear=False):
+        with mock.patch.dict(
+            os.environ,
+            {"IS_EXTERNAL_ENV": "true", "GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED": "true"},
+            clear=False,
+        ):
             reloaded_base = importlib.reload(base)
 
             with override_settings(SECURE_CSP=reloaded_base.SECURE_CSP):
