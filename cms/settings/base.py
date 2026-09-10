@@ -1201,9 +1201,7 @@ WAGTAIL_POLYMATH = {
     "mathjax_sri": "sha512-M36RUChWzAh1veeenRZFql7HydLEnkYmoloiCvVrhz402UZgKI93qkV7SsaxtVKdN95Wzajh39ysrXCq34NTsg==",
 }
 
-GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED = (
-    not IS_EXTERNAL_ENV or env.get("GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED", "false").lower() == "true"
-)
+CMS_GTM_PREVIEW_MODE_ENABLED = not IS_EXTERNAL_ENV or env.get("CMS_GTM_PREVIEW_MODE_ENABLED", "false").lower() == "true"
 
 VIDEO_EMBED_CSP_SOURCES = ["www.youtube.com", "player.vimeo.com"]
 VIDEO_EMBED_PERMISSIONS_POLICY_SOURCES = ["self", "https://www.youtube.com", "https://player.vimeo.com"]
@@ -1234,7 +1232,7 @@ SECURE_CSP: dict[str, list] = {
     "frame-ancestors": [CSP.NONE if IS_EXTERNAL_ENV else CSP.SELF],
 }
 
-allow_google_fonts = not IS_EXTERNAL_ENV or GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED
+allow_google_fonts = not IS_EXTERNAL_ENV or CMS_GTM_PREVIEW_MODE_ENABLED
 
 # Google Fonts are needed for the Wagtail admin and GTM Preview Mode.
 # The external site otherwise loads fonts directly from the ONS CDN, so these
@@ -1243,7 +1241,7 @@ if allow_google_fonts:
     SECURE_CSP["style-src"].append("fonts.googleapis.com")
     SECURE_CSP["font-src"].append("fonts.gstatic.com")
 
-if GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED:
+if CMS_GTM_PREVIEW_MODE_ENABLED:
     SECURE_CSP["script-src"].append("tagmanager.google.com")
     SECURE_CSP["style-src"].extend(["www.googletagmanager.com", "tagmanager.google.com"])
     SECURE_CSP["img-src"].extend(["ssl.gstatic.com", "www.gstatic.com"])

@@ -40,7 +40,7 @@ class SettingsTestCase(TestCase):
 
         with mock.patch.dict(os.environ, {"IS_EXTERNAL_ENV": "false"}, clear=False):
             reloaded_base = importlib.reload(base)
-            self.assertTrue(reloaded_base.GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED)
+            self.assertTrue(reloaded_base.CMS_GTM_PREVIEW_MODE_ENABLED)
             self.assertIn("fonts.googleapis.com", reloaded_base.SECURE_CSP["style-src"])
             self.assertIn("fonts.gstatic.com", reloaded_base.SECURE_CSP["font-src"])
             self.assertIn("tagmanager.google.com", reloaded_base.SECURE_CSP["script-src"])
@@ -51,10 +51,10 @@ class SettingsTestCase(TestCase):
         self.addCleanup(importlib.reload, base)
 
         with mock.patch.dict(
-            os.environ, {"IS_EXTERNAL_ENV": "true", "GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED": "false"}, clear=False
+            os.environ, {"IS_EXTERNAL_ENV": "true", "CMS_GTM_PREVIEW_MODE_ENABLED": "false"}, clear=False
         ):
             reloaded_base = importlib.reload(base)
-            self.assertFalse(reloaded_base.GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED)
+            self.assertFalse(reloaded_base.CMS_GTM_PREVIEW_MODE_ENABLED)
             self.assertNotIn("fonts.googleapis.com", reloaded_base.SECURE_CSP["style-src"])
             self.assertNotIn("fonts.gstatic.com", reloaded_base.SECURE_CSP["font-src"])
             self.assertNotIn("data:", reloaded_base.SECURE_CSP["font-src"])
@@ -66,11 +66,11 @@ class SettingsTestCase(TestCase):
 
         with mock.patch.dict(
             os.environ,
-            {"IS_EXTERNAL_ENV": "true", "GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED": "true"},
+            {"IS_EXTERNAL_ENV": "true", "CMS_GTM_PREVIEW_MODE_ENABLED": "true"},
             clear=False,
         ):
             reloaded_base = importlib.reload(base)
-            self.assertTrue(reloaded_base.GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED)
+            self.assertTrue(reloaded_base.CMS_GTM_PREVIEW_MODE_ENABLED)
             self.assertIn("fonts.googleapis.com", reloaded_base.SECURE_CSP["style-src"])
             self.assertIn("fonts.gstatic.com", reloaded_base.SECURE_CSP["font-src"])
             self.assertIn("tagmanager.google.com", reloaded_base.SECURE_CSP["script-src"])
@@ -146,7 +146,7 @@ class SecurityHeadersTestCase(TestCase):
 
         with mock.patch.dict(
             os.environ,
-            {"IS_EXTERNAL_ENV": "true", "GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED": "true"},
+            {"IS_EXTERNAL_ENV": "true", "CMS_GTM_PREVIEW_MODE_ENABLED": "true"},
             clear=False,
         ):
             reloaded_base = importlib.reload(base)
