@@ -1203,6 +1203,8 @@ WAGTAIL_POLYMATH = {
 
 CMS_GTM_PREVIEW_MODE_ENABLED = not IS_EXTERNAL_ENV or env.get("CMS_GTM_PREVIEW_MODE_ENABLED", "false").lower() == "true"
 
+# Although different video URL variants such as youtu.be and youtube.com without www are allowed,
+# the URL is normalised when calling `get_embed_url`.
 VIDEO_EMBED_CSP_SOURCES = ["www.youtube.com", "player.vimeo.com"]
 VIDEO_EMBED_PERMISSIONS_POLICY_SOURCES = ["self", "https://www.youtube.com", "https://player.vimeo.com"]
 
