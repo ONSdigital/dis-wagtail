@@ -19,7 +19,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: 12.5rem;
+        min-height: rem-sizing(200);
 
         &--full-width {
             flex-basis: 100%;
