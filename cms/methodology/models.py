@@ -22,6 +22,7 @@ from cms.core.query import order_by_pk_position
 from cms.core.utils import redirect_to_parent_listing
 from cms.core.widgets import date_widget
 from cms.data_downloads.mixins import DataDownloadMixin
+from cms.datavis.mixins import ChartImageRenderMixin
 from cms.methodology.forms import MethodologyPageAdminForm
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
@@ -82,6 +83,7 @@ class MethodologyRelatedPage(Orderable):
 
 
 class MethodologyPage(  # type: ignore[django-manager-missing]
+    ChartImageRenderMixin,
     DataDownloadMixin,
     BundledPageMixin,
     NoTrailingSlashRoutablePageMixin,
@@ -89,6 +91,7 @@ class MethodologyPage(  # type: ignore[django-manager-missing]
     BasePage,
 ):
     base_form_class = MethodologyPageAdminForm
+    chart_image_fields: ClassVar[tuple[str, ...]] = ("content",)
     parent_page_types: ClassVar[list[str]] = ["MethodologyIndexPage"]
     search_index_content_type: ClassVar[str] = "static_methodology"
     template = "templates/pages/methodology_page.html"

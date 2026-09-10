@@ -17,7 +17,6 @@ from cms.datavis.services import (
     UNAVAILABLE_RENDER_ERROR,
     iter_chart_blocks,
     render_chart_blocks,
-    render_charts_for_page,
 )
 from cms.datavis.tests.factories import RenderedChartImageFactory, TableDataFactory
 from cms.datavis.utils import hash_chart_config
@@ -124,35 +123,3 @@ class RenderChartBlocksTests(TestCase):
 
         self.assertEqual(results, [])
         mock_client_cls.assert_not_called()
-
-
-class RenderChartsForPageTests(TestCase):
-    def test_saves_a_new_revision_when_a_chart_is_rendered(self):
-        page = make_page_with_chart()
-        self.assertEqual(page.revisions.count(), 0)
-
-        with patch("cms.datavis.services.ChartExporterClient") as mock_client_cls:
-            mock_client_cls.return_value.create_chart.return_value = make_export_response()
-            results = render_charts_for_page(page)
-
-        self.assertTrue(any(result.changed for result in results))
-        self.assertEqual(page.revisions.count(), 1)
-        revision_content = page.get_latest_revision().as_object().content
-        rendered_block = next(iter_chart_blocks(revision_content))
-        self.assertIsInstance(rendered_block.value["rendered_chart_image"], RenderedChartImage)
-
-    def test_second_render_with_unchanged_config_is_skipped(self):
-        page = make_page_with_chart()
-
-        with patch("cms.datavis.services.ChartExporterClient") as mock_client_cls:
-            mock_client_cls.return_value.create_chart.return_value = make_export_response()
-            render_charts_for_page(page)
-
-        self.assertEqual(page.revisions.count(), 1)
-
-        with patch("cms.datavis.services.ChartExporterClient") as mock_client_cls:
-            results = render_charts_for_page(page)
-
-        mock_client_cls.return_value.create_chart.assert_not_called()
-        self.assertFalse(any(result.changed for result in results))
-        self.assertEqual(page.revisions.count(), 1)

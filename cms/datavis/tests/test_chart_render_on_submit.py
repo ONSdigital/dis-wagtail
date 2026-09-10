@@ -24,7 +24,11 @@ def chart_block_value():
 
 
 class ChartRenderOnSubmitTests(TestCase):
-    """Covers the workflow trigger: rendering charts when a page is submitted for review."""
+    """Covers the review gate: the blocking render when a page is submitted for review.
+
+    Saves outside submit-for-review are pre-rendered by ``ChartImageRenderMixin`` instead,
+    which never blocks - see ``test_chart_render_on_save``.
+    """
 
     def setUp(self):
         page = StatisticalArticlePageFactory()
@@ -48,7 +52,7 @@ class ChartRenderOnSubmitTests(TestCase):
         form.cleaned_data = {"content": self.page.content}
         return form
 
-    def test_render_does_not_run_on_a_plain_save(self):
+    def test_blocking_render_does_not_run_on_a_plain_save(self):
         with patch("cms.core.forms.render_chart_blocks") as mock_render:
             form = self._build_form(submitting=False)
             form.clean()

@@ -134,7 +134,7 @@ class ChartExporterClientTests(TestCase):
         responses.post(f"{BASE_URL}/charts", body=requests.exceptions.ConnectionError("boom"))
         responses.post(f"{BASE_URL}/charts", body=requests.exceptions.ConnectionError("boom"))
 
-        with patch("cms.datavis.clients.chart_exporter.time.sleep"), self.assertRaises(ChartExporterUnavailable):
+        with self.assertRaises(ChartExporterUnavailable):
             self.client.create_chart(self.chart_config)
 
         self.assertEqual(len(responses.calls), 3)

@@ -42,6 +42,7 @@ from cms.datasets.utils import format_datasets_as_document_list
 from cms.datavis.blocks.base import BaseChartBlock
 from cms.datavis.blocks.featured_charts import FeaturedChartBlock
 from cms.datavis.blocks.iframe import IframeBlock
+from cms.datavis.mixins import ChartImageRenderMixin
 from cms.taxonomy.mixins import GenericTaxonomyMixin
 
 if TYPE_CHECKING:
@@ -237,6 +238,7 @@ class ArticleSeriesPage(  # type: ignore[django-manager-missing]
 
 # pylint: disable=too-many-public-methods
 class StatisticalArticlePage(  # type: ignore[django-manager-missing]
+    ChartImageRenderMixin,
     DataDownloadMixin,
     BundledPageMixin,
     NoTrailingSlashRoutablePageMixin,
@@ -248,6 +250,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
     """
 
     base_form_class = StatisticalArticlePageAdminForm
+    chart_image_fields: ClassVar[tuple[str, ...]] = ("content", "featured_chart")
 
     schema_org_type = "Article"
 

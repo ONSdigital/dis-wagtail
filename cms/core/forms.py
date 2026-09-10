@@ -1,5 +1,5 @@
 import logging
-from typing import Any, ClassVar
+from typing import Any
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms import ValidationError
@@ -218,23 +218,30 @@ class PageWithProtectedChartImagesAdminForm(WagtailAdminPageForm):
     It is replaced here with whatever is already persisted for the matching block (matched by
     block id), or with None for blocks that have no persisted match.
 
-    When the page is submitted for review, every chart block's image is (re-)rendered
-    synchronously so a failed render blocks the transition with a form error, rather than
-    letting a page reach review with a stale or missing chart image.
+    Images are pre-rendered on every revision by ``ChartImageRenderMixin``, but that is best
+    effort. Submitting for review re-checks every chart block synchronously, and blocks the
+    transition with a form error if any image cannot be produced, so a page never reaches
+    review with a missing or stale chart image. Blocks whose attached image still matches the
+    current config hash are skipped, so this normally reaches the exporter only for the ones
+    the pre-render failed to produce.
+
+    The set of fields to cover is declared as ``chart_image_fields`` on the page model, via
+    ``ChartImageRenderMixin``.
     """
 
-    protected_chart_image_fields: ClassVar[tuple[str, ...]] = ()
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
 
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        # If protected_chart_image_fields is empty, the whole thing is redundant
-        if not cls.protected_chart_image_fields:
-            raise ImproperlyConfigured(f"{cls.__name__} must define protected_chart_image_fields")
+        if not getattr(self.instance, "chart_image_fields", ()):
+            raise ImproperlyConfigured(
+                f"{type(self.instance).__name__} must apply ChartImageRenderMixin and define chart_image_fields "
+                f"to be used with {type(self).__name__}"
+            )
 
     def clean(self) -> dict[str, Any] | None:
         cleaned_data: dict[str, Any] | None = super().clean()
 
-        for field_name in self.protected_chart_image_fields:
+        for field_name in self.instance.chart_image_fields:
             if field_name not in self.cleaned_data:
                 continue
 
@@ -253,7 +260,7 @@ class PageWithProtectedChartImagesAdminForm(WagtailAdminPageForm):
     def _render_charts_for_submission(self) -> None:
         blocks = [
             block
-            for field_name in self.protected_chart_image_fields
+            for field_name in self.instance.chart_image_fields
             if field_name in self.cleaned_data
             for block in iter_chart_blocks(self.cleaned_data[field_name])
         ]

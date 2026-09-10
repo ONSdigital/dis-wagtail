@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
     from wagtail.blocks.stream_block import StreamChild, StreamValue
-    from wagtail.models import Page
 
 logger = logging.getLogger(__name__)
 
@@ -91,23 +90,4 @@ def render_chart_blocks(blocks: Iterable[StreamChild]) -> list[ChartRenderResult
         duration,
         sum(1 for result in results if result.error),
     )
-    return results
-
-
-def render_charts_for_page(page: Page) -> list[ChartRenderResult]:
-    """Render (or reuse) chart images for every chart block on the page's latest revision.
-
-    Saves a new revision when any image changed, so the result is carried by a subsequent
-    publish. Operates on the latest revision's content rather than the live page, since this
-    is called ahead of a page being submitted for review, before it may ever be published.
-    """
-    revision_page = page.get_latest_revision_as_object()
-    field_names = getattr(type(revision_page).base_form_class, "protected_chart_image_fields", ())
-    blocks = [
-        block for field_name in field_names for block in iter_chart_blocks(getattr(revision_page, field_name, None))
-    ]
-
-    results = render_chart_blocks(blocks)
-    if any(result.changed for result in results):
-        revision_page.save_revision(log_action=False)
     return results
