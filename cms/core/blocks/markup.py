@@ -99,6 +99,8 @@ class BasicTableBlock(WagtailTableBlock):
 
         for row in data:
             tds = [{"value": cell} for cell in row]
+            if tds and value.get("first_col_is_header", False):
+                tds[0]["heading"] = True
             trs.append({"tds": tds})
 
         return trs
