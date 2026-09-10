@@ -25,10 +25,10 @@
             flex-basis: 100%;
             flex-direction: column;
             gap: rem-sizing(24);
-            justify-content: flex-start;
 
             @include media-query('m') {
                 flex-direction: row;
+                justify-content: flex-start;
             }
         }
 
