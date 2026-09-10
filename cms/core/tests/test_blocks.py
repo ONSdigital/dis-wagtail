@@ -606,7 +606,7 @@ class CoreBlocksTestCase(TestCase):
         self.assertEqual(block.clean(value)["data"], [["unwanted", ""]] * len(UNWANTED_CONTROL_CHARACTERS))
 
 
-class BasicTableBlockGetRowsTestCase(TestCase):
+class BasicTableBlockGetContextTestCase(TestCase):
     """Test for BasicTableBlock.get_context method."""
 
     def test_get_context_with_no_header(self):
