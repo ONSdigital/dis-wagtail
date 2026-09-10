@@ -5,7 +5,7 @@ from unittest import mock
 
 from django.conf import settings
 from django.template import Context, Template
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse, reverse_lazy
 from django.utils.csp import CSP
 
@@ -140,20 +140,26 @@ class SecurityHeadersTestCase(TestCase):
                 self.assertIn("*.analytics.google.com", self._get_csp_expressions(csp, "connect-src"))
 
     def test_gtm_preview_mode_csp(self):
-        for url in self.urls:
-            with self.subTest(url):
-                response = self.client.get(url)
+        self.addCleanup(importlib.reload, base)
 
-                csp = self._parse_csp(response.headers["Content-Security-Policy"])
+        with mock.patch.dict(os.environ, {"GOOGLE_TAG_MANAGER_PREVIEW_MODE_ENABLED": "true"}, clear=False):
+            reloaded_base = importlib.reload(base)
 
-                self.assertIn("tagmanager.google.com", self._get_csp_expressions(csp, "script-src"))
-                self.assertIn("www.googletagmanager.com", self._get_csp_expressions(csp, "style-src"))
-                self.assertIn("tagmanager.google.com", self._get_csp_expressions(csp, "style-src"))
-                self.assertIn("fonts.googleapis.com", self._get_csp_expressions(csp, "style-src"))
-                self.assertIn("ssl.gstatic.com", self._get_csp_expressions(csp, "img-src"))
-                self.assertIn("www.gstatic.com", self._get_csp_expressions(csp, "img-src"))
-                self.assertIn("data:", self._get_csp_expressions(csp, "font-src"))
-                self.assertIn("fonts.gstatic.com", self._get_csp_expressions(csp, "font-src"))
+            with override_settings(SECURE_CSP=reloaded_base.SECURE_CSP):
+                for url in self.urls:
+                    with self.subTest(url):
+                        response = self.client.get(url)
+
+                        csp = self._parse_csp(response.headers["Content-Security-Policy"])
+
+                        self.assertIn("tagmanager.google.com", self._get_csp_expressions(csp, "script-src"))
+                        self.assertIn("www.googletagmanager.com", self._get_csp_expressions(csp, "style-src"))
+                        self.assertIn("tagmanager.google.com", self._get_csp_expressions(csp, "style-src"))
+                        self.assertIn("fonts.googleapis.com", self._get_csp_expressions(csp, "style-src"))
+                        self.assertIn("ssl.gstatic.com", self._get_csp_expressions(csp, "img-src"))
+                        self.assertIn("www.gstatic.com", self._get_csp_expressions(csp, "img-src"))
+                        self.assertIn("data:", self._get_csp_expressions(csp, "font-src"))
+                        self.assertIn("fonts.gstatic.com", self._get_csp_expressions(csp, "font-src"))
 
     def test_hotjar_csp(self):
         """https://help.hotjar.com/hc/en-us/articles/36820026388881-Content-Security-Policies."""
