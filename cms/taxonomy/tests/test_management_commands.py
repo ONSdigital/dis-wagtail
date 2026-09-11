@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import requests
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from requests import HTTPError
 
 from cms.taxonomy.management.commands import sync_topics
@@ -185,6 +185,28 @@ class SyncTopicsTests(TestCase):
         self.assertEqual(
             saved_subtopic.get_parent().id, root_topic.id, "Expect the subtopic to have the correct parent"
         )
+
+    @override_settings(TOPIC_API_BASE_URL="https://example.test/topics")
+    def test_subtopics_url_is_built_from_base_url_not_href(self):
+        """The subtopics URL should be constructed from TOPIC_API_BASE_URL, not the response href."""
+        # Given a root topic whose response href points at a different host we should ignore
+        root_topic = create_topic("0001")
+        subtopic = create_topic("0002")
+        root_json = build_topic_api_json(root_topic, subtopics=[subtopic])
+        root_json["links"] = {"subtopics": {"href": "https://malicious.example/should-not-be-used"}}
+
+        mock_root_response = mock_successful_json_response([root_json])
+        mock_subtopic_response = mock_successful_json_response([build_topic_api_json(subtopic)])
+        self.mock_requests.get.side_effect = [mock_root_response, mock_subtopic_response]
+
+        # When
+        call_command("sync_topics")
+
+        # Then the subtopics call uses the constructed URL, and the href is ignored
+        self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
+        requested_urls = [call.args[0] for call in self.mock_requests.get.call_args_list]
+        self.assertEqual(requested_urls[0], "https://example.test/topics")
+        self.assertEqual(requested_urls[1], "https://example.test/topics/0001/subtopics")
 
     def test_sync_two_root_topics(self):
         # Given
