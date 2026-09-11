@@ -1,7 +1,10 @@
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+
+from django.conf import settings
 
 from cms.core.blocks.constants import CHART_BLOCK_TYPES
 from cms.datavis.clients.chart_exporter import (
@@ -9,6 +12,7 @@ from cms.datavis.clients.chart_exporter import (
     ChartExporterError,
     ChartExporterMalformedRequest,
     ChartExporterUnavailable,
+    ChartObjectResponse,
 )
 from cms.datavis.models import RenderedChartImage
 from cms.datavis.utils import hash_chart_config
@@ -31,6 +35,14 @@ class ChartRenderResult:
     error: str | None = None
 
 
+@dataclass(frozen=True)
+class ChartFetched:
+    """A chart image is ready to be created from this exporter response."""
+
+    response: ChartObjectResponse
+    config_hash: str
+
+
 def iter_chart_blocks(value: StreamValue | None) -> Iterator[StreamChild]:
     """Recursively yield chart blocks from a StreamValue, including those nested in sections."""
     if not value:
@@ -42,7 +54,13 @@ def iter_chart_blocks(value: StreamValue | None) -> Iterator[StreamChild]:
             yield block
 
 
-def _render_chart_block(block: StreamChild, client: ChartExporterClient) -> ChartRenderResult:
+def _fetch_chart_response(block: StreamChild, client: ChartExporterClient) -> ChartFetched | ChartRenderResult:
+    """Do the (slow, network-bound) part of rendering a chart block.
+
+    Safe to run off the main thread: it only calls out to the exporter and never touches the
+    database. Returns a final ``ChartRenderResult`` when there's nothing left to do, or a
+    ``ChartFetched`` when a chart image still needs to be created from the response.
+    """
     config = block.block.get_export_config(block.value)
     config_hash = hash_chart_config(config)
 
@@ -63,9 +81,7 @@ def _render_chart_block(block: StreamChild, client: ChartExporterClient) -> Char
         # Integration disabled: nothing to attach.
         return ChartRenderResult(block_id=block.id, changed=False)
 
-    image = RenderedChartImage.objects.create_from_export_response(response, config_hash=config_hash)
-    block.value["rendered_chart_image"] = image
-    return ChartRenderResult(block_id=block.id, changed=True)
+    return ChartFetched(response=response, config_hash=config_hash)
 
 
 def render_chart_blocks(blocks: Iterable[StreamChild]) -> list[ChartRenderResult]:
@@ -81,7 +97,22 @@ def render_chart_blocks(blocks: Iterable[StreamChild]) -> list[ChartRenderResult
 
     client = ChartExporterClient()
     start = time.monotonic()
-    results = [_render_chart_block(block, client) for block in blocks]
+
+    with ThreadPoolExecutor(max_workers=settings.CMS_CHART_EXPORTER_API_MAX_CONCURRENT_RENDERS) as executor:
+        fetched = list(executor.map(lambda block: _fetch_chart_response(block, client), blocks))
+
+    results = []
+    for block, outcome in zip(blocks, fetched, strict=True):
+        if isinstance(outcome, ChartRenderResult):
+            # Nothing to do, we already have a result (either it was skipped or an error occurred)
+            results.append(outcome)
+            continue
+        image = RenderedChartImage.objects.create_from_export_response(
+            outcome.response, config_hash=outcome.config_hash
+        )
+        block.value["rendered_chart_image"] = image
+        results.append(ChartRenderResult(block_id=block.id, changed=True))
+
     duration = time.monotonic() - start
 
     logger.info(

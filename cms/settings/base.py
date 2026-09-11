@@ -1020,6 +1020,7 @@ CMS_CHART_EXPORTER_API_BASE_URL = env.get("CMS_CHART_EXPORTER_API_BASE_URL", "")
 # Feature flag to enable/disable interaction with the Chart Exporter API
 CMS_CHART_EXPORTER_API_ENABLED = env.get("CMS_CHART_EXPORTER_API_ENABLED", "false").lower() == "true"
 CMS_CHART_EXPORTER_API_MAX_RETRIES = int(env.get("CMS_CHART_EXPORTER_API_MAX_RETRIES", 2))
+CMS_CHART_EXPORTER_API_MAX_CONCURRENT_RENDERS = int(env.get("CMS_CHART_EXPORTER_API_MAX_CONCURRENT_RENDERS", 5))
 
 # Feature flag to enable/disable validation of bundled datasets status on bundle approval
 BUNDLE_DATASET_STATUS_VALIDATION_ENABLED = (
