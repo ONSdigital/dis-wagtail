@@ -1,9 +1,13 @@
 # pylint: disable=too-many-lines
 from http import HTTPStatus
+from urllib.parse import urlsplit
 
+from django.contrib.auth.models import Group
+from django.http import Http404
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from wagtail import hooks
 from wagtail.blocks import StreamValue
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale, PageViewRestriction
@@ -14,6 +18,7 @@ from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalAr
 from cms.bundles.mixins import BundledPageMixin
 from cms.core.permission_testers import BasePagePermissionTester
 from cms.core.tests.utils import TranslationResetMixin
+from cms.core.utils import serve_page_with_view_restrictions
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datavis.tests.factories import TableDataFactory
 from cms.users.tests.factories import UserFactory
@@ -1287,3 +1292,229 @@ class ArticleSeriesChartDownloadMultilingualTestCase(TranslationResetMixin, Wagt
         self.assertIn("100", content)
         self.assertNotIn("Gwerth Cywir", content)
         self.assertNotIn("999", content)
+
+
+class ArticleSeriesPagePrivacyTestCase(WagtailTestUtils, TestCase):
+    """View restrictions on editions must be enforced on the series routable sub-routes.
+
+    The series sub-routes serve child StatisticalArticlePage editions; wagtail's URL-level
+    restriction check only covers the routed page (the series), so the edition's own
+    restrictions are enforced via serve_page_with_view_restrictions.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.series = ArticleSeriesPageFactory()
+        cls.edition = StatisticalArticlePageFactory(parent=cls.series, title="Private edition")
+        # page.url is absolute in tests (site host differs from the test client host);
+        # `next`/`return_url` use the request path, so keep both forms.
+        cls.series_path = urlsplit(cls.series.url).path
+        cls.edition_url = f"{cls.series.url}/editions/{cls.edition.slug}"
+        cls.edition_path = f"{cls.series_path}/editions/{cls.edition.slug}"
+        cls.protected_urls = [
+            cls.series.url,  # latest_article
+            f"{cls.series.url}/related-data",
+            cls.edition_url,
+            f"{cls.edition_url}/related-data",
+            f"{cls.edition_url}/versions/1",
+            f"{cls.edition_url}/download-chart/some-chart",
+            f"{cls.edition_url}/download-table/some-table",
+        ]
+
+    def test_password_restricted_edition_is_protected_on_series_routes(self):
+        restriction = PageViewRestriction.objects.create(
+            page=self.edition, restriction_type=PageViewRestriction.PASSWORD, password="edition-password"
+        )
+        action_url = reverse("wagtailcore_authenticate_with_password", args=[restriction.id, self.edition.id])
+
+        for url in self.protected_urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+                self.assertContains(response, action_url)
+                self.assertContains(response, 'name="return_url"')
+                # The hidden return_url must point back at the requested sub-route.
+                self.assertContains(response, f'value="{urlsplit(url).path}"')
+
+        # Entering the correct password grants access to the edition.
+        response = self.client.post(
+            action_url, {"password": "edition-password", "return_url": self.edition_path}, follow=False
+        )
+        self.assertRedirects(response, self.edition_path, fetch_redirect_response=False)
+        self.assertEqual(self.client.get(self.edition_url).status_code, HTTPStatus.OK)
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=True, WAGTAIL_CORE_ADMIN_LOGIN_ENABLED=False)
+    def test_password_restriction_unlocks_for_anonymous_users_with_cognito_enabled(self):
+        """Regression: with Cognito on and core admin login off, ONSAuthMiddleware used to flush
+        anonymous sessions on every request, wiping the passed-restriction mark so the correct
+        password never unlocked the page.
+        """
+        restriction = PageViewRestriction.objects.create(
+            page=self.edition, restriction_type=PageViewRestriction.PASSWORD, password="edition-password"
+        )
+        action_url = reverse("wagtailcore_authenticate_with_password", args=[restriction.id, self.edition.id])
+
+        response = self.client.post(
+            action_url, {"password": "edition-password", "return_url": self.edition_path}, follow=False
+        )
+
+        self.assertRedirects(response, self.edition_path, fetch_redirect_response=False)
+        self.assertEqual(self.client.get(self.edition_url).status_code, HTTPStatus.OK)
+
+    def test_login_restricted_edition_redirects_to_login_on_series_routes(self):
+        PageViewRestriction.objects.create(page=self.edition, restriction_type=PageViewRestriction.LOGIN)
+        login_url = reverse("wagtailcore_login")
+
+        for url in self.protected_urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertRedirects(response, f"{login_url}?next={urlsplit(url).path}", fetch_redirect_response=False)
+
+        self.client.force_login(self.create_superuser(username="admin"))
+        self.assertEqual(self.client.get(self.edition_url).status_code, HTTPStatus.OK)
+
+    def test_groups_restricted_edition_redirects_unless_user_in_group(self):
+        restriction = PageViewRestriction.objects.create(page=self.edition, restriction_type=PageViewRestriction.GROUPS)
+        group = Group.objects.create(name="Edition viewers")
+        restriction.groups.add(group)
+
+        user = UserFactory()
+        self.client.force_login(user)
+        response = self.client.get(self.edition_url)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertIn(f"next={self.edition_path}", response["Location"])
+
+        user.groups.add(group)
+        self.assertEqual(self.client.get(self.edition_url).status_code, HTTPStatus.OK)
+
+    @override_settings(CMS_PAGE_PRIVACY_CONTROLS_ENABLED=True, WAGTAIL_FRONTEND_LOGIN_URL="/auth/frontend-login")
+    def test_login_restriction_uses_frontend_login_url_when_configured(self):
+        PageViewRestriction.objects.create(page=self.edition, restriction_type=PageViewRestriction.LOGIN)
+
+        response = self.client.get(self.edition_url)
+
+        self.assertRedirects(response, f"/auth/frontend-login?next={self.edition_path}", fetch_redirect_response=False)
+
+    def test_unrestricted_edition_served_on_series_routes(self):
+        for url in [self.series.url, self.edition_url]:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, HTTPStatus.OK)
+
+    def test_restriction_on_series_still_enforced_on_sub_routes(self):
+        PageViewRestriction.objects.create(page=self.series, restriction_type=PageViewRestriction.LOGIN)
+
+        response = self.client.get(self.edition_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertIn(f"next={self.edition_path}", response["Location"])
+
+    def _get_serve_chain_pages(self, url):
+        """GET the url with a temporary outermost on_serve_page hook recording each chain
+        invocation (order=-1 wraps outside wagtail's restriction check, so runs that
+        short-circuit into a restriction response are still counted). Returns the page ids
+        the chain ran for.
+        """
+        chain_pages = []
+
+        def counting_hook(callback):
+            def inner(page, request, serve_args, serve_kwargs):
+                chain_pages.append(page.pk)
+                return callback(page, request, serve_args, serve_kwargs)
+
+            return inner
+
+        with hooks.register_temporarily("on_serve_page", counting_hook, order=-1):
+            self.client.get(url)
+        return chain_pages
+
+    def test_hook_chain_runs_once_for_unrestricted_edition(self):
+        """The helper skips the chain replay when the edition has no restrictions of its
+        own - the URL-level run against the series already enforced its ancestors'.
+        """
+        self.assertEqual(self._get_serve_chain_pages(self.edition_url), [self.series.pk])
+
+    def test_hook_chain_replayed_for_restricted_edition(self):
+        """An edition with its own restriction still gets the chain run against it."""
+        PageViewRestriction.objects.create(
+            page=self.edition, restriction_type=PageViewRestriction.PASSWORD, password="pw"
+        )
+
+        self.assertEqual(self._get_serve_chain_pages(self.edition_url), [self.series.pk, self.edition.pk])
+
+
+class ExternalEnvArticleSeriesPrivacyTestCase(WagtailTestUtils, TestCase):
+    """The external environment has no auth machinery (no sessions, users, or auth
+    backends), so view restrictions can never be satisfied there - restricted editions
+    must be treated as not existing (404) rather than entering the restriction flow,
+    which would crash on the missing request attributes.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.series = ArticleSeriesPageFactory()
+        cls.public_edition = StatisticalArticlePageFactory(
+            parent=cls.series, title="Public edition", release_date=timezone.now().date()
+        )
+        cls.private_edition = StatisticalArticlePageFactory(
+            parent=cls.series,
+            title="Private edition",
+            release_date=timezone.now().date() + timezone.timedelta(days=1),
+        )
+        PageViewRestriction.objects.create(page=cls.private_edition, restriction_type=PageViewRestriction.LOGIN)
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_series_root_skips_restricted_latest_and_serves_latest_public_edition(self):
+        response = self.client.get(self.series.url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.public_edition.title)
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_restricted_edition_sub_routes_404(self):
+        private_url = f"{self.series.url}/editions/{self.private_edition.slug}"
+        for url in [
+            private_url,
+            f"{private_url}/related-data",
+            f"{private_url}/download-chart/some-chart",
+            f"{private_url}/download-table/some-table",
+        ]:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, HTTPStatus.NOT_FOUND)
+
+    def test_series_root_404_when_only_edition_is_restricted(self):
+        # Create the data before entering the external-env override: the DB router blocks
+        # writes while IS_EXTERNAL_ENV is active.
+        series = ArticleSeriesPageFactory()
+        restricted = StatisticalArticlePageFactory(parent=series, title="Only restricted edition")
+        PageViewRestriction.objects.create(page=restricted, restriction_type=PageViewRestriction.LOGIN)
+
+        with override_settings(IS_EXTERNAL_ENV=True):
+            self.assertEqual(self.client.get(series.url).status_code, HTTPStatus.NOT_FOUND)
+
+    def test_restricted_series_404s_on_all_routes(self):
+        """Directly-routed restricted pages are covered by the before_serve_page hook."""
+        PageViewRestriction.objects.create(page=self.series, restriction_type=PageViewRestriction.LOGIN)
+
+        with override_settings(IS_EXTERNAL_ENV=True):
+            for url in [self.series.url, f"{self.series.url}/editions/{self.public_edition.slug}"]:
+                with self.subTest(url=url):
+                    self.assertEqual(self.client.get(url).status_code, HTTPStatus.NOT_FOUND)
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_helper_raises_http404_not_attribute_error_without_auth_middleware(self):
+        """The real external-env request has no .user/.session attributes; the helper must
+        404 before wagtail's restriction check touches them.
+        """
+        request = RequestFactory().get(f"/{self.private_edition.slug}")
+
+        with self.assertRaises(Http404):
+            serve_page_with_view_restrictions(self.private_edition, request)
+
+    def test_internal_env_unaffected(self):
+        """Internally the restriction flow still runs: the restricted latest edition is
+        served as the restriction response, not skipped.
+        """
+        response = self.client.get(self.series.url)
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertIn("next=", response["Location"])

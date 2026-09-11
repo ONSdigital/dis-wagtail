@@ -1,4 +1,5 @@
 from unittest import mock
+from urllib.parse import parse_qs, urlsplit
 
 from django.conf import settings
 from django.contrib import messages
@@ -181,3 +182,81 @@ class ExtendSessionTests(WagtailTestUtils, TestCase):
         res = self.client.post(url, follow=False)
 
         self.assertEqual(res.status_code, 403)
+
+
+@override_settings(ROOT_URLCONF="cms.urls", CMS_PAGE_PRIVACY_CONTROLS_ENABLED=True)
+class FrontendLoginRedirectTests(TestCase):
+    """Tests for frontend_login_redirect, the login target for Wagtail page privacy settings."""
+
+    FLORENCE_LOGIN_URL = "https://florence.example/florence/login"
+
+    def setUp(self):
+        self.url = reverse("frontend_login_redirect")
+
+    def _get_redirect_target(self, response):
+        """Splits a redirect response's Location into (base URL, decoded query params)."""
+        self.assertEqual(response.status_code, 302)
+        scheme, netloc, path, query, _fragment = urlsplit(response["Location"])
+        base = f"{scheme}://{netloc}{path}" if netloc else path
+        return base, parse_qs(query)
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=True, WAGTAILADMIN_LOGIN_URL=FLORENCE_LOGIN_URL)
+    def test_cognito_enabled_redirects_to_sso_with_absolute_redirect_param(self):
+        """With Cognito on, the user is sent to Florence SSO with the absolute
+        post-login target in the `redirect` query parameter.
+        """
+        response = self.client.get(self.url, {"next": "/economy/private-page/"})
+
+        base, params = self._get_redirect_target(response)
+        self.assertEqual(base, self.FLORENCE_LOGIN_URL)
+        self.assertEqual(params, {"redirect": ["http://testserver/economy/private-page/"]})
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=True, WAGTAILADMIN_LOGIN_URL=f"{FLORENCE_LOGIN_URL}?foo=bar")
+    def test_cognito_enabled_merges_existing_query_string(self):
+        """A login URL that already carries a query string keeps its parameters."""
+        response = self.client.get(self.url, {"next": "/economy/private-page/"})
+
+        base, params = self._get_redirect_target(response)
+        self.assertEqual(base, self.FLORENCE_LOGIN_URL)
+        self.assertEqual(
+            params,
+            {"foo": ["bar"], "redirect": ["http://testserver/economy/private-page/"]},
+        )
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=True, WAGTAILADMIN_LOGIN_URL=FLORENCE_LOGIN_URL)
+    def test_missing_next_falls_back_to_homepage(self):
+        response = self.client.get(self.url)
+
+        _base, params = self._get_redirect_target(response)
+        self.assertEqual(params, {"redirect": ["http://testserver/"]})
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=True, WAGTAILADMIN_LOGIN_URL=FLORENCE_LOGIN_URL)
+    def test_unsafe_next_values_fall_back_to_homepage(self):
+        """Absolute, protocol-relative, and non-rooted `next` values must not be
+        used as redirect targets (open redirect protection).
+        """
+        for unsafe_next in ["https://evil.example/", "//evil.example/", "economy/page/", "javascript:alert(1)"]:
+            with self.subTest(next=unsafe_next):
+                response = self.client.get(self.url, {"next": unsafe_next})
+
+                _base, params = self._get_redirect_target(response)
+                self.assertEqual(params, {"redirect": ["http://testserver/"]})
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
+    def test_cognito_disabled_falls_back_to_wagtail_frontend_login(self):
+        """With Cognito off, the user is sent to Wagtail's built-in frontend login,
+        which reads the target from `next`.
+        """
+        response = self.client.get(self.url, {"next": "/economy/private-page/"})
+
+        base, params = self._get_redirect_target(response)
+        self.assertEqual(base, reverse("wagtailcore_login"))
+        self.assertEqual(params, {"next": ["/economy/private-page/"]})
+
+    @override_settings(AWS_COGNITO_LOGIN_ENABLED=False)
+    def test_cognito_disabled_unsafe_next_falls_back_to_homepage(self):
+        response = self.client.get(self.url, {"next": "https://evil.example/"})
+
+        base, params = self._get_redirect_target(response)
+        self.assertEqual(base, reverse("wagtailcore_login"))
+        self.assertEqual(params, {"next": ["/"]})

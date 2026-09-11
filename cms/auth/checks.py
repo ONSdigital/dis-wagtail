@@ -37,6 +37,70 @@ def check_aws_cognito(app_configs: Iterable[AppConfig] | None, **kwargs: Any) ->
 
 
 @register()
+def check_wagtail_admin_login_url(app_configs: Iterable[AppConfig] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
+    """Catches the config where WAGTAILADMIN_LOGIN_URL redirects to itself.
+
+    When WAGTAIL_CORE_ADMIN_LOGIN_ENABLED is False, urls.py mounts a RedirectView at the
+    local admin login path targeting WAGTAILADMIN_LOGIN_URL. If that setting is left at
+    its local default, the redirect points at itself and users loop forever instead of
+    reaching a working login. The loop depends only on this URL wiring, so it applies
+    whether or not Cognito is enabled.
+    """
+    errors: list[Error] = []
+
+    # The admin URLs (and the login RedirectView) are not mounted in the external env.
+    if getattr(settings, "IS_EXTERNAL_ENV", False):
+        return errors
+    if getattr(settings, "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED", False):
+        return errors
+
+    local_admin_login_path = f"/{getattr(settings, 'WAGTAILADMIN_HOME_PATH', 'admin/')}login/"
+    if getattr(settings, "WAGTAILADMIN_LOGIN_URL", None) == local_admin_login_path:
+        errors.append(
+            Error(
+                "WAGTAILADMIN_LOGIN_URL points at the local admin login path, which redirects to "
+                "itself when WAGTAIL_CORE_ADMIN_LOGIN_ENABLED is False.",
+                hint="Set WAGTAILADMIN_LOGIN_URL to the external (Florence SSO) login URL.",
+                id="auth.E010",
+            )
+        )
+
+    return errors
+
+
+@register()
+def check_admin_login_mechanism(app_configs: Iterable[AppConfig] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
+    """Ensures an internal deployment has at least one working admin auth mechanism.
+
+    With both AWS_COGNITO_LOGIN_ENABLED and WAGTAIL_CORE_ADMIN_LOGIN_ENABLED off there is
+    no way to sign in to the admin: the auth middleware ignores SSO tokens and the admin
+    login route is a redirect rather than a login form. This holds even when
+    WAGTAILADMIN_LOGIN_URL points at an external login page.
+    """
+    errors: list[Error] = []
+
+    if getattr(settings, "IS_EXTERNAL_ENV", False):
+        return errors
+
+    cognito_enabled = getattr(settings, "AWS_COGNITO_LOGIN_ENABLED", False)
+    core_login_enabled = getattr(settings, "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED", False)
+    if not cognito_enabled and not core_login_enabled:
+        errors.append(
+            Error(
+                "No admin login mechanism is enabled: AWS_COGNITO_LOGIN_ENABLED and "
+                "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED are both False.",
+                hint=(
+                    "Enable AWS_COGNITO_LOGIN_ENABLED for Florence SSO, or "
+                    "WAGTAIL_CORE_ADMIN_LOGIN_ENABLED for Wagtail's username/password login."
+                ),
+                id="auth.E011",
+            )
+        )
+
+    return errors
+
+
+@register()
 def check_session_config(app_configs: Iterable[AppConfig] | None, **kwargs: Any) -> list[Error]:  # pylint: disable=unused-argument
     errors: list[Error] = []
     session_cookie_age = getattr(settings, "SESSION_COOKIE_AGE", None)
