@@ -32,7 +32,7 @@ whitenoise = "~6.12.0"
 slack-sdk = "^3.43.0"
 django-cache-memoize = "^0.2.1"
 requests = "^2.34.2"
-django-treebeard = "^4.8.0" # Wagtail 7.4 allows < 6.0, but 5.x needs a TopicManager refactor
+django-treebeard = ">=4.8,<6.0" # Wagtail pins < 6.0, so that is our ceiling rather than the latest release
 kafka-python = "^2.3.2"
 wagtail-tinytableblock = "^0.5.0"
 queryish = "^0.3"

@@ -12,6 +12,9 @@ from wagtail.search import index
 
 from cms.core.db_router import force_write_db_for
 
+# The dummy root sits at depth 1 and real topics start below it, so every depth comparison in this module
+# is offset by one level that users never see.
+DUMMY_ROOT_DEPTH = 1
 BASE_TOPIC_DEPTH = 2
 
 if TYPE_CHECKING:
@@ -20,14 +23,25 @@ if TYPE_CHECKING:
 
 class TopicManager(MP_NodeManager):
     def get_queryset(self) -> TreeQuerySet:
-        """Filter out the dummy root topic from all querysets."""
+        """Return every row, dummy root included.
+
+        This must not filter. Treebeard resolves the tree through `cls.objects` by name, in roughly twenty
+        places, and offers no hook to point it at a different manager. Hiding the dummy root here makes it
+        invisible to add_child, move, get_root_nodes and the rest, which then fail with Topic.DoesNotExist.
+
+        Anything that shows or enumerates topics wants `topics()` below instead.
+        """
         # Reuse Wagtail's custom tree QuerySet for helpful utils
-        return TreeQuerySet(self.model, using=self._db, hints=self._hints).order_by("path").filter(depth__gt=1)
+        return TreeQuerySet(self.model, using=self._db, hints=self._hints).order_by("path")
+
+    def topics(self) -> TreeQuerySet:
+        """Return the real topics, excluding the dummy root."""
+        return self.get_queryset().filter(depth__gt=DUMMY_ROOT_DEPTH)
 
     def root_topic(self) -> Topic:
         """Return the dummy root topic."""
         # We create the dummy root in a migration so we know it will exist, so cast to "Topic" for mypy
-        return typing.cast(Topic, super().get_queryset().filter(depth=1).get())
+        return typing.cast(Topic, self.get_queryset().filter(depth=DUMMY_ROOT_DEPTH).get())
 
 
 # This is the main 'node' model, it inherits mp_node
@@ -95,7 +109,8 @@ class Topic(index.Indexed, MP_Node):
         """
         if self.depth == BASE_TOPIC_DEPTH:
             return self
-        return typing.cast("Topic", self.get_ancestors().first())
+        # Ancestors are ordered root to leaf, so without dropping the dummy root this would return it.
+        return typing.cast("Topic", self.get_topic_ancestors().first())
 
     def move(self, target: Topic | None = None, pos: str = "sorted-child") -> None:
         """Move the topic to underneath the target parent. If no target is passed, move it underneath our root."""
@@ -105,9 +120,18 @@ class Topic(index.Indexed, MP_Node):
     def __str__(self) -> str:
         return str(self.title)
 
+    def get_topic_ancestors(self) -> models.QuerySet[Topic]:
+        """Return the ancestors a user would recognise, without the dummy root.
+
+        get_ancestors goes through cls.objects, which cannot filter the dummy root out, so anything walking
+        up the tree for display has to drop it here instead.
+        """
+        # treebeard is untyped, so get_ancestors() comes back as Any
+        return typing.cast("models.QuerySet[Topic]", self.get_ancestors().filter(depth__gt=DUMMY_ROOT_DEPTH))
+
     @property
     def display_parent_topics(self) -> str:
-        if ancestors := [topic.title for topic in self.get_ancestors()]:
+        if ancestors := [topic.title for topic in self.get_topic_ancestors()]:
             return " → ".join(ancestors)
         return ""
 
@@ -117,7 +141,7 @@ class Topic(index.Indexed, MP_Node):
         Used for linking to search listing pages.
         """
         # Ancestors are ordered root to leaf.
-        ancestor_slugs = list(self.get_ancestors().values_list("slug", flat=True))
+        ancestor_slugs = list(self.get_topic_ancestors().values_list("slug", flat=True))
         return "/".join([*ancestor_slugs, self.slug])
 
 
