@@ -8,7 +8,6 @@
     margin-bottom: 1em;
 
     @include media-query('m') {
-        // desktop only
         flex-direction: row;
     }
 
