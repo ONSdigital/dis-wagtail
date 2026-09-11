@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from typing import Any
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 import requests
 from django.core.management import call_command
@@ -583,14 +583,13 @@ class SyncTopicsTests(TestCase):
         call_command("sync_topics")
 
         # Then
-        self.mock_requests.get.assert_called_once()
-        _, kwargs = self.mock_requests.get.call_args
-        self.assertEqual(
-            kwargs.get("headers"),
-            {
+        self.mock_requests.get.assert_called_once_with(
+            ANY,
+            headers={
                 "Authorization": "Bearer test-token",
                 "X-Florence-Token": "Bearer test-token",
             },
+            timeout=30,
         )
 
     @override_settings(CMS_TOPIC_SYNC_AUTH_ENABLED=False, SERVICE_AUTH_TOKEN="test-token")
@@ -604,9 +603,7 @@ class SyncTopicsTests(TestCase):
         call_command("sync_topics")
 
         # Then
-        self.mock_requests.get.assert_called_once()
-        _, kwargs = self.mock_requests.get.call_args
-        self.assertEqual(kwargs.get("headers"), {})
+        self.mock_requests.get.assert_called_once_with(ANY, headers={}, timeout=30)
 
     @override_settings(CMS_TOPIC_SYNC_AUTH_ENABLED=True, SERVICE_AUTH_TOKEN=None)
     def test_sync_raises_when_auth_enabled_and_token_unset(self):
