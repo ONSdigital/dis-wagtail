@@ -531,7 +531,7 @@ class SyncTopicsTests(TestCase):
         # When, then raises
         self.assertRaises(RuntimeError, sync_topics.Command().handle)
 
-    @override_settings(CMS_TOPIC_SYNC_EXCLUDED_SLUGS=["census"])
+    @override_settings(CMS_TOPIC_SYNC_EXCLUDED_SLUGS={"census"})
     def test_excluded_topic_and_subtopics_are_not_synced(self):
         """A top-level topic with an excluded slug, and its subtopics, should be skipped entirely."""
         # Given
@@ -564,7 +564,7 @@ class SyncTopicsTests(TestCase):
             Topic.objects.filter(id=excluded_subtopic.id).exists(), "Excluded subtopic should not be synced"
         )
 
-    @override_settings(CMS_TOPIC_SYNC_EXCLUDED_SLUGS=["census"])
+    @override_settings(CMS_TOPIC_SYNC_EXCLUDED_SLUGS={"census"})
     def test_existing_excluded_subtree_is_marked_removed_even_when_api_returns_it(self):
         """Even when the API returns an excluded topic, exclusion drops it from the fetched set,
         so an existing DB copy is marked removed. This isolates exclusion (not API-absence) as the cause.
