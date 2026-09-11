@@ -39,15 +39,16 @@ class RetryFilePermissionSetAttemptsCommandTests(TestCase):
         return out.getvalue()
 
     def test_default(self):
-        with self.assertNumQueries(7):
+        with self.assertNumQueries(8):
             # Query summary:
-            # 1. Fetch outdated documents
-            # 2. Update 'file_permissions_last_set' for outdated private documents
-            # 3. Update 'file_permissions_last_set' for outdated public documents
-            # 4. Fetch outdated images
-            # 5. Fetch renditions for those images
-            # 6. Update 'file_permissions_last_set' for outdated private images
-            # 7. Update 'file_permissions_last_set' for outdated public images
+            # 1. Fetch outdated rendered chart images
+            # 2. Fetch outdated documents
+            # 3. Update 'file_permissions_last_set' for outdated private documents
+            # 4. Update 'file_permissions_last_set' for outdated public documents
+            # 5. Fetch outdated images
+            # 6. Fetch renditions for those images
+            # 7. Update 'file_permissions_last_set' for outdated private images
+            # 8. Update 'file_permissions_last_set' for outdated public images
             output = self.call_command(self.command_name)
 
         self.assertIn("2 CustomDocument instances have outdated file permissions", output)
@@ -58,10 +59,11 @@ class RetryFilePermissionSetAttemptsCommandTests(TestCase):
         self.assertIn("File permissions successfully updated for 1 public custom images.", output)
 
     def test_dry_run(self):
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(3):
             # Query summary:
-            # 1. Fetch outdated documents
-            # 2. Fetch outdated images
+            # 1. Fetch outdated rendered chart images
+            # 2. Fetch outdated documents
+            # 3. Fetch outdated images
             output = self.call_command(self.command_name, "--dry-run")
         self.assertIn("This is a dry run.", output)
         self.assertIn("2 CustomDocument instances have outdated file permissions", output)

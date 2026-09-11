@@ -55,6 +55,7 @@ wagtail-factories = "^4.5.0"
 pydantic = "^2.12.5"
 wagtail-schema-org = "5.0.0"
 django-permissions-policy = "^4.32.0"
+stamina = "^26.1.0"
 
 [tool.poetry.group.dev.dependencies]
 # :TODO: Remove pylint when ruff supports all pylint rules

@@ -1,3 +1,4 @@
+import json
 from typing import Any, ClassVar
 from unittest.mock import Mock
 from urllib.parse import urlparse
@@ -14,6 +15,7 @@ from cms.datavis.blocks.base import BaseChartBlock, BaseVisualisationBlock
 from cms.datavis.blocks.charts import LineChartBlock
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
 from cms.datavis.tests.factories import TableDataFactory
+from cms.datavis.utils import hash_chart_config
 
 
 class BaseVisualisationBlockTestCase(SimpleTestCase, WagtailTestUtils):
@@ -94,6 +96,10 @@ class BaseChartBlockTestCase(BaseVisualisationBlockTestCase):
         value = self.get_value(raw_data)
         return self.block.get_component_config(value)
 
+    def get_export_config(self, raw_data: dict[str, Any] | None = None):
+        value = self.get_value(raw_data)
+        return self.block.get_export_config(value)
+
     def _test_generic_properties(self):
         """Test attributes that are common to all chart blocks."""
         value = self.get_value()
@@ -125,6 +131,23 @@ class BaseChartBlockTestCase(BaseVisualisationBlockTestCase):
         self.assertIn("xAxis", config)
         self.assertIn("yAxis", config)
         self.assertIn("series", config)
+
+    def _test_get_export_config(self):
+        config = self.get_export_config()
+
+        # Request/page-dependent "download" config must not be sent to the exporter.
+        self.assertNotIn("download", config)
+        self.assertEqual(config["caption"], "Test Caption")
+
+        # Must be deterministic, since it's used for hashing.
+        self.assertEqual(hash_chart_config(config), hash_chart_config(self.get_export_config()))
+
+        # The footnotes title is translated, and a gettext_lazy proxy would break both the
+        # hashing above and the JSON request body.
+        config_with_footnotes = self.get_export_config(self.raw_data | {"footnotes": "<p>Note</p>"})
+        self.assertEqual(config_with_footnotes["footnotes"]["title"], "Footnotes")
+        json.dumps(config_with_footnotes)
+        hash_chart_config(config_with_footnotes)
 
 
 class BuildChartDownloadUrlTests(SimpleTestCase):
