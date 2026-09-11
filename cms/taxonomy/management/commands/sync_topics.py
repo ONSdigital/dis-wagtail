@@ -205,12 +205,16 @@ def _create_topic(fetched_topic: Mapping[str, str]) -> None:
         Topic.save_new(new_topic)
 
 
-def _check_for_removed_topics(existing_topic_ids: set[str]) -> None:
+def _check_for_removed_topics(fetched_topic_ids: set[str]) -> None:
     """Figures out which topics exist in the database but were not returned
-    by the external API in this sync cycle.
+    by the external API in this sync cycle, and marks them as removed.
+
+    Only considers topics that are not already marked as removed, so the operation is
+    idempotent (already-removed topics are not re-saved) and the logged counts reflect
+    only topics newly removed in this cycle.
     """
-    existing_topics = _get_all_existing_topic_ids()
-    removed_topics = existing_topics.difference(existing_topic_ids)
+    active_topic_ids = _get_active_topic_ids()
+    removed_topics = active_topic_ids.difference(fetched_topic_ids)
     if removed_topics:
         logger.warning("Found removed topic(s)", extra={"count": len(removed_topics)})
     for removed_topic_id in removed_topics:
@@ -218,8 +222,8 @@ def _check_for_removed_topics(existing_topic_ids: set[str]) -> None:
         _set_topic_as_removed(removed_topic_id)
 
 
-def _get_all_existing_topic_ids() -> set[str]:
-    return set(Topic.objects.values_list("id", flat=True))
+def _get_active_topic_ids() -> set[str]:
+    return set(Topic.objects.filter(removed=False).values_list("id", flat=True))
 
 
 def _set_topic_as_removed(removed_topic_id: str) -> None:

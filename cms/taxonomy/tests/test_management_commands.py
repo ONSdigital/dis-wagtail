@@ -531,6 +531,35 @@ class SyncTopicsTests(TestCase):
         # When, then raises
         self.assertRaises(RuntimeError, sync_topics.Command().handle)
 
+    def test_only_missing_topics_are_marked_as_removed(self):
+        """A topic should only be marked as removed when it is no longer returned by the API.
+
+        This uses three topics to cover:
+        - a topic that the API still returns -> should not be marked as removed,
+        - a topic that the API no longer returns -> should be marked as removed (once),
+        - a topic that was already removed and is still not returned -> should be left alone (not saved again).
+        """
+        # Given a topic that the API still returns (should be not be marked as removed)
+        still_returned_topic = TopicFactory(id="0001", title="Still here", removed=False, slug="still-here")
+        # And a topic that the API no longer returns (should be newly marked as removed)
+        TopicFactory(id="0002", title="No longer returned", removed=False, slug="no-longer-returned")
+        # And a topic that was already removed and is still not returned (should not be touched again)
+        TopicFactory(id="9999", title="Already removed", removed=True, slug="already-removed")
+
+        # The API only returns the topic that still exists
+        self.mock_requests.get.return_value = mock_successful_json_response(
+            [build_topic_api_json(still_returned_topic)]
+        )
+
+        # When
+        with patch.object(sync_topics, "_set_topic_as_removed") as mock_set_removed:
+            call_command("sync_topics")
+
+        # Then only the topic that is no longer returned gets marked as removed, and only once.
+        # We assert the topic id to prove the still-returned topic (0001)
+        # and the already-removed topic (9999) were marked as removed.
+        mock_set_removed.assert_called_once_with("0002")
+
 
 def create_topic(topic_id: str, include_description: bool = True, include_slug: bool = True) -> Topic:
     """Create a topic (without saving it to the database)."""
