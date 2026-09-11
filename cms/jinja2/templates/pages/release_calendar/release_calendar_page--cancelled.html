@@ -45,7 +45,9 @@
             <h2>{{ _("Changes to this release date") }}</h2>
 
             <ol class="ons-list ons-list--bare">
-                {% include_block page.changes_to_release_date %}
+                {% for block in page.changes_to_release_date %}
+                    {% include_block block %}
+                {% endfor %}
             </ol>
         </section>
     {% endif %}
