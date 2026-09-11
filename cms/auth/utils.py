@@ -103,6 +103,27 @@ def _validate_jwt(token: str, *, extra_fields: Iterable[str], token_type: str) -
     return claims
 
 
+def get_service_auth_headers(token: str | None, *, enabled: bool = True) -> dict[str, str]:
+    """Build request headers for authenticating service-to-service API calls.
+
+    Authentication is optional: when `enabled` is `False`, or when `token`
+    is unset or empty, no auth headers are returned and requests are made unauthenticated
+    (e.g. external environments).
+
+    When authenticated, both the standard ``Authorization`` header and the legacy
+    ``X-Florence-Token`` header are sent. The ``X-Florence-Token`` header remains mandatory
+    for now because some services still depend on older middleware. Once all services are
+    upgraded, we can remove the ``X-Florence-Token`` header entirely.
+    """
+    if not enabled or not token:
+        return {}
+
+    return {
+        "Authorization": f"Bearer {token}",
+        "X-Florence-Token": f"Bearer {token}",
+    }
+
+
 def get_auth_config() -> dict[str, Any]:
     """Returns a dictionary containing authentication configuration details."""
     # Default value for csrf_header_name is "HTTP_X_CSRFTOKEN", the header needs to be set as "X-CSRFToken"

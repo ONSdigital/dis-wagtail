@@ -1,9 +1,10 @@
 from collections.abc import Iterable
 from typing import Any
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 import requests
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from requests import HTTPError
 
@@ -12,6 +13,7 @@ from cms.taxonomy.models import Topic
 from cms.taxonomy.tests.factories import TopicFactory
 
 
+@override_settings(CMS_TOPIC_SYNC_AUTH_ENABLED=False)
 class SyncTopicsTests(TestCase):
     def setUp(self):
         self.requests_patcher = patch("cms.taxonomy.management.commands.sync_topics.requests")
@@ -531,6 +533,116 @@ class SyncTopicsTests(TestCase):
         # When, then raises
         self.assertRaises(RuntimeError, sync_topics.Command().handle)
 
+    def test_only_missing_topics_are_marked_as_removed(self):
+        """A topic should only be marked as removed when it is no longer returned by the API.
+
+        This uses three topics to cover:
+        - a topic that the API still returns -> should not be marked as removed,
+        - a topic that the API no longer returns -> should be marked as removed (once),
+        - a topic that was already removed and is still not returned -> should be left alone (not saved again).
+        """
+        # Given a topic that the API still returns (should be not be marked as removed)
+        still_returned_topic = TopicFactory(id="0001", title="Still here", removed=False, slug="still-here")
+        # And a topic that the API no longer returns (should be newly marked as removed)
+        TopicFactory(id="0002", title="No longer returned", removed=False, slug="no-longer-returned")
+        # And a topic that was already removed and is still not returned (should not be touched again)
+        TopicFactory(id="9999", title="Already removed", removed=True, slug="already-removed")
+
+        # The API only returns the topic that still exists
+        self.mock_requests.get.return_value = mock_successful_json_response(
+            [build_topic_api_json(still_returned_topic)]
+        )
+
+        # When
+        with patch.object(sync_topics, "_set_topic_as_removed") as mock_set_removed:
+            call_command("sync_topics")
+
+        # Then only the topic that is no longer returned gets marked as removed, and only once.
+        # We assert the topic id to prove the still-returned topic (0001)
+        # and the already-removed topic (9999) were marked as removed.
+        mock_set_removed.assert_called_once_with("0002")
+
+    def test_sync_valid_topic_current_wrapped(self):
+        """A topic delivered in the internal-env shape (wrapped under `current`) should sync."""
+        # Given
+        topic = create_topic("1234")
+        mock_response = mock_successful_json_response([build_topic_api_json_wrapped(topic)])
+        self.mock_requests.get.return_value = mock_response
+
+        # When
+        call_command("sync_topics")
+
+        # Then
+        self.mock_requests.get.assert_called_once()
+        self.assertEqual(Topic.objects.all().count(), 1, "Expect one topic to be saved")
+        saved_topic = Topic.objects.first()
+        self.assertEqual(saved_topic, topic, "Expect the saved topic to match")
+
+    def test_sync_topic_with_subtopic_current_wrapped(self):
+        """Subtopic traversal should work when items are wrapped under `current`."""
+        # Given
+        root_topic = create_topic("0001")
+        subtopic = create_topic("0002")
+        mock_root_response = mock_successful_json_response(
+            [build_topic_api_json_wrapped(root_topic, subtopics=[subtopic])]
+        )
+        mock_subtopic_response = mock_successful_json_response([build_topic_api_json_wrapped(subtopic)])
+
+        self.mock_requests.get.side_effect = [mock_root_response, mock_subtopic_response]
+
+        # When
+        call_command("sync_topics")
+
+        # Then
+        self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
+        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
+        saved_subtopic = Topic.objects.get(id=subtopic.id)
+        self.assertEqual(
+            saved_subtopic.get_parent().id, root_topic.id, "Expect the subtopic to have the correct parent"
+        )
+
+    @override_settings(CMS_TOPIC_SYNC_AUTH_ENABLED=True, SERVICE_AUTH_TOKEN="test-token")
+    def test_sync_sends_auth_headers_when_auth_enabled_and_token_set(self):
+        """When auth is enabled and SERVICE_AUTH_TOKEN is set, requests carry both auth headers."""
+        # Given
+        topic = create_topic("1234")
+        self.mock_requests.get.return_value = mock_successful_json_response([build_topic_api_json(topic)])
+
+        # When
+        call_command("sync_topics")
+
+        # Then
+        self.mock_requests.get.assert_called_once_with(
+            ANY,
+            headers={
+                "Authorization": "Bearer test-token",
+                "X-Florence-Token": "Bearer test-token",
+            },
+            timeout=30,
+        )
+
+    @override_settings(CMS_TOPIC_SYNC_AUTH_ENABLED=False, SERVICE_AUTH_TOKEN="test-token")
+    def test_sync_sends_no_auth_headers_when_auth_disabled(self):
+        """When auth is disabled, no auth headers are sent even if a token is set."""
+        # Given
+        topic = create_topic("1234")
+        self.mock_requests.get.return_value = mock_successful_json_response([build_topic_api_json(topic)])
+
+        # When
+        call_command("sync_topics")
+
+        # Then
+        self.mock_requests.get.assert_called_once_with(ANY, headers={}, timeout=30)
+
+    @override_settings(CMS_TOPIC_SYNC_AUTH_ENABLED=True, SERVICE_AUTH_TOKEN=None)
+    def test_sync_raises_when_auth_enabled_and_token_unset(self):
+        """When auth is enabled and SERVICE_AUTH_TOKEN is unset, the command errors."""
+        with self.assertRaises(CommandError) as exc:
+            call_command("sync_topics")
+
+        self.assertIn("SERVICE_AUTH_TOKEN must be set when CMS_TOPIC_SYNC_AUTH_ENABLED is True", str(exc.exception))
+        self.mock_requests.get.assert_not_called()
+
 
 def create_topic(topic_id: str, include_description: bool = True, include_slug: bool = True) -> Topic:
     """Create a topic (without saving it to the database)."""
@@ -564,6 +676,16 @@ def build_topic_api_json(topic: Topic, subtopics: Iterable[Topic] = ()) -> dict[
         "slug": topic.slug,
         "links": links,
         "subtopics_ids": subtopics_ids,
+    }
+
+
+def build_topic_api_json_wrapped(topic: Topic, subtopics: Iterable[Topic] = ()) -> dict[str, Any]:
+    """Return the topic in the internal-env format, wrapped under ``current`` (and ``next``)."""
+    topic_json = build_topic_api_json(topic, subtopics=subtopics)
+    return {
+        "id": topic.id,
+        "current": topic_json,
+        "next": topic_json,
     }
 
 

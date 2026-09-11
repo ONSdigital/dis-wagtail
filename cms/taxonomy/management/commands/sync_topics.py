@@ -6,7 +6,9 @@ import requests
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import BaseCommand
+from django.core.management.base import CommandError
 
+from cms.auth.utils import get_service_auth_headers
 from cms.taxonomy.models import Topic
 
 logger = logging.getLogger(__name__)
@@ -15,9 +17,19 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     """Topic Sync management command."""
 
+    service_auth_token: str | None = None
+    auth_enabled: bool = False
+
     def handle(self, *args: Any, **options: Any) -> None:
+        # When auth is enabled, a service token is mandatory
+        # When disabled, requests are made unauthenticated and no token is required.
+        self.auth_enabled = settings.CMS_TOPIC_SYNC_AUTH_ENABLED
+        self.service_auth_token = getattr(settings, "SERVICE_AUTH_TOKEN", None)
+        if self.auth_enabled and not self.service_auth_token:
+            raise CommandError("SERVICE_AUTH_TOKEN must be set when CMS_TOPIC_SYNC_AUTH_ENABLED is True")
+
         logger.info("Fetching topics from API...")
-        fetched_topics = _fetch_all_topics()
+        fetched_topics = self.fetch_all_topics()
         logger.info("Fetched topics", extra={"count": len(fetched_topics)})
 
         logger.info("Syncing topics...")
@@ -28,59 +40,76 @@ class Command(BaseCommand):
 
         logger.info("Finished syncing topics.")
 
+    def fetch_all_topics(self) -> list[dict[str, str]]:
+        """Collect a complete list of topics and their subtopics by doing a
+        depth/breadth-first search using a stack of URLs.
+        """
+        topics = []
 
-def _fetch_all_topics() -> list[dict[str, str]]:
-    """Collect a complete list of topics and their subtopics by doing a
-    depth/breadth-first search using a stack of URLs.
-    """
-    topics = []
+        if not settings.TOPIC_API_BASE_URL:
+            raise ImproperlyConfigured('"TOPIC_API_BASE_URL" must be set')
 
-    if not settings.TOPIC_API_BASE_URL:
-        raise ImproperlyConfigured('"TOPIC_API_BASE_URL" must be set')
+        # Build a stack of topics URLs and parent IDs
+        request_stack: list[tuple[str, str | None]] = [(settings.TOPIC_API_BASE_URL, None)]
 
-    # Build a stack of topics URLs and parent IDs
-    request_stack: list[tuple[str, str | None]] = [(settings.TOPIC_API_BASE_URL, None)]
+        # Use the stack of subtopic URls to iterate through, fetching all the subtopics
+        while request_stack:
+            url, parent_id = request_stack.pop()
+            raw_topics = self.request_topics(url)
 
-    # Use the stack of subtopic URls to iterate through, fetching all the subtopics
-    while request_stack:
-        url, parent_id = request_stack.pop()
-        raw_topics = _request_topics(url)
-
-        # Extract just the fields we need
-        subtopics = [
-            {
-                k: v
-                for k, v in raw_topic.items()
-                if k
-                in {
-                    "title",
-                    "id",
-                    "slug",
-                    "description",
+            # Extract just the fields we need
+            subtopics = [
+                {
+                    k: v
+                    for k, v in raw_topic.items()
+                    if k
+                    in {
+                        "title",
+                        "id",
+                        "slug",
+                        "description",
+                    }
                 }
-            }
-            for raw_topic in raw_topics
-        ]
+                for raw_topic in raw_topics
+            ]
 
-        for topic in subtopics:
-            if parent_id:
-                topic["parent_id"] = parent_id
+            for topic in subtopics:
+                if parent_id:
+                    topic["parent_id"] = parent_id
 
-        # Extend the topics list, to build a flat list of topics and subtopics which contain their own parent IDs
-        topics.extend(subtopics)
+            # Extend the topics list, to build a flat list of topics and subtopics which contain their own parent IDs
+            topics.extend(subtopics)
 
-        # Add any subtopics URLs from the topics we just fetched to the stack
-        request_stack.extend(_extract_subtopic_links(raw_topics))
+            # Add any subtopics URLs from the topics we just fetched to the stack
+            request_stack.extend(_extract_subtopic_links(raw_topics))
 
-    return topics
+        return topics
+
+    def request_topics(self, url: str) -> list[dict[str, Any]]:
+        """Fetch topics from the API and return the items from the response.
+
+        Supports two response shapes for each item, depending on the environment:
+        - the item *is* the topic, with fields at the top level (external env), or
+        - the item wraps the topic under a `current` key, alongside `id` and `next` (internal env).
+        Items are normalised to the topic representation so downstream processing is unchanged.
+        """
+        headers = get_service_auth_headers(self.service_auth_token, enabled=self.auth_enabled)
+        topics_response = requests.get(url, headers=headers, timeout=30)
+        topics_response.raise_for_status()
+        raw_items: list[dict[str, Any]] = topics_response.json().get("items", [])
+        return [_normalise_topic_item(item) for item in raw_items]
 
 
-def _request_topics(url: str) -> list[dict[str, Any]]:
-    """Fetch topics from the API and return the items from the response."""
-    topics_response = requests.get(url, timeout=30)
-    topics_response.raise_for_status()
-    raw_topics: list[dict[str, Any]] = topics_response.json().get("items", [])
-    return raw_topics
+def _normalise_topic_item(item: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the topic representation for an item.
+
+    Internal environments wrap the topic under a `current` key; external put the topic
+    fields at the top level. Unwrap `current` when present, otherwise use the item as-is.
+    """
+    current = item.get("current")
+    if isinstance(current, Mapping):
+        return dict(current)
+    return dict(item)
 
 
 def _extract_subtopic_links(raw_topics: Iterable[Mapping[str, Any]]) -> list[tuple[str, str | None]]:
@@ -205,12 +234,16 @@ def _create_topic(fetched_topic: Mapping[str, str]) -> None:
         Topic.save_new(new_topic)
 
 
-def _check_for_removed_topics(existing_topic_ids: set[str]) -> None:
+def _check_for_removed_topics(fetched_topic_ids: set[str]) -> None:
     """Figures out which topics exist in the database but were not returned
-    by the external API in this sync cycle.
+    by the external API in this sync cycle, and marks them as removed.
+
+    Only considers topics that are not already marked as removed, so the operation is
+    idempotent (already-removed topics are not re-saved) and the logged counts reflect
+    only topics newly removed in this cycle.
     """
-    existing_topics = _get_all_existing_topic_ids()
-    removed_topics = existing_topics.difference(existing_topic_ids)
+    active_topic_ids = _get_active_topic_ids()
+    removed_topics = active_topic_ids.difference(fetched_topic_ids)
     if removed_topics:
         logger.warning("Found removed topic(s)", extra={"count": len(removed_topics)})
     for removed_topic_id in removed_topics:
@@ -218,8 +251,8 @@ def _check_for_removed_topics(existing_topic_ids: set[str]) -> None:
         _set_topic_as_removed(removed_topic_id)
 
 
-def _get_all_existing_topic_ids() -> set[str]:
-    return set(Topic.objects.values_list("id", flat=True))
+def _get_active_topic_ids() -> set[str]:
+    return set(Topic.objects.filter(removed=False).values_list("id", flat=True))
 
 
 def _set_topic_as_removed(removed_topic_id: str) -> None:
