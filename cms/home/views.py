@@ -7,6 +7,8 @@ from django.http import Http404, HttpRequest
 from django.utils.translation import activate
 from wagtail.models import Locale, Site
 
+from cms.core.cache import apply_page_cache_headers
+
 
 def serve_localized_homepage(request: HttpRequest, lang_code: str) -> Any:
     """A custom view to directly serve the translated homepage for a given
@@ -40,8 +42,8 @@ def serve_localized_homepage(request: HttpRequest, lang_code: str) -> Any:
     # Get the translated version of the homepage for the given language code.
     translated_homepage = homepage.get_translation_or_none(locale)
 
-    if translated_homepage and translated_homepage.live:
-        return translated_homepage.serve(request)
+    # Fall back to the default homepage if no live translation exists.
+    page = translated_homepage if translated_homepage and translated_homepage.live else homepage
 
-    # If no translation exists, fall back to the default homepage.
-    return homepage.serve(request)
+    # Bypasses Wagtail's serve view, so the on_serve_page hook never runs - apply headers directly.
+    return apply_page_cache_headers(page, page.serve(request))

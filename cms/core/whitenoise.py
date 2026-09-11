@@ -25,6 +25,10 @@ class CMSWhiteNoiseMiddleware(WhiteNoiseMiddleware):
     The manifest file is hidden in the external environment to prevent fingerprinting. It is not filtered.
     """
 
+    # Immutable (hashed) static files are cached for 1 year, rather than whitenoise's
+    # 10 year default, per the static asset caching policy.
+    FOREVER = 31536000
+
     # NB: If the app isn't in `INSTALLED_APPS`, it doesn't need to be added here.
     ignore_patterns: tuple[str, ...] = (
         "wagtailadmin/*",

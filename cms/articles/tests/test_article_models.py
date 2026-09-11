@@ -746,6 +746,19 @@ class StatisticalArticlePageRenderTestCase(WagtailTestUtils, TestCase):
         self.formatted_date = date_format(self.page.release_date, settings.DATE_FORMAT)
         self.user = self.create_superuser("admin")
 
+    def test_publishing_rule_cache_headers(self):
+        """Statistical article pages are covered by the 59 second publishing rule."""
+        response = self.client.get(self.basic_page_url)
+
+        self.assertEqual(
+            response.headers["Cache-Control"],
+            "public, max-age=5, stale-while-revalidate=0, stale-if-error=60",
+        )
+        self.assertEqual(
+            response.headers["Cloudflare-CDN-Cache-Control"],
+            "max-age=31536000, stale-while-revalidate=86400, stale-if-error=432000",
+        )
+
     def test_display_title(self):
         """Check how the title is displayed on the front-end, with/without news headline."""
         response = self.client.get(self.basic_page_url)
