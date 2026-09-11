@@ -1,6 +1,5 @@
 import logging
-from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import Any
 
 from django.core.exceptions import ImproperlyConfigured
 from django.forms import ValidationError
@@ -10,11 +9,8 @@ from wagtail.admin.forms.pages import CopyForm
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import PageLogEntry
 
-from cms.core.blocks.constants import CHART_BLOCK_TYPES
 from cms.core.utils import FORMULA_INDICATORS, latex_formula_to_svg
-
-if TYPE_CHECKING:
-    from wagtail.blocks.stream_block import StreamChild
+from cms.datavis.services import iter_chart_blocks, render_chart_blocks
 
 logger = logging.getLogger(__name__)
 
@@ -213,49 +209,64 @@ class PageWithEquationsAdminForm(WagtailAdminPageForm):
         return content
 
 
-def _iter_chart_blocks(value: StreamValue | None) -> Iterator[StreamChild]:
-    """Recursively yield chart blocks from a StreamValue, including those nested in sections."""
-    if not value:
-        return
-    for block in value:
-        if block.block_type == "section":
-            yield from _iter_chart_blocks(block.value.get("content"))
-        elif block.block_type in CHART_BLOCK_TYPES:
-            yield block
-
-
 class PageWithProtectedChartImagesAdminForm(WagtailAdminPageForm):
-    """Discards client-submitted rendered_chart_image references on chart blocks.
+    """Discards client-submitted rendered_chart_image references on chart blocks, and renders
+    charts on submission for review.
 
-    That field is hidden in the editor and populated only by the chart render pipeline, so any
-    value present in submitted form data must be treated as tampering. It is replaced here with
-    whatever is already persisted for the matching block (matched by block id), or with None for
-    blocks that have no persisted match.
+    The rendered_chart_image field is hidden in the editor and populated only by the chart
+    render pipeline, so any value present in submitted form data must be treated as tampering.
+    It is replaced here with whatever is already persisted for the matching block (matched by
+    block id), or with None for blocks that have no persisted match.
+
+    Images are pre-rendered on every revision by ``ChartImageRenderMixin``, but that is best
+    effort. Submitting for review re-checks every chart block synchronously, and blocks the
+    transition with a form error if any image cannot be produced, so a page never reaches
+    review with a missing or stale chart image. Blocks whose attached image still matches the
+    current config hash are skipped, so this normally reaches the exporter only for the ones
+    the pre-render failed to produce.
+
+    The set of fields to cover is declared as ``chart_image_fields`` on the page model, via
+    ``ChartImageRenderMixin``.
     """
 
-    protected_chart_image_fields: ClassVar[tuple[str, ...]] = ()
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
 
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        # If protected_chart_image_fields is empty, the whole thing is redundant
-        if not cls.protected_chart_image_fields:
-            raise ImproperlyConfigured(f"{cls.__name__} must define protected_chart_image_fields")
+        if not getattr(self.instance, "chart_image_fields", ()):
+            raise ImproperlyConfigured(
+                f"{type(self.instance).__name__} must apply ChartImageRenderMixin and define chart_image_fields "
+                f"to be used with {type(self).__name__}"
+            )
 
     def clean(self) -> dict[str, Any] | None:
         cleaned_data: dict[str, Any] | None = super().clean()
 
-        for field_name in self.protected_chart_image_fields:
+        for field_name in self.instance.chart_image_fields:
             if field_name not in self.cleaned_data:
                 continue
 
             persisted_images = {
                 block.id: block.value.get("rendered_chart_image")
-                for block in _iter_chart_blocks(getattr(self.instance, field_name, None))
+                for block in iter_chart_blocks(getattr(self.instance, field_name, None))
             }
-            for block in _iter_chart_blocks(self.cleaned_data[field_name]):
+            for block in iter_chart_blocks(self.cleaned_data[field_name]):
                 block.value["rendered_chart_image"] = persisted_images.get(block.id)
 
+        if self.data.get("action-submit"):
+            self._render_charts_for_submission()
+
         return cleaned_data
+
+    def _render_charts_for_submission(self) -> None:
+        blocks = [
+            block
+            for field_name in self.instance.chart_image_fields
+            if field_name in self.cleaned_data
+            for block in iter_chart_blocks(self.cleaned_data[field_name])
+        ]
+        errors = [result.error for result in render_chart_blocks(blocks) if result.error]
+        if errors:
+            raise ValidationError(errors)
 
 
 class ONSCopyForm(CopyForm):

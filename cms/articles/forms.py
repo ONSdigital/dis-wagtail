@@ -51,5 +51,4 @@ class StatisticalArticlePageAdminForm(
     PageWithCorrectionsAdminForm,
     PageWithProtectedChartImagesAdminForm,
     PageWithEquationsAdminForm,
-):
-    protected_chart_image_fields = ("content", "featured_chart")
+): ...

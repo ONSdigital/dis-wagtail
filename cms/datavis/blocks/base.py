@@ -8,6 +8,7 @@ from django.forms.widgets import RadioSelect
 from django.urls import reverse
 from django.utils.functional import cached_property
 from django.utils.html import strip_tags
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.admin.telepath import register
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
 
     from cms.core.models import BasePage
+    from cms.datavis.models import RenderedChartImage
 
 
 AnnotationsList = list[dict[str, Any]]
@@ -130,9 +132,14 @@ class BaseChartBlock(BaseVisualisationBlock):
     def get_context(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
 
-        context["chart_config"] = self.get_component_config(
-            value, parent_context=parent_context, block_id=context.get("block_id")
-        )
+        chart_config = self.get_component_config(value, parent_context=parent_context, block_id=context.get("block_id"))
+        # Image added here rather than in get_component_config, since get_export_config reuses that
+        # method to build the chart exporter API payload: including the rendered image's own
+        # URL there would make the config self-referential, changing on every render and
+        # defeating the config_hash idempotency check.
+        if rendered_chart_image := value.get("rendered_chart_image"):
+            chart_config["fallbackImageUrl"] = rendered_chart_image.url
+        context["chart_config"] = chart_config
         return context
 
     def get_highcharts_chart_type(self, value: StructValue) -> str:
@@ -338,12 +345,52 @@ class BaseChartBlock(BaseVisualisationBlock):
 
         return options
 
-    @staticmethod
-    def _get_image_download_item() -> dict[str, str]:
-        # Placeholder for future image download implementation
+    def _get_image_download_item(
+        self,
+        *,
+        value: StructValue,
+        parent_context: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        """Download item for the chart image rendered by the chart exporter.
+
+        Returns None until an image has been rendered, so the menu never offers a dead link.
+        """
+        image: RenderedChartImage | None = value.get("rendered_chart_image")
+        if not image:
+            return None
+
+        size_suffix = f"({format_file_size_kb(image.size_bytes, decimal_places=0, minimum=1)}KB)"
+        link_text = _("Download image %(size)s") % {"size": size_suffix}
+
+        # Resolves to the serve view while the image is private, and to the file itself
+        # once the page is published and the image made public.
+        image_url = image.url
+        request: HttpRequest | None = parent_context.get("request") if parent_context else None
+        # No-op for the already-absolute URL of a public image.
+        absolute_image_url = request.build_absolute_uri(image_url) if request else image_url
+
         return {
-            "text": "Download image (18KB)",
-            "url": "xyz",
+            "text": link_text,
+            "url": image_url,
+            # Matches the image block's download item (see cms.core.blocks.embeddable).
+            "download": "file",
+            "attributes": self._get_gtm_attributes_image_download(link_text, absolute_image_url, image, value),
+        }
+
+    def _get_gtm_attributes_image_download(
+        self, text: str, url: str, image: RenderedChartImage, value: StructValue
+    ) -> dict[str, str]:
+        file_name = f"{slugify(value.get('title') or '') or 'chart'}.png"
+        return {
+            **get_gtm_attributes_file_download(
+                text=text,
+                url=url,
+                file_extension="png",
+                file_name=file_name,
+                file_size_kb=format_file_size_kb(image.size_bytes),
+            ),
+            "data-ga-chart-title": value.get("title"),
+            "data-ga-chart-type": self.get_highcharts_chart_type(value),
         }
 
     def _get_csv_download_item(
@@ -404,7 +451,8 @@ class BaseChartBlock(BaseVisualisationBlock):
         rows: list[list[str | int | float]] | None = None,
     ) -> dict[str, Any]:
         items_list: list[dict[str, Any]] = []
-        items_list.append(self._get_image_download_item())
+        if image_item := self._get_image_download_item(value=value, parent_context=parent_context):
+            items_list.append(image_item)
         if csv_item := self._get_csv_download_item(
             value=value,
             parent_context=parent_context,

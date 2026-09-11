@@ -14,6 +14,7 @@ from cms.data_downloads.utils import get_csv_download_filename
 from cms.datavis.blocks.base import BaseChartBlock, BaseVisualisationBlock
 from cms.datavis.blocks.charts import LineChartBlock
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
+from cms.datavis.models import RenderedChartImage
 from cms.datavis.tests.factories import TableDataFactory
 from cms.datavis.utils import hash_chart_config
 
@@ -192,15 +193,54 @@ class GetDownloadConfigTests(TestCase):
             "y_axis": {"title": ""},
         }
 
+    @staticmethod
+    def _csv_item(config: dict) -> dict:
+        """The CSV item's position depends on whether a rendered image is attached."""
+        return next(item for item in config["itemsList"] if "CSV" in str(item["text"]))
+
     def test_download_config_without_context(self):
-        """Without parent_context, only image download should be present."""
+        """Without parent_context there is no CSV item, and with no rendered image, no image item."""
         value = self.block.to_python(self.raw_data)
         config = self.block.get_download_config(value)
 
         self.assertIn("title", config)
-        self.assertIn("itemsList", config)
-        self.assertEqual(len(config["itemsList"]), 1)
-        self.assertIn("image", config["itemsList"][0]["text"])
+        self.assertEqual(config["itemsList"], [])
+
+    def test_download_config_omits_image_item_until_one_is_rendered(self):
+        """A chart with no rendered image must not offer a dead download link."""
+        value = self.block.to_python(self.raw_data)
+        config = self.block.get_download_config(
+            value, parent_context={"page": Mock(url="/articles/test/")}, block_id="test-block-id"
+        )
+
+        self.assertNotIn("image", " ".join(str(item["text"]) for item in config["itemsList"]))
+
+    def test_download_config_includes_rendered_image(self):
+        value = self.block.to_python(self.raw_data)
+        image = RenderedChartImage(pk=42, size_bytes=48213, width=1200, height=640, content_type="image/png")
+        image.file.name = "charts/abc.png"
+        value["rendered_chart_image"] = image
+
+        config = self.block.get_download_config(value)
+
+        image_item = config["itemsList"][0]
+        # Private until the page is published, so it must point at the serve view, not S3.
+        self.assertEqual(image_item["url"], image.serve_url)
+        self.assertEqual(str(image_item["text"]), "Download image (47KB)")
+        self.assertEqual(image_item["download"], "file")
+        self.assertEqual(
+            image_item["attributes"],
+            {
+                "data-ga-event": "file-download",
+                "data-ga-file-extension": "png",
+                "data-ga-file-name": "test-chart-title-that-is-quite-long-indeed.png",
+                "data-ga-link-text": "Download image (47KB)",
+                "data-ga-link-url": image.serve_url,
+                "data-ga-file-size": format_file_size_kb(48213),
+                "data-ga-chart-title": self.raw_data["title"],
+                "data-ga-chart-type": "line",
+            },
+        )
 
     def test_download_config_with_context_includes_csv(self):
         """With parent_context and block_id, CSV download should be included."""
@@ -215,8 +255,8 @@ class GetDownloadConfigTests(TestCase):
             rows=[["a", "b"], ["1", "2"]],
         )
 
-        self.assertEqual(len(config["itemsList"]), 2)
-        csv_item = config["itemsList"][1]
+        self.assertEqual(len(config["itemsList"]), 1)
+        csv_item = self._csv_item(config)
         self.assertIn("CSV", csv_item["text"])
         self.assertIn("KB", csv_item["text"])  # Should include file size
         self.assertEqual(csv_item["url"], "/articles/test/download-chart/test-block-id")
@@ -233,7 +273,7 @@ class GetDownloadConfigTests(TestCase):
             block_id="test-block-id",
         )
 
-        csv_item = config["itemsList"][1]
+        csv_item = self._csv_item(config)
         self.assertEqual(csv_item["url"], "/articles/test/versions/1/download-chart/test-block-id")
 
     def test_download_config_in_preview_mode_uses_admin_url(self):
@@ -253,7 +293,7 @@ class GetDownloadConfigTests(TestCase):
             block_id="test-block-id",
         )
 
-        csv_item = config["itemsList"][1]
+        csv_item = self._csv_item(config)
         # Should use the admin URL for revision chart download
         self.assertEqual(csv_item["url"], "/admin/data-downloads/pages/123/revisions/456/download-chart/test-block-id/")
 
@@ -273,7 +313,7 @@ class GetDownloadConfigTests(TestCase):
             block_id="test-block-id",
         )
 
-        csv_item = config["itemsList"][1]
+        csv_item = self._csv_item(config)
         self.assertEqual(csv_item["url"], "#")
 
     def test_download_config_not_in_preview_mode_uses_real_url(self):
@@ -291,7 +331,7 @@ class GetDownloadConfigTests(TestCase):
             block_id="test-block-id",
         )
 
-        csv_item = config["itemsList"][1]
+        csv_item = self._csv_item(config)
         self.assertEqual(csv_item["url"], "/articles/test/download-chart/test-block-id")
 
     def test_download_config_csv_download_data_attributes_in_config(self):
@@ -313,8 +353,7 @@ class GetDownloadConfigTests(TestCase):
             rows=rows,
         )
 
-        # CSV item is at index 1 (image download is at index 0)
-        csv_item = config["itemsList"][1]
+        csv_item = self._csv_item(config)
         expected_url = f"{page.url.rstrip('/')}/download-chart/test-block-id"
         absolute_expected_url = context["request"].build_absolute_uri(expected_url)
         expected_file_size_with_unit = get_approximate_file_size_in_kb(rows)

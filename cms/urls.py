@@ -199,6 +199,11 @@ urlpatterns = (
             private_media_views.ImageServeView.as_view(),
             name="wagtailimages_serve",
         ),
+        re_path(
+            r"^rendered-chart-images/(\d+)$",
+            private_media_views.RenderedChartImageServeView.as_view(),
+            name="rendered_chart_image_serve",
+        ),
     ]
 )
 
