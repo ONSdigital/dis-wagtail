@@ -366,6 +366,29 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 f"page{pluralize(num_pages_not_ready)} not ready to be published."
             )
 
+    def _validate_bundled_pages_no_unpublished_changes(self) -> None:
+
+        formset = self.formsets.get("bundled_pages")
+        if not formset:
+            return
+
+        for form in formset.forms:
+            if not form.is_valid() or form.cleaned_data.get("DELETE"):
+                continue
+
+            if page := form.clean().get("page"):
+                page = page.specific
+                if page.live and not page.has_unpublished_changes:
+                    form.add_error("page", "This page has no unpublished changes")
+
+    def _validate_release_calendar_page_no_unpublished_changes(self) -> None:
+        release_calendar_page = self.cleaned_data.get("release_calendar_page")
+        if not release_calendar_page:
+            return
+
+        if release_calendar_page.live and not release_calendar_page.has_unpublished_changes:
+            self.add_error("release_calendar_page", "This page has no unpublished changes")
+
     def _validate_release_calendar_page_status(self) -> None:
         release_calendar_page = self.cleaned_data["release_calendar_page"]
         if not release_calendar_page:
@@ -470,6 +493,10 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         self.deduplicate_formset(formset="bundled_pages", target_field="page")
         self.deduplicate_formset(formset="bundled_datasets", target_field="dataset")
         self.deduplicate_formset(formset="teams", target_field="team")
+
+        # pages must have unpublished changes
+        self._validate_bundled_pages_no_unpublished_changes()
+        self._validate_release_calendar_page_no_unpublished_changes()
 
         self._validate_bundled_pages()
 
