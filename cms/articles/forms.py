@@ -4,7 +4,12 @@ from typing import Any
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import Page
 
-from cms.core.forms import DeduplicateTopicsAdminForm, PageWithCorrectionsAdminForm, PageWithEquationsAdminForm
+from cms.core.forms import (
+    DeduplicateTopicsAdminForm,
+    PageWithCorrectionsAdminForm,
+    PageWithEquationsAdminForm,
+    PageWithProtectedChartImagesAdminForm,
+)
 
 
 class PageWithHeadlineFiguresAdminForm(DeduplicateTopicsAdminForm):
@@ -42,5 +47,9 @@ class PageWithHeadlineFiguresAdminForm(DeduplicateTopicsAdminForm):
 
 
 class StatisticalArticlePageAdminForm(
-    PageWithHeadlineFiguresAdminForm, PageWithCorrectionsAdminForm, PageWithEquationsAdminForm
-): ...
+    PageWithHeadlineFiguresAdminForm,
+    PageWithCorrectionsAdminForm,
+    PageWithProtectedChartImagesAdminForm,
+    PageWithEquationsAdminForm,
+):
+    protected_chart_image_fields = ("content", "featured_chart")
