@@ -381,14 +381,6 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                 if page.live and not page.has_unpublished_changes:
                     form.add_error("page", "This page has no unpublished changes")
 
-    def _validate_release_calendar_page_no_unpublished_changes(self) -> None:
-        release_calendar_page = self.cleaned_data.get("release_calendar_page")
-        if not release_calendar_page:
-            return
-
-        if release_calendar_page.live and not release_calendar_page.has_unpublished_changes:
-            self.add_error("release_calendar_page", "This page has no unpublished changes")
-
     def _validate_release_calendar_page_status(self) -> None:
         release_calendar_page = self.cleaned_data["release_calendar_page"]
         if not release_calendar_page:
@@ -496,7 +488,6 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
         # pages must have unpublished changes
         self._validate_bundled_pages_no_unpublished_changes()
-        self._validate_release_calendar_page_no_unpublished_changes()
 
         self._validate_bundled_pages()
 
