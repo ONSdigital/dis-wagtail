@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 import requests
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from requests import HTTPError
 
@@ -12,6 +13,7 @@ from cms.taxonomy.models import Topic
 from cms.taxonomy.tests.factories import TopicFactory
 
 
+@override_settings(CMS_TOPIC_SYNC_AUTH_ENABLED=False)
 class SyncTopicsTests(TestCase):
     def setUp(self):
         self.requests_patcher = patch("cms.taxonomy.management.commands.sync_topics.requests")
@@ -570,9 +572,9 @@ class SyncTopicsTests(TestCase):
             saved_subtopic.get_parent().id, root_topic.id, "Expect the subtopic to have the correct parent"
         )
 
-    @override_settings(SERVICE_AUTH_TOKEN="test-token")
-    def test_sync_sends_auth_headers_when_token_set(self):
-        """When SERVICE_AUTH_TOKEN is set, requests carry both auth headers."""
+    @override_settings(CMS_TOPIC_SYNC_AUTH_ENABLED=True, SERVICE_AUTH_TOKEN="test-token")
+    def test_sync_sends_auth_headers_when_auth_enabled_and_token_set(self):
+        """When auth is enabled and SERVICE_AUTH_TOKEN is set, requests carry both auth headers."""
         # Given
         topic = create_topic("1234")
         self.mock_requests.get.return_value = mock_successful_json_response([build_topic_api_json(topic)])
@@ -591,9 +593,9 @@ class SyncTopicsTests(TestCase):
             },
         )
 
-    @override_settings(SERVICE_AUTH_TOKEN=None)
-    def test_sync_sends_no_auth_headers_when_token_unset(self):
-        """When SERVICE_AUTH_TOKEN is unset, no auth headers are sent (optional)."""
+    @override_settings(CMS_TOPIC_SYNC_AUTH_ENABLED=False, SERVICE_AUTH_TOKEN="test-token")
+    def test_sync_sends_no_auth_headers_when_auth_disabled(self):
+        """When auth is disabled, no auth headers are sent even if a token is set."""
         # Given
         topic = create_topic("1234")
         self.mock_requests.get.return_value = mock_successful_json_response([build_topic_api_json(topic)])
@@ -605,6 +607,15 @@ class SyncTopicsTests(TestCase):
         self.mock_requests.get.assert_called_once()
         _, kwargs = self.mock_requests.get.call_args
         self.assertEqual(kwargs.get("headers"), {})
+
+    @override_settings(CMS_TOPIC_SYNC_AUTH_ENABLED=True, SERVICE_AUTH_TOKEN=None)
+    def test_sync_raises_when_auth_enabled_and_token_unset(self):
+        """When auth is enabled and SERVICE_AUTH_TOKEN is unset, the command errors."""
+        with self.assertRaises(CommandError) as exc:
+            call_command("sync_topics")
+
+        self.assertIn("SERVICE_AUTH_TOKEN must be set when CMS_TOPIC_SYNC_AUTH_ENABLED is True", str(exc.exception))
+        self.mock_requests.get.assert_not_called()
 
 
 def create_topic(topic_id: str, include_description: bool = True, include_slug: bool = True) -> Topic:

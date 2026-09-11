@@ -1110,6 +1110,9 @@ AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
 # Auth Sync Teams
 AWS_COGNITO_TEAM_SYNC_ENABLED = env.get("AWS_COGNITO_TEAM_SYNC_ENABLED", "false").lower() == "true"
 AWS_COGNITO_TEAM_SYNC_FREQUENCY = int(env.get("AWS_COGNITO_TEAM_SYNC_FREQUENCY", "1"))
+# Controls whether the topic sync sends service auth headers to the topic API.
+# When enabled, SERVICE_AUTH_TOKEN is mandatory and both auth headers are sent.
+CMS_TOPIC_SYNC_AUTH_ENABLED = env.get("CMS_TOPIC_SYNC_AUTH_ENABLED", "true").lower() == "true"
 
 # User groups
 PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
