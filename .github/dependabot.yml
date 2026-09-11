@@ -50,3 +50,29 @@ updates:
           - '*'
     cooldown:
       default-days: 7
+
+    # Enable security updates for npm packages
+  - package-ecosystem: npm
+
+    # When set to 0, version updates are disabled.
+    open-pull-requests-limit: 0
+
+    # Look for `package.json` and `lock` files in the `root` directory
+    directory: '/'
+    # Every weekday
+    schedule:
+      interval: daily
+
+    groups:
+      # Group updates into fewer pull requests
+      npm-security-updates:
+        applies-to: security-updates
+        patterns:
+          - '*'
+
+      npm-version-updates:
+        applies-to: version-updates
+        patterns:
+          - '*'
+    cooldown:
+      default-days: 7
