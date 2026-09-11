@@ -1207,21 +1207,30 @@ WAGTAIL_POLYMATH = {
     "mathjax_sri": "sha512-M36RUChWzAh1veeenRZFql7HydLEnkYmoloiCvVrhz402UZgKI93qkV7SsaxtVKdN95Wzajh39ysrXCq34NTsg==",
 }
 
+CMS_GTM_PREVIEW_MODE_ENABLED = not IS_EXTERNAL_ENV or env.get("CMS_GTM_PREVIEW_MODE_ENABLED", "false").lower() == "true"
+
+# Although different video URL variants such as youtu.be and youtube.com without www are allowed,
+# the URL is normalised when calling `get_embed_url`.
+VIDEO_EMBED_CSP_SOURCES = ["www.youtube.com", "player.vimeo.com"]
+VIDEO_EMBED_PERMISSIONS_POLICY_SOURCES = ["self", "https://www.youtube.com", "https://player.vimeo.com"]
+
 # Content Security policy settings
 # https://docs.djangoproject.com/en/6.0/ref/csp/
 static_sources = [ONS_CDN_URL]
 SECURE_CSP: dict[str, list] = {
     "default-src": [CSP.SELF],
-    "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_CSP_SOURCES],
+    "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_CSP_SOURCES, *VIDEO_EMBED_CSP_SOURCES],
     # UNSAFE_INLINE is required by mathjax
     "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE, "*.hotjar.com"],
-    "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com", "*.hotjar.com"],
+    "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com", "*.google-analytics.com", "*.hotjar.com"],
     # UNSAFE_INLINE is required by hotjar
     "script-src": [CSP.SELF, *static_sources, "*.hotjar.com", "www.googletagmanager.com", CSP.UNSAFE_INLINE],
     "font-src": [CSP.SELF, *static_sources, "*.hotjar.com"],
     "connect-src": [
         CSP.SELF,
         "www.googletagmanager.com",
+        "*.google-analytics.com",
+        "*.analytics.google.com",
         "www.google.com",
         "*.hotjar.com",
         "*.hotjar.io",
@@ -1230,12 +1239,21 @@ SECURE_CSP: dict[str, list] = {
     "manifest-src": [CSP.SELF, ONS_CDN_URL],
     "frame-ancestors": [CSP.NONE if IS_EXTERNAL_ENV else CSP.SELF],
 }
-# Google Fonts are only needed for the Wagtail admin.
-# The external site loads fonts directly from the ONS CDN, so these CSP sources
-# should not be allowed there.
-if not IS_EXTERNAL_ENV:
+
+allow_google_fonts = not IS_EXTERNAL_ENV or CMS_GTM_PREVIEW_MODE_ENABLED
+
+# Google Fonts are needed for the Wagtail admin and GTM Preview Mode.
+# The external site otherwise loads fonts directly from the ONS CDN, so these
+# sources should only be allowed when one of those cases applies.
+if allow_google_fonts:
     SECURE_CSP["style-src"].append("fonts.googleapis.com")
     SECURE_CSP["font-src"].append("fonts.gstatic.com")
+
+if CMS_GTM_PREVIEW_MODE_ENABLED:
+    SECURE_CSP["script-src"].append("tagmanager.google.com")
+    SECURE_CSP["style-src"].extend(["www.googletagmanager.com", "tagmanager.google.com"])
+    SECURE_CSP["img-src"].extend(["ssl.gstatic.com", "www.gstatic.com"])
+    SECURE_CSP["font-src"].append("data:")
 
 if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
     SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")
@@ -1248,8 +1266,8 @@ PERMISSIONS_POLICY: dict = {
     "autoplay": [],
     "camera": [],
     "display-capture": [],
-    "encrypted-media": [],
-    "fullscreen": [],
+    "encrypted-media": VIDEO_EMBED_PERMISSIONS_POLICY_SOURCES,
+    "fullscreen": VIDEO_EMBED_PERMISSIONS_POLICY_SOURCES,
     "geolocation": [],
     "gyroscope": [],
     "interest-cohort": [],
