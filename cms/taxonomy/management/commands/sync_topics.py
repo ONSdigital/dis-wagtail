@@ -120,16 +120,15 @@ def _normalise_topic_item(item: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _extract_subtopic_links(raw_topics: Iterable[Mapping[str, Any]]) -> list[tuple[str, str | None]]:
-    """Return a list of tuples of any subtopic links and their parent topic IDs found in raw_topics."""
+    """Return a list of tuples of the subtopics URL and parent topic ID for each topic that has subtopics.
+
+    The subtopics URL is built from `TOPIC_API_BASE_URL` and the topic ID rather than following the
+    `links.subtopics.href` value from the response, so we always call our configured API host.
+    """
     return [
-        (subtopic_link, raw_topic["id"])
+        (f"{settings.TOPIC_API_BASE_URL}/{raw_topic['id']}/subtopics", raw_topic["id"])
         for raw_topic in raw_topics
-        # NOTE: This assumes we can simply call the links in the response as they are provided,
-        # perhaps switch to building the URL ourselves
-        if (
-            (subtopic_link := raw_topic.get("links", {}).get("subtopics", {}).get("href"))
-            and raw_topic.get("subtopics_ids")
-        )
+        if raw_topic.get("subtopics_ids")
     ]
 
 
