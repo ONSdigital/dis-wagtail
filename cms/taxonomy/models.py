@@ -61,9 +61,12 @@ class Topic(index.Indexed, MP_Node):
     We use tree nodes to represent the topic/subtopic parent/child relationships.
 
     Note:
-    We must be able to cope with topics potentially moving to and from root level. However, Nodes cannot be moved from
-    root level in treebeard. To cope with this, we put all topics underneath a dummy root level node. To hide this
-    dummy node, we override the default object manager with one which only returns non-root level, actual topic nodes.
+    Every topic lives underneath a single dummy root node, which mirrors how the Wagtail page tree is
+    structured and keeps adding and moving topics simple.
+
+    `objects` deliberately does not hide that dummy root: treebeard resolves the tree through `cls.objects`
+    by name, so filtering it there breaks add_child and move. Use `Topic.objects.topics()`, or
+    `.topics()` on any topic queryset, anywhere topics are shown, listed or counted.
     """
 
     search_auto_update = True
