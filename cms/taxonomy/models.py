@@ -21,6 +21,17 @@ if TYPE_CHECKING:
     from django.db.models import BaseConstraint
 
 
+# Reuse Wagtail's custom tree QuerySet for helpful utils
+class TopicQuerySet(TreeQuerySet):
+    def topics(self) -> TreeQuerySet:
+        """Return the real topics, excluding the dummy root.
+
+        This lives on the queryset rather than only on the manager so it can come after a filter, not just
+        first off Topic.objects.
+        """
+        return self.filter(depth__gt=DUMMY_ROOT_DEPTH)
+
+
 class TopicManager(MP_NodeManager):
     def get_queryset(self) -> TreeQuerySet:
         """Return every row, dummy root included.
@@ -29,14 +40,13 @@ class TopicManager(MP_NodeManager):
         places, and offers no hook to point it at a different manager. Hiding the dummy root here makes it
         invisible to add_child, move, get_root_nodes and the rest, which then fail with Topic.DoesNotExist.
 
-        Anything that shows or enumerates topics wants `topics()` below instead.
+        Anything that shows or enumerates topics wants `topics()` instead.
         """
-        # Reuse Wagtail's custom tree QuerySet for helpful utils
-        return TreeQuerySet(self.model, using=self._db, hints=self._hints).order_by("path")
+        return TopicQuerySet(self.model, using=self._db, hints=self._hints).order_by("path")
 
     def topics(self) -> TreeQuerySet:
         """Return the real topics, excluding the dummy root."""
-        return self.get_queryset().filter(depth__gt=DUMMY_ROOT_DEPTH)
+        return self.get_queryset().topics()
 
     def root_topic(self) -> Topic:
         """Return the dummy root topic."""
@@ -61,7 +71,7 @@ class Topic(index.Indexed, MP_Node):
     class Meta:
         ordering = ("path",)
 
-    objects: TopicManager = TopicManager.from_queryset(TreeQuerySet)()
+    objects: TopicManager = TopicManager.from_queryset(TopicQuerySet)()
 
     id = models.CharField(max_length=100, primary_key=True)
     title = models.CharField(max_length=100)

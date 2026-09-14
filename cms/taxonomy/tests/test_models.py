@@ -5,7 +5,7 @@ from django.test import TestCase
 from wagtail.models import Page
 
 from cms.core.db_router import force_write_db_for
-from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
+from cms.taxonomy.models import BASE_TOPIC_DEPTH, GenericPageToTaxonomyTopic, Topic
 from cms.taxonomy.tests.factories import TopicFactory
 
 
@@ -29,6 +29,16 @@ class TopicModelTest(TestCase):
     def test_topics_excludes_root_topic(self):
         """Topic.objects.topics() is what callers should use anywhere topics are shown or enumerated."""
         self.assertNotIn(self.root_topic, Topic.objects.topics())
+
+    def test_topics_is_chainable_from_a_queryset(self):
+        """topics() lives on the queryset, so it can come after a filter, not only first off the manager."""
+        topic = Topic(id="chainable", title="Chainable")
+        Topic.save_new(topic)
+        base_depth_or_above = Topic.objects.filter(depth__lte=BASE_TOPIC_DEPTH)
+
+        self.assertIn(self.root_topic, base_depth_or_above)
+        self.assertNotIn(self.root_topic, base_depth_or_above.topics())
+        self.assertIn(topic, base_depth_or_above.topics())
 
     def test_save_topic_with_no_parent_uses_root_topic(self):
         """If we call Topic.save_new(...) without specifying parent_topic,
