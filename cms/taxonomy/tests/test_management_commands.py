@@ -393,7 +393,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 3, "Expect 2 calls to retrieve topics")
-        self.assertEqual(Topic.objects.topics().count(), 4, "Expect 3 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 4, "Expect 4 topics to be saved")
         self.assertEqual(
             Topic.objects.get(id=subtopic.id).get_parent().id,
             root_topic_2.id,
