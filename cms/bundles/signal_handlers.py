@@ -3,12 +3,18 @@ from typing import Any
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from wagtail.admin.signal_handlers import workflow_approval_email_notifier
+from wagtail.models import WorkflowState
+from wagtail.signals import workflow_approved
 
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.notifications.email import send_bundle_in_review_email, send_bundle_published_email
+from cms.post_publish_actions.signal_handlers import is_publishing_bundle
 
 logger = logging.getLogger(__name__)
+
+WORKFLOW_APPROVED_DISPATCH_UID = "workflow_state_approved_email_notification"
 
 
 @receiver(post_save, sender=BundleTeam)
@@ -44,3 +50,27 @@ def handle_bundle_publication(instance: Bundle, **kwargs: Any) -> None:
             send_bundle_published_email(bundle_team=bundle_team)
 
         # @TODO: Publish the datasets when endpoint available?
+
+
+def workflow_approval_email_handler(**kwargs: Any) -> None:
+    """Suppress Wagtail's page approved email when the approval is a side effect of publishing a bundle.
+
+    Preview teams get the bundle published notification instead, so the misleading page approved email
+    would otherwise be redundant.
+    """
+    if is_publishing_bundle():
+        return
+
+    workflow_approval_email_notifier(**kwargs)
+
+
+def register_signal_handlers() -> None:
+    # Disconnect first using Wagtail's workflow approved dispatch UID to ensure our
+    # handler replaces the default one. Without disconnecting, our handler might
+    # get silently ignored.
+    workflow_approved.disconnect(sender=WorkflowState, dispatch_uid=WORKFLOW_APPROVED_DISPATCH_UID)
+    workflow_approved.connect(
+        workflow_approval_email_handler,
+        sender=WorkflowState,
+        dispatch_uid=WORKFLOW_APPROVED_DISPATCH_UID,
+    )
