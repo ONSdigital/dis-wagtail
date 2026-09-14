@@ -82,7 +82,5 @@ updates:
         applies-to: version-updates
         patterns:
           - '*'
-        exclude-patterns:
-          - 'dis-authorisation-client-js'
     cooldown:
       default-days: 7
