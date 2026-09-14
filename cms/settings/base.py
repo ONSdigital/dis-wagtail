@@ -755,17 +755,21 @@ if "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env or "FRONTEND_CACHE_CLOUDFLARE_BEARER
         WAGTAIL_STORAGES_DOCUMENTS_FRONTENDCACHE = WAGTAILFRONTENDCACHE
 
 
-# Set s-max-age header that is used by reverse proxy/front end cache. See
-# urls.py.
-try:
-    CACHE_CONTROL_S_MAXAGE = int(env.get("CACHE_CONTROL_S_MAXAGE", 600))
-except ValueError:
-    pass
+# Browser Cache-Control settings for semi-static HTML pages. See cms/core/cache.py.
+# "Default" applies to most pages; "publishing rule" applies to page types covered by
+# the 59 second publishing rule (release calendar entry, statistical article, methodology).
+CACHE_CONTROL_DEFAULT_MAX_AGE = int(env.get("CACHE_CONTROL_DEFAULT_MAX_AGE", 60))
+CACHE_CONTROL_DEFAULT_STALE_IF_ERROR = int(env.get("CACHE_CONTROL_DEFAULT_STALE_IF_ERROR", 300))
 
+CACHE_CONTROL_PUBLISHING_RULE_MAX_AGE = int(env.get("CACHE_CONTROL_PUBLISHING_RULE_MAX_AGE", 5))
+CACHE_CONTROL_PUBLISHING_RULE_STALE_IF_ERROR = int(env.get("CACHE_CONTROL_PUBLISHING_RULE_STALE_IF_ERROR", 60))
 
-# Give front-end cache 30 second to revalidate the cache to avoid hitting the
-# backend. See urls.py.
-CACHE_CONTROL_STALE_WHILE_REVALIDATE = int(env.get("CACHE_CONTROL_STALE_WHILE_REVALIDATE", 30))
+# Edge (Cloudflare) cache settings, set via the Cloudflare-CDN-Cache-Control header so they
+# can differ from the browser Cache-Control settings above. Pages are purged from the edge
+# cache on publish, so these can be set far in the future.
+CACHE_CONTROL_CDN_MAX_AGE = int(env.get("CACHE_CONTROL_CDN_MAX_AGE", 31536000))
+CACHE_CONTROL_CDN_STALE_WHILE_REVALIDATE = int(env.get("CACHE_CONTROL_CDN_STALE_WHILE_REVALIDATE", 86400))
+CACHE_CONTROL_CDN_STALE_IF_ERROR = int(env.get("CACHE_CONTROL_CDN_STALE_IF_ERROR", 432000))
 
 
 # Required to get e.g. wagtail-sharing working on Heroku and probably many other platforms.
@@ -1012,6 +1016,12 @@ DATASETS_API_EDITIONS_URL = env.get("DATASETS_API_EDITIONS_URL", f"{ONS_API_BASE
 DIS_DATASETS_BUNDLE_API_BASE_URL = env.get("DIS_DATASETS_BUNDLE_API_BASE_URL", ONS_API_BASE_URL)
 TOPIC_API_BASE_URL = env.get("TOPIC_API_BASE_URL", f"{ONS_API_BASE_URL}/topics")  # used to sync topics
 
+# Comma-separated list of top-level topic slugs to exclude when syncing topics.
+# Excluded topics and all of their subtopics are skipped during sync.
+CMS_TOPIC_SYNC_EXCLUDED_SLUGS = {
+    slug.strip() for slug in env.get("CMS_TOPIC_SYNC_EXCLUDED_SLUGS", "census").split(",") if slug.strip()
+}
+
 # Feature flag to enable/disable interaction with the ONS Bundle API
 DIS_DATASETS_BUNDLE_API_ENABLED = env.get("DIS_DATASETS_BUNDLE_API_ENABLED", "false").lower() == "true"
 
@@ -1110,6 +1120,9 @@ AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
 # Auth Sync Teams
 AWS_COGNITO_TEAM_SYNC_ENABLED = env.get("AWS_COGNITO_TEAM_SYNC_ENABLED", "false").lower() == "true"
 AWS_COGNITO_TEAM_SYNC_FREQUENCY = int(env.get("AWS_COGNITO_TEAM_SYNC_FREQUENCY", "1"))
+# Controls whether the topic sync sends service auth headers to the topic API.
+# When enabled, SERVICE_AUTH_TOKEN is mandatory and both auth headers are sent.
+CMS_TOPIC_SYNC_AUTH_ENABLED = env.get("CMS_TOPIC_SYNC_AUTH_ENABLED", "true").lower() == "true"
 
 # User groups
 PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
