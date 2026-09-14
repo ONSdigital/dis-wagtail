@@ -13,7 +13,7 @@ from cms.methodology.models import MethodologyPage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.standard_pages.models import InformationPage  # Uses GenericTaxonomyMixin
 from cms.standard_pages.tests.factories import InformationPageFactory
-from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
+from cms.taxonomy.models import DUMMY_ROOT_DEPTH, GenericPageToTaxonomyTopic, Topic
 from cms.taxonomy.tests.factories import TopicFactory
 from cms.themes.models import ThemePage  # Uses ExclusiveTaxonomyMixin
 from cms.topics.models import TopicPage  # Uses ExclusiveTaxonomyMixin
@@ -366,6 +366,24 @@ class TestDummyRootCannotBeChosen(WagtailTestUtils, TestCase):
         self.assertFalse(
             GenericPageToTaxonomyTopic.objects.filter(topic=self.root_topic).exists(),
             "The dummy root must never be linked to a page",
+        )
+
+    def test_limit_choices_to_assumes_a_single_dummy_root(self):
+        """Guard for the day the dummy root is removed.
+
+        limit_choices_to={"depth__gt": DUMMY_ROOT_DEPTH} on the topic FKs is only correct while the dummy
+        root is the one and only row at that depth. Remove the dummy root and real topics move up to it,
+        at which point the same filter silently rejects every top-level topic.
+        """
+        TopicFactory(title="A real topic")
+
+        self.assertEqual(
+            [topic.id for topic in Topic.objects.filter(depth__lte=DUMMY_ROOT_DEPTH)],
+            ["_root"],
+            msg=(
+                "Remove limit_choices_to from GenericPageToTaxonomyTopic.topic and "
+                "ExclusiveTaxonomyMixin.topic, or real topics will be rejected."
+            ),
         )
 
     def test_model_validation_rejects_the_dummy_root(self):
