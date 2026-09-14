@@ -29,6 +29,9 @@ class AreaChartBlockTestCase(BaseChartBlockTestCase):
     def test_get_component_config(self):
         self._test_get_component_config()
 
+    def test_get_export_config(self):
+        self._test_get_export_config()
+
     def test_highcharts_chart_type(self):
         self.assertEqual(HighChartsChartType.AREA, self.block.highcharts_chart_type)
         value = self.get_value()
