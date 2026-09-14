@@ -4,6 +4,12 @@
     width: 100%;
     display: flex;
     gap: rem-sizing(24);
+    flex-direction: column;
+    margin-bottom: 1em;
+
+    @include media-query('m') {
+        flex-direction: row;
+    }
 
     &__block {
         flex-basis: 50%;
@@ -12,12 +18,17 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        min-height: rem-sizing(200);
 
         &--full-width {
             flex-basis: 100%;
-            flex-direction: row;
+            flex-direction: column;
             gap: rem-sizing(24);
-            justify-content: flex-start;
+
+            @include media-query('m') {
+                flex-direction: row;
+                justify-content: flex-start;
+            }
         }
 
         @media (forced-colors: active) {

@@ -9,6 +9,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from cms.auth.utils import get_service_auth_headers
 from cms.teams.models import Team
 
 logger = logging.getLogger(__name__)
@@ -66,13 +67,9 @@ class Command(BaseCommand):
             return None
 
     def _fetch_groups(self, url: str) -> list[dict] | None:
-        # Include both the standard Authorization header and the legacy X-Florence-Token.
-        # The X-Florence-Token remains mandatory for now because some services still depend on older middleware.
-        # Once all services are upgraded, we can remove the X-Florence-Token header entirely.
-        headers = {
-            "Authorization": f"Bearer {self.service_auth_token}",
-            "X-Florence-Token": f"Bearer {self.service_auth_token}",
-        }
+        # The service token is mandatory for the teams sync (validated in `handle`), so auth is
+        # always enabled here.
+        headers = get_service_auth_headers(self.service_auth_token)
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
         try:
