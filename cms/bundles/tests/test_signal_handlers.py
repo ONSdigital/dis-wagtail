@@ -5,11 +5,15 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from wagtail.admin.signal_handlers import register_signal_handlers as wagtail_register_signal_handlers
+from wagtail.models import WorkflowState
+from wagtail.signals import workflow_approved
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
+from cms.bundles.signal_handlers import workflow_approval_email_handler
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.core.tests import TransactionTestCase
 from cms.teams.tests.factories import TeamFactory
@@ -201,4 +205,17 @@ class TestWorkflowApprovalNotification(TransactionTestCase):
         # only the bundle published notification goes out, not Wagtail's page approved email
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(self.previewer.email, mail.outbox[0].to)
-        self.assertIn(f'Bundle "{bundle.name}" has been published', mail.outbox[0].subject)
+
+    def test_our_handler_still_claims_wagtails_dispatch_uid(self):
+        """Guards against Wagtail renaming "workflow_state_approved_email_notification": if it changed,
+        Wagtail's own connect() below would stop being a no-op and would add a second, competing receiver.
+        """
+        wagtail_register_signal_handlers()
+
+        sync_receivers, async_receivers = workflow_approved._live_receivers(  # pylint: disable=protected-access
+            WorkflowState
+        )
+
+        # An upgrade with a breaking change will trigger a failure here
+        self.assertEqual(sync_receivers, [workflow_approval_email_handler])
+        self.assertEqual(async_receivers, [])

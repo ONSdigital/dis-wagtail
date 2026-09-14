@@ -14,6 +14,7 @@ from cms.post_publish_actions.signal_handlers import is_publishing_bundle
 
 logger = logging.getLogger(__name__)
 
+# See: https://github.com/wagtail/wagtail/blob/a69ebb39a780b470e7b0c01f0949035d8e02377c/wagtail/admin/signal_handlers.py#L41
 WORKFLOW_APPROVED_DISPATCH_UID = "workflow_state_approved_email_notification"
 
 
