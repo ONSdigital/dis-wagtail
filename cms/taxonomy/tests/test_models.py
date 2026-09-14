@@ -40,6 +40,17 @@ class TopicModelTest(TestCase):
         self.assertNotIn(self.root_topic, base_depth_or_above.topics())
         self.assertIn(topic, base_depth_or_above.topics())
 
+    def test_topics_chains_off_a_tree_queryset(self):
+        """Treebeard's tree methods go through Topic.objects, so .topics() chains off them too."""
+        parent = Topic(id="parent", title="Parent")
+        Topic.save_new(parent)
+        child = Topic(id="child", title="Child")
+        Topic.save_new(child, parent_topic=parent)
+
+        self.assertIn(self.root_topic, child.get_ancestors())
+        self.assertNotIn(self.root_topic, child.get_ancestors().topics())
+        self.assertIn(parent, child.get_ancestors().topics())
+
     def test_save_topic_with_no_parent_uses_root_topic(self):
         """If we call Topic.save_new(...) without specifying parent_topic,
         it will be placed under the dummy root at depth=2.

@@ -140,7 +140,7 @@ class Topic(index.Indexed, MP_Node):
         up the tree for display has to drop it here instead.
         """
         # treebeard is untyped, so get_ancestors() comes back as Any
-        return typing.cast("models.QuerySet[Topic]", self.get_ancestors().filter(depth__gt=DUMMY_ROOT_DEPTH))
+        return typing.cast("models.QuerySet[Topic]", self.get_ancestors().topics())
 
     @property
     def display_parent_topics(self) -> str:
