@@ -21,7 +21,6 @@ if TYPE_CHECKING:
     from django.db.models import BaseConstraint
 
 
-# Reuse Wagtail's custom tree QuerySet for helpful utils
 class TopicQuerySet(TreeQuerySet):
     def topics(self) -> TreeQuerySet:
         """Return the real topics, excluding the dummy root.
