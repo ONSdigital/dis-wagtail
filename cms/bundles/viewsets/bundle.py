@@ -435,6 +435,12 @@ class BundleEditView(EditView):
         Show the "save and approve" button if the bundle has the right status, and we have a different user
         than the creator
         """
+        if self.request.method == "POST":
+            # A POST renders the form again if nothing was saved (e.g. form was invalid, bundle api failed).
+            # Validating the form copied new data to the bundle instance, so we need to refresh
+            # with DB as source of truth
+            with force_write_db():
+                self.object.refresh_from_db()
         context: dict = super().get_context_data(**kwargs)
 
         # initialise the action menu
