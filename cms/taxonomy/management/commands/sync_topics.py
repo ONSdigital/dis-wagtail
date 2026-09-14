@@ -49,6 +49,9 @@ class Command(BaseCommand):
         if not settings.TOPIC_API_BASE_URL:
             raise ImproperlyConfigured('"TOPIC_API_BASE_URL" must be set')
 
+        # Slugs configured to be excluded from syncing, along with all of their subtopics.
+        excluded_slugs = settings.CMS_TOPIC_SYNC_EXCLUDED_SLUGS
+
         # Build a stack of topics URLs and parent IDs
         request_stack: list[tuple[str, str | None]] = [(settings.TOPIC_API_BASE_URL, None)]
 
@@ -56,6 +59,11 @@ class Command(BaseCommand):
         while request_stack:
             url, parent_id = request_stack.pop()
             raw_topics = self.request_topics(url)
+
+            # Drop any topics whose slug is excluded. Because their subtopic links are not added to the
+            # request stack below, their whole subtree is skipped too.
+            if excluded_slugs:
+                raw_topics = [raw_topic for raw_topic in raw_topics if raw_topic.get("slug") not in excluded_slugs]
 
             # Extract just the fields we need
             subtopics = [
