@@ -15,7 +15,7 @@ from cms.core.db_router import force_write_db_for
 # The dummy root sits at depth 1 and real topics start below it, so every depth comparison in this module
 # is offset by one level that users never see.
 DUMMY_ROOT_DEPTH = 1
-BASE_TOPIC_DEPTH = 2
+BASE_TOPIC_DEPTH = DUMMY_ROOT_DEPTH + 1
 
 if TYPE_CHECKING:
     from django.db.models import BaseConstraint
