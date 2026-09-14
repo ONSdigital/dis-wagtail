@@ -161,7 +161,14 @@ class GenericPageToTaxonomyTopic(models.Model):
     """This model enables many-to-many relationships between pages and topics."""
 
     page = ParentalKey("wagtailcore.Page", related_name="topics")
-    topic = models.ForeignKey("taxonomy.Topic", on_delete=models.CASCADE, related_name="related_pages")
+    # The dummy root is a real row, so the form field queryset has to exclude it. The chooser only controls
+    # what is offered, not what validation accepts.
+    topic = models.ForeignKey(
+        "taxonomy.Topic",
+        on_delete=models.CASCADE,
+        related_name="related_pages",
+        limit_choices_to={"depth__gt": DUMMY_ROOT_DEPTH},
+    )
 
     panels: ClassVar[list[FieldPanel]] = [FieldPanel("topic")]
 
