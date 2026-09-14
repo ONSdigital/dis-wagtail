@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from wagtail.admin.panels import MultipleChooserPanel, Panel
 
-from cms.taxonomy.models import Topic
+from cms.taxonomy.models import DUMMY_ROOT_DEPTH, Topic
 from cms.taxonomy.panels import ExclusiveTaxonomyFieldPanel
 from cms.taxonomy.viewsets import ExclusiveTopicChooserWidget
 
@@ -14,8 +14,17 @@ class ExclusiveTaxonomyMixin(models.Model):
     """A mixin that allows pages to be linked exclusively to a topic."""
 
     # Note that this is intended to behave as a one-to-one relationship, but multilingual versions of the same page
-    # will need to be linked to the same topic, so we need to use a ForeignKey and enforce exclusivity separately
-    topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, related_name="related_%(class)s", null=True)
+    # will need to be linked to the same topic, so we need to use a ForeignKey and enforce exclusivity separately.
+    #
+    # The dummy root is a real row, so the form field queryset has to exclude it. The chooser only controls
+    # what is offered, not what validation accepts.
+    topic = models.ForeignKey(
+        Topic,
+        on_delete=models.SET_NULL,
+        related_name="related_%(class)s",
+        null=True,
+        limit_choices_to={"depth__gt": DUMMY_ROOT_DEPTH},
+    )
 
     taxonomy_panels: ClassVar[list[Panel]] = [
         ExclusiveTaxonomyFieldPanel("topic", widget=ExclusiveTopicChooserWidget),
