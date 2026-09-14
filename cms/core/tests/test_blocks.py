@@ -606,6 +606,111 @@ class CoreBlocksTestCase(TestCase):
         self.assertEqual(block.clean(value)["data"], [["unwanted", ""]] * len(UNWANTED_CONTROL_CHARACTERS))
 
 
+class BasicTableBlockGetContextTestCase(TestCase):
+    """Test for BasicTableBlock.get_context method."""
+
+    def test_get_context_with_no_header(self):
+        """Test get_context when first_row_is_table_header is False and first_col_is_header is False."""
+        block = BasicTableBlock()
+        value = {
+            "data": [
+                ["R1C1", "R1C2", "R1C3"],
+                ["R2C1", "R2C2", "R2C3"],
+                ["R3C1", "R3C2", "R3C3"],
+            ],
+            "first_row_is_table_header": False,
+            "first_col_is_header": False,
+            "table_caption": "Caption",
+        }
+
+        context = block.get_context(value)
+        self.assertEqual(context["options"]["caption"], "Caption")
+        self.assertEqual(context["options"]["ths"], [])
+        self.assertEqual(
+            context["options"]["trs"],
+            [
+                {"tds": [{"value": "R1C1"}, {"value": "R1C2"}, {"value": "R1C3"}]},
+                {"tds": [{"value": "R2C1"}, {"value": "R2C2"}, {"value": "R2C3"}]},
+                {"tds": [{"value": "R3C1"}, {"value": "R3C2"}, {"value": "R3C3"}]},
+            ],
+        )
+
+    def test_get_context_with_first_row_as_header(self):
+        """Test get_context when first_row_is_table_header is True and first_col_is_header is False."""
+        block = BasicTableBlock()
+        value = {
+            "data": [
+                ["R1C1", "R1C2", "R1C3"],
+                ["R2C1", "R2C2", "R2C3"],
+                ["R3C1", "R3C2", "R3C3"],
+            ],
+            "first_row_is_table_header": True,
+            "first_col_is_header": False,
+            "table_caption": "Caption",
+        }
+
+        context = block.get_context(value)
+
+        self.assertEqual(context["options"]["caption"], "Caption")
+        self.assertEqual(context["options"]["ths"], [{"value": "R1C1"}, {"value": "R1C2"}, {"value": "R1C3"}])
+        self.assertEqual(
+            context["options"]["trs"],
+            [
+                {"tds": [{"value": "R2C1"}, {"value": "R2C2"}, {"value": "R2C3"}]},
+                {"tds": [{"value": "R3C1"}, {"value": "R3C2"}, {"value": "R3C3"}]},
+            ],
+        )
+
+    def test_get_context_with_first_column_as_header(self):
+        """Test get_context when first_col_is_header is True and first_row_is_table_header is False."""
+        value = {
+            "data": [
+                ["R1C1", "R1C2", "R1C3"],
+                ["R2C1", "R2C2", "R2C3"],
+                ["R3C1", "R3C2", "R3C3"],
+            ],
+            "first_row_is_table_header": False,
+            "first_col_is_header": True,
+            "table_caption": "Caption",
+        }
+        block = BasicTableBlock()
+        context = block.get_context(value)
+        self.assertEqual(context["options"]["caption"], "Caption")
+        self.assertEqual(context["options"]["ths"], [])
+        self.assertEqual(
+            context["options"]["trs"],
+            [
+                {"tds": [{"value": "R1C1", "heading": True}, {"value": "R1C2"}, {"value": "R1C3"}]},
+                {"tds": [{"value": "R2C1", "heading": True}, {"value": "R2C2"}, {"value": "R2C3"}]},
+                {"tds": [{"value": "R3C1", "heading": True}, {"value": "R3C2"}, {"value": "R3C3"}]},
+            ],
+        )
+
+    def test_get_context_with_first_row_and_first_column_as_header(self):
+        """Test get_context when first_row_is_table_header is True and first_col_is_header is True."""
+        value = {
+            "data": [
+                ["R1C1", "R1C2", "R1C3"],
+                ["R2C1", "R2C2", "R2C3"],
+                ["R3C1", "R3C2", "R3C3"],
+            ],
+            "first_row_is_table_header": True,
+            "first_col_is_header": True,
+            "table_caption": None,
+        }
+        block = BasicTableBlock()
+        context = block.get_context(value)
+        self.assertIsNone(context["options"]["caption"])
+        self.assertEqual(context["options"]["ths"], [{"value": "R1C1"}, {"value": "R1C2"}, {"value": "R1C3"}])
+        self.assertEqual(
+            context["options"]["trs"],
+            [
+                {"tds": [{"value": "R2C1", "heading": True}, {"value": "R2C2"}, {"value": "R2C3"}]},
+                {"tds": [{"value": "R3C1", "heading": True}, {"value": "R3C2"}, {"value": "R3C3"}]},
+            ],
+        )
+
+
 class DefinitionsBlockTestCase(TestCase):
     """Test for Definitions block."""
 
