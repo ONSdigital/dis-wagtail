@@ -272,6 +272,26 @@ class BundleAdminFormTestCase(TestCase):
         error = "This page is not ready to be published"
         self.assertFormError(form, "release_calendar_page", [error])
 
+    def test_clean__allows_approval_when_page_has_unpublished_changes(self):
+        """Check bundle can be approved when a linked page has unpublished changes."""
+        raw_data = self.raw_form_data_with_unpublished_page_changes()
+
+        raw_data["bundled_pages"] = inline_formset([{"page": self.page.id}])
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+        self.assertTrue(form.is_valid())
+
+    def test_clean__does_not_allow_approval_when_page_has_no_unpublished_changes(self):
+        """Check bundle cannot be approved when a linked page has no unpublished changes."""
+        raw_data = self.raw_form_data()
+        raw_data["bundled_pages"] = inline_formset([{"page": self.page.id}])
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+        self.assertFalse(form.is_valid(), form.errors)
+
+        error = "This page has no unpublished changes"
+        self.assertFormSetError(form.formsets["bundled_pages"], 0, "page", error)
+
     def test_clean__validates_release_calendar_page_or_publication_date(self):
         nowish = timezone.now() + timedelta(minutes=5)
         release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish)
