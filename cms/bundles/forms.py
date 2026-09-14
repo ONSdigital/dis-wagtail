@@ -1,4 +1,6 @@
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
@@ -44,6 +46,10 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         self.datasets_bundle_api_user_access_token = kwargs.pop("access_token", None)
 
         super().__init__(*args, **kwargs)
+
+        # when True, leave InlinePanels out of validation and saving
+        self.ignore_inline_formsets = False
+
         # hide the status field, and exclude the "Released" status choice
         self.fields["status"].widget = forms.HiddenInput()
         if self.instance.status in EDITABLE_BUNDLE_STATUSES:
@@ -62,15 +68,17 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
                     self.fields[field_name].disabled = True
 
             if "data" in kwargs and kwargs["data"].get("status") != BundleStatus.APPROVED.value:
-                # the form is initialised in a POST request, and the status has changed
-                # drop the InlinePanel formsets (bundle_pages, bundle_datasets, teams) so
-                # no changes are made
-                self.formsets: dict[str, Any] = {}
-            else:
-                # we're initializing the form with GET, tell the InlinePanel formsets they cannot
-                # add more items, so the "Add X" button is not shown
-                for formset in self.formsets.values():
-                    formset.max_num = formset.min_num = len(formset.forms)
+                # The form is initialised in a POST request, and the status has changed.
+                # Ignore the submitted InlinePanel data so no changes are made, but keep formsets built from stored
+                # data, as they are needed to render the form again if save fails
+                self.ignore_inline_formsets = True
+                self.formsets: dict[str, Any] = {
+                    name: type(formset)(instance=self.instance, prefix=formset.prefix, form_kwargs=formset.form_kwargs)
+                    for name, formset in self.formsets.items()
+                }
+
+            for formset in self.formsets.values():
+                formset.max_num = formset.min_num = len(formset.forms)
 
         # fully hide and disable the approved_at/by fields to prevent form tampering
         self.fields["approved_at"].disabled = True
@@ -82,6 +90,30 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
         self.original_datasets = set(self.instance.bundled_datasets.all().order_by("id").select_related("dataset"))
         self.original_teams = set(self.instance.teams.all().order_by("id").select_related("team"))
+
+    @contextmanager
+    def _inline_formsets_ignored(self) -> Iterator[None]:
+        if not self.ignore_inline_formsets:
+            yield
+            return
+
+        formsets, self.formsets = self.formsets, {}
+        try:
+            yield
+        finally:
+            self.formsets = formsets
+
+    def full_clean(self) -> None:
+        with self._inline_formsets_ignored():
+            super().full_clean()
+
+    def is_valid(self) -> bool:
+        with self._inline_formsets_ignored():
+            return super().is_valid()
+
+    def has_changed(self):
+        with self._inline_formsets_ignored():
+            return super().has_changed()
 
     @cached_property
     def bundle_api_client(self) -> BundleAPIClient:
@@ -508,7 +540,8 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         """Save the bundle and create in API if it has datasets but no API ID."""
         # Use the standard save behavior first. This handles new/existing objects
         # and m2m relations if commit=True.
-        bundle: Bundle = super().save(commit=commit)
+        with self._inline_formsets_ignored():
+            bundle: Bundle = super().save(commit=commit)
 
         if commit:
             self._sync_with_bundle_api(bundle)
