@@ -248,9 +248,9 @@ Feature: CMS users can manage bundles
     @bundle_api_enabled
     Scenario: A CMS user sees the error and the unchanged bundle when publishing a ready to publish bundle fails
         Given a bundle called "Bundle help pages release five" exists in "ready to publish" with the following approved information pages:
-            | Title        |
-            | Site map  |
-            | Complains |
+            | Title      |
+            | Site map   |
+            | Complaints |
         And the bundle is linked to the Bundle API
         And the Bundle API fails to update bundle states
         When the user goes to edit the bundle
