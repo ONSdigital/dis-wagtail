@@ -1,15 +1,19 @@
 import logging
+from functools import partial
 
+from django.db import transaction
 from django.template import TemplateDoesNotExist
 from django.template.loader import render_to_string
 from wagtail.admin.mail import send_mail
 
 from cms.bundles.models import Bundle, BundleTeam
+from cms.core.db_router import force_write_db
 from cms.teams.models import Team
 
 logger = logging.getLogger(__name__)
 
 
+@force_write_db()
 def _send_bundle_email(bundle: Bundle, team: Team, subject: str, email_template_name: str) -> None:
     """Helper to send an email to all active users in the team."""
     email_id_tuples = team.users.filter(is_active=True).values_list("email", "id")
@@ -93,6 +97,16 @@ def _send_bundle_email(bundle: Bundle, team: Team, subject: str, email_template_
         )
 
 
+def _send_bundle_email_on_commit(bundle: Bundle, team: Team, subject: str, email_template_name: str) -> None:
+    """Queue bundle email to go out after surrounding transaction commits successfully.
+
+    These emails can be triggered by signals fired mid-transaction, so we want to guard against
+    the emails sending if the transaction rolls back.
+    Outside a transaction this runs the callback immediately.
+    """
+    transaction.on_commit(partial(_send_bundle_email, bundle, team, subject, email_template_name))
+
+
 def send_bundle_in_review_email(bundle_team: BundleTeam) -> None:
     """Send email notification to the team members when a bundle is ready for review."""
     bundle: Bundle = bundle_team.parent
@@ -101,9 +115,10 @@ def send_bundle_in_review_email(bundle_team: BundleTeam) -> None:
 
     email_template_name = "bundle_in_review_email"
 
-    _send_bundle_email(bundle, team, subject, email_template_name)
     bundle_team.preview_notification_sent = True
     bundle_team.save(update_fields=["preview_notification_sent"])
+
+    _send_bundle_email_on_commit(bundle, team, subject, email_template_name)
 
 
 def send_bundle_published_email(bundle_team: BundleTeam) -> None:
@@ -114,4 +129,4 @@ def send_bundle_published_email(bundle_team: BundleTeam) -> None:
 
     email_template_name = "bundle_published_email"
 
-    _send_bundle_email(bundle, team, subject, email_template_name)
+    _send_bundle_email_on_commit(bundle, team, subject, email_template_name)
