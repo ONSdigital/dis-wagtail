@@ -399,7 +399,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             )
 
     def _validate_release_calendar_page_status(self) -> None:
-        release_calendar_page = self.cleaned_data["release_calendar_page"]
+        release_calendar_page = self.cleaned_data.get("release_calendar_page")
         if not release_calendar_page:
             return
 
@@ -412,8 +412,8 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
             raise ValidationError({"release_calendar_page": error})
 
     def _validate_publication_date(self) -> None:
-        release_calendar_page = self.cleaned_data["release_calendar_page"]
-        publication_date = self.cleaned_data["publication_date"]
+        release_calendar_page = self.cleaned_data.get("release_calendar_page")
+        publication_date = self.cleaned_data.get("publication_date")
 
         if release_calendar_page and publication_date:
             error = "You must choose either a Release Calendar page or a Publication date, not both."
@@ -505,8 +505,8 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
         self._validate_bundled_pages()
 
-        submitted_status = cleaned_data["status"]
-        if self.instance.status != submitted_status:
+        submitted_status = cleaned_data.get("status")
+        if submitted_status and self.instance.status != submitted_status:
             # the status has changed
             if submitted_status == BundleStatus.APPROVED:
                 cleaned_data["approved_at"] = timezone.now()
