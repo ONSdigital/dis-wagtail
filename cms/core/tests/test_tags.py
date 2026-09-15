@@ -339,7 +339,7 @@ class PageConfigTestCase(TestCase):
         self.assertEqual(config["header"]["phase"], {"badge": "Beta", "html": "This is a new service."})
         self.assertEqual(
             config["header"]["search"],
-            {"id": "search", "form": {"action": "/search", "inputName": "q"}},
+            {"id": "search", "toggleAriaLabel": "Toggle search", "form": {"action": "/search", "inputName": "q"}},
         )
         self.assertEqual(
             config["footer"]["oglLink"],
@@ -368,7 +368,7 @@ class PageConfigTestCase(TestCase):
 
         self.assertEqual(
             config["header"]["search"],
-            {"id": "search", "form": {"action": "/search", "inputName": "q"}},
+            {"id": "search", "toggleAriaLabel": "Toggle search", "form": {"action": "/search", "inputName": "q"}},
         )
 
     def test_page_title_from_context_overrides_model(self):
