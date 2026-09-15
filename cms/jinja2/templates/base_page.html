@@ -69,7 +69,7 @@
     } -%}
 
     {%- set announcement_text -%}
-        {% trans trimmed in_language=language_labels[request.LANGUAGE_CODE] %}This page is currently not available {{in_language}}. It is displayed in its original language.{% endtrans %}
+        <p>{% trans trimmed in_language=language_labels[request.LANGUAGE_CODE] %}This page is currently not available {{in_language}}. It is displayed in its original language.{% endtrans %}</p>
     {%- endset -%}
     {% if page and page.show_localised_version_not_available_notice(request) %}
         {% from "components/panel/_macro.njk" import onsPanel %}
