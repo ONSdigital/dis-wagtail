@@ -244,3 +244,17 @@ Feature: CMS users can manage bundles
             | Title        | Type             | Status    |
             | Contact us   | Information page | Published |
             | Legal notice | Information page | Published |
+
+    @bundle_api_enabled
+    Scenario: A CMS user sees the error and the unchanged bundle when publishing a ready to publish bundle fails
+        Given a bundle called "Bundle help pages release five" exists in "ready to publish" with the following approved information pages:
+            | Title      |
+            | Site map   |
+            | Complaints |
+        And the bundle is linked to the Bundle API
+        And the Bundle API fails to update bundle states
+        When the user goes to edit the bundle
+        And the user publishes the bundle
+        Then the user sees an error explaining the bundle state could not be synced with the Bundle API
+        And the bundle edit page shows the bundle status as "Ready to publish"
+        And the bundle edit page is still in read only mode
