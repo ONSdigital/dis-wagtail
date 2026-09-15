@@ -80,7 +80,7 @@ class BundleAdminFormTestCase(TestCase):
         }
 
     def raw_form_data_with_unpublished_page_changes(self) -> dict[str, Any]:
-        """Returns form data with a bundled page that has an unpublished revision."""
+        """Modifies the page by adding unpublished title changes and returns the resulting form data."""
         self.page.title = "Updated statistical article title"
         self.page.save_revision()
         return self.raw_form_data()
