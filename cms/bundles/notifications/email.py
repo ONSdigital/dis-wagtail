@@ -7,11 +7,13 @@ from django.template.loader import render_to_string
 from wagtail.admin.mail import send_mail
 
 from cms.bundles.models import Bundle, BundleTeam
+from cms.core.db_router import force_write_db
 from cms.teams.models import Team
 
 logger = logging.getLogger(__name__)
 
 
+@force_write_db()
 def _send_bundle_email(bundle: Bundle, team: Team, subject: str, email_template_name: str) -> None:
     """Helper to send an email to all active users in the team."""
     email_id_tuples = team.users.filter(is_active=True).values_list("email", "id")
