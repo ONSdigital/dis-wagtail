@@ -205,11 +205,9 @@ class TestNotificationsNotSentWhenCommitIsRolledBack(WagtailTestUtils, TestCase)
         return patch.object(BundleEditView, "save_instance", save_instance_then_fail)
 
     def move_bundle_to_in_review(self):
-        with self.captureOnCommitCallbacks(execute=True):
+        with self.captureOnCommitCallbacks():
             self.bundle.status = BundleStatus.IN_REVIEW
             self.bundle.save(update_fields=["status"])
-
-        mail.outbox = []
 
     def get_form_data(self, action, *, new_teams=()):
         teams = [{"id": self.bundle_team.id, "team": self.preview_team.id, "ORDER": "1"}]
