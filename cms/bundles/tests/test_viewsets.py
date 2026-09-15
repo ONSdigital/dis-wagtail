@@ -340,6 +340,39 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-return-to-draft", BundleStatus.DRAFT, self.edit_url)
 
+    def test_bundle_edit_view__unparseable_publication_date(self):
+        """Test unparsable date rerenders form with a field error, not 500."""
+        for bundle_status, action in [
+            (BundleStatus.DRAFT, "action-edit"),
+            (BundleStatus.IN_REVIEW, "action-return-to-draft"),
+        ]:
+            with self.subTest(status=bundle_status, action=action):
+                self.bundle.status = bundle_status
+                self.bundle.publication_date = timezone.now() + timedelta(days=1)
+                self.bundle.save(update_fields=["status", "publication_date"])
+
+                data = self.get_base_form_data()
+                data["publication_date"] = "not-a-date"
+                data[action] = action
+
+                response = self.client.post(self.edit_url, data)
+
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+                self.assertFormError(response.context["form"], "publication_date", "Enter a valid date/time.")
+
+                self.bundle.refresh_from_db()
+                self.assertEqual(self.bundle.status, bundle_status)
+
+    def test_bundle_edit_view__unknown_release_calendar_page(self):
+        data = self.get_base_form_data()
+        data["release_calendar_page"] = str(Page.objects.order_by("-pk").first().pk + 1)
+        data["action-edit"] = "action-edit"
+
+        response = self.client.post(self.edit_url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("release_calendar_page", response.context["form"].errors)
+
     @patch("cms.bundles.forms.BundleAdminForm._validate_publication_date")
     def test_bundle_edit_view__renders_validation_errors_for_an_approved_bundle(self, mock_validate):
         """An invalid form must re-render not 500."""
