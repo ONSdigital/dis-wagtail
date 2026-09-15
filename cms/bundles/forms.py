@@ -109,11 +109,11 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
     def is_valid(self) -> bool:
         with self._inline_formsets_ignored():
-            return super().is_valid()
+            return super().is_valid()  # type: ignore[no-any-return]
 
-    def has_changed(self):
+    def has_changed(self) -> bool:
         with self._inline_formsets_ignored():
-            return super().has_changed()
+            return super().has_changed()  # type: ignore[no-any-return]
 
     @cached_property
     def bundle_api_client(self) -> BundleAPIClient:
