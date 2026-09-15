@@ -340,6 +340,31 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-return-to-draft", BundleStatus.DRAFT, self.edit_url)
 
+    @patch("cms.bundles.forms.BundleAdminForm._validate_publication_date")
+    def test_bundle_edit_view__renders_validation_errors_for_an_approved_bundle(self, mock_validate):
+        """An invalid form must re-render not 500."""
+        mock_validate.side_effect = ValidationError("Something went wrong")
+
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.publication_date = timezone.now() + timedelta(days=1)
+        self.bundle.save(update_fields=["status", "publication_date"])
+
+        data = self.get_base_form_data(status=BundleStatus.APPROVED)
+        data["action-return-to-draft"] = "action-return-to-draft"
+
+        response = self.client.post(self.edit_url, data)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertFormError(form=response.context["form"], field=None, errors=["Something went wrong"])
+        # The bundled pages panel is rendered
+        self.assertContains(response, self.statistical_article_page.title)
+        # Bundle displayed as stored, not the attempted status change
+        self.assertEqual(response.context["view"].object.status, BundleStatus.APPROVED)
+        self.assertRegex(response.content.decode(), r"Status: </span>\s*Ready to publish")
+
+        self.bundle.refresh_from_db()
+        self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
+
     def test_bundle_edit_view__shows_release_calendar_page_details(self):
         """Release calendar page's title, release status, release date and page status are displayed."""
         for title, status, expected_text in self.RELEASE_CALENDAR_PAGE_CASES:
@@ -861,6 +886,46 @@ class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseMixin, TestCase):
                 self.assertContains(response, f"{expected_banner_msg} Failed to sync bundle with Bundle API.")
 
                 self.assertFormError(form=form, field=None, errors=expected_errors)
+
+    @override_settings(DIS_DATASETS_BUNDLE_API_ENABLED=True)
+    @patch("cms.bundles.forms.BundleAPISyncService")
+    def test_edit_view_surfaces_errors_when_the_save_fails_for_an_approved_bundle(self, mock_sync_service):
+        """Test that the edit view surfaces errors when the bundle API sync fails."""
+        mock_sync_service.return_value.sync.side_effect = ValidationError("Failed to sync bundle with Bundle API")
+
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.approved_at = timezone.now()
+        self.bundle.approved_by = self.publishing_officer
+        self.bundle.publication_date = timezone.now()
+        self.bundle.save(update_fields=["status", "approved_at", "approved_by", "publication_date"])
+
+        base_data = self.get_base_form_data(status=BundleStatus.APPROVED)
+
+        # Add an extra page to the form data to simulate a change that would trigger a save
+        extra_page = StatisticalArticlePageFactory(title="extra page")
+        base_data.update({"bundled_pages-TOTAL_FORMS": "2", "bundled_pages-1-page": extra_page.id})
+
+        for action in ["action-publish", "action-return-to-draft", "action-return-to-preview"]:
+            with self.subTest(action=action):
+                response = self.client.post(self.edit_url, {**base_data, action: action})
+
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+                self.assertContains(
+                    response, "The bundle could not be saved due to errors. Failed to sync bundle with Bundle API"
+                )
+
+                # bundled pages is rendered from stored data rather than the submitted data
+                self.assertContains(response, self.statistical_article_page.title)
+                # verify that the extra page is not present in the response
+                self.assertNotContains(response, extra_page.title)
+
+                bundle = response.context["view"].object
+                self.assertEqual(bundle.status, BundleStatus.APPROVED)
+                self.assertEqual(bundle.approved_by, self.publishing_officer)
+                self.assertRegex(response.content.decode(), r"Status: </span>\s*Ready to publish")
+
+                self.bundle.refresh_from_db()
+                self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
 
 
 class BundleViewSetInspectTestCase(BundleViewSetTestCaseMixin, TestCase):
