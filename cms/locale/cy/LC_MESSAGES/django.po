@@ -173,10 +173,8 @@ msgid "Toggle menu"
 msgstr "Togl dewislen"
 
 #: cms/core/templatetags/page_config_tags.py:237
-#, fuzzy
-#| msgid "Toggle menu"
 msgid "Toggle search"
-msgstr "Togl dewislen"
+msgstr "Toglo'r chwiliad"
 
 #: cms/core/templatetags/page_config_tags.py:247
 msgid "All content is available under the"
