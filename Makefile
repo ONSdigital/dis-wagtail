@@ -114,8 +114,7 @@ load-design-system-templates:  ## Load the design system templates
 .PHONY: load-topics
 load-topics:  ## Load our fixture of taxonomy topics
 	poetry run python ./manage.py loaddata cms/taxonomy/fixtures/topics.json
-	poetry run python ./manage.py shell -c "from wagtail.search.backends import get_search_backend; from cms.taxonomy.models import Topic; \
-	get_search_backend().add_bulk(Topic, Topic.objects.all())"
+	poetry run python ./manage.py update_index
 
 .PHONY: delete-topics
 delete-topics: ## Delete all topics from the database (root is preserved via the model manager)
