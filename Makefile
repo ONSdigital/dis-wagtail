@@ -114,6 +114,7 @@ load-design-system-templates:  ## Load the design system templates
 .PHONY: load-topics
 load-topics:  ## Load our fixture of taxonomy topics
 	poetry run python ./manage.py loaddata cms/taxonomy/fixtures/topics.json
+	poetry run python ./manage.py update_index
 
 .PHONY: delete-topics
 delete-topics: ## Delete all topics from the database (root is preserved via the model manager)
