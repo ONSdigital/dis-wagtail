@@ -11,7 +11,9 @@ class TopicChooseViewMixin:
     model_class = Topic
 
     def get_object_list(self) -> QuerySet[Topic]:
-        return self.model_class.objects.all().order_by("path")  # type: ignore[no-any-return]
+        # topics() rather than all(): the dummy root is a real row and would otherwise be offered as a
+        # selectable "_Root Topic" in the chooser.
+        return self.model_class.objects.topics().order_by("path")  # type: ignore[no-any-return]
 
     @property
     def columns(self) -> list[Column]:
@@ -48,8 +50,8 @@ class ExclusiveTopicChooserViewSet(TopicChooserViewSet):
         # the page ID to get the page type.
 
         if not settings.ENFORCE_EXCLUSIVE_TAXONOMY:
-            return Topic.objects.all()  # type: ignore[no-any-return]
-        return Topic.objects.filter(related_themepage=None, related_topicpage=None)  # type: ignore[no-any-return]
+            return Topic.objects.topics()  # type: ignore[no-any-return]
+        return Topic.objects.topics().filter(related_themepage=None, related_topicpage=None)  # type: ignore[no-any-return]
 
 
 topic_chooser_viewset = TopicChooserViewSet("topic_chooser")

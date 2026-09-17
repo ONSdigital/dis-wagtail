@@ -1890,18 +1890,18 @@ typing_extensions = "*"
 
 [[package]]
 name = "django-treebeard"
-version = "4.8.0"
+version = "5.3.1"
 description = "Efficient tree implementations for Django"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "django_treebeard-4.8.0-py3-none-any.whl", hash = "sha256:ecaa7a0bbfa86a48fc91ff335513e83c841cdfe1add6229d04ac7096198d5d51"},
-    {file = "django_treebeard-4.8.0.tar.gz", hash = "sha256:61b8076b576107da21f6f6040774c0d17025200c2efdb70dd1f14b18c9206c3a"},
+    {file = "django_treebeard-5.3.1-py3-none-any.whl", hash = "sha256:0f93f55fcb8b4acb09b6cfc2e93a9451b33db1ff14a22e2563f5bb555fcb9c4b"},
+    {file = "django_treebeard-5.3.1.tar.gz", hash = "sha256:9c3828f5c3130c57fb5c34412ba8ac9b6cefffe98757a284feb02e55776d1d25"},
 ]
 
 [package.dependencies]
-django = ">=4.2"
+django = ">=5.2"
 
 [package.extras]
 test = ["pytest-django (>=4.0,<5.0)", "pytest-pythonpath (>=0.7,<1.0)"]
@@ -4795,4 +4795,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "fe5b4be851b5be08b75180865f0584f64ef41421990d53d71ed8fb9e8b6a8092"
+content-hash = "d0f84492beb8aa4f1719975834c05b9070ea590144e7831fd66a791082655348"

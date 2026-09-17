@@ -61,6 +61,9 @@ class TestTopicChooserViewSet(TestCase, WagtailTestUtils):
         self.assertContains(response, "Topic C")
         self.assertContains(response, "Topic D")
         self.assertContains(response, "Topic B \\u2192 Topic C")
+        # The dummy root is a real row, so guard both the selectable "_Root Topic" chooser row and the
+        # root leaking into the rendered Parent Topics path... it shouldn't be selectable.
+        self.assertNotContains(response, "_Root Topic")
 
 
 class TestExclusiveTopicChooserViewSet(TestCase, WagtailTestUtils):
@@ -150,6 +153,7 @@ class TestExclusiveTopicChooserViewSet(TestCase, WagtailTestUtils):
 
         self.assertNotContains(response, "Topic X")
         self.assertContains(response, "Topic Y")
+        self.assertNotContains(response, "_Root Topic")
 
     def test_admin_chooser_list_excludes_linked_topic_integration_topic_page(self):
         """Topic Page: Integration test that calls the real Wagtail route, verifying the output
@@ -164,3 +168,4 @@ class TestExclusiveTopicChooserViewSet(TestCase, WagtailTestUtils):
 
         self.assertNotContains(response, "Topic X")
         self.assertContains(response, "Topic Y")
+        self.assertNotContains(response, "_Root Topic")

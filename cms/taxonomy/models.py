@@ -12,22 +12,45 @@ from wagtail.search import index
 
 from cms.core.db_router import force_write_db_for
 
-BASE_TOPIC_DEPTH = 2
+# The dummy root sits at depth 1 and real topics start below it, so every depth comparison in this module
+# is offset by one level that users never see.
+DUMMY_ROOT_DEPTH = 1
+BASE_TOPIC_DEPTH = DUMMY_ROOT_DEPTH + 1
 
 if TYPE_CHECKING:
     from django.db.models import BaseConstraint
 
 
+class TopicQuerySet(TreeQuerySet):
+    def topics(self) -> TreeQuerySet:
+        """Return the real topics, excluding the dummy root.
+
+        This lives on the queryset rather than only on the manager so it can come after a filter, not just
+        first off Topic.objects.
+        """
+        return self.filter(depth__gt=DUMMY_ROOT_DEPTH)
+
+
 class TopicManager(MP_NodeManager):
     def get_queryset(self) -> TreeQuerySet:
-        """Filter out the dummy root topic from all querysets."""
-        # Reuse Wagtail's custom tree QuerySet for helpful utils
-        return TreeQuerySet(self.model, using=self._db, hints=self._hints).order_by("path").filter(depth__gt=1)
+        """Return every row, dummy root included.
+
+        This must not filter. Treebeard resolves the tree through `cls.objects` by name, in roughly twenty
+        places, and offers no hook to point it at a different manager. Hiding the dummy root here makes it
+        invisible to add_child, move, get_root_nodes and the rest, which then fail with Topic.DoesNotExist.
+
+        Anything that shows or enumerates topics wants `topics()` instead.
+        """
+        return TopicQuerySet(self.model, using=self._db, hints=self._hints).order_by("path")
+
+    def topics(self) -> TreeQuerySet:
+        """Return the real topics, excluding the dummy root."""
+        return self.get_queryset().topics()
 
     def root_topic(self) -> Topic:
         """Return the dummy root topic."""
         # We create the dummy root in a migration so we know it will exist, so cast to "Topic" for mypy
-        return typing.cast(Topic, super().get_queryset().filter(depth=1).get())
+        return typing.cast(Topic, self.get_queryset().filter(depth=DUMMY_ROOT_DEPTH).get())
 
 
 # This is the main 'node' model, it inherits mp_node
@@ -37,9 +60,12 @@ class Topic(index.Indexed, MP_Node):
     We use tree nodes to represent the topic/subtopic parent/child relationships.
 
     Note:
-    We must be able to cope with topics potentially moving to and from root level. However, Nodes cannot be moved from
-    root level in treebeard. To cope with this, we put all topics underneath a dummy root level node. To hide this
-    dummy node, we override the default object manager with one which only returns non-root level, actual topic nodes.
+    Every topic lives underneath a single dummy root node, which mirrors how the Wagtail page tree is
+    structured and keeps adding and moving topics simple.
+
+    `objects` deliberately does not hide that dummy root: treebeard resolves the tree through `cls.objects`
+    by name, so filtering it there breaks add_child and move. Use `Topic.objects.topics()`, or
+    `.topics()` on any topic queryset, anywhere topics are shown, listed or counted.
     """
 
     search_auto_update = True
@@ -47,7 +73,7 @@ class Topic(index.Indexed, MP_Node):
     class Meta:
         ordering = ("path",)
 
-    objects: TopicManager = TopicManager.from_queryset(TreeQuerySet)()
+    objects: TopicManager = TopicManager.from_queryset(TopicQuerySet)()
 
     id = models.CharField(max_length=100, primary_key=True)
     title = models.CharField(max_length=100)
@@ -95,7 +121,8 @@ class Topic(index.Indexed, MP_Node):
         """
         if self.depth == BASE_TOPIC_DEPTH:
             return self
-        return typing.cast("Topic", self.get_ancestors().first())
+        # Ancestors are ordered root to leaf, so without dropping the dummy root this would return it.
+        return typing.cast("Topic", self.get_topic_ancestors().first())
 
     def move(self, target: Topic | None = None, pos: str = "sorted-child") -> None:
         """Move the topic to underneath the target parent. If no target is passed, move it underneath our root."""
@@ -105,9 +132,18 @@ class Topic(index.Indexed, MP_Node):
     def __str__(self) -> str:
         return str(self.title)
 
+    def get_topic_ancestors(self) -> models.QuerySet[Topic]:
+        """Return the ancestors a user would recognise, without the dummy root.
+
+        get_ancestors goes through cls.objects, which cannot filter the dummy root out, so anything walking
+        up the tree for display has to drop it here instead.
+        """
+        # treebeard is untyped, so get_ancestors() comes back as Any
+        return typing.cast("models.QuerySet[Topic]", self.get_ancestors().topics())
+
     @property
     def display_parent_topics(self) -> str:
-        if ancestors := [topic.title for topic in self.get_ancestors()]:
+        if ancestors := [topic.title for topic in self.get_topic_ancestors()]:
             return " → ".join(ancestors)
         return ""
 
@@ -117,7 +153,7 @@ class Topic(index.Indexed, MP_Node):
         Used for linking to search listing pages.
         """
         # Ancestors are ordered root to leaf.
-        ancestor_slugs = list(self.get_ancestors().values_list("slug", flat=True))
+        ancestor_slugs = list(self.get_topic_ancestors().values_list("slug", flat=True))
         return "/".join([*ancestor_slugs, self.slug])
 
 
@@ -125,7 +161,14 @@ class GenericPageToTaxonomyTopic(models.Model):
     """This model enables many-to-many relationships between pages and topics."""
 
     page = ParentalKey("wagtailcore.Page", related_name="topics")
-    topic = models.ForeignKey("taxonomy.Topic", on_delete=models.CASCADE, related_name="related_pages")
+    # The dummy root is a real row, so the form field queryset has to exclude it. The chooser only controls
+    # what is offered, not what validation accepts.
+    topic = models.ForeignKey(
+        "taxonomy.Topic",
+        on_delete=models.CASCADE,
+        related_name="related_pages",
+        limit_choices_to={"depth__gt": DUMMY_ROOT_DEPTH},
+    )
 
     panels: ClassVar[list[FieldPanel]] = [FieldPanel("topic")]
 
