@@ -95,3 +95,37 @@ class RegistryPriorityTestCase(SimpleTestCase):
             registry._registry[PostPublishActionType.SEARCH_UPDATED],  # pylint: disable=protected-access
             registry.RegisteredPostPublishAction(handler=handler, priority=PostPublishActionPriority.HIGH),
         )
+
+
+class RegistryCriticalTestCase(SimpleTestCase):
+    def setUp(self):
+        patcher = patch.dict(registry._registry, {}, clear=True)  # pylint: disable=protected-access
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_registration_defaults_to_non_critical(self):
+        register_post_publish_action(PostPublishActionType.SEARCH_UPDATED, _noop_handler)
+
+        self.assertFalse(
+            registry._registry[PostPublishActionType.SEARCH_UPDATED].critical  # pylint: disable=protected-access
+        )
+        self.assertEqual(registry.get_critical_action_types(), [])
+
+    def test_get_critical_action_types_only_returns_critical_action_types(self):
+        register_post_publish_action(PostPublishActionType.SEARCH_UPDATED, _noop_handler, critical=False)
+        register_post_publish_action(PostPublishActionType.CACHE_PURGE, _noop_handler, critical=True)
+        register_post_publish_action(PostPublishActionType.S3_ACL, _noop_handler, critical=False)
+
+        self.assertEqual(registry.get_critical_action_types(), [PostPublishActionType.CACHE_PURGE])
+
+    def test_decorator_passes_critical_to_registration(self):
+        @registry.post_publish_action(PostPublishActionType.SEARCH_UPDATED, critical=True)
+        def handler(page, bundle):  # pylint: disable=unused-argument
+            pass
+
+        self.assertEqual(
+            registry._registry[PostPublishActionType.SEARCH_UPDATED],  # pylint: disable=protected-access
+            registry.RegisteredPostPublishAction(
+                handler=handler, priority=PostPublishActionPriority.MEDIUM, critical=True
+            ),
+        )
