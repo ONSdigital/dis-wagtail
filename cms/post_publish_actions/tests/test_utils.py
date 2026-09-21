@@ -54,36 +54,91 @@ class PostPublishNotifySlackTestCase(TestCase):
         self.assertFalse(mock_notify.call_args.kwargs["publish_failed"])
 
     @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
-    def test_end_time_derived_from_action_finished_at(self, mock_notify):
+    def test_end_time_derived_from_critical_action_finished_at(self, mock_notify):
         """The end time of the notification should be the latest finished_at of the actions."""
         bundle = BundleFactory()
-        page = HomePage.objects.first()
+        pages = StatisticalArticlePageFactory.create_batch(2)
         start_time = timezone.now() - timedelta(minutes=5)
-        last_finish = start_time + timedelta(minutes=2)
+        last_critical_finish = start_time + timedelta(minutes=2)
 
         PostPublishAction.objects.create(
             bundle=bundle,
-            page=page,
-            action_type=PostPublishActionType.S3_ACL,
+            page=pages[0],
+            action_type=PostPublishActionType.CACHE_PURGE,
             status=PostPublishActionStatus.SUCCESSFUL,
             finished_at=start_time + timedelta(minutes=1),
         )
         action = PostPublishAction.objects.create(
             bundle=bundle,
-            page=page,
-            action_type=PostPublishActionType.SEARCH_UPDATED,
+            page=pages[1],
+            action_type=PostPublishActionType.CACHE_PURGE,
             status=PostPublishActionStatus.SUCCESSFUL,
-            finished_at=last_finish,
+            finished_at=last_critical_finish,
         )
 
         post_publish_notify_slack(start_time, bundle)
 
         mock_notify.assert_called_once()
-        self.assertEqual(mock_notify.call_args.args[2], last_finish)
+        self.assertEqual(mock_notify.call_args.args[2], last_critical_finish)
 
         action.refresh_from_db()
         self.assertEqual(action.status, PostPublishActionStatus.SUCCESSFUL)
         self.assertIsNone(action.timed_out_at)
+
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
+    def test_end_time_ignores_non_critical_actions(self, mock_notify):
+        bundle = BundleFactory()
+        page = HomePage.objects.first()
+        start_time = timezone.now() - timedelta(minutes=5)
+        critical_finish = start_time + timedelta(minutes=1)
+
+        PostPublishAction.objects.create(
+            bundle=bundle,
+            page=page,
+            action_type=PostPublishActionType.CACHE_PURGE,
+            status=PostPublishActionStatus.SUCCESSFUL,
+            finished_at=critical_finish,
+        )
+        for action_type in [PostPublishActionType.SEARCH_UPDATED, PostPublishActionType.S3_ACL]:
+            PostPublishAction.objects.create(
+                bundle=bundle,
+                page=page,
+                action_type=action_type,
+                status=PostPublishActionStatus.SUCCESSFUL,
+                finished_at=start_time + timedelta(minutes=3),
+            )
+
+        post_publish_notify_slack(start_time, bundle)
+
+        mock_notify.assert_called_once()
+        self.assertEqual(mock_notify.call_args.args[2], critical_finish)
+
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
+    def test_end_time_falls_back_to_now_without_critical_actions(self, mock_notify):
+        bundle = BundleFactory()
+        page = HomePage.objects.first()
+        start_time = timezone.now() - timedelta(minutes=5)
+
+        PostPublishAction.objects.create(
+            bundle=bundle,
+            page=page,
+            action_type=PostPublishActionType.SEARCH_UPDATED,
+            status=PostPublishActionStatus.SUCCESSFUL,
+            finished_at=start_time + timedelta(minutes=1),
+        )
+        PostPublishAction.objects.create(
+            bundle=bundle,
+            page=page,
+            action_type=PostPublishActionType.S3_ACL,
+            status=PostPublishActionStatus.SUCCESSFUL,
+            finished_at=start_time + timedelta(minutes=2),
+        )
+
+        before = timezone.now()
+        post_publish_notify_slack(start_time, bundle)
+
+        mock_notify.assert_called_once()
+        self.assertGreaterEqual(mock_notify.call_args.args[2], before)
 
     @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     def test_end_time_ignores_actions_from_a_previous_publish(self, mock_notify):
@@ -94,7 +149,7 @@ class PostPublishNotifySlackTestCase(TestCase):
         PostPublishAction.objects.create(
             bundle=bundle,
             page=page,
-            action_type=PostPublishActionType.SEARCH_UPDATED,
+            action_type=PostPublishActionType.CACHE_PURGE,
             status=PostPublishActionStatus.SUCCESSFUL,
             finished_at=start_time - timedelta(hours=1),
         )
@@ -112,7 +167,10 @@ class PostPublishNotifySlackTestCase(TestCase):
         start_time = timezone.now()
 
         action = PostPublishAction.objects.create(
-            bundle=bundle, page=page, action_type=PostPublishActionType.S3_ACL, status=PostPublishActionStatus.RUNNING
+            bundle=bundle,
+            page=page,
+            action_type=PostPublishActionType.CACHE_PURGE,
+            status=PostPublishActionStatus.RUNNING,
         )
 
         post_publish_notify_slack(start_time, bundle)
