@@ -33,6 +33,11 @@ class PostPublishActionQuerySet(models.QuerySet):
 
         return self.filter(action_type__in=get_registered_action_types())
 
+    def critical(self) -> Self:
+        from .registry import get_critical_action_types  # pylint: disable=import-outside-toplevel
+
+        return self.filter(action_type__in=get_critical_action_types())
+
     def finished(self) -> Self:
         return self.exclude(finished_at=None)
 
