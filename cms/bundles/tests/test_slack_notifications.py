@@ -700,6 +700,24 @@ class BundleStatusNotificationsTestCase(TestCase):
             self.assertIn("Failed to send/update Slack message", logs.output[0])
 
 
+class PostPublishActionRepliesTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = StatisticalArticlePageFactory(title="Test Page")
+        cls.bundle = BundleFactory(bundled_pages=[cls.page], slack_notification_ts="1503435956.000247")
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.core.slack.get_slack_client")
+    def test_send_bundle_thread_reply(self, mock_get_client):
+        mock_client = Mock()
+        mock_client.chat_postMessage.return_value = {
+            "ok": True,
+            "thread_ts": "1503435956.000248",
+            "channel": "C024BE91L",
+        }
+        mock_get_client.return_value = mock_client
+
+
 class BundleFailureAlertsTestCase(TestCase):
     """Tests for bundle failure notifications."""
 
