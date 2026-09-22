@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.test import RequestFactory, TestCase, override_settings
+from django.utils import translation
 from wagtail.coreutils import get_dummy_request
 from wagtail.models import Locale, Site
 
@@ -359,17 +360,22 @@ class PageConfigTestCase(TestCase):
         )
 
     def test_welsh_page_config(self):
-        config = get_page_config({"page": self.welsh_home_page, "request": self.welsh_request})
+        with translation.override("cy"):
+            config = get_page_config({"page": self.welsh_home_page, "request": self.welsh_request})
 
-        self.assertEqual(config["bodyClasses"], "template-home-page")
-        self.assertEqual(config["title"], f"Swyddfa Ystadegau Gwladol - {self.welsh_home_page.title}")
-        self.assertEqual(config["meta"]["canonicalUrl"], "https://cy.ons.localhost/")
-        self.assertEqual(config["absoluteUrl"], "http://cy.ons.localhost:443/")
+            self.assertEqual(config["bodyClasses"], "template-home-page")
+            self.assertEqual(config["title"], f"Swyddfa Ystadegau Gwladol - {self.welsh_home_page.title}")
+            self.assertEqual(config["meta"]["canonicalUrl"], "https://cy.ons.localhost/")
+            self.assertEqual(config["absoluteUrl"], "http://cy.ons.localhost:443/")
 
-        self.assertEqual(
-            config["header"]["search"],
-            {"id": "search", "toggleAriaLabel": "Toggle search", "form": {"action": "/search", "inputName": "q"}},
-        )
+            self.assertEqual(
+                config["header"]["search"],
+                {
+                    "id": "search",
+                    "toggleAriaLabel": "Toglo'r chwiliad",
+                    "form": {"action": "/search", "inputName": "q"},
+                },
+            )
 
     def test_page_title_from_context_overrides_model(self):
         config = get_page_config({"page": self.page, "request": self.request, "page_title": "custom title"})

@@ -59,6 +59,7 @@ class PageConfigHeaderSearchFormDict(TypedDict):
 class PageConfigHeaderSearchDict(TypedDict):
     id: str
     form: PageConfigHeaderSearchFormDict
+    toggleAriaLabel: str
 
 
 class PageConfigHeaderLanguageDict(TypedDict):
