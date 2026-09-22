@@ -18,13 +18,14 @@ def get_slack_client() -> WebClient | None:
     return WebClient(token=token)
 
 
-def send_or_update_slack_message(
+def send_or_update_slack_message(  # pylint: disable=too-many-arguments  # noqa: PLR0913
     text: str,
     color: str,
     fields: list[dict],
     channel: str | None,
     *,
     update_message_ts: str | None = None,
+    thread_ts: str | None = None,
 ) -> str | None:
     """Send or update a Slack message.
 
@@ -38,6 +39,7 @@ def send_or_update_slack_message(
         channel: Slack channel to send the message to
         update_message_ts: Optional timestamp of the message to update. Forces a new message to be posted if not
                            provided
+        thread_ts: Optional timestamp of message to post the new message as a reply to
 
     Returns: Timestamp of the sent or updated message, or None if sending/updating failed
     """
@@ -71,6 +73,7 @@ def send_or_update_slack_message(
                 attachments=attachments,
                 unfurl_links=False,
                 unfurl_media=False,
+                thread_ts=thread_ts,
             )
             # Return timestamp if response is valid
             if response and response.get("ts"):
@@ -87,6 +90,7 @@ def send_or_update_slack_message(
                     attachments=attachments,
                     unfurl_links=False,
                     unfurl_media=False,
+                    thread_ts=thread_ts,
                 )
                 if response and response.get("ts"):
                     return str(response["ts"])
