@@ -61,6 +61,9 @@ def run_action(
     bundle_id: int | None,
 ) -> None:
     from cms.bundles.models import Bundle  # pylint: disable=import-outside-toplevel
+    from cms.bundles.notifications.slack import (  # pylint: disable=import-outside-toplevel
+        notify_slack_of_post_publish_action_success,
+    )
 
     # TODO: Support page-only publishes
     if bundle_id is None:
@@ -127,6 +130,8 @@ def run_action(
         action.duration = timedelta(seconds=duration)
         action.save(update_fields=["status", "finished_at", "failed_reason", "duration"])
 
+        notify_slack_of_post_publish_action_success(bundle, page, action)
+
 
 def flush_executor() -> None:
     """Shutdown the executors and rebuild them.
@@ -138,6 +143,7 @@ def flush_executor() -> None:
     _executor.shutdown(wait=True)
     _support_executor.shutdown(wait=True)
     _bundle_notification_futures.clear()
+    _bundle_publication_message_futures.clear()
 
     _executor = _build_executor()
     _support_executor = _build_support_executor()
@@ -148,6 +154,7 @@ def _reset_executors_after_fork() -> None:
     global _executor, _support_executor  # noqa: PLW0603 # pylint: disable=global-statement
 
     _bundle_notification_futures.clear()
+    _bundle_publication_message_futures.clear()
 
     _executor = _build_executor()
     _support_executor = _build_support_executor()
@@ -165,6 +172,7 @@ def run_in_support_executor[**P](fn: Callable[P, None], *args: P.args, **kwargs:
 
 
 _bundle_notification_futures: dict[int, Future] = {}
+_bundle_publication_message_futures: dict[int, Future] = {}
 
 
 def _run_after[**P](previous: Future | None, fn: Callable[P, None], /, *args: P.args, **kwargs: P.kwargs) -> None:
@@ -182,10 +190,27 @@ def run_bundle_notification_in_support_executor[**P](
     return future
 
 
+def run_bundle_publication_message_in_support_executor[**P](
+    bundle_id: int, fn: Callable[P, None], *args: P.args, **kwargs: P.kwargs
+) -> Future:
+    future = run_bundle_notification_in_support_executor(bundle_id, fn, *args, **kwargs)
+    _bundle_publication_message_futures[bundle_id] = future
+    return future
+
+
+@release_db_connections
+def wait_for_bundle_publication_message(bundle_id: int) -> None:
+    if future := _bundle_publication_message_futures.get(bundle_id):
+        wait([future])
+
+
 @release_db_connections
 def wait_for_bundle_notifications(bundle_id: int) -> None:
     if future := _bundle_notification_futures.pop(bundle_id, None):
         wait([future])
+
+    # All the bundle's notifications have been sent, so we can also remove the publication message future if it exists
+    _bundle_publication_message_futures.pop(bundle_id, None)
 
 
 def executor_stop_and_wait(progress: bool = False) -> None:
