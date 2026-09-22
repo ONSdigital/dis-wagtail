@@ -174,7 +174,8 @@ class BundleAdminFormTestCase(TestCase):
 
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
         self.assertFalse(form.is_valid())
-        self.assertFormError(form, None, ["'The Statistical Article' is already in an active bundle (Another Bundle)"])
+        error = "This page is already in an active bundle (Another Bundle)"
+        self.assertFormSetError(form.formsets["bundled_pages"], 0, "page", error)
 
     def test_clean__validates_release_calendar_page_not_already_used(self):
         """Should validate that the page is not in the active bundle."""
@@ -189,9 +190,8 @@ class BundleAdminFormTestCase(TestCase):
 
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
         self.assertFalse(form.is_valid())
-        self.assertFormError(
-            form, None, ["'Release Calendar Page' is already set as the Release Calendar page for this bundle."]
-        )
+        error = "This page is already set as the Release Calendar page for this bundle."
+        self.assertFormSetError(form.formsets["bundled_pages"], 0, "page", error)
 
     def test_clean__sets_approved_by_and_approved_at_when_no_other_changes(self):
         # Given
