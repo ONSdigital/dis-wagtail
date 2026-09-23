@@ -750,7 +750,7 @@ class PostPublishActionFailureRepliesTestCase(TestCase):
             [
                 {"title": "Page", "value": self.page_link, "short": False},
                 {"title": "Reason", "value": "HTTPError: 500 Server Error", "short": False},
-                {"title": "Critical", "value": "yes", "short": True},
+                {"title": "Critical", "value": "Yes", "short": True},
             ],
         )
 
