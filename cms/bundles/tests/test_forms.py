@@ -174,7 +174,7 @@ class BundleAdminFormTestCase(TestCase):
 
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
         self.assertFalse(form.is_valid())
-        error = "This page is already in an active bundle (Another Bundle)"
+        error = "This page is already in an active bundle (Another Bundle)."
         self.assertFormSetError(form.formsets["bundled_pages"], 0, "page", error)
 
     def test_clean__validates_release_calendar_page_not_already_used(self):
@@ -289,7 +289,7 @@ class BundleAdminFormTestCase(TestCase):
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
         self.assertFalse(form.is_valid(), form.errors)
 
-        error = "This page has no unpublished changes"
+        error = "This page has no unpublished changes."
         self.assertFormSetError(form.formsets["bundled_pages"], 0, "page", error)
 
     def test_clean__validates_release_calendar_page_or_publication_date(self):
