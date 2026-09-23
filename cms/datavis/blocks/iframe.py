@@ -16,6 +16,104 @@ if TYPE_CHECKING:
     from wagtail.blocks.struct_block import StructValue
 
 
+def _validate_visualisation_url(url: str, *, field_name: str) -> dict[str, ValidationError]:
+    """Validate an iframe source URL or download URL. Validation errors are returned as an errors dict. The URL can be
+    either absolute (with scheme and hostname) or relative (path only).
+    """
+    parsed_url = urlparse(url)
+
+    if parsed_url.scheme or parsed_url.netloc:
+        # If a scheme or netloc is present, validate as an absolute URL
+        return _validate_absolute_visualisation_url(parsed_url, url=url, field_name=field_name)
+
+    # Otherwise, validate as a relative URL path
+    return _validate_visualisation_url_path(parsed_url, field_name=field_name)
+
+
+def _validate_absolute_visualisation_url(
+    parsed_url: ParseResult, *, url: str, field_name: str
+) -> dict[str, ValidationError]:
+    """Validate an absolute iframe source URL or download URL. Validation errors are returned as an errors dict."""
+    errors = {}
+    allowed_domains = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
+
+    # Check the original `url` string scheme here, as URL parse is permissive of malformed schemes
+    if not (url.startswith("https://") and parsed_url.hostname):
+        errors[field_name] = ValidationError("Please enter a valid URL. Full URLs must start with 'https://'.")
+    elif not any(
+        is_hostname_in_domain(parsed_url.hostname, allowed_domain)
+        for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
+    ):
+        errors[field_name] = ValidationError(
+            f"The URL hostname is not in the list of allowed domains: {allowed_domains}"
+        )
+    else:
+        path_errors = _validate_visualisation_url_path(parsed_url, field_name=field_name)
+        errors.update(path_errors)
+
+    return errors
+
+
+def _validate_visualisation_url_path(parsed_url: ParseResult, *, field_name: str) -> dict[str, ValidationError]:
+    """Validate the path of an iframe source URL or download URL. Validation errors are returned as an errors dict."""
+    errors = {}
+    url_path = parsed_url.path.rstrip("/")
+    allowed_prefixes = [prefix.rstrip("/") for prefix in settings.IFRAME_VISUALISATION_PATH_PREFIXES]
+
+    if not any(url_path.startswith(prefix + "/") and len(url_path) > len(prefix) + 1 for prefix in allowed_prefixes):
+        readable_prefixes = " or ".join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)
+        errors[field_name] = ValidationError(
+            f"The URL path is not allowed. It must start with: {readable_prefixes}, "
+            "and include a subpath after the prefix."
+        )
+    return errors
+
+
+class DownloadBlock(blocks.StructBlock):
+    url = RelativeOrAbsoluteURLBlock(required=False)
+
+    def __init__(self, local_blocks=None, search_index=True, *, link_text_help_text=None, **kwargs):
+        # Inject link_text here so each block instance can provide its own help text.
+        local_blocks = list(local_blocks or [])
+        local_blocks.append(
+            (
+                "link_text",
+                blocks.CharBlock(
+                    required=False,
+                    help_text=link_text_help_text,
+                ),
+            )
+        )
+        super().__init__(local_blocks=local_blocks, search_index=search_index, **kwargs)
+
+    def _validate_download_url(self, value: StructValue) -> dict[str, ValidationError]:
+        """Validate a download URL. Validation errors are returned as an errors dict. The URL can be either
+        absolute (with scheme and hostname) or relative (path only).
+        """
+        return _validate_visualisation_url(
+            (value.get("url") or "").strip(),
+            field_name="url",
+        )
+
+    def clean(self, value: StructValue) -> StructValue:
+        errors = {}
+        url = (value.get("url") or "").strip()
+        link_text = (value.get("link_text") or "").strip()
+
+        if url and not link_text:
+            errors |= {"link_text": ValidationError("Link text is required when a URL is provided.")}
+
+        if link_text and not url:
+            errors |= {"url": ValidationError("A URL is required when link text is provided.")}
+
+        if url:
+            errors |= self._validate_download_url(value)
+
+        if errors:
+            raise blocks.StructBlockValidationError(errors)
+        return super().clean(value)
+
+
 class IframeBlock(BaseVisualisationBlock):
     # Overrides title in BaseVisualisationBlock as it is not required for the iframe
     title = blocks.CharBlock(required=False)
@@ -54,6 +152,25 @@ class IframeBlock(BaseVisualisationBlock):
         label="Accessible description",
     )
 
+    image_download = DownloadBlock(
+        required=False,
+        label="Image download",
+        link_text_help_text=(
+            "This should always follow the format 'Download image (23KB)', with the correct file "
+            "size substituted. The file size suffix should be capitalised."
+        ),
+    )
+
+    data_download = DownloadBlock(
+        required=False,
+        label="Data download",
+        link_text_help_text=(
+            "This should always follow the format 'Download CSV (23KB)', with the correct file "
+            "type and file size substituted. The file type and file size suffix should be "
+            "capitalised."
+        ),
+    )
+
     class Meta:
         template = "templates/components/streamfield/datavis/iframe_visualisation_block.html"
         icon = "code"
@@ -66,6 +183,8 @@ class IframeBlock(BaseVisualisationBlock):
             "iframe_source_url",
             "caption",
             "footnotes",
+            "image_download",
+            "data_download",
         ]
 
     def clean(self, value: StructValue) -> StructValue:
@@ -91,61 +210,50 @@ class IframeBlock(BaseVisualisationBlock):
         return {}
 
     def _validate_source_url(self, value: StructValue) -> dict[str, ValidationError]:
-        """Validate the source URL of the iframe. Validation errors are returned as an errors dict.
-        The URL can be either absolute (with scheme and hostname) or relative (path only).
+        """Validate the iframe source URL. Validation errors are returned as an errors dict. The URL can be either
+        absolute (with scheme and hostname) or relative (path only).
         """
-        source_url = value["iframe_source_url"]
+        source_url = value.get("iframe_source_url")
+
         if not source_url:
             return {"iframe_source_url": ValidationError("Please enter a valid URL.")}
 
-        parsed_url = urlparse(source_url)
-
-        if parsed_url.scheme or parsed_url.netloc:
-            # If a scheme or netloc is present, validate as an absolute URL
-            return self._validate_absolute_source_url(parsed_url, source_url=source_url)
-
-        # Otherwise, validate as a relative URL path
-        return self._validate_source_url_path(parsed_url)
-
-    def _validate_absolute_source_url(self, parsed_url: ParseResult, *, source_url: str) -> dict[str, ValidationError]:
-        """Validate the absolute source URL of the iframe. Validation errors are returned as an errors dict."""
-        errors = {}
-        allowed_domains = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
-
-        # Check the original source_url string scheme here, as URL parse is permissive of malformed schemes
-        if not (source_url.startswith("https://") and parsed_url.hostname):
-            errors["iframe_source_url"] = ValidationError(
-                "Please enter a valid URL. Full URLs must start with 'https://'."
-            )
-        elif not any(
-            is_hostname_in_domain(parsed_url.hostname, allowed_domain)
-            for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
-        ):
-            errors["iframe_source_url"] = ValidationError(
-                f"The URL hostname is not in the list of allowed domains: {allowed_domains}"
-            )
-        else:
-            path_errors = self._validate_source_url_path(parsed_url)
-            errors.update(path_errors)
-
-        return errors
+        return _validate_visualisation_url(
+            source_url,
+            field_name="iframe_source_url",
+        )
 
     @staticmethod
-    def _validate_source_url_path(parsed_url: ParseResult) -> dict[str, ValidationError]:
-        """Validate the path of the iframe source URL. Validation errors are returned as an errors dict."""
-        errors = {}
-        url_path = parsed_url.path.rstrip("/")
-        allowed_prefixes = [prefix.rstrip("/") for prefix in settings.IFRAME_VISUALISATION_PATH_PREFIXES]
+    def _get_download_item(download: StructValue | None) -> dict[str, str] | None:
+        url = (download.get("url") or "").strip() if download else ""
+        link_text = (download.get("link_text") or "").strip() if download else ""
 
-        if not any(
-            url_path.startswith(prefix + "/") and len(url_path) > len(prefix) + 1 for prefix in allowed_prefixes
-        ):
-            readable_prefixes = " or ".join(settings.IFRAME_VISUALISATION_PATH_PREFIXES)
-            errors["iframe_source_url"] = ValidationError(
-                f"The URL path is not allowed. It must start with: {readable_prefixes}, "
-                "and include a subpath after the prefix."
-            )
-        return errors
+        if not url or not link_text:
+            return None
+
+        return {
+            "text": link_text,
+            "url": url,
+            "download": "file",
+        }
+
+    def _get_download_config(self, value: StructValue) -> dict[str, Any] | None:
+        items = [
+            item
+            for item in [
+                self._get_download_item(value.get("image_download")),
+                self._get_download_item(value.get("data_download")),
+            ]
+            if item
+        ]
+
+        if not items:
+            return None
+
+        return {
+            "title": _("Downloads"),
+            "itemsList": items,
+        }
 
     def get_figure_config(self, value: StructValue) -> dict[str, Any]:
         config = {
@@ -156,6 +264,9 @@ class IframeBlock(BaseVisualisationBlock):
             "caption": _("Source") + ": " + value.get("caption") if value.get("caption") else None,
             "audioDescription": value.get("audio_description"),
         }
+
+        if download := self._get_download_config(value):
+            config["download"] = download
 
         # Check for meaningful text before displaying footnotes
         if (footnotes := value.get("footnotes")) and strip_tags(str(footnotes)).strip():
