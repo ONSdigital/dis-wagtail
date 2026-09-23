@@ -181,3 +181,72 @@ class PostPublishNotifySlackTestCase(TestCase):
 
         mock_notify.assert_called_once()
         self.assertEqual(mock_notify.call_args.args[2], action.finished_at)
+
+
+class PostPublishNotifySlackFailureRepliesTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.bundle = BundleFactory()
+        cls.pages = StatisticalArticlePageFactory.create_batch(2)
+
+    def _create_action(self, action_type, status, page=None, **kwargs):
+        return PostPublishAction.objects.create(
+            bundle=self.bundle,
+            page=page or self.pages[0],
+            action_type=action_type,
+            status=status,
+            **kwargs,
+        )
+
+    @override_settings(BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS=0)
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_action_failure")
+    def test_replies_for_each_action_which_did_not_succeed(self, mock_notify_failure, mock_notify_end):
+        start_time = timezone.now() - timedelta(seconds=1)
+        self._create_action(
+            PostPublishActionType.S3_ACL,
+            PostPublishActionStatus.SUCCESSFUL,
+            finished_at=timezone.now(),
+        )
+        timed_out = self._create_action(PostPublishActionType.CACHE_PURGE, PostPublishActionStatus.RUNNING)
+        search_failures = [
+            self._create_action(
+                PostPublishActionType.SEARCH_UPDATED,
+                PostPublishActionStatus.FAILED,
+                page=page,
+                finished_at=timezone.now(),
+            )
+            for page in reversed(self.pages)
+        ]
+        manager = MagicMock()
+        manager.attach_mock(mock_notify_failure, "failure")
+        manager.attach_mock(mock_notify_end, "end")
+
+        post_publish_notify_slack(start_time, self.bundle)
+
+        timed_out.refresh_from_db()
+        self.assertIsNotNone(timed_out.timed_out_at)
+
+        self.assertEqual(
+            [
+                (name, call_args[1].pk, call_args[2].pk) if name == "failure" else (name, *call_args)
+                for name, call_args, _kwargs in manager.mock_calls
+            ],
+            [
+                ("failure", self.pages[0].pk, timed_out.pk),
+                ("failure", self.pages[0].pk, search_failures[1].pk),
+                ("failure", self.pages[1].pk, search_failures[0].pk),
+                ("end", self.bundle, start_time, timed_out.finished_at),
+            ],
+        )
+
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_action_failure")
+    def test_no_failure_replies_when_all_actions_succeed(self, mock_notify_failure, mock_notify_end):
+        for action_type in PostPublishActionType:
+            self._create_action(action_type, PostPublishActionStatus.SUCCESSFUL, finished_at=timezone.now())
+
+        post_publish_notify_slack(timezone.now(), self.bundle)
+
+        mock_notify_failure.assert_not_called()
+        mock_notify_end.assert_called_once()

@@ -9,7 +9,10 @@ from django.db.models import Max
 from django.utils import timezone
 from wagtail.models import Page
 
-from cms.bundles.notifications.slack import notify_slack_of_post_publish_end
+from cms.bundles.notifications.slack import (
+    notify_slack_of_post_publish_action_failure,
+    notify_slack_of_post_publish_end,
+)
 from cms.core.db_router import force_write_db
 from cms.core.utils import GeneratorCollector, release_db_connections
 
@@ -62,7 +65,10 @@ def as_completed_actions_by_bundle(
 
 @force_write_db()
 def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_failed: bool = False) -> None:
-    """Notifies slack when all post-publish actions are completed."""
+    """Notifies slack when all post-publish actions are completed.
+
+    Successful actions send their own notifications, so this also replies with failures if any.
+    """
     as_completed_collector = GeneratorCollector(as_completed_actions_by_bundle([bundle], start_time))
 
     # Consume the generator
@@ -78,6 +84,17 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_f
                 "outstanding_actions": outstanding_actions,
             },
         )
+
+    unsuccessful_actions = (
+        PostPublishAction.objects.active()
+        .filter(bundle=bundle)
+        .exclude(status=PostPublishActionStatus.SUCCESSFUL)
+        .select_related("page")
+    )
+
+    for action_type in get_post_publish_actions():
+        for action in unsuccessful_actions.filter(action_type=action_type).order_by("page_id"):
+            notify_slack_of_post_publish_action_failure(bundle, action.page, action)
 
     # Get end time based off last finished post-publish action marked critical
     end_time = (

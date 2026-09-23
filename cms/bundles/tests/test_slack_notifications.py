@@ -22,6 +22,7 @@ from cms.bundles.notifications.slack import (
     alert_slack_of_bundle_content_failure,
     notify_slack_of_bundle_failure,
     notify_slack_of_bundle_pre_publish,
+    notify_slack_of_post_publish_action_failure,
     notify_slack_of_post_publish_end,
     notify_slack_of_publication_start,
     notify_slack_of_publish_end,
@@ -716,6 +717,60 @@ class PostPublishActionRepliesTestCase(TestCase):
             "channel": "C024BE91L",
         }
         mock_get_client.return_value = mock_client
+
+
+class PostPublishActionFailureRepliesTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = StatisticalArticlePageFactory()
+        cls.bundle = BundleFactory(bundled_pages=[cls.page], slack_notification_ts="1503435956.000247")
+        cls.page_link = f"<{cls.page.full_edit_url}|{cls.page.title}> (ID: {cls.page.id})"
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_post_publish_action_failure(self, mock_send):
+        action = PostPublishAction.objects.create(
+            bundle=self.bundle,
+            page=self.page,
+            action_type=PostPublishActionType.CACHE_PURGE,
+            failed_reason="HTTPError: 500 Server Error",
+            finished_at=timezone.now(),
+        )
+
+        notify_slack_of_post_publish_action_failure(self.bundle, self.page, action)
+
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args[1]
+
+        self.assertEqual(call_kwargs["text"], "Post-publish action failed: Frontend cache purge")
+        self.assertEqual(call_kwargs["color"], "danger")
+        self.assertEqual(call_kwargs["thread_ts"], "1503435956.000247")
+        self.assertEqual(
+            call_kwargs["field"],
+            [
+                {"title": "Page", "value": self.page_link, "short": False},
+                {"title": "Reason", "value": "HTTPError: 500 Server Error", "short": False},
+                {"title": "Critical", "value": "yes", "short": True},
+            ],
+        )
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_post_publish_action_failure__not_critical_without_reason(self, mock_send):
+        action = PostPublishAction.objects.create(
+            bundle=self.bundle,
+            page=self.page,
+            action_type=PostPublishActionType.SEARCH_UPDATED,
+            status=PostPublishActionStatus.FAILED,
+            finished_at=timezone.now(),
+        )
+
+        notify_slack_of_post_publish_action_failure(self.bundle, self.page, action)
+
+        call_kwargs = mock_send.call_args[1]
+        self.assertEqual(call_kwargs["text"], "Post-publish action failed: Search updated")
+        self.assertIn({"title": "Reason", "value": "Unknown", "short": False}, call_kwargs["fields"])
+        self.assertIn({"title": "Critical", "value": "No", "short": True}, call_kwargs["fields"])
 
 
 class BundleFailureAlertsTestCase(TestCase):
