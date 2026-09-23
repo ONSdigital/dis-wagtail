@@ -746,7 +746,7 @@ class PostPublishActionFailureRepliesTestCase(TestCase):
         self.assertEqual(call_kwargs["color"], "danger")
         self.assertEqual(call_kwargs["thread_ts"], "1503435956.000247")
         self.assertEqual(
-            call_kwargs["field"],
+            call_kwargs["fields"],
             [
                 {"title": "Page", "value": self.page_link, "short": False},
                 {"title": "Reason", "value": "HTTPError: 500 Server Error", "short": False},
