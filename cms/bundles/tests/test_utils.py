@@ -576,7 +576,7 @@ class PublishBundleFailureTests(TestCase):
         page2.save_revision()
         bundle = BundleFactory(approved=True, bundled_pages=[page1, page2])
 
-        result = publish_bundle(bundle, update_status=True)
+        result = self._publish_and_wait(bundle, update_status=True)
 
         self.assertTrue(result)
         bundle.refresh_from_db()
