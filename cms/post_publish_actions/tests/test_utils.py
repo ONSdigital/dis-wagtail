@@ -114,25 +114,36 @@ class PostPublishNotifySlackTestCase(TestCase):
         self.assertEqual(mock_notify.call_args.args[2], critical_finish)
 
     @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
-    def test_end_time_falls_back_to_now_without_critical_actions(self, mock_notify):
+    def test_end_time_falls_back_to_the_last_action_to_finish_without_critical_actions(self, mock_notify):
         bundle = BundleFactory()
         page = HomePage.objects.first()
         start_time = timezone.now() - timedelta(minutes=5)
+        last_finish = start_time + timedelta(minutes=2)
 
         PostPublishAction.objects.create(
             bundle=bundle,
             page=page,
-            action_type=PostPublishActionType.SEARCH_UPDATED,
+            action_type=PostPublishActionType.S3_ACL,
             status=PostPublishActionStatus.SUCCESSFUL,
             finished_at=start_time + timedelta(minutes=1),
         )
         PostPublishAction.objects.create(
             bundle=bundle,
             page=page,
-            action_type=PostPublishActionType.S3_ACL,
+            action_type=PostPublishActionType.SEARCH_UPDATED,
             status=PostPublishActionStatus.SUCCESSFUL,
-            finished_at=start_time + timedelta(minutes=2),
+            finished_at=last_finish,
         )
+
+        post_publish_notify_slack(start_time, bundle)
+
+        mock_notify.assert_called_once()
+        self.assertEqual(mock_notify.call_args.args[2], last_finish)
+
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
+    def test_end_time_falls_back_to_now_without_any_actions(self, mock_notify):
+        bundle = BundleFactory()
+        start_time = timezone.now() - timedelta(minutes=5)
 
         before = timezone.now()
         post_publish_notify_slack(start_time, bundle)
