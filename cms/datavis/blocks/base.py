@@ -395,7 +395,7 @@ class BaseChartBlock(BaseVisualisationBlock):
             items_list.append(csv_item)
 
         return {
-            "title": f"Download: {value['title']}",
+            "title": _("Downloads"),
             "itemsList": items_list,
         }
 

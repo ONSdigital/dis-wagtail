@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-23 17:01+0100\n"
+"POT-Creation-Date: 2026-09-24 14:05+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -83,18 +83,15 @@ msgstr "Ffynhonnell"
 msgid "Footnotes"
 msgstr "Troednodiadau"
 
-#: cms/core/blocks/embeddable.py:122
-msgid "Download this image"
-msgstr "Lawrlwythwch y ddelwedd hon"
+#: cms/core/blocks/embeddable.py:122 cms/core/blocks/markup.py:290
+#: cms/datavis/blocks/base.py:398 cms/datavis/blocks/iframe.py:254
+msgid "Downloads"
+msgstr "Lawrlwythiadau"
 
 #: cms/core/blocks/markup.py:273 cms/datavis/blocks/base.py:358
 #, python-format
 msgid "Download CSV %(size)s"
 msgstr "Lawrlwythwch CSV %(size)s"
-
-#: cms/core/blocks/markup.py:290
-msgid "Download this table"
-msgstr "Lawrlwythwch y tabl hwn"
 
 #: cms/core/blocks/related.py:60
 msgid "Related links"
@@ -179,10 +176,6 @@ msgstr "Mae’r holl gynnwys ar gael o dan y"
 #: cms/core/templatetags/page_config_tags.py:243
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
-
-#: cms/datavis/blocks/iframe.py:254
-msgid "Downloads"
-msgstr "Lawrlwythiadau"
 
 #: cms/datavis/blocks/table.py:58
 #: cms/jinja2/templates/pages/release_calendar/release_calendar_page.html:91

@@ -119,7 +119,7 @@ class ImageBlock(blocks.StructBlock):
         )
 
         return {
-            "title": _("Download this image"),
+            "title": _("Downloads"),
             "itemsList": [{"text": link_text, "url": large_image.url, "download": "file", "attributes": attributes}],
         }
 
