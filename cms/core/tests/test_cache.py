@@ -4,6 +4,7 @@ from django.core.cache import caches
 from django.test import SimpleTestCase, TestCase, override_settings
 from fakeredis import FakeConnection
 
+from cms.core.tests.utils import TranslationResetMixin
 from cms.home.models import HomePage
 
 
@@ -87,7 +88,7 @@ class InvalidateReplayRedisCacheTestCase(SimpleTestCase):
         self.assertIsNone(caches["invalidate_replay"].get("key"))
 
 
-class PageCacheControlHeadersTestCase(TestCase):
+class PageCacheControlHeadersTestCase(TranslationResetMixin, TestCase):
     """Test the Cache-Control and Cloudflare-CDN-Cache-Control headers set on page responses."""
 
     cdn_cache_control = "max-age=31536000, stale-while-revalidate=86400, stale-if-error=432000"
