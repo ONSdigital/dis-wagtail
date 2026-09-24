@@ -1,8 +1,9 @@
 from typing import Any
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.test import SimpleTestCase, override_settings
+from django.test import RequestFactory, SimpleTestCase, override_settings
 from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.iframe import DownloadBlock, IframeBlock
@@ -389,6 +390,38 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         self.assertEqual(downloads[0]["url"], "/visualisations/dvc/1234567890/image.png")
         self.assertEqual(downloads[1]["text"], "Download CSV (23KB)")
         self.assertEqual(downloads[1]["url"], "/visualisations/dvc/1234567890/data.csv")
+
+    def test_download_config_file_download_attributes_in_config(self):
+        """Verify expected file download GTM data attributes are present in download config data."""
+        request = RequestFactory().get("/")
+        cases = [
+            ("image_download", "/visualisations/dvc/1234567890/image.png", "Download image (23KB)", "png", "image.png"),
+            ("data_download", "/visualisations/dvc/1234567890/data.csv", "Download CSV (23KB)", "csv", "data.csv"),
+        ]
+
+        for field_name, url, link_text, expected_extension, expected_file_name in cases:
+            with self.subTest(field_name=field_name):
+                data = self.raw_data.copy()
+                data[field_name] = {
+                    "url": url,
+                    "link_text": link_text,
+                }
+
+                value = self.get_value(data)
+                context = self.block.get_context(value, parent_context={"request": request})
+                download_item = context["figure_config"]["download"]["itemsList"][0]
+                absolute_expected_url = request.build_absolute_uri(url)
+
+                expected_attributes = {
+                    "data-ga-event": "file-download",
+                    "data-ga-file-extension": expected_extension,
+                    "data-ga-file-name": expected_file_name,
+                    "data-ga-link-text": link_text,
+                    "data-ga-link-url": urlparse(absolute_expected_url).path,
+                    "data-ga-link-domain": urlparse(absolute_expected_url).hostname,
+                }
+
+                self.assertEqual(download_item["attributes"], expected_attributes)
 
 
 @override_settings(

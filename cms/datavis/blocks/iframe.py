@@ -1,3 +1,4 @@
+import os
 import uuid
 from typing import TYPE_CHECKING, Any
 from urllib.parse import ParseResult, urlparse
@@ -8,11 +9,13 @@ from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 
+from cms.core.analytics_utils import get_gtm_attributes_file_download
 from cms.core.blocks.struct_blocks import RelativeOrAbsoluteURLBlock
 from cms.core.url_utils import is_hostname_in_domain
 from cms.datavis.blocks.base import BaseVisualisationBlock
 
 if TYPE_CHECKING:
+    from django.http import HttpRequest
     from wagtail.blocks.struct_block import StructValue
 
 
@@ -224,25 +227,35 @@ class IframeBlock(BaseVisualisationBlock):
         )
 
     @staticmethod
-    def _get_download_item(download: StructValue | None) -> dict[str, str] | None:
+    def _get_download_item(download: StructValue | None, request: HttpRequest | None) -> dict[str, str] | None:
         url = (download.get("url") or "").strip() if download else ""
         link_text = (download.get("link_text") or "").strip() if download else ""
 
         if not url or not link_text:
             return None
 
-        return {
-            "text": link_text,
-            "url": url,
-            "download": "file",
-        }
+        absolute_csv_url = (
+            request.build_absolute_uri(url) if request and not getattr(request, "is_preview", False) else url
+        )
+        file_name = os.path.basename(urlparse(url).path)
+        _base, ext = os.path.splitext(file_name)
 
-    def _get_download_config(self, value: StructValue) -> dict[str, Any] | None:
+        attributes = get_gtm_attributes_file_download(
+            text=link_text,
+            url=absolute_csv_url,
+            file_extension=ext.lstrip("."),
+            file_name=file_name,
+            file_size_kb=None,
+        )
+
+        return {"text": link_text, "url": url, "download": "file", "attributes": attributes}
+
+    def _get_download_config(self, value: StructValue, request: HttpRequest | None = None) -> dict[str, Any] | None:
         items = [
             item
             for item in [
-                self._get_download_item(value.get("image_download")),
-                self._get_download_item(value.get("data_download")),
+                self._get_download_item(value.get("image_download"), request),
+                self._get_download_item(value.get("data_download"), request),
             ]
             if item
         ]
@@ -255,7 +268,8 @@ class IframeBlock(BaseVisualisationBlock):
             "itemsList": items,
         }
 
-    def get_figure_config(self, value: StructValue) -> dict[str, Any]:
+    def get_figure_config(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
+        request = parent_context.get("request") if parent_context else None
         config = {
             "figureNumber": value.get("figure_number"),
             "headingLevel": 3,
@@ -265,7 +279,7 @@ class IframeBlock(BaseVisualisationBlock):
             "audioDescription": value.get("audio_description"),
         }
 
-        if download := self._get_download_config(value):
+        if download := self._get_download_config(value, request=request):
             config["download"] = download
 
         # Check for meaningful text before displaying footnotes
@@ -287,7 +301,7 @@ class IframeBlock(BaseVisualisationBlock):
     def get_context(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
 
-        context["figure_config"] = self.get_figure_config(value)
+        context["figure_config"] = self.get_figure_config(value, parent_context=parent_context)
         # fallback is only when block_id is not available, which should not happen in normal usage
         context["figure_config"]["id"] = f"{context.get('block_id') or uuid.uuid4().hex[:8]}"
         context["iframe_config"] = self.get_iframe_config(value)
