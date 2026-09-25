@@ -370,6 +370,53 @@ class BundleAdminFormTestCase(TestCase):
 
         self.assertFormError(form, "publication_date", ["The release date cannot be in the past."])
 
+    def test_clean_unparsable_publication_date_is_a_field_error(self):
+        """If django validation fails, the field is removed from `cleaned_data`.
+
+        Test that this is handled correctly and doesn't raise a `KeyError` in clean().
+        """
+        data = self.form_data
+        data["publication_date"] = "not-a-date"
+        data["status"] = BundleStatus.DRAFT
+
+        form = self.form_class(instance=self.bundle, data=data)
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(form, "publication_date", ["Enter a valid date/time."])
+
+    def test_clean_unparsable_publication_date_when_unscheduling_an_approved_bundle(self):
+        self.bundle.publication_date = timezone.now() - timedelta(days=1)
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status", "publication_date"])
+
+        data = self.form_data
+        data["publication_date"] = "not-a-date"
+        data["status"] = BundleStatus.DRAFT
+
+        form = self.form_class(instance=self.bundle, data=data)
+
+        self.assertFalse(form.is_valid())
+        self.assertFormError(form, "publication_date", ["Enter a valid date/time."])
+
+    def test_clean_unknown_release_calendar_page_is_a_field_error(self):
+        data = self.form_data
+        data["release_calendar_page"] = ReleaseCalendarPageFactory().pk + 1000
+        data["status"] = BundleStatus.DRAFT
+
+        form = self.form_class(instance=self.bundle, data=data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("release_calendar_page", form.errors)
+
+    def test_clean_unknown_status_is_a_field_error(self):
+        data = self.form_data
+        data["status"] = "unknown-status"
+
+        form = self.form_class(instance=self.bundle, data=data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("status", form.errors)
+
     def test_clean_validates_the_bundle_has_content(self):
         raw_data = self.raw_form_data()
         raw_data["bundled_pages"] = inline_formset([])
