@@ -6,15 +6,18 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
+from django.urls import reverse
 from django.utils import timezone
 
 from cms.core.db_router import force_write_db
 from cms.core.slack import send_or_update_slack_message
 from cms.core.utils import release_db_connections
-from cms.post_publish_actions.models import PostPublishAction
+from cms.post_publish_actions.executor import wait_for_bundle_publication_message
+from cms.post_publish_actions.models import PostPublishAction, PostPublishActionType
 
 if TYPE_CHECKING:
     from django.utils.functional import _StrOrPromise
+    from wagtail.models import Page
 
     from cms.bundles.models import Bundle
     from cms.users.models import User
@@ -73,10 +76,47 @@ def send_bundle_notification(  # pylint: disable=too-many-arguments  # noqa: PLR
         )
 
 
+@force_write_db()
+def send_bundle_thread_reply(bundle: Bundle, text: str, color: str, fields: list[dict]) -> None:
+    """Send a Slack message as a reply to the bundle's existing notification thread.
+
+    This function always creates a new message in the thread, and does not update
+    any existing messages.
+
+    Args:
+        bundle: The bundle being published
+        text: Message text/title
+        color: Slack attachment color ("warning", "good", "danger")
+        fields: Slack attachment fields
+    """
+    wait_for_bundle_publication_message(bundle.pk)
+    thread_ts = bundle.__class__.objects.values_list("slack_notification_ts", flat=True).get(pk=bundle.pk)
+    release_db_connections()
+    if not thread_ts:
+        logger.info(
+            "Skipping sending Slack thread reply (no existing thread timestamp)",
+            extra={"bundle_id": bundle.pk, "slack_message": text},
+        )
+        return
+
+    send_or_update_slack_message(
+        text=text,
+        color=color,
+        fields=fields,
+        channel=settings.SLACK_PUBLISH_LOG_CHANNEL,
+        thread_ts=thread_ts,
+    )
+
+
 def _get_published_page_count(bundle: Bundle) -> int:
     """Get count of bundle's pages that are live without any draft changes."""
     # cast to int because mypy can't figure out `count` return type
     return int(bundle.get_bundled_pages().filter(live=True, has_unpublished_changes=False).count())
+
+
+def _get_page_edit_link(page: Page) -> str:
+    edit_url = f"{settings.WAGTAILADMIN_BASE_URL}{reverse('wagtailadmin_pages:edit', args=[page.pk])}"
+    return f"<{edit_url}|{page.title}> (ID: {page.pk})"
 
 
 def _get_publish_type(bundle: Bundle) -> str:
@@ -286,21 +326,7 @@ def notify_slack_of_publish_end(
             }
         )
 
-    fields.extend(
-        [
-            {"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False},
-            {
-                "title": "Post-Publish Actions Successful",
-                "value": str(PostPublishAction.objects.successful().count_for_bundle(bundle)),
-                "short": True,
-            },
-            {
-                "title": "Post-Publish Actions Failed",
-                "value": str(PostPublishAction.objects.failed().count_for_bundle(bundle)),
-                "short": True,
-            },
-        ]
-    )
+    fields.append({"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False})
 
     if example_page_url := _get_example_page_url(bundle):
         fields.append({"title": "Example Page", "value": example_page_url, "short": False})
@@ -386,21 +412,7 @@ def notify_slack_of_post_publish_end(
             }
         )
 
-    fields.extend(
-        [
-            {"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False},
-            {
-                "title": "Post-Publish Actions Successful",
-                "value": str(PostPublishAction.objects.successful().count_for_bundle(bundle)),
-                "short": True,
-            },
-            {
-                "title": "Post-Publish Actions Failed",
-                "value": str(failed_post_publish_actions_count),
-                "short": True,
-            },
-        ]
-    )
+    fields.append({"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False})
 
     if example_page_url := _get_example_page_url(bundle):
         fields.append({"title": "Example Page", "value": example_page_url, "short": False})
@@ -411,6 +423,38 @@ def notify_slack_of_post_publish_end(
         bundle=bundle,
         text="Publishing the bundle has ended with errors." if has_errors else "Publishing the bundle has ended.",
         color="danger" if has_errors else "good",
+        fields=fields,
+    )
+
+
+def notify_slack_of_post_publish_summary(bundle: Bundle, start_time: datetime, end_time: datetime) -> None:
+    """Reply to the bundle's publication message with a summary of post-publish actions for all pages."""
+    failed_count = PostPublishAction.objects.failed().count_for_bundle(bundle)
+
+    fields: list[dict[str, Any]] = [
+        {
+            "title": "Post-Publish Actions Successful",
+            "value": str(PostPublishAction.objects.successful().count_for_bundle(bundle)),
+            "short": True,
+        },
+        {"title": "Post-Publish Actions Failed", "value": str(failed_count), "short": True},
+        {"title": "Finished At", "value": _format_publish_datetime(end_time), "short": True},
+        {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": True},
+    ]
+
+    send_bundle_thread_reply(
+        bundle=bundle,
+        text="Post-Publish actions have ended with errors"
+        if failed_count > 0
+        else "Post-Publish actions have ended successfully",
+        color="danger" if failed_count > 0 else "good",
+        fields=fields,
+    )
+
+    send_bundle_thread_reply(
+        bundle=bundle,
+        text=f"Post-publish action failed: {PostPublishActionType(action.action_type).label}",
+        color="danger",
         fields=fields,
     )
 

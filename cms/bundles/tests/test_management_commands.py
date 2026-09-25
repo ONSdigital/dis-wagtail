@@ -1,4 +1,6 @@
 import time
+
+# secretlint-disable
 from datetime import timedelta
 from io import StringIO
 from unittest.mock import patch
