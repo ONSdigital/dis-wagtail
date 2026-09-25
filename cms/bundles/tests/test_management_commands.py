@@ -210,16 +210,18 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
                         f"Post-publish action completed: {action_type.label}"
                         for action_type in get_post_publish_actions()
                     ),
-                    "Post-publish actions have ended.",
+                    "Post-Publish actions have ended successfully",
                 ]
             ),
         )
         for reply in replies:
             self.assertEqual(reply["thread_ts"], "1503435956.000247")
             if reply["text"].startswith("Post-publish action completed"):
-                self.assertIn(f"(ID: {self.bundle.pk})", reply["attachments"][0]["fields"][0]["value"])
+                self.assertIn(f"(ID: {self.statistical_article.pk})", reply["attachments"][0]["fields"][0]["value"])
 
-        summary_reply = next(reply for reply in replies if reply["text"] == "Post-publish actions have ended.")
+        summary_reply = next(
+            reply for reply in replies if reply["text"] == "Post-Publish actions have ended successfully"
+        )
 
         self.assertIn(
             {"title": "Post-Publish Actions Successful", "value": str(len(get_post_publish_actions())), "short": True},
@@ -260,7 +262,8 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
                         for action_type in get_post_publish_actions()
                         if action_type != PostPublishActionType.SEARCH_UPDATED
                     ),
-                    "Post-publish actions have ended with errors.",
+                    "Post-publish action failed: Search updated",
+                    "Post-Publish actions have ended with errors",
                 ]
             ),
         )
