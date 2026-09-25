@@ -120,7 +120,10 @@ class ExecutorTestCase(TestCase):
         executor.wait_for_bundle_notifications(1)
 
     def test_wait_for_bundle_notifications_without_registration(self):
-        executor.wait_for_bundle_notifications(12345)
+        try:
+            executor.wait_for_bundle_notifications(12345)
+        except KeyError as e:
+            self.fail(f"wait_for_bundle_notifications raised KeyError unexpectedly: {e}")
 
     def test_wait_for_bundle_publication_message_only_waits_for_the_publication_message(self):
         order = []
@@ -138,7 +141,7 @@ class ExecutorTestCase(TestCase):
         executor.wait_for_bundle_notifications(1)
         self.assertEqual(order, ["start", "reply", "end"])
 
-    def test_wait_for_bundle_notifications_forgets_the_publiction_message(self):
+    def test_wait_for_bundle_notifications_forgets_the_publication_message(self):
         executor.run_bundle_publication_message_in_support_executor(1, lambda: None)
         self.assertIn(1, executor._bundle_publication_message_futures)
 
@@ -155,7 +158,10 @@ class ExecutorTestCase(TestCase):
         self.assertNotIn(1, executor._bundle_publication_message_futures)
 
     def test_wait_for_bundle_publication_message_without_registration(self):
-        executor.wait_for_bundle_publication_message(12345)
+        try:
+            executor.wait_for_bundle_publication_message(12345)
+        except KeyError as e:
+            self.fail(f"wait_for_bundle_publication_message raised KeyError unexpectedly: {e}")
 
     def test_swallows_exceptions(self):
         """Test exceptions don't escape worker boundary and are logged."""
