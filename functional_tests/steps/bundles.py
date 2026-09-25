@@ -21,6 +21,7 @@ from cms.taxonomy.tests.factories import TopicFactory
 from cms.teams.models import Team
 from cms.teams.tests.factories import TeamFactory
 from cms.workflows.tests.utils import mark_page_as_ready_to_publish
+from functional_tests.step_helpers.bundles_api import fail_bundle_state_update
 from functional_tests.step_helpers.datasets import (
     TEST_UNPUBLISHED_DATASETS,
     ensure_dataset_topic,
@@ -476,7 +477,11 @@ def the_user_publishes_the_bundle(context: Context) -> None:
 @then("the bundle edit page is in read only mode")
 def the_bundle_edit_page_is_in_read_only_mode(context: Context) -> None:
     context.page.goto(context.base_url + reverse("bundle:edit", args=[context.bundle.pk]))
+    the_bundle_edit_page_is_still_in_read_only_mode(context)
 
+
+@then("the bundle edit page is still in read only mode")
+def the_bundle_edit_page_is_still_in_read_only_mode(context: Context) -> None:
     expect(context.page.locator("#id_name")).to_be_disabled()
     expect(context.page.locator("#id_publication_date")).to_be_disabled()
 
@@ -618,3 +623,29 @@ def local_dataset_reflects_new_title(context: Context) -> None:
 def bundle_status_is_ready_to_publish(context: Context) -> None:
     expect(context.page.get_by_text("Bundle 'Drift bundle' updated.")).to_be_visible()
     expect(context.page.get_by_role("cell", name="Ready to publish")).to_be_visible()
+
+
+@given("the bundle is linked to the Bundle API")
+def bundle_is_linked_to_bundle_api(context: Context) -> None:
+    context.bundle.bundle_api_bundle_id = "test-bundle-123"
+    context.bundle.save(update_fields=["bundle_api_bundle_id"])
+
+
+@given("the Bundle API fails to update bundle states")
+def bundle_api_fails_to_update_bundle_states(context: Context) -> None:
+    fail_bundle_state_update(context.bundle_api_mock)
+
+
+@then("the user sees an error explaining the bundle state could not be synced with the Bundle API")
+def user_sees_bundle_state_sync_error(context: Context) -> None:
+    expect(
+        context.page.get_by_text(
+            "The bundle could not be saved due to errors. Failed to sync bundle state with Bundle API."
+        )
+    ).to_be_visible()
+
+
+@then('the bundle edit page shows the bundle status as "{status}"')
+def the_bundle_edit_page_shows_the_bundle_status(context: Context, status: str) -> None:
+    context.page.get_by_role("button", name="Toggle status").click()
+    expect(context.page.get_by_role("heading", name=f"Status: {status}")).to_be_visible()

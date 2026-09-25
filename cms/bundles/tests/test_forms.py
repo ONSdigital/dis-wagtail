@@ -631,5 +631,14 @@ class BundleAdminFormTestCase(TestCase):
         self.assertEqual(form.cleaned_data.get("approved_by"), self.bundle.approved_by)
         self.assertEqual(form.cleaned_data.get("approved_at"), self.bundle.approved_at)
 
-        # assert bundled_pages not in formsets
-        self.assertEqual(form.formsets, {})
+        # the inline data is ignored, formsets are built from stored data
+        bundled_pages = form.formsets["bundled_pages"]
+        self.assertFalse(bundled_pages.is_bound)
+        self.assertEqual([f.instance.page_id for f in bundled_pages.forms], [self.bundle.bundled_pages.first().page_id])
+
+        self.assertEqual(form.changed_data, ["status"])
+
+        # saving doesn't apply inline changes
+        original_page_ids = list(self.bundle.bundled_pages.values_list("page_id", flat=True))
+        form.save()
+        self.assertEqual(list(self.bundle.bundled_pages.values_list("page_id", flat=True)), original_page_ids)
