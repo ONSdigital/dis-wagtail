@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
 from functools import cached_property
@@ -92,7 +92,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
         self.original_teams = set(self.instance.teams.all().order_by("id").select_related("team"))
 
     @contextmanager
-    def _inline_formsets_ignored(self) -> Iterator[None]:
+    def _inline_formsets_ignored(self) -> Generator[None]:
         if not self.ignore_inline_formsets:
             yield
             return
