@@ -1,6 +1,6 @@
 # pylint: disable=protected-access
 from datetime import timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 from django.test import TestCase, override_settings
 from django.utils import timezone
@@ -261,3 +261,55 @@ class PostPublishNotifySlackFailureRepliesTestCase(TestCase):
 
         mock_notify_failure.assert_not_called()
         mock_notify_end.assert_called_once()
+
+
+class PostPublishSummaryReplyTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.bundle = BundleFactory()
+        cls.page = StatisticalArticlePageFactory()
+
+    def _create_action(self, action_type, finished_at):
+        return PostPublishAction.objects.create(
+            bundle=self.bundle,
+            page=self.page,
+            action_type=action_type,
+            status=PostPublishActionStatus.SUCCESSFUL,
+            finished_at=finished_at,
+        )
+
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_summary")
+    def test_summary_reply_uses_the_last_action_to_finish(self, mock_summary, mock_notify_end):
+        start_time = timezone.now() - timedelta(minutes=5)
+        critical_finish = start_time + timedelta(minutes=1)
+        last_finish = start_time + timedelta(minutes=3)
+
+        self._create_action(PostPublishActionType.CACHE_PURGE, critical_finish)
+        self._create_action(PostPublishActionType.SEARCH_UPDATED, last_finish)
+
+        manager = MagicMock()
+        manager.attach_mock(mock_summary, "summary")
+        manager.attach_mock(mock_notify_end, "end")
+
+        post_publish_notify_slack(start_time, self.bundle)
+
+        self.assertEqual(
+            manager.mock_calls,
+            [
+                call.summary(self.bundle, start_time, last_finish),
+                call.end(self.bundle, start_time, critical_finish, publish_failed=False),
+            ],
+        )
+
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
+    @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_summary")
+    def test_summary_reply_falls_back_to_now_without_any_actions(self, mock_summary, mock_notify_end):
+        start_time = timezone.now() - timedelta(minutes=5)
+
+        before = timezone.now()
+        post_publish_notify_slack(start_time, self.bundle)
+
+        mock_summary.assert_called_once()
+        self.assertGreaterEqual(mock_summary.call_args.args[2], before)
+        self.assertEqual(mock_summary.call_args.args[2], mock_notify_end.call_args.args[2])

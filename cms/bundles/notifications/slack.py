@@ -327,21 +327,7 @@ def notify_slack_of_publish_end(
             }
         )
 
-    fields.extend(
-        [
-            {"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False},
-            {
-                "title": "Post-Publish Actions Successful",
-                "value": str(PostPublishAction.objects.successful().count_for_bundle(bundle)),
-                "short": True,
-            },
-            {
-                "title": "Post-Publish Actions Failed",
-                "value": str(PostPublishAction.objects.failed().count_for_bundle(bundle)),
-                "short": True,
-            },
-        ]
-    )
+    fields.append({"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False})
 
     if example_page_url := _get_example_page_url(bundle):
         fields.append({"title": "Example Page", "value": example_page_url, "short": False})
@@ -427,21 +413,7 @@ def notify_slack_of_post_publish_end(
             }
         )
 
-    fields.extend(
-        [
-            {"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False},
-            {
-                "title": "Post-Publish Actions Successful",
-                "value": str(PostPublishAction.objects.successful().count_for_bundle(bundle)),
-                "short": True,
-            },
-            {
-                "title": "Post-Publish Actions Failed",
-                "value": str(failed_post_publish_actions_count),
-                "short": True,
-            },
-        ]
-    )
+    fields.append({"title": "Dataset Count", "value": str(bundle_dataset_count), "short": False})
 
     if example_page_url := _get_example_page_url(bundle):
         fields.append({"title": "Example Page", "value": example_page_url, "short": False})
@@ -452,6 +424,31 @@ def notify_slack_of_post_publish_end(
         bundle=bundle,
         text="Publishing the bundle has ended with errors." if has_errors else "Publishing the bundle has ended.",
         color="danger" if has_errors else "good",
+        fields=fields,
+    )
+
+
+def notify_slack_of_post_publish_summary(bundle: Bundle, start_time: datetime, end_time: datetime) -> None:
+    """Reply to the bundle's publication message with a summary of post-publish actions for all pages."""
+    failed_count = PostPublishAction.objects.failed().count_for_bundle(bundle)
+
+    fields: list[dict[str, Any]] = [
+        {
+            "title": "Post-Publish Actions Successful",
+            "value": str(PostPublishAction.objects.successful().count_for_bundle(bundle)),
+            "short": True,
+        },
+        {"title": "Post-Publish Actions Failed", "value": str(failed_count), "short": True},
+        {"title": "Finished At", "value": _format_publish_datetime(end_time), "short": True},
+        {"title": "Duration", "value": f"{(end_time - start_time).total_seconds():.3f} seconds", "short": True},
+    ]
+
+    send_bundle_thread_reply(
+        bundle=bundle,
+        text="Post-Publish actions have ended with errors"
+        if failed_count > 0
+        else "Post-Publish actions have ended successfully",
+        color="danger" if failed_count > 0 else "good",
         fields=fields,
     )
 
