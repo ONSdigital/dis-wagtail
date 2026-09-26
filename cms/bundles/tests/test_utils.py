@@ -460,6 +460,11 @@ class PublishBundleFailureTests(TestCase):
         """Ensure executor threads don't outlive test lifetime."""
         self.addCleanup(flush_executor)
 
+    def _publish_and_wait(self, bundle, **kwargs):
+        result = publish_bundle(bundle, **kwargs)
+        flush_executor()
+        return result
+
     @patch("cms.bundles.utils.logger")
     @patch("cms.bundles.utils.notify_slack_of_bundle_failure")
     @patch("cms.bundles.utils.alert_slack_of_bundle_content_failure")
@@ -473,7 +478,7 @@ class PublishBundleFailureTests(TestCase):
         page2 = StatisticalArticlePageFactory(title="Article 2", live=False)
         bundle = BundleFactory(approved=True, bundled_pages=[page1, page2])
 
-        result = publish_bundle(bundle, update_status=True)
+        result = self._publish_and_wait(bundle, update_status=True)
 
         self.assertFalse(result)
         bundle.refresh_from_db()
@@ -515,7 +520,7 @@ class PublishBundleFailureTests(TestCase):
         page2 = StatisticalArticlePageFactory(title="Article 2", live=False)
         bundle = BundleFactory(approved=True, bundled_pages=[page1, page2])
 
-        result = publish_bundle(bundle, update_status=True)
+        result = self._publish_and_wait(bundle, update_status=True)
 
         self.assertFalse(result)
 
@@ -548,7 +553,7 @@ class PublishBundleFailureTests(TestCase):
         page2 = StatisticalArticlePageFactory(title="Article 2", live=False)
         bundle = BundleFactory(approved=True, bundled_pages=[page1, page2])
 
-        result = publish_bundle(bundle, update_status=True)
+        result = self._publish_and_wait(bundle, update_status=True)
 
         self.assertFalse(result)
         bundle.refresh_from_db()
@@ -571,7 +576,7 @@ class PublishBundleFailureTests(TestCase):
         page2.save_revision()
         bundle = BundleFactory(approved=True, bundled_pages=[page1, page2])
 
-        result = publish_bundle(bundle, update_status=True)
+        result = self._publish_and_wait(bundle, update_status=True)
 
         self.assertTrue(result)
         bundle.refresh_from_db()
@@ -593,7 +598,7 @@ class PublishBundleFailureTests(TestCase):
         # page2 has no revision and no workflow state - will fail
         bundle = BundleFactory(approved=True, bundled_pages=[page1, page2])
 
-        result = publish_bundle(bundle, update_status=True)
+        result = self._publish_and_wait(bundle, update_status=True)
 
         self.assertFalse(result)
         bundle.refresh_from_db()
@@ -614,7 +619,7 @@ class PublishBundleFailureTests(TestCase):
 
         # Page without revision will fail
         # update_status=False should be ignored for failures, where the status must be saved
-        result = publish_bundle(bundle, update_status=False)
+        result = self._publish_and_wait(bundle, update_status=False)
 
         self.assertFalse(result)
         bundle.refresh_from_db()
@@ -638,7 +643,7 @@ class PublishBundleFailureTests(TestCase):
 
         # Page without revision will fail
         # update_status=False should be ignored for failures, where the status must be saved
-        result = publish_bundle(bundle, update_status=False)
+        result = self._publish_and_wait(bundle, update_status=False)
 
         self.assertFalse(result)
         bundle.refresh_from_db()
@@ -666,7 +671,7 @@ class PublishBundleFailureTests(TestCase):
             bundle=bundle, page=page_will_publish, action_type="DOES_NOT_EXIST"
         )
 
-        publish_bundle(bundle)
+        self._publish_and_wait(bundle, update_status=True)
 
         bundle.refresh_from_db()
         self.assertEqual(bundle.status, BundleStatus.PUBLISHED)
