@@ -210,6 +210,53 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
             self.assertEqual(reply["thread_ts"], "1503435956.000247")
             self.assertIn(f"(ID: {self.statistical_article.pk}", reply["attachments"][0]["fields"][0]["value"])
 
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.core.slack.get_slack_client")
+    @patch("cms.search.signal_handlers.get_publisher")
+    def test_publish_bundle_replies_to_publication_message_when_actions_fail(self, mock_get_publisher, mock_get_client):
+        BundlePageFactory(parent=self.bundle, page=self.statistical_article)
+        mark_page_as_ready_to_publish(self.statistical_article)
+
+        mock_get_publisher.return_value.publish_created_or_updated.side_effect = ValueError("Search is down")
+
+        mock_client = Mock()
+        mock_client.chat_postMessage.side_effect = lambda **kwargs: {
+            "ok": True,
+            "ts": "1503435957.000248" if kwargs.get("thread_ts") else "1503435956.000247",
+        }
+        mock_client.chat_update.side_effect = lambda **kwargs: {"ok": True, "ts": kwargs["ts"]}
+        mock_get_client.return_value = mock_client
+
+        self.call_command()
+        executor_stop_and_wait()
+
+        replies = [
+            message_call.kwargs
+            for message_call in mock_client.chat_postMessage.call_args_list
+            if message_call.kwargs["thread_ts"]
+        ]
+        self.assertEqual(
+            sorted(reply["text"] for reply in replies),
+            sorted(
+                [
+                    *(
+                        f"Post-publish action completed: {action_type.label}"
+                        for action_type in get_post_publish_actions()
+                        if action_type != PostPublishActionType.SEARCH_UPDATED
+                    ),
+                    "Post-publish action failed: Search updated",
+                ]
+            ),
+        )
+
+        failure_reply = next(reply for reply in replies if reply["text"].startswith("Post-publish action failed"))
+
+        self.assertEqual(failure_reply["thread_ts"], "1503435956.000247")
+        self.assertIn(
+            {"title": "Reason", "value": "ValueError: Search is down", "short": False},
+            failure_reply["attachments"][0]["fields"],
+        )
+
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
