@@ -59,6 +59,7 @@ class PageConfigHeaderSearchFormDict(TypedDict):
 class PageConfigHeaderSearchDict(TypedDict):
     id: str
     form: PageConfigHeaderSearchFormDict
+    toggleAriaLabel: str
 
 
 class PageConfigHeaderLanguageDict(TypedDict):
@@ -232,7 +233,14 @@ def _get_base_page_config(context: jinja2.runtime.Context, site: Site, request: 
                 "keyLinks": main_menu_highlights(request, main_menu),
                 "columns": main_menu_columns(request, main_menu),
             },
-            "search": {"id": "search", "form": {"action": settings.ONS_WEBSITE_SEARCH_PATH, "inputName": "q"}},
+            "search": {
+                "id": "search",
+                "toggleAriaLabel": _("Toggle search"),
+                "form": {
+                    "action": settings.ONS_WEBSITE_SEARCH_PATH,
+                    "inputName": "q",
+                },
+            },
         },
         "footer": {
             "cols": footer_menu_columns(request, footer_menu),
