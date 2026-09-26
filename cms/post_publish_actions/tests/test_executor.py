@@ -120,7 +120,48 @@ class ExecutorTestCase(TestCase):
         executor.wait_for_bundle_notifications(1)
 
     def test_wait_for_bundle_notifications_without_registration(self):
-        executor.wait_for_bundle_notifications(12345)
+        try:
+            executor.wait_for_bundle_notifications(12345)
+        except KeyError as e:
+            self.fail(f"wait_for_bundle_notifications raised KeyError unexpectedly: {e}")
+
+    def test_wait_for_bundle_publication_message_only_waits_for_the_publication_message(self):
+        order = []
+
+        def slow_start_notification():
+            time.sleep(0.2)
+            order.append("start")
+
+        executor.run_bundle_publication_message_in_support_executor(1, slow_start_notification)
+        executor.run_bundle_notification_in_support_executor(1, lambda: (time.sleep(0.5), order.append("end")))
+
+        executor.wait_for_bundle_publication_message(1)
+        order.append("reply")
+
+        executor.wait_for_bundle_notifications(1)
+        self.assertEqual(order, ["start", "reply", "end"])
+
+    def test_wait_for_bundle_notifications_forgets_the_publication_message(self):
+        executor.run_bundle_publication_message_in_support_executor(1, lambda: None)
+        self.assertIn(1, executor._bundle_publication_message_futures)
+
+        executor.wait_for_bundle_notifications(1)
+
+        self.assertNotIn(1, executor._bundle_publication_message_futures)
+
+    def test_flush_forgets_publication_messages(self):
+        executor.run_bundle_publication_message_in_support_executor(1, lambda: None)
+        self.assertIn(1, executor._bundle_publication_message_futures)
+
+        executor.flush_executor()
+
+        self.assertNotIn(1, executor._bundle_publication_message_futures)
+
+    def test_wait_for_bundle_publication_message_without_registration(self):
+        try:
+            executor.wait_for_bundle_publication_message(12345)
+        except KeyError as e:
+            self.fail(f"wait_for_bundle_publication_message raised KeyError unexpectedly: {e}")
 
     def test_swallows_exceptions(self):
         """Test exceptions don't escape worker boundary and are logged."""
@@ -162,20 +203,25 @@ class RunActionTestCase(TransactionTestCase):
 
         PostPublishAction.objects.create(page=page, bundle=bundle, action_type=PostPublishActionType.S3_ACL)
 
-        with self.assertNumQueriesConnection(default=6):
+        with self.assertNumQueriesConnection(default=7):
             executor.run_action(self.handler, PostPublishActionType.S3_ACL, page.id, bundle.id)
 
     def test_requires_bundle_id(self):
         with self.assertRaisesMessage(RuntimeError, "Bundle id required"):
             executor.run_action(self.handler, PostPublishActionType.S3_ACL, 123, None)
 
-    def test_runs_handler(self):
+    @patch("cms.bundles.notifications.slack.notify_slack_of_post_publish_action_success")
+    def test_runs_handler(self, mock_notify_success):
         bundle = BundleFactory()
         page = StatisticalArticlePageFactory()
 
         action = PostPublishAction.objects.create(page=page, bundle=bundle, action_type=PostPublishActionType.S3_ACL)
 
         executor.run_action(self.handler, PostPublishActionType.S3_ACL, page.id, bundle.id)
+
+        mock_notify_success.assert_called_once_with(bundle, page, action)
+        notified_action = mock_notify_success.call_args.args[2]
+        self.assertEqual(notified_action.status, PostPublishActionStatus.SUCCESSFUL)
 
         action.refresh_from_db()
 
@@ -186,7 +232,8 @@ class RunActionTestCase(TransactionTestCase):
 
         self.handler.assert_called()
 
-    def test_failed_handler(self):
+    @patch("cms.bundles.notifications.slack.notify_slack_of_post_publish_action_success")
+    def test_failed_handler(self, mock_notify_success):
         self.handler.side_effect = ValueError("Failed")
 
         bundle = BundleFactory()
@@ -202,3 +249,5 @@ class RunActionTestCase(TransactionTestCase):
         self.assertIsNotNone(action.finished_at)
         self.assertEqual(action.failed_reason, "ValueError: Failed")
         self.assertGreater(action.duration.total_seconds(), 0)
+
+        mock_notify_success.assert_not_called()
