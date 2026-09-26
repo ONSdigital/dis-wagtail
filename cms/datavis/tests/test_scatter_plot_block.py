@@ -56,6 +56,9 @@ class ScatterPlotBlockTestCase(BaseChartBlockTestCase):
     def test_get_component_config(self):
         self._test_get_component_config()
 
+    def test_get_export_config(self):
+        self._test_get_export_config()
+
     def test_x_axis_min_max_configuration(self):
         """Test that min/max values are correctly configured for the x-axis."""
         self.raw_data["x_axis"]["min"] = 0.5
