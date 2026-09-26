@@ -105,7 +105,7 @@ DJANGO_SETTINGS_MODULE=cms.settings.functional_test make createsuperuser
 #### Using DSLR Snapshots for Development
 
 Resetting and migrating the DB will always work, but it is slow to run. A faster solution is
-using [DSLR snapshots](https://pypi.org/project/dslr/). Note however, that these snapshots may break if the database
+using [DSLR snapshots](https://pypi.org/project/DSLR/). Note however, that these snapshots may break if the database
 structure has changed, at which point you will need to reset and migrate again, then create a new, good snapshot.
 
 Create a DSLR snapshot of the functional tests dev database with:
@@ -284,7 +284,7 @@ and run a live server on a random port for the tests.
 
 ### Database Snapshot and Restore
 
-We are using [DSLR](https://pypi.org/project/dslr/) for fast database snapshots and restores.
+We are using [DSLR](https://pypi.org/project/DSLR/) for fast database snapshots and restores.
 
 After we have used the Django test runner to set up the test database and initialise it by running migrations, we take a
 DSLR snapshot of this clean, initial state. In the test case fixture, post test, we then restore the clean snapshot,
