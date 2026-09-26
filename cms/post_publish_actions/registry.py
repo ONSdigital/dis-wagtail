@@ -27,6 +27,7 @@ class PostPublishActionPriority(IntEnum):
 class RegisteredPostPublishAction:
     handler: ActionHandler
     priority: int = PostPublishActionPriority.MEDIUM
+    critical: bool = False
 
 
 _registry: dict[PostPublishActionType, RegisteredPostPublishAction] = {}
@@ -37,18 +38,19 @@ def register_post_publish_action(
     action_handler: ActionHandler,
     *,
     priority: int = PostPublishActionPriority.MEDIUM,
+    critical: bool = False,
 ) -> None:
     if action_type in _registry:
         raise ImproperlyConfigured(f"{action_type} is already configured: {_registry[action_type].handler}")
 
-    _registry[action_type] = RegisteredPostPublishAction(handler=action_handler, priority=priority)
+    _registry[action_type] = RegisteredPostPublishAction(handler=action_handler, priority=priority, critical=critical)
 
 
 def post_publish_action(
-    action_type: PostPublishActionType, priority: int = PostPublishActionPriority.MEDIUM
+    action_type: PostPublishActionType, priority: int = PostPublishActionPriority.MEDIUM, *, critical: bool = False
 ) -> Callable[[ActionHandler], ActionHandler]:
     def decorator(action_handler: ActionHandler) -> ActionHandler:
-        register_post_publish_action(action_type, action_handler, priority=priority)
+        register_post_publish_action(action_type, action_handler, priority=priority, critical=critical)
         return action_handler
 
     return decorator
@@ -72,3 +74,8 @@ def get_registered_action_types() -> list[PostPublishActionType]:
     so this may only be a subset of all action types defined in `PostPublishActionType`.
     """
     return list(_registry)
+
+
+def get_critical_action_types() -> list[PostPublishActionType]:
+    """Returns a list of all registered post-publish action types that are marked as critical."""
+    return [action_type for action_type, registered in _registry.items() if registered.critical]
