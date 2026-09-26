@@ -5,14 +5,20 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from wagtail.admin.signal_handlers import register_signal_handlers as wagtail_register_signal_handlers
+from wagtail.models import WorkflowState
+from wagtail.signals import workflow_approved
 from wagtail.test.utils.form_data import inline_formset, nested_form_data
 
 from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
 from cms.bundles.models import BundleTeam
+from cms.bundles.signal_handlers import workflow_approval_email_handler
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
+from cms.core.tests import TransactionTestCase
 from cms.teams.tests.factories import TeamFactory
 from cms.users.tests.factories import UserFactory
+from cms.workflows.tests.utils import mark_page_as_ready_to_publish, progress_page_workflow
 
 
 class TestNotifications(TestCase):
@@ -158,3 +164,58 @@ class TestNotifications(TestCase):
 
         # Ensure no additional notification is sent
         self.assertEqual(len(mail.outbox), 0)
+
+
+class TestWorkflowApprovalNotification(TransactionTestCase):
+    def setUp(self):
+        self.editor = UserFactory()
+        self.preview_team = TeamFactory()
+        self.previewer = UserFactory()
+        self.previewer.teams.set([self.preview_team])
+
+    def test_approval_email_is_sent_when_workflow_is_approved_outside_a_bundle(self):
+        page = StatisticalArticlePageFactory()
+        workflow_state = mark_page_as_ready_to_publish(page, user=self.editor)
+
+        progress_page_workflow(workflow_state)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(self.editor.email, mail.outbox[0].to)
+        self.assertIn('has been approved in "Release review"', mail.outbox[0].subject)
+
+    def test_approval_email_is_not_sent_when_the_workflow_is_approved_by_publishing_a_bundle(self):
+        page = StatisticalArticlePageFactory()
+        bundle = BundleFactory(approved=True, name="Approved Bundle")
+        BundlePageFactory(parent=bundle, page=page)
+        BundleTeam.objects.create(parent=bundle, team=self.preview_team)
+        mark_page_as_ready_to_publish(page, user=self.editor)
+
+        # Set the date in the past so it gets published
+        bundle.publication_date = timezone.now() - timedelta(days=1)
+        bundle.save()
+
+        # Ensure the mail outbox is cleared before publishing the bundle
+        mail.outbox = []
+
+        call_command("publish_bundles")
+
+        bundle.refresh_from_db()
+        self.assertEqual(bundle.status, BundleStatus.PUBLISHED)
+
+        # only the bundle published notification goes out, not Wagtail's page approved email
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(self.previewer.email, mail.outbox[0].to)
+
+    def test_our_handler_still_claims_wagtails_dispatch_uid(self):
+        """Guards against Wagtail renaming "workflow_state_approved_email_notification": if it changed,
+        Wagtail's own connect() below would stop being a no-op and would add a second, competing receiver.
+        """
+        wagtail_register_signal_handlers()
+
+        sync_receivers, async_receivers = workflow_approved._live_receivers(  # pylint: disable=protected-access
+            WorkflowState
+        )
+
+        # An upgrade with a breaking change will trigger a failure here
+        self.assertEqual(sync_receivers, [workflow_approval_email_handler])
+        self.assertEqual(async_receivers, [])

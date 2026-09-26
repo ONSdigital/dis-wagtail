@@ -8,4 +8,6 @@ class BundlesAppConfig(AppConfig):
     name = "cms.bundles"
 
     def ready(self) -> None:
-        import cms.bundles.signal_handlers  # noqa # pylint: disable=unused-import, import-outside-toplevel
+        from .signal_handlers import register_signal_handlers  # pylint: disable=import-outside-toplevel
+
+        register_signal_handlers()
