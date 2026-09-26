@@ -260,7 +260,9 @@ def _check_for_removed_topics(fetched_topic_ids: set[str]) -> None:
 
 
 def _get_active_topic_ids() -> set[str]:
-    return set(Topic.objects.filter(removed=False).values_list("id", flat=True))
+    # topics() rather than all(): the dummy root is never returned by the API, so including it here would
+    # make every sync decide it had been removed and flag it.
+    return set(Topic.objects.topics().filter(removed=False).values_list("id", flat=True))
 
 
 def _set_topic_as_removed(removed_topic_id: str) -> None:
