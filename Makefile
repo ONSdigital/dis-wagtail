@@ -105,7 +105,7 @@ megalint:  ## Run the mega-linter. Use LINTER=NAME to run only one.
 		-v /var/run/docker.sock:/var/run/docker.sock:rw \
 		-v $(shell pwd):/tmp/lint:rw \
 		$(if $(LINTER),-e ENABLE_LINTERS=$(LINTER),) \
-		ghcr.io/oxsecurity/megalinter-cupcake@sha256:266c8d80f74b3308d71078f9f1e5426c6f012eb71c126eadd69960d5ccb770ed # v10.0.0
+		ghcr.io/oxsecurity/megalinter-cupcake@sha256:7cce5b9d46564149d451a9752c5c266982f10c231be7df79996f46e3e171d2fc # v10.1.0
 
 .PHONY: load-design-system-templates
 load-design-system-templates:  ## Load the design system templates
@@ -114,6 +114,7 @@ load-design-system-templates:  ## Load the design system templates
 .PHONY: load-topics
 load-topics:  ## Load our fixture of taxonomy topics
 	poetry run python ./manage.py loaddata cms/taxonomy/fixtures/topics.json
+	poetry run python ./manage.py update_index
 
 .PHONY: delete-topics
 delete-topics: ## Delete all topics from the database (root is preserved via the model manager)

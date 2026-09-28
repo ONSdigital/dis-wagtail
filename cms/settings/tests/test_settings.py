@@ -5,7 +5,7 @@ from unittest import mock
 
 from django.conf import settings
 from django.template import Context, Template
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse, reverse_lazy
 from django.utils.csp import CSP
 
@@ -40,18 +40,43 @@ class SettingsTestCase(TestCase):
 
         with mock.patch.dict(os.environ, {"IS_EXTERNAL_ENV": "false"}, clear=False):
             reloaded_base = importlib.reload(base)
+            self.assertTrue(reloaded_base.CMS_GTM_PREVIEW_MODE_ENABLED)
             self.assertIn("fonts.googleapis.com", reloaded_base.SECURE_CSP["style-src"])
             self.assertIn("fonts.gstatic.com", reloaded_base.SECURE_CSP["font-src"])
+            self.assertIn("tagmanager.google.com", reloaded_base.SECURE_CSP["script-src"])
+            self.assertIn("data:", reloaded_base.SECURE_CSP["font-src"])
             self.assertEqual(reloaded_base.SECURE_CSP["frame-ancestors"], [CSP.SELF])
 
     def test_external_env_csp_settings(self):
         self.addCleanup(importlib.reload, base)
 
-        with mock.patch.dict(os.environ, {"IS_EXTERNAL_ENV": "true"}, clear=False):
+        with mock.patch.dict(
+            os.environ, {"IS_EXTERNAL_ENV": "true", "CMS_GTM_PREVIEW_MODE_ENABLED": "false"}, clear=False
+        ):
             reloaded_base = importlib.reload(base)
+            self.assertFalse(reloaded_base.CMS_GTM_PREVIEW_MODE_ENABLED)
             self.assertNotIn("fonts.googleapis.com", reloaded_base.SECURE_CSP["style-src"])
             self.assertNotIn("fonts.gstatic.com", reloaded_base.SECURE_CSP["font-src"])
+            self.assertNotIn("data:", reloaded_base.SECURE_CSP["font-src"])
+            self.assertNotIn("tagmanager.google.com", reloaded_base.SECURE_CSP["script-src"])
             self.assertEqual(reloaded_base.SECURE_CSP["frame-ancestors"], [CSP.NONE])
+
+    def test_gtm_preview_mode_can_be_enabled_via_feature_flag(self):
+        self.addCleanup(importlib.reload, base)
+
+        with mock.patch.dict(
+            os.environ,
+            {"IS_EXTERNAL_ENV": "true", "CMS_GTM_PREVIEW_MODE_ENABLED": "true"},
+            clear=False,
+        ):
+            reloaded_base = importlib.reload(base)
+            self.assertTrue(reloaded_base.CMS_GTM_PREVIEW_MODE_ENABLED)
+            self.assertIn("fonts.googleapis.com", reloaded_base.SECURE_CSP["style-src"])
+            self.assertIn("fonts.gstatic.com", reloaded_base.SECURE_CSP["font-src"])
+            self.assertIn("tagmanager.google.com", reloaded_base.SECURE_CSP["script-src"])
+            self.assertIn("ssl.gstatic.com", reloaded_base.SECURE_CSP["img-src"])
+            self.assertIn("www.gstatic.com", reloaded_base.SECURE_CSP["img-src"])
+            self.assertIn("data:", reloaded_base.SECURE_CSP["font-src"])
 
     def test_iframe_visualisation_csp_sources_include_subdomains(self):
         self.addCleanup(importlib.reload, base)
@@ -64,7 +89,7 @@ class SettingsTestCase(TestCase):
             )
 
 
-class CSPTestCase(TestCase):
+class SecurityHeadersTestCase(TestCase):
     urls = frozenset(["/", "/test404", reverse_lazy("wagtailadmin_login")])
 
     def _parse_csp(self, header_value: str) -> dict[str, list[str]]:
@@ -80,6 +105,15 @@ class CSPTestCase(TestCase):
         # Fall back to default-src if directive is not present
         return policy.get(directive, policy.get("default-src", []))
 
+    def _parse_permissions_policy(self, header_value: str) -> dict[str, list[str]]:
+        directives = {}
+
+        for directive in header_value.split(","):
+            feature, allow_list = directive.strip().split("=", 1)
+            directives[feature] = [value.strip('"') for value in allow_list.strip()[1:-1].split()]
+
+        return directives
+
     def test_self_in_all_expressions(self):
         for url in self.urls:
             with self.subTest(url):
@@ -91,7 +125,7 @@ class CSPTestCase(TestCase):
                     with self.subTest(directive):
                         self.assertIn(CSP.SELF, self._get_csp_expressions(csp, directive))
 
-    def test_gtm_csp(self):
+    def test_google_tagging_csp(self):
         """https://developers.google.com/tag-platform/security/guides/csp."""
         for url in self.urls:
             with self.subTest(url):
@@ -103,6 +137,35 @@ class CSPTestCase(TestCase):
                 self.assertIn("www.googletagmanager.com", self._get_csp_expressions(csp, "connect-src"))
                 self.assertIn("www.googletagmanager.com", self._get_csp_expressions(csp, "script-src"))
                 self.assertIn("www.google.com", self._get_csp_expressions(csp, "connect-src"))
+                self.assertIn("*.google-analytics.com", self._get_csp_expressions(csp, "img-src"))
+                self.assertIn("*.google-analytics.com", self._get_csp_expressions(csp, "connect-src"))
+                self.assertIn("*.analytics.google.com", self._get_csp_expressions(csp, "connect-src"))
+
+    def test_gtm_preview_mode_csp(self):
+        self.addCleanup(importlib.reload, base)
+
+        with mock.patch.dict(
+            os.environ,
+            {"IS_EXTERNAL_ENV": "true", "CMS_GTM_PREVIEW_MODE_ENABLED": "true"},
+            clear=False,
+        ):
+            reloaded_base = importlib.reload(base)
+
+            with override_settings(SECURE_CSP=reloaded_base.SECURE_CSP):
+                for url in self.urls:
+                    with self.subTest(url):
+                        response = self.client.get(url)
+
+                        csp = self._parse_csp(response.headers["Content-Security-Policy"])
+
+                        self.assertIn("tagmanager.google.com", self._get_csp_expressions(csp, "script-src"))
+                        self.assertIn("www.googletagmanager.com", self._get_csp_expressions(csp, "style-src"))
+                        self.assertIn("tagmanager.google.com", self._get_csp_expressions(csp, "style-src"))
+                        self.assertIn("fonts.googleapis.com", self._get_csp_expressions(csp, "style-src"))
+                        self.assertIn("ssl.gstatic.com", self._get_csp_expressions(csp, "img-src"))
+                        self.assertIn("www.gstatic.com", self._get_csp_expressions(csp, "img-src"))
+                        self.assertIn("data:", self._get_csp_expressions(csp, "font-src"))
+                        self.assertIn("fonts.gstatic.com", self._get_csp_expressions(csp, "font-src"))
 
     def test_hotjar_csp(self):
         """https://help.hotjar.com/hc/en-us/articles/36820026388881-Content-Security-Policies."""
@@ -159,6 +222,32 @@ class CSPTestCase(TestCase):
                 for allowed_source in settings.IFRAME_VISUALISATION_CSP_SOURCES:
                     with self.subTest(allowed_source):
                         self.assertIn(allowed_source, self._get_csp_expressions(csp, "frame-src"))
+
+    def test_video_embed_csp(self):
+        for url in self.urls:
+            with self.subTest(url):
+                response = self.client.get(url)
+
+                csp = self._parse_csp(response.headers["Content-Security-Policy"])
+
+                self.assertIn("www.youtube.com", self._get_csp_expressions(csp, "frame-src"))
+                self.assertIn("player.vimeo.com", self._get_csp_expressions(csp, "frame-src"))
+
+    def test_video_embed_permissions_policy(self):
+        for url in self.urls:
+            with self.subTest(url):
+                response = self.client.get(url)
+
+                permissions_policy = self._parse_permissions_policy(response.headers["Permissions-Policy"])
+
+                self.assertEqual(
+                    permissions_policy["encrypted-media"],
+                    ["self", "https://www.youtube.com", "https://player.vimeo.com"],
+                )
+                self.assertEqual(
+                    permissions_policy["fullscreen"],
+                    ["self", "https://www.youtube.com", "https://player.vimeo.com"],
+                )
 
     def test_wagtail_csp(self):
         """https://github.com/wagtail/wagtail/issues?q=is%3Aissue%20state%3Aopen%20csp."""

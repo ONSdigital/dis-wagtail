@@ -124,6 +124,21 @@ class PathBasedLocalisationTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertIn(welsh_page.get_site().root_url + "/cy/", welsh_series_url)
         self.assertContains(response, f'<link rel="canonical" href="{welsh_series_url}" />')
 
+    def test_translated_welsh_statistical_article_page_cache_headers(self):
+        welsh_page = self.welsh_article_page_alias
+        welsh_page.alias_of = None
+        welsh_page.save_revision().publish()
+        response = self.client.get(welsh_page.get_url(request=self.dummy_request))
+
+        self.assertEqual(
+            response.headers["Cache-Control"],
+            "public, max-age=5, stale-while-revalidate=0, stale-if-error=60",
+        )
+        self.assertEqual(
+            response.headers["Cloudflare-CDN-Cache-Control"],
+            "max-age=31536000, stale-while-revalidate=86400, stale-if-error=432000",
+        )
+
     @patch("cms.home.models.HomePage.serve")
     def test_500_page(self, mock_homepage_serve):
         """Test that the 500 page can be served."""

@@ -89,6 +89,10 @@ class MethodologyPage(  # type: ignore[django-manager-missing]
     BasePage,
 ):
     base_form_class = PageWithEquationsAdminForm
+
+    # Set for appropriate caching based on the 59 second publishing rule.
+    is_publishing_rule_page = True
+
     parent_page_types: ClassVar[list[str]] = ["MethodologyIndexPage"]
     search_index_content_type: ClassVar[str] = "static_methodology"
     template = "templates/pages/methodology_page.html"

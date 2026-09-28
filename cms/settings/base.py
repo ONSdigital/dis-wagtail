@@ -755,17 +755,21 @@ if "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env or "FRONTEND_CACHE_CLOUDFLARE_BEARER
         WAGTAIL_STORAGES_DOCUMENTS_FRONTENDCACHE = WAGTAILFRONTENDCACHE
 
 
-# Set s-max-age header that is used by reverse proxy/front end cache. See
-# urls.py.
-try:
-    CACHE_CONTROL_S_MAXAGE = int(env.get("CACHE_CONTROL_S_MAXAGE", 600))
-except ValueError:
-    pass
+# Browser Cache-Control settings for semi-static HTML pages. See cms/core/cache.py.
+# "Default" applies to most pages; "publishing rule" applies to page types covered by
+# the 59 second publishing rule (release calendar entry, statistical article, methodology).
+CACHE_CONTROL_DEFAULT_MAX_AGE = int(env.get("CACHE_CONTROL_DEFAULT_MAX_AGE", 60))
+CACHE_CONTROL_DEFAULT_STALE_IF_ERROR = int(env.get("CACHE_CONTROL_DEFAULT_STALE_IF_ERROR", 300))
 
+CACHE_CONTROL_PUBLISHING_RULE_MAX_AGE = int(env.get("CACHE_CONTROL_PUBLISHING_RULE_MAX_AGE", 5))
+CACHE_CONTROL_PUBLISHING_RULE_STALE_IF_ERROR = int(env.get("CACHE_CONTROL_PUBLISHING_RULE_STALE_IF_ERROR", 60))
 
-# Give front-end cache 30 second to revalidate the cache to avoid hitting the
-# backend. See urls.py.
-CACHE_CONTROL_STALE_WHILE_REVALIDATE = int(env.get("CACHE_CONTROL_STALE_WHILE_REVALIDATE", 30))
+# Edge (Cloudflare) cache settings, set via the Cloudflare-CDN-Cache-Control header so they
+# can differ from the browser Cache-Control settings above. Pages are purged from the edge
+# cache on publish, so these can be set far in the future.
+CACHE_CONTROL_CDN_MAX_AGE = int(env.get("CACHE_CONTROL_CDN_MAX_AGE", 31536000))
+CACHE_CONTROL_CDN_STALE_WHILE_REVALIDATE = int(env.get("CACHE_CONTROL_CDN_STALE_WHILE_REVALIDATE", 86400))
+CACHE_CONTROL_CDN_STALE_IF_ERROR = int(env.get("CACHE_CONTROL_CDN_STALE_IF_ERROR", 432000))
 
 
 # Required to get e.g. wagtail-sharing working on Heroku and probably many other platforms.
@@ -1012,6 +1016,12 @@ DATASETS_API_EDITIONS_URL = env.get("DATASETS_API_EDITIONS_URL", f"{ONS_API_BASE
 DIS_DATASETS_BUNDLE_API_BASE_URL = env.get("DIS_DATASETS_BUNDLE_API_BASE_URL", ONS_API_BASE_URL)
 TOPIC_API_BASE_URL = env.get("TOPIC_API_BASE_URL", f"{ONS_API_BASE_URL}/topics")  # used to sync topics
 
+# Comma-separated list of top-level topic slugs to exclude when syncing topics.
+# Excluded topics and all of their subtopics are skipped during sync.
+CMS_TOPIC_SYNC_EXCLUDED_SLUGS = {
+    slug.strip() for slug in env.get("CMS_TOPIC_SYNC_EXCLUDED_SLUGS", "census").split(",") if slug.strip()
+}
+
 # Feature flag to enable/disable interaction with the ONS Bundle API
 DIS_DATASETS_BUNDLE_API_ENABLED = env.get("DIS_DATASETS_BUNDLE_API_ENABLED", "false").lower() == "true"
 
@@ -1110,6 +1120,9 @@ AWS_COGNITO_APP_CLIENT_ID = env.get("AWS_COGNITO_APP_CLIENT_ID")
 # Auth Sync Teams
 AWS_COGNITO_TEAM_SYNC_ENABLED = env.get("AWS_COGNITO_TEAM_SYNC_ENABLED", "false").lower() == "true"
 AWS_COGNITO_TEAM_SYNC_FREQUENCY = int(env.get("AWS_COGNITO_TEAM_SYNC_FREQUENCY", "1"))
+# Controls whether the topic sync sends service auth headers to the topic API.
+# When enabled, SERVICE_AUTH_TOKEN is mandatory and both auth headers are sent.
+CMS_TOPIC_SYNC_AUTH_ENABLED = env.get("CMS_TOPIC_SYNC_AUTH_ENABLED", "true").lower() == "true"
 
 # User groups
 PUBLISHING_ADMINS_GROUP_NAME = "Publishing Admins"
@@ -1201,21 +1214,30 @@ WAGTAIL_POLYMATH = {
     "mathjax_sri": "sha512-M36RUChWzAh1veeenRZFql7HydLEnkYmoloiCvVrhz402UZgKI93qkV7SsaxtVKdN95Wzajh39ysrXCq34NTsg==",
 }
 
+CMS_GTM_PREVIEW_MODE_ENABLED = not IS_EXTERNAL_ENV or env.get("CMS_GTM_PREVIEW_MODE_ENABLED", "false").lower() == "true"
+
+# Although different video URL variants such as youtu.be and youtube.com without www are allowed,
+# the URL is normalised when calling `get_embed_url`.
+VIDEO_EMBED_CSP_SOURCES = ["www.youtube.com", "player.vimeo.com"]
+VIDEO_EMBED_PERMISSIONS_POLICY_SOURCES = ["self", "https://www.youtube.com", "https://player.vimeo.com"]
+
 # Content Security policy settings
 # https://docs.djangoproject.com/en/6.0/ref/csp/
 static_sources = [ONS_CDN_URL]
 SECURE_CSP: dict[str, list] = {
     "default-src": [CSP.SELF],
-    "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_CSP_SOURCES],
+    "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_CSP_SOURCES, *VIDEO_EMBED_CSP_SOURCES],
     # UNSAFE_INLINE is required by mathjax
     "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE, "*.hotjar.com"],
-    "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com", "*.hotjar.com"],
+    "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com", "*.google-analytics.com", "*.hotjar.com"],
     # UNSAFE_INLINE is required by hotjar
     "script-src": [CSP.SELF, *static_sources, "*.hotjar.com", "www.googletagmanager.com", CSP.UNSAFE_INLINE],
     "font-src": [CSP.SELF, *static_sources, "*.hotjar.com"],
     "connect-src": [
         CSP.SELF,
         "www.googletagmanager.com",
+        "*.google-analytics.com",
+        "*.analytics.google.com",
         "www.google.com",
         "*.hotjar.com",
         "*.hotjar.io",
@@ -1224,12 +1246,21 @@ SECURE_CSP: dict[str, list] = {
     "manifest-src": [CSP.SELF, ONS_CDN_URL],
     "frame-ancestors": [CSP.NONE if IS_EXTERNAL_ENV else CSP.SELF],
 }
-# Google Fonts are only needed for the Wagtail admin.
-# The external site loads fonts directly from the ONS CDN, so these CSP sources
-# should not be allowed there.
-if not IS_EXTERNAL_ENV:
+
+allow_google_fonts = not IS_EXTERNAL_ENV or CMS_GTM_PREVIEW_MODE_ENABLED
+
+# Google Fonts are needed for the Wagtail admin and GTM Preview Mode.
+# The external site otherwise loads fonts directly from the ONS CDN, so these
+# sources should only be allowed when one of those cases applies.
+if allow_google_fonts:
     SECURE_CSP["style-src"].append("fonts.googleapis.com")
     SECURE_CSP["font-src"].append("fonts.gstatic.com")
+
+if CMS_GTM_PREVIEW_MODE_ENABLED:
+    SECURE_CSP["script-src"].append("tagmanager.google.com")
+    SECURE_CSP["style-src"].extend(["www.googletagmanager.com", "tagmanager.google.com"])
+    SECURE_CSP["img-src"].extend(["ssl.gstatic.com", "www.gstatic.com"])
+    SECURE_CSP["font-src"].append("data:")
 
 if s3_custom_domain := env.get("AWS_S3_CUSTOM_DOMAIN"):
     SECURE_CSP["img-src"].append(f"https://{s3_custom_domain}")
@@ -1242,8 +1273,8 @@ PERMISSIONS_POLICY: dict = {
     "autoplay": [],
     "camera": [],
     "display-capture": [],
-    "encrypted-media": [],
-    "fullscreen": [],
+    "encrypted-media": VIDEO_EMBED_PERMISSIONS_POLICY_SOURCES,
+    "fullscreen": VIDEO_EMBED_PERMISSIONS_POLICY_SOURCES,
     "geolocation": [],
     "gyroscope": [],
     "interest-cohort": [],

@@ -13,11 +13,14 @@ from django.db import DatabaseError, connections
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
+from django.utils.cache import patch_cache_control
 from django.views import defaults
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 from django_redis import get_redis_connection
 from django_redis.cache import RedisCache
+
+from cms.core.cache import get_cdn_cache_control_header_value, get_publishing_rule_cache_control_kwargs
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -31,8 +34,13 @@ DB_HEALTHCHECK_QUERY = "SELECT 1"
 def page_not_found(
     request: HttpRequest, exception: Exception, template_name: str = "templates/pages/errors/404.html"
 ) -> HttpResponse:
-    """Custom 404 error view to use our page not found template."""
-    return defaults.page_not_found(request, exception, template_name)
+    """Custom 404 error view to use our page not found template, with the same Cache-Control
+    headers as pages under the 59 second publishing rule.
+    """
+    response = defaults.page_not_found(request, exception, template_name)
+    patch_cache_control(response, **get_publishing_rule_cache_control_kwargs())
+    response["Cloudflare-CDN-Cache-Control"] = get_cdn_cache_control_header_value()
+    return response
 
 
 def server_error(request: HttpRequest, template_name: str = "templates/pages/errors/500.html") -> HttpResponse:

@@ -71,6 +71,10 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
     """The calendar release page model."""
 
     base_form_class = ReleaseCalendarPageAdminForm
+
+    # Set for appropriate caching based on the 59 second publishing rule.
+    is_publishing_rule_page = True
+
     template = "templates/pages/release_calendar/release_calendar_page.html"
     parent_page_types: ClassVar[list[str]] = ["ReleaseCalendarIndex"]
     subpage_types: ClassVar[list[str]] = []
@@ -258,7 +262,7 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
                 items += block.block.to_table_of_contents_items(block.value)
 
             if self.dataset_document_list:
-                items += [{"url": "#datasets", "text": _("Data")}]
+                items += [{"url": "#data", "text": _("Data")}]
 
         if self.status in NON_PROVISIONAL_STATUSES and self.changes_to_release_date:
             items += [
