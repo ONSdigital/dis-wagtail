@@ -422,7 +422,7 @@ def notify_slack_of_post_publish_end(
 
     send_bundle_notification(
         bundle=bundle,
-        text="Publishing the bundle has ended with errors." if has_errors else "Publishing the bundle has ended.",
+        text="Publishing the bundle has ended. Post-publish actions have finished.",
         color="danger" if has_errors else "good",
         fields=fields,
     )
