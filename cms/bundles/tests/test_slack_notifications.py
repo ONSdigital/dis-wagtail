@@ -263,7 +263,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended.")
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended. Post-publish actions have finished.")
         self.assertEqual(call_kwargs["color"], "good")  # Green
 
         fields = call_kwargs["fields"]
@@ -310,7 +310,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended with errors.")
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended. Post-publish actions have finished.")
         self.assertEqual(call_kwargs["color"], "danger")
 
         fields = call_kwargs["fields"]
@@ -332,7 +332,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended with errors.")
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended. Post-publish actions have finished.")
         self.assertEqual(call_kwargs["color"], "danger")
 
         fields = call_kwargs["fields"]
@@ -368,7 +368,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended with errors.")
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended. Post-publish actions have finished.")
         self.assertEqual(call_kwargs["color"], "danger")
 
         fields = call_kwargs["fields"]
