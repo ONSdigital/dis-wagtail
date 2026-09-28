@@ -1,8 +1,10 @@
 import json
 
+import factory
 from factory import Factory
 
 from cms.datavis.blocks.table import TableDataType
+from cms.datavis.models import RenderedChartImage
 
 
 def make_table_block_value(
@@ -70,3 +72,16 @@ class TableDataFactory(Factory):
         return {
             "table_data": json.dumps({"data": table_data}),
         }
+
+
+class RenderedChartImageFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = RenderedChartImage
+
+    file = factory.LazyAttribute(lambda o: f"rendered_charts/{o.export_id}.png")
+    export_id = factory.Faker("uuid4")
+    config_hash = factory.Faker("sha256")
+    width = 1200
+    height = 640
+    content_type = "image/png"
+    size_bytes = 48213

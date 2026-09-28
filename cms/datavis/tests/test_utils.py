@@ -3,7 +3,7 @@ import collections
 from django.test import SimpleTestCase
 
 from cms.datavis.blocks.utils import get_approximate_file_size_in_kb
-from cms.datavis.utils import numberfy
+from cms.datavis.utils import hash_chart_config, numberfy
 
 Case = collections.namedtuple("Case", ["arg", "expected", "description"])
 
@@ -37,6 +37,29 @@ class NumberfyTestCase(SimpleTestCase):
     def test_fails_on_float(self):
         with self.assertRaises(AttributeError):
             numberfy(123.45)
+
+
+class HashChartConfigTestCase(SimpleTestCase):
+    """Tests of the hash_chart_config function."""
+
+    def test_deterministic_for_identical_config(self):
+        config = {"title": "Chart", "series": [{"name": "A", "data": [1, 2, 3]}]}
+        self.assertEqual(hash_chart_config(config), hash_chart_config(dict(config)))
+
+    def test_key_order_does_not_affect_hash(self):
+        config_a = {"title": "Chart", "series": []}
+        config_b = {"series": [], "title": "Chart"}
+        self.assertEqual(hash_chart_config(config_a), hash_chart_config(config_b))
+
+    def test_different_config_produces_different_hash(self):
+        config_a = {"title": "Chart A"}
+        config_b = {"title": "Chart B"}
+        self.assertNotEqual(hash_chart_config(config_a), hash_chart_config(config_b))
+
+    def test_returns_sha256_hex_digest(self):
+        result = hash_chart_config({"title": "Chart"})
+        self.assertEqual(len(result), 64)
+        int(result, 16)  # raises ValueError if not valid hex
 
 
 class GetApproximateFileSizeInKbTestCase(SimpleTestCase):
