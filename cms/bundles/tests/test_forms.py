@@ -79,6 +79,12 @@ class BundleAdminFormTestCase(TestCase):
             "bundled_datasets": inline_formset([]),
         }
 
+    def raw_form_data_with_unpublished_page_changes(self) -> dict[str, Any]:
+        """Modifies the page by adding unpublished title changes and returns the resulting form data."""
+        self.page.title = "Updated statistical article title"
+        self.page.save_revision()
+        return self.raw_form_data()
+
     def _setup_bundle(self, ready_to_publish: bool = True) -> dict[str, Any]:
         """Sets up the bundle and returns raw form data."""
         page = StatisticalArticlePageFactory(title="A Page")
@@ -163,12 +169,13 @@ class BundleAdminFormTestCase(TestCase):
         another_bundle = BundleFactory(name="Another Bundle")
         BundlePageFactory(parent=another_bundle, page=self.page)
 
-        raw_data = self.raw_form_data()
+        raw_data = self.raw_form_data_with_unpublished_page_changes()
         raw_data["bundled_pages"] = inline_formset([{"page": self.page.id}])
 
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
         self.assertFalse(form.is_valid())
-        self.assertFormError(form, None, ["'The Statistical Article' is already in an active bundle (Another Bundle)"])
+        error = "This page is already in an active bundle (Another Bundle)."
+        self.assertFormSetError(form.formsets["bundled_pages"], 0, "page", error)
 
     def test_clean__validates_release_calendar_page_not_already_used(self):
         """Should validate that the page is not in the active bundle."""
@@ -176,13 +183,15 @@ class BundleAdminFormTestCase(TestCase):
         release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish, title="Release Calendar Page")
         raw_data = self.raw_form_data()
         raw_data["release_calendar_page"] = release_calendar_page.id
+        # give the rc page unpublished changes so it passes validation when bundled
+        release_calendar_page.title = "Updated release calendar page"
+        release_calendar_page.save_revision()
         raw_data["bundled_pages"] = inline_formset([{"page": release_calendar_page.id}])
 
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
         self.assertFalse(form.is_valid())
-        self.assertFormError(
-            form, None, ["'Release Calendar Page' is already set as the Release Calendar page for this bundle."]
-        )
+        error = "This page is already set as the Release Calendar page for this bundle."
+        self.assertFormSetError(form.formsets["bundled_pages"], 0, "page", error)
 
     def test_clean__sets_approved_by_and_approved_at_when_no_other_changes(self):
         # Given
@@ -263,6 +272,26 @@ class BundleAdminFormTestCase(TestCase):
         error = "This page is not ready to be published"
         self.assertFormError(form, "release_calendar_page", [error])
 
+    def test_clean__allows_approval_when_page_has_unpublished_changes(self):
+        """Check bundle can be approved when a linked page has unpublished changes."""
+        raw_data = self.raw_form_data_with_unpublished_page_changes()
+
+        raw_data["bundled_pages"] = inline_formset([{"page": self.page.id}])
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+        self.assertTrue(form.is_valid())
+
+    def test_clean__does_not_allow_approval_when_page_has_no_unpublished_changes(self):
+        """Check bundle cannot be approved when a linked page has no unpublished changes."""
+        raw_data = self.raw_form_data()
+        raw_data["bundled_pages"] = inline_formset([{"page": self.page.id}])
+
+        form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
+        self.assertFalse(form.is_valid(), form.errors)
+
+        error = "This page has no unpublished changes."
+        self.assertFormSetError(form.formsets["bundled_pages"], 0, "page", error)
+
     def test_clean__validates_release_calendar_page_or_publication_date(self):
         nowish = timezone.now() + timedelta(minutes=5)
         release_calendar_page = ReleaseCalendarPageFactory(release_date=nowish)
@@ -281,7 +310,7 @@ class BundleAdminFormTestCase(TestCase):
     def test_clean__removes_duplicate_pages(self):
         self.assertEqual(self.bundle.bundled_pages.count(), 0)
 
-        raw_data = self.raw_form_data()
+        raw_data = self.raw_form_data_with_unpublished_page_changes()
         raw_data["bundled_pages"] = inline_formset([{"page": self.page.id}, {"page": self.page.id}])
 
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
@@ -295,7 +324,7 @@ class BundleAdminFormTestCase(TestCase):
         dataset = DatasetFactory(id=123)
         self.assertEqual(self.bundle.bundled_datasets.count(), 0)
 
-        raw_data = self.raw_form_data()
+        raw_data = self.raw_form_data_with_unpublished_page_changes()
         raw_data["bundled_datasets"] = inline_formset([{"dataset": dataset.pk}, {"dataset": dataset.pk}])
 
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
@@ -309,7 +338,7 @@ class BundleAdminFormTestCase(TestCase):
         team = TeamFactory()
         self.assertEqual(self.bundle.teams.count(), 0)
 
-        raw_data = self.raw_form_data()
+        raw_data = self.raw_form_data_with_unpublished_page_changes()
         raw_data["teams"] = inline_formset([{"team": team.pk}, {"team": team.pk}])
 
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
@@ -353,14 +382,14 @@ class BundleAdminFormTestCase(TestCase):
 
         # add a dataset
         DatasetFactory(id=123)
-        raw_data = self.raw_form_data()
+        raw_data = self.raw_form_data_with_unpublished_page_changes()
         raw_data["bundled_datasets"] = inline_formset([{"dataset": 123}])
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
         self.assertTrue(form.is_valid())
 
     def test_clean_validates_the_bundle_has_datasets(self):
         dataset = DatasetFactory(id=123)
-        raw_data = self.raw_form_data()
+        raw_data = self.raw_form_data_with_unpublished_page_changes()
         raw_data["bundled_datasets"] = inline_formset([{"dataset": dataset.pk}])
         form = self.form_class(instance=self.bundle, data=nested_form_data(raw_data))
 
@@ -376,7 +405,10 @@ class BundleAdminFormTestCase(TestCase):
     def test_clean_sets_publication_date_seconds_to_zero(self):
         form = self.form_class(
             instance=self.bundle,
-            data=nested_form_data(self.raw_form_data() | {"publication_date": timezone.now() + timedelta(days=1)}),
+            data=nested_form_data(
+                self.raw_form_data_with_unpublished_page_changes()
+                | {"publication_date": timezone.now() + timedelta(days=1)}
+            ),
         )
 
         self.assertTrue(form.is_valid(), form.errors)
