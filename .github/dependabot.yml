@@ -78,6 +78,13 @@ updates:
         update-types:
           - 'major'
 
+      npm-major-version-updates:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        update-types:
+          - 'major'
+
       npm-version-updates:
         applies-to: version-updates
         patterns:
