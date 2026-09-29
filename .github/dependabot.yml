@@ -59,6 +59,13 @@ updates:
 
     # Look for `package.json` and `lock` files in the `root` directory
     directory: '/'
+    ignore:
+      - dependency-name: 'eslint*'
+        update-types:
+          - 'version-update:semver-major'
+      - dependency-name: '@eslint/*'
+        update-types:
+          - 'version-update:semver-major'
     # Every weekday
     schedule:
       interval: daily
@@ -81,7 +88,7 @@ updates:
       npm-major-version-updates:
         applies-to: version-updates
         patterns:
-          - '!eslint*'
+          - '*'
         update-types:
           - 'major'
 
