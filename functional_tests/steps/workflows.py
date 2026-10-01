@@ -122,7 +122,7 @@ def the_user_can_unlock_the_workflow(context: Context):
 @step("the {page_str} page goes through the publishing steps with {user} as user and {approver} as reviewer")
 def the_page_goes_through_the_publishing_steps(context: Context, page_str: str, user: str, approver: str) -> None:
     user_clicks_action_menu_toggle(context)
-    click_the_given_button(context, "Submit to Release review")
+    click_the_given_button(context, "Submit to Review")
     a_user_is_logged_in(context, approver)
     the_user_edits_a_page(context, page_str)
     user_clicks_action_menu_toggle(context)

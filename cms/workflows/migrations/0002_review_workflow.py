@@ -51,7 +51,7 @@ def create_tasks_and_workflow(apps, schema_editor):
     )
     ready_to_publish_task.groups.set([publishing_admins, publishing_officers])
 
-    workflow = Workflow.objects.create(name="Release review", active=True)
+    workflow = Workflow.objects.create(name="Review", active=True)
     WorkflowTask.objects.create(workflow=workflow, task=review_task, sort_order=0)
     WorkflowTask.objects.create(workflow=workflow, task=ready_to_publish_task, sort_order=1)
 
@@ -65,7 +65,7 @@ def remove_tasks_and_workflow(apps, schema_editor):
 
     GroupReviewTask.objects.all().delete()
     ReadyToPublishGroupTask.objects.all().delete()
-    Workflow.objects.filter(name="Release review").delete()
+    Workflow.objects.filter(name="Review").delete()
 
 
 class Migration(migrations.Migration):
