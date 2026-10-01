@@ -104,10 +104,10 @@ class DownloadBlock(blocks.StructBlock):
         link_text = (value.get("link_text") or "").strip()
 
         if url and not link_text:
-            errors |= {"link_text": ValidationError("Link text is required when a URL is provided.")}
+            errors |= {"link_text": ValidationError("Link text is required when a download URL is provided.")}
 
         if link_text and not url:
-            errors |= {"url": ValidationError("A URL is required when link text is provided.")}
+            errors |= {"url": ValidationError("A download URL is required when link text is provided.")}
 
         if url:
             errors |= self._validate_download_url(value)
@@ -159,7 +159,7 @@ class IframeBlock(BaseVisualisationBlock):
         required=False,
         label="Image download",
         link_text_help_text=(
-            "This should always follow the format 'Download image (23KB)', with the correct file "
+            "This should always follow the format “Download image (23KB)”, with the correct file "
             "size substituted. The file size suffix should be capitalised."
         ),
     )
@@ -168,7 +168,7 @@ class IframeBlock(BaseVisualisationBlock):
         required=False,
         label="Data download",
         link_text_help_text=(
-            "This should always follow the format 'Download CSV (23KB)', with the correct file "
+            "This should always follow the format “Download CSV (23KB)”, with the correct file "
             "type and file size substituted. The file type and file size suffix should be "
             "capitalised."
         ),

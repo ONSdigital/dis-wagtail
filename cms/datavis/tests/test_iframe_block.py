@@ -330,7 +330,7 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
                 )
                 self.assertEqual(
                     info.exception.block_errors[field_name].block_errors["link_text"].message,
-                    "Link text is required when a URL is provided.",
+                    "Link text is required when a download URL is provided.",
                 )
 
     def test_clean__valid_download_data_is_allowed(self):
@@ -444,7 +444,7 @@ class DownloadBlockTestCase(SimpleTestCase):
 
         self.assertEqual(
             info.exception.block_errors["url"].message,
-            "A URL is required when link text is provided.",
+            "A download URL is required when link text is provided.",
         )
 
     def test_clean__download_url_without_link_text_raises_error(self):
@@ -456,7 +456,7 @@ class DownloadBlockTestCase(SimpleTestCase):
 
         self.assertEqual(
             info.exception.block_errors["link_text"].message,
-            "Link text is required when a URL is provided.",
+            "Link text is required when a download URL is provided.",
         )
 
     def test_clean__download_url_with_whitespace_only_link_text_raises_error(self):
@@ -468,7 +468,7 @@ class DownloadBlockTestCase(SimpleTestCase):
 
         self.assertEqual(
             info.exception.block_errors["link_text"].message,
-            "Link text is required when a URL is provided.",
+            "Link text is required when a download URL is provided.",
         )
 
     def test_clean__download_url_with_link_text(self):
