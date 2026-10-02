@@ -1126,7 +1126,7 @@ class ONSTableBlockTestCase(WagtailTestUtils, TestCase):
         self.assertIn("download", result["options"])
         self.assertIn("title", result["options"]["download"])
         self.assertIn("itemsList", result["options"]["download"])
-        self.assertEqual(result["options"]["download"]["title"], "Download this table")
+        self.assertEqual(result["options"]["download"]["title"], "Downloads")
         self.assertEqual(len(result["options"]["download"]["itemsList"]), 1)
         self.assertIn("CSV", result["options"]["download"]["itemsList"][0]["text"])
         self.assertIn("url", result["options"]["download"]["itemsList"][0])
@@ -1470,7 +1470,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         # Download section rendered
-        self.assertContains(response, "Download this image")
+        self.assertContains(response, "Downloads")
 
         # HTML5 download attribute present once (avoid base-template noise)
         self.assertContains(response, " download", count=1)
@@ -1504,7 +1504,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         # Download section not rendered
-        self.assertNotContains(response, "Download this image")
+        self.assertNotContains(response, "Downloads")
 
         # No HTML5 download attribute
         self.assertNotContains(response, " download")
@@ -1534,7 +1534,7 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertContains(response, "Summary")
 
         # Nothing from the image block renders when the image is missing
-        self.assertNotContains(response, "Download this image")
+        self.assertNotContains(response, "Downloads")
         self.assertNotContains(response, " download")
         self.assertNotContains(response, "Figure 1")
         self.assertNotContains(response, "The image title")

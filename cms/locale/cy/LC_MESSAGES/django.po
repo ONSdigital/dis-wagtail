@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-15 10:23+0100\n"
+"POT-Creation-Date: 2026-09-24 14:05+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,7 +23,7 @@ msgstr "Erthygl"
 
 #: cms/articles/models.py:493
 #: cms/jinja2/templates/pages/methodology_page.html:103
-#: cms/jinja2/templates/pages/statistical_article_page.html:226
+#: cms/jinja2/templates/pages/statistical_article_page.html:228
 #: cms/methodology/models.py:205
 msgid "Cite this page"
 msgstr "Dyfynnwch y dudalen hon"
@@ -74,27 +74,24 @@ msgid "Hide all"
 msgstr "Cuddio popeth"
 
 #: cms/core/blocks/embeddable.py:86 cms/core/blocks/markup.py:230
-#: cms/datavis/blocks/base.py:153 cms/datavis/blocks/iframe.py:156
+#: cms/datavis/blocks/base.py:153 cms/datavis/blocks/iframe.py:264
 msgid "Source"
 msgstr "Ffynhonnell"
 
 #: cms/core/blocks/embeddable.py:90 cms/core/blocks/markup.py:235
-#: cms/datavis/blocks/base.py:170 cms/datavis/blocks/iframe.py:163
+#: cms/datavis/blocks/base.py:170 cms/datavis/blocks/iframe.py:274
 msgid "Footnotes"
 msgstr "Troednodiadau"
 
-#: cms/core/blocks/embeddable.py:122
-msgid "Download this image"
-msgstr "Lawrlwythwch y ddelwedd hon"
+#: cms/core/blocks/embeddable.py:122 cms/core/blocks/markup.py:290
+#: cms/datavis/blocks/base.py:398 cms/datavis/blocks/iframe.py:254
+msgid "Downloads"
+msgstr "Lawrlwythiadau"
 
 #: cms/core/blocks/markup.py:273 cms/datavis/blocks/base.py:358
 #, python-format
 msgid "Download CSV %(size)s"
 msgstr "Lawrlwythwch CSV %(size)s"
-
-#: cms/core/blocks/markup.py:290
-msgid "Download this table"
-msgstr "Lawrlwythwch y tabl hwn"
 
 #: cms/core/blocks/related.py:60
 msgid "Related links"
