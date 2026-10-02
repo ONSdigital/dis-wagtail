@@ -360,7 +360,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
         self.assertContains(response, self.statistical_article_page.title)
         # Bundle displayed as stored, not the attempted status change
         self.assertEqual(response.context["view"].object.status, BundleStatus.APPROVED)
-        self.assertRegex(response.content.decode(), r"Status: </span>\s*Ready to publish")
+        self.assertInHTML('<span class="w-sr-only">Status: </span> Ready to publish', response.content.decode())
 
         self.bundle.refresh_from_db()
         self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
@@ -922,7 +922,7 @@ class BundleViewSetBundleAPIErrorTestCase(BundleViewSetTestCaseMixin, TestCase):
                 bundle = response.context["view"].object
                 self.assertEqual(bundle.status, BundleStatus.APPROVED)
                 self.assertEqual(bundle.approved_by, self.publishing_officer)
-                self.assertRegex(response.content.decode(), r"Status: </span>\s*Ready to publish")
+                self.assertInHTML('<span class="w-sr-only">Status: </span> Ready to publish', response.content.decode())
 
                 self.bundle.refresh_from_db()
                 self.assertEqual(self.bundle.status, BundleStatus.APPROVED)
