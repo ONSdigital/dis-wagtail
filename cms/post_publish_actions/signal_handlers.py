@@ -27,6 +27,10 @@ def enqueue_post_publish_actions_for_bundle(bundle: Bundle) -> Generator[None]:
         _publishing_bundle.reset(context_bundle)
 
 
+def is_publishing_bundle() -> bool:
+    return _publishing_bundle.get() is not None
+
+
 def run_post_publish_actions_handler(sender: type[Page], instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
     run_post_publish_actions_for(instance, _publishing_bundle.get())
 
