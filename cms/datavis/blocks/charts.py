@@ -133,6 +133,7 @@ class BarColumnChartBlock(BaseChartBlock):
     x_axis_type = AxisType.CATEGORICAL
     MAX_SERIES_COUNT_WITH_DATA_LABELS = 2
     MAX_DATA_POINTS_WITH_DATA_LABELS = 20
+    MAX_DATA_LABEL_DECIMAL_POINTS = 2
     MAX_SERIES_COUNT_WITH_CUSTOM_REFERENCE_LINE = 1
 
     # Error codes
@@ -274,6 +275,19 @@ class BarColumnChartBlock(BaseChartBlock):
             "footnotes",
         ]
 
+    def get_component_config(
+        self,
+        value: StructValue,
+        *,
+        parent_context: dict[str, Any] | None = None,
+        block_id: str | None = None,
+    ) -> dict[str, Any]:
+        config = super().get_component_config(value, parent_context=parent_context, block_id=block_id)
+        data_label_decimal_points = self.determine_data_label_decimal_points(value)
+        if data_label_decimal_points is not None:
+            config["dataLabelDecimalPoints"] = data_label_decimal_points
+        return config
+
     def get_series_customisation(self, value: StructValue, series_number: int) -> dict[str, Any]:
         for block in value.get("series_customisation", []):
             if block.block_type == self.SERIES_AS_LINE_OVERLAY_BLOCK and block.value == series_number:
@@ -406,19 +420,51 @@ class BarColumnChartBlock(BaseChartBlock):
         item = super().get_series_item(value, series_number, series_name, rows)
 
         # Add data labels configuration.
-        # This is only supported for non-stacked horizontal bar charts with 1 or 2 series,
-        # and where the number of data points does not exceed 20.
-        if (
+        if self.data_labels_allowed(value):
+            item["dataLabels"] = True
+
+        return item
+
+    # Data labels are only supported for non-stacked horizontal bar charts with 1 or 2 series,
+    # and where the number of data points does not exceed 20.
+    def data_labels_allowed(self, value: StructValue) -> bool:
+        """Determine whether data labels are allowed for the given chart configuration."""
+        return bool(
             value.get("show_data_labels")
             and value.get("select_chart_type") == BarColumnChartTypeChoices.BAR
             and not value.get("use_stacked_layout")
             # +1 to allow for the categories in the first column
             and len(value["table"].headers) <= self.MAX_SERIES_COUNT_WITH_DATA_LABELS + 1
             and len(value["table"].rows) <= self.MAX_DATA_POINTS_WITH_DATA_LABELS
-        ):
-            item["dataLabels"] = True
+        )
 
-        return item
+    def determine_data_label_decimal_points(self, value: StructValue) -> int | None:
+        """Determine the number of decimal points to use for data labels."""
+        if not self.data_labels_allowed(value):
+            return None
+
+        # Inspect the raw cell strings from the stored JSON rather than the
+        # numberfy'd rows, so trailing zeros (e.g. "5.50") are preserved.
+        raw_data = json.loads(value["table"]["table_data"]).get("data", [])
+        max_decimal_points: int | None = None
+        for row in raw_data[1:]:
+            for cell in row[1:]:
+                if not isinstance(cell, str):
+                    continue
+                stripped = cell.strip()
+                if "." not in stripped:
+                    continue
+                try:
+                    float(stripped)
+                except ValueError:
+                    continue
+                decimals = len(stripped.split(".")[1])
+                if max_decimal_points is None or decimals > max_decimal_points:
+                    max_decimal_points = decimals
+
+        if max_decimal_points is None:
+            return None
+        return min(max_decimal_points, self.MAX_DATA_LABEL_DECIMAL_POINTS)
 
 
 class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
