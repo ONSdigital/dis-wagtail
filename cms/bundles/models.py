@@ -244,6 +244,11 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         return self.status in (BundleStatus.APPROVED, BundleStatus.PARTIALLY_PUBLISHED, BundleStatus.FAILED)
 
     @property
+    def can_be_deleted(self) -> bool:
+        """Only bundles that have not been approved or published can be deleted."""
+        return self.status in EDITABLE_BUNDLE_STATUSES
+
+    @property
     def can_be_manually_published(self) -> bool:
         if not self.is_ready_to_be_published:
             return False

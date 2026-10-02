@@ -446,7 +446,7 @@ class BundleEditView(EditView):
 
     @cached_property
     def can_delete(self) -> bool:
-        return not self.object.is_ready_to_be_published and self.user_has_permission_for_instance("delete", self.object)
+        return self.object.can_be_deleted and self.user_has_permission_for_instance("delete", self.object)
 
 
 class BundleInspectView(InspectView):
@@ -478,7 +478,7 @@ class BundleInspectView(InspectView):
         return user_can_manage_bundles(self.request.user)
 
     def get_delete_url(self) -> str | None:
-        if not self.object.is_ready_to_be_published:
+        if self.object.can_be_deleted:
             delete_url: str | None = super().get_delete_url()
             return delete_url
         return ""
@@ -852,7 +852,7 @@ class BundleDeleteView(DeleteView):
     has_errors = False
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponseBase:
-        if self.object.is_ready_to_be_published:
+        if not self.object.can_be_deleted:
             raise PermissionDenied
         response: HttpResponseBase = super().dispatch(request, *args, **kwargs)
         return response

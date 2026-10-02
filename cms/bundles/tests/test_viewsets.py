@@ -1835,37 +1835,37 @@ class BundleDeleteTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.inspect_url)
         self.assertContains(response, self.delete_url)
 
-    def test_bundle_deletable_once_published(self):
-        self.bundle.status = BundleStatus.PUBLISHED
-        self.bundle.save(update_fields=["status"])
+    def test_bundle_not_deletable_if_not_deletable_status(self):
+        for status in [
+            BundleStatus.APPROVED,
+            BundleStatus.PUBLISHED,
+            BundleStatus.PARTIALLY_PUBLISHED,
+            BundleStatus.FAILED,
+        ]:
+            with self.subTest(status=status):
+                self.bundle.status = status
+                self.bundle.save(update_fields=["status"])
 
-        response = self.client.get(self.delete_url)
-        self.assertEqual(response.status_code, HTTPStatus.OK)
+                # try both GET and POST for the delete view
+                response = self.client.get(self.delete_url, follow=True)
+                self.assertRedirects(response, "/admin/")
+                self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
-        # the inspect view has the delete link
-        response = self.client.get(self.inspect_url)
-        self.assertContains(response, self.delete_url)
+                response = self.client.post(self.delete_url, data={"action-delete": "delete"}, follow=True)
+                self.assertRedirects(response, "/admin/")
+                self.assertContains(response, "Sorry, you do not have permission to access this area.")
+                self.assertTrue(Bundle.objects.filter(pk=self.bundle.pk).exists())
 
-    def test_bundle_not_deletable_if_ready_to_be_published(self):
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
+                # the edit view redirects for published statuses, otherwise it has no delete URL
+                response = self.client.get(self.edit_url)
+                if status in PUBLISHED_BUNDLE_STATUSES:
+                    self.assertEqual(response.status_code, HTTPStatus.FOUND)
+                else:
+                    self.assertNotContains(response, self.delete_url)
 
-        # try both GET and POST for the delete view
-        response = self.client.get(self.delete_url, follow=True)
-        self.assertRedirects(response, "/admin/")
-        self.assertContains(response, "Sorry, you do not have permission to access this area.")
-
-        response = self.client.post(self.delete_url, data={"action-delete": "delete"}, follow=True)
-        self.assertRedirects(response, "/admin/")
-        self.assertContains(response, "Sorry, you do not have permission to access this area.")
-
-        # the edit view doesn't have the delete URL
-        response = self.client.get(self.edit_url)
-        self.assertNotContains(response, self.delete_url)
-
-        # the inspect view doesn't have the delete link
-        response = self.client.get(self.inspect_url)
-        self.assertNotContains(response, self.delete_url)
+                # the inspect view doesn't have the delete link
+                response = self.client.get(self.inspect_url)
+                self.assertNotContains(response, self.delete_url)
 
 
 class BundleChooserViewsetTestCase(BundleViewSetTestCaseMixin, TestCase):
