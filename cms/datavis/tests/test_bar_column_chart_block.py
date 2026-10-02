@@ -385,6 +385,19 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
             expected_decimal_points=2,
         )
 
+    def test_data_label_decimal_points_ignores_trailing_whitespace(self):
+        # Trailing whitespace should not be counted as decimal places,
+        # e.g. "5.0 " is one decimal point, not two.
+        self._assert_data_label_decimal_points(
+            table_data=[
+                ["", "Series 1", "Series 2"],
+                ["2005", "5.0 ", "5"],
+                ["2006", "6", "6"],
+                ["2007", "7", "7"],
+            ],
+            expected_decimal_points=1,
+        )
+
     def test_data_label_decimal_points_longest_three_decimals_capped_at_two(self):
         self._assert_data_label_decimal_points(
             table_data=[
