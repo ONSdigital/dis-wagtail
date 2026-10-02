@@ -475,13 +475,8 @@ def the_user_publishes_the_bundle(context: Context) -> None:
 
 
 @then("the bundle edit page is in read only mode")
-def the_bundle_edit_page_is_in_read_only_mode(context: Context) -> None:
-    context.page.goto(context.base_url + reverse("bundle:edit", args=[context.bundle.pk]))
-    the_bundle_edit_page_is_still_in_read_only_mode(context)
-
-
 @then("the bundle edit page is still in read only mode")
-def the_bundle_edit_page_is_still_in_read_only_mode(context: Context) -> None:
+def the_bundle_edit_page_is_in_read_only_mode(context: Context) -> None:
     expect(context.page.locator("#id_name")).to_be_disabled()
     expect(context.page.locator("#id_publication_date")).to_be_disabled()
 

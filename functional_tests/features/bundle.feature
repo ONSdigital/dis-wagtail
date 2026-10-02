@@ -218,7 +218,8 @@ Feature: CMS users can manage bundles
             | Title           | Type             | Status           |
             | Browsers        | Information page | Ready to publish |
             | Fair use policy | Information page | Ready to publish |
-        And the bundle edit page is in read only mode
+        When the user goes to edit the bundle
+        Then the bundle edit page is in read only mode
 
     Scenario: A CMS user can manually publish a ready to publish bundle
         Given a bundle called "Bundle help pages release four" exists in "ready to publish" with the following approved information pages:
