@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -69,3 +69,15 @@ def extract_url_path(url: str) -> str:
     parsed_url = urlparse(url)
     path = parsed_url.path.rstrip("/")  # Treat paths with and without trailing slashes as equivalent
     return path
+
+
+def add_query_params(url: str, params: dict[str, str]) -> str:
+    """Returns a URL with the given query parameters merged into any it already has."""
+    parts = urlsplit(url)
+    query = urlencode(
+        [
+            *parse_qsl(parts.query, keep_blank_values=True),
+            *params.items(),
+        ]
+    )
+    return urlunsplit(parts._replace(query=query))

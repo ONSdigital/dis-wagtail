@@ -3,6 +3,7 @@ from django.test import TestCase, override_settings
 from wagtail.blocks import CharBlock, StructBlock, URLBlock
 
 from cms.core.url_utils import (
+    add_query_params,
     extract_url_path,
     is_hostname_in_domain,
     validate_ons_url,
@@ -186,3 +187,50 @@ class TestGetUrlPath(TestCase):
         for url, expected_path in test_cases:
             with self.subTest(url=url):
                 self.assertEqual(extract_url_path(url), expected_path)
+
+
+class TestAddQueryParams(TestCase):
+    def test_add_query_params_without_existing_query_params(self):
+        self.assertEqual(
+            add_query_params(
+                "https://example.com/image.png",
+                {"force_download": "true"},
+            ),
+            "https://example.com/image.png?force_download=true",
+        )
+
+    def test_add_query_params_with_root_relative_url(self):
+        self.assertEqual(
+            add_query_params(
+                "/media/images/image.png",
+                {"force_download": "true"},
+            ),
+            "/media/images/image.png?force_download=true",
+        )
+
+    def test_add_query_params_merges_existing_query_params(self):
+        self.assertEqual(
+            add_query_params(
+                "https://example.com/image.png?version=2",
+                {"force_download": "true"},
+            ),
+            "https://example.com/image.png?version=2&force_download=true",
+        )
+
+    def test_add_query_params_preserves_fragment(self):
+        self.assertEqual(
+            add_query_params(
+                "https://example.com/image.png#preview",
+                {"force_download": "true"},
+            ),
+            "https://example.com/image.png?force_download=true#preview",
+        )
+
+    def test_add_query_params_escapes_values(self):
+        self.assertEqual(
+            add_query_params(
+                "https://example.com/image.png",
+                {"filename": "a b&c.png"},
+            ),
+            "https://example.com/image.png?filename=a+b%26c.png",
+        )
