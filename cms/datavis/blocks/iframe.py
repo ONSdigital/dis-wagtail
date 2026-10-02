@@ -39,7 +39,6 @@ def _validate_absolute_visualisation_url(
 ) -> dict[str, ValidationError]:
     """Validate an absolute iframe source URL or download URL. Validation errors are returned as an errors dict."""
     errors = {}
-    allowed_domains = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
 
     # Check the original `url` string scheme here, as URL parse is permissive of malformed schemes
     if not (url.startswith("https://") and parsed_url.hostname):
@@ -48,6 +47,7 @@ def _validate_absolute_visualisation_url(
         is_hostname_in_domain(parsed_url.hostname, allowed_domain)
         for allowed_domain in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS
     ):
+        allowed_domains = " or ".join(settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)
         errors[field_name] = ValidationError(
             f"The URL hostname is not in the list of allowed domains: {allowed_domains}"
         )
@@ -259,14 +259,10 @@ class IframeBlock(BaseVisualisationBlock):
         return {"text": link_text, "url": url, "download": "file", "attributes": attributes}
 
     def _get_download_config(self, value: StructValue, request: HttpRequest | None = None) -> dict[str, Any] | None:
-        items = [
-            item
-            for item in [
-                self._get_download_item(value.get("image_download"), request),
-                self._get_download_item(value.get("data_download"), request),
-            ]
-            if item
-        ]
+        items = []
+        for key in ("image_download", "data_download"):
+            if item := self._get_download_item(value.get(key), request):
+                items.append(item)
 
         if not items:
             return None
