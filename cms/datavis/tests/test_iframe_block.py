@@ -81,12 +81,12 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
     def test_download_link_help_text_is_set(self):
         self.assertEqual(
             self.block.child_blocks["image_download"].child_blocks["link_text"].field.help_text,
-            "This should always follow the format 'Download image (23KB)', with the correct file "
+            "This should always follow the format “Download image (23KB)”, with the correct file "
             "size substituted. The file size suffix should be capitalised.",
         )
         self.assertEqual(
             self.block.child_blocks["data_download"].child_blocks["link_text"].field.help_text,
-            "This should always follow the format 'Download CSV (23KB)', with the correct file "
+            "This should always follow the format “Download CSV (23KB)”, with the correct file "
             "type and file size substituted. The file type and file size suffix should be "
             "capitalised.",
         )
