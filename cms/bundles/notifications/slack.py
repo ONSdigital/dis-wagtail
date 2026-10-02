@@ -431,11 +431,12 @@ def notify_slack_of_post_publish_end(
 def notify_slack_of_post_publish_summary(bundle: Bundle, start_time: datetime, end_time: datetime) -> None:
     """Reply to the bundle's publication message with a summary of post-publish actions for all pages."""
     failed_count = PostPublishAction.objects.failed().count_for_bundle(bundle)
+    success_count = PostPublishAction.objects.successful().count_for_bundle(bundle)
 
     fields: list[dict[str, Any]] = [
         {
             "title": "Post-Publish Actions Successful",
-            "value": str(PostPublishAction.objects.successful().count_for_bundle(bundle)),
+            "value": str(success_count),
             "short": True,
         },
         {"title": "Post-Publish Actions Failed", "value": str(failed_count), "short": True},
