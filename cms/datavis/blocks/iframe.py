@@ -163,7 +163,7 @@ class IframeBlock(BaseVisualisationBlock):
         label="Accessible description",
     )
 
-    image_download = DownloadBlock(
+    image_download: DownloadBlock | None = DownloadBlock(
         required=False,
         label="Image download",
         link_text_help_text=(
@@ -172,7 +172,7 @@ class IframeBlock(BaseVisualisationBlock):
         ),
     )
 
-    data_download = DownloadBlock(
+    data_download: DownloadBlock | None = DownloadBlock(
         required=False,
         label="Data download",
         link_text_help_text=(
