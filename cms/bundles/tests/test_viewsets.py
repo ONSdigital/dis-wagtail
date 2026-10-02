@@ -370,7 +370,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
 
         response = self.client.post(self.edit_url, data)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertIn("release_calendar_page", response.context["form"].errors)
 
     @patch("cms.bundles.forms.BundleAdminForm._validate_publication_date")
