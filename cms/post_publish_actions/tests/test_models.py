@@ -67,3 +67,24 @@ class PostPublishActionTestCase(TestCase):
             self.assertNotIn(action, PostPublishAction.objects.active())
 
         self.assertIn(action, PostPublishAction.objects.active())
+
+    def test_critical_only_includes_critical_action_types(self):
+        cache_purge = PostPublishAction.objects.create(
+            bundle=self.bundle, page=self.page, action_type=PostPublishActionType.CACHE_PURGE
+        )
+        search_updated = PostPublishAction.objects.create(
+            bundle=self.bundle, page=self.page, action_type=PostPublishActionType.SEARCH_UPDATED
+        )
+
+        self.assertQuerySetEqual(PostPublishAction.objects.critical(), [cache_purge])
+
+        with patch.dict(
+            registry._registry,  # pylint: disable=protected-access
+            {
+                PostPublishActionType.SEARCH_UPDATED: registry.RegisteredPostPublishAction(
+                    handler=registry.get_post_publish_action_for_type(PostPublishActionType.SEARCH_UPDATED),
+                    critical=True,
+                )
+            },
+        ):
+            self.assertQuerySetEqual(PostPublishAction.objects.critical(), [cache_purge, search_updated], ordered=False)
