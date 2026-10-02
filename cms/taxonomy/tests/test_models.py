@@ -5,7 +5,7 @@ from django.test import TestCase
 from wagtail.models import Page
 
 from cms.core.db_router import force_write_db_for
-from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
+from cms.taxonomy.models import BASE_TOPIC_DEPTH, GenericPageToTaxonomyTopic, Topic
 from cms.taxonomy.tests.factories import TopicFactory
 
 
@@ -22,9 +22,34 @@ class TopicModelTest(TestCase):
         self.assertEqual(root_again.pk, self.root_topic.pk)
         self.assertEqual(root_again.depth, 1)  # Root node typically has depth=1
 
-    def test_filtered_manager_excludes_root_topic(self):
-        """Topic.objects should exclude the dummy root."""
-        self.assertNotIn(self.root_topic, Topic.objects.all())
+    def test_default_manager_includes_root_topic(self):
+        """Topic.objects must expose the dummy root, because treebeard resolves the tree through it."""
+        self.assertIn(self.root_topic, Topic.objects.all())
+
+    def test_topics_excludes_root_topic(self):
+        """Topic.objects.topics() is what callers should use anywhere topics are shown or enumerated."""
+        self.assertNotIn(self.root_topic, Topic.objects.topics())
+
+    def test_topics_is_chainable_from_a_queryset(self):
+        """topics() lives on the queryset, so it can come after a filter, not only first off the manager."""
+        topic = Topic(id="chainable", title="Chainable")
+        Topic.save_new(topic)
+        base_depth_or_above = Topic.objects.filter(depth__lte=BASE_TOPIC_DEPTH)
+
+        self.assertIn(self.root_topic, base_depth_or_above)
+        self.assertNotIn(self.root_topic, base_depth_or_above.topics())
+        self.assertIn(topic, base_depth_or_above.topics())
+
+    def test_topics_chains_off_a_tree_queryset(self):
+        """Treebeard's tree methods go through Topic.objects, so .topics() chains off them too."""
+        parent = Topic(id="parent", title="Parent")
+        Topic.save_new(parent)
+        child = Topic(id="child", title="Child")
+        Topic.save_new(child, parent_topic=parent)
+
+        self.assertIn(self.root_topic, child.get_ancestors())
+        self.assertNotIn(self.root_topic, child.get_ancestors().topics())
+        self.assertIn(parent, child.get_ancestors().topics())
 
     def test_save_topic_with_no_parent_uses_root_topic(self):
         """If we call Topic.save_new(...) without specifying parent_topic,
@@ -35,8 +60,7 @@ class TopicModelTest(TestCase):
         self.assertEqual(t1.depth, 2)  # Root is depth=1, so child is depth=2
         self.assertIsNone(t1.get_parent())
 
-        # Because of the custom manager, we expect to see it in Topic.objects
-        self.assertIn(t1, Topic.objects.all())
+        self.assertIn(t1, Topic.objects.topics())
 
     def test_save_topic_with_explicit_parent(self):
         """If we call Topic.save_new(...) with a parent_topic, it will become that node's child."""
