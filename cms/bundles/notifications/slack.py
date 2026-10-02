@@ -14,6 +14,7 @@ from cms.core.slack import send_or_update_slack_message
 from cms.core.utils import release_db_connections
 from cms.post_publish_actions.executor import wait_for_bundle_publication_message
 from cms.post_publish_actions.models import PostPublishAction, PostPublishActionType
+from cms.post_publish_actions.registry import get_critical_action_types
 
 if TYPE_CHECKING:
     from django.utils.functional import _StrOrPromise
@@ -476,6 +477,32 @@ def notify_slack_of_post_publish_action_success(bundle: Bundle, page: Page, acti
         bundle=bundle,
         text=f"Post-publish action completed: {PostPublishActionType(action.action_type).label}",
         color="good",
+        fields=fields,
+    )
+
+
+def notify_slack_of_post_publish_action_failure(bundle: Bundle, page: Page, action: PostPublishAction) -> None:
+    """Reply to the bundle's publication message when a post-publish action for one of its pages fails.
+
+    Args:
+        bundle: The bundle that was published.
+        page: The page for which the post-publish action failed.
+        action: The post-publish action that failed.
+    """
+    fields: list[dict[str, Any]] = [
+        {"title": "Page", "value": _get_page_edit_link(page), "short": False},
+        {"title": "Reason", "value": action.failed_reason or "Unknown", "short": False},
+        {
+            "title": "Critical",
+            "value": "Yes" if action.action_type in get_critical_action_types() else "No",
+            "short": True,
+        },
+    ]
+
+    send_bundle_thread_reply(
+        bundle=bundle,
+        text=f"Post-publish action failed: {PostPublishActionType(action.action_type).label}",
+        color="danger",
         fields=fields,
     )
 
