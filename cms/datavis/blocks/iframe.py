@@ -1,5 +1,6 @@
 import os
 import uuid
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 from urllib.parse import ParseResult, urlparse
 
@@ -75,7 +76,14 @@ def _validate_visualisation_url_path(parsed_url: ParseResult, *, field_name: str
 class DownloadBlock(blocks.StructBlock):
     url = RelativeOrAbsoluteURLBlock(required=False)
 
-    def __init__(self, local_blocks=None, search_index=True, *, link_text_help_text=None, **kwargs):
+    def __init__(
+        self,
+        local_blocks: Iterable[tuple[str, blocks.Block]] | None = None,
+        search_index: bool = True,
+        *,
+        link_text_help_text: str | None = None,
+        **kwargs: Any,
+    ) -> None:
         # Inject link_text here so each block instance can provide its own help text.
         local_blocks = list(local_blocks or [])
         local_blocks.append(
@@ -99,7 +107,7 @@ class DownloadBlock(blocks.StructBlock):
         )
 
     def clean(self, value: StructValue) -> StructValue:
-        errors = {}
+        errors: dict[str, ValidationError] = {}
         url = (value.get("url") or "").strip()
         link_text = (value.get("link_text") or "").strip()
 
@@ -227,7 +235,7 @@ class IframeBlock(BaseVisualisationBlock):
         )
 
     @staticmethod
-    def _get_download_item(download: StructValue | None, request: HttpRequest | None) -> dict[str, str] | None:
+    def _get_download_item(download: StructValue | None, request: HttpRequest | None) -> dict[str, Any] | None:
         url = (download.get("url") or "").strip() if download else ""
         link_text = (download.get("link_text") or "").strip() if download else ""
 
