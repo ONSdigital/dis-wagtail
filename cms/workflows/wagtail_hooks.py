@@ -39,7 +39,7 @@ def _perform_workflow_action_on_locked_page(request: HttpRequest, page: Page, ac
     extra_workflow_data_json = request.POST.get("workflow-action-extra-data", "{}")
     try:
         extra_workflow_data = json.loads(extra_workflow_data_json)
-    except (json.JSONDecodeError, TypeError):
+    except json.JSONDecodeError, TypeError:
         extra_workflow_data = {}
     page.current_workflow_task.on_action(
         page.current_workflow_task_state, request.user, action_name, **extra_workflow_data
@@ -50,6 +50,22 @@ def _perform_workflow_action_on_locked_page(request: HttpRequest, page: Page, ac
         result = fn(request, page)
         if hasattr(result, "status_code"):
             return result
+
+    return None
+
+
+def _deny_unavailable_workflow_action(request: HttpRequest, page: Page, action_name: str) -> HttpResponse | None:
+    """Reject actions that are not available to this user at the current workflow stage."""
+    # Keep the publish-stage guard explicit as a second check against publishing a bundled page.
+    if action_name == "locked-approve" and (not is_page_ready_to_publish(page) or in_active_bundle(page)):
+        messages.error(request, "Cannot publish from this state.")
+        return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
+
+    # Hiding an action in the menu does not prevent a user from attempting it via POST, so we need to check here as well
+    allowed_actions = {name for name, _, _ in page.current_workflow_task.get_actions(page, request.user)}
+    if action_name not in allowed_actions:
+        messages.error(request, "You cannot perform this workflow action.")
+        return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
 
     return None
 
@@ -132,7 +148,9 @@ def before_edit_page_post_workflow_action_without_workflow(request: HttpRequest,
 
 
 @hooks.register("before_edit_page")
-def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
+def before_edit_page(  # noqa: PLR0911  # pylint: disable=too-many-return-statements
+    request: HttpRequest, page: Page
+) -> HttpResponse | None:
     if request.method != "POST":
         return None
 
@@ -158,10 +176,9 @@ def before_edit_page(request: HttpRequest, page: Page) -> HttpResponse | None:
         # All workflow actions on locked pages must be intercepted here because Wagtail's edit view
         # rejects POSTs when locked_for_user is True. Both our tasks lock the page for everyone.
         if action_name in ("reject", "approve", "locked-approve") and is_page_in_workflow(page):
-            # Additional guard: locked-approve only valid at Ready to Publish and not in a bundle
-            if action_name == "locked-approve" and (not is_page_ready_to_publish(page) or in_active_bundle(page)):
-                messages.error(request, "Cannot publish from this state.")
-                return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
+            denial = _deny_unavailable_workflow_action(request, page, action_name)
+            if denial is not None:
+                return denial
 
             hook_response = _perform_workflow_action_on_locked_page(request, page, action_name)
             if hook_response:
