@@ -339,8 +339,7 @@ class BundleViewSetEditTestCase(BundleViewSetTestCaseMixin, TestCase):
         self.bundle.status = BundleStatus.APPROVED
         self.bundle.save(update_fields=["status"])
         self.post_with_action_and_test("action-return-to-draft", BundleStatus.DRAFT, self.edit_url)
-
-    def test_bundle_edit_view__unparseable_publication_date(self):
+    def test_bundle_edit_view__unparsable_publication_date(self):
         """Test unparsable date rerenders form with a field error, not 500."""
         for bundle_status, action in [
             (BundleStatus.DRAFT, "action-edit"),
