@@ -449,13 +449,16 @@ class BarColumnChartBlock(BaseChartBlock):
         max_decimal_points: int | None = None
         for row in raw_data[1:]:
             for cell in row[1:]:
-                if not isinstance(cell, str) or "." not in cell:
+                if not isinstance(cell, str):
+                    continue
+                stripped = cell.strip()
+                if "." not in stripped:
                     continue
                 try:
-                    float(cell)
+                    float(stripped)
                 except ValueError:
                     continue
-                decimals = len(cell.split(".")[1])
+                decimals = len(stripped.split(".")[1])
                 if max_decimal_points is None or decimals > max_decimal_points:
                     max_decimal_points = decimals
 
