@@ -93,6 +93,7 @@ class BundleAdminForm(DeduplicateInlinePanelAdminForm):
 
     @contextmanager
     def _inline_formsets_ignored(self) -> Generator[None]:
+        """Context manager that removes inline formsets for duration of the `with` block, then restore them after."""
         if not self.ignore_inline_formsets:
             yield
             return
