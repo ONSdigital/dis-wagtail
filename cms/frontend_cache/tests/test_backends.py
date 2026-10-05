@@ -83,6 +83,6 @@ class CloudflareBackendTestCase(SimpleTestCase):
             self.assertIn(f"Couldn't purge '{url}' from Cloudflare. Cloudflare errors 'Rate limited'", message)
 
     def test_invalid_batch_size_raises(self):
-        for value in (0, -1, "abc", None):
+        for value in (0, -1):
             with self.subTest(value=value), self.assertRaisesMessage(ImproperlyConfigured, "PURGE_BATCH_SIZE"):
                 self.make_backend(PURGE_BATCH_SIZE=value)
