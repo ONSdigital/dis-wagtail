@@ -725,8 +725,10 @@ if "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env or "FRONTEND_CACHE_CLOUDFLARE_BEARER
     INSTALLED_APPS += ["wagtail.contrib.frontend_cache", "cms.frontend_cache"]
     WAGTAILFRONTENDCACHE = {
         "default": {
-            "BACKEND": "wagtail.contrib.frontend_cache.backends.CloudflareBackend",
+            "BACKEND": "cms.frontend_cache.backends.CloudflareBackend",
             "ZONEID": env["FRONTEND_CACHE_CLOUDFLARE_ZONEID"],
+            # Number of URLs sent per Cloudflare purge request. Cloudflare Enterprise allows up to 500.
+            "PURGE_BATCH_SIZE": int(env.get("CLOUDFLARE_URL_PURGE_BATCH_SIZE", 30)),
         }
     }
 
