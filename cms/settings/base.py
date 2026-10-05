@@ -1229,7 +1229,14 @@ SECURE_CSP: dict[str, list] = {
     "frame-src": [CSP.SELF, *IFRAME_VISUALISATION_CSP_SOURCES, *VIDEO_EMBED_CSP_SOURCES],
     # UNSAFE_INLINE is required by mathjax
     "style-src": [CSP.SELF, *static_sources, CSP.UNSAFE_INLINE, "*.hotjar.com"],
-    "img-src": [CSP.SELF, ONS_CDN_URL, "www.googletagmanager.com", "*.google-analytics.com", "*.hotjar.com"],
+    "img-src": [
+        CSP.SELF,
+        ONS_CDN_URL,
+        "www.googletagmanager.com",
+        "*.google-analytics.com",
+        "*.hotjar.com",
+        "https://bossanova.uk/jspreadsheet/logo.png",
+    ],
     # UNSAFE_INLINE is required by hotjar
     "script-src": [CSP.SELF, *static_sources, "*.hotjar.com", "www.googletagmanager.com", CSP.UNSAFE_INLINE],
     "font-src": [CSP.SELF, *static_sources, "*.hotjar.com"],
