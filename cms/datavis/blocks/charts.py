@@ -445,7 +445,8 @@ class BarColumnChartBlock(BaseChartBlock):
 
         # Inspect the raw cell strings from the stored JSON rather than the
         # numberfy'd rows, so trailing zeros (e.g. "5.50") are preserved.
-        raw_data = json.loads(value["table"]["table_data"]).get("data", [])
+        raw_table_data = json.loads(value["table"]["table_data"])
+        raw_data = raw_table_data.get("data", []) if isinstance(raw_table_data, dict) else []
         max_decimal_points: int | None = None
         for row in raw_data[1:]:
             for cell in row[1:]:
