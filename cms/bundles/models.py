@@ -22,6 +22,7 @@ from cms.workflows.utils import is_page_ready_to_preview
 
 from .enums import (
     ACTIVE_BUNDLE_STATUSES,
+    DELETABLE_BUNDLE_STATUSES,
     EDITABLE_BUNDLE_STATUSES,
     PREVIEWABLE_BUNDLE_STATUSES,
     PUBLISHED_BUNDLE_STATUSES,
@@ -246,7 +247,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
     @property
     def can_be_deleted(self) -> bool:
         """Only bundles that have not been approved or published can be deleted."""
-        return self.status in EDITABLE_BUNDLE_STATUSES
+        return self.status in DELETABLE_BUNDLE_STATUSES
 
     @property
     def can_be_manually_published(self) -> bool:
