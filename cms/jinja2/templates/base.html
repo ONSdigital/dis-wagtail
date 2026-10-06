@@ -47,8 +47,8 @@
             }
 
             function isUsageCookieAllowed(){
-                var re = /^(.*)?\s*'usage':true\s*[^;]+(.*)?$/;
-                return document.cookie.match(re);
+                var cookiePolicy = document.cookie.match(/(?:^|;\s*)ons_cookie_policy=([^;]*)/);
+                return cookiePolicy !== null && /'usage':true/.test(cookiePolicy[1]);
             }
 
             if (isUsageCookieAllowed()) {
