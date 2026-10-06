@@ -7,6 +7,7 @@ import responses
 from django.conf import settings
 
 from cms.datasets.tests.utils import convert_dataset_to_old_format
+from functional_tests.step_helpers.utils import LOCAL_HTTP_PASSTHRU
 
 if TYPE_CHECKING:
     from cms.taxonomy.models import Topic
@@ -157,6 +158,7 @@ def mock_datasets_responses(
     ensure_dataset_topic()
 
     with responses.RequestsMock(assert_all_requests_are_fired=False) as mock_responses:
+        mock_responses.add_passthru(LOCAL_HTTP_PASSTHRU)
         # Mock the list endpoint - need to match with any query parameters
         unpublished_datasets = [d for d in datasets if d["state"] != "published"]
         published_datasets = [d for d in datasets if d["state"] == "published"]

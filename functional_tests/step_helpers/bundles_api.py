@@ -7,6 +7,8 @@ from typing import Any
 import responses
 from django.conf import settings
 
+from functional_tests.step_helpers.utils import LOCAL_HTTP_PASSTHRU
+
 
 def _prepare_bundle_contents_response(contents: list[dict[str, Any]]) -> dict[str, Any]:
     """Prepare a Bundle API contents response format.
@@ -123,6 +125,7 @@ def mock_bundle_api(
         The mock responses object for making assertions about API calls
     """
     with responses.RequestsMock(assert_all_requests_are_fired=False) as mock_responses:
+        mock_responses.add_passthru(LOCAL_HTTP_PASSTHRU)
         base_url = settings.DIS_DATASETS_BUNDLE_API_BASE_URL
         escaped_base_url = re.escape(base_url)
 

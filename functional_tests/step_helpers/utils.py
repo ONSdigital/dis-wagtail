@@ -1,3 +1,4 @@
+import re
 from typing import TYPE_CHECKING
 
 from django.conf import settings
@@ -20,6 +21,10 @@ if TYPE_CHECKING:
 
 DATETIME_PICKER_SELECTOR = ".xdsoft_datetimepicker:visible"
 DATETIME_PICKER_OPEN_TIMEOUT = 3_000
+
+# In-process HTTP mocks, like the chart exporter mock, listen on 127.0.0.1. The APIs mocked with responses use other
+# hosts (e.g. https://dummy_base_api), so a RequestsMock can pass these requests through without hiding a missing mock.
+LOCAL_HTTP_PASSTHRU = re.compile(r"^http://127\.0\.0\.1:\d+/")
 
 
 def fill_datetime_field(field: Locator, value: str) -> None:

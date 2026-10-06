@@ -9,6 +9,7 @@ from behave.runner import Context
 from django.test.utils import override_settings
 from playwright.sync_api import sync_playwright
 
+from cms.datavis.tests.utils import mock_chart_exporter
 from functional_tests.behave_fixtures import django_test_case, django_test_runner
 from functional_tests.step_helpers.utils import str_to_bool
 
@@ -156,12 +157,18 @@ def after_scenario(context: Context, scenario: Scenario) -> None:
 
 
 def before_tag(context: Context, tag: str) -> None:
-    """Handle tag-specific setup."""
+    """Handle tag-specific setup.
+
+    Teardown is registered with context.add_cleanup() rather than done in after_tag, which runs in the same order as
+    before_tag: undoing several tags' settings overrides in that order would leak settings into later scenarios.
+    Cleanups run in reverse order.
+    """
     if tag == "cognito_enabled":
         # Apply Cognito test settings
         settings = get_cognito_overridden_settings()
         context.aws_override = override_settings(**settings)
         context.aws_override.enable()
+        context.add_cleanup(context.aws_override.disable)
     elif tag == "bundle_api_enabled":
         # Enable Bundle API integration for this scenario
         context.bundle_api_override = override_settings(
@@ -169,6 +176,7 @@ def before_tag(context: Context, tag: str) -> None:
             BUNDLE_DATASET_METADATA_VALIDATION_ENABLED=True,
         )
         context.bundle_api_override.enable()
+        context.add_cleanup(context.bundle_api_override.disable)
 
         # Create Bundle API content items from TEST_UNPUBLISHED_DATASETS
         contents = []
@@ -190,21 +198,13 @@ def before_tag(context: Context, tag: str) -> None:
         # because our steps run within the scenario. We capture the yielded RequestsMock so steps
         # can register additional routes (e.g. dataset detail endpoints) on the same active mock.
         context.bundle_api_mock = context.bundle_api_cm.__enter__()  # pylint: disable=unnecessary-dunder-call
+        context.add_cleanup(context.bundle_api_cm.__exit__, None, None, None)
     elif tag == "autosave_enabled":
         context.autosave_override = override_settings(WAGTAIL_AUTOSAVE_INTERVAL=500)
         context.autosave_override.enable()
-
-
-def after_tag(context: Context, tag: str) -> None:
-    """Handle tag-specific cleanup."""
-    if tag == "cognito_enabled":
-        # Disable settings override
-        context.aws_override.disable()
-    elif tag == "bundle_api_enabled":
-        # Disable Bundle API settings override
-        context.bundle_api_override.disable()
-
-        # Exit the Bundle API mock context manager
-        context.bundle_api_cm.__exit__(None, None, None)
-    elif tag == "autosave_enabled":
-        context.autosave_override.disable()
+        context.add_cleanup(context.autosave_override.disable)
+    elif tag == "chart_exporter_mock":
+        # Steps use context.chart_exporter; settings point the CMS at it, and its PNGs go to a temporary MEDIA_ROOT
+        chart_exporter_cm = mock_chart_exporter()
+        context.chart_exporter = chart_exporter_cm.__enter__()  # pylint: disable=unnecessary-dunder-call
+        context.add_cleanup(chart_exporter_cm.__exit__, None, None, None)

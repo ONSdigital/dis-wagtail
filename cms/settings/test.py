@@ -18,6 +18,10 @@ env = os.environ.copy()
 # #############
 # General
 
+# Tests that need exporter use cms.datavis.tests.utils.mock_chart_exporter().
+CMS_CHART_EXPORTER_API_ENABLED = False
+CMS_CHART_EXPORTER_API_BASE_URL = ""
+
 # pragma: allowlist nextline secret
 SECRET_KEY = "fake_secret_key_to_run_tests"  # noqa: S105
 

@@ -62,6 +62,32 @@ services:
       file: docker-compose-dev.yml
       service: mailpit
 
+  # Opt-in mock of the chart exporter API, see docs/integrations/chart_exporter.md.
+  # Start it with `docker compose --profile chart-exporter-mock up -d chart-exporter-mock`,
+  # then set CMS_CHART_EXPORTER_API_ENABLED=true and
+  # CMS_CHART_EXPORTER_API_BASE_URL=http://chart-exporter-mock:30300 for web.
+  chart-exporter-mock:
+    extends:
+      service: web
+    profiles:
+      - chart-exporter-mock
+    command:
+      - python
+      - -m
+      - cms.datavis.tests.chart_exporter_mock
+      - --host
+      - 0.0.0.0
+      - --port
+      - '30300'
+      # Write PNGs to web's MEDIA_DIR, so the CMS can serve them
+      - --output-dir
+      - /app/media
+    ports: !override
+      - ${CHART_EXPORTER_MOCK_HOST_PORT:-30300}:30300
+    volumes: !override
+      - ./:/app/
+    depends_on: !reset []
+
 volumes:
   node_modules:
   pgdata:
