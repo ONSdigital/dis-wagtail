@@ -78,19 +78,6 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         except ValidationError as e:
             self.fail(f"ValidationError raised: {e}")
 
-    def test_download_link_help_text_is_set(self):
-        self.assertEqual(
-            self.block.child_blocks["image_download"].child_blocks["link_text"].field.help_text,
-            "This should always follow the format “Download image (23KB)”, with the correct file "
-            "size substituted. The file size suffix should be capitalised.",
-        )
-        self.assertEqual(
-            self.block.child_blocks["data_download"].child_blocks["link_text"].field.help_text,
-            "This should always follow the format “Download CSV (23KB)”, with the correct file "
-            "type and file size substituted. The file type and file size suffix should be "
-            "capitalised.",
-        )
-
     def test_invalid_data(self):
         """Validate that these tests can detect invalid data."""
         invalid_data = self.raw_data.copy()
@@ -291,6 +278,31 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
             rendered = self.block.render(self.raw_data)
             self.assertIn(content, rendered)
 
+    def test_clean__valid_download_data_is_allowed(self):
+        """Valid nested download data is accepted when cleaning the iframe block."""
+        valid_data = self.raw_data.copy()
+        valid_data["data_download"] = {
+            "url": "/visualisations/dvc/1234567890/data.csv",
+            "link_text": "Download CSV (23KB)",
+        }
+
+        value = self.get_value(valid_data)
+
+        self.block.clean(value)
+
+    def test_download_link_help_text_is_set(self):
+        self.assertEqual(
+            self.block.child_blocks["image_download"].child_blocks["link_text"].field.help_text,
+            "This should always follow the format “Download image (23KB)”, with the correct file "
+            "size substituted. The file size suffix should be capitalised.",
+        )
+        self.assertEqual(
+            self.block.child_blocks["data_download"].child_blocks["link_text"].field.help_text,
+            "This should always follow the format “Download CSV (23KB)”, with the correct file "
+            "type and file size substituted. The file type and file size suffix should be "
+            "capitalised.",
+        )
+
     def test_download_block_errors_are_nested_under_the_parent_field(self):
         invalid_data = self.raw_data.copy()
         invalid_data["data_download"] = {
@@ -333,17 +345,25 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
                     "Link text is required when a download URL is provided.",
                 )
 
-    def test_clean__valid_download_data_is_allowed(self):
-        """Valid nested download data is accepted when cleaning the iframe block."""
-        valid_data = self.raw_data.copy()
-        valid_data["data_download"] = {
-            "url": "/visualisations/dvc/1234567890/data.csv",
-            "link_text": "Download CSV (23KB)",
+    def test_both_downloads_appear_in_config(self):
+        """Image and data downloads are both included in the config when they are both set."""
+        data = self.raw_data.copy()
+        data["image_download"] = {
+            "url": "/visualisations/dvc/1234567890/image.png",
+            "link_text": "Download image (23KB)",
         }
+        data["data_download"] = {"url": "/visualisations/dvc/1234567890/data.csv", "link_text": "Download CSV (23KB)"}
 
-        value = self.get_value(valid_data)
+        config = self.get_figure_config(data)
+        downloads = config["download"]["itemsList"]
 
-        self.block.clean(value)
+        # Both downloads should be present in the config
+        self.assertEqual(len(downloads), 2)
+
+        self.assertEqual(downloads[0]["text"], "Download image (23KB)")
+        self.assertEqual(downloads[0]["url"], "/visualisations/dvc/1234567890/image.png")
+        self.assertEqual(downloads[1]["text"], "Download CSV (23KB)")
+        self.assertEqual(downloads[1]["url"], "/visualisations/dvc/1234567890/data.csv")
 
     def test_download_not_in_config_when_not_set(self):
         """Downloads should be omitted from the component config when no download fields are set."""
@@ -370,26 +390,6 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
         # Confirm the data download is present in the config
         self.assertEqual(downloads[0]["text"], "Download CSV (23KB)")
         self.assertEqual(downloads[0]["url"], "/visualisations/dvc/1234567890/data.csv")
-
-    def test_both_downloads_appear_in_config(self):
-        """Image and data downloads are both included in the config when they are both set."""
-        data = self.raw_data.copy()
-        data["image_download"] = {
-            "url": "/visualisations/dvc/1234567890/image.png",
-            "link_text": "Download image (23KB)",
-        }
-        data["data_download"] = {"url": "/visualisations/dvc/1234567890/data.csv", "link_text": "Download CSV (23KB)"}
-
-        config = self.get_figure_config(data)
-        downloads = config["download"]["itemsList"]
-
-        # Both downloads should be present in the config
-        self.assertEqual(len(downloads), 2)
-
-        self.assertEqual(downloads[0]["text"], "Download image (23KB)")
-        self.assertEqual(downloads[0]["url"], "/visualisations/dvc/1234567890/image.png")
-        self.assertEqual(downloads[1]["text"], "Download CSV (23KB)")
-        self.assertEqual(downloads[1]["url"], "/visualisations/dvc/1234567890/data.csv")
 
     def test_download_config_file_download_attributes_in_config(self):
         """Verify expected file download GTM data attributes are present in download config data."""
@@ -435,6 +435,45 @@ class DownloadBlockTestCase(SimpleTestCase):
         super().setUpClass()
         cls.block = DownloadBlock()
 
+    def test_clean__download_url_with_link_text(self):
+        """A download url with download link text is allowed."""
+        value = self.block.to_python(
+            {"url": "/visualisations/dvc/1234567890/data.csv", "link_text": "Download CSV (23KB)"}
+        )
+
+        self.block.clean(value)
+
+    def test_clean__no_download_url_and_no_link_text(self):
+        """The download block is not required so an empty download url and empty download link text is allowed."""
+        value = self.block.to_python({"url": "", "link_text": ""})
+
+        self.block.clean(value)
+
+    def test_valid_absolute_download_urls(self):
+        """Test valid URL patterns for each domain in the valid_domains list."""
+        for base_domain in VALID_DOMAINS:
+            for url in get_valid_absolute_urls(base_domain):
+                with self.subTest(domain=base_domain, url=url):
+                    value = self.block.to_python({"url": url, "link_text": "Download CSV (23KB)"})
+                    self.block.clean(value)
+
+    def test_valid_relative_download_url(self):
+        """Test valid relative URL patterns."""
+        value = self.block.to_python({"url": "/visualisations/dvc/1234567890", "link_text": "Download CSV (23KB)"})
+        self.block.clean(value)
+
+    def test_invalid_download_url(self):
+        """Validate that invalid download URLs are rejected."""
+        cases = get_invalid_url_cases()
+
+        for bad_url, message in cases.items():
+            with self.subTest(bad_url=bad_url):
+                value = self.block.to_python({"url": bad_url, "link_text": "Download CSV (23KB)"})
+                with self.assertRaises(ValidationError, msg="Expected ValidationError for invalid URL") as info:
+                    self.block.clean(value)
+
+                self.assertEqual(info.exception.block_errors["url"].message, message)
+
     def test_clean__download_link_text_without_url_raises_error(self):
         """A download link text cannot be saved without a download url."""
         value = self.block.to_python({"url": "", "link_text": "Download CSV (23KB)"})
@@ -470,42 +509,3 @@ class DownloadBlockTestCase(SimpleTestCase):
             info.exception.block_errors["link_text"].message,
             "Link text is required when a download URL is provided.",
         )
-
-    def test_clean__download_url_with_link_text(self):
-        """A download url with download link text is allowed."""
-        value = self.block.to_python(
-            {"url": "/visualisations/dvc/1234567890/data.csv", "link_text": "Download CSV (23KB)"}
-        )
-
-        self.block.clean(value)
-
-    def test_clean__no_download_url_and_no_link_text(self):
-        """The download block is not required so an empty download url and empty download link text is allowed."""
-        value = self.block.to_python({"url": "", "link_text": ""})
-
-        self.block.clean(value)
-
-    def test_invalid_download_url(self):
-        """Validate that invalid download URLs are rejected."""
-        cases = get_invalid_url_cases()
-
-        for bad_url, message in cases.items():
-            with self.subTest(bad_url=bad_url):
-                value = self.block.to_python({"url": bad_url, "link_text": "Download CSV (23KB)"})
-                with self.assertRaises(ValidationError, msg="Expected ValidationError for invalid URL") as info:
-                    self.block.clean(value)
-
-                self.assertEqual(info.exception.block_errors["url"].message, message)
-
-    def test_valid_absolute_download_urls(self):
-        """Test valid URL patterns for each domain in the valid_domains list."""
-        for base_domain in VALID_DOMAINS:
-            for url in get_valid_absolute_urls(base_domain):
-                with self.subTest(domain=base_domain, url=url):
-                    value = self.block.to_python({"url": url, "link_text": "Download CSV (23KB)"})
-                    self.block.clean(value)
-
-    def test_valid_relative_download_url(self):
-        """Test valid relative URL patterns."""
-        value = self.block.to_python({"url": "/visualisations/dvc/1234567890", "link_text": "Download CSV (23KB)"})
-        self.block.clean(value)
