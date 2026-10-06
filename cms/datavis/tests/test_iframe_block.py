@@ -18,6 +18,7 @@ def get_invalid_url_cases() -> dict[str, str]:
     return {
         "https://www.random.url.com": "The URL hostname is not in the list of allowed domains: example.com",
         "http://example.com": "Please enter a valid URL. Full URLs must start with 'https://'.",
+        "https://[example.com/visualisations/dvc/1234567890": "Please enter a valid URL.",
         "https://example.com/invalidpath/12345": (
             f"The URL path is not allowed. It must start with: {readable_prefixes}, "
             "and include a subpath after the prefix."

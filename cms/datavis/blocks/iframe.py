@@ -24,7 +24,10 @@ def _validate_visualisation_url(url: str, *, field_name: str) -> dict[str, Valid
     """Validate an iframe source URL or download URL. Validation errors are returned as an errors dict. The URL can be
     either absolute (with scheme and hostname) or relative (path only).
     """
-    parsed_url = urlparse(url)
+    try:
+        parsed_url = urlparse(url)
+    except ValueError:
+        return {field_name: ValidationError("Please enter a valid URL.")}
 
     if parsed_url.scheme or parsed_url.netloc:
         # If a scheme or netloc is present, validate as an absolute URL
