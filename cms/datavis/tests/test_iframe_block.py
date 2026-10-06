@@ -1,6 +1,7 @@
 from typing import Any
 from urllib.parse import urlparse
 
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import RequestFactory, SimpleTestCase, override_settings
@@ -422,6 +423,21 @@ class IframeBlockTestCase(BaseVisualisationBlockTestCase):
                 }
 
                 self.assertEqual(download_item["attributes"], expected_attributes)
+
+    def test_download_config_adds_download_attribute_to_rendered_link(self):
+        """Download links render the HTML download attribute."""
+        data = self.raw_data.copy()
+        data["data_download"] = {
+            "url": "/visualisations/dvc/1234567890/data.csv",
+            "link_text": "Download CSV (23KB)",
+        }
+
+        rendered = self.block.render(data)
+        soup = BeautifulSoup(rendered, "html.parser")
+        download_link = soup.find("a", href="/visualisations/dvc/1234567890/data.csv")
+
+        self.assertIsNotNone(download_link)
+        self.assertIn("download", download_link.attrs)
 
 
 @override_settings(
