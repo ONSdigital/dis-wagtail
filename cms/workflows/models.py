@@ -131,9 +131,12 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
             ("reject", "Unlock editing", True),
         ]
 
-        if not in_active_bundle(obj):
-            if hasattr(obj, "permissions_for_user") and obj.permissions_for_user(user).can_publish():
-                actions.append(("locked-approve", get_final_approve_label(obj, "Approve"), False))
+        if (
+            not in_active_bundle(obj)
+            and hasattr(obj, "permissions_for_user")
+            and obj.permissions_for_user(user).can_publish()
+        ):
+            actions.append(("locked-approve", get_final_approve_label(obj, "Approve"), False))
 
         return actions
 
