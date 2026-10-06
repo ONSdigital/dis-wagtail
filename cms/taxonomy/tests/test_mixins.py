@@ -13,7 +13,7 @@ from cms.methodology.models import MethodologyPage
 from cms.methodology.tests.factories import MethodologyPageFactory
 from cms.standard_pages.models import InformationPage  # Uses GenericTaxonomyMixin
 from cms.standard_pages.tests.factories import InformationPageFactory
-from cms.taxonomy.models import GenericPageToTaxonomyTopic, Topic
+from cms.taxonomy.models import DUMMY_ROOT_DEPTH, GenericPageToTaxonomyTopic, Topic
 from cms.taxonomy.tests.factories import TopicFactory
 from cms.themes.models import ThemePage  # Uses ExclusiveTaxonomyMixin
 from cms.topics.models import TopicPage  # Uses ExclusiveTaxonomyMixin
@@ -314,3 +314,88 @@ class TestGenericTaxonomyMixinIntegrityError(WagtailTestUtils, TestCase):
                     self.assertEqual(GenericPageToTaxonomyTopic.objects.filter(page=page).count(), 1)
                 except IntegrityError:
                     self.fail(f"IntegrityError raised when saving id-less topic for {page.__class__.__name__}.")
+
+
+class TestDummyRootCannotBeChosen(WagtailTestUtils, TestCase):
+    """The dummy root is a real row that the chooser hides but validation must also reject.
+
+    The chooser tests in test_viewsets.py cover what is *offered*. These cover what is *accepted*, at the
+    two layers that can actually write it: a submitted admin form, and an ORM write that validates.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = cls.create_superuser(username="admin")
+        cls.page = InformationPageFactory(live=False)
+
+    def setUp(self):
+        self.login()
+        self.root_topic = Topic.objects.root_topic()
+
+    def test_admin_post_does_not_link_the_dummy_root(self):
+        """GenericPageToTaxonomyTopic.topic, through the real admin edit view.
+
+        The chooser never offers "_root", but nothing stops a submitted form carrying it.
+        """
+        data = nested_form_data(
+            {
+                "title": self.page.title,
+                "slug": self.page.slug,
+                "summary": rich_text(self.page.summary),
+                "show_cite_this_page": "on",
+                "content": streamfield(
+                    [("section", {"title": "Test", "content": streamfield([("rich_text", rich_text("text"))])})]
+                ),
+                "related_pages-TOTAL_FORMS": "0",
+                "related_pages-INITIAL_FORMS": "0",
+                "related_pages-MIN_NUM_FORMS": "0",
+                "related_pages-MAX_NUM_FORMS": "1000",
+                "topics-TOTAL_FORMS": "1",
+                "topics-INITIAL_FORMS": "0",
+                "topics-MIN_NUM_FORMS": "0",
+                "topics-MAX_NUM_FORMS": "1000",
+                "topics-0-topic": self.root_topic.pk,
+                "topics-0-id": "",
+            }
+        )
+
+        response = self.client.post(reverse("wagtailadmin_pages:edit", args=(self.page.pk,)), data)
+
+        # A rejected form is re-rendered rather than redirecting to the listing.
+        self.assertEqual(response.status_code, HTTPStatus.OK, "Expected the edit form to be redisplayed with an error")
+        self.assertFalse(
+            GenericPageToTaxonomyTopic.objects.filter(topic=self.root_topic).exists(),
+            "The dummy root must never be linked to a page",
+        )
+
+    def test_limit_choices_to_assumes_a_single_dummy_root(self):
+        """Guard for the day the dummy root is removed.
+
+        limit_choices_to={"depth__gt": DUMMY_ROOT_DEPTH} on the topic FKs is only correct while the dummy
+        root is the one and only row at that depth. Remove the dummy root and real topics move up to it,
+        at which point the same filter silently rejects every top-level topic.
+        """
+        TopicFactory(title="A real topic")
+
+        self.assertEqual(
+            [topic.id for topic in Topic.objects.filter(depth__lte=DUMMY_ROOT_DEPTH)],
+            ["_root"],
+            msg=(
+                "Remove limit_choices_to from GenericPageToTaxonomyTopic.topic and "
+                "ExclusiveTaxonomyMixin.topic, or real topics will be rejected."
+            ),
+        )
+
+    def test_model_validation_rejects_the_dummy_root(self):
+        """ExclusiveTaxonomyMixin.topic, through the ORM.
+
+        add_child() runs full_clean(), and ForeignKey.validate() applies limit_choices_to, so an ORM write
+        that validates cannot link the dummy root either.
+        """
+        theme_page = ThemePage(title="Theme", topic=self.root_topic, summary="My theme page summary")
+
+        with self.assertRaises(ValidationError) as ctx:
+            Page.objects.get(id=1).add_child(instance=theme_page)
+
+        self.assertIn("topic", ctx.exception.message_dict)
+        self.assertIn("is not a valid choice", " ".join(ctx.exception.message_dict["topic"]))

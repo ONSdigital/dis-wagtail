@@ -33,7 +33,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.mock_requests.get.assert_called_once()
-        self.assertEqual(Topic.objects.all().count(), 0, "Expect no topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 0, "Expect no topics to be saved")
 
     def test_sync_empty_response(self):
         # Given
@@ -47,7 +47,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.mock_requests.get.assert_called_once()
-        self.assertEqual(Topic.objects.all().count(), 0, "Expect no topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 0, "Expect no topics to be saved")
 
     def template_test_sync_one_valid_topic(self, topic: Topic) -> None:
         # Given
@@ -59,8 +59,8 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.mock_requests.get.assert_called_once()
-        self.assertEqual(Topic.objects.all().count(), 1, "Expect one topic to be saved")
-        saved_topic = Topic.objects.first()
+        self.assertEqual(Topic.objects.topics().count(), 1, "Expect one topic to be saved")
+        saved_topic = Topic.objects.topics().first()
         self.assertEqual(saved_topic, topic, "Expect the saved topic to match")
 
     def test_sync_valid_topic(self):
@@ -81,7 +81,7 @@ class SyncTopicsTests(TestCase):
         with self.assertRaisesRegex(RuntimeError, "missing required field\\(s\\) slug"):
             call_command("sync_topics")
 
-        self.assertListEqual(list(Topic.objects.all()), [])
+        self.assertListEqual(list(Topic.objects.topics()), [])
 
     def test_sync_raises_when_api_topic_missing_title(self):
         """The sync should fail fast if the API omits a required title."""
@@ -94,7 +94,7 @@ class SyncTopicsTests(TestCase):
         with self.assertRaisesRegex(RuntimeError, "missing required field\\(s\\) title"):
             call_command("sync_topics")
 
-        self.assertListEqual(list(Topic.objects.all()), [])
+        self.assertListEqual(list(Topic.objects.topics()), [])
 
     def test_sync_updates_valid_topics_before_later_missing_slug_error(self):
         """A malformed topic should fail when processed, after earlier valid topics have synced."""
@@ -109,7 +109,7 @@ class SyncTopicsTests(TestCase):
         with self.assertRaisesRegex(RuntimeError, "missing required field\\(s\\) slug"):
             call_command("sync_topics")
 
-        self.assertEqual(Topic.objects.count(), 1)
+        self.assertEqual(Topic.objects.topics().count(), 1)
         self.assertEqual(Topic.objects.get(id=valid_topic.id).slug, valid_topic.slug)
 
     def test_sync_valid_topic_empty_description(self):
@@ -151,8 +151,8 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.mock_requests.get.assert_called_once()
-        self.assertEqual(Topic.objects.all().count(), 1, "Expect one topic to be saved")
-        saved_topic = Topic.objects.first()
+        self.assertEqual(Topic.objects.topics().count(), 1, "Expect one topic to be saved")
+        saved_topic = Topic.objects.topics().first()
         self.assertEqual(saved_topic, topic, "Expect the saved topic to match")
 
     def test_sync_topic_with_subtopic(self):
@@ -179,7 +179,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
-        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 2, "Expect 2 topics to be saved")
         saved_root_topic = Topic.objects.get(id=root_topic.id)
         saved_subtopic = Topic.objects.get(id=subtopic.id)
         self.assertEqual(saved_root_topic, root_topic, "Expect root topic to match")
@@ -228,7 +228,7 @@ class SyncTopicsTests(TestCase):
         call_command("sync_topics")
 
         # Then
-        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 2, "Expect 2 topics to be saved")
         saved_root_topic = Topic.objects.get(id=root_topic.id)
         saved_root_topic_2 = Topic.objects.get(id=root_topic_2.id)
         self.assertEqual(saved_root_topic, root_topic, "Expect root topic to match")
@@ -255,7 +255,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
-        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 2, "Expect 2 topics to be saved")
         saved_root_topic = Topic.objects.get(id=root_topic.id)
         saved_subtopic = Topic.objects.get(id=subtopic.id)
         self.assertEqual(saved_root_topic, root_topic, "Expect root topic to match")
@@ -282,7 +282,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect 1 calls to retrieve topics")
-        self.assertEqual(Topic.objects.all().count(), 1, "Expect 1 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 1, "Expect 1 topics to be saved")
         saved_topic = Topic.objects.get(id=updated_topic.id)
         self.assertEqual(saved_topic.title, updated_topic.title, "Expect topic title to be updated to match")
 
@@ -301,7 +301,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect 1 calls to retrieve topics")
-        self.assertEqual(Topic.objects.all().count(), 1, "Expect 1 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 1, "Expect 1 topics to be saved")
         saved_topic = Topic.objects.get(id=updated_topic.id)
         self.assertEqual(
             saved_topic.description, updated_topic.description, "Expect topic description to be updated to match"
@@ -319,7 +319,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect 1 calls to retrieve topics")
-        self.assertEqual(Topic.objects.all().count(), 1, "Expect 1 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 1, "Expect 1 topics to be saved")
         saved_topic = Topic.objects.get(id=topic.id)
         self.assertEqual(saved_topic, topic, "Expect topic to match")
 
@@ -337,7 +337,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect 1 calls to retrieve topics")
-        self.assertEqual(Topic.objects.all().count(), 1, "Expect 1 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 1, "Expect 1 topics to be saved")
         saved_topic = Topic.objects.get(id=topic.id)
         self.assertTrue(saved_topic.removed, "Expect topic to be marked as removed")
 
@@ -356,7 +356,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect 1 calls to retrieve topics")
-        self.assertEqual(Topic.objects.all().count(), 1, "Expect 1 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 1, "Expect 1 topics to be saved")
 
         saved_topic = Topic.objects.get(id=removed_topic.id)
         self.assertFalse(saved_topic.removed, "Expect topic to be marked as removed")
@@ -393,7 +393,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 3, "Expect 2 calls to retrieve topics")
-        self.assertEqual(Topic.objects.all().count(), 4, "Expect 3 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 4, "Expect 4 topics to be saved")
         self.assertEqual(
             Topic.objects.get(id=subtopic.id).get_parent().id,
             root_topic_2.id,
@@ -428,7 +428,7 @@ class SyncTopicsTests(TestCase):
         call_command("sync_topics")
 
         # Then
-        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 2, "Expect 2 topics to be saved")
         saved_root_topic = Topic.objects.get(id=root_topic.id)
         saved_moved_topic = Topic.objects.get(id=initial_subtopic.id)
         self.assertEqual(saved_root_topic, root_topic, "Expect root topic to match")
@@ -456,7 +456,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
-        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 2, "Expect 2 topics to be saved")
         saved_moved_topic = Topic.objects.get(id=root_topic_2.id)
         self.assertEqual(
             saved_moved_topic.get_parent().id, root_topic.id, "Expect topic to have moved underneath other root topic"
@@ -476,7 +476,7 @@ class SyncTopicsTests(TestCase):
         self.assertRaises(HTTPError, sync_topics.Command().handle)
 
         # And check the existing topics remain unaffected
-        self.assertEqual(Topic.objects.all().count(), 1, "Expect 1 topic to remain in the database")
+        self.assertEqual(Topic.objects.topics().count(), 1, "Expect 1 topic to remain in the database")
         saved_topic = Topic.objects.get(id=existing_topic.id)
         self.assertEqual(saved_topic, existing_topic, "Expect existing topic to remain unmodified in database")
 
@@ -505,7 +505,7 @@ class SyncTopicsTests(TestCase):
 
         # Check the two topics remain unaltered, the changes must be all or nothing
         self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
-        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to remain in the database")
+        self.assertEqual(Topic.objects.topics().count(), 2, "Expect 2 topics to remain in the database")
         saved_root_topic = Topic.objects.get(id=existing_topic.id)
         saved_subtopic = Topic.objects.get(id=existing_subtopic.id)
         self.assertEqual(
@@ -574,8 +574,8 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.mock_requests.get.assert_called_once()
-        self.assertEqual(Topic.objects.all().count(), 1, "Expect one topic to be saved")
-        saved_topic = Topic.objects.first()
+        self.assertEqual(Topic.objects.topics().count(), 1, "Expect one topic to be saved")
+        saved_topic = Topic.objects.topics().first()
         self.assertEqual(saved_topic, topic, "Expect the saved topic to match")
 
     def test_sync_topic_with_subtopic_current_wrapped(self):
@@ -595,7 +595,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
-        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 2, "Expect 2 topics to be saved")
         saved_subtopic = Topic.objects.get(id=subtopic.id)
         self.assertEqual(
             saved_subtopic.get_parent().id, root_topic.id, "Expect the subtopic to have the correct parent"
@@ -669,7 +669,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect no subtopic fetch for the excluded topic")
-        self.assertEqual(Topic.objects.count(), 1, "Expect only the included topic to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 1, "Expect only the included topic to be saved")
         self.assertTrue(Topic.objects.filter(id=included_topic.id).exists())
         self.assertFalse(Topic.objects.filter(id=excluded_topic.id).exists(), "Excluded topic should not be synced")
         self.assertFalse(
