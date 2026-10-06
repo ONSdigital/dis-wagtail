@@ -721,6 +721,11 @@ WAGTAILADMIN_NOTIFICATION_INCLUDE_SUPERUSERS = False
 # default to the list of defined content languages if this is not defined.
 WAGTAILFRONTENDCACHE_LANGUAGES: list[str] = []
 if "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env or "FRONTEND_CACHE_CLOUDFLARE_BEARER_TOKEN" in env:
+    # Number of URLs sent per Cloudflare purge request. Cloudflare Enterprise allows up to 500.
+    CLOUDFLARE_URL_PURGE_BATCH_SIZE = int(env.get("CLOUDFLARE_URL_PURGE_BATCH_SIZE", 30))
+    if CLOUDFLARE_URL_PURGE_BATCH_SIZE < 1:
+        raise ImproperlyConfigured("CLOUDFLARE_URL_PURGE_BATCH_SIZE must be a positive integer.")
+
     # Apps need to be installed in this order so that any signal disconnects work as intended
     INSTALLED_APPS += ["wagtail.contrib.frontend_cache", "cms.frontend_cache"]
     WAGTAILFRONTENDCACHE = {
@@ -728,8 +733,7 @@ if "FRONTEND_CACHE_CLOUDFLARE_TOKEN" in env or "FRONTEND_CACHE_CLOUDFLARE_BEARER
             # Wagtail's CloudflareBackend with a configurable PURGE_BATCH_SIZE (see class docstring).
             "BACKEND": "cms.frontend_cache.backends.CloudflareBackend",
             "ZONEID": env["FRONTEND_CACHE_CLOUDFLARE_ZONEID"],
-            # Number of URLs sent per Cloudflare purge request. Cloudflare Enterprise allows up to 500.
-            "PURGE_BATCH_SIZE": int(env.get("CLOUDFLARE_URL_PURGE_BATCH_SIZE", 30)),
+            "PURGE_BATCH_SIZE": CLOUDFLARE_URL_PURGE_BATCH_SIZE,
         }
     }
 
