@@ -336,6 +336,79 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                         case False:
                             self.assertNotIn("dataLabels", item)
 
+    def _assert_data_label_decimal_points(self, table_data, expected_decimal_points):
+        self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.BAR
+        self.raw_data["show_data_labels"] = True
+        self.raw_data["use_stacked_layout"] = False
+        self.raw_data["table"] = TableDataFactory(table_data=table_data)
+
+        config = self.get_component_config()
+
+        if expected_decimal_points is None:
+            self.assertNotIn("dataLabelDecimalPoints", config)
+        else:
+            self.assertEqual(expected_decimal_points, config["dataLabelDecimalPoints"])
+
+    def test_data_label_decimal_points_all_whole_numbers(self):
+        # The DS macro ignores dataLabelDecimalPoints unless it is 1 or 2, so
+        # we omit the key entirely when no decimals are present.
+        self._assert_data_label_decimal_points(
+            table_data=[
+                ["", "Series 1", "Series 2"],
+                ["2005", "100", "50"],
+                ["2006", "120", "55"],
+                ["2007", "140", "60"],
+            ],
+            expected_decimal_points=None,
+        )
+
+    def test_data_label_decimal_points_longest_one_decimal(self):
+        self._assert_data_label_decimal_points(
+            table_data=[
+                ["", "Series 1", "Series 2"],
+                ["2005", "100", "50.5"],
+                ["2006", "120", "55"],
+                ["2007", "140.3", "60"],
+            ],
+            expected_decimal_points=1,
+        )
+
+    def test_data_label_decimal_points_preserves_trailing_zeros(self):
+        # Ensure trailing zeros are preserved in the decimal point count, e.g. 5.50 is two decimal points, not one.
+        self._assert_data_label_decimal_points(
+            table_data=[
+                ["", "Series 1", "Series 2"],
+                ["2005", "5.50", "5"],
+                ["2006", "6", "6"],
+                ["2007", "7", "7"],
+            ],
+            expected_decimal_points=2,
+        )
+
+    def test_data_label_decimal_points_ignores_trailing_whitespace(self):
+        # Trailing whitespace should not be counted as decimal places,
+        # e.g. "5.0 " is one decimal point, not two.
+        self._assert_data_label_decimal_points(
+            table_data=[
+                ["", "Series 1", "Series 2"],
+                ["2005", "5.0 ", "5"],
+                ["2006", "6", "6"],
+                ["2007", "7", "7"],
+            ],
+            expected_decimal_points=1,
+        )
+
+    def test_data_label_decimal_points_longest_three_decimals_capped_at_two(self):
+        self._assert_data_label_decimal_points(
+            table_data=[
+                ["", "Series 1", "Series 2"],
+                ["2005", "100", "50.5"],
+                ["2006", "120.12", "55"],
+                ["2007", "140.345", "60"],
+            ],
+            expected_decimal_points=2,
+        )
+
     def test_no_show_markers_option(self):
         """Test that this option is not present for line charts."""
         with self.subTest("base case"):

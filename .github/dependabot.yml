@@ -50,3 +50,56 @@ updates:
           - '*'
     cooldown:
       default-days: 7
+
+    # Enable security updates for npm packages
+  - package-ecosystem: npm
+
+    # When set to 0, version updates are disabled.
+    open-pull-requests-limit: 3
+
+    # Look for `package.json` and `lock` files in the `root` directory
+    directory: '/'
+    # Temporarily ignore major updates for eslint packages
+    ignore:
+      - dependency-name: 'eslint*'
+        update-types:
+          - 'version-update:semver-major'
+      - dependency-name: '@eslint/*'
+        update-types:
+          - 'version-update:semver-major'
+    # Every weekday
+    schedule:
+      interval: daily
+
+    groups:
+      # Group updates into fewer pull requests
+      npm-security-updates:
+        applies-to: security-updates
+        patterns:
+          - '*'
+
+      # Separate dis-authorisation-client-js major updates
+      npm-dis-authorisation-client-js-major-updates:
+        applies-to: version-updates
+        patterns:
+          - 'dis-authorisation-client-js'
+        update-types:
+          - 'major'
+
+      # Separate all other major updates
+      npm-major-version-updates:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        update-types:
+          - 'major'
+
+      npm-version-updates:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+    cooldown:
+      default-days: 7
