@@ -12,6 +12,8 @@ class CloudflareBackend(WagtailCloudflareBackend):
     ref: https://github.com/wagtail/wagtail/issues/14352
     """
 
+    CHUNK_SIZE: int
+
     def __init__(self, params: dict[str, Any]) -> None:
         batch_size = params.pop("PURGE_BATCH_SIZE", self.CHUNK_SIZE)
         super().__init__(params)
