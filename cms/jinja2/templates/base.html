@@ -47,7 +47,7 @@
             }
 
             function isUsageCookieAllowed(){
-                var cookiePolicy = document.cookie.match(/(?:^|;\s*)ons_cookie_policy=([^;]*)/);
+                const cookiePolicy = document.cookie.match(/(?:^|;\s*)ons_cookie_policy=([^;]*)/);
                 return cookiePolicy !== null && /'usage':true/.test(cookiePolicy[1]);
             }
 
