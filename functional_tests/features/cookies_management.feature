@@ -12,6 +12,16 @@ Feature: An ONS website user can accept, reject, and manage cookies using the co
         When An external user navigates to the homepage
         Then the Google Tag Manager script is loaded
 
+    Scenario: Google Tag Manager does not load when usage cookies are not allowed
+        Given the browser has not allowed usage cookies
+        When An external user navigates to the homepage
+        Then the Google Tag Manager script is not loaded
+
+    Scenario: Google Tag Manager does not load when usage cookie preference is missing
+        Given the browser has no usage cookie preference
+        When An external user navigates to the homepage
+        Then the Google Tag Manager script is not loaded    
+    
     Scenario: An external website user accepts additional cookies in the cookies banner
         When An external user navigates to the homepage
         And the cookies banner is displayed in English

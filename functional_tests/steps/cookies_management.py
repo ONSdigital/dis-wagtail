@@ -47,6 +47,20 @@ def allow_usage_cookies(context: Context) -> None:
     )
 
 
+@given("the browser has not allowed usage cookies")
+def disallow_usage_cookies(context: Context) -> None:
+    context.page.context.add_cookies(
+        [{"name": "ons_cookie_policy", "value": "{'essential':true,'usage':false}", "url": context.base_url}]
+    )
+
+
+@given("the browser has no usage cookie preference")
+def missing_usage_cookie_preference(context: Context) -> None:
+    context.page.context.add_cookies(
+        [{"name": "ons_cookie_policy", "value": "{'essential':true}", "url": context.base_url}]
+    )
+
+
 @when('the user is clicks "Accept additional cookies" on the cookies banner')
 def user_accepts_additional_cookies_in_banner(context: Context) -> None:
     context.page.get_by_role("button", name="Accept additional cookies").click()
