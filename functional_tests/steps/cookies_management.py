@@ -40,6 +40,13 @@ def clear_browser_cookies(context: Context) -> None:
     context.page.context.clear_cookies()
 
 
+@given("the browser has allowed usage cookies")
+def allow_usage_cookies(context: Context) -> None:
+    context.page.context.add_cookies(
+        [{"name": "ons_cookie_policy", "value": "{'essential':true,'usage':true}", "url": context.base_url}]
+    )
+
+
 @when('the user is clicks "Accept additional cookies" on the cookies banner')
 def user_accepts_additional_cookies_in_banner(context: Context) -> None:
     context.page.get_by_role("button", name="Accept additional cookies").click()
@@ -101,6 +108,16 @@ def check_all_optional_cookies_are_set_in_browser(context: Context) -> None:
             "settings": True,
         },
     )
+
+
+@then("the Google Tag Manager script is loaded")
+def check_google_tag_manager_script_is_loaded(context: Context) -> None:
+    expect(context.page.locator('script[src^="https://www.googletagmanager.com/gtm.js"]')).to_have_count(1)
+
+
+@then("the Google Tag Manager script is not loaded")
+def check_google_tag_manager_script_is_not_loaded(context: Context) -> None:
+    expect(context.page.locator('script[src^="https://www.googletagmanager.com/gtm.js"]')).to_have_count(0)
 
 
 @when('the user turns "{cookie_state}" the "{cookie_type}" cookies')
