@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from datetime import timedelta
 from http import HTTPStatus
 from unittest.mock import patch
@@ -10,7 +11,7 @@ from django.utils import timezone
 from wagtail.models import ModelLogEntry
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
-from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.enums import PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
@@ -236,6 +237,17 @@ class PreviewBundlePageViewTestCase(WagtailTestUtils, TestCase):
         page = HomePage.objects.first()
         response = self.client.get(reverse("bundles:preview", args=[self.bundle.pk, page.pk]))
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_bundle_manager_can_preview_article_series(self):
+        series = ArticleSeriesPageFactory(parent=self.page_ready_for_publishing.get_parent().get_parent())
+        draft_edition = StatisticalArticlePageFactory(parent=series, title="Draft edition", live=False)
+        series.save_revision(user=self.publishing_officer)
+        BundlePageFactory(parent=self.bundle, page=series)
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(reverse("bundles:preview", args=[self.bundle.pk, series.pk]))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, draft_edition.title)
+        self.assertIn("statistical_article_page--previous-releases.html", response.template_name)
 
     def test_view_checks__user_can_preview(self):
         scenarios = [

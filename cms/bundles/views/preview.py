@@ -14,6 +14,7 @@ from django.views.generic import TemplateView
 from wagtail.log_actions import log
 from wagtail.models import Page
 
+from cms.articles.models import ArticleSeriesPage
 from cms.bundles.clients.api import BundleAPIClient
 from cms.bundles.models import Bundle
 from cms.bundles.permissions import user_can_manage_bundles, user_can_preview_bundle
@@ -145,7 +146,12 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
             data={"type": "page", "id": page_id, "title": getattr(page, "display_title", page.title)},
         )
 
-        response = TemplateResponse(request, page.get_template(request), context)
+        if isinstance(page, ArticleSeriesPage):
+            # series pages have no default page template, they have serve_preview instead
+            response = page.serve_preview(request, "default")
+            response.context_data.update(context)
+        else:
+            response = TemplateResponse(request, page.get_template(request), context)
 
         self._update_preview_cookie(request, response, bundle, page_id)
 
