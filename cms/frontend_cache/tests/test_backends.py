@@ -78,13 +78,13 @@ class CloudflareBackendTestCase(SimpleTestCase):
                 "BACKEND": "cms.frontend_cache.backends.CloudflareBackend",
                 "BEARER_TOKEN": "token",
                 "ZONEID": "test-zone",
-                "PURGE_BATCH_SIZE": 2,
+                "PURGE_BATCH_SIZE": 3,
             }
         }
 
         purge_urls_from_cache(urls, backend_settings=backend_settings)
 
-        self.assertEqual(sent_batches(), [urls[0:2], urls[2:4], urls[4:5]])
+        self.assertEqual(sent_batches(), [urls[0:3], urls[3:5]])
 
     @responses.activate
     def test_cloudflare_errors_are_still_logged_per_url(self):
