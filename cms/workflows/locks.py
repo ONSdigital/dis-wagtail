@@ -36,7 +36,7 @@ class PageWorkflowLock(WorkflowLock):
 
     def get_stage_label(self) -> str:
         """Returns the human-readable label for the current workflow stage."""
-        from .models import ReadyToPublishGroupTask
+        from .models import ReadyToPublishGroupTask  # pylint: disable=import-outside-toplevel
 
         if isinstance(self.task, ReadyToPublishGroupTask):
             return "Ready to be published"
