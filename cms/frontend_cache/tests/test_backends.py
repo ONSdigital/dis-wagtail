@@ -56,12 +56,18 @@ class CloudflareBackendTestCase(SimpleTestCase):
         self.assertEqual(sent_batches(), [urls[0:2], urls[2:4], urls[4:5]])
 
     def test_invalid_batch_size_from_env_raises(self):
-        for value in ("0", "-1"):
+        for value in ("0", "-1", "501"):
             with (
                 self.subTest(value=value),
                 self.assertRaisesMessage(ImproperlyConfigured, "CLOUDFLARE_URL_PURGE_BATCH_SIZE"),
             ):
                 self.reload_settings(value)
+
+    def test_batch_size_boundaries_from_env_are_accepted(self):
+        for value in ("1", "500"):
+            with self.subTest(value=value):
+                reloaded_base = self.reload_settings(value)
+                self.assertEqual(reloaded_base.WAGTAILFRONTENDCACHE["default"]["PURGE_BATCH_SIZE"], int(value))
 
     @responses.activate
     def test_purge_is_split_into_batches_of_configured_size(self):
