@@ -10,7 +10,7 @@ from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import F
-from django.http import HttpRequest
+from django.http import Http404, HttpRequest
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.functional import cached_property
@@ -887,9 +887,16 @@ class BundleDeleteView(DeleteView):
 
     def delete_action(self) -> None:
         with transaction.atomic():
-            bundle = self.object
-            log(instance=self.object, action="wagtail.delete")
-            self.object.delete()
+            # Re-read the row inside the transaction to ensure we have the
+            # latest state and lock it for update
+            try:
+                bundle = Bundle.objects.select_for_update(of=("self",)).get(pk=self.object.pk)
+            except Bundle.DoesNotExist as e:
+                raise Http404 from e
+            if not bundle.can_be_deleted:
+                raise PermissionDenied("The bundle cannot be deleted.")
+            log(instance=bundle, action="wagtail.delete")
+            bundle.delete()
             self.sync_bundle_deletion_with_bundle_api(bundle)
 
     def form_valid(self, form: BundleAdminForm) -> HttpResponseBase:

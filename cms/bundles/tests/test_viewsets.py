@@ -27,6 +27,7 @@ from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
+from cms.bundles.viewsets.bundle import BundleDeleteView
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
 from cms.core.tests import TransactionTestCase
@@ -1866,6 +1867,31 @@ class BundleDeleteTestCase(WagtailTestUtils, TestCase):
                 # the inspect view doesn't have the delete link
                 response = self.client.get(self.inspect_url)
                 self.assertNotContains(response, self.delete_url)
+
+    def _post_delete_with_concurrent_change(self, change):
+        """POSTs the delete after dispatch has passed, but before the delete action runs."""
+        original_form_valid = BundleDeleteView.form_valid
+
+        def form_valid_after_change(view, form):
+            change()
+            return original_form_valid(view, form)
+
+        with patch.object(BundleDeleteView, "form_valid", autospec=True, side_effect=form_valid_after_change):
+            return self.client.post(self.delete_url, data={"action-delete": "delete"})
+
+    def test_bundle_not_deleted_if_status_changed_concurrently(self):
+        response = self._post_delete_with_concurrent_change(
+            lambda: Bundle.objects.filter(pk=self.bundle.pk).update(status=BundleStatus.APPROVED)
+        )
+
+        self.assertRedirects(response, reverse("wagtailadmin_home"), fetch_redirect_response=False)
+        self.assertTrue(Bundle.objects.filter(pk=self.bundle.pk).exists())
+        self.assertFalse(ModelLogEntry.objects.filter(action="wagtail.delete").exists())
+
+    def test_delete_returns_404_if_bundle_deleted_concurrently(self):
+        response = self._post_delete_with_concurrent_change(lambda: Bundle.objects.filter(pk=self.bundle.pk).delete())
+
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
 
 class BundleChooserViewsetTestCase(BundleViewSetTestCaseMixin, TestCase):
