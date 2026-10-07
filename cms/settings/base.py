@@ -547,6 +547,11 @@ if "AWS_STORAGE_BUCKET_NAME" in env:
     # Limit how large a file can be spooled into memory before it's written to disk.
     AWS_S3_MAX_MEMORY_SIZE = 2 * 1024 * 1024  # 2MB
 
+    if "AWS_S3_ENDPOINT_URL" in env:
+        AWS_S3_ENDPOINT_URL = env["AWS_S3_ENDPOINT_URL"]
+    if "AWS_S3_ADDRESSING_STYLE" in env:
+        AWS_S3_ADDRESSING_STYLE = env["AWS_S3_ADDRESSING_STYLE"]
+
     # We generally use this setting in the production to put the S3 bucket
     # behind a CDN using a custom domain, e.g. media.llamasavers.com.
     # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#cloudfront

@@ -1,0 +1,133 @@
+---
+# Runs the CMS alongside the chart exporter service, a Floci S3 emulator and the
+# Floci web console, so chart images can be rendered and served end to end.
+#
+# It extends the services in docker-compose.yml, so it is used on its own:
+#
+#   docker compose -f docker-compose-chart-exporter.yml up -d --wait
+#
+# or add COMPOSE_FILE=docker-compose-chart-exporter.yml to .env so that plain
+# `docker compose` commands use it. Services added to docker-compose.yml need
+# adding here too.
+#
+# The exporter image is built from a local checkout of
+# ONSdigital/design-system-chart-exporter (whichever branch is checked out),
+# expected next to this repository. Set CHART_EXPORTER_DIR to use another path.
+# Rebuild it after changing branch or pulling: `docker compose ... build chart-exporter`.
+#
+# NOTE: setting AWS_STORAGE_BUCKET_NAME switches all CMS media to S3 (Floci),
+# because the CMS reads the PNGs the exporter writes from the shared bucket.
+# Images and documents uploaded without this file live on the local filesystem,
+# so they will not be found while it is in use (and vice versa).
+
+services:
+  web:
+    extends:
+      file: docker-compose.yml
+      service: web
+    environment:
+      CMS_CHART_EXPORTER_API_ENABLED: 'true'
+      CMS_CHART_EXPORTER_API_BASE_URL: http://chart-exporter:30300
+      # Share the bucket the exporter writes to. It is created by the exporter's
+      # Floci init hook, so the name must match scripts/floci-init/create-bucket.sh.
+      AWS_STORAGE_BUCKET_NAME: ons-charts
+      AWS_ENDPOINT_URL_S3: http://floci:4566
+      # Floci accepts any dummy credentials, never put real AWS credentials here
+      AWS_ACCESS_KEY_ID: test # pragma: allowlist secret
+      AWS_SECRET_ACCESS_KEY: test # pragma: allowlist secret
+      AWS_DEFAULT_REGION: us-east-1
+      # Public files are linked to directly, so their URLs must work from the browser
+      AWS_S3_CUSTOM_DOMAIN: localhost:${FLOCI_PORT:-4566}/ons-charts
+      AWS_S3_URL_PROTOCOL: 'http:'
+    depends_on:
+      floci:
+        condition: service_healthy
+      chart-exporter:
+        condition: service_started
+
+  db:
+    extends:
+      file: docker-compose.yml
+      service: db
+
+  redis:
+    extends:
+      file: docker-compose.yml
+      service: redis
+
+  broker:
+    extends:
+      file: docker-compose.yml
+      service: broker
+
+  mailpit:
+    extends:
+      file: docker-compose.yml
+      service: mailpit
+
+  chart-exporter:
+    build:
+      context: ${CHART_EXPORTER_DIR:-../design-system-chart-exporter}
+      # The deployable image, which vendors the Design System templates at build time
+      target: web
+    ports:
+      - ${CHART_EXPORTER_PORT:-30300}:30300
+    # Chromium crashes cryptically on the 64MB default shared memory size
+    shm_size: 2gb
+    environment:
+      CHART_EXPORTER_S3_BUCKET: ons-charts
+      CHART_EXPORTER_S3_ENDPOINT_URL: http://floci:4566
+      AWS_ACCESS_KEY_ID: test # pragma: allowlist secret
+      AWS_SECRET_ACCESS_KEY: test # pragma: allowlist secret
+      AWS_DEFAULT_REGION: us-east-1
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:30300/health']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    depends_on:
+      floci:
+        condition: service_healthy
+
+  floci:
+    # The -compat variant ships the aws CLI, needed by the bucket init hook
+    image: floci/floci:latest-compat
+    ports:
+      - ${FLOCI_PORT:-4566}:4566
+    environment:
+      # URLs returned by Floci must use the compose hostname, not localhost
+      FLOCI_HOSTNAME: floci
+      # Keep objects across restarts, as the CMS database keeps referencing them
+      FLOCI_STORAGE_MODE: persistent
+      FLOCI_STORAGE_PERSISTENT_PATH: /app/data
+      # Unlike S3, private objects can still be read anonymously. Don't enable
+      # FLOCI_SERVICES_S3_ENFORCE_AUTH to change that: it rejects the account-ID
+      # access keys floci-ui signs with, so the console can no longer list objects.
+    volumes:
+      - floci_data:/app/data
+      # Floci runs these LocalStack-style init hooks once the emulator is ready
+      - ${CHART_EXPORTER_DIR:-../design-system-chart-exporter}/scripts/floci-init:/etc/localstack/init/ready.d:ro
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:4566/_localstack/health']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  floci-ui:
+    # Web console for browsing the emulated buckets at http://localhost:4500
+    image: floci/floci-ui:latest
+    ports:
+      - ${FLOCI_UI_PORT:-4500}:4500
+    environment:
+      FLOCI_ENDPOINT: http://floci:4566
+      AWS_ACCESS_KEY_ID: test # pragma: allowlist secret
+      AWS_SECRET_ACCESS_KEY: test # pragma: allowlist secret
+      AWS_REGION: us-east-1
+    depends_on:
+      floci:
+        condition: service_healthy
+
+volumes:
+  node_modules:
+  pgdata:
+  floci_data:
