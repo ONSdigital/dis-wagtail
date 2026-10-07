@@ -149,7 +149,8 @@ class PreviewBundlePageView(BundleContentsMixin, TemplateView):
         if isinstance(page, ArticleSeriesPage):
             # series pages have no default page template, they have serve_preview instead
             response = page.serve_preview(request, "default")
-            response.context_data.update(context)
+            if response.context_data:
+                response.context_data.update(context)
         else:
             response = TemplateResponse(request, page.get_template(request), context)
 

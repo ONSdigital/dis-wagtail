@@ -3,6 +3,7 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import Permission
+from django.http import HttpResponse
 from django.templatetags.static import static
 from django.urls import include, reverse
 from django.utils import timezone
@@ -22,7 +23,7 @@ from .utils import is_page_in_workflow, is_page_ready_to_publish
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
-    from django.http import HttpRequest, HttpResponse
+    from django.http import HttpRequest
     from django.urls import URLPattern
     from django.urls.resolvers import URLResolver
     from wagtail.admin.action_menu import ActionMenuItem
@@ -48,7 +49,7 @@ def _perform_workflow_action_on_locked_page(request: HttpRequest, page: Page, ac
     # run the after_edit_page hooks
     for fn in hooks.get_hooks("after_edit_page"):
         result = fn(request, page)
-        if hasattr(result, "status_code"):
+        if isinstance(result, HttpResponse):
             return result
 
     return None
