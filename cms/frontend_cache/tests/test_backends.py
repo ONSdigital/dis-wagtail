@@ -39,7 +39,7 @@ class CloudflareBackendTestCase(SimpleTestCase):
             {
                 "FRONTEND_CACHE_CLOUDFLARE_BEARER_TOKEN": "token",
                 "FRONTEND_CACHE_CLOUDFLARE_ZONEID": "test-zone",
-                "CLOUDFLARE_URL_PURGE_BATCH_SIZE": batch_size,
+                "FRONTEND_CACHE_CLOUDFLARE_URL_PURGE_BATCH_SIZE": batch_size,
             },
             clear=False,
         ):
@@ -59,7 +59,7 @@ class CloudflareBackendTestCase(SimpleTestCase):
         for value in ("0", "-1", "501"):
             with (
                 self.subTest(value=value),
-                self.assertRaisesMessage(ImproperlyConfigured, "CLOUDFLARE_URL_PURGE_BATCH_SIZE"),
+                self.assertRaisesMessage(ImproperlyConfigured, "FRONTEND_CACHE_CLOUDFLARE_URL_PURGE_BATCH_SIZE"),
             ):
                 self.reload_settings(value)
 

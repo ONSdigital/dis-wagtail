@@ -29,4 +29,4 @@ purged from Cloudflare as a group using cache-tag purging; purge invocation itse
 
 ## Front-end cache purging
 
-When pages are published, URLs are purged from Cloudflare using `cms.frontend_cache.backends.CloudflareBackend`, a subclass of Wagtail's backend. Wagtail sends 30 URLs per purge request, which is lower than the limit on our Cloudflare Enterprise plan. The `CLOUDFLARE_URL_PURGE_BATCH_SIZE` env var sets how many URLs go in each request (default `30`; set to `500` in deployed environments). The subclass can be removed once [Wagtail supports configuring this upstream](https://github.com/wagtail/wagtail/issues/14352).
+When pages are published, URLs are purged from Cloudflare using `cms.frontend_cache.backends.CloudflareBackend`, a subclass of Wagtail's backend. Wagtail sends 30 URLs per purge request, which is lower than the limit on our Cloudflare Enterprise plan. The `FRONTEND_CACHE_CLOUDFLARE_URL_PURGE_BATCH_SIZE` env var sets how many URLs go in each request (default `30`; set to `500` in deployed environments). The subclass can be removed once [Wagtail supports configuring this upstream](https://github.com/wagtail/wagtail/issues/14352).
