@@ -54,6 +54,13 @@ def disallow_usage_cookies(context: Context) -> None:
     )
 
 
+@given("another cookie contains usage consent")
+def add_unrelated_cookie_with_usage_consent(context: Context) -> None:
+    context.page.context.add_cookies(
+        [{"name": "legacy_ons_cookie_policy", "value": "{'usage':true}", "url": context.base_url}]
+    )
+
+
 @given("the browser has no usage cookie preference")
 def missing_usage_cookie_preference(context: Context) -> None:
     context.page.context.add_cookies(
