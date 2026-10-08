@@ -8,23 +8,23 @@ Feature: An ONS website user can accept, reject, and manage cookies using the co
         And the Google Tag Manager script is not loaded
 
     Scenario: Google Tag Manager does not load when consent is not in ons_cookie_policy but appears in another cookie
-        Given the browser has not allowed usage cookies
-        And another cookie contains usage consent
+        Given another cookie contains usage consent
         When An external user navigates to the homepage
-        Then the Google Tag Manager script is not loaded
+        Then all the optional cookies are disabled in the ons_cookie_policy cookie in the browser
+        And the Google Tag Manager script is not loaded
 
     Scenario: Google Tag Manager loads when usage cookies are allowed
-        Given the browser has allowed usage cookies
+        Given the user has allowed usage cookies
         When An external user navigates to the homepage
         Then the Google Tag Manager script is loaded
 
     Scenario: Google Tag Manager does not load when usage cookies are not allowed
-        Given the browser has not allowed usage cookies
+        Given the user has not allowed usage cookies
         When An external user navigates to the homepage
         Then the Google Tag Manager script is not loaded
 
     Scenario: Google Tag Manager does not load when usage cookie preference is missing
-        Given the browser has no usage cookie preference
+        Given the user has no usage cookie preference
         When An external user navigates to the homepage
         Then the Google Tag Manager script is not loaded    
     
