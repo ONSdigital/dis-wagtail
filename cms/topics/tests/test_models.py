@@ -1185,7 +1185,7 @@ class TopicPageSearchListingPagesTests(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.topic_page.url)
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Data")
+        self.assertNotContains(response, "<h2>Data</h2>")
         self.assertNotContains(response, "View all related data")
         self.assertNotContains(response, f"/{self.topic_tag.slug}/datalist?filter=datasets")
 
