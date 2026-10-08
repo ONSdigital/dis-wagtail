@@ -61,7 +61,7 @@ Feature: Page-level workflows
         | Publishing Admin   |
 
 
-    Scenario: When page is Approved (Ready to publish), then a Publishing admin can "unlock" it
+    Scenario: When page is Approved (Ready to publish), then a Publishing admin can unlock it
         Given the statistical article page is "ready to publish"
         When a Publishing Admin logs into the admin site
         And  the user edits the statistical article page
@@ -81,7 +81,7 @@ Feature: Page-level workflows
         And  the user clicks the "Schedule to publish" button
         And  the "has been scheduled for publishing." text is displayed
 
-    Scenario: When page is Approved (Ready to publish) and in a work in progress bundle, then a Publishing admin can "unlock" it
+    Scenario: When page is Approved (Ready to publish) and in a work in progress bundle, then a Publishing admin can unlock it
         Given the statistical article page is "ready to publish"
         When a Publishing Admin logs into the admin site
         And  the statistical article page is in a "In Preview" bundle
@@ -93,7 +93,7 @@ Feature: Page-level workflows
         And  the "Unlock editing" link does not exist
 
 
-    Scenario: When page is Approved (Ready to publish) and in an Approved bundle, then a Publishing admin cannot "unlock" it
+    Scenario: When page is Approved (Ready to publish) and in an Approved bundle, then a Publishing admin cannot unlock it
         Given the statistical article page is "Ready to publish"
         When a Publishing Admin logs into the admin site
         And  the statistical article page is in a "Ready to publish" bundle
