@@ -125,8 +125,10 @@ def render_chart_blocks(blocks: Iterable[StreamChild]) -> list[ChartRenderResult
         outcome = next(fetched_iter) if isinstance(item, ChartPending) else item
         if isinstance(outcome, ChartRenderResult):
             # Nothing to do, we already have a result (either it was skipped or an error occurred)
+            logger.debug("Skipping block %s, no rendering needed or error occurred", block.id)
             results.append(outcome)
             continue
+        logger.debug("Saving chart image instance for block %s", block.id)
         image = RenderedChartImage.objects.create_from_export_response(
             outcome.response, config_hash=outcome.config_hash
         )
