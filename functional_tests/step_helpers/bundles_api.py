@@ -8,6 +8,11 @@ import responses
 from django.conf import settings
 
 
+def _bundle_state_url() -> re.Pattern[str]:
+    """The URL pattern for the Bundle API state update endpoint."""
+    return re.compile(rf"{re.escape(settings.DIS_DATASETS_BUNDLE_API_BASE_URL)}/bundles/[^/]+/state$")
+
+
 def _prepare_bundle_contents_response(contents: list[dict[str, Any]]) -> dict[str, Any]:
     """Prepare a Bundle API contents response format.
 
@@ -156,7 +161,7 @@ def mock_bundle_api(
         # Mock PUT /bundles/{bundle_id}/state - update bundle state
         # Returns the updated bundle with the new state
         mock_responses.put(
-            re.compile(rf"{escaped_base_url}/bundles/[^/]+/state$"),
+            _bundle_state_url(),
             json=bundle_response,
             status=HTTPStatus.OK,
             headers={"ETag": bundle_etag},
@@ -184,3 +189,16 @@ def mock_bundle_api(
         )
 
         yield mock_responses
+
+
+def fail_bundle_state_update(mock_responses: responses.RequestsMock) -> None:
+    """Make the Bundle API reject bundle state updates with a server error.
+
+    Simulate an error state when syncing bundle state to test bundle form submission errors.
+    """
+    mock_responses.replace(
+        responses.PUT,
+        _bundle_state_url(),
+        json={"errors": [{"code": "Internal Server Error", "description": "Simulated Bundle API failure"}]},
+        status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    )
