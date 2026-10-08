@@ -652,7 +652,7 @@ class StatisticalArticlePage(  # type: ignore[django-manager-missing]
             block_value = chart_block.value
 
             if isinstance(block_instance, BaseChartBlock):
-                data["chart"] = block_instance.get_component_config(block_value)
+                data["chart"] = block_instance.get_render_config(block_value)
                 data["chart"]["id"] = chart_block.id
                 # Featured article should not display downloads
                 data["chart"]["download"] = None

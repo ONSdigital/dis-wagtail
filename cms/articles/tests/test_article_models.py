@@ -31,7 +31,7 @@ from cms.core.tests.utils import extract_datalayer_pushed_values
 from cms.datasets.blocks import DatasetStoryBlock
 from cms.datasets.models import Dataset
 from cms.datasets.tests.factories import DatasetFactory
-from cms.datavis.tests.factories import TableDataFactory, make_table_block_value
+from cms.datavis.tests.factories import RenderedChartImageFactory, TableDataFactory, make_table_block_value
 from cms.topics.models import TopicPage
 from cms.users.tests.factories import UserFactory
 
@@ -1320,6 +1320,32 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(data["chart"]["headingLevel"], 3)
 
         self.assertNotIn("image", data)
+
+    def test_as_featured_article_child_macro_data_with_chart_includes_fallback_image(self):
+        """Test that the rendered chart image is used as the chart fallback image."""
+        self.page.featured_chart = [
+            {
+                "type": "line_chart",
+                "value": {
+                    "title": "Test Chart",
+                    "table": TableDataFactory(table_data=[["", "Series 0"], ["2004", "100"], ["2005", "120"]]),
+                    "theme": "primary",
+                    "show_legend": True,
+                    "x_axis": {"title": ""},
+                    "y_axis": {"title": ""},
+                },
+            }
+        ]
+        self.page.save()
+
+        data = self.page.as_featured_article_child_macro_data()
+        self.assertNotIn("fallbackImageUrl", data["chart"])
+
+        image = RenderedChartImageFactory()
+        self.page.featured_chart[0].value["rendered_chart_image"] = image
+
+        data = self.page.as_featured_article_child_macro_data()
+        self.assertEqual(data["chart"]["fallbackImageUrl"], image.url)
 
     def test_as_featured_article_child_macro_data_with_iframe(self):
         """Test that an iframe is used when configured as the featured chart."""
