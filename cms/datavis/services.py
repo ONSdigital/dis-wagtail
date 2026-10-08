@@ -2,7 +2,7 @@ import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 
@@ -36,6 +36,15 @@ class ChartRenderResult:
 
 
 @dataclass(frozen=True)
+class ChartPending:
+    """A chart block whose config is built and which still needs rendering by the exporter."""
+
+    block_id: str
+    config: dict[str, Any]
+    config_hash: str
+
+
+@dataclass(frozen=True)
 class ChartFetched:
     """A chart image is ready to be created from this exporter response."""
 
@@ -54,13 +63,8 @@ def iter_chart_blocks(value: StreamValue | None) -> Iterator[StreamChild]:
             yield block
 
 
-def _fetch_chart_response(block: StreamChild, client: ChartExporterClient) -> ChartFetched | ChartRenderResult:
-    """Do the (slow, network-bound) part of rendering a chart block.
-
-    Safe to run off the main thread: it only calls out to the exporter and never touches the
-    database. Returns a final ``ChartRenderResult`` when there's nothing left to do, or a
-    ``ChartFetched`` when a chart image still needs to be created from the response.
-    """
+def _prepare_chart_block(block: StreamChild) -> ChartPending | ChartRenderResult:
+    """Build the export config for a chart block and check whether it needs re-rendering."""
     config = block.block.get_export_config(block.value)
     config_hash = hash_chart_config(config)
 
@@ -68,20 +72,31 @@ def _fetch_chart_response(block: StreamChild, client: ChartExporterClient) -> Ch
     if isinstance(existing, RenderedChartImage) and existing.config_hash == config_hash:
         return ChartRenderResult(block_id=block.id, changed=False)
 
+    return ChartPending(block_id=block.id, config=config, config_hash=config_hash)
+
+
+def _fetch_chart_response(pending: ChartPending, client: ChartExporterClient) -> ChartFetched | ChartRenderResult:
+    """Do the (slow, network-bound) part of rendering a chart block.
+
+    Safe to run off the main thread: it only calls out to the exporter and never touches the
+    database. Returns a final ``ChartRenderResult`` when there's nothing left to do, or a
+    ``ChartFetched`` when a chart image still needs to be created from the response.
+    """
+    block_id = pending.block_id
     try:
-        response = client.create_chart(config)
+        response = client.create_chart(pending.config)
     except ChartExporterMalformedRequest:
-        return ChartRenderResult(block_id=block.id, changed=False, error=GENERIC_RENDER_ERROR)
+        return ChartRenderResult(block_id=block_id, changed=False, error=GENERIC_RENDER_ERROR)
     except ChartExporterUnavailable:
-        return ChartRenderResult(block_id=block.id, changed=False, error=UNAVAILABLE_RENDER_ERROR)
+        return ChartRenderResult(block_id=block_id, changed=False, error=UNAVAILABLE_RENDER_ERROR)
     except ChartExporterError:
-        return ChartRenderResult(block_id=block.id, changed=False, error=GENERIC_RENDER_ERROR)
+        return ChartRenderResult(block_id=block_id, changed=False, error=GENERIC_RENDER_ERROR)
 
     if response is None:
         # Integration disabled: nothing to attach.
-        return ChartRenderResult(block_id=block.id, changed=False)
+        return ChartRenderResult(block_id=block_id, changed=False)
 
-    return ChartFetched(response=response, config_hash=config_hash)
+    return ChartFetched(response=response, config_hash=pending.config_hash)
 
 
 def render_chart_blocks(blocks: Iterable[StreamChild]) -> list[ChartRenderResult]:
@@ -98,11 +113,16 @@ def render_chart_blocks(blocks: Iterable[StreamChild]) -> list[ChartRenderResult
     client = ChartExporterClient()
     start = time.monotonic()
 
+    # Prepare the configs before making the requests in the ThreadPoolExecutor
+    prepared = [_prepare_chart_block(block) for block in blocks]
+    pending = [item for item in prepared if isinstance(item, ChartPending)]
+
     with ThreadPoolExecutor(max_workers=settings.CMS_CHART_EXPORTER_API_MAX_CONCURRENT_RENDERS) as executor:
-        fetched = list(executor.map(lambda block: _fetch_chart_response(block, client), blocks))
+        fetched_iter = iter(executor.map(lambda item: _fetch_chart_response(item, client), pending))
 
     results = []
-    for block, outcome in zip(blocks, fetched, strict=True):
+    for block, item in zip(blocks, prepared, strict=True):
+        outcome = next(fetched_iter) if isinstance(item, ChartPending) else item
         if isinstance(outcome, ChartRenderResult):
             # Nothing to do, we already have a result (either it was skipped or an error occurred)
             results.append(outcome)
