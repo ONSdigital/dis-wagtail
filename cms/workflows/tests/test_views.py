@@ -1,22 +1,16 @@
-from http import HTTPStatus
-
 from django.test import TestCase
 from django.urls import reverse
-from wagtail.models import TaskState
+from wagtail.models import TaskState, WorkflowState
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
-from cms.bundles.enums import BundleStatus
-from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.standard_pages.tests.factories import InformationPageFactory
-from cms.users.tests.factories import UserFactory
-from cms.workflows.models import GroupReviewTask
-from cms.workflows.tests.utils import mark_page_as_ready_for_review, mark_page_as_ready_to_publish
+from cms.workflows.models import ReadyToPublishGroupTask
+from cms.workflows.tests.utils import mark_page_as_ready_to_publish
 
 
-class UnlockWorkflowViewTestCase(WagtailTestUtils, TestCase):
+class LegacyUnlockWorkflowViewTestCase(WagtailTestUtils, TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.bundle = BundleFactory()
         cls.page = InformationPageFactory()
 
         cls.unlock_url = reverse("workflows:unlock", args=(cls.page.pk,))
@@ -25,81 +19,66 @@ class UnlockWorkflowViewTestCase(WagtailTestUtils, TestCase):
     def setUp(self):
         self.client.force_login(self.superuser)
 
-    def test_access__unhappy_paths__bad_page_id(self):
-        response = self.client.get(reverse("workflows:unlock", args=(99999,)))
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+    def test_legacy_unlock_url_with_bad_page_id_redirects(self):
+        page_id = 99999
+        response = self.client.get(reverse("workflows:unlock", args=(page_id,)))
 
-    def test_access__unhappy_paths__page_not_in_workflow(self):
-        response = self.client.get(self.unlock_url, follow=True)
-        self.assertContains(response, "Sorry, you do not have permission to access this area.")
-
-    def test_access__unhappy_paths__page_not_ready_to_be_published(self):
-        mark_page_as_ready_for_review(self.page)
-        response = self.client.get(self.unlock_url, follow=True)
-        self.assertContains(response, "Sorry, you do not have permission to access this area.")
-
-    def test_access__unhappy_paths__user_not_in_necessary_group(self):
-        generic_user = UserFactory(access_admin=True)
-
-        mark_page_as_ready_for_review(self.page)
-
-        self.client.force_login(generic_user)
-        response = self.client.get(self.unlock_url, follow=True)
-        self.assertContains(response, "Sorry, you do not have permission to access this area.")
-
-    def test_access__unhappy_paths__page_in_bundle_ready_to_be_published(self):
-        mark_page_as_ready_to_publish(self.page)
-        BundlePageFactory(parent=self.bundle, page=self.page)
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
-
-        response = self.client.get(self.unlock_url, follow=True)
-        self.assertContains(response, "Sorry, you do not have permission to access this area.")
-
-    def _assert_happy_path(self):
-        response = self.client.get(self.unlock_url)
-        self.assertTemplateUsed(response, "workflows/confirm_unlock.html")
-        self.assertContains(
+        self.assertRedirects(
             response,
-            "This page is currently ready to be published. Are you sure you want to unlock editing for this page?",
+            reverse("wagtailadmin_pages:edit", args=(page_id,)),
+            fetch_redirect_response=False,
         )
 
-    def test_access__happy_path__page_ready_to_be_published__no_bundle(self):
-        mark_page_as_ready_to_publish(self.page)
-
-        self._assert_happy_path()
-
-    def test_access__happy_path__page_ready_to_be_published__in_a_bundle(self):
-        mark_page_as_ready_to_publish(self.page)
-        BundlePageFactory(parent=self.bundle, page=self.page)
-
-        self._assert_happy_path()
-
-        self.bundle.status = BundleStatus.IN_REVIEW
-        self.bundle.save(update_fields=["status"])
-
-        self._assert_happy_path()
-
-    def test_page_title(self):
-        mark_page_as_ready_to_publish(self.page)
+    def test_legacy_unlock_get_redirects_without_changing_workflow(self):
+        workflow_state = mark_page_as_ready_to_publish(self.page)
+        task_id = workflow_state.current_task_state_id
 
         response = self.client.get(self.unlock_url)
-        expected_title = f"Unlock: {self.page.get_admin_display_title()}"
-        self.assertContains(response, f"<title>{expected_title} - Wagtail</title>", html=True)
 
-    def test_cancel_link_points_to_edit_page(self):
-        mark_page_as_ready_to_publish(self.page)
+        self.assertRedirects(
+            response,
+            reverse("wagtailadmin_pages:edit", args=(self.page.pk,)),
+            fetch_redirect_response=False,
+        )
+        workflow_state.refresh_from_db()
+        self.assertEqual(workflow_state.current_task_state_id, task_id)
+        self.assertEqual(workflow_state.status, WorkflowState.STATUS_IN_PROGRESS)
 
-        response = self.client.get(self.unlock_url)
-        edit_url = reverse("wagtailadmin_pages:edit", args=(self.page.pk,))
-        self.assertContains(response, f'<a href="{edit_url}" class="button button-secondary">No, don’t unlock</a>')
+    def test_legacy_unlock_post_does_not_change_workflow(self):
+        # legacy url now just redirects and doesn't affect the workflow state
+        workflow_state = mark_page_as_ready_to_publish(self.page)
+        task_id = workflow_state.current_task_state_id
+        self.assertIsInstance(self.page.current_workflow_task, ReadyToPublishGroupTask)
 
-    def test_post(self):
-        mark_page_as_ready_to_publish(self.page)
-
-        task_states_count_before = TaskState.objects.count()
         response = self.client.post(self.unlock_url)
-        self.assertIsInstance(self.page.current_workflow_task, GroupReviewTask)
-        self.assertRedirects(response, reverse("wagtailadmin_pages:edit", args=(self.page.pk,)))
 
-        self.assertEqual(TaskState.objects.count(), task_states_count_before + 1)
+        self.assertRedirects(
+            response,
+            reverse("wagtailadmin_pages:edit", args=(self.page.pk,)),
+            fetch_redirect_response=False,
+        )
+        workflow_state.refresh_from_db()
+        self.page.refresh_from_db()
+        self.assertIsInstance(self.page.current_workflow_task, ReadyToPublishGroupTask)
+        self.assertEqual(workflow_state.status, workflow_state.STATUS_IN_PROGRESS)
+        self.assertEqual(workflow_state.current_task_state_id, task_id)
+
+    def test_page_editor_reject_returns_ready_page_to_editable_draft(self):
+        workflow_state = mark_page_as_ready_to_publish(self.page)
+        ready_task_state = workflow_state.current_task_state
+
+        response = self.client.post(
+            reverse("wagtailadmin_pages:edit", args=(self.page.pk,)),
+            {"action-workflow-action": "true", "workflow-action-name": "reject"},
+        )
+
+        self.assertRedirects(
+            response, reverse("wagtailadmin_pages:edit", args=(self.page.pk,)), fetch_redirect_response=False
+        )
+        ready_task_state.refresh_from_db()
+        workflow_state.refresh_from_db()
+        self.page.refresh_from_db()
+        self.assertEqual(ready_task_state.status, TaskState.STATUS_CANCELLED)
+        self.assertEqual(workflow_state.status, WorkflowState.STATUS_NEEDS_CHANGES)
+        self.assertIsNone(self.page.current_workflow_task)
+        self.assertIsNone(self.page.get_lock())

@@ -276,7 +276,7 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
         return [
             page
             for page in self.get_bundled_pages(specific=True).not_type(PREVIEWER_EXCLUDED_PAGE_TYPES)
-            if is_page_ready_to_preview(page)
+            if is_page_ready_to_preview(page) or self.status == BundleStatus.IN_REVIEW
         ]
 
     def get_teams_display(self) -> str:

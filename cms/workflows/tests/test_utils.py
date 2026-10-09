@@ -16,8 +16,8 @@ class UtilsTestCase(TestCase):
         self.page = InformationPageFactory(title="Test Information Page")
 
     def test_workflow_setup(self):
-        """Ensure the "Release review" workflow exists with the expected tasks."""
-        workflow = Workflow.objects.get(name="Release review")
+        """Ensure the "Review" workflow exists with the expected tasks."""
+        workflow = Workflow.objects.get(name="Review")
 
         # Get the tasks from the workflow
         group_review_task = GroupReviewTask.objects.first()

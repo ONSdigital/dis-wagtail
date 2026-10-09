@@ -194,7 +194,7 @@ class TestWorkflowApprovalNotification(TransactionTestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(self.editor.email, mail.outbox[0].to)
-        self.assertIn('has been approved in "Release review"', mail.outbox[0].subject)
+        self.assertIn('has been approved in "Review"', mail.outbox[0].subject)
 
     def test_approval_email_is_not_sent_when_the_workflow_is_approved_by_publishing_a_bundle(self):
         page = StatisticalArticlePageFactory()

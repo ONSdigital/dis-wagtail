@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from datetime import timedelta
 from http import HTTPStatus
 from unittest.mock import patch
@@ -10,7 +11,7 @@ from django.utils import timezone
 from wagtail.models import ModelLogEntry
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
 
-from cms.articles.tests.factories import StatisticalArticlePageFactory
+from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.admin_forms import AddToBundleForm
 from cms.bundles.enums import PREVIEWABLE_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
@@ -237,6 +238,17 @@ class PreviewBundlePageViewTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(reverse("bundles:preview", args=[self.bundle.pk, page.pk]))
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
+    def test_bundle_manager_can_preview_article_series(self):
+        series = ArticleSeriesPageFactory(parent=self.page_ready_for_publishing.get_parent().get_parent())
+        draft_edition = StatisticalArticlePageFactory(parent=series, title="Draft edition", live=False)
+        series.save_revision(user=self.publishing_officer)
+        BundlePageFactory(parent=self.bundle, page=series)
+        self.client.force_login(self.publishing_officer)
+        response = self.client.get(reverse("bundles:preview", args=[self.bundle.pk, series.pk]))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, draft_edition.title)
+        self.assertIn("statistical_article_page--previous-releases.html", response.template_name)
+
     def test_view_checks__user_can_preview(self):
         scenarios = [
             (self.superuser, HTTPStatus.OK, None),
@@ -273,7 +285,9 @@ class PreviewBundlePageViewTestCase(WagtailTestUtils, TestCase):
 
         self.assertContains(response, self.url_preview_ready)
         self.assertContains(response, self.page_ready_for_publishing.display_title)
-        self.assertNotContains(response, self.url_not_preview_ready)
+        # a bundled draft page is previewable to this team's previewer
+        self.assertContains(response, self.url_not_preview_ready)
+        self.assertContains(response, self.page_not_ready_for_publishing.display_title)
 
     def test_view__previewer_can_preview_only_when_bundle_in_review_or_ready_to_be_published(self):
         self.client.force_login(self.previewer)
@@ -293,13 +307,14 @@ class PreviewBundlePageViewTestCase(WagtailTestUtils, TestCase):
                 self.assertEqual(response.status_code, HTTPStatus.OK)
                 self.assertContains(response, self.page_ready_for_publishing.title)
 
-    def test_view_checks__page_ready_to_be_published(self):
-        # previewers can only access pages that are ready to publish
+    def test_view__previewer_can_open_draft_page_in_preview_bundle(self):
+        # a draft page is previewable when included in this bundle
         self.client.force_login(self.previewer)
         self.previewer.teams.add(self.preview_team)
 
         response = self.client.get(self.url_not_preview_ready)
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.page_not_ready_for_publishing.title)
 
         # bundle managers can use the preview even if the page is not ready
         self.client.force_login(self.publishing_officer)

@@ -200,14 +200,15 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         # Log in as publishing_admin
         self.client.force_login(self.publishing_admin)
 
-        mark_page_as_ready_for_review(self.page, self.publishing_admin)
+        workflow_state = mark_page_as_ready_for_review(self.page, self.publishing_admin)
+        review_task_state = workflow_state.current_task_state
         latest_revision = self.page.latest_revision
 
         data = self.get_simple_post_data(self.page)
         response = self.client.post(self.edit_url, data, follow=True)
 
         self.assertContains(
-            response, "You cannot review your own changes. Please ask another Publishing team member to do so."
+            response, "You cannot approve your own changes. Please ask another Publishing team member to do so."
         )
         self.page.refresh_from_db()
         self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)
@@ -217,31 +218,37 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
 
         response = self.client.post(self.edit_url, data, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "You cannot review your own changes")
+        self.assertNotContains(response, "You cannot approve your own changes")
 
         self.assertTrue(is_page_ready_to_publish(self.page))
         self.page.refresh_from_db()
-        self.assertEqual(self.page.latest_revision.user_id, self.publishing_officer.id)
-        self.assertNotEqual(self.page.latest_revision.pk, latest_revision.pk)
+        review_task_state.refresh_from_db()
+        self.assertEqual(review_task_state.status, review_task_state.STATUS_APPROVED)
+        self.assertEqual(review_task_state.finished_by_id, self.publishing_officer.id)
+        self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)
+        self.assertEqual(self.page.latest_revision.user_id, self.publishing_admin.id)
 
-    def test_before_edit_page__prevents_self_reject(self):
-        """Test that the last editor cannot request changes on their own submission."""
+    def test_before_edit_page__allows_self_reject(self):
+        """The submitter can unlock their own page without approving or changing its content."""
         self.client.force_login(self.publishing_admin)
 
         workflow_state = mark_page_as_ready_for_review(self.page, self.publishing_admin)
+        review_task_state = workflow_state.current_task_state
         latest_revision = self.page.latest_revision
 
         data = self.get_simple_post_data(self.page)
         data["workflow-action-name"] = "reject"
         response = self.client.post(self.edit_url, data, follow=True)
 
-        self.assertContains(
-            response, "You cannot review your own changes. Please ask another Publishing team member to do so."
-        )
+        self.assertContains(response, "editing has been unlocked.")
         self.page.refresh_from_db()
         self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)
         workflow_state.refresh_from_db()
-        self.assertEqual(workflow_state.status, workflow_state.STATUS_IN_PROGRESS)
+        review_task_state.refresh_from_db()
+        self.assertEqual(review_task_state.status, review_task_state.STATUS_REJECTED)
+        self.assertEqual(workflow_state.status, workflow_state.STATUS_NEEDS_CHANGES)
+        self.assertIsNone(self.page.current_workflow_task)
+        self.assertIsNone(self.page.get_lock())
 
     def test_before_edit_page__prevents_schedule_mechanism_when_in_bundle(self):
         """Test that users cannot set individual page publishing schedule while in a bundle."""
@@ -407,7 +414,7 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         self.assertEqual(
             self.page.current_workflow_task.get_actions(self.page, self.publishing_admin),
             [
-                ("reject", "Request changes", True),
+                ("reject", "Unlock editing", True),
                 ("approve", "Approve", False),
                 ("approve", "Approve with comment", True),
             ],
@@ -415,7 +422,7 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
 
         # check the dashboard
         response = self.client.get(self.dashboard_url)
-        self.assertContains(response, "Request changes")
+        self.assertContains(response, "Unlock editing")
         self.assertContains(response, "Approve")
         self.assertContains(response, "Approve with comment")
 
@@ -423,27 +430,29 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
 
-        self.assertEqual(len(menu_items), 5)
+        self.assertEqual(len(menu_items), 4)
 
-        self.assertItemWithPropertyIn("name", "action-unpublish", menu_items)
         self.assertItemWithPropertyIn("name", "action-cancel-workflow", menu_items)
         self.assertItemWithPropertyIn("name", "reject", menu_items)
         self.assertItemWithPropertyIn("name", "approve", menu_items)
+        self.assertItemWithPropertyNotIn("name", "action-unpublish", menu_items)
         self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
 
     def test_group_review_task_actions__for_self_approver(self):
         self.client.force_login(self.publishing_officer)
         mark_page_as_ready_for_review(self.page, self.publishing_officer)
 
-        # self-approver should see no task actions at all
+        # self-approver should see only reject action
         self.assertEqual(
             self.page.current_workflow_task.get_actions(self.page, self.publishing_officer),
-            [],
+            [
+                ("reject", "Unlock editing", True),
+            ],
         )
 
         # check the dashboard
         response = self.client.get(self.dashboard_url)
-        self.assertNotContains(response, "Request changes")
+        self.assertContains(response, "Unlock editing")
         self.assertNotContains(response, "Approve")
         self.assertNotContains(response, "Approve with comment")
 
@@ -451,10 +460,10 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
 
-        self.assertEqual(len(menu_items), 1)
+        self.assertEqual(len(menu_items), 2)
 
         self.assertItemWithPropertyIn("name", "action-cancel-workflow", menu_items)
-        self.assertItemWithPropertyNotIn("name", "reject", menu_items)
+        self.assertItemWithPropertyIn("name", "reject", menu_items)
         self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
         self.assertItemWithPropertyNotIn("name", "approve", menu_items)
 
@@ -476,7 +485,7 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
 
         self.assertEqual(
             non_bundle_page.current_workflow_task.get_actions(non_bundle_page, self.publishing_admin),
-            [("unlock", "Unlock editing", False), ("locked-approve", "Publish", False)],
+            [("reject", "Unlock editing", True), ("locked-approve", "Publish", False)],
         )
 
         for user in [self.publishing_officer, self.publishing_admin]:
@@ -492,7 +501,7 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         mark_page_as_ready_to_publish(self.page)
         self.assertEqual(
             self.page.current_workflow_task.get_actions(self.page, self.publishing_admin),
-            [("unlock", "Unlock editing", False)],
+            [("reject", "Unlock editing", True)],
         )
 
     def test_ready_to_publish_task__get_actions__user_can_publish__bundle_ready_to_publish(self):
@@ -540,13 +549,13 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
 
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
-        # unpublish, approve, approve with comment, reject, cancel-workflow
-        self.assertEqual(len(menu_items), 5)
+        # approve, approve with comment, reject, cancel-workflow
+        self.assertEqual(len(menu_items), 4)
 
         self.assertItemWithPropertyIn("name", "approve", menu_items)
         self.assertItemWithPropertyIn("name", "reject", menu_items)
-        self.assertItemWithPropertyIn("name", "action-unpublish", menu_items)
         self.assertItemWithPropertyIn("name", "action-cancel-workflow", menu_items)
+        self.assertItemWithPropertyNotIn("name", "action-unpublish", menu_items)
         self.assertItemWithPropertyNotIn("name", "action-publish", menu_items)
         self.assertItemWithPropertyNotIn("name", "locked-approve", menu_items)
         self.assertItemWithPropertyNotIn("name", "unlock", menu_items)
@@ -561,9 +570,9 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.get(self.edit_url)
         menu_items = response.context["action_menu"].menu_items
 
-        self.assertEqual(len(menu_items), 1)  # unlock
+        self.assertEqual(len(menu_items), 1)  # reject
 
-        self.assertItemWithPropertyIn("name", "unlock", menu_items)
+        self.assertItemWithPropertyIn("name", "reject", menu_items)
         self.assertItemWithPropertyNotIn("name", "locked-approve", menu_items)
 
         self.assertItemWithPropertyIn("label", "Unlock editing", menu_items)
@@ -579,7 +588,7 @@ class WorkflowTweaksTestCase(WorkflowTweaksBaseTestCase):
         menu_items = response.context["action_menu"].menu_items
 
         self.assertEqual(len(menu_items), 2)  # unlock, publish
-        self.assertItemWithPropertyIn("name", "unlock", menu_items)
+        self.assertItemWithPropertyIn("name", "reject", menu_items)
         self.assertItemWithPropertyIn("name", "locked-approve", menu_items)
 
         self.assertItemWithPropertyIn("label", "Publish", menu_items)
@@ -721,7 +730,7 @@ class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
         response = self.client.post(self.edit_url, data, follow=True)
 
         self.assertContains(
-            response, "You cannot review your own changes. Please ask another Publishing team member to do so."
+            response, "You cannot approve your own changes. Please ask another Publishing team member to do so."
         )
         self.page.refresh_from_db()
         self.assertEqual(self.page.latest_revision.pk, latest_revision.pk)
@@ -757,7 +766,7 @@ class WorkflowTweaksNonBundledPageTestCase(WorkflowTweaksBaseTestCase):
 
         self.assertEqual(len(menu_items), 2)  # unlock + locked-approve
         self.assertItemWithPropertyIn("name", "locked-approve", menu_items)
-        self.assertItemWithPropertyIn("name", "unlock", menu_items)
+        self.assertItemWithPropertyIn("name", "reject", menu_items)
 
         self.assertItemWithPropertyIn("label", "Publish", menu_items)
         self.assertItemWithPropertyIn("label", "Unlock editing", menu_items)
@@ -822,16 +831,14 @@ class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):
     def setUp(self):
         self.client.force_login(self.publishing_admin)
 
-    def test_can_lock__in_review(self):
+    def test_in_review_is_workflow_locked_but_cannot_be_manually_locked(self):
         mark_page_as_ready_for_review(self.page)
 
-        tester = BasePagePermissionTester(user=self.user, page=self.page)
-        self.assertFalse(tester.can_lock())
-
-        for user in [self.publishing_officer, self.publishing_admin, self.superuser]:
-            with self.subTest(msg=f"{user=} can lock"):
+        for user in [self.user, self.publishing_officer, self.publishing_admin, self.superuser]:
+            with self.subTest(user=user):
                 tester = BasePagePermissionTester(user=user, page=self.page)
-                self.assertTrue(tester.can_lock())
+                self.assertFalse(tester.can_lock())
+                self.assertTrue(self.page.get_lock().for_user(user))
 
     def test_can_lock__ready_to_publish(self):
         mark_page_as_ready_to_publish(self.page)
