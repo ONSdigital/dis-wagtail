@@ -285,7 +285,9 @@ class PreviewBundlePageViewTestCase(WagtailTestUtils, TestCase):
 
         self.assertContains(response, self.url_preview_ready)
         self.assertContains(response, self.page_ready_for_publishing.display_title)
-        self.assertNotContains(response, self.url_not_preview_ready)
+        # a bundled draft page is previewable to this team's previewer
+        self.assertContains(response, self.url_not_preview_ready)
+        self.assertContains(response, self.page_not_ready_for_publishing.display_title)
 
     def test_view__previewer_can_preview_only_when_bundle_in_review_or_ready_to_be_published(self):
         self.client.force_login(self.previewer)
@@ -305,13 +307,14 @@ class PreviewBundlePageViewTestCase(WagtailTestUtils, TestCase):
                 self.assertEqual(response.status_code, HTTPStatus.OK)
                 self.assertContains(response, self.page_ready_for_publishing.title)
 
-    def test_view_checks__page_ready_to_be_published(self):
-        # previewers can only access pages that are ready to publish
+    def test_view__previewer_can_open_draft_page_in_preview_bundle(self):
+        # a draft page is previewable when included in this bundle
         self.client.force_login(self.previewer)
         self.previewer.teams.add(self.preview_team)
 
         response = self.client.get(self.url_not_preview_ready)
-        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.page_not_ready_for_publishing.title)
 
         # bundle managers can use the preview even if the page is not ready
         self.client.force_login(self.publishing_officer)
