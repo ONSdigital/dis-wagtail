@@ -26,6 +26,7 @@ from cms.bundles.notifications.slack import (
     notify_slack_of_post_publish_action_failure,
     notify_slack_of_post_publish_action_success,
     notify_slack_of_post_publish_end,
+    notify_slack_of_post_publish_summary,
     notify_slack_of_publication_start,
     notify_slack_of_publish_end,
     notify_slack_of_status_change,
@@ -236,8 +237,6 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Duration", "value": "1.234 seconds", "short": False}, fields)
         self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
         self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
-        self.assertIn({"title": "Post-Publish Actions Successful", "value": "0", "short": True}, fields)
-        self.assertIn({"title": "Post-Publish Actions Failed", "value": "0", "short": True}, fields)
         self.assertIn(
             {
                 "title": "Example Page",
@@ -264,7 +263,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended.")
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended. Post-publish actions have finished.")
         self.assertEqual(call_kwargs["color"], "good")  # Green
 
         fields = call_kwargs["fields"]
@@ -279,8 +278,6 @@ class BundleStatusNotificationsTestCase(TestCase):
         self.assertIn({"title": "Page Count", "value": "1", "short": True}, fields)
         self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
         self.assertIn({"title": "Dataset Count", "value": "0", "short": False}, fields)
-        self.assertIn({"title": "Post-Publish Actions Successful", "value": "0", "short": True}, fields)
-        self.assertIn({"title": "Post-Publish Actions Failed", "value": "0", "short": True}, fields)
 
         self.assertIn(
             {
@@ -313,15 +310,13 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended with errors.")
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended. Post-publish actions have finished.")
         self.assertEqual(call_kwargs["color"], "danger")
 
         fields = call_kwargs["fields"]
         self.assertIn({"title": "Page Count", "value": "2", "short": True}, fields)
         self.assertIn({"title": "Pages Published", "value": "1", "short": True}, fields)
         self.assertIn({"title": "Publish Failure", "value": "1 of 2 page(s) failed to publish", "short": False}, fields)
-        self.assertIn({"title": "Post-Publish Actions Successful", "value": "0", "short": True}, fields)
-        self.assertIn({"title": "Post-Publish Actions Failed", "value": "0", "short": True}, fields)
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
     @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
@@ -337,7 +332,7 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended with errors.")
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended. Post-publish actions have finished.")
         self.assertEqual(call_kwargs["color"], "danger")
 
         fields = call_kwargs["fields"]
@@ -373,11 +368,10 @@ class BundleStatusNotificationsTestCase(TestCase):
         mock_send.assert_called_once()
         call_kwargs = mock_send.call_args[1]
 
-        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended with errors.")
+        self.assertEqual(call_kwargs["text"], "Publishing the bundle has ended. Post-publish actions have finished.")
         self.assertEqual(call_kwargs["color"], "danger")
 
         fields = call_kwargs["fields"]
-        self.assertIn({"title": "Post-Publish Actions Failed", "value": "1", "short": True}, fields)
         self.assertFalse(any(field.get("title") == "Publish Failure" for field in fields))
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
@@ -1193,3 +1187,72 @@ class HelperFunctionsTestCase(TestCase):
         bundle = BundleFactory(bundled_pages=[], release_calendar_page=None)
         url = _get_example_page_url(bundle)
         self.assertIsNone(url)
+
+
+class PostPublishSummaryReplyTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.page = StatisticalArticlePageFactory()
+        cls.bundle = BundleFactory(bundled_pages=[cls.page], slack_notification_ts="1503435956.000247")
+        cls.start_time = datetime(2026, 2, 17, 10, 0, 0, tzinfo=UTC)
+
+    def _create_action(self, action_type, status):
+        return PostPublishAction.objects.create(
+            bundle=self.bundle,
+            page=self.page,
+            action_type=action_type,
+            status=status,
+            finished_at=timezone.now(),
+        )
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_post_publish_summary(self, mock_send):
+        self._create_action(PostPublishActionType.CACHE_PURGE, PostPublishActionStatus.SUCCESSFUL)
+        self._create_action(PostPublishActionType.SEARCH_UPDATED, PostPublishActionStatus.SUCCESSFUL)
+
+        end_time = self.start_time + timedelta(seconds=5, milliseconds=123)
+
+        notify_slack_of_post_publish_summary(self.bundle, self.start_time, end_time)
+
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args[1]
+
+        self.assertEqual(call_kwargs["text"], "Post-Publish actions have ended successfully")
+        self.assertEqual(call_kwargs["color"], "good")
+        self.assertEqual(call_kwargs["thread_ts"], "1503435956.000247")
+        self.assertEqual(
+            call_kwargs["fields"],
+            [
+                {"title": "Post-Publish Actions Successful", "value": "2", "short": True},
+                {"title": "Post-Publish Actions Failed", "value": "0", "short": True},
+                {"title": "Finished At", "value": "17/02/2026 - 10:00:05.123", "short": True},
+                {"title": "Duration", "value": "5.123 seconds", "short": True},
+            ],
+        )
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
+    @patch("cms.bundles.notifications.slack.send_or_update_slack_message")
+    def test_notify_slack_of_post_publish_summary__with_failures(self, mock_send):
+        self._create_action(PostPublishActionType.CACHE_PURGE, PostPublishActionStatus.SUCCESSFUL)
+        self._create_action(PostPublishActionType.SEARCH_UPDATED, PostPublishActionStatus.FAILED)
+
+        end_time = self.start_time + timedelta(seconds=3, milliseconds=456)
+
+        notify_slack_of_post_publish_summary(self.bundle, self.start_time, end_time)
+
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args[1]
+
+        self.assertEqual(call_kwargs["text"], "Post-Publish actions have ended with errors")
+        self.assertEqual(call_kwargs["color"], "danger")
+        self.assertEqual(call_kwargs["thread_ts"], "1503435956.000247")
+        self.assertEqual(
+            call_kwargs["fields"],
+            [
+                {"title": "Post-Publish Actions Successful", "value": "1", "short": True},
+                {"title": "Post-Publish Actions Failed", "value": "1", "short": True},
+                {"title": "Finished At", "value": "17/02/2026 - 10:00:03.456", "short": True},
+                {"title": "Duration", "value": "3.456 seconds", "short": True},
+            ],
+        )

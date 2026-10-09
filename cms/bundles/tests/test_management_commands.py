@@ -204,11 +204,29 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
 
         self.assertEqual(
             sorted(reply["text"] for reply in replies),
-            sorted(f"Post-publish action completed: {action_type.label}" for action_type in get_post_publish_actions()),
+            sorted(
+                [
+                    *(
+                        f"Post-publish action completed: {action_type.label}"
+                        for action_type in get_post_publish_actions()
+                    ),
+                    "Post-Publish actions have ended successfully",
+                ]
+            ),
         )
         for reply in replies:
             self.assertEqual(reply["thread_ts"], "1503435956.000247")
-            self.assertIn(f"(ID: {self.statistical_article.pk}", reply["attachments"][0]["fields"][0]["value"])
+            if reply["text"].startswith("Post-publish action completed"):
+                self.assertIn(f"(ID: {self.statistical_article.pk})", reply["attachments"][0]["fields"][0]["value"])
+
+        summary_reply = next(
+            reply for reply in replies if reply["text"] == "Post-Publish actions have ended successfully"
+        )
+
+        self.assertIn(
+            {"title": "Post-Publish Actions Successful", "value": str(len(get_post_publish_actions())), "short": True},
+            summary_reply["attachments"][0]["fields"],
+        )
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token", SLACK_PUBLISH_LOG_CHANNEL="C024BE91L")
     @patch("cms.core.slack.get_slack_client")
@@ -245,6 +263,7 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
                         if action_type != PostPublishActionType.SEARCH_UPDATED
                     ),
                     "Post-publish action failed: Search updated",
+                    "Post-Publish actions have ended with errors",
                 ]
             ),
         )
