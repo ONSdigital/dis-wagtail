@@ -287,7 +287,7 @@ class ONSTableBlock(TinyTableBlock):
         )
 
         return {
-            "title": _("Download this table"),
+            "title": _("Downloads"),
             "itemsList": [{"text": link_text, "url": csv_url, "attributes": attributes}],
         }
 
