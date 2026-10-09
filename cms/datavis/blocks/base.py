@@ -1,8 +1,10 @@
 from collections.abc import Sequence
 from contextlib import suppress
+from math import isfinite
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect
 from django.urls import reverse
 from django.utils.html import strip_tags
@@ -118,6 +120,20 @@ class BaseChartBlock(BaseVisualisationBlock):
     )
 
     series_customisation = blocks.StaticBlock()
+
+    def clean(self, value: StructValue) -> StructValue:
+        value = super().clean(value)
+        self.validate_cell_values(value)
+        return value
+
+    def validate_cell_values(self, value: StructValue) -> None:
+        """Check if values contain special floating-point values."""
+        rows = value["table"].rows
+
+        if any(isinstance(cell, float) and not isfinite(cell) for row in rows for cell in row):
+            raise blocks.StructBlockValidationError(
+                {"table": ValidationError("Table cannot contain NaN or infinity values.")}
+            )
 
     def get_context(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
