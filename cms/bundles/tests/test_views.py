@@ -24,6 +24,7 @@ from cms.bundles.tests.utils import (
 from cms.bundles.views.preview import PreviewBundleDatasetView
 from cms.home.models import HomePage
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
+from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.teams.models import Team
 from cms.users.tests.factories import GroupFactory, UserFactory
 from cms.workflows.tests.utils import (
@@ -208,6 +209,13 @@ class PreviewBundlePageViewTestCase(WagtailTestUtils, TestCase):
             "bundles:preview", args=[cls.bundle.pk, cls.page_not_ready_for_publishing.pk]
         )
 
+        cls.draft = InformationPageFactory(live=False, title="Bundled draft")
+        cls.draft.save_revision()
+        BundlePageFactory(parent=cls.bundle, page=cls.draft)
+        cls.draft_preview_url = reverse("bundles:preview", args=[cls.bundle.pk, cls.draft.pk])
+        cls.unbundled_draft = InformationPageFactory(live=False, title="Unbundled draft")
+        cls.unbundled_draft.save_revision()
+
     def test_view_requires_access_to_admin(self):
         response = self.client.get(self.url_preview_ready, follow=True)
         self.assertRedirects(response, f"/admin/login/?next={self.url_preview_ready}")
@@ -320,6 +328,72 @@ class PreviewBundlePageViewTestCase(WagtailTestUtils, TestCase):
         self.client.force_login(self.publishing_officer)
         response = self.client.get(self.url_not_preview_ready)
         self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_previewer_can_open_bundled_draft_in_preview_bundle(self):
+        self.previewer.teams.add(self.preview_team)
+        self.client.force_login(self.previewer)
+
+        self.assertIsNone(self.draft.current_workflow_task)
+        response = self.client.get(self.draft_preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.draft.title)
+        self.assertContains(response, self.draft_preview_url)
+
+    def test_draft_is_not_exposed_in_approved_bundle(self):
+        self.bundle.status = BundleStatus.APPROVED
+        self.bundle.save(update_fields=["status"])
+        self.previewer.teams.add(self.preview_team)
+        self.client.force_login(self.previewer)
+
+        self.assertEqual(self.client.get(self.draft_preview_url).status_code, HTTPStatus.NOT_FOUND)
+
+    def test_previewer_cannot_access_unbundled_draft_through_bundle_url(self):
+        self.previewer.teams.add(self.preview_team)
+        self.client.force_login(self.previewer)
+        url = reverse("bundles:preview", args=[self.bundle.pk, self.unbundled_draft.pk])
+
+        self.assertEqual(self.client.get(url).status_code, HTTPStatus.NOT_FOUND)
+
+    def test_previewer_cannot_use_another_bundle_url_for_a_bundled_draft(self):
+        other_bundle = BundleFactory(name="Other preview bundle", status=BundleStatus.IN_REVIEW)
+        BundleTeam.objects.create(parent=other_bundle, team=self.preview_team)
+        self.previewer.teams.add(self.preview_team)
+        self.client.force_login(self.previewer)
+        wrong_bundle_url = reverse("bundles:preview", args=[other_bundle.pk, self.draft.pk])
+
+        self.assertEqual(self.client.get(wrong_bundle_url).status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(self.client.get(self.draft_preview_url).status_code, HTTPStatus.OK)
+
+    def test_only_assigned_active_team_can_preview_bundle_drafts(self):
+        other_previewer = create_bundle_viewer(username="other-draft-previewer")
+        other_previewer.teams.add(self.team)
+        self.client.force_login(other_previewer)
+        self.assertNotEqual(self.client.get(self.draft_preview_url).status_code, HTTPStatus.OK)
+
+        self.previewer.teams.add(self.preview_team)
+        self.client.force_login(self.previewer)
+        self.assertEqual(self.client.get(self.draft_preview_url).status_code, HTTPStatus.OK)
+
+        self.preview_team.is_active = False
+        self.preview_team.save(update_fields=["is_active"])
+        self.client.force_login(type(self.previewer).objects.get(pk=self.previewer.pk))
+        self.assertNotEqual(self.client.get(self.draft_preview_url).status_code, HTTPStatus.OK)
+
+    def test_previewer_sees_latest_saved_draft_revision_not_unsaved_changes(self):
+        self.draft.summary = "Earlier saved summary"
+        self.draft.save_revision()
+        self.draft.summary = "Latest saved summary"
+        self.draft.save_revision()
+        self.draft.summary = "Never saved summary"
+        self.previewer.teams.add(self.preview_team)
+        self.client.force_login(self.previewer)
+
+        response = self.client.get(self.draft_preview_url)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, "Latest saved summary")
+        self.assertNotContains(response, "Earlier saved summary")
+        self.assertNotContains(response, "Never saved summary")
 
     def test_preview_logs_action(self):
         self.client.force_login(self.publishing_officer)
@@ -740,6 +814,22 @@ class PreviewBundleDatasetViewTestCase(WagtailTestUtils, TestCase):
                 self.client.force_login(user)
                 response = self.client.get(self.preview_url)
                 self.assertEqual(response.status_code, expected_status)
+
+    @patch("cms.bundles.views.preview.BundleAPIClient")
+    def test_assigned_previewer_can_preview_bundle_dataset_but_other_team_cannot(self, mock_client_class):
+        mock_client_class.return_value.get_bundle_contents.return_value = self.mock_bundle_contents
+        other_previewer = create_bundle_viewer(username="other-dataset-previewer")
+        other_team = Team.objects.create(identifier="other-dataset-team", name="Other dataset team")
+        other_previewer.teams.add(other_team)
+
+        self.client.force_login(other_previewer)
+        self.assertNotEqual(self.client.get(self.preview_url).status_code, HTTPStatus.OK)
+
+        self.previewer.teams.add(self.preview_team)
+        self.client.force_login(self.previewer)
+        response = self.client.get(self.preview_url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, self.mock_bundle_contents["items"][0]["links"]["preview"])
 
     @patch("cms.bundles.views.preview.BundleAPIClient")
     def test_view_returns_iframe_url_from_api(self, mock_client_class):
