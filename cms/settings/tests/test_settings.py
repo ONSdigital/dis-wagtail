@@ -184,6 +184,18 @@ class SecurityHeadersTestCase(TestCase):
                 self.assertIn("*.hotjar.com", self._get_csp_expressions(csp, "style-src"))
                 self.assertIn(CSP.UNSAFE_INLINE, self._get_csp_expressions(csp, "style-src"))
 
+    def test_jspreadsheet_logo_csp(self):
+        for url in self.urls:
+            with self.subTest(url):
+                response = self.client.get(url)
+
+                csp = self._parse_csp(response.headers["Content-Security-Policy"])
+
+                self.assertIn(
+                    "https://bossanova.uk/jspreadsheet/logo.png",
+                    self._get_csp_expressions(csp, "img-src"),
+                )
+
     def test_mathjax_csp(self):
         for url in self.urls:
             with self.subTest(url):
