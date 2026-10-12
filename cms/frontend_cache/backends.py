@@ -6,7 +6,7 @@ from wagtail.contrib.frontend_cache.backends import CloudflareBackend as Wagtail
 class CloudflareBackend(WagtailCloudflareBackend):
     """Wagtail's Cloudflare backend with a configurable purge batch size.
 
-    Wagtail hardcodes CHUNK_SIZE, which is lower than what Cloudflare Enterprise allows.
+    TODO: Wagtail hardcodes CHUNK_SIZE, which is lower than what Cloudflare Enterprise allows.
     Remove this class once Wagtail supports configuring the batch size upstream.
     ref: https://github.com/wagtail/wagtail/issues/14352
     """
