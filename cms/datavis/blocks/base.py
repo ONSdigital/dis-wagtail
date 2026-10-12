@@ -52,6 +52,11 @@ class BaseChartBlock(BaseVisualisationBlock):
     highcharts_chart_type: ClassVar[HighChartsChartType]
     x_axis_type: ClassVar[AxisType]
     extra_series_attributes: ClassVar[dict[str, Any]]
+    # Table columns holding numeric data; the first column is a label by default
+    numeric_columns: ClassVar[slice] = slice(1, None)
+
+    # Error codes
+    ERROR_SPECIAL_FLOAT_VALUES = "special_float_values"
 
     # Editable fields
     # Note that static blocks are intended to be overridden with real blocks or
@@ -130,9 +135,14 @@ class BaseChartBlock(BaseVisualisationBlock):
         """Check if values contain special floating-point values."""
         rows = value["table"].rows
 
-        if any(isinstance(cell, float) and not isfinite(cell) for row in rows for cell in row):
+        if any(isinstance(cell, float) and not isfinite(cell) for row in rows for cell in row[self.numeric_columns]):
             raise blocks.StructBlockValidationError(
-                {"table": ValidationError("Table cannot contain NaN or infinity values.")}
+                {
+                    "table": ValidationError(
+                        "Table cannot contain NaN or infinity values.",
+                        code=self.ERROR_SPECIAL_FLOAT_VALUES,
+                    )
+                }
             )
 
     def get_context(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:

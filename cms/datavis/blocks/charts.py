@@ -470,6 +470,7 @@ class BarColumnChartBlock(BaseChartBlock):
 
 class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
     x_axis_type = AxisType.CATEGORICAL
+    numeric_columns = slice(1, 4)
 
     # Error codes
     ERROR_BAR_CHART_NO_ASPECT_RATIO = "bar_chart_no_aspect_ratio"
@@ -724,6 +725,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
 class ScatterPlotBlock(BaseChartBlock):
     highcharts_chart_type = HighChartsChartType.SCATTER
     x_axis_type = AxisType.LINEAR
+    numeric_columns = slice(0, 2)
 
     # Remove unsupported features
     select_chart_type = None

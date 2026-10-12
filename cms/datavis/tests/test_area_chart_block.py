@@ -84,10 +84,25 @@ class AreaChartBlockTestCase(BaseChartBlockTestCase):
                     with self.assertRaises(StructBlockValidationError) as cm:
                         self.block.clean(self.get_value(special_value_data))
 
-                    self.assertEqual(
-                        ["Table cannot contain NaN or infinity values."],
-                        cm.exception.block_errors["table"].messages,
-                    )
+                    error = cm.exception.block_errors["table"]
+                    self.assertEqual(AreaChartBlock.ERROR_SPECIAL_FLOAT_VALUES, error.code)
+                    self.assertEqual(["Table cannot contain NaN or infinity values."], error.messages)
+
+    def test_special_floating_point_values_allowed_in_category_labels(self):
+        """Test that label-like strings such as NaN are fine in the category column."""
+        data = self.raw_data.copy()
+        data["table"] = TableDataFactory(
+            table_data=[
+                ["Dates", "Series 1", "Series 2"],
+                ["NaN", "3", "8"],
+                ["Inf", "4", "3"],
+            ]
+        )
+
+        try:
+            self.block.clean(self.get_value(data))
+        except ValidationError as e:
+            self.fail(f"ValidationError raised: {e}")
 
     def test_table_works_if_special_floating_point_values_in_header(self):
         """Test that the table works if special floating-point values are in the header."""

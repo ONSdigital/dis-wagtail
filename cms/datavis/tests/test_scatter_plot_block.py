@@ -1,5 +1,6 @@
 # pylint: disable=too-many-public-methods
 from django.core.exceptions import ValidationError
+from wagtail.blocks import StructBlockValidationError
 from wagtail.blocks.struct_block import StructValue
 
 from cms.datavis.blocks.charts import ScatterPlotBlock
@@ -237,3 +238,28 @@ class ScatterPlotBlockTestCase(BaseChartBlockTestCase):
         self.raw_data["y_axis"]["title"] = ""
         config = self.get_component_config()
         self.assertEqual(None, config["yAxis"]["title"])
+
+    def test_special_floating_point_values(self):
+        """Test that NaN is rejected in numeric columns but allowed as a group name."""
+        cases = [
+            ("x", [["NaN", "2", "First"]], True),
+            ("y", [["1", "inf", "First"]], True),
+            ("group", [["1", "2", "NaN"]], False),
+        ]
+        for name, rows, is_invalid in cases:
+            with self.subTest(column=name):
+                data = self.raw_data.copy()
+                data["table"] = TableDataFactory(table_data=[["X", "Y", "Group"], *rows])
+                value = self.get_value(data)
+
+                if is_invalid:
+                    with self.assertRaises(StructBlockValidationError) as cm:
+                        self.block.clean(value)
+                    self.assertEqual(
+                        ScatterPlotBlock.ERROR_SPECIAL_FLOAT_VALUES, cm.exception.block_errors["table"].code
+                    )
+                else:
+                    try:
+                        self.block.clean(value)
+                    except ValidationError as e:
+                        self.fail(f"ValidationError raised: {e}")
