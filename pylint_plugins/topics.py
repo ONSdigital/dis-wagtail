@@ -25,7 +25,7 @@ def _is_topic(node: nodes.NodeNG, *, allow_instance: bool) -> bool:
     return False
 
 
-def _chain_reaches_allwed_method(node: nodes.Attribute) -> bool:
+def _chain_reaches_allowed_method(node: nodes.Attribute) -> bool:
     current: nodes.NodeNG = node
     while True:
         parent = current.parent
@@ -47,7 +47,7 @@ class TopicQuerySetChecker(BaseChecker):
             "unfiltered-topic-queryset",
             "Code that lists, counts or looks up topics should use Topic.objects.topics(),"
             " or .topics() on the queryset."
-            "Where the tree is needed disable this rule and comment why.",
+            " Where the tree is needed, disable this rule and comment why.",
         ),
     }
 
@@ -59,7 +59,7 @@ class TopicQuerySetChecker(BaseChecker):
         else:
             return
 
-        if not is_topic or IGNORED_MODULES.search(node.root().name) or _chain_reaches_allwed_method(node):
+        if not is_topic or IGNORED_MODULES.search(node.root().name) or _chain_reaches_allowed_method(node):
             return
 
         self.add_message("unfiltered-topic-queryset", node=node, args=(node.as_string(),))
