@@ -113,7 +113,7 @@ def the_given_text_is_present(
 def the_user_can_unlock_the_workflow(context: Context):
     # The page action opens Wagtail's reject-action modal; its submit button performs the action.
     context.page.get_by_role("button", name="Unlock editing", exact=True).click()
-    context.page.get_by_role("button", name="Unlock editing", exact=True).click()
+    context.page.get_by_role("dialog").get_by_role("button", name="Unlock editing", exact=True).click()
 
     expect(context.page.get_by_role("status").get_by_text("editing has been unlocked.")).to_be_visible()
     expect(context.page.get_by_role("link", name="Page locked", exact=True)).to_have_count(0)
