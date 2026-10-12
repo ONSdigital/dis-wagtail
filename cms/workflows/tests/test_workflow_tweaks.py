@@ -1051,8 +1051,10 @@ class PageWorkflowTransitionTests(WorkflowTweaksBaseTestCase):
             args=[self.page.pk, "reject", workflow.current_task_state_id],
         )
         response = self.client.get(url)
-        self.assertContains(response, "Unlock editing")
-        self.assertContains(response, 'name="comment"')
+        modal = response.json()
+        self.assertEqual(modal["step"], "action")
+        self.assertIn("Unlock editing", modal["html"])
+        self.assertIn('name="comment"', modal["html"])
         workflow.refresh_from_db()
         self.assertEqual(workflow.status, WorkflowState.STATUS_IN_PROGRESS)
 
@@ -1140,7 +1142,9 @@ class PageWorkflowTransitionTests(WorkflowTweaksBaseTestCase):
             args=[self.page.pk, "reject", workflow.current_task_state_id],
         )
         response = self.client.get(url)
-        self.assertContains(response, "Unlock editing")
-        self.assertContains(response, 'name="comment"')
+        modal = response.json()
+        self.assertEqual(modal["step"], "action")
+        self.assertIn("Unlock editing", modal["html"])
+        self.assertIn('name="comment"', modal["html"])
         workflow.refresh_from_db()
         self.assertEqual(workflow.status, WorkflowState.STATUS_IN_PROGRESS)
