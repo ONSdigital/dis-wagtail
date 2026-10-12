@@ -23,7 +23,10 @@ class TopicModelTest(TestCase):
         self.assertEqual(root_again.depth, 1)  # Root node typically has depth=1
 
     def test_default_manager_includes_root_topic(self):
-        """Topic.objects must expose the dummy root, because treebeard resolves the tree through it."""
+        """Topic.objects must include the dummy root, because treebeard resolves the tree through it.
+
+        If this fails, the root is being filtered out in the manager. Use .topics() to exclude it instead.
+        """
         self.assertIn(self.root_topic, Topic.objects.all())
 
     def test_topics_excludes_root_topic(self):

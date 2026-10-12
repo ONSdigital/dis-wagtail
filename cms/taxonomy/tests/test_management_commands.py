@@ -574,8 +574,8 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.mock_requests.get.assert_called_once()
-        self.assertEqual(Topic.objects.all().count(), 1, "Expect one topic to be saved")
-        saved_topic = Topic.objects.first()
+        self.assertEqual(Topic.objects.topics().count(), 1, "Expect one topic to be saved")
+        saved_topic = Topic.objects.topics().first()
         self.assertEqual(saved_topic, topic, "Expect the saved topic to match")
 
     def test_sync_topic_with_subtopic_current_wrapped(self):
@@ -595,7 +595,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 2, "Expect 2 calls to retrieve topics")
-        self.assertEqual(Topic.objects.all().count(), 2, "Expect 2 topics to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 2, "Expect 2 topics to be saved")
         saved_subtopic = Topic.objects.get(id=subtopic.id)
         self.assertEqual(
             saved_subtopic.get_parent().id, root_topic.id, "Expect the subtopic to have the correct parent"
@@ -669,7 +669,7 @@ class SyncTopicsTests(TestCase):
 
         # Then
         self.assertEqual(self.mock_requests.get.call_count, 1, "Expect no subtopic fetch for the excluded topic")
-        self.assertEqual(Topic.objects.count(), 1, "Expect only the included topic to be saved")
+        self.assertEqual(Topic.objects.topics().count(), 1, "Expect only the included topic to be saved")
         self.assertTrue(Topic.objects.filter(id=included_topic.id).exists())
         self.assertFalse(Topic.objects.filter(id=excluded_topic.id).exists(), "Excluded topic should not be synced")
         self.assertFalse(

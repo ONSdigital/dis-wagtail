@@ -97,7 +97,8 @@ class Topic(index.Indexed, MP_Node):
 
         Raises an IntegrityError if a topic with the same ID already exists.
         """
-        if Topic.objects.filter(id=topic.id).exists():
+        # Include the dummy root so a clash with its ID is still caught.
+        if Topic.objects.filter(id=topic.id).exists():  # pylint: disable=unfiltered-topic-queryset
             raise IntegrityError(f"Topic with id {topic.id} already exists")
         if not parent_topic:
             parent_topic = Topic.objects.root_topic()

@@ -147,7 +147,7 @@ def get_local_topic_ids(topic_ids: Iterable[str | None]) -> set[str]:
     if not wanted:
         return set()
 
-    found = set(Topic.objects.filter(id__in=wanted).values_list("id", flat=True))
+    found = set(Topic.objects.topics().filter(id__in=wanted).values_list("id", flat=True))
     if missing := wanted - found:
         logger.warning(
             "Dataset API returned topic IDs not found in local taxonomy", extra={"topic_ids": sorted(missing)}
