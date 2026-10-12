@@ -67,9 +67,9 @@ updates:
       - dependency-name: '@eslint/*'
         update-types:
           - 'version-update:semver-major'
-    # Every weekday
+    # Every week
     schedule:
-      interval: daily
+      interval: weekly
 
     groups:
       # Group updates into fewer pull requests
