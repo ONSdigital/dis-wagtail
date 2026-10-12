@@ -66,10 +66,10 @@ Feature: Page-level workflows
         When a Publishing Admin logs into the admin site
         And  the user edits the statistical article page
         And  the user clicks the action button toggle
-        Then the "Unlock editing" link exists
+        Then the "Unlock editing" button exists
         And  the user can unlock the page for editing
-        And  the "Page editing unlocked." text is displayed
-        And  the "Unlock editing" link does not exist
+        And  the "editing has been unlocked." text is displayed
+        And  the "Unlock editing" button does not exist
 
 
     Scenario: When page is Approved (Ready to publish), is not in a bundle and has a schedule it can be scheduled to publish
@@ -87,10 +87,10 @@ Feature: Page-level workflows
         And  the statistical article page is in a "In Preview" bundle
         And  the user edits the statistical article page
         And  the user clicks the action button toggle
-        Then the "Unlock editing" link exists
+        Then the "Unlock editing" button exists
         And  the user can unlock the page for editing
-        And  the "Page editing unlocked." text is displayed
-        And  the "Unlock editing" link does not exist
+        And  the "editing has been unlocked." text is displayed
+        And  the "Unlock editing" button does not exist
 
 
     Scenario: When page is Approved (Ready to publish) and in an Approved bundle, then a Publishing admin cannot unlock it
@@ -99,7 +99,7 @@ Feature: Page-level workflows
         And  the statistical article page is in a "Ready to publish" bundle
         And  the user edits the statistical article page
         Then the "Page locked" button exists
-        And  the "Unlock editing" link does not exist
+        And  the "Unlock editing" button does not exist
         And  the "This page is included in a bundle that is ready to be published. You must revert the bundle to Draft or In preview in order to make further changes." text is displayed
 
 
