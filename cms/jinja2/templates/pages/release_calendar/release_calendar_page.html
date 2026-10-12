@@ -63,8 +63,8 @@
 {% endblock %}
 
 {% block mainContent %}
-    <div class="ons-grid ons-js-table-of-contents-container ons-u-ml-no">
-        <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m ons-u-p-no">
+    <div class="ons-grid ons-js-table-of-contents-container">
+        <div class="ons-grid__col ons-grid__col--sticky@m ons-col-4@m">
             {% with toc_title=_("Contents"), toc_aria_label=_("Sections in this page") %}
                 {# fmt:off #}
                 {{-
@@ -77,7 +77,7 @@
                 {# fmt:on #}
             {% endwith %}
         </div>
-        <div class="ons-grid__col ons-col-8@m ons-col-12@s ons-u-p-no@2xs@m">
+        <div class="ons-grid__col ons-col-8@m">
             <section id="summary" class="spacing">
                 <h2>{{ _("Summary") }}</h2>
                 {{ page.summary|richtext() }}
