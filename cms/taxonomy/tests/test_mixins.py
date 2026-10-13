@@ -381,8 +381,8 @@ class TestDummyRootCannotBeChosen(WagtailTestUtils, TestCase):
             [topic.id for topic in Topic.objects.filter(depth__lte=DUMMY_ROOT_DEPTH)],
             ["_root"],
             msg=(
-                "Remove limit_choices_to from GenericPageToTaxonomyTopic.topic and "
-                "ExclusiveTaxonomyMixin.topic, or real topics will be rejected."
+                "Remove limit_choices_to from GenericPageToTaxonomyTopic.topic, "
+                "ExclusiveTaxonomyMixin.topic and Dataset.topic, or real topics will be rejected."
             ),
         )
 
