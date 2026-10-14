@@ -1,3 +1,5 @@
+from typing import Any
+
 from django import forms
 from django.forms import Media
 from django.utils.functional import cached_property
@@ -12,15 +14,19 @@ class MathJaxConfigTextareaWidget(PolymathTextareaWidget):
     @property
     def media(self) -> Media:
         # The config script must come after polymath's widget script, which sets window.MathJax.
-        # A single list keeps that order when Django merges media.
+        # A single list keeps that order when Django merges media. Media has no public accessors
+        # for its lists, hence the private attributes.
         widget_media = super().media
-        return Media(js=[*widget_media._js, "js/mathjax-config.js"], css=widget_media._css)  # pylint: disable=protected-access
+        return Media(
+            js=[*widget_media._js, "js/mathjax-config.js"],  # type: ignore[attr-defined]  # pylint: disable=protected-access
+            css=widget_media._css,  # type: ignore[attr-defined]  # pylint: disable=protected-access
+        )
 
 
 class MathBlock(PolymathMathBlock):
     @cached_property
     def field(self) -> forms.CharField:
-        field_kwargs = {"widget": MathJaxConfigTextareaWidget(attrs={"rows": self.rows})}
+        field_kwargs: dict[str, Any] = {"widget": MathJaxConfigTextareaWidget(attrs={"rows": self.rows})}
         field_kwargs.update(self.field_options)
         return forms.CharField(**field_kwargs)
 
