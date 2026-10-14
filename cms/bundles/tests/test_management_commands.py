@@ -206,9 +206,9 @@ class PublishBundlesCommandTestCase(TransactionTestCase):
             sorted(reply["text"] for reply in replies),
             sorted(f"Post-publish action completed: {action_type.label}" for action_type in get_post_publish_actions()),
         )
+        self.assertEqual({r["thread_ts"] for r in replies}, {"1503435956.000247"})
         for reply in replies:
-            self.assertEqual(reply["thread_ts"], "1503435956.000247")
-            self.assertIn(f"(ID: {self.statistical_article.pk}", reply["attachments"][0]["fields"][0]["value"])
+            self.assertIn(f"(ID: {self.statistical_article.pk})", reply["attachments"][0]["fields"][0]["value"])
 
     @override_settings(SLACK_NOTIFICATIONS_WEBHOOK_URL="https://slack.example.com")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
