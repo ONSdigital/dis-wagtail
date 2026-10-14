@@ -123,7 +123,7 @@ INSTALLED_APPS = [
     "whitenoise.runserver_nostatic",  # Must be before `django.contrib.staticfiles`
     "django.contrib.staticfiles",
     "django_jinja",
-    "wagtailmath",
+    "wagtail_polymath",
     "wagtailtables",
     "wagtailfontawesomesvg",
     "wagtail_tinytableblock",
@@ -1217,12 +1217,17 @@ WAGTAIL_AUTOSAVE_INTERVAL = int(env.get("WAGTAIL_AUTOSAVE_INTERVAL", 500))
 
 CMS_AUDIT_LOG_COOLDOWN_SECONDS = int(env.get("CMS_AUDIT_LOG_COOLDOWN_SECONDS", 30))
 
-# For Wagtail Math (soon to be Polymath) Serve MathJax from the ONS CDN rather than a third-party one.
+# For Wagtail Polymath. Serve MathJax from the ONS CDN rather than a third-party one.
 WAGTAIL_POLYMATH = {
-    "mathjax_url": f"{ONS_CDN_URL}/vendor/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML",
-    # This is a public Subresource Integrity hash, not a credential.
-    # pragma: allowlist nextline secret
-    "mathjax_sri": "sha512-M36RUChWzAh1veeenRZFql7HydLEnkYmoloiCvVrhz402UZgKI93qkV7SsaxtVKdN95Wzajh39ysrXCq34NTsg==",
+    "engine": "mathjax",
+    "libraries": [
+        {
+            "url": f"{ONS_CDN_URL}/vendor/mathjax/4.1.3/tex-mml-chtml.js",
+            # This is a public Subresource Integrity hash, not a credential.
+            # pragma: allowlist nextline secret
+            "sri": "sha256-ihPtDDm7pTmSF9ViEsItlvsrBTsNkz0MOXMchzOwCQw=",
+        },
+    ],
 }
 
 CMS_GTM_PREVIEW_MODE_ENABLED = not IS_EXTERNAL_ENV or env.get("CMS_GTM_PREVIEW_MODE_ENABLED", "false").lower() == "true"
