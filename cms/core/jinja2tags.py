@@ -5,7 +5,7 @@ from jinja2 import pass_context
 from jinja2.ext import Extension
 from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
 from wagtail.coreutils import WAGTAIL_APPEND_SLASH
-from wagtailmath.templatetags.wagtailmath import mathjax
+from wagtail_polymath.templatetags.wagtail_polymath import polymath_scripts
 
 from cms.core.templatetags.page_config_tags import get_page_config
 from cms.core.templatetags.util_tags import (
@@ -30,7 +30,7 @@ class CoreExtension(Extension):  # pylint: disable=abstract-method
 
         self.environment.globals.update(
             {
-                "mathjax": mathjax,
+                "polymath_scripts": polymath_scripts,
                 "static": static,
                 "routablepageurl": pass_context(
                     routablepageurl if WAGTAIL_APPEND_SLASH else routablepageurl_no_trailing_slash

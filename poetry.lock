@@ -4569,6 +4569,28 @@ files = [
 wagtail = "*"
 
 [[package]]
+name = "wagtail-polymath"
+version = "2.0.2"
+description = "Wagtail StreamField block for rendering mathematical equations"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = [
+    {file = "wagtail_polymath-2.0.2-py3-none-any.whl", hash = "sha256:443fc7f80e07b1c764b18573030d1ab6526a4b1e14aeb9cb62efdfe34133c29f"},
+    {file = "wagtail_polymath-2.0.2.tar.gz", hash = "sha256:1d03f4310eee9de57b2be4b4b7590bec4215bb236e85fe55b6a5537484851a66"},
+]
+
+[package.dependencies]
+Django = ">=5.2"
+Wagtail = ">=7.0"
+
+[package.extras]
+ci = ["tox (>=4.55.1,<5)", "tox-gh-actions (>=3.5,<4)"]
+coverage = ["coverage (>=7.16.1,<8)"]
+linting = ["prek (>=0.5.3,<0.6)"]
+testing = ["coverage (>=7.16.1,<8)", "dj-database-url (==3.1.2)"]
+
+[[package]]
 name = "wagtail-schema-org"
 version = "5.0.0"
 description = "Add Schema.org JSON-LD to your website"
@@ -4605,27 +4627,6 @@ Wagtail = ">=6.3"
 
 [package.extras]
 testing = ["coverage (>=7.10,<8.0)", "dj-database-url (>=3.0,<4)"]
-
-[[package]]
-name = "wagtailmath"
-version = "1.4.0"
-description = "Wagtail StreamField block for rendering mathematical equations"
-optional = false
-python-versions = ">=3.10"
-groups = ["main"]
-files = [
-    {file = "wagtailmath-1.4.0-py3-none-any.whl", hash = "sha256:141b05be94e21e4b0d60668f40899b4f6cd95f8b7c3341e861cffab9128864e8"},
-    {file = "wagtailmath-1.4.0.tar.gz", hash = "sha256:9321f369e9161067983ed19df3e0ae045a0a7772f223a0663b07aa1a0b16d212"},
-]
-
-[package.dependencies]
-Django = ">=5.2"
-Wagtail = ">=7.0"
-
-[package.extras]
-ci = ["tox (>=4.55.1,<5)", "tox-gh-actions (>=3.5,<4)"]
-linting = ["pre-commit (>=3.6.0,<4)"]
-testing = ["dj-database-url (==3.1.2)", "pytest (==9.1.1)", "pytest-cov (==7.1.0)", "pytest-django (==4.13.0)"]
 
 [[package]]
 name = "wagtailtables"
@@ -4729,4 +4730,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "5b5ecb9e8d75e3f32348f103a879ee3ae564cbbbc8a7c1bb5823d0339bb6f31b"
+content-hash = "067f0c3144e399cb929dbe92d9ea61932fbd23a2718f73de8cfd5937ce00a269"
