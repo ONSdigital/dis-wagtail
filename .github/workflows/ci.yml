@@ -64,7 +64,7 @@ jobs:
         id: cache-flag
         uses: ./.github/actions/setup-cache-flag
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.0.0 # zizmor: ignore[cache-poisoning]
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0 # zizmor: ignore[cache-poisoning]
         with:
           node-version-file: '.nvmrc'
           cache: ${{ steps.cache-flag.outputs.npm-cache }} # disabled on release branches via setup-cache-flag action
@@ -97,7 +97,7 @@ jobs:
         id: cache-flag
         uses: ./.github/actions/setup-cache-flag
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.0.0 # zizmor: ignore[cache-poisoning]
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0 # zizmor: ignore[cache-poisoning]
         with:
           node-version-file: '.nvmrc'
           cache: ${{ steps.cache-flag.outputs.npm-cache }} # disabled on release branches via setup-cache-flag action
