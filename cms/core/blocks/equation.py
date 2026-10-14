@@ -1,9 +1,28 @@
+from django import forms
 from django.forms import Media
 from django.utils.functional import cached_property
 from wagtail import blocks
 from wagtail.admin.telepath import register
 from wagtail.blocks.struct_block import StructBlockAdapter
-from wagtail_polymath.blocks import MathBlock
+from wagtail_polymath.blocks import MathBlock as PolymathMathBlock
+from wagtail_polymath.widgets import PolymathTextareaWidget
+
+
+class MathJaxConfigTextareaWidget(PolymathTextareaWidget):
+    @property
+    def media(self) -> Media:
+        # The config script must come after polymath's widget script, which sets window.MathJax.
+        # A single list keeps that order when Django merges media.
+        widget_media = super().media
+        return Media(js=[*widget_media._js, "js/mathjax-config.js"], css=widget_media._css)  # pylint: disable=protected-access
+
+
+class MathBlock(PolymathMathBlock):
+    @cached_property
+    def field(self) -> forms.CharField:
+        field_kwargs = {"widget": MathJaxConfigTextareaWidget(attrs={"rows": self.rows})}
+        field_kwargs.update(self.field_options)
+        return forms.CharField(**field_kwargs)
 
 
 class EquationBlock(blocks.StructBlock):
