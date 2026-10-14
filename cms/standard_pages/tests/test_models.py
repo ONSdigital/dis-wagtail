@@ -200,6 +200,8 @@ class InformationPageTestCase(WagtailTestUtils, TestCase):
         self.assertFalse(ons_config.has_attr("defer") or ons_config.has_attr("async"))
         library = soup.find("script", src=lambda src: src and src.endswith("tex-mml-chtml.js"))
         self.assertTrue(library.has_attr("defer"))
+        self.assertTrue(library["integrity"].startswith("sha256-"))
+        self.assertEqual(library["crossorigin"], "anonymous")
 
     def test_get_cached_paths(self):
         self.page.content = [
