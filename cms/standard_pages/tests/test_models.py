@@ -1,5 +1,6 @@
 from http import HTTPStatus
 
+from bs4 import BeautifulSoup
 from django.http import Http404
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
@@ -157,6 +158,7 @@ class InformationPageTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.page_url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertNotContains(response, "tex-mml-chtml.js")
+        self.assertNotContains(response, "mathjax-config")
         self.assertNotContains(response, "pym.min.js")
 
     def test_content_scripts_loaded_for_relevant_blocks(self):
@@ -186,6 +188,18 @@ class InformationPageTestCase(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, "tex-mml-chtml.js")
         self.assertContains(response, "pym.min.js")
+
+        # Our MathJax config must run after polymath's and before the deferred MathJax library
+        soup = BeautifulSoup(response.content, "html.parser")
+        srcs = [script["src"] for script in soup.find_all("script", src=True)]
+        polymath_config_index = next(i for i, src in enumerate(srcs) if "wagtail_polymath/js/mathjax_init" in src)
+        ons_config_index = next(i for i, src in enumerate(srcs) if "js/mathjax-config" in src)
+        self.assertLess(polymath_config_index, ons_config_index)
+
+        ons_config = soup.find("script", src=srcs[ons_config_index])
+        self.assertFalse(ons_config.has_attr("defer") or ons_config.has_attr("async"))
+        library = soup.find("script", src=lambda src: src and src.endswith("tex-mml-chtml.js"))
+        self.assertTrue(library.has_attr("defer"))
 
     def test_get_cached_paths(self):
         self.page.content = [
