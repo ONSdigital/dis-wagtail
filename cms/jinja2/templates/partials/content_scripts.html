@@ -4,6 +4,7 @@ The conditionals should help with only adding the extra JavaScript when needed.
 -#}
 {% if page.has_equations %}
     {{ polymath_scripts() }}
+    <script src="{{ static('js/mathjax-config.js') }}"></script>
 {% endif %}
 {% if page.has_iframe_visualisations or (featured_item and featured_item.has_iframe_visualisations) %}
     <script src="{{ ONS_CDN_BASE_URL }}/vendor/pym/1.3.2/pym.min.js"></script>
