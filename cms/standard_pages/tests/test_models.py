@@ -156,7 +156,7 @@ class InformationPageTestCase(WagtailTestUtils, TestCase):
         """MathJax and pym.js should not load when the page has no equation or iframe blocks."""
         response = self.client.get(self.page_url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertNotContains(response, "MathJax.js")
+        self.assertNotContains(response, "tex-mml-chtml.js")
         self.assertNotContains(response, "pym.min.js")
 
     def test_content_scripts_loaded_for_relevant_blocks(self):
@@ -184,7 +184,7 @@ class InformationPageTestCase(WagtailTestUtils, TestCase):
 
         response = self.client.get(self.page_url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertContains(response, "MathJax.js")
+        self.assertContains(response, "tex-mml-chtml.js")
         self.assertContains(response, "pym.min.js")
 
     def test_get_cached_paths(self):

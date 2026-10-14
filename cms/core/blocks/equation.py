@@ -3,7 +3,7 @@ from django.utils.functional import cached_property
 from wagtail import blocks
 from wagtail.admin.telepath import register
 from wagtail.blocks.struct_block import StructBlockAdapter
-from wagtailmath.blocks import MathBlock
+from wagtail_polymath.blocks import MathBlock
 
 
 class EquationBlock(blocks.StructBlock):

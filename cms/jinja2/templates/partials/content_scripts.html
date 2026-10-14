@@ -3,7 +3,7 @@ This is a partial include to reuse on pages with equations/iframe visualisations
 The conditionals should help with only adding the extra JavaScript when needed.
 -#}
 {% if page.has_equations %}
-    <script async src="{{ mathjax() }}"></script>
+    {{ polymath_scripts() }}
 {% endif %}
 {% if page.has_iframe_visualisations or (featured_item and featured_item.has_iframe_visualisations) %}
     <script src="{{ ONS_CDN_BASE_URL }}/vendor/pym/1.3.2/pym.min.js"></script>
