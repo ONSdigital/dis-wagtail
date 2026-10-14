@@ -14,3 +14,10 @@ window.MathJax.loader = {
 if (window.MathJax.tex) {
   delete window.MathJax.tex.inlineMath;
 }
+
+// MathJax 4 generates speech and braille in a web worker created from a blob: URL,
+// which our CSP blocks. Use assistive MathML for screen readers instead, as MathJax 2 did.
+window.MathJax.options = {
+  ...window.MathJax.options,
+  menuOptions: { settings: { speech: false, braille: false, assistiveMml: true } },
+};
