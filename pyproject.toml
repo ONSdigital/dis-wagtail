@@ -24,7 +24,7 @@ gunicorn = "~26.0.0"
 psycopg = {extras = ["pool"], version = "^3.3.6"}
 wagtail-font-awesome-svg = "^2.0"
 apscheduler = "^3.11.3"
-wagtail-polymath = "~2.0.2"
+wagtail-polymath = "~2.0.3"
 whitenoise = "~6.12.0"
 slack-sdk = "^3.43.0"
 django-cache-memoize = "^0.2.1"
