@@ -19,7 +19,6 @@ The vendored files live in [cdn.ons.gov.uk-vendor](https://github.com/ONSdigital
 `cms/core/static/js/mathjax-config.js` adjusts the config that wagtail-polymath sets. It:
 
 - loads fonts from the ONS CDN (`[mathjax]/fonts`) instead of jsdelivr, MathJax 4's default
-- removes single dollar inline maths (`$...$`), which polymath turns on, so dollar signs in page text are not typeset
 - turns off MathJax's speech and braille and turns on assistive MathML for screen readers.
   MathJax 4 generates speech and braille in a `blob:` web worker, which our CSP blocks
 
