@@ -34,11 +34,11 @@
     "start:reload": "webpack-dev-server"
   },
   "devDependencies": {
-    "@babel/core": "^8.0.6",
-    "@babel/preset-env": "^8.0.6",
+    "@babel/core": "^8.0.7",
+    "@babel/preset-env": "^8.0.7",
     "@eslint/js": "^9.39.5",
     "@wagtail/eslint-config-wagtail": "^1.0.0",
-    "@wagtail/stylelint-config-wagtail": "^2.0.0",
+    "@wagtail/stylelint-config-wagtail": "^2.0.1",
     "autoprefixer": "^10.6.1",
     "babel-loader": "^10.1.1",
     "clean-webpack-plugin": "^4.0.0",
