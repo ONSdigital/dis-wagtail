@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-15 10:23+0100\n"
+"POT-Creation-Date: 2026-10-07 11:53+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -148,39 +148,39 @@ msgstr "Rhyddhawyd"
 msgid "Home"
 msgstr "Hafan"
 
-#: cms/core/templatetags/page_config_tags.py:225
+#: cms/core/templatetags/page_config_tags.py:226
 msgid "Beta"
 msgstr "Beta"
 
-#: cms/core/templatetags/page_config_tags.py:225
+#: cms/core/templatetags/page_config_tags.py:226
 msgid "This is a new service."
 msgstr "Mae hwn yn wasanaeth newydd."
 
-#: cms/core/templatetags/page_config_tags.py:229
+#: cms/core/templatetags/page_config_tags.py:230
 msgid "Menu links navigation"
 msgstr "Llywio dolenni dewislen"
 
-#: cms/core/templatetags/page_config_tags.py:230
+#: cms/core/templatetags/page_config_tags.py:231
 msgid "Menu links"
 msgstr "Dolenni dewislen"
 
-#: cms/core/templatetags/page_config_tags.py:231
+#: cms/core/templatetags/page_config_tags.py:232
 msgid "Menu"
 msgstr "Dewislen"
 
-#: cms/core/templatetags/page_config_tags.py:231
+#: cms/core/templatetags/page_config_tags.py:232
 msgid "Toggle menu"
 msgstr "Togl dewislen"
 
-#: cms/core/templatetags/page_config_tags.py:237
+#: cms/core/templatetags/page_config_tags.py:238
 msgid "Toggle search"
 msgstr "Toglo'r chwiliad"
 
-#: cms/core/templatetags/page_config_tags.py:247
+#: cms/core/templatetags/page_config_tags.py:248
 msgid "All content is available under the"
 msgstr "Mae’r holl gynnwys ar gael o dan y"
 
-#: cms/core/templatetags/page_config_tags.py:250
+#: cms/core/templatetags/page_config_tags.py:251
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
@@ -207,7 +207,7 @@ msgstr "yn Saesneg"
 msgid "in Welsh"
 msgstr "yn y Gymraeg"
 
-#: cms/jinja2/templates/base_page.html:72
+#: cms/jinja2/templates/base_page.html:73
 #, python-format
 msgid ""
 "This page is currently not available %(in_language)s. It is displayed in its "
