@@ -4570,19 +4570,19 @@ wagtail = "*"
 
 [[package]]
 name = "wagtail-polymath"
-version = "2.0.2"
+version = "2.0.3"
 description = "Wagtail StreamField block for rendering mathematical equations"
 optional = false
 python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "wagtail_polymath-2.0.2-py3-none-any.whl", hash = "sha256:443fc7f80e07b1c764b18573030d1ab6526a4b1e14aeb9cb62efdfe34133c29f"},
-    {file = "wagtail_polymath-2.0.2.tar.gz", hash = "sha256:1d03f4310eee9de57b2be4b4b7590bec4215bb236e85fe55b6a5537484851a66"},
+    {file = "wagtail_polymath-2.0.3-py3-none-any.whl", hash = "sha256:6e1a2f4c031b6ebe77ef938895b134bd7b9bec3b3202c11e174c6a54ae9bc2be"},
+    {file = "wagtail_polymath-2.0.3.tar.gz", hash = "sha256:cfbed873be5461d95427389088b6fa2e32c70d641db8777d8411f73d7924678c"},
 ]
 
 [package.dependencies]
 Django = ">=5.2"
-Wagtail = ">=7.0"
+Wagtail = ">=7.4"
 
 [package.extras]
 ci = ["tox (>=4.55.1,<5)", "tox-gh-actions (>=3.5,<4)"]
@@ -4730,4 +4730,4 @@ test = ["pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "067f0c3144e399cb929dbe92d9ea61932fbd23a2718f73de8cfd5937ce00a269"
+content-hash = "a5c01aec0f84ab1fe0ad928ebbc73e64680d5a6ba587b3cebbaf53e0485586ce"
