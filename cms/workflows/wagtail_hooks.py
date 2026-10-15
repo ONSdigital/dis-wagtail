@@ -42,6 +42,8 @@ def _perform_workflow_action_on_locked_page(request: HttpRequest, page: Page, ac
         extra_workflow_data = json.loads(extra_workflow_data_json)
     except json.JSONDecodeError, TypeError:
         extra_workflow_data = {}
+    if not isinstance(extra_workflow_data, dict):
+        extra_workflow_data = {}
     page.current_workflow_task.on_action(
         page.current_workflow_task_state, request.user, action_name, **extra_workflow_data
     )
