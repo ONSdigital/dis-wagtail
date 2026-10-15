@@ -1000,10 +1000,9 @@ class PageWorkflowTransitionTests(WorkflowTweaksBaseTestCase):
 
     def test_reviewer_can_return_review_page_to_draft(self):
         workflow = mark_page_as_ready_for_review(self.page, self.publishing_officer)
-        review = workflow.current_task_state
         self.post_action(self.publishing_admin, "reject")
         workflow.refresh_from_db()
-        review.refresh_from_db()
+        review = workflow.current_task_state
         self.page.refresh_from_db()
         self.assertEqual(review.status, TaskState.STATUS_REJECTED)
         self.assertEqual(review.finished_by_id, self.publishing_admin.pk)
@@ -1025,10 +1024,9 @@ class PageWorkflowTransitionTests(WorkflowTweaksBaseTestCase):
 
     def test_submitter_returns_review_to_editable_draft_and_can_resubmit(self):
         workflow = mark_page_as_ready_for_review(self.page, self.publishing_officer)
-        review = workflow.current_task_state
         self.post_action(self.publishing_officer, "reject")
         workflow.refresh_from_db()
-        review.refresh_from_db()
+        review = workflow.current_task_state
         self.page.refresh_from_db()
         self.assertEqual(review.status, TaskState.STATUS_REJECTED)
         self.assertEqual(workflow.status, WorkflowState.STATUS_NEEDS_CHANGES)
