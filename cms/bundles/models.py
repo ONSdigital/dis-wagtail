@@ -246,7 +246,6 @@ class Bundle(index.Indexed, ClusterableModel, models.Model):  # type: ignore[dja
 
     @property
     def can_be_deleted(self) -> bool:
-        """Only bundles that have not been approved or published can be deleted."""
         return self.status in DELETABLE_BUNDLE_STATUSES
 
     @property
