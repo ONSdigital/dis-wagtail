@@ -1,7 +1,17 @@
-from django.http import HttpResponse
+from django.contrib import messages
+from django.contrib.auth.models import AnonymousUser, Permission
+from django.contrib.messages.storage.cookie import CookieStorage
+from django.http import HttpResponse, HttpResponseRedirect
 from django.test import RequestFactory, TestCase, override_settings
+from django.urls import reverse
+from wagtail.admin.auth import permission_denied
 
-from cms.core.middleware import CloudflareWagtailCacheTagMiddleware, NonTrailingSlashRedirectMiddleware
+from cms.core.middleware import (
+    CloudflareWagtailCacheTagMiddleware,
+    NonTrailingSlashRedirectMiddleware,
+    UnauthorizedAccessLoggingMiddleware,
+)
+from cms.users.tests.factories import UserFactory
 
 
 class TestNonTrailingSlashRedirectMiddleware(TestCase):
@@ -194,3 +204,180 @@ class TestCloudflareWagtailCacheTagMiddleware(TestCase):
         result = self.middleware.process_response(request, response)
         self.assertEqual(result["Content-Type"], "application/json")
         self.assertEqual(result.get("Cache-Tag"), "wagtail")
+
+
+class TestUnauthorizedAccessLoggingMiddleware(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.middleware = UnauthorizedAccessLoggingMiddleware(lambda req: None)
+
+    def process(self, request, response):
+        self.middleware.process_request(request)
+        with self.assertLogs("cms.security", level="WARNING") as logs:
+            self.middleware.process_response(request, response)
+        return logs.records[0]
+
+    def assert_not_logged(self, request, response):
+        self.middleware.process_request(request)
+        with self.assertNoLogs("cms.security"):
+            self.middleware.process_response(request, response)
+
+    def test_logs_403_for_authenticated_user(self):
+        user = UserFactory()
+        request = self.factory.get("/admin/bundles/?a=1", HTTP_USER_AGENT="TestAgent", REMOTE_ADDR="10.0.0.1")
+        request.user = user
+
+        record = self.process(request, HttpResponse(status=403))
+
+        self.assertEqual(record.getMessage(), "unauthorized access attempt")
+        self.assertEqual(record.classification, "PROTECTIVE_MONITORING")
+        self.assertEqual(record.auth, {"identity": str(user.pk), "identity_type": "user"})
+        self.assertEqual(record.email, user.email)
+        self.assertEqual(record.user_agent, "TestAgent")
+        self.assertEqual(record.ip_address, "10.0.0.1")
+        self.assertEqual(record.event_type, "unauthorized access attempt")
+        self.assertEqual(record.http["method"], "GET")
+        self.assertEqual(record.http["path"], "/admin/bundles/")
+        self.assertEqual(record.http["query"], "a=1")
+        self.assertEqual(record.http["status_code"], 403)
+        self.assertEqual(record.http["scheme"], "http")
+        self.assertEqual(record.http["port"], 80)
+        self.assertIn("host", record.http)
+        self.assertIsNotNone(record.http["started_at"])
+
+    def test_logs_401_for_anonymous_user_without_auth(self):
+        request = self.factory.get("/api/thing")
+        request.user = AnonymousUser()
+
+        record = self.process(request, HttpResponse(status=401))
+
+        self.assertEqual(record.http["status_code"], 401)
+        self.assertFalse(hasattr(record, "auth"))
+        self.assertFalse(hasattr(record, "email"))
+
+    def test_logs_403_without_user_on_request(self):
+        record = self.process(self.factory.get("/anything"), HttpResponse(status=403))
+        self.assertFalse(hasattr(record, "auth"))
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_omits_ip_address_in_external_env(self):
+        request = self.factory.get("/anything")
+        request.user = AnonymousUser()
+
+        record = self.process(request, HttpResponse(status=403))
+
+        self.assertFalse(hasattr(record, "ip_address"))
+
+    def test_event_type_depends_on_authentication(self):
+        anonymous = self.factory.get("/x")
+        anonymous.user = AnonymousUser()
+        record = self.process(anonymous, HttpResponse(status=403))
+        self.assertEqual(record.getMessage(), "unauthenticated access attempt")
+
+        authenticated = self.factory.get("/x")
+        authenticated.user = UserFactory()
+        record = self.process(authenticated, HttpResponse(status=403))
+        self.assertEqual(record.getMessage(), "unauthorized access attempt")
+
+    def test_logs_anonymous_admin_redirect_to_login(self):
+        request = self.factory.get("/admin/pages/")
+        request.user = AnonymousUser()
+
+        record = self.process(request, HttpResponseRedirect("/admin/login/?next=/admin/pages/"))
+
+        self.assertEqual(record.http["status_code"], 302)
+        self.assertEqual(record.http["path"], "/admin/pages/")
+
+    def test_logs_authenticated_user_admin_redirect_to_login(self):
+        user = UserFactory()
+        request = self.factory.get("/admin/pages/")
+        request.user = user
+
+        record = self.process(request, HttpResponseRedirect("/admin/login/?next=/admin/pages/"))
+
+        self.assertEqual(record.auth["identity"], str(user.pk))
+
+    def test_ignores_redirect_outside_admin(self):
+        request = self.factory.get("/some-page")
+        request.user = AnonymousUser()
+        self.assert_not_logged(request, HttpResponseRedirect("/admin/login/"))
+
+    def test_logs_wagtail_permission_denied_redirect(self):
+        user = UserFactory()
+        request = self.factory.get("/admin/pages/")
+        request.user = user
+        request._messages = CookieStorage(request)  # pylint: disable=protected-access
+        messages.error(request, "Sorry, you do not have permission to access this area.")
+
+        record = self.process(request, HttpResponseRedirect("/admin/"))
+
+        self.assertEqual(record.getMessage(), "unauthorized access attempt")
+        self.assertEqual(record.auth["identity"], str(user.pk))
+
+    def test_detects_real_wagtail_permission_denied_response(self):
+        """Fails if Wagtail changes the permission denied message the middleware relies on."""
+        request = self.factory.get("/admin/pages/")
+        request.user = UserFactory()
+        request._messages = CookieStorage(request)  # pylint: disable=protected-access
+
+        response = permission_denied(request)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(UnauthorizedAccessLoggingMiddleware._is_denied(request, response))  # pylint: disable=protected-access
+
+    def test_ignores_admin_home_redirect_without_permission_message(self):
+        request = self.factory.get("/admin/pages/")
+        request.user = UserFactory()
+        request._messages = CookieStorage(request)  # pylint: disable=protected-access
+        messages.error(request, "Something else went wrong.")
+        self.assert_not_logged(request, HttpResponseRedirect("/admin/"))
+
+    def test_ignores_admin_redirect_to_other_location(self):
+        request = self.factory.get("/admin")
+        request.user = AnonymousUser()
+        self.assert_not_logged(request, HttpResponseRedirect("/admin/"))
+
+    @override_settings(WAGTAILADMIN_HOME_PATH="admin")
+    def test_ignores_redirect_on_path_sharing_admin_prefix(self):
+        request = self.factory.get("/administrator/")
+        request.user = AnonymousUser()
+        self.assert_not_logged(request, HttpResponseRedirect("/admin/login/"))
+
+    def test_ignores_login_page_redirect(self):
+        for path in ("/admin/login/", "/admin/password_reset/"):
+            with self.subTest(path=path):
+                request = self.factory.get(path)
+                request.user = AnonymousUser()
+                self.assert_not_logged(request, HttpResponseRedirect("/admin/login/"))
+
+    def test_ignores_successful_response(self):
+        request = self.factory.get("/")
+        request.user = AnonymousUser()
+        self.assert_not_logged(request, HttpResponse(status=200))
+
+    def test_end_to_end_anonymous_admin_access(self):
+        with self.assertLogs("cms.security", level="WARNING") as logs:
+            response = self.client.get("/admin/pages/")
+
+        self.assertEqual(response.status_code, 302)
+        record = logs.records[0]
+        self.assertEqual(record.getMessage(), "unauthenticated access attempt")
+
+    def test_end_to_end_user_without_admin_access(self):
+        user = UserFactory()
+        self.client.force_login(user)
+        with self.assertLogs("cms.security", level="WARNING") as logs:
+            response = self.client.get("/admin/pages/")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(logs.records[0].auth["identity"], str(user.pk))
+
+    def test_end_to_end_forbidden_bundle_access(self):
+        user = UserFactory()
+        user.user_permissions.add(Permission.objects.get(codename="access_admin"))
+        self.client.force_login(user)
+        with self.assertLogs("cms.security", level="WARNING") as logs:
+            response = self.client.get(reverse("bundle:add"), headers={"x-requested-with": "XMLHttpRequest"})
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(logs.records[0].event_type, "unauthorized access attempt")
