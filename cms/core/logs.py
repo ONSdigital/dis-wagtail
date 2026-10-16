@@ -30,6 +30,11 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
         if isinstance(extra.get("request"), HttpRequest):
             extra.pop("request", None)
 
+        top_level_fields: dict[str, Any] = {
+            key: extra.pop(key) for key in ("auth", "classification", "http") if key in extra
+        }
+
+        # TODO: created_at should be UTC ISO8601 with millisecond precision, per the logging standards.
         record_data = {
             "created_at": datetime.fromtimestamp(record.created),
             "namespace": record.name,
@@ -37,6 +42,8 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
             "event": message,
             "data": extra,
         }
+
+        record_data.update(top_level_fields)
 
         if record.exc_info:
             record_data["errors"] = [

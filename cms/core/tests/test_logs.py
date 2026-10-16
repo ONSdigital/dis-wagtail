@@ -44,6 +44,24 @@ class JSONFormatterTestCase(TestCase):
             },
         )
 
+    def test_formats_standard_fields_at_top_level(self):
+        with self.assertLogs(__name__) as logs:
+            logger.info(
+                "The message",
+                extra={
+                    "classification": "PROTECTIVE_MONITORING",
+                    "auth": {"identity": "1", "identity_type": "user"},
+                    "http": {"method": "GET"},
+                    "other": 1,
+                },
+            )
+
+        formatted = self.format_log(logs.records[0])
+        self.assertEqual(formatted["classification"], "PROTECTIVE_MONITORING")
+        self.assertEqual(formatted["auth"], {"identity": "1", "identity_type": "user"})
+        self.assertEqual(formatted["http"], {"method": "GET"})
+        self.assertEqual(formatted["data"], {"other": 1})
+
     def test_formats_error(self):
         with self.assertLogs(__name__) as logs:
             try:
