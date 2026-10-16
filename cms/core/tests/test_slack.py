@@ -41,6 +41,32 @@ class SendOrUpdateMessageTestCase(TestCase):
 
     @override_settings(SLACK_BOT_TOKEN="xoxb-test-token")
     @patch("cms.core.slack.get_slack_client")
+    def test_send_thread_reply(self, mock_get_client):
+        mock_client = Mock()
+        mock_response = {"ok": True, "ts": "1503435957.000248"}
+        mock_client.chat_postMessage.return_value = mock_response
+        mock_get_client.return_value = mock_client
+
+        message_ts = send_or_update_slack_message(
+            text="This is a test reply",
+            channel="C024Be91L",
+            color="good",
+            fields=[{"title": "foo", "value": "bar", "short": True}],
+            thread_ts="1503435956.000247",
+        )
+
+        self.assertEqual(message_ts, mock_response["ts"])
+
+        mock_client.chat_update.assert_not_called()
+        mock_client.chat_postMessage.assert_called_once()
+        call_kwargs = mock_client.chat_postMessage.call_args[1]
+
+        self.assertEqual(call_kwargs["channel"], "C024Be91L")
+        self.assertEqual(call_kwargs["text"], "This is a test reply")
+        self.assertEqual(call_kwargs["thread_ts"], "1503435956.000247")
+
+    @override_settings(SLACK_BOT_TOKEN="xoxb-test-token")
+    @patch("cms.core.slack.get_slack_client")
     def test_update_existing_message(self, mock_get_client):
         """Should update existing message when a valid timestamp is provided."""
         mock_client = Mock()
