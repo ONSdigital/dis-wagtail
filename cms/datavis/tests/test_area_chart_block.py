@@ -85,8 +85,8 @@ class AreaChartBlockTestCase(BaseChartBlockTestCase):
                         self.block.clean(self.get_value(special_value_data))
 
                     error = cm.exception.block_errors["table"]
-                    self.assertEqual(AreaChartBlock.ERROR_SPECIAL_FLOAT_VALUES, error.code)
-                    self.assertEqual(["Table cannot contain NaN or infinity values."], error.messages)
+                    self.assertEqual(AreaChartBlock.ERROR_NON_NUMERIC_VALUES, error.code)
+                    self.assertEqual(["Numeric columns can only contain numbers."], error.messages)
 
     def test_special_floating_point_values_allowed_in_category_labels(self):
         """Test that label-like strings such as NaN are fine in the category column."""
@@ -121,8 +121,8 @@ class AreaChartBlockTestCase(BaseChartBlockTestCase):
         except StructBlockValidationError:
             self.fail("StructBlockValidationError raised for special floating-point values in header.")
 
-    def test_table_works_if_special_floating_point_values_in_substring(self):
-        """Test that the table works if special floating-point values are in a substring."""
+    def test_substring_special_floating_point_values_rejected(self):
+        """Test that non-numeric strings containing NaN or infinity are rejected."""
         substring_special_value_data = self.raw_data.copy()
         substring_special_value_data["table"] = TableDataFactory(
             table_data=[
@@ -132,11 +132,10 @@ class AreaChartBlockTestCase(BaseChartBlockTestCase):
             ]
         )
 
-        # This should not raise a validation error because the special value is part of a substring
-        try:
+        with self.assertRaises(StructBlockValidationError) as cm:
             self.block.clean(self.get_value(substring_special_value_data))
-        except StructBlockValidationError:
-            self.fail("StructBlockValidationError raised for special floating-point values in a substring.")
+
+        self.assertEqual(AreaChartBlock.ERROR_NON_NUMERIC_VALUES, cm.exception.block_errors["table"].code)
 
     def test_editable_x_axis_title(self):
         self.raw_data["x_axis"]["title"] = "Editable X-axis Title"

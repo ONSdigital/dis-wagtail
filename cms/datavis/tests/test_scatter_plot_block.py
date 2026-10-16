@@ -255,9 +255,7 @@ class ScatterPlotBlockTestCase(BaseChartBlockTestCase):
                 if is_invalid:
                     with self.assertRaises(StructBlockValidationError) as cm:
                         self.block.clean(value)
-                    self.assertEqual(
-                        ScatterPlotBlock.ERROR_SPECIAL_FLOAT_VALUES, cm.exception.block_errors["table"].code
-                    )
+                    self.assertEqual(ScatterPlotBlock.ERROR_NON_NUMERIC_VALUES, cm.exception.block_errors["table"].code)
                 else:
                     try:
                         self.block.clean(value)

@@ -210,7 +210,7 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
                 with self.assertRaises(blocks.StructBlockValidationError) as cm:
                     self.block.clean(value)
                 self.assertEqual(
-                    BarColumnConfidenceIntervalChartBlock.ERROR_NON_NUMERIC_VALUE,
+                    BarColumnConfidenceIntervalChartBlock.ERROR_NON_NUMERIC_VALUES,
                     cm.exception.block_errors["table"].code,
                 )
 
@@ -431,7 +431,7 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
                     with self.assertRaises(blocks.StructBlockValidationError) as cm:
                         self.block.clean(value)
                     self.assertEqual(
-                        BarColumnConfidenceIntervalChartBlock.ERROR_SPECIAL_FLOAT_VALUES,
+                        BarColumnConfidenceIntervalChartBlock.ERROR_NON_NUMERIC_VALUES,
                         cm.exception.block_errors["table"].code,
                     )
                 else:

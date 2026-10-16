@@ -1,6 +1,5 @@
 from collections.abc import Sequence
 from contextlib import suppress
-from math import isfinite
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
@@ -56,7 +55,7 @@ class BaseChartBlock(BaseVisualisationBlock):
     numeric_columns: ClassVar[slice] = slice(1, None)
 
     # Error codes
-    ERROR_SPECIAL_FLOAT_VALUES = "special_float_values"
+    ERROR_NON_NUMERIC_VALUES = "non_numeric_values"
 
     # Editable fields
     # Note that static blocks are intended to be overridden with real blocks or
@@ -132,15 +131,15 @@ class BaseChartBlock(BaseVisualisationBlock):
         return value
 
     def validate_cell_values(self, value: StructValue) -> None:
-        """Check if values contain special floating-point values."""
+        """Check that numeric columns contain only numbers or blanks."""
         rows = value["table"].rows
 
-        if any(isinstance(cell, float) and not isfinite(cell) for row in rows for cell in row[self.numeric_columns]):
+        if any(isinstance(cell, str) and cell.strip() for row in rows for cell in row[self.numeric_columns]):
             raise blocks.StructBlockValidationError(
                 {
                     "table": ValidationError(
-                        "Table cannot contain NaN or infinity values.",
-                        code=self.ERROR_SPECIAL_FLOAT_VALUES,
+                        "Numeric columns can only contain numbers.",
+                        code=self.ERROR_NON_NUMERIC_VALUES,
                     )
                 }
             )

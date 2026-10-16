@@ -476,7 +476,6 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
     ERROR_BAR_CHART_NO_ASPECT_RATIO = "bar_chart_no_aspect_ratio"
     ERROR_UNMATCHED_RANGE = "unmatched_range"
     ERROR_INSUFFICIENT_COLUMNS = "insufficient_columns"
-    ERROR_NON_NUMERIC_VALUE = "non_numeric_value"
     ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE = "horizontal_bar_no_category_title"
     ERROR_HORIZONTAL_BAR_NO_CATEGORY_TICK_INTERVAL = "horizontal_bar_no_category_tick_interval"
 
@@ -695,12 +694,6 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
         else:  # Only perform row-level validation if we have the expected number of columns.
             # Validate that range values are either both present or both absent.
             for row in value["table"].rows:
-                if any((isinstance(cell, str) and cell.strip()) for cell in row[1:4]):
-                    errors["table"] = ValidationError(
-                        f'Non-numeric values in category "{row[0]}"',
-                        code=self.ERROR_NON_NUMERIC_VALUE,
-                    )
-
                 if (row[2] == "") != (row[3] == ""):
                     errors["table"] = ValidationError(
                         f'Unmatched range for category "{row[0]}". Enter both '
