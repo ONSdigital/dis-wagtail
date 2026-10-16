@@ -78,14 +78,14 @@ class EnqueuePostPublishActionsSignalTestCase(SimpleTestCase):
 class ScheduledPagePostPublishActionsTestCase(TestCase):
     def setUp(self):
         self.page = InformationPageFactory(live=False)
-        self.go_live_at = timezone.now() + timedelta(days=1)
+        self.tomorrow_go_live_at = timezone.now() + timedelta(days=1)
 
         patcher = patch("cms.post_publish_actions.signal_handlers.run_post_publish_actions_for")
         self.mock_run_post_publish_actions_for = patcher.start()
         self.addCleanup(patcher.stop)
 
     def test_scheduling_a_page_does_not_run_post_publish_actions_immediately(self):
-        self.page.go_live_at = self.go_live_at
+        self.page.go_live_at = self.tomorrow_go_live_at
         self.page.save_revision().publish()
 
         self.page.refresh_from_db()
@@ -93,10 +93,10 @@ class ScheduledPagePostPublishActionsTestCase(TestCase):
         self.mock_run_post_publish_actions_for.assert_not_called()
 
     def test_post_publish_actions_run_when_page_goes_live(self):
-        self.page.go_live_at = self.go_live_at
+        self.page.go_live_at = self.tomorrow_go_live_at
         self.page.save_revision().publish()
 
-        with time_machine.travel(self.go_live_at + timedelta(minutes=1)):
+        with time_machine.travel(self.tomorrow_go_live_at + timedelta(minutes=1)):
             call_command("publish_scheduled_without_bundles", stdout=StringIO())
 
         self.page.refresh_from_db()
