@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import CharField, IntegerField
 from django.db.models.functions import Cast
-from wagtail.models import Page, ReferenceIndex
+from wagtail.models import DraftStateMixin, Page, ReferenceIndex
 from wagtail.signals import published, unpublished
 
 from cms.bundles.models import Bundle
@@ -41,13 +41,16 @@ def _publish_media(instance: Model) -> None:
             )
 
 
-def publish_media_on_publish(instance: Model, **kwargs: Any) -> None:
+def publish_media_on_publish(instance: DraftStateMixin, **kwargs: Any) -> None:
     """Signal handler to be connected to the 'published' signal for all
     publishable models. It is responsible for identifying any privacy-controlled
     media used by the object, and ensuring that it is also made public.
     """
     # NB: Pages are handled by post-publish actions.
-    if not isinstance(instance, Page):
+    if isinstance(instance, Page):
+        return
+
+    if instance.live:
         _publish_media(instance)
 
 
