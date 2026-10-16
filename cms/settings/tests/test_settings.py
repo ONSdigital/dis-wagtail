@@ -212,6 +212,9 @@ class SecurityHeadersTestCase(TestCase):
                 self.assertIn(settings.ONS_CDN_URL, self._get_csp_expressions(csp, "font-src"))
                 self.assertIn(CSP.UNSAFE_INLINE, self._get_csp_expressions(csp, "style-src"))
 
+                # MathJax 4 and its fonts are served from the ONS CDN, not jsdelivr.
+                self.assertNotIn("jsdelivr", response.headers["Content-Security-Policy"])
+
     def test_design_system_csp(self):
         for url in self.urls:
             with self.subTest(url):
