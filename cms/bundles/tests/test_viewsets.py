@@ -27,6 +27,7 @@ from cms.bundles.enums import PUBLISHED_BUNDLE_STATUSES, BundleStatus
 from cms.bundles.models import Bundle, BundleTeam
 from cms.bundles.tests.factories import BundleDatasetFactory, BundleFactory, BundlePageFactory
 from cms.bundles.tests.utils import grant_all_bundle_permissions, make_bundle_viewer
+from cms.bundles.viewsets.bundle import BundleDeleteView
 from cms.bundles.viewsets.bundle_chooser import bundle_chooser_viewset
 from cms.bundles.viewsets.bundle_page_chooser import PagesWithDraftsForBundleChooserWidget, bundle_page_chooser_viewset
 from cms.core.tests import TransactionTestCase
@@ -1933,37 +1934,62 @@ class BundleDeleteTestCase(WagtailTestUtils, TestCase):
         response = self.client.get(self.inspect_url)
         self.assertContains(response, self.delete_url)
 
-    def test_bundle_deletable_once_published(self):
-        self.bundle.status = BundleStatus.PUBLISHED
-        self.bundle.save(update_fields=["status"])
+    def test_bundle_not_deletable_if_not_deletable_status(self):
+        for status in [
+            BundleStatus.APPROVED,
+            BundleStatus.PUBLISHED,
+            BundleStatus.PARTIALLY_PUBLISHED,
+            BundleStatus.FAILED,
+        ]:
+            with self.subTest(status=status):
+                self.bundle.status = status
+                self.bundle.save(update_fields=["status"])
 
-        response = self.client.get(self.delete_url)
-        self.assertEqual(response.status_code, HTTPStatus.OK)
+                # try both GET and POST for the delete view
+                response = self.client.get(self.delete_url, follow=True)
+                self.assertRedirects(response, reverse("wagtailadmin_home"))
+                self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
-        # the inspect view has the delete link
-        response = self.client.get(self.inspect_url)
-        self.assertContains(response, self.delete_url)
+                response = self.client.post(self.delete_url, data={"action-delete": "delete"}, follow=True)
+                self.assertRedirects(response, reverse("wagtailadmin_home"))
+                self.assertContains(response, "Sorry, you do not have permission to access this area.")
+                self.assertTrue(Bundle.objects.filter(pk=self.bundle.pk).exists())
 
-    def test_bundle_not_deletable_if_ready_to_be_published(self):
-        self.bundle.status = BundleStatus.APPROVED
-        self.bundle.save(update_fields=["status"])
+                # the edit view redirects for published statuses, otherwise it has no delete URL
+                response = self.client.get(self.edit_url)
+                if status in PUBLISHED_BUNDLE_STATUSES:
+                    self.assertEqual(response.status_code, HTTPStatus.FOUND)
+                else:
+                    self.assertNotContains(response, self.delete_url)
 
-        # try both GET and POST for the delete view
-        response = self.client.get(self.delete_url, follow=True)
-        self.assertRedirects(response, "/admin/")
-        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+                # the inspect view doesn't have the delete link
+                response = self.client.get(self.inspect_url)
+                self.assertNotContains(response, self.delete_url)
 
-        response = self.client.post(self.delete_url, data={"action-delete": "delete"}, follow=True)
-        self.assertRedirects(response, "/admin/")
-        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+    def _post_delete_with_concurrent_change(self, change):
+        """POSTs the delete after dispatch has passed, but before the delete action runs."""
+        original_form_valid = BundleDeleteView.form_valid
 
-        # the edit view doesn't have the delete URL
-        response = self.client.get(self.edit_url)
-        self.assertNotContains(response, self.delete_url)
+        def form_valid_after_change(view, form):
+            change()
+            return original_form_valid(view, form)
 
-        # the inspect view doesn't have the delete link
-        response = self.client.get(self.inspect_url)
-        self.assertNotContains(response, self.delete_url)
+        with patch.object(BundleDeleteView, "form_valid", autospec=True, side_effect=form_valid_after_change):
+            return self.client.post(self.delete_url, data={"action-delete": "delete"})
+
+    def test_bundle_not_deleted_if_status_changed_concurrently(self):
+        response = self._post_delete_with_concurrent_change(
+            lambda: Bundle.objects.filter(pk=self.bundle.pk).update(status=BundleStatus.APPROVED)
+        )
+
+        self.assertRedirects(response, reverse("wagtailadmin_home"), fetch_redirect_response=False)
+        self.assertTrue(Bundle.objects.filter(pk=self.bundle.pk).exists())
+        self.assertFalse(ModelLogEntry.objects.filter(action="wagtail.delete").exists())
+
+    def test_delete_returns_404_if_bundle_deleted_concurrently(self):
+        response = self._post_delete_with_concurrent_change(lambda: Bundle.objects.filter(pk=self.bundle.pk).delete())
+
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
 
 class BundleChooserViewsetTestCase(BundleViewSetTestCaseMixin, TestCase):
