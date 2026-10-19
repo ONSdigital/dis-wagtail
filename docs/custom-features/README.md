@@ -12,3 +12,4 @@ The following are project-specific features:
 - [Locked migrate](locked-migrate.md)
 - [Cache Invalidation Replay](cache-invalidation-replay.md)
 - [Data creation scripts](data-creation-scripts.md)
+- [Taxonomy topics](taxonomy-topics.md)

@@ -15,6 +15,7 @@ from cms.datasets.utils import (
     extract_topic_ids,
     get_published_from_state,
 )
+from cms.taxonomy.models import DUMMY_ROOT_DEPTH
 
 logger = logging.getLogger(__name__)
 
@@ -256,7 +257,12 @@ class Dataset(models.Model):  # type: ignore[django-manager-missing]
     edition = models.CharField(max_length=255)
     version = models.IntegerField()
     topic = models.ForeignKey(
-        "taxonomy.Topic", null=True, blank=True, on_delete=models.SET_NULL, related_name="datasets"
+        "taxonomy.Topic",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="datasets",
+        limit_choices_to={"depth__gt": DUMMY_ROOT_DEPTH},
     )
 
     objects = DatasetManager()

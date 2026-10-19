@@ -21,7 +21,7 @@ django-jinja = "^2.11.0"
 django-redis = "~7.0.0"
 django-storages = { version = "~1.14.6", extras = ["s3"] }
 gunicorn = "~26.0.0"
-psycopg = {extras = ["pool"], version = "^3.3.4"}
+psycopg = {extras = ["pool"], version = "^3.3.6"}
 wagtail-font-awesome-svg = "^2.0"
 apscheduler = "^3.11.3"
 # :TODO: Migrate to wagtail-polymath (the renamed successor), which upgrades the MathJax
@@ -32,7 +32,7 @@ whitenoise = "~6.12.0"
 slack-sdk = "^3.43.0"
 django-cache-memoize = "^0.2.1"
 requests = "^2.34.2"
-django-treebeard = "^4.8.0" # Wagtail 7.4 allows < 6.0, but 5.x needs a TopicManager refactor
+django-treebeard = ">=4.8,<6.0" # Wagtail pins < 6.0, so that is our ceiling rather than the latest release
 kafka-python = "^2.3.2"
 wagtail-tinytableblock = "^0.5.0"
 queryish = "^0.3"
@@ -82,6 +82,7 @@ django-migration-linter = "^6.0.0"
 fakeredis = "^2.36.2"
 time-machine = "^3.2.0"
 boto3-stubs = { version="^1.43.41", extras=['rds'] }
+psycopg = {extras = ["binary"], version = "^3.3.6"}
 
 [tool.ruff]
 target-version = "py314"

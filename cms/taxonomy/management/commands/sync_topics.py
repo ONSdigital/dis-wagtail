@@ -173,7 +173,7 @@ def _check_for_duplicate_topics(fetched_topics: Iterable[Mapping[str, str]]) -> 
 
 def _get_topic(topic_id: str) -> Topic | None:
     """Fetches a Topic record by its primary key (id), or returns None if not found."""
-    return Topic.objects.filter(id=topic_id).first()  # type: ignore[no-any-return]
+    return Topic.objects.topics().filter(id=topic_id).first()  # type: ignore[no-any-return]
 
 
 def _topic_matches(existing_topic: Topic, fetched_topic: Mapping[str, str]) -> bool:
@@ -260,10 +260,12 @@ def _check_for_removed_topics(fetched_topic_ids: set[str]) -> None:
 
 
 def _get_active_topic_ids() -> set[str]:
-    return set(Topic.objects.filter(removed=False).values_list("id", flat=True))
+    # topics() rather than all(): the dummy root is never returned by the API, so including it here would
+    # make every sync decide it had been removed and flag it.
+    return set(Topic.objects.topics().filter(removed=False).values_list("id", flat=True))
 
 
 def _set_topic_as_removed(removed_topic_id: str) -> None:
-    removed_topic = Topic.objects.get(id=removed_topic_id)
+    removed_topic = Topic.objects.topics().get(id=removed_topic_id)
     removed_topic.removed = True
     removed_topic.save()
