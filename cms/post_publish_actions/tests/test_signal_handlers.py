@@ -103,3 +103,28 @@ class ScheduledPagePostPublishActionsTestCase(TestCase):
         self.assertTrue(self.page.live)
         self.mock_run_post_publish_actions_for.assert_called_once_with(self.page, None)
         self.assertTrue(self.mock_run_post_publish_actions_for.call_args.args[0].live)
+
+    def test_scheduling_previously_published_page_runs_actions_only_when_it_goes_live(self):
+        self.page.save_revision().publish()
+        self.page.refresh_from_db()
+        self.assertTrue(self.page.live)
+        self.mock_run_post_publish_actions_for.assert_called_once_with(self.page, None)
+
+        self.page.unpublish()
+        self.page.refresh_from_db()
+        self.assertFalse(self.page.live)
+        self.mock_run_post_publish_actions_for.reset_mock()
+
+        self.page.go_live_at = self.tomorrow_go_live_at
+        self.page.save_revision().publish()
+
+        self.page.refresh_from_db()
+        self.assertFalse(self.page.live)
+        self.mock_run_post_publish_actions_for.assert_not_called()
+
+        with time_machine.travel(self.tomorrow_go_live_at + timedelta(minutes=1)):
+            call_command("publish_scheduled_without_bundles", stdout=StringIO())
+
+        self.page.refresh_from_db()
+        self.assertTrue(self.page.live)
+        self.mock_run_post_publish_actions_for.assert_called_once_with(self.page, None)

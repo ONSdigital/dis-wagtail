@@ -118,10 +118,10 @@ class SignalHandlersTestCase(TestCase):
         """Tests that scheduling a draft page to go live in the future does not run the
         signal handlers that make referenced media public.
         """
-        go_live_at = timezone.now() + timedelta(days=1)
+        tomorrow_go_live_at = timezone.now() + timedelta(days=1)
         self.test_page.content = self.generate_media_referencing_content()
         self.test_page.live = False
-        self.test_page.go_live_at = go_live_at
+        self.test_page.go_live_at = tomorrow_go_live_at
         self.test_page.save(update_fields=["content", "live", "go_live_at"])
 
         self.test_page.save_revision().publish()
@@ -134,7 +134,7 @@ class SignalHandlersTestCase(TestCase):
         self.assertEqual(self.private_document.privacy, Privacy.PRIVATE)
 
         # Once the revision is live media should be public
-        with time_machine.travel(go_live_at + timedelta(minutes=1)):
+        with time_machine.travel(tomorrow_go_live_at + timedelta(minutes=1)):
             call_command("publish_scheduled_without_bundles", stdout=StringIO())
 
         self.test_page.refresh_from_db()
@@ -228,8 +228,8 @@ class SignalHandlersTestCase(TestCase):
         """Tests that the signal handlers early return for snippets scheduled to go live in future,
         and run when it goes live.
         """
-        go_live_at = timezone.now() + timedelta(days=1)
-        definition = DefinitionFactory(live=False, go_live_at=go_live_at)
+        tomorrow_go_live_at = timezone.now() + timedelta(days=1)
+        definition = DefinitionFactory(live=False, go_live_at=tomorrow_go_live_at)
 
         definition.save_revision().publish()
 
@@ -237,7 +237,7 @@ class SignalHandlersTestCase(TestCase):
         self.assertFalse(definition.live)
         mock_publish_media.assert_not_called()
 
-        with time_machine.travel(go_live_at + timedelta(minutes=1)):
+        with time_machine.travel(tomorrow_go_live_at + timedelta(minutes=1)):
             call_command("publish_scheduled_without_bundles", stdout=StringIO())
 
         definition.refresh_from_db()
