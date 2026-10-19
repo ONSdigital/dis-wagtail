@@ -122,8 +122,8 @@ class Command(BaseCommand):
                     # Use queryset delete methods to use any customized behaviour
                     model._default_manager.filter(pk__in=[instance.pk for instance in instances]).delete()  # pylint: disable=protected-access
 
-            # NB: Because the root topic is hidden in get_queryset, the tree gets corrupted during deletion.
-            # Manually repair the tree afterwards.
+            # TODO (remove): This repaired tree corruption caused by the root topic being hidden in get_queryset.
+            # The root is no longer hidden, so this is kept as a safety net until we confirm it can be removed.
             Topic.fix_tree()
 
         self.stdout.write("Successfully deleted", self.style.SUCCESS)
