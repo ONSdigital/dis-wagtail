@@ -1346,6 +1346,12 @@ class StatisticalArticlePageFeaturedArticleTestCase(WagtailTestUtils, TestCase):
 
         data = self.page.as_featured_article_child_macro_data()
         self.assertEqual(data["chart"]["fallbackImageUrl"], image.url)
+        self.assertNotIn("fallbackImageAlt", data["chart"])
+
+        self.page.featured_chart[0].value["audio_description"] = "Line chart of values rising."
+
+        data = self.page.as_featured_article_child_macro_data()
+        self.assertEqual(data["chart"]["fallbackImageAlt"], "Line chart of values rising.")
 
     def test_as_featured_article_child_macro_data_with_iframe(self):
         """Test that an iframe is used when configured as the featured chart."""

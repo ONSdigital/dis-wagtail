@@ -152,6 +152,8 @@ class BaseChartBlock(BaseVisualisationBlock):
         # defeating the config_hash idempotency check.
         if rendered_chart_image := value.get("rendered_chart_image"):
             chart_config["fallbackImageUrl"] = rendered_chart_image.url
+            if audio_description := value.get("audio_description"):
+                chart_config["fallbackImageAlt"] = audio_description
         return chart_config
 
     def get_highcharts_chart_type(self, value: StructValue) -> str:
