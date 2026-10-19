@@ -34,6 +34,7 @@ def is_publishing_bundle() -> bool:
 def run_post_publish_actions_handler(sender: type[Page], instance: Page, **kwargs: Any) -> None:  # pylint: disable=unused-argument
     # Wagtail can trigger the publish signal for a draft page that has been scheduled for future publishing
     # Only run post-publish actions for pages that are actually live
+    # TODO: remove when https://github.com/wagtail/wagtail/issues/13959 is fixed
     if not instance.live:
         return
     run_post_publish_actions_for(instance, _publishing_bundle.get())

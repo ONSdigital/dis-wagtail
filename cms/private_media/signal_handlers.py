@@ -47,6 +47,9 @@ def publish_media_on_publish(instance: DraftStateMixin, **kwargs: Any) -> None:
     media used by the object, and ensuring that it is also made public.
     """
     # NB: Pages are handled by post-publish actions.
+    # Wagtail can trigger the publish signal for a draft that has been scheduled for future publishing
+    # Only run post-publish actions for objects that are actually live
+    # TODO: remove when https://github.com/wagtail/wagtail/issues/13959 is fixed
     if isinstance(instance, Page):
         return
 
