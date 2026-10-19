@@ -4,10 +4,12 @@ from unittest.mock import patch
 import requests
 import responses
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 
 from cms.datasets.models import Dataset, ONSDataset, ONSDatasetApiQuerySet
 from cms.datasets.tests.factories import DatasetFactory
+from cms.taxonomy.models import Topic
 from cms.taxonomy.tests.factories import SimpleTopicFactory, TopicFactory
 
 
@@ -668,3 +670,20 @@ class TestDatasetUrlPath(TestCase):
             self.dataset.get_url_path(link_to_latest_version=True),
             "/inflationandpricesindices/datasets/cpih01/editions/september/versions",
         )
+
+
+class TestDatasetTopicValidation(TestCase):
+    def test_model_validation_rejects_the_dummy_root(self):
+        """Dataset.topic is only set from the API today, but any future form must not be able to link the dummy root."""
+        dataset = DatasetFactory.build(topic=Topic.objects.root_topic())
+
+        with self.assertRaises(ValidationError) as ctx:
+            dataset.full_clean(validate_unique=False)
+
+        self.assertIn("topic", ctx.exception.message_dict)
+        self.assertIn("is not a valid choice", " ".join(ctx.exception.message_dict["topic"]))
+
+    def test_model_validation_accepts_a_real_topic(self):
+        dataset = DatasetFactory.build(topic=TopicFactory())
+
+        dataset.full_clean(validate_unique=False)

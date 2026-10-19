@@ -92,7 +92,8 @@ class TestDataFactory:
         )
 
     def _create_datasets(self) -> None:
-        topic_ids = list(Topic.objects.values_list("pk", flat=True))
+        # topics() rather than the default manager, which now includes the dummy root.
+        topic_ids = list(Topic.objects.topics().values_list("pk", flat=True))
 
         for index in range(self.get_config_count(self.config.datasets.count)):
             self.create_from_factory(
