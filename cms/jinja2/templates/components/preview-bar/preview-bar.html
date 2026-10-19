@@ -2,10 +2,9 @@
 {% from "components/select/_macro.njk" import onsSelect %}
 {% from "components/button/_macro.njk" import onsButton %}
 
-<section aria-label="Preview items">
-    {% call onsPanel({"classes": "ons-container ons-u-mb-xs preview-bar"}) %}
+<section aria-label="Preview items" class="ons-container">
+    {% call onsPanel({"classes": "ons-u-mb-xs"}) %}
         <div class="ons-grid">
-
             <div class="ons-grid__col ons-col-8@m">
                 {# fmt:off #}
                 {{-
