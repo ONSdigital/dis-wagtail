@@ -490,6 +490,8 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         _updated_ids: list[int] | None = None,
     ) -> None:
         """Don't update and publish aliases if the page is not live."""
+        # don't update aliases if the page is not live and is not an alias itself
+        # this ensures we handle the case where we have aliases of aliases correctly
         if not self.live and self.alias_of_id is None:
             return
 

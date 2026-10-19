@@ -21,7 +21,6 @@ class ScheduledPageAliasesTestCase(TranslationResetMixin, TestCase):
 
     def setUp(self):
         page = InformationPageFactory(live=False, title="Original title")
-        page.refresh_from_db()
         self.page_pk = page.pk
         self.alias = page.copy_for_translation(Locale.objects.get(language_code="cy"), copy_parents=True, alias=True)
         self.go_live_at = timezone.now() + timedelta(days=1)
@@ -30,9 +29,9 @@ class ScheduledPageAliasesTestCase(TranslationResetMixin, TestCase):
         page: InformationPage = InformationPage.objects.get(pk=self.page_pk).get_latest_revision_as_object()
         return page
 
-    def publish(self, title: str = "Published title") -> None:
+    def publish(self) -> None:
         page = self.get_page()
-        page.title = title
+        page.title = "Published title"
         page.save_revision().publish()
 
     def schedule(self) -> None:
@@ -89,6 +88,7 @@ class ScheduledPageAliasesTestCase(TranslationResetMixin, TestCase):
 
     def test_scheduling_a_new_revision_of_a_live_page_does_not_update_its_aliases(self):
         self.publish()
+        self.assertEqual(self.alias.title, "Published title")
 
         self.schedule()
         self.assertAlias(live=True, title="Published title")
