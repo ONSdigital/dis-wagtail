@@ -1,7 +1,12 @@
+from datetime import timedelta
+from io import StringIO
 from unittest.mock import call, patch
 
+import time_machine
+from django.core.management import call_command
 from django.db.models.signals import post_delete
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from wagtail.models import Locale, Page, PageViewRestriction
 from wagtail.signals import page_published, page_slug_changed, page_unpublished, post_page_move
 
@@ -74,6 +79,31 @@ class SearchSignalsTest(TestCase):
         PageViewRestriction.objects.create(page=self.included_page, restriction_type=PageViewRestriction.LOGIN)
         page_published.send(sender=type(self.included_page), instance=self.included_page)
         self.mock_publisher.publish_created_or_updated.assert_not_called()
+
+    def test_on_page_published_page_not_live(self):
+        """Test we don't run publish_created_or_updated for a page that is not live."""
+        page = InformationPageFactory(live=False)
+        page_published.send(sender=type(page), instance=page)
+
+        self.mock_publisher.publish_created_or_updated.assert_not_called()
+
+    def test_scheduling_a_page_only_publishes_to_search_when_it_goes_live(self):
+        """Scheduling a draft page should not trigger publish_created_or_updated until it goes live."""
+        go_live_at = timezone.now() + timedelta(days=1)
+        page = InformationPageFactory(live=False, go_live_at=go_live_at)
+
+        page.save_revision().publish()
+
+        page.refresh_from_db()
+        self.assertFalse(page.live)
+        self.mock_publisher.publish_created_or_updated.assert_not_called()
+
+        with time_machine.travel(go_live_at + timedelta(minutes=1)):
+            call_command("publish_scheduled_without_bundles", stdout=StringIO())
+
+        page.refresh_from_db()
+        self.assertTrue(page.live)
+        self.mock_publisher.publish_created_or_updated.assert_called_once_with(page)
 
     def test_on_page_unpublished_excluded_page_type(self):
         """Excluded pages should not trigger publish_deleted."""
