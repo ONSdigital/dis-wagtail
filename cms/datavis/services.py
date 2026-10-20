@@ -75,6 +75,14 @@ def _prepare_chart_block(block: StreamChild) -> ChartPending | ChartRenderResult
     return ChartPending(block_id=block.id, config=config, config_hash=config_hash)
 
 
+def _safe_prepare_chart_block(block: StreamChild) -> ChartPending | ChartRenderResult:
+    try:
+        return _prepare_chart_block(block)
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception("Could not prepare chart block", extra={"block_id": block.id})
+        return ChartRenderResult(block_id=block.id, changed=False, error=GENERIC_RENDER_ERROR)
+
+
 def _fetch_chart_response(pending: ChartPending, client: ChartExporterClient) -> ChartFetched | ChartRenderResult:
     """Do the (slow, network-bound) part of rendering a chart block.
 
@@ -91,6 +99,9 @@ def _fetch_chart_response(pending: ChartPending, client: ChartExporterClient) ->
         return ChartRenderResult(block_id=block_id, changed=False, error=UNAVAILABLE_RENDER_ERROR)
     except ChartExporterError:
         return ChartRenderResult(block_id=block_id, changed=False, error=GENERIC_RENDER_ERROR)
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception("Unexpected error fetching chart", extra={"block_id": block_id})
+        return ChartRenderResult(block_id=block_id, changed=False, error=GENERIC_RENDER_ERROR)
 
     if response is None:
         # Integration disabled: nothing to attach.
@@ -105,6 +116,9 @@ def render_chart_blocks(blocks: Iterable[StreamChild]) -> list[ChartRenderResult
     Each block's ``rendered_chart_image`` value is updated directly when a new image is
     created or reused. Blocks whose config hash already matches their currently attached
     image are skipped, so unchanged charts are not re-rendered on resubmission.
+
+    Failures are isolated per block and reported via ``ChartRenderResult.error``, so one bad
+    chart never prevents the others from being rendered.
     """
     blocks = list(blocks)
     if not blocks:
@@ -114,7 +128,7 @@ def render_chart_blocks(blocks: Iterable[StreamChild]) -> list[ChartRenderResult
     start = time.monotonic()
 
     # Prepare the configs before making the requests in the ThreadPoolExecutor
-    prepared = [_prepare_chart_block(block) for block in blocks]
+    prepared = [_safe_prepare_chart_block(block) for block in blocks]
     pending = [item for item in prepared if isinstance(item, ChartPending)]
 
     with ThreadPoolExecutor(max_workers=settings.CMS_CHART_EXPORTER_API_MAX_CONCURRENT_RENDERS) as executor:
@@ -129,9 +143,14 @@ def render_chart_blocks(blocks: Iterable[StreamChild]) -> list[ChartRenderResult
             results.append(outcome)
             continue
         logger.debug("Saving chart image instance for block %s", block.id)
-        image = RenderedChartImage.objects.create_from_export_response(
-            outcome.response, config_hash=outcome.config_hash
-        )
+        try:
+            image = RenderedChartImage.objects.create_from_export_response(
+                outcome.response, config_hash=outcome.config_hash
+            )
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Could not save chart image", extra={"block_id": block.id})
+            results.append(ChartRenderResult(block_id=block.id, changed=False, error=GENERIC_RENDER_ERROR))
+            continue
         block.value["rendered_chart_image"] = image
         results.append(ChartRenderResult(block_id=block.id, changed=True))
 

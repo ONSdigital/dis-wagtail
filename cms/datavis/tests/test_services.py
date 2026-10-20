@@ -54,6 +54,20 @@ def make_page_with_chart():
     return StatisticalArticlePage.objects.get(pk=page.pk)
 
 
+def make_page_with_charts(titles):
+    """Create and persist a StatisticalArticlePage with one chart block per title, in order."""
+    page = StatisticalArticlePageFactory()
+    page.content = [
+        {
+            "type": "section",
+            "id": str(uuid.uuid4()),
+            "value": {"title": "Section", "content": [chart_block(title=title) for title in titles]},
+        }
+    ]
+    page.save()
+    return StatisticalArticlePage.objects.get(pk=page.pk)
+
+
 def make_export_response(**overrides):
     defaults = {
         "id": str(uuid.uuid4()),
@@ -123,3 +137,27 @@ class RenderChartBlocksTests(TestCase):
 
         self.assertEqual(results, [])
         mock_client_cls.assert_not_called()
+
+    @patch("cms.datavis.services.ChartExporterClient")
+    def test_failing_block_in_the_middle_does_not_prevent_others_being_saved(self, mock_client_cls):
+        # Chart A and C will succeed, while Chart B will fail
+        page = make_page_with_charts(["A", "B", "C"])
+        blocks = list(iter_chart_blocks(page.content))
+        block_a, block_b, block_c = blocks
+        failing_hash = hash_chart_config(block_b.block.get_export_config(block_b.value))
+
+        def create_chart(config):
+            if hash_chart_config(config) == failing_hash:
+                raise RuntimeError("boom")
+            return make_export_response(id=str(uuid.uuid4()), key=f"charts/{uuid.uuid4()}.png")
+
+        mock_client_cls.return_value.create_chart.side_effect = create_chart
+
+        results = render_chart_blocks([block_a, block_b, block_c])
+
+        self.assertEqual([result.block_id for result in results], [block_a.id, block_b.id, block_c.id])
+        self.assertEqual([result.changed for result in results], [True, False, True])
+        self.assertEqual([result.error for result in results], [None, GENERIC_RENDER_ERROR, None])
+        self.assertIsInstance(block_a.value["rendered_chart_image"], RenderedChartImage)
+        self.assertIsNone(block_b.value["rendered_chart_image"])
+        self.assertIsInstance(block_c.value["rendered_chart_image"], RenderedChartImage)
