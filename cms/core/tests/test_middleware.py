@@ -1,3 +1,4 @@
+import uuid
 from unittest import mock
 
 from django.contrib import messages
@@ -246,6 +247,19 @@ class TestUnauthorizedAccessLoggingMiddleware(TestCase):
         self.assertEqual(record.http["port"], 80)
         self.assertIn("host", record.http)
         self.assertIsNotNone(record.http["started_at"])
+
+    def test_logs_403_with_external_user_id(self):
+        external_user_id = uuid.UUID(int=123)
+        user = UserFactory(external_user_id=external_user_id)
+        request = self.factory.get("/admin/bundles/?a=1", HTTP_USER_AGENT="TestAgent", REMOTE_ADDR="10.0.0.1")
+        request.user = user
+
+        record = self.process(request, HttpResponse(status=403))
+
+        self.assertTrue(hasattr(record, "auth"))
+        self.assertIn("external_user_id", record.auth)
+
+        self.assertEqual(record.auth["external_user_id"], external_user_id)
 
     def test_logs_401_for_anonymous_user_without_auth(self):
         request = self.factory.get("/api/thing")

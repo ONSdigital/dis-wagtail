@@ -32,9 +32,7 @@ ALLOWED_REQUEST_PATHS = {
     settings.WAGTAILADMIN_HOME_PATH,
     "/__debug__/",
 }
-UNAUTHORISED_ACCESS_EXEMPT_URL_NAMES = frozenset(
-    ("wagtailadmin_login", "wagtailadmin_password_reset", "wagtailadmin_logout")
-)
+UNAUTHORISED_ACCESS_EXEMPT_URL_NAMES = ("wagtailadmin_login", "wagtailadmin_password_reset", "wagtailadmin_logout")
 
 
 class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
@@ -126,6 +124,8 @@ class UnauthorizedAccessLoggingMiddleware(MiddlewareMixin):
             extra["http"]["port"] = int(request.get_port())
         if user is not None and user.is_authenticated:
             extra["auth"] = {"identity": str(user.pk), "identity_type": "user"}
+            if external_user_id := getattr(user, "external_user_id", None):
+                extra["auth"]["external_user_id"] = external_user_id
             data["email"] = user.email
         # Internal environments will share the IP address, so only log it
         # for external environments.
