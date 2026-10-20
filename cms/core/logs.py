@@ -1,7 +1,7 @@
 import json
 import logging
 import traceback
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import json_log_formatter
@@ -34,9 +34,9 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
             key: extra.pop(key) for key in ("auth", "classification", "http") if key in extra
         }
 
-        # TODO: created_at should be UTC ISO8601 with millisecond precision, per the logging standards.
+        created_at = datetime.fromtimestamp(record.created, tz=UTC)
         record_data = {
-            "created_at": datetime.fromtimestamp(record.created),
+            "created_at": created_at.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
             "namespace": record.name,
             "severity": SEVERITY_MAPPING.get(record.levelno, 3),  # Default to INFO
             "event": message,
