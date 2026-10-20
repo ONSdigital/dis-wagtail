@@ -127,8 +127,6 @@ class UnauthorizedAccessLoggingMiddleware(MiddlewareMixin):
             if external_user_id := getattr(user, "external_user_id", None):
                 extra["auth"]["external_user_id"] = external_user_id
             data["email"] = user.email
-        # Internal environments will share the IP address, so only log it
-        # for external environments.
         if not settings.IS_EXTERNAL_ENV:
             data["ip_address"] = request.META.get("REMOTE_ADDR")
 
