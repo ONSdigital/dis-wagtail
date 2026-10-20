@@ -38,10 +38,14 @@ class SimpleTableStructValue(StructValue):
                 for i, val in enumerate(row):
                     if isinstance(val, str):
                         value = numberfy(val)
-                        # Convert special float values like inf and nan to strings
+                        # Use original string values if conversion results in
+                        # non-finite float
                         if isinstance(value, float) and not math.isfinite(value):
-                            value = str(value)
+                            value = val
                         row[i] = value
+                    # Catch numeric representations of non-finite floats
+                    elif isinstance(val, float) and not math.isfinite(val):
+                        row[i] = str(val)
         return data
 
     @cached_property
