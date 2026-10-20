@@ -136,6 +136,20 @@ class BundleModelTestCase(TestCase):
         self.assertNotIn(topic_page, pages_for_previewers)
         self.assertNotIn(article_series_page, pages_for_previewers)
 
+    def test_draft_bundle_is_deletable(self):
+        """Test that a draft bundle is deletable."""
+        self.bundle.status = BundleStatus.DRAFT
+        self.bundle.save(update_fields=["status"])
+
+        self.assertTrue(self.bundle.can_be_deleted)
+
+    def test_published_bundle_is_not_deletable(self):
+        """Test that a published bundle is not deletable."""
+        self.bundle.status = BundleStatus.PUBLISHED
+        self.bundle.save(update_fields=["status"])
+
+        self.assertFalse(self.bundle.can_be_deleted)
+
 
 class BundledPageMixinTestCase(WagtailTestUtils, TestCase):
     """Test BundledPageMixin properties and methods."""
