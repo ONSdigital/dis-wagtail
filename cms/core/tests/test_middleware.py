@@ -1,3 +1,5 @@
+from unittest import mock
+
 from django.contrib import messages
 from django.contrib.auth.models import AnonymousUser, Permission
 from django.contrib.messages.storage.cookie import CookieStorage
@@ -267,6 +269,43 @@ class TestUnauthorizedAccessLoggingMiddleware(TestCase):
         record = self.process(request, HttpResponse(status=403))
 
         self.assertFalse(hasattr(record, "ip_address"))
+
+    def test_omits_port_when_port_is_invalid(self):
+        for invalid_port in ("not-a-port", None, ""):
+            with self.subTest(port=invalid_port):
+                request = self.factory.get("/anything")
+                request.user = AnonymousUser()
+
+                with mock.patch.object(request, "get_port", return_value=invalid_port):
+                    record = self.process(request, HttpResponse(status=403))
+
+                self.assertEqual(record.http["status_code"], 403)
+                self.assertNotIn("port", record.http)
+
+    def test_host_value_fallback_sequence(self):
+        request = self.factory.get("/anything", HTTP_HOST="example.com")
+        request.user = AnonymousUser()
+
+        record = self.process(request, HttpResponse(status=403))
+
+        self.assertIn("host", record.http)
+        self.assertEqual(record.http["host"], "example.com")
+
+        request = self.factory.get("/anything", HTTP_HOST="example.com", SERVER_NAME="server.com")
+        request.user = AnonymousUser()
+
+        record = self.process(request, HttpResponse(status=403))
+
+        self.assertIn("host", record.http)
+        self.assertEqual(record.http["host"], "example.com")
+
+        request = self.factory.get("/anything", SERVER_NAME="server.com")
+        request.user = AnonymousUser()
+
+        record = self.process(request, HttpResponse(status=403))
+
+        self.assertIn("host", record.http)
+        self.assertEqual(record.http["host"], "server.com")
 
     def test_event_type_depends_on_authentication(self):
         anonymous = self.factory.get("/x")

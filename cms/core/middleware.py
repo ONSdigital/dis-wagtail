@@ -32,6 +32,9 @@ ALLOWED_REQUEST_PATHS = {
     settings.WAGTAILADMIN_HOME_PATH,
     "/__debug__/",
 }
+UNAUTHORISED_ACCESS_EXEMPT_URL_NAMES = frozenset(
+    ("wagtailadmin_login", "wagtailadmin_password_reset", "wagtailadmin_logout")
+)
 
 
 class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
@@ -110,16 +113,17 @@ class UnauthorizedAccessLoggingMiddleware(MiddlewareMixin):
         extra: dict[str, Any] = {
             "classification": PROTECTIVE_MONITORING_CLASSIFICATION,
             "http": {
-                "host": request.META.get("SERVER_NAME", ""),
+                "host": request.META.get("HTTP_HOST", request.META.get("SERVER_NAME", "")),
                 "method": request.method,
                 "path": request.path,
-                "port": int(request.get_port()),
                 "query": request.META.get("QUERY_STRING", ""),
                 "scheme": request.scheme,
                 "started_at": getattr(request, "protective_monitoring_started_at", timezone.now()),
                 "status_code": response.status_code,
             },
         }
+        with suppress(TypeError, ValueError):
+            extra["http"]["port"] = int(request.get_port())
         if user is not None and user.is_authenticated:
             extra["auth"] = {"identity": str(user.pk), "identity_type": "user"}
             data["email"] = user.email
@@ -156,7 +160,7 @@ class UnauthorizedAccessLoggingMiddleware(MiddlewareMixin):
             # Wagtail redirects to login both anonymous users and users without admin access.
             # The login and password reset URLs redirect to the external login when core login is disabled.
             exempt_paths = set()
-            for url_name in ("wagtailadmin_login", "wagtailadmin_password_reset"):
+            for url_name in UNAUTHORISED_ACCESS_EXEMPT_URL_NAMES:
                 with suppress(NoReverseMatch):
                     exempt_paths.add(reverse(url_name))
             return request.path not in exempt_paths
