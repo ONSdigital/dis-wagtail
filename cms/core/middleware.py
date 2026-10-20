@@ -98,36 +98,37 @@ class UnauthorizedAccessLoggingMiddleware(MiddlewareMixin):
         request.protective_monitoring_started_at = timezone.now()  # type: ignore[attr-defined]
 
     def process_response(self, request: HttpRequest, response: HttpResponse) -> HttpResponse:
-        if self._is_denied(request, response):
-            user = getattr(request, "user", None)
+        if not self._is_denied(request, response):
+            return response
+        user = getattr(request, "user", None)
 
-            event_type = self._get_event_type(request)
-            data = {
-                "event_type": event_type,
-                "user_agent": request.META.get("HTTP_USER_AGENT", ""),
-            }
-            extra: dict[str, Any] = {
-                "classification": PROTECTIVE_MONITORING_CLASSIFICATION,
-                "http": {
-                    "host": request.META.get("SERVER_NAME", ""),
-                    "method": request.method,
-                    "path": request.path,
-                    "port": int(request.get_port()),
-                    "query": request.META.get("QUERY_STRING", ""),
-                    "scheme": request.scheme,
-                    "started_at": getattr(request, "protective_monitoring_started_at", timezone.now()),
-                    "status_code": response.status_code,
-                },
-            }
-            if user is not None and user.is_authenticated:
-                extra["auth"] = {"identity": str(user.pk), "identity_type": "user"}
-                data["email"] = user.email
-            # Internal environments will share the IP address, so only log it
-            # for external environments.
-            if not settings.IS_EXTERNAL_ENV:
-                data["ip_address"] = request.META.get("REMOTE_ADDR")
+        event_type = self._get_event_type(request)
+        data = {
+            "event_type": event_type,
+            "user_agent": request.META.get("HTTP_USER_AGENT", ""),
+        }
+        extra: dict[str, Any] = {
+            "classification": PROTECTIVE_MONITORING_CLASSIFICATION,
+            "http": {
+                "host": request.META.get("SERVER_NAME", ""),
+                "method": request.method,
+                "path": request.path,
+                "port": int(request.get_port()),
+                "query": request.META.get("QUERY_STRING", ""),
+                "scheme": request.scheme,
+                "started_at": getattr(request, "protective_monitoring_started_at", timezone.now()),
+                "status_code": response.status_code,
+            },
+        }
+        if user is not None and user.is_authenticated:
+            extra["auth"] = {"identity": str(user.pk), "identity_type": "user"}
+            data["email"] = user.email
+        # Internal environments will share the IP address, so only log it
+        # for external environments.
+        if not settings.IS_EXTERNAL_ENV:
+            data["ip_address"] = request.META.get("REMOTE_ADDR")
 
-            security_logger.warning(event_type, extra={**extra, **data})
+        security_logger.warning(event_type, extra={**extra, **data})
         return response
 
     @staticmethod
