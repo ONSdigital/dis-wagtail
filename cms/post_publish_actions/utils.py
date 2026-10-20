@@ -82,7 +82,7 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_f
     # Get end time based off last finished post-publish action marked critical
     # try to fall back to last finished action, else now
     completed_actions = PostPublishAction.objects.completed().filter(bundle=bundle, finished_at__gte=start_time)
-end_time = (
+    end_time = (
         completed_actions.critical().aggregate(latest_finish=Max("finished_at"))["latest_finish"]
         or completed_actions.aggregate(latest_finish=Max("finished_at"))["latest_finish"]
         or timezone.now()
