@@ -88,7 +88,9 @@ class ScheduledPageAliasesTestCase(TranslationResetMixin, TestCase):
 
     def test_scheduling_a_new_revision_of_a_live_page_does_not_update_its_aliases(self):
         self.publish()
-        self.assertEqual(self.alias.title, "Original title")
+
+        self.alias.refresh_from_db()
+        self.assertEqual(self.alias.title, "Published title")
 
         self.schedule()
         self.assertAlias(live=True, title="Published title")
