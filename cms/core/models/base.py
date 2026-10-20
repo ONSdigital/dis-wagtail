@@ -482,6 +482,28 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         )
         return revision
 
+    def update_aliases(
+        self,
+        *,
+        revision: Revision | None = None,
+        _content: dict[str, Any] | None = None,
+        _updated_ids: list[int] | None = None,
+    ) -> None:
+        """Don't update and publish aliases if the page is not live.
+
+        This short circuits existing logic in the base page `update_aliases` method that
+        currently updates and publishes aliases even if the alias_of page is not live.
+        """
+        # TODO: remove when https://github.com/wagtail/wagtail/pull/14742 is merged
+        # don't update aliases if the page is not live and is not an alias itself
+        # this ensures we handle the case where we have aliases of aliases correctly
+        if not self.live and self.alias_of_id is None:
+            return
+
+        super().update_aliases(revision=revision, _content=_content, _updated_ids=_updated_ids)
+
+    update_aliases.alters_data = True  # type: ignore[attr-defined]
+
 
 class BaseSiteSetting(WagtailBaseSiteSetting):
     """A customized site setting.
