@@ -88,6 +88,23 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
         self.assertEqual(config["series"][1]["name"], "Series 2")
         self.assertEqual(config["series"][1]["data"], [50, 55, 60])
 
+    def test_zero_and_empty_data_points(self):
+        """Zero values should survive as numbers; empty cells should become None."""
+        for chart_type in BarColumnChartTypeChoices.values:
+            with self.subTest(chart_type=chart_type):
+                data = self.raw_data.copy()
+                data["select_chart_type"] = chart_type
+                data["table"] = TableDataFactory(
+                    table_data=[
+                        ["", "Series 1"],
+                        ["2005", "0"],
+                        ["2006", ""],
+                        ["2007", "140"],
+                    ]
+                )
+                config = self.get_component_config(data)
+                self.assertEqual([0, None, 140], config["series"][0]["data"])
+
     def test_bar_chart_no_x_axis_title(self):
         self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.BAR
         config = self.get_component_config()
