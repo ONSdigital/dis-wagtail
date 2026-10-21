@@ -1,11 +1,17 @@
 import uuid
+from datetime import timedelta
+from io import StringIO
 from typing import Any
 from unittest.mock import patch
 
+import time_machine
+from django.core.management import call_command
 from django.test import TestCase
+from django.utils import timezone
 from wagtail.models import Site
 from wagtail_factories import DocumentFactory, ImageFactory
 
+from cms.core.tests.factories import DefinitionFactory
 from cms.private_media.constants import Privacy
 from cms.standard_pages.models import InformationPage
 
@@ -108,6 +114,33 @@ class SignalHandlersTestCase(TestCase):
         self.test_page.save_revision().publish()
         self.assertMediaPrivacy(Privacy.PUBLIC)
 
+    def test_scheduling_a_page_does_not_make_referenced_media_public(self):
+        """Tests that scheduling a draft page to go live in the future does not run the
+        signal handlers that make referenced media public.
+        """
+        tomorrow_go_live_at = timezone.now() + timedelta(days=1)
+        self.test_page.content = self.generate_media_referencing_content()
+        self.test_page.live = False
+        self.test_page.go_live_at = tomorrow_go_live_at
+        self.test_page.save(update_fields=["content", "live", "go_live_at"])
+
+        self.test_page.save_revision().publish()
+
+        self.test_page.refresh_from_db()
+        self.assertFalse(self.test_page.live)
+        self.private_image.refresh_from_db()
+        self.assertEqual(self.private_image.privacy, Privacy.PRIVATE)
+        self.private_document.refresh_from_db()
+        self.assertEqual(self.private_document.privacy, Privacy.PRIVATE)
+
+        # Once the revision is live media should be public
+        with time_machine.travel(tomorrow_go_live_at + timedelta(minutes=1)):
+            call_command("publish_scheduled_without_bundles", stdout=StringIO())
+
+        self.test_page.refresh_from_db()
+        self.assertTrue(self.test_page.live)
+        self.assertMediaPrivacy(Privacy.PUBLIC)
+
     def test_unpublishing_a_page_makes_referenced_media_private(self):
         """Tests the impact of unpublishing a media-referencing page has on the privacy of referenced media."""
         self.test_page.content = self.generate_media_referencing_content()
@@ -180,3 +213,33 @@ class SignalHandlersTestCase(TestCase):
 
         # should only run one time for the original page, not the alias
         mock_publish_media.assert_called_once_with(self.test_page)
+
+    @patch("cms.private_media.signal_handlers._publish_media")
+    def test_signal_runs_for_published_snippets(self, mock_publish_media):
+        """Tests that the signal handlers run for published snippets."""
+        definition = DefinitionFactory(live=False)
+
+        definition.save_revision().publish()
+
+        mock_publish_media.assert_called_once_with(definition)
+
+    @patch("cms.private_media.signal_handlers._publish_media")
+    def test_signal_early_returns_for_scheduled_snippets(self, mock_publish_media):
+        """Tests that the signal handlers early return for snippets scheduled to go live in future,
+        and run when it goes live.
+        """
+        tomorrow_go_live_at = timezone.now() + timedelta(days=1)
+        definition = DefinitionFactory(live=False, go_live_at=tomorrow_go_live_at)
+
+        definition.save_revision().publish()
+
+        definition.refresh_from_db()
+        self.assertFalse(definition.live)
+        mock_publish_media.assert_not_called()
+
+        with time_machine.travel(tomorrow_go_live_at + timedelta(minutes=1)):
+            call_command("publish_scheduled_without_bundles", stdout=StringIO())
+
+        definition.refresh_from_db()
+        self.assertTrue(definition.live)
+        mock_publish_media.assert_called_once_with(definition)
