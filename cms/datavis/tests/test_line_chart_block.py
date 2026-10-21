@@ -111,10 +111,24 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
                 for item in config["series"]:
                     self.assertEqual(show_markers, item["marker"])
 
-    def test_connect_nulls(self):
+    def test_connect_nulls_not_set(self):
         config = self.get_component_config()
         for item in config["series"]:
-            self.assertEqual(True, item["connectNulls"])
+            self.assertNotIn("connectNulls", item)
+
+    def test_zero_and_empty_data_points(self):
+        """Zero values should survive as numbers; empty cells should become None."""
+        self.raw_data["table"] = TableDataFactory(
+            table_data=[
+                ["", "Value"],
+                ["Jan", "2"],
+                ["Feb", "0"],
+                ["Mar", ""],
+                ["Apr", "4"],
+            ]
+        )
+        config = self.get_component_config()
+        self.assertEqual([2, 0, None, 4], config["series"][0]["data"])
 
     def test_tick_interval_defaults(self):
         self.raw_data["x_axis"]["tick_interval_mobile"] = None

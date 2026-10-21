@@ -281,7 +281,7 @@ class BaseChartBlock(BaseVisualisationBlock):
         self, value: StructValue, series_number: int, series_name: str, rows: list[list[str | int | float]]
     ) -> dict[str, Any]:
         """Get the configuration for a single series."""
-        data_points = [r[series_number] or None for r in rows]
+        data_points = [r[series_number] if r[series_number] not in ("", None) else None for r in rows]
 
         item = {
             "name": series_name,
