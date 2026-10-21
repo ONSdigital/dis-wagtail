@@ -9,6 +9,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django_stubs_ext import StrOrPromise
 from wagtail.admin.panels import ObjectList, TabbedInterface
+from wagtail.locks import BasicLock
 from wagtail.log_actions import log
 from wagtail.models import Page
 from wagtail.query import PageQuerySet
@@ -22,6 +23,7 @@ from cms.core.query import order_by_pk_position
 from cms.core.signals import page_title_changed
 from cms.locale.utils import get_mapped_site_root_paths
 from cms.taxonomy.mixins import ExclusiveTaxonomyMixin
+from cms.workflows.utils import is_page_in_workflow
 
 from .mixins import ListingFieldsMixin, SocialFieldsMixin
 
@@ -48,6 +50,14 @@ else:
     from wagtail.contrib.settings.models import BaseSiteSetting as WagtailBaseSiteSetting
 
 __all__ = ["BasePage", "BaseSiteSetting"]
+
+
+class WorkflowManualLock(BasicLock):
+    def for_user(self, _user: User) -> bool:
+        return True
+
+    def get_description(self, _user: User) -> str:
+        return "This page is manually locked. Unlock the manual lock before changing its status"
 
 
 class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # type: ignore[django-manager-missing]
@@ -116,6 +126,11 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
     def permissions_for_user(self, user: User) -> BasePagePermissionTester:
         """Override the permission tester class to use for our page models."""
         return BasePagePermissionTester(user, self)
+
+    def get_lock(self):
+        if self.locked and is_page_in_workflow(self):
+            return WorkflowManualLock(self)
+        return super().get_lock()
 
     @transaction.atomic
     def save(  # type: ignore[override]

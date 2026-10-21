@@ -84,6 +84,22 @@ def update_action_menu(menu_items: list[ActionMenuItem], request: HttpRequest, c
     """
     updated_menu_items = menu_items
     page: Page = context["page"]
+    if page.locked:
+        if is_page_in_workflow(page):
+            return [PageLockedMenuItem()]
+        return [
+            item
+            for item in menu_items
+            if item.name
+            not in {
+                "action-submit",
+                "action-restart-workflow",
+                "action-cancel-workflow",
+                "action-publish",
+                "action-unpublish",
+            }
+        ]
+
     if in_bundle_ready_to_be_published(page):
         # start with a fully locked action menu when in a bundle that is ready to be published,
         # as we want to prevent all actions.
@@ -151,11 +167,28 @@ def before_edit_page_post_workflow_action_without_workflow(request: HttpRequest,
 
 
 @hooks.register("before_edit_page")
-def before_edit_page(  # noqa: PLR0911  # pylint: disable=too-many-return-statements
+def before_edit_page(  # noqa: PLR0911, PLR0912  # pylint: disable=too-many-return-statements
     request: HttpRequest, page: Page
 ) -> HttpResponse | None:
     if request.method != "POST":
         return None
+
+    if page.locked and (
+        is_page_in_workflow(page)
+        or any(
+            request.POST.get(action) == "true"
+            for action in (
+                "action-submit",
+                "action-restart-workflow",
+                "action-cancel-workflow",
+                "action-workflow-action",
+                "action-publish",
+                "action-unpublish",
+            )
+        )
+    ):
+        messages.error(request, "Unlock this page before changing its workflow state.")
+        return redirect("wagtailadmin_pages:edit", page.pk, preserve_request=False)
 
     if in_active_bundle(page) and (
         (request.POST.get("go_live_at") and not page.go_live_at)
