@@ -67,6 +67,76 @@ class AreaChartBlockTestCase(BaseChartBlockTestCase):
 
         self.assertEqual(AreaChartBlock.ERROR_EMPTY_CELLS, cm.exception.block_errors["table"].code)
 
+    def test_data_with_special_floating_point_values(self):
+        """Test that an error is raised for NaN and infinity cells."""
+        for cell in ["nan", "inf", "infinity"]:
+            for variation in [cell, cell.upper(), cell.capitalize(), f"+{cell}", f"-{cell}"]:
+                with self.subTest(variation=variation):
+                    special_value_data = self.raw_data.copy()
+                    special_value_data["table"] = TableDataFactory(
+                        table_data=[
+                            ["Dates", "Series 1", "Series 2"],
+                            ["Q1 2023", "3", "8"],
+                            ["Q2 2023", variation, "3"],
+                        ]
+                    )
+
+                    with self.assertRaises(StructBlockValidationError) as cm:
+                        self.block.clean(self.get_value(special_value_data))
+
+                    error = cm.exception.block_errors["table"]
+                    self.assertEqual(AreaChartBlock.ERROR_NON_NUMERIC_VALUES, error.code)
+                    self.assertEqual(["Numeric columns can only contain numbers."], error.messages)
+
+    def test_special_floating_point_values_allowed_in_category_labels(self):
+        """Test that label-like strings such as NaN are fine in the category column."""
+        data = self.raw_data.copy()
+        data["table"] = TableDataFactory(
+            table_data=[
+                ["Dates", "Series 1", "Series 2"],
+                ["NaN", "3", "8"],
+                ["Inf", "4", "3"],
+            ]
+        )
+
+        try:
+            self.block.clean(self.get_value(data))
+        except ValidationError as e:
+            self.fail(f"ValidationError raised: {e}")
+
+    def test_table_works_if_special_floating_point_values_in_header(self):
+        """Test that the table works if special floating-point values are in the header."""
+        header_special_value_data = self.raw_data.copy()
+        header_special_value_data["table"] = TableDataFactory(
+            table_data=[
+                ["Infinity", "+Inf", "NaN"],
+                ["Q1 2023", "3", "8"],
+                ["Q2 2023", "5", "3"],
+            ]
+        )
+
+        # This should not raise a validation error because the special value is in the header
+        try:
+            self.block.clean(self.get_value(header_special_value_data))
+        except StructBlockValidationError:
+            self.fail("StructBlockValidationError raised for special floating-point values in header.")
+
+    def test_substring_special_floating_point_values_rejected(self):
+        """Test that non-numeric strings containing NaN or infinity are rejected."""
+        substring_special_value_data = self.raw_data.copy()
+        substring_special_value_data["table"] = TableDataFactory(
+            table_data=[
+                ["Dates", "Series 1", "Series 2"],
+                ["Q1 2023", "InfinityX", "Infinity X"],
+                ["Q2 2023", "NaNHello", "NaN Hello"],
+            ]
+        )
+
+        with self.assertRaises(StructBlockValidationError) as cm:
+            self.block.clean(self.get_value(substring_special_value_data))
+
+        self.assertEqual(AreaChartBlock.ERROR_NON_NUMERIC_VALUES, cm.exception.block_errors["table"].code)
+
     def test_editable_x_axis_title(self):
         self.raw_data["x_axis"]["title"] = "Editable X-axis Title"
         config = self.get_component_config()
