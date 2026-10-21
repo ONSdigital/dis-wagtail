@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from wagtail.admin.panels import FieldPanel
     from wagtail.contrib.settings.models import BaseGenericSetting as _WagtailBaseGenericSetting
     from wagtail.contrib.settings.models import BaseSiteSetting as _WagtailBaseSiteSetting
+    from wagtail.locks import BaseLock
     from wagtail.models import Revision
     from wagtail.models.sites import Site, SiteRootPath
 
@@ -127,7 +128,7 @@ class BasePage(PageLDMixin, ListingFieldsMixin, SocialFieldsMixin, Page):  # typ
         """Override the permission tester class to use for our page models."""
         return BasePagePermissionTester(user, self)
 
-    def get_lock(self):
+    def get_lock(self) -> BaseLock | None:
         if self.locked and is_page_in_workflow(self):
             return WorkflowManualLock(self)
         return super().get_lock()
