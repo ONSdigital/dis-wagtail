@@ -1,14 +1,17 @@
+import json
 from collections.abc import Sequence
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
+from django.forms import ValidationError
+from django.forms.utils import ErrorList
 from django.forms.widgets import RadioSelect
 from django.urls import reverse
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
-from wagtail.blocks.struct_block import StructValue
+from wagtail.blocks.struct_block import StructBlockValidationError, StructValue
 
 from cms.core.analytics_utils import get_gtm_attributes_file_download
 from cms.core.utils import format_file_size_kb
@@ -118,6 +121,19 @@ class BaseChartBlock(BaseVisualisationBlock):
     )
 
     series_customisation = blocks.StaticBlock()
+
+    def clean(self, value: StructValue) -> StructValue:
+        value = super().clean(value)
+        try:
+            # Mirror how requests serialises the exporter payload (allow_nan=False)
+            json.dumps(self.get_export_config(value), allow_nan=False)
+        except (TypeError, ValueError) as e:
+            # This is only possible if there is a bug in the code, but we return
+            # it to help support debugging.
+            raise StructBlockValidationError(
+                non_block_errors=ErrorList([ValidationError(f"Could not serialise chart configuration: {e}")])
+            ) from e
+        return value
 
     def get_context(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)

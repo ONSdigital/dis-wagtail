@@ -1,6 +1,9 @@
 # pylint: disable=too-many-public-methods
+from unittest.mock import patch
+
 from django.core.exceptions import ValidationError
-from wagtail.blocks.struct_block import StructValue
+from django.utils.translation import gettext_lazy
+from wagtail.blocks.struct_block import StructBlockValidationError, StructValue
 
 from cms.datavis.blocks.charts import LineChartBlock
 from cms.datavis.constants import HighChartsChartType
@@ -52,6 +55,28 @@ class LineChartBlockTestCase(BaseChartBlockTestCase):
         value = self.get_value(invalid_data)
         with self.assertRaises(ValidationError, msg="Expected ValidationError for missing title"):
             self.block.clean(value)
+
+    def _assert_clean_rejects_export_config(self, export_config):
+        value = self.get_value()
+        with (
+            patch.object(self.block, "get_export_config", return_value=export_config),
+            self.assertRaises(StructBlockValidationError) as cm,
+        ):
+            self.block.clean(value)
+        self.assertIn("Could not serialise chart configuration", cm.exception.as_json_data()["messages"][0])
+
+    def test_clean_rejects_non_finite_export_config(self):
+        """NaN would make requests raise InvalidJSONError when posting to the exporter."""
+        for bad_value in (float("nan"), float("inf")):
+            with self.subTest(bad_value=bad_value):
+                self._assert_clean_rejects_export_config({"series": [bad_value]})
+
+    def test_clean_rejects_non_serialisable_export_config(self):
+        self._assert_clean_rejects_export_config({"title": object()})
+        self._assert_clean_rejects_export_config({"title": set()})
+
+        # Test that lazy translation objects are rejected as non-serialisable.
+        self._assert_clean_rejects_export_config({"title": gettext_lazy("Dataset")})
 
     def test_series_data(self):
         """Test that we identify two separate series in the data."""
