@@ -1,16 +1,20 @@
 # pylint: disable=too-many-lines
 import datetime
 import json
+from importlib import import_module
+from types import SimpleNamespace
 from unittest.mock import patch
 
+from django.apps import apps
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.core import mail
+from django.db import connection
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from wagtail.admin.action_menu import PageLockedMenuItem
-from wagtail.models import PageLogEntry, Revision, TaskState, WorkflowState
+from wagtail.models import PageLogEntry, Revision, TaskState, Workflow, WorkflowState, WorkflowTask
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 from wagtail.test.utils.timestamps import submittable_timestamp
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
@@ -866,6 +870,17 @@ class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):
         self.assertContains(response, self.index_page.title)
         self.assertContains(response, "Publish 1 page")
 
+    def test_bulk_publish_page_override__manually_locked(self):
+        mark_page_as_ready_to_publish(self.index_page)
+        self.index_page.locked = True
+        self.index_page.locked_by = self.publishing_admin
+        self.index_page.save(update_fields=["locked", "locked_by"])
+
+        response = self.client.get(self.bulk_publish_url)
+
+        self.assertContains(response, "You don't have permission to publish this page")
+        self.assertContains(response, "Publish 0 pages")
+
     @override_settings(ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT=True)
     def test_bulk_publish_page_override__with_direct_publishing_allowed(self):
         response = self.client.get(self.bulk_publish_url)
@@ -938,6 +953,77 @@ class PageWorkflowTransitionTests(WorkflowTweaksBaseTestCase):
         self.page.refresh_from_db()
         self.assertEqual(self.page.get_latest_revision_as_object().title, "Updated draft")
         self.assertIsNone(self.page.current_workflow_task)
+
+    def test_manually_locked_draft_cannot_be_submitted_by_lock_owner(self):
+        self.page.locked = True
+        self.page.locked_by = self.publishing_officer
+        self.page.save(update_fields=["locked", "locked_by"])
+        self.client.force_login(self.publishing_officer)
+        self.assertFalse(self.page.get_lock().for_user(self.publishing_officer))
+        response = self.client.get(self.edit_url)
+        self.assertItemWithPropertyNotIn("name", "action-submit", response.context["action_menu"].menu_items)
+
+        response = self.client.post(self.edit_url, self.editor_data("Submitted draft", "action-submit"), follow=True)
+
+        self.assertContains(response, "Unlock this page before changing its workflow state.")
+        self.page.refresh_from_db()
+        self.assertIsNone(self.page.current_workflow_state)
+
+    def test_manual_lock_hides_review_actions_and_blocks_direct_posts(self):
+        workflow = mark_page_as_ready_for_review(self.page, self.publishing_officer)
+        revision_id = self.page.latest_revision_id
+        self.page.locked = True
+        self.page.locked_by = self.publishing_admin
+        self.page.save(update_fields=["locked", "locked_by"])
+        self.client.force_login(self.publishing_admin)
+        self.assertTrue(self.page.get_lock().for_user(self.publishing_admin))
+        self.assertTrue(self.page.permissions_for_user(self.publishing_admin).can_unlock())
+
+        response = self.client.get(self.edit_url)
+        self.assertTrue(response.context["action_menu"].context["locked_for_user"])
+        self.assertNotContains(response, "Unlock editing")
+        menu_items = response.context["action_menu"].menu_items
+        for action in ("approve", "reject", "action-cancel-workflow"):
+            self.assertItemWithPropertyNotIn("name", action, menu_items)
+        self.assertNotContains(response, 'data-workflow-action-name="reject"')
+
+        for action in ("approve", "reject"):
+            with self.subTest(action=action):
+                response = self.post_action(self.publishing_admin, action)
+                self.assertContains(response, "Unlock this page before changing its workflow state.")
+                workflow.refresh_from_db()
+                self.assertEqual(workflow.current_task_state.status, TaskState.STATUS_IN_PROGRESS)
+
+        response = self.client.post(
+            self.edit_url, self.editor_data("Unexpected edit", "action-save-draft"), follow=True
+        )
+        self.assertContains(response, "Unlock this page before changing its workflow state.")
+        self.page.refresh_from_db()
+        self.assertEqual(self.page.latest_revision_id, revision_id)
+
+    def test_manual_lock_hides_ready_actions_and_blocks_publish(self):
+        workflow = mark_page_as_ready_for_review(self.page, self.publishing_officer)
+        self.approve_review(workflow)
+        self.page.locked = True
+        self.page.locked_by = self.publishing_admin
+        self.page.save(update_fields=["locked", "locked_by"])
+        self.client.force_login(self.publishing_admin)
+        self.assertTrue(self.page.get_lock().for_user(self.publishing_admin))
+        self.assertTrue(self.page.permissions_for_user(self.publishing_admin).can_unlock())
+
+        response = self.client.get(self.edit_url)
+        menu_items = response.context["action_menu"].menu_items
+        for action in ("locked-approve", "reject"):
+            self.assertItemWithPropertyNotIn("name", action, menu_items)
+
+        for action in ("locked-approve", "reject"):
+            with self.subTest(action=action):
+                response = self.post_action(self.publishing_admin, action)
+                self.assertContains(response, "Unlock this page before changing its workflow state.")
+                workflow.refresh_from_db()
+                self.assertEqual(workflow.current_task_state.status, TaskState.STATUS_IN_PROGRESS)
+                self.page.refresh_from_db()
+                self.assertFalse(self.page.live)
 
     def test_editor_submission_enters_review_and_locks_page(self):
         self.client.force_login(self.publishing_officer)
