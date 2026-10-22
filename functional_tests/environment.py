@@ -24,6 +24,7 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "True"
 # but that happens too late to solve import time issues.
 django.setup()
 
+CLEAN_FILENAME_RE = re.compile(r"[^A-Za-z0-9]+", re.ASCII)
 
 # Imported after django.setup() as auth_utils import Django models and requires Django to be initialised.
 from functional_tests.step_helpers.auth_utils import (  # noqa: E402 # pylint: disable=wrong-import-position
@@ -213,4 +214,4 @@ def after_tag(context: Context, tag: str) -> None:
 def get_scenario_trace_name(scenario: Scenario) -> str:
     """Get the name of the trace file for a scenario, if trace recording is enabled."""
     trace_name = f"{Path(scenario.filename).stem}_{scenario.line}_{scenario.name}"
-    return re.sub(r"[^A-Za-z0-9]+", "_", trace_name).strip("_")[:200]
+    return CLEAN_FILENAME_RE.sub("_", trace_name).strip("_")[:200]
