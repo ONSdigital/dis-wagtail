@@ -162,8 +162,16 @@ def user_adds_info_page_contents(context: Context) -> None:
 def user_adds_equation(context: Context) -> None:
     context.page.get_by_role("button", name="Insert a block").nth(2).click()
     context.page.get_by_text("Equation", exact=True).click()
-    context.page.locator('[data-controller="wagtailmathjax"]').fill("$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$")
-    context.page.wait_for_timeout(5000)
+    context.page.locator('[data-controller="polymath-textarea-controller"]').fill(
+        "$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$"
+    )
+
+
+@then("the equation preview is rendered")
+def the_equation_preview_is_rendered(context: Context) -> None:
+    # Polymath has two preview divs and shows one at a time. It renders each change into the
+    # hidden one and then swaps them, so either div can hold the equation. Check the visible one.
+    expect(context.page.locator("[id^='PolymathTextarea'] mjx-container").filter(visible=True)).to_be_visible()
 
 
 @when("the user updates the content of the information page")
