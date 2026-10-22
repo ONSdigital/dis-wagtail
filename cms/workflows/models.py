@@ -1,9 +1,10 @@
 from typing import TYPE_CHECKING, Any
 
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils import timezone
 from wagtail.admin.mail import GroupApprovalTaskStateSubmissionEmailNotifier
-from wagtail.models import AbstractGroupApprovalTask, TaskState, WorkflowMixin
+from wagtail.models import AbstractGroupApprovalTask, TaskState, WorkflowMixin, WorkflowState
 
 from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 
@@ -141,6 +142,14 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
         return actions
 
     def on_action(self, task_state: TaskState, user: User, action_name: str, **kwargs: Any) -> None:
+        if not WorkflowState.objects.filter(
+            pk=task_state.workflow_state_id,
+            status=WorkflowState.STATUS_IN_PROGRESS,
+            current_task_state=task_state,
+            current_task_state__status=TaskState.STATUS_IN_PROGRESS,
+        ).exists():
+            raise PermissionDenied
+
         if action_name == "locked-approve":
             super().on_action(task_state, user, "approve", **kwargs)
         elif action_name == "reject":
