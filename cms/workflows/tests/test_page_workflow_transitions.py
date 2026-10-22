@@ -1,5 +1,6 @@
 import json
 
+from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from wagtail.models import PageLogEntry, TaskState, WorkflowState
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
@@ -332,6 +333,56 @@ class PageWorkflowTransitionTests(WorkflowTweaksBaseTestCase):
         self.assertEqual(self.page.get_latest_revision_as_object().title, "Edited after ready return")
         workflow.resume(user=self.publishing_officer)
         self.assertIsInstance(self.page.current_workflow_task, GroupReviewTask)
+
+    def test_ready_actions_reject_cancelled_workflow_after_resubmission(self):
+        workflow = mark_page_as_ready_for_review(self.page, self.publishing_officer)
+        self.approve_review(workflow)
+        ready = workflow.current_task_state
+        task = ready.task.specific
+        workflow.cancel(user=self.publishing_admin)
+        current_workflow = mark_page_as_ready_for_review(self.page, self.publishing_officer)
+        current_task_id = current_workflow.current_task_state_id
+
+        for action in ("reject", "locked-approve"):
+            with self.subTest(action=action):
+                with self.assertRaises(PermissionDenied):
+                    task.on_action(ready, self.publishing_admin, action)
+
+                workflow.refresh_from_db()
+                ready.refresh_from_db()
+                current_workflow.refresh_from_db()
+                self.page.refresh_from_db()
+                self.assertEqual(workflow.status, WorkflowState.STATUS_CANCELLED)
+                self.assertEqual(ready.status, TaskState.STATUS_CANCELLED)
+                self.assertEqual(current_workflow.status, WorkflowState.STATUS_IN_PROGRESS)
+                self.assertEqual(current_workflow.current_task_state_id, current_task_id)
+                self.assertEqual(self.page.current_workflow_state.pk, current_workflow.pk)
+                self.assertFalse(self.page.live)
+
+    def test_ready_actions_reject_previous_task_after_workflow_resumes(self):
+        workflow = mark_page_as_ready_for_review(self.page, self.publishing_officer)
+        self.approve_review(workflow)
+        ready = workflow.current_task_state
+        task = ready.task.specific
+        task.on_action(ready, self.publishing_admin, "reject")
+        workflow.refresh_from_db()
+        workflow.resume(user=self.publishing_officer)
+        self.approve_review(workflow)
+        current_task_id = workflow.current_task_state_id
+
+        for action in ("reject", "locked-approve"):
+            with self.subTest(action=action):
+                with self.assertRaises(PermissionDenied):
+                    task.on_action(ready, self.publishing_admin, action)
+
+                workflow.refresh_from_db()
+                ready.refresh_from_db()
+                self.page.refresh_from_db()
+                self.assertEqual(ready.status, TaskState.STATUS_CANCELLED)
+                self.assertEqual(workflow.status, WorkflowState.STATUS_IN_PROGRESS)
+                self.assertEqual(workflow.current_task_state_id, current_task_id)
+                self.assertEqual(workflow.current_task_state.status, TaskState.STATUS_IN_PROGRESS)
+                self.assertFalse(self.page.live)
 
     def test_ready_return_opens_action_modal_without_changing_state(self):
         workflow = mark_page_as_ready_for_review(self.page, self.publishing_officer)
