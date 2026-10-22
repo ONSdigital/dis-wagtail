@@ -10,6 +10,8 @@ from wagtail_polymath.blocks import MathBlock as PolymathMathBlock
 from wagtail_polymath.widgets import PolymathTextareaWidget
 
 
+# TODO: remove this widget, the MathBlock subclass and js/mathjax-config.js once polymath can set
+# the MathJax config itself. See https://github.com/wagtail-nest/wagtail-polymath/issues/38
 class MathJaxConfigTextareaWidget(PolymathTextareaWidget):
     @property
     def media(self) -> Media:
