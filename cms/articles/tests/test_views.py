@@ -267,7 +267,7 @@ class RevisionChartDownloadBundlePermissionsTestCase(WagtailTestUtils, TestCase)
     Bundle viewers (users with view_bundle permission) should be able to download
     chart CSVs from pages in bundles they can preview, even without page edit/publish
     permissions. The page must be in a previewable workflow state (GroupReviewTask or
-    ReadyToPublishGroupTask).
+    ReadyToPublishGroupTask), or the bundle must be in preview.
     """
 
     @classmethod
@@ -387,24 +387,28 @@ class RevisionChartDownloadBundlePermissionsTestCase(WagtailTestUtils, TestCase)
         # Permission denied redirects with message (Wagtail standard behavior)
         self.assertContains(response, "Sorry, you do not have permission to access this area.")
 
-    def test_bundle_viewer_denied_when_page_not_in_previewable_workflow_state(self):
-        """Test that bundle viewer cannot download when page is not in a previewable workflow state.
+    def test_bundle_viewer_can_download_from_bundled_draft(self):
+        """Test that bundle viewer can download from a bundled draft.
 
-        Note: The test setup puts the page in a previewable state, so we cancel it here
-        to test the denial scenario.
+        Note: The test setup puts the page in a workflow, so we cancel it here
+        to test downloading from a draft state.
         """
         viewer = create_bundle_viewer()
         viewer.teams.add(self.preview_team)
 
-        # Cancel the workflow to remove the page from the previewable state
         workflow_state = self.article.current_workflow_state
         workflow_state.cancel(user=viewer)
+        self.article.unpublish()
+        self.revision_id = self.article.save_revision().pk
+        self.article.refresh_from_db()
+        self.assertFalse(self.article.live)
+        self.assertIsNone(self.article.current_workflow_state)
 
         self.client.force_login(viewer)
-        response = self.client.get(self.get_download_url(), follow=True)
+        response = self.client.get(self.get_download_url())
 
-        # Permission denied redirects with message (Wagtail standard behavior)
-        self.assertContains(response, "Sorry, you do not have permission to access this area.")
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response["Content-Type"], "text/csv")
 
 
 class RevisionTableDownloadViewTestCase(WagtailTestUtils, TestCase):

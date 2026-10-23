@@ -443,6 +443,9 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:  # py
         try:
             # Durable ensures no other savepoint will roll back the publish
             with transaction.atomic(durable=True):
+                if page.locked:
+                    raise ValueError("Cannot publish a manually locked page")
+
                 if workflow_state := page.current_workflow_state:
                     with enqueue_post_publish_actions_for_bundle(bundle):
                         # finish the workflow
