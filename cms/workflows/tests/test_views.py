@@ -78,7 +78,7 @@ class LegacyUnlockWorkflowViewTestCase(WagtailTestUtils, TestCase):
         ready_task_state.refresh_from_db()
         workflow_state.refresh_from_db()
         self.page.refresh_from_db()
-        self.assertEqual(ready_task_state.status, TaskState.STATUS_CANCELLED)
+        self.assertEqual(ready_task_state.status, TaskState.STATUS_REJECTED)
         self.assertEqual(workflow_state.status, WorkflowState.STATUS_NEEDS_CHANGES)
         self.assertIsNone(self.page.current_workflow_task)
         self.assertIsNone(self.page.get_lock())

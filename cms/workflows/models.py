@@ -159,25 +159,14 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
 
     @transaction.atomic
     def _unlock_and_revert_to_review(self, task_state: TaskState, user: User, **kwargs: Any) -> None:
-        """Cancel this task and reject the In Preview task state, unlocking the page for editing.
+        """Reject this task, and unlock the page for editing.
 
         On resubmit, Wagtail's resume() reads current_task_state.task and restarts the workflow
-        at In Preview, requiring re-approval before reaching Ready to Publish again.
+        at In Preview. Reset that pointer after rejection so logging and notifications refer
+        to Ready to Publish, while resubmission still requires a fresh review.
         """
         workflow_state = task_state.workflow_state
 
-        # Cancel the Ready to Publish task state manually rather than calling
-        # task_state.cancel() because cancel() triggers workflow_state.update() which
-        # would attempt to progress the workflow (finding the next task or finishing it).
-        # We need to control the workflow state ourselves to point it at In Preview.
-        task_state.status = TaskState.STATUS_CANCELLED
-        task_state.finished_at = timezone.now()
-        task_state.finished_by = user
-        task_state.comment = kwargs.get("comment", "")
-        task_state.save()
-        task_state.log_state_change_action(user, "cancel")
-
-        # Find the In Preview task state so resume() will restart there
         in_preview_task = workflow_state.workflow.tasks.exclude(pk=self.pk).first()
         in_preview_task_state = (
             workflow_state.task_states.filter(task=in_preview_task).order_by("-finished_at").first()
@@ -186,20 +175,14 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
         )
 
         if not in_preview_task_state:
-            # Unexpected state — cancel the workflow entirely as a safe fallback.
             workflow_state.cancel(user=user)
             return
 
-        # Point the workflow at the In Preview task state before rejecting it.
-        # This ensures resume() will restart at In Preview on resubmit.
+        workflow_state.current_task_state = task_state
+        task_state.reject(user=user, comment=kwargs.get("comment", ""))
+
         workflow_state.current_task_state = in_preview_task_state
         workflow_state.save(update_fields=["current_task_state"])
-
-        # Set to IN_PROGRESS so reject() accepts it — reject() guards against
-        # rejecting non-in-progress states. This keeps us aligned with core's reject
-        # behaviour (signals, logging, future additions).
-        in_preview_task_state.status = TaskState.STATUS_IN_PROGRESS
-        in_preview_task_state.reject(user=user, comment=kwargs.get("comment", ""))
 
     def locked_for_user(self, obj: Model, user: User) -> bool:
         """Marked as locked regardless of user, or bundle."""

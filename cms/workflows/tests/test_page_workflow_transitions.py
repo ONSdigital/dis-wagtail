@@ -1,5 +1,6 @@
 import json
 
+from django.core import mail
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from wagtail.models import PageLogEntry, TaskState, WorkflowState
@@ -314,6 +315,40 @@ class PageWorkflowTransitionTests(WorkflowTweaksBaseTestCase):
         self.assertEqual(workflow.status, WorkflowState.STATUS_IN_PROGRESS)
         self.assertContains(self.client.get(self.edit_url), "revert the bundle")
 
+    def test_ready_return_preserves_previous_approval(self):
+        workflow = mark_page_as_ready_for_review(self.page, self.publishing_officer)
+        review = self.approve_review(workflow, comment="Figures checked")
+        review.refresh_from_db()
+        approval_details = (review.status, review.finished_by_id, review.finished_at, review.comment)
+        ready = workflow.current_task_state
+
+        self.post_action(self.publishing_officer, "reject", comment="More changes needed")
+
+        review.refresh_from_db()
+        ready.refresh_from_db()
+        workflow.refresh_from_db()
+        self.assertEqual((review.status, review.finished_by_id, review.finished_at, review.comment), approval_details)
+        self.assertEqual(review.status, TaskState.STATUS_APPROVED)
+        self.assertEqual(ready.status, TaskState.STATUS_REJECTED)
+        self.assertEqual(ready.finished_by_id, self.publishing_officer.pk)
+        self.assertEqual(ready.comment, "More changes needed")
+        self.assertEqual(workflow.status, WorkflowState.STATUS_NEEDS_CHANGES)
+        self.assertEqual(workflow.current_task_state_id, review.pk)
+
+    def test_ready_return_email_identifies_ready_to_publish_task(self):
+        workflow = mark_page_as_ready_for_review(self.page, self.publishing_officer)
+        review = self.approve_review(workflow)
+        ready = workflow.current_task_state
+        mail.outbox.clear()
+
+        self.post_action(self.publishing_admin, "reject", comment="More changes needed")
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(self.publishing_officer.email, mail.outbox[0].to)
+        self.assertIn(ready.task.name, mail.outbox[0].body)
+        self.assertNotIn(review.task.name, mail.outbox[0].body)
+        self.assertIn("More changes needed", mail.outbox[0].body)
+
     def test_return_from_ready_requires_review_on_resubmission(self):
         workflow = mark_page_as_ready_for_review(self.page, self.publishing_officer)
         self.approve_review(workflow)
@@ -322,7 +357,7 @@ class PageWorkflowTransitionTests(WorkflowTweaksBaseTestCase):
         ready.refresh_from_db()
         workflow.refresh_from_db()
         self.page.refresh_from_db()
-        self.assertEqual(ready.status, TaskState.STATUS_CANCELLED)
+        self.assertEqual(ready.status, TaskState.STATUS_REJECTED)
         self.assertEqual(workflow.status, WorkflowState.STATUS_NEEDS_CHANGES)
         self.assertIsNone(self.page.get_lock())
         saved = self.client.post(
@@ -378,7 +413,7 @@ class PageWorkflowTransitionTests(WorkflowTweaksBaseTestCase):
                 workflow.refresh_from_db()
                 ready.refresh_from_db()
                 self.page.refresh_from_db()
-                self.assertEqual(ready.status, TaskState.STATUS_CANCELLED)
+                self.assertEqual(ready.status, TaskState.STATUS_REJECTED)
                 self.assertEqual(workflow.status, WorkflowState.STATUS_IN_PROGRESS)
                 self.assertEqual(workflow.current_task_state_id, current_task_id)
                 self.assertEqual(workflow.current_task_state.status, TaskState.STATUS_IN_PROGRESS)
