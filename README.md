@@ -488,7 +488,7 @@ and every `send_mail` call will appear instantly in the UI.
 
 In order to generate the equations in Wagtail using LaTeX strings via Matplotlib (Non-JS Equations), we will need to use `MacPorts` to install the following packages `texlive-latex-extra` and `texlive-fonts-recommended`.
 
-As a prerequisite you will have to have [MacPorts](https://www.macports.org/install.php) installed.
+As a prerequisite you will have to have [MacPorts](https://guide.macports.org/) installed.
 
 ```bash
 sudo port install texlive-latex-extra texlive-fonts-recommended
