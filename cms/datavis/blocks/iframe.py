@@ -236,15 +236,13 @@ class IframeBlock(BaseVisualisationBlock):
         if not url or not link_text:
             return None
 
-        absolute_csv_url = (
-            request.build_absolute_uri(url) if request and not getattr(request, "is_preview", False) else url
-        )
+        absolute_url = request.build_absolute_uri(url) if request and not getattr(request, "is_preview", False) else url
         file_name = os.path.basename(urlparse(url).path)
         _base, ext = os.path.splitext(file_name)
 
         attributes = get_gtm_attributes_file_download(
             text=link_text,
-            url=absolute_csv_url,
+            url=absolute_url,
             file_extension=ext.lstrip("."),
             file_name=file_name,
             file_size_kb=None,
