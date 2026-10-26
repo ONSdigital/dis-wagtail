@@ -100,15 +100,6 @@ class DownloadBlock(blocks.StructBlock):
         )
         super().__init__(local_blocks=local_blocks, search_index=search_index, **kwargs)
 
-    def _validate_download_url(self, value: StructValue) -> dict[str, ValidationError]:
-        """Validate a download URL. Validation errors are returned as an errors dict. The URL can be either
-        absolute (with scheme and hostname) or relative (path only).
-        """
-        return _validate_visualisation_url(
-            (value.get("url") or "").strip(),
-            field_name="url",
-        )
-
     def clean(self, value: StructValue) -> StructValue:
         errors: dict[str, ValidationError] = {}
         url = (value.get("url") or "").strip()
@@ -121,7 +112,7 @@ class DownloadBlock(blocks.StructBlock):
             errors |= {"url": ValidationError("A download URL is required when link text is provided.")}
 
         if url:
-            errors |= self._validate_download_url(value)
+            errors |= _validate_visualisation_url((value.get("url") or "").strip(), field_name="url")
 
         if errors:
             raise blocks.StructBlockValidationError(errors)
