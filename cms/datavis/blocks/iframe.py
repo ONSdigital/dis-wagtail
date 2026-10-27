@@ -77,7 +77,18 @@ def _validate_visualisation_url_path(parsed_url: ParseResult, *, field_name: str
 
 
 class DownloadBlock(blocks.StructBlock):
-    url = RelativeOrAbsoluteURLBlock(required=False)
+    url = RelativeOrAbsoluteURLBlock(
+        required=False,
+        help_text=(
+            "Enter the full URL or relative URL path (preferred) of the downloadable file. "
+            "A full URL must start with <code>https://</code>, and the hostname must match one of the allowed domains. "
+            "The URL path must start with an allowed prefix for both full or relative URLs. "
+            f"Allowed domains: "
+            f"{' or '.join(f'<code>{d}</code>' for d in settings.IFRAME_VISUALISATION_ALLOWED_DOMAINS)}. "
+            f"Allowed path prefixes: "
+            f"{' or '.join(f'<code>{p}</code>' for p in settings.IFRAME_VISUALISATION_PATH_PREFIXES)}."
+        ),
+    )
 
     def __init__(
         self,
