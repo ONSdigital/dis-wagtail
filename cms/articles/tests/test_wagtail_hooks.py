@@ -4,7 +4,7 @@ from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
-from wagtail.test.utils.form_data import nested_form_data
+from wagtail.test.utils.form_data import nested_form_data, streamfield
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.topics.tests.factories import TopicPageFactory
@@ -187,7 +187,7 @@ class ArticleBeforeCreatePageHookTestCase(WagtailTestUtils, TestCase):
     def setUpTestData(cls):
         cls.series_page = ArticleSeriesPageFactory()
         cls.article_page = StatisticalArticlePageFactory(parent=cls.series_page)
-        cls.add_url = reverse("wagtailadmin_pages:add_subpage", args=[cls.series_page.id])
+        cls.add_url = reverse("wagtailadmin_pages:add", args=["articles", "statisticalarticlepage", cls.series_page.id])
         cls.user = cls.create_superuser("admin")
 
     def setUp(self):
@@ -202,10 +202,20 @@ class ArticleBeforeCreatePageHookTestCase(WagtailTestUtils, TestCase):
         self.assertContains(response, self.prepopulated_message, count=1)
 
     def test_message_not_added_on_autosave_post(self):
-        response = self.client.post(
-            self.add_url,
-            data={"title": "New article"},
-            headers={"accept": "application/json"},
+        data = nested_form_data(
+            {
+                "title": "New article",
+                "headline_figures": streamfield([]),
+                "content": streamfield([]),
+                "corrections": streamfield([]),
+                "notices": streamfield([]),
+                "datasets": streamfield([]),
+                "featured_chart": streamfield([]),
+            }
         )
+        response = self.client.post(self.add_url, data, headers={"accept": "application/json"})
 
-        self.assertNotIn(self.prepopulated_message, self.queued_messages(response))
+        self.assertFalse(
+            any(self.prepopulated_message in message for message in self.queued_messages(response)),
+            "Prepopulated message should not be queued when POST used",
+        )
