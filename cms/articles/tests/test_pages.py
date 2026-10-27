@@ -538,7 +538,9 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         self.assertContains(
-            response, "This page has been prepopulated with the content from the latest page in the series."
+            response,
+            "This page has been prepopulated with the content from the latest page in the series.",
+            count=1,
         )
 
         self.assertContains(response, self.page.summary)
@@ -722,7 +724,9 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         self.assertContains(
-            response, "This page has been prepopulated with the content from the latest page in the series."
+            response,
+            "This page has been prepopulated with the content from the latest page in the series.",
+            count=1,
         )
 
         new_page = response.context_data["form"].instance

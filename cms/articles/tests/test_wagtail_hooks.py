@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
@@ -177,3 +178,34 @@ class ArticleHeadlineFiguresHooksTestCase(WagtailTestUtils, TestCase):
         # Verify the page is still live, unpublish was prevented
         self.series_page.refresh_from_db()
         self.assertTrue(self.series_page.live)
+
+
+class ArticleBeforeCreatePageHookTestCase(WagtailTestUtils, TestCase):
+    prepopulated_message = "This page has been prepopulated with the content from the latest page in the series."
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.series_page = ArticleSeriesPageFactory()
+        cls.article_page = StatisticalArticlePageFactory(parent=cls.series_page)
+        cls.add_url = reverse("wagtailadmin_pages:add_subpage", args=[cls.series_page.id])
+        cls.user = cls.create_superuser("admin")
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def queued_messages(self, response):
+        return [str(message) for message in get_messages(response.wsgi_request)]
+
+    def test_message_added_on_get(self):
+        response = self.client.get(self.add_url, follow=True)
+
+        self.assertContains(response, self.prepopulated_message, count=1)
+
+    def test_message_not_added_on_autosave_post(self):
+        response = self.client.post(
+            self.add_url,
+            data={"title": "New article"},
+            headers={"accept": "application/json"},
+        )
+
+        self.assertNotIn(self.prepopulated_message, self.queued_messages(response))
