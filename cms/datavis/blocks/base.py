@@ -134,12 +134,18 @@ class BaseChartBlock(BaseVisualisationBlock):
         """Check that numeric columns contain only numbers or blanks."""
         rows = value["table"].rows
 
-        if any(isinstance(cell, str) and cell.strip() for row in rows for cell in row[self.numeric_columns]):
+        invalid_values = [
+            cell.strip() for row in rows for cell in row[self.numeric_columns] if isinstance(cell, str) and cell.strip()
+        ]
+
+        if invalid_values:
+            count = len(invalid_values)
             raise blocks.StructBlockValidationError(
                 {
                     "table": ValidationError(
-                        "Numeric columns can only contain numbers.",
+                        "Numeric columns can only contain numbers. Found %(count)d invalid value(s): %(values)s",
                         code=self.ERROR_NON_NUMERIC_VALUES,
+                        params={"count": count, "values": ", ".join(f'"{value}"' for value in invalid_values)},
                     )
                 }
             )

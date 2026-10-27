@@ -86,7 +86,10 @@ class AreaChartBlockTestCase(BaseChartBlockTestCase):
 
                     error = cm.exception.block_errors["table"]
                     self.assertEqual(AreaChartBlock.ERROR_NON_NUMERIC_VALUES, error.code)
-                    self.assertEqual(["Numeric columns can only contain numbers."], error.messages)
+                    self.assertEqual(
+                        [f'Numeric columns can only contain numbers. Found 1 invalid value(s): "{variation}"'],
+                        error.messages,
+                    )
 
     def test_special_floating_point_values_allowed_in_category_labels(self):
         """Test that label-like strings such as NaN are fine in the category column."""
