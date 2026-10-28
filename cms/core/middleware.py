@@ -153,7 +153,7 @@ class UnauthorizedAccessLoggingMiddleware(MiddlewareMixin):
         if not request.path.startswith(admin_path):
             return False
 
-        location_path = urlsplit(response["Location"]).path
+        location_path = urlsplit(response.get("Location", "")).path
         if location_path == urlsplit(settings.WAGTAILADMIN_LOGIN_URL).path:
             # Wagtail redirects to login both anonymous users and users without admin access.
             # The login and password reset URLs redirect to the external login when core login is disabled.

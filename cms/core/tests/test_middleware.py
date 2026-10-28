@@ -385,6 +385,11 @@ class TestUnauthorizedAccessLoggingMiddleware(TestCase):
         messages.error(request, "Something else went wrong.")
         self.assert_not_logged(request, HttpResponseRedirect("/admin/"))
 
+    def test_ignores_admin_redirect_without_location_header(self):
+        request = self.factory.get("/admin/pages/")
+        request.user = AnonymousUser()
+        self.assert_not_logged(request, HttpResponse(status=302))
+
     def test_ignores_admin_redirect_to_other_location(self):
         request = self.factory.get("/admin")
         request.user = AnonymousUser()
