@@ -114,11 +114,13 @@ load-design-system-templates:  ## Load the design system templates
 .PHONY: load-topics
 load-topics:  ## Load our fixture of taxonomy topics
 	poetry run python ./manage.py loaddata cms/taxonomy/fixtures/topics.json
+	# loaddata bypasses treebeard, so the existing dummy root's numchild is left stale. Rebuild the tree metadata
+	poetry run python ./manage.py shell -c "from cms.taxonomy.models import Topic; Topic.fix_tree()"
 	poetry run python ./manage.py update_index
 
 .PHONY: delete-topics
-delete-topics: ## Delete all topics from the database (root is preserved via the model manager)
-	poetry run python ./manage.py shell -c "from cms.taxonomy.models import Topic; Topic.objects.all().delete(); Topic.fix_tree()"
+delete-topics: ## Delete all topics from the database, keeping the dummy root
+	poetry run python ./manage.py shell -c "from cms.taxonomy.models import Topic; Topic.objects.topics().delete(); Topic.fix_tree()"
 
 .PHONY: test-data-create
 test-data-create:  ## Seed test data
