@@ -211,6 +211,7 @@ class PostPublishSummaryReplyTestCase(TestCase):
 
     @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_end")
     @patch("cms.post_publish_actions.utils.notify_slack_of_post_publish_summary")
+    @override_settings(FRONTEND_CACHE_CLOUDFLARE_TOKEN="test-token")
     def test_summary_reply_uses_the_last_action_to_finish(self, mock_summary, mock_notify_end):
         start_time = timezone.now() - timedelta(minutes=5)
         critical_finish = start_time + timedelta(minutes=1)
@@ -223,7 +224,19 @@ class PostPublishSummaryReplyTestCase(TestCase):
         manager.attach_mock(mock_summary, "summary")
         manager.attach_mock(mock_notify_end, "end")
 
-        post_publish_notify_slack(start_time, self.bundle)
+        # Patch registry to ensure the cache purging action is registered and marked critical as local test setup can
+        # vary and the frontend cache app is conditionally registered
+        with patch.dict(
+            registry._registry,
+            {
+                PostPublishActionType.CACHE_PURGE: registry.RegisteredPostPublishAction(
+                    handler=MagicMock(), critical=True
+                ),
+                PostPublishActionType.SEARCH_UPDATED: registry.RegisteredPostPublishAction(handler=MagicMock()),
+            },
+            clear=True,
+        ):
+            post_publish_notify_slack(start_time, self.bundle)
 
         self.assertEqual(
             manager.mock_calls,

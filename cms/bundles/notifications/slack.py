@@ -13,7 +13,7 @@ from cms.core.db_router import force_write_db
 from cms.core.slack import send_or_update_slack_message
 from cms.core.utils import release_db_connections
 from cms.post_publish_actions.executor import wait_for_bundle_publication_message
-from cms.post_publish_actions.models import PostPublishAction, PostPublishActionType
+from cms.post_publish_actions.models import PostPublishAction
 
 if TYPE_CHECKING:
     from django.utils.functional import _StrOrPromise
@@ -449,13 +449,6 @@ def notify_slack_of_post_publish_summary(bundle: Bundle, start_time: datetime, e
         if failed_count > 0
         else "Post-Publish actions have ended successfully",
         color="danger" if failed_count > 0 else "good",
-        fields=fields,
-    )
-
-    send_bundle_thread_reply(
-        bundle=bundle,
-        text=f"Post-publish action failed: {PostPublishActionType(action.action_type).label}",
-        color="danger",
         fields=fields,
     )
 
