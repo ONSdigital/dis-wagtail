@@ -16,7 +16,8 @@ Feature: A general use information page
         Given an information page exists
         When the user edits the information page
         And  the user adds an equation
-        And  the user clicks the "Save draft" button
+        Then the equation preview is rendered
+        When the user clicks the "Save draft" button
         And  the user views the information page draft
         Then the equation is rendered
 

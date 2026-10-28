@@ -30,6 +30,7 @@ from cms.core.blocks import (
 )
 from cms.core.blocks.definitions import DefinitionsBlock
 from cms.core.blocks.embeddable import ImageBlock
+from cms.core.blocks.equation import EquationBlock
 from cms.core.tests.factories import DefinitionFactory
 from cms.core.tests.utils import get_test_document
 from cms.core.utils import UNWANTED_CONTROL_CHARACTERS, format_file_size_kb
@@ -1595,3 +1596,13 @@ class InformationPageImageBlockRenderingTests(WagtailPageTestCase):
         self.assertEqual(download_list_item.get("data-ga-link-url"), urlparse(download_link.get("href")).path)
         self.assertEqual(download_list_item.get("data-ga-link-domain"), urlparse(absolute_download_url).hostname)
         self.assertEqual(download_list_item.get("data-ga-file-size"), format_file_size_kb(self.large.file.size))
+
+
+class EquationBlockTestCase(TestCase):
+    def test_mathjax_config_loads_after_polymath_widget_script(self):
+        """Polymath's widget script sets window.MathJax, so our config must come after it."""
+        widget_js = [str(js) for js in EquationBlock().child_blocks["equation"].field.widget.media._js]  # pylint: disable=protected-access
+
+        polymath_index = next(i for i, js in enumerate(widget_js) if "wagtail_polymath-mathjax-widget" in js)
+        config_index = next(i for i, js in enumerate(widget_js) if "js/mathjax-config" in js)
+        self.assertLess(polymath_index, config_index)

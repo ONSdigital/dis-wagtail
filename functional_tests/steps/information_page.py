@@ -162,8 +162,16 @@ def user_adds_info_page_contents(context: Context) -> None:
 def user_adds_equation(context: Context) -> None:
     context.page.get_by_role("button", name="Insert a block").nth(2).click()
     context.page.get_by_text("Equation", exact=True).click()
-    context.page.locator('[data-controller="wagtailmathjax"]').fill("$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$")
-    context.page.wait_for_timeout(5000)
+    context.page.locator('[data-controller="polymath-textarea-controller"]').fill(
+        "$$\\sum_{i=0}^n i^2 = \\frac{(n^2+n)(2n+1)}{6}$$"
+    )
+
+
+@then("the equation preview is rendered")
+def the_equation_preview_is_rendered(context: Context) -> None:
+    # Polymath has two preview divs and shows one at a time. It renders each change into the
+    # hidden one and then swaps them, so either div can hold the equation. Check the visible one.
+    expect(context.page.locator("[id^='PolymathTextarea'] mjx-container").filter(visible=True)).to_be_visible()
 
 
 @when("the user updates the content of the information page")
@@ -328,4 +336,10 @@ def preview_index_page_lists_live_and_draft_information_pages(context: Context) 
 
 @then("the equation is rendered")
 def the_equation_is_rendered(context: Context) -> None:
-    expect(context.page.get_by_text("n∑i=0i2=(n2+n)(2n+1)").last).to_be_visible()
+    equation = context.page.locator("main mjx-container")
+    expect(equation).to_be_visible()
+    # MathJax adds a hidden MathML copy of the equation for screen readers, so check its text.
+    # MathJax 4 inserts an invisible "times" character (\u2062) where the TeX multiplies two terms
+    # without a sign, as in "(n^2+n)(2n+1)" and "2n". MathJax 2 didn't, so the expected text now
+    # has to include it.
+    expect(equation.locator("mjx-assistive-mml")).to_have_text("∑i=0ni2=(n2+n)\u2062(2\u2062n+1)6")
