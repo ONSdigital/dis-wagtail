@@ -408,6 +408,25 @@ class TestUnauthorizedAccessLoggingMiddleware(TestCase):
                 request.user = AnonymousUser()
                 self.assert_not_logged(request, HttpResponseRedirect("/admin/login/"))
 
+    def test_ignores_editing_session_redirects_to_login(self):
+        paths = (
+            reverse("wagtailadmin_editing_sessions:release", args=(1,)),
+            reverse("wagtailadmin_editing_sessions:ping", args=("app", "model", "1", 1)),
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                request = self.factory.post(path)
+                request.user = AnonymousUser()
+                self.assert_not_logged(request, HttpResponseRedirect("/admin/login/"))
+
+    def test_logs_unresolvable_admin_path_redirecting_to_login(self):
+        request = self.factory.get("/admin/does-not-exist/")
+        request.user = AnonymousUser()
+
+        record = self.process(request, HttpResponseRedirect("/admin/login/"))
+
+        self.assertEqual(record.http["path"], "/admin/does-not-exist/")
+
     def test_ignores_successful_response(self):
         request = self.factory.get("/")
         request.user = AnonymousUser()

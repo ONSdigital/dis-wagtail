@@ -8,7 +8,7 @@ from urllib.parse import urlsplit
 from django.conf import settings
 from django.contrib.messages import constants as message_constants
 from django.http import HttpRequest, HttpResponse, HttpResponsePermanentRedirect
-from django.urls import NoReverseMatch, reverse
+from django.urls import NoReverseMatch, Resolver404, resolve, reverse
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 from django.utils.html import escape
@@ -32,7 +32,14 @@ ALLOWED_REQUEST_PATHS = {
     settings.WAGTAILADMIN_HOME_PATH,
     "/__debug__/",
 }
-UNAUTHORISED_ACCESS_EXEMPT_URL_NAMES = ("wagtailadmin_login", "wagtailadmin_password_reset", "wagtailadmin_logout")
+UNAUTHORISED_ACCESS_EXEMPT_URL_NAMES = {
+    "wagtailadmin_login",
+    "wagtailadmin_password_reset",
+    "wagtailadmin_logout",
+    # Sent automatically by the edit page, including after logout or session expiry
+    "wagtailadmin_editing_sessions:ping",
+    "wagtailadmin_editing_sessions:release",
+}
 
 
 class NonTrailingSlashRedirectMiddleware(MiddlewareMixin):
@@ -157,11 +164,9 @@ class UnauthorizedAccessLoggingMiddleware(MiddlewareMixin):
         if location_path == urlsplit(settings.WAGTAILADMIN_LOGIN_URL).path:
             # Wagtail redirects to login both anonymous users and users without admin access.
             # The login and password reset URLs redirect to the external login when core login is disabled.
-            exempt_paths = set()
-            for url_name in UNAUTHORISED_ACCESS_EXEMPT_URL_NAMES:
-                with suppress(NoReverseMatch):
-                    exempt_paths.add(reverse(url_name))
-            return request.path not in exempt_paths
+            with suppress(Resolver404):
+                return resolve(request.path).view_name not in UNAUTHORISED_ACCESS_EXEMPT_URL_NAMES
+            return True
 
         return UnauthorizedAccessLoggingMiddleware._is_wagtail_permission_denied(request, location_path)
 
