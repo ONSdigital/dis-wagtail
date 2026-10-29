@@ -63,6 +63,27 @@ class SimpleTableBlockTestCase(TestCase):
         self.assertEqual([1, 2, 3], value.rows[0])
         self.assertEqual([4.0, 5.07, 6.3], value.rows[1])
 
+    def test_non_finite_float_strings_are_kept_as_original_strings(self):
+        block_data = TableDataFactory(
+            table_data=[
+                ["Header 1", "Header 2", "Header 3", "Header 4"],
+                ["inf", "-inf", "nan", "Infinity"],
+            ]
+        )
+        value = self.get_value(block_data)
+        self.assertEqual(["inf", "-inf", "nan", "Infinity"], value.rows[0])
+
+    def test_non_finite_float_values_are_converted_to_strings(self):
+        block_data = TableDataFactory(
+            table_data=[
+                ["Header 1", "Header 2", "Header 3", "Header 4"],
+                # 1e309 is a float value representing positive infinity
+                [1e309, float("-inf"), float("nan"), 1.123],
+            ]
+        )
+        value = self.get_value(block_data)
+        self.assertEqual(["inf", "-inf", "nan", 1.123], value.rows[0])
+
     def test_strips_unwanted_control_characters(self):
         block_data = TableDataFactory(
             table_data=[

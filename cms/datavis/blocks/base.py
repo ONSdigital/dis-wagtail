@@ -3,6 +3,7 @@ from contextlib import suppress
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect
 from django.urls import reverse
 from django.utils.html import strip_tags
@@ -50,6 +51,11 @@ class BaseChartBlock(BaseVisualisationBlock):
     highcharts_chart_type: ClassVar[HighChartsChartType]
     x_axis_type: ClassVar[AxisType]
     extra_series_attributes: ClassVar[dict[str, Any]]
+    # Table columns holding numeric data; the first column is a label by default
+    numeric_columns: ClassVar[slice] = slice(1, None)
+
+    # Error codes
+    ERROR_NON_NUMERIC_VALUES = "non_numeric_values"
 
     # Editable fields
     # Note that static blocks are intended to be overridden with real blocks or
@@ -118,6 +124,31 @@ class BaseChartBlock(BaseVisualisationBlock):
     )
 
     series_customisation = blocks.StaticBlock()
+
+    def clean(self, value: StructValue) -> StructValue:
+        value = super().clean(value)
+        self.validate_cell_values(value)
+        return value
+
+    def validate_cell_values(self, value: StructValue) -> None:
+        """Check that numeric columns contain only numbers or blanks."""
+        rows = value["table"].rows
+
+        invalid_values = [
+            cell.strip() for row in rows for cell in row[self.numeric_columns] if isinstance(cell, str) and cell.strip()
+        ]
+
+        if invalid_values:
+            count = len(invalid_values)
+            raise blocks.StructBlockValidationError(
+                {
+                    "table": ValidationError(
+                        "Numeric columns can only contain numbers. Found %(count)d invalid value(s): %(values)s",
+                        code=self.ERROR_NON_NUMERIC_VALUES,
+                        params={"count": count, "values": ", ".join(f'"{value}"' for value in invalid_values)},
+                    )
+                }
+            )
 
     def get_context(self, value: StructValue, parent_context: dict[str, Any] | None = None) -> dict[str, Any]:
         context: dict[str, Any] = super().get_context(value, parent_context)
