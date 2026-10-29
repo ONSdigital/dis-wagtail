@@ -1,10 +1,10 @@
 import os
+import re
 from pathlib import Path
 
 import django
 from behave import use_fixture
 from behave.model import Scenario
-from behave.model_core import Status
 from behave.runner import Context
 from django.test.utils import override_settings
 from playwright.sync_api import sync_playwright
@@ -24,6 +24,7 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "True"
 # but that happens too late to solve import time issues.
 django.setup()
 
+CLEAN_FILENAME_RE = re.compile(r"[^A-Za-z0-9]+", re.ASCII)
 
 # Imported after django.setup() as auth_utils import Django models and requires Django to be initialised.
 from functional_tests.step_helpers.auth_utils import (  # noqa: E402 # pylint: disable=wrong-import-position
@@ -135,17 +136,17 @@ def before_scenario(context: Context, scenario: Scenario) -> None:
 
     if context.playwright_trace:
         # Start a new tracing chunk to capture each scenario separately
-        context.playwright_context.tracing.start_chunk(name=scenario.name, title=scenario.name)
+        context.playwright_context.tracing.start_chunk(name=get_scenario_trace_name(scenario), title=scenario.name)
 
 
 def after_scenario(context: Context, scenario: Scenario) -> None:
     """Runs after each scenario.
     Write out a Playwright trace if the scenario failed and trace recording is enabled, then close the playwright page.
     """
-    if context.playwright_context and scenario.status == Status.failed:
+    if context.playwright_trace and scenario.status.has_failed():
         # If the scenario failed, write the trace chunk out to a file, which will be prefixed with the scenario name
         context.playwright_context.tracing.stop_chunk(
-            path=context.playwright_traces_dir.joinpath(f"{scenario.name.replace(' ', '_')}_failure_trace.zip")
+            path=context.playwright_traces_dir.joinpath(f"{get_scenario_trace_name(scenario)}_failure_trace.zip")
         )
 
     elif context.playwright_trace:
@@ -208,3 +209,9 @@ def after_tag(context: Context, tag: str) -> None:
         context.bundle_api_cm.__exit__(None, None, None)
     elif tag == "autosave_enabled":
         context.autosave_override.disable()
+
+
+def get_scenario_trace_name(scenario: Scenario) -> str:
+    """Get the name of the trace file for a scenario, if trace recording is enabled."""
+    trace_name = f"{Path(scenario.filename).stem}_{scenario.line}_{scenario.name}"
+    return CLEAN_FILENAME_RE.sub("_", trace_name).strip("_")[:200]
