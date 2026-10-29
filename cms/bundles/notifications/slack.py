@@ -6,7 +6,6 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
-from django.urls import reverse
 from django.utils import timezone
 
 from cms.core.db_router import force_write_db
@@ -17,7 +16,6 @@ from cms.post_publish_actions.models import PostPublishAction
 
 if TYPE_CHECKING:
     from django.utils.functional import _StrOrPromise
-    from wagtail.models import Page
 
     from cms.bundles.models import Bundle
     from cms.users.models import User
@@ -112,11 +110,6 @@ def _get_published_page_count(bundle: Bundle) -> int:
     """Get count of bundle's pages that are live without any draft changes."""
     # cast to int because mypy can't figure out `count` return type
     return int(bundle.get_bundled_pages().filter(live=True, has_unpublished_changes=False).count())
-
-
-def _get_page_edit_link(page: Page) -> str:
-    edit_url = f"{settings.WAGTAILADMIN_BASE_URL}{reverse('wagtailadmin_pages:edit', args=[page.pk])}"
-    return f"<{edit_url}|{page.title}> (ID: {page.pk})"
 
 
 def _get_publish_type(bundle: Bundle) -> str:

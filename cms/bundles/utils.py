@@ -23,7 +23,11 @@ from cms.bundles.notifications.slack import (
 )
 from cms.core.fields import StreamField
 from cms.core.formatting_utils import get_page_display_status
-from cms.post_publish_actions.executor import run_bundle_notification_in_support_executor, run_in_support_executor
+from cms.post_publish_actions.executor import (
+    run_bundle_notification_in_support_executor,
+    run_bundle_publication_message_in_support_executor,
+    run_in_support_executor,
+)
 from cms.post_publish_actions.models import PostPublishAction
 from cms.post_publish_actions.signal_handlers import enqueue_post_publish_actions_for_bundle
 from cms.release_calendar.enums import ReleaseStatus
@@ -425,7 +429,7 @@ def publish_bundle(bundle: Bundle, *, update_status: bool = True) -> bool:  # py
     start_time = timezone.now()
 
     # Send publishing started notification
-    run_bundle_notification_in_support_executor(
+    run_bundle_publication_message_in_support_executor(
         bundle.pk,
         notify_slack_of_publication_start,
         bundle=bundle,
