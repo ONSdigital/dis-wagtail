@@ -1,18 +1,44 @@
+import logging
 import os
+from contextlib import suppress
+from http import HTTPStatus
+from typing import Any
+from urllib.parse import urlsplit
 
 from django.conf import settings
+from django.contrib.messages import constants as message_constants
 from django.http import HttpRequest, HttpResponse, HttpResponsePermanentRedirect
+from django.urls import NoReverseMatch, Resolver404, resolve, reverse
+from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
+from django.utils.html import escape
+from django.utils.translation import gettext_lazy as _
 
 from cms.core.utils import redirect
 
 NON_TRAILING_SLASH_METHODS = {"GET", "HEAD"}
 CLOUDFLARE_CACHE_TAG_HEADER = "Cache-Tag"
 
+security_logger = logging.getLogger("cms.security")
+UNAUTHORIZED_ACCESS_EVENT = "unauthorized access attempt"
+UNAUTHENTICATED_ACCESS_EVENT = "unauthenticated access attempt"
+PROTECTIVE_MONITORING_CLASSIFICATION = "PROTECTIVE_MONITORING"
+# Must match the message in wagtail.admin.auth.permission_denied
+WAGTAIL_PERMISSION_DENIED_MESSAGE = _("Sorry, you do not have permission to access this area.")
+
+
 ALLOWED_REQUEST_PATHS = {
     settings.DJANGO_ADMIN_HOME_PATH,
     settings.WAGTAILADMIN_HOME_PATH,
     "/__debug__/",
+}
+UNAUTHORISED_ACCESS_EXEMPT_URL_NAMES = {
+    "wagtailadmin_login",
+    "wagtailadmin_password_reset",
+    "wagtailadmin_logout",
+    # Sent automatically by the edit page, including after logout or session expiry
+    "wagtailadmin_editing_sessions:ping",
+    "wagtailadmin_editing_sessions:release",
 }
 
 
@@ -68,3 +94,95 @@ class CloudflareWagtailCacheTagMiddleware(MiddlewareMixin):
             response[CLOUDFLARE_CACHE_TAG_HEADER] = ",".join(updated_tags)
 
         return response
+
+
+class UnauthorizedAccessLoggingMiddleware(MiddlewareMixin):
+    """Logs denied requests (401/403 and admin redirects to login) to stdout as protective monitoring events.
+
+    These events are intentionally not stored in the database.
+    """
+
+    def process_request(self, request: HttpRequest) -> None:
+        request.protective_monitoring_started_at = timezone.now()  # type: ignore[attr-defined]
+
+    def process_response(self, request: HttpRequest, response: HttpResponse) -> HttpResponse:
+        if not self._is_denied(request, response):
+            return response
+        user = getattr(request, "user", None)
+
+        event_type = self._get_event_type(request)
+        data = {
+            "event_type": event_type,
+            "user_agent": request.META.get("HTTP_USER_AGENT", ""),
+        }
+        extra: dict[str, Any] = {
+            "classification": PROTECTIVE_MONITORING_CLASSIFICATION,
+            "http": {
+                "host": request.META.get("HTTP_HOST", request.META.get("SERVER_NAME", "")),
+                "method": request.method,
+                "path": request.path,
+                "query": request.META.get("QUERY_STRING", ""),
+                "scheme": request.scheme,
+                "started_at": getattr(request, "protective_monitoring_started_at", timezone.now()),
+                "status_code": response.status_code,
+            },
+        }
+        with suppress(TypeError, ValueError):
+            extra["http"]["port"] = int(request.get_port())
+        if not settings.IS_EXTERNAL_ENV:
+            if user is not None and user.is_authenticated:
+                extra["auth"] = {"identity": str(user.pk), "identity_type": "user"}
+                if external_user_id := getattr(user, "external_user_id", None):
+                    extra["auth"]["external_user_id"] = external_user_id
+                data["email"] = user.email
+            data["ip_address"] = request.META.get("REMOTE_ADDR")
+
+        security_logger.warning(event_type, extra={**extra, **data})
+        return response
+
+    @staticmethod
+    def _get_event_type(request: HttpRequest) -> str:
+        """Determines the event type based on whether the user is authenticated."""
+        user = getattr(request, "user", None)
+        if user is not None and user.is_authenticated:
+            return UNAUTHORIZED_ACCESS_EVENT
+        return UNAUTHENTICATED_ACCESS_EVENT
+
+    @staticmethod
+    def _is_denied(request: HttpRequest, response: HttpResponse) -> bool:
+        if response.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN):
+            return True
+
+        if response.status_code != HTTPStatus.FOUND:
+            return False
+
+        admin_path = f"/{settings.WAGTAILADMIN_HOME_PATH.strip('/')}/"
+        if not request.path.startswith(admin_path):
+            return False
+
+        location_path = urlsplit(response.get("Location", "")).path
+        if location_path == urlsplit(settings.WAGTAILADMIN_LOGIN_URL).path:
+            # Wagtail redirects to login both anonymous users and users without admin access.
+            # The login and password reset URLs redirect to the external login when core login is disabled.
+            with suppress(Resolver404):
+                return resolve(request.path).view_name not in UNAUTHORISED_ACCESS_EXEMPT_URL_NAMES
+            return True
+
+        return UnauthorizedAccessLoggingMiddleware._is_wagtail_permission_denied(request, location_path)
+
+    @staticmethod
+    def _is_wagtail_permission_denied(request: HttpRequest, location_path: str) -> bool:
+        """Detects Wagtail's permission_denied redirect to the admin home, which sets an error message."""
+        try:
+            if location_path != reverse("wagtailadmin_home"):
+                return False
+        except NoReverseMatch:
+            return False
+
+        # Peek at the queued messages without consuming them.
+        queued = getattr(getattr(request, "_messages", None), "_queued_messages", [])
+        # Wagtail renders the message through a template, which escapes it and adds whitespace.
+        denied_text = escape(str(WAGTAIL_PERMISSION_DENIED_MESSAGE))
+        return any(
+            message.level == message_constants.ERROR and denied_text in str(message.message) for message in queued
+        )

@@ -36,13 +36,40 @@ class JSONFormatterTestCase(TestCase):
         self.assertEqual(
             self.format_log(logs.records[0]),
             {
-                "created_at": "2025-01-01T00:00:00",
+                "created_at": "2025-01-01T00:00:00.000Z",
                 "namespace": __name__,
                 "severity": 3,
                 "event": "The message",
                 "data": {},
             },
         )
+
+    def test_formats_created_at_as_utc_with_milliseconds(self):
+        with self.assertLogs(__name__) as logs:
+            logger.info("The message")
+
+        record = logs.records[0]
+        record.created = 1735689600.123956  # 2025-01-01T00:00:00.123956Z
+
+        self.assertEqual(self.format_log(record)["created_at"], "2025-01-01T00:00:00.123Z")
+
+    def test_formats_standard_fields_at_top_level(self):
+        with self.assertLogs(__name__) as logs:
+            logger.info(
+                "The message",
+                extra={
+                    "classification": "PROTECTIVE_MONITORING",
+                    "auth": {"identity": "1", "identity_type": "user"},
+                    "http": {"method": "GET"},
+                    "other": 1,
+                },
+            )
+
+        formatted = self.format_log(logs.records[0])
+        self.assertEqual(formatted["classification"], "PROTECTIVE_MONITORING")
+        self.assertEqual(formatted["auth"], {"identity": "1", "identity_type": "user"})
+        self.assertEqual(formatted["http"], {"method": "GET"})
+        self.assertEqual(formatted["data"], {"other": 1})
 
     def test_formats_error(self):
         with self.assertLogs(__name__) as logs:
@@ -54,7 +81,7 @@ class JSONFormatterTestCase(TestCase):
         self.assertEqual(
             self.format_log(logs.records[0]),
             {
-                "created_at": "2025-01-01T00:00:00",
+                "created_at": "2025-01-01T00:00:00.000Z",
                 "namespace": __name__,
                 "severity": 1,
                 "event": "The error message",
@@ -82,7 +109,7 @@ class JSONFormatterTestCase(TestCase):
         self.assertEqual(
             self.format_log(logs.records[0]),
             {
-                "created_at": "2025-01-01T00:00:00",
+                "created_at": "2025-01-01T00:00:00.000Z",
                 "namespace": "django.request",
                 "severity": 2,
                 "event": "Not Found: /does-not-exist",
@@ -104,7 +131,7 @@ class JSONFormatterTestCase(TestCase):
         self.assertEqual(
             formatted,
             {
-                "created_at": "2025-01-01T00:00:00",
+                "created_at": "2025-01-01T00:00:00.000Z",
                 "namespace": "cms.core.logs",
                 "severity": 1,
                 "event": "Unable to serialize log message to JSON. Dropping message",
@@ -146,7 +173,7 @@ class GunicornJSONFormatterTestCase(SimpleTestCase):
 
         formatted = self.format_log(logs.records[0])
 
-        self.assertEqual(formatted["created_at"], "2025-01-01T00:00:00")
+        self.assertEqual(formatted["created_at"], "2025-01-01T00:00:00.000Z")
         self.assertEqual(formatted["namespace"], "gunicorn.access")
         self.assertEqual(formatted["event"], "http request")
         self.assertEqual(formatted["severity"], 3)
@@ -174,7 +201,7 @@ class GunicornJSONFormatterTestCase(SimpleTestCase):
 
         formatted = self.format_log(logs.records[0])
 
-        self.assertEqual(formatted["created_at"], "2025-01-01T00:00:00")
+        self.assertEqual(formatted["created_at"], "2025-01-01T00:00:00.000Z")
         self.assertEqual(formatted["namespace"], "gunicorn.access")
         self.assertEqual(formatted["event"], "http request")
         self.assertEqual(formatted["severity"], 3)
