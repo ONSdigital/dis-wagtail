@@ -9,7 +9,10 @@ from django.db.models import Max
 from django.utils import timezone
 from wagtail.models import Page
 
-from cms.bundles.notifications.slack import notify_slack_of_post_publish_end
+from cms.bundles.notifications.slack import (
+    notify_slack_of_post_publish_end,
+    notify_slack_of_post_publish_summary,
+)
 from cms.core.db_router import force_write_db
 from cms.core.utils import GeneratorCollector, release_db_connections
 
@@ -79,14 +82,20 @@ def post_publish_notify_slack(start_time: datetime, bundle: Bundle, *, publish_f
             },
         )
 
-    end_time = (
-        PostPublishAction.objects.completed()
-        .filter(bundle=bundle, finished_at__gte=start_time)
-        .aggregate(latest_finish=Max("finished_at"))["latest_finish"]
-        or timezone.now()
+    completed_actions = PostPublishAction.objects.completed().filter(bundle=bundle, finished_at__gte=start_time)
+    # time of last finished action, else now
+    all_actions_end_time = (
+        completed_actions.aggregate(latest_finish=Max("finished_at"))["latest_finish"] or timezone.now()
+    )
+    notify_slack_of_post_publish_summary(bundle, start_time, all_actions_end_time)
+    # Get end time based off last finished post-publish action marked critical
+    # try to fall back to last finished action, else now
+    critical_end_time = (
+        completed_actions.critical().aggregate(latest_finish=Max("finished_at"))["latest_finish"]
+        or all_actions_end_time
     )
     wait_for_bundle_notifications(bundle.pk)
-    notify_slack_of_post_publish_end(bundle, start_time, end_time, publish_failed=publish_failed)
+    notify_slack_of_post_publish_end(bundle, start_time, critical_end_time, publish_failed=publish_failed)
 
 
 def run_post_publish_actions_for(page: Page, bundle: Bundle | None) -> None:

@@ -1,6 +1,6 @@
 # secretlint-disable
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
@@ -8,7 +8,10 @@ from django.test import TestCase
 from cms.articles.models import ArticleSeriesPage, StatisticalArticlePage
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.bundles.enums import BundleStatus
-from cms.bundles.notifications.slack import BundleAlertType
+from cms.bundles.notifications.slack import (
+    BundleAlertType,
+    notify_slack_of_publication_start,
+)
 from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.bundles.utils import (
     BundleAPIBundleMetadata,
@@ -565,6 +568,23 @@ class PublishBundleFailureTests(TestCase):
         self.assertEqual(call_kwargs["bundle"], bundle)
         self.assertEqual(call_kwargs["exception_message"], "1 of 2 page(s) failed to publish")
         self.assertEqual(call_kwargs["alert_type"], BundleAlertType.FAIL)
+
+    @patch("cms.bundles.utils.run_bundle_publication_message_in_support_executor")
+    def test_publish_bundle__uses_publication_executor_for_start_notification(self, mock_publication_executor):
+        page = StatisticalArticlePageFactory(live=False)
+        page.save_revision()
+        bundle = BundleFactory(approved=True, bundled_pages=[page])
+
+        result = self._publish_and_wait(bundle)
+
+        self.assertTrue(result)
+        mock_publication_executor.assert_called_once_with(
+            bundle.pk,
+            notify_slack_of_publication_start,
+            bundle=bundle,
+            start_time=ANY,
+            url=bundle.full_inspect_url,
+        )
 
     @patch("cms.bundles.utils.notify_slack_of_publish_end")
     @patch("cms.bundles.utils.notify_slack_of_publication_start")
