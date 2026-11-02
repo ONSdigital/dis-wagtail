@@ -105,6 +105,23 @@ class BarColumnChartBlockTestCase(BaseChartBlockTestCase):
                 config = self.get_component_config(data)
                 self.assertEqual([0, None, 140], config["series"][0]["data"])
 
+    def test_string_data_points(self):
+        """String values should be converted to numbers if possible, otherwise preserved as strings."""
+        for chart_type in BarColumnChartTypeChoices.values:
+            with self.subTest(chart_type=chart_type):
+                data = self.raw_data.copy()
+                data["select_chart_type"] = chart_type
+                data["table"] = TableDataFactory(
+                    table_data=[
+                        ["", "Series 1"],
+                        ["2005", "100"],
+                        ["2006", "abc"],
+                        ["2007", "140"],
+                    ]
+                )
+                config = self.get_component_config(data)
+                self.assertEqual([100, "abc", 140], config["series"][0]["data"])
+
     def test_bar_chart_no_x_axis_title(self):
         self.raw_data["select_chart_type"] = BarColumnChartTypeChoices.BAR
         config = self.get_component_config()
