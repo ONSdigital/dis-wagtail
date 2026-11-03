@@ -64,6 +64,17 @@ class SubdomainLocalisationTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
         self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
 
+    def test_host_language_overrides_accept_language_header(self):
+        """Test that the host language takes precedence over the Accept-Language header."""
+        request = RequestFactory(SERVER_NAME="cy.ons.localhost").get("/", SERVER_PORT=80)
+        response = self.client.get(
+            self.welsh_page.get_full_url(request=request),
+            headers={"host": "cy.ons.localhost", "accept-language": "en-GB,en;q=0.9"},
+        )
+        # The accept-language header should be ignored in favor of the host language.
+        self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
+        self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
+
     def test_accessing_welsh_alternate_domain_activates_welsh(self):
         request = RequestFactory(SERVER_NAME="cy.pub.ons.localhost").get("/", SERVER_PORT=80)
         response = self.client.get(
@@ -72,10 +83,19 @@ class SubdomainLocalisationTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
         self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")
 
-    def test_language_cookie(self):
-        self.assertNotIn(settings.LANGUAGE_COOKIE_NAME, self.client.cookies)
+    def test_no_language_cookie_is_set(self):
+        """Test Django does not set a language cookie when using subdomain-based locale."""
+        request = RequestFactory(SERVER_NAME="cy.ons.localhost").get("/", SERVER_PORT=80)
+        response = self.client.get(self.welsh_page.get_full_url(request=request), headers={"host": "cy.ons.localhost"})
+        # LANGUAGE_COOKIE_NAME comes from Django's global_settings
+        self.assertNotIn(settings.LANGUAGE_COOKIE_NAME, response.cookies)
+
+    def test_host_language_overrides_language_cookie(self):
+        """Test that the host language takes precedence over the Django language cookie."""
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "en-gb"
         request = RequestFactory(SERVER_NAME="cy.ons.localhost").get("/", SERVER_PORT=80)
         response = self.client.get(self.welsh_page.get_full_url(request=request), headers={"host": "cy.ons.localhost"})
 
-        self.assertIn(settings.LANGUAGE_COOKIE_NAME, response.cookies)
-        self.assertEqual(response.cookies[settings.LANGUAGE_COOKIE_NAME].value, "cy")
+        # The language cookie should be ignored in favor of the host language.
+        self.assertEqual(translation.get_language(), self.welsh_locale.language_code)
+        self.assertContains(response, "Mae’r holl gynnwys ar gael o dan y")

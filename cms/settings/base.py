@@ -454,8 +454,6 @@ _valid_language_codes = {code for code, _ in LANGUAGES}
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
 
-LANGUAGE_COOKIE_NAME = "ons_language"
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/stable/howto/static-files/
 
