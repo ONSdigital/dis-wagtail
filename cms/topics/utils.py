@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any
 
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _
 from wagtail.blocks import StreamValue
 
 from cms.core.formatting_utils import format_as_document_list_item

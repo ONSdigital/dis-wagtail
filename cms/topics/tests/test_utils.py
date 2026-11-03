@@ -49,7 +49,8 @@ class TestUtils(TestCase):
 
         with translation.override("cy"):
             formatted_time_series = format_time_series_as_document_list(time_series_data)
-            self.assertEqual(str(formatted_time_series[0]["metadata"]["object"]["text"]), "Cyfres amser")
+
+        self.assertEqual(formatted_time_series[0]["metadata"]["object"]["text"], "Cyfres amser")
 
     def test_get_topic_search_url_returns_correct_url(self):
         result = get_topic_search_url(self.topic, self.suffix)
