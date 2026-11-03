@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any
 
+from django.utils.translation import gettext_lazy as _
 from wagtail.blocks import StreamValue
 
 from cms.core.formatting_utils import format_as_document_list_item
@@ -22,7 +23,7 @@ def format_time_series_as_document_list(time_series: StreamValue) -> list[dict[s
         time_series_document = format_as_document_list_item(
             title=block_value["title"],
             url=block_value["url"],
-            content_type="Time series",
+            content_type=_("Time series"),
             description=block_value["description"],
         )
 

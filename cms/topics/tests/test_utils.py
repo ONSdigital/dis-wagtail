@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.utils import translation
 from wagtail.blocks import StreamValue
 
 from cms.taxonomy.tests.factories import TopicFactory
@@ -36,6 +37,19 @@ class TestUtils(TestCase):
 
         self.assertEqual(len(formatted_time_series), 1)
         self.assertEqual(formatted_time_series[0], expected)
+
+    def test_format_time_series_as_document_list_uses_welsh_translation(self):
+        block_value = {"title": "Test", "url": "https://example.com/dataset", "description": "Summary"}
+        time_series_data = StreamValue(
+            TimeSeriesPageStoryBlock(),
+            stream_data=[
+                ("time_series_page_link", block_value),
+            ],
+        )
+
+        with translation.override("cy"):
+            formatted_time_series = format_time_series_as_document_list(time_series_data)
+            self.assertEqual(str(formatted_time_series[0]["metadata"]["object"]["text"]), "Cyfres amser")
 
     def test_get_topic_search_url_returns_correct_url(self):
         result = get_topic_search_url(self.topic, self.suffix)
