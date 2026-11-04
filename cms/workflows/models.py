@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from wagtail.admin.mail import GroupApprovalTaskStateSubmissionEmailNotifier
 from wagtail.locks import BasicLock
-from wagtail.models import AbstractGroupApprovalTask, TaskState, WorkflowMixin, WorkflowState
+from wagtail.models import AbstractGroupApprovalTask, LockableMixin, TaskState, WorkflowMixin, WorkflowState
 
 from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
 
@@ -80,14 +80,18 @@ class GroupReviewTask(AbstractGroupApprovalTask):
         - Reviewers (not the last editor): 'Approve', 'Approve with comment'
         - Manually locked: no actions, fully locked until manual lock removed
         """
-        if not self.user_can_access_editor(obj, user) or isinstance(obj.get_lock(), BasicLock):
+        if (
+            not isinstance(obj, LockableMixin)
+            or not self.user_can_access_editor(obj, user)
+            or isinstance(obj.get_lock(), BasicLock)
+        ):
             return []
 
         actions: list[tuple[str, str, bool]] = [
             ("reject", "Unlock editing", True),
         ]
 
-        is_self_approver = obj.latest_revision and obj.latest_revision.user_id == user.pk  # type: ignore[attr-defined]
+        is_self_approver = obj.latest_revision and obj.latest_revision.user_id == user.pk
         if not is_self_approver:
             actions.extend(
                 [
@@ -98,9 +102,7 @@ class GroupReviewTask(AbstractGroupApprovalTask):
 
         return actions
 
-    def on_action(
-        self, task_state: TaskState, user: User, action_name: str, **kwargs: Any
-    ) -> None:
+    def on_action(self, task_state: TaskState, user: User, action_name: str, **kwargs: Any) -> None:
         if isinstance(task_state.workflow_state.content_object.get_lock(), BasicLock):
             raise PermissionDenied
 
@@ -132,7 +134,11 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
         - In a bundle ready to publish: no actions (fully locked via bundle)
         - Manually locked: no actions, fully locked until manual lock removed
         """
-        if not self.user_can_access_editor(obj, user) or isinstance(obj.get_lock(), BasicLock):
+        if (
+            not isinstance(obj, LockableMixin)
+            or not self.user_can_access_editor(obj, user)
+            or isinstance(obj.get_lock(), BasicLock)
+        ):
             return []
 
         if in_bundle_ready_to_be_published(obj):
