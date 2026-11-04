@@ -875,6 +875,14 @@ class WorkflowPermissionTweaks(WagtailTestUtils, TestCase):
         self.assertContains(response, "You don't have permission to publish this page")
         self.assertContains(response, "Publish 0 pages")
 
+        response = self.client.post(self.bulk_publish_url)
+
+        self.assertEqual(response.status_code, 302)
+        self.index_page.refresh_from_db()
+        self.assertFalse(self.index_page.live)
+        self.assertTrue(self.index_page.locked)
+        self.assertIsInstance(self.index_page.current_workflow_task, ReadyToPublishGroupTask)
+
     @override_settings(ALLOW_DIRECT_PUBLISHING_IN_DEVELOPMENT=True)
     def test_bulk_publish_page_override__with_direct_publishing_allowed(self):
         response = self.client.get(self.bulk_publish_url)

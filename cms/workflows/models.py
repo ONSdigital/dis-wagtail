@@ -4,6 +4,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils import timezone
 from wagtail.admin.mail import GroupApprovalTaskStateSubmissionEmailNotifier
+from wagtail.locks import BasicLock
 from wagtail.models import AbstractGroupApprovalTask, TaskState, WorkflowMixin, WorkflowState
 
 from cms.bundles.utils import in_active_bundle, in_bundle_ready_to_be_published
@@ -77,8 +78,9 @@ class GroupReviewTask(AbstractGroupApprovalTask):
 
         - All users with access: 'Unlock editing' (reject with comment)
         - Reviewers (not the last editor): 'Approve', 'Approve with comment'
+        - Manually locked: no actions, fully locked until manual lock removed
         """
-        if not self.user_can_access_editor(obj, user):
+        if not self.user_can_access_editor(obj, user) or isinstance(obj.get_lock(), BasicLock):
             return []
 
         actions: list[tuple[str, str, bool]] = [
@@ -95,6 +97,14 @@ class GroupReviewTask(AbstractGroupApprovalTask):
             )
 
         return actions
+
+    def on_action(
+        self, task_state: TaskState, user: User, action_name: str, **kwargs: Any
+    ) -> None:
+        if isinstance(task_state.workflow_state.content_object.get_lock(), BasicLock):
+            raise PermissionDenied
+
+        super().on_action(task_state, user, action_name, **kwargs)
 
     class Meta:
         verbose_name = "Group review task"
@@ -120,8 +130,9 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
         - Not in a bundle: 'Unlock editing' + 'Publish'
         - In a bundle not ready to publish: 'Unlock editing' only
         - In a bundle ready to publish: no actions (fully locked via bundle)
+        - Manually locked: no actions, fully locked until manual lock removed
         """
-        if not self.user_can_access_editor(obj, user):
+        if not self.user_can_access_editor(obj, user) or isinstance(obj.get_lock(), BasicLock):
             return []
 
         if in_bundle_ready_to_be_published(obj):
@@ -148,6 +159,9 @@ class ReadyToPublishGroupTask(AbstractGroupApprovalTask):
             current_task_state=task_state,
             current_task_state__status=TaskState.STATUS_IN_PROGRESS,
         ).exists():
+            raise PermissionDenied
+
+        if isinstance(task_state.workflow_state.content_object.get_lock(), BasicLock):
             raise PermissionDenied
 
         if action_name == "locked-approve":

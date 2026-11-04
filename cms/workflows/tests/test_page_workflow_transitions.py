@@ -12,7 +12,7 @@ from cms.standard_pages.tests.factories import InformationPageFactory
 from cms.users.tests.factories import UserFactory
 from cms.workflows.models import GroupReviewTask, ReadyToPublishGroupTask
 from cms.workflows.tests.test_workflow_tweaks import WorkflowTweaksBaseTestCase
-from cms.workflows.tests.utils import mark_page_as_ready_for_review
+from cms.workflows.tests.utils import mark_page_as_ready_for_review, mark_page_as_ready_to_publish
 
 
 class PageWorkflowTransitionTests(WorkflowTweaksBaseTestCase):
@@ -142,6 +142,51 @@ class PageWorkflowTransitionTests(WorkflowTweaksBaseTestCase):
                 self.assertEqual(workflow.current_task_state.status, TaskState.STATUS_IN_PROGRESS)
                 self.page.refresh_from_db()
                 self.assertFalse(self.page.live)
+
+    def test_dashboard_workflow_actions_require_manual_lock_removal(self):
+        self.client.force_login(self.publishing_admin)
+        for prepare_workflow, action in (
+            (mark_page_as_ready_for_review, "approve"),
+            (mark_page_as_ready_for_review, "reject"),
+            (mark_page_as_ready_to_publish, "locked-approve"),
+            (mark_page_as_ready_to_publish, "reject"),
+        ):
+            with self.subTest(stage=prepare_workflow.__name__, action=action):
+                page = InformationPageFactory(live=False)
+                workflow = prepare_workflow(page, self.publishing_officer)
+                workflow.refresh_from_db()
+                task_state = workflow.current_task_state
+                task = task_state.task.specific
+                page.locked = True
+                page.locked_by = self.publishing_admin
+                page.save(update_fields=["locked", "locked_by"])
+                url = reverse("wagtailadmin_pages:workflow_action", args=[page.pk, action, task_state.pk])
+
+                self.assertEqual(task.get_actions(page, self.publishing_admin), [])
+                response = self.client.post(url, {"comment": "Dashboard review"})
+
+                self.assertRedirects(response, reverse("wagtailadmin_home"), fetch_redirect_response=False)
+                task_state.refresh_from_db()
+                with self.assertRaises(PermissionDenied):
+                    task.on_action(task_state, self.publishing_admin, action)
+                workflow.refresh_from_db()
+                page.refresh_from_db()
+                self.assertEqual(workflow.status, WorkflowState.STATUS_IN_PROGRESS)
+                self.assertEqual(workflow.current_task_state_id, task_state.pk)
+                self.assertEqual(task_state.status, TaskState.STATUS_IN_PROGRESS)
+                self.assertFalse(page.live)
+                self.assertTrue(page.locked)
+
+                page.locked = False
+                page.save(update_fields=["locked"])
+                response = self.client.post(url, {"comment": "Dashboard review"})
+
+                self.assertEqual(response.status_code, 302)
+                task_state.refresh_from_db()
+                page.refresh_from_db()
+                expected_status = TaskState.STATUS_REJECTED if action == "reject" else TaskState.STATUS_APPROVED
+                self.assertEqual(task_state.status, expected_status)
+                self.assertEqual(page.live, action == "locked-approve")
 
     def test_editor_submission_enters_review_and_locks_page(self):
         self.client.force_login(self.publishing_officer)
