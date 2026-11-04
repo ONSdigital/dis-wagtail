@@ -131,7 +131,7 @@
 {% block postHero %}
 
     {% if has_corrections or has_notices or page.headline_figures %}
-        <section>
+        <section id="post-hero-content">
             {% if has_corrections or has_notices %}
                 {% set openText = _("Show detail") %}
                 {% set closeText = _("Hide detail") %}
