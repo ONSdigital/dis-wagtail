@@ -1,4 +1,6 @@
 # pylint: disable=not-callable
+from datetime import UTC, datetime, timedelta
+
 from behave import given, then, when
 from behave.runner import Context
 from django.conf import settings
@@ -77,6 +79,21 @@ def step_not_redirected_to_signin(context: Context) -> None:
 def step_wait_for_expiry(context: Context) -> None:
     """Sleep past the token TTL so it expires."""
     context.page.wait_for_timeout(5000)
+
+
+@when("the user has been inactive for more than 15 minutes")
+def step_backdate_last_interaction(context: Context) -> None:
+    """Set the auth client's last interaction time to 16 minutes ago, so the test doesn't have to wait."""
+    context.page.wait_for_load_state("networkidle")
+    sixteen_minutes_ago = (datetime.now(tz=UTC) - timedelta(minutes=16)).isoformat()
+    context.page.evaluate(
+        """(lastInteraction) => {
+            const state = JSON.parse(window.localStorage.getItem('dis_auth_client_state') || '{}');
+            state.last_interaction_time = lastInteraction;
+            window.localStorage.setItem('dis_auth_client_state', JSON.stringify(state));
+        }""",
+        sixteen_minutes_ago,
+    )
 
 
 @given("the user refreshes the page")
