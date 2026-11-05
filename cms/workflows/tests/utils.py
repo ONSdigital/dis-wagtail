@@ -15,14 +15,14 @@ def progress_page_workflow(workflow_state: WorkflowState, user: User | None = No
 
 def mark_page_as_ready_for_review(page: Page, user: User | None = None) -> WorkflowState:
     page.save_revision(user=user)
-    workflow = Workflow.objects.get(name="Release review")
+    workflow = Workflow.objects.get(name="Review")
     # start the workflow
     return workflow.start(page, user=user)
 
 
 def mark_page_as_ready_to_publish(page: Page, user: User | None = None) -> WorkflowState:
     page.save_revision(user=user)
-    workflow = Workflow.objects.get(name="Release review")
+    workflow = Workflow.objects.get(name="Review")
     # start the workflow
     workflow_state = workflow.start(page, user=user)
 
