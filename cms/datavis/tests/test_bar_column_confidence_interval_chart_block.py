@@ -120,6 +120,22 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
             config["series"][0]["data"],
         )
 
+    def test_column_chart_with_zero_bounds(self):
+        """Zero as a range min or max should still render a proper box, not collapse to the value."""
+        self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.COLUMN
+        self.raw_data["table"] = TableDataFactory(
+            table_data=[
+                ["Category", "Value", "Range min", "Range max"],
+                ["2005", "5", "0", "10"],
+                ["2006", "-5", "-10", "0"],
+            ]
+        )
+        config = self.get_component_config()
+        self.assertEqual(
+            [(0, 0, 5, 10, 10), (-10, -10, -5, 0, 0)],
+            config["series"][0]["data"],
+        )
+
     def test_custom_legend_labels(self):
         """Test that custom legend labels are used when provided."""
         self.raw_data["estimate_line_label"] = "Custom Estimate"
