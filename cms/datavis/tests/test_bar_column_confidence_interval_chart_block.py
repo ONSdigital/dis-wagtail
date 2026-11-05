@@ -210,7 +210,7 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
                 with self.assertRaises(blocks.StructBlockValidationError) as cm:
                     self.block.clean(value)
                 self.assertEqual(
-                    BarColumnConfidenceIntervalChartBlock.ERROR_NON_NUMERIC_VALUE,
+                    BarColumnConfidenceIntervalChartBlock.ERROR_NON_NUMERIC_VALUES,
                     cm.exception.block_errors["table"].code,
                 )
 
@@ -411,3 +411,31 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
         self.assertNotIn("max", x_axis_config)
         self.assertNotIn("startOnTick", x_axis_config)
         self.assertNotIn("endOnTick", x_axis_config)
+
+    def test_special_floating_point_values(self):
+        """Test that NaN is rejected in used numeric columns but ignored elsewhere."""
+        cases = [
+            ("category", ["NaN", "100", "90", "110"], False),
+            ("value", ["2005", "NaN", "90", "110"], True),
+            ("range_min", ["2005", "100", "inf", "110"], True),
+            ("range_max", ["2005", "100", "90", "-inf"], True),
+            ("ignored", ["2005", "100", "90", "110", "NaN"], False),
+        ]
+        for name, row, is_invalid in cases:
+            with self.subTest(column=name):
+                data = self.raw_data.copy()
+                data["table"] = TableDataFactory(table_data=[["Category", "Value", "Range min", "Range max"], row])
+                value = self.get_value(data)
+
+                if is_invalid:
+                    with self.assertRaises(blocks.StructBlockValidationError) as cm:
+                        self.block.clean(value)
+                    self.assertEqual(
+                        BarColumnConfidenceIntervalChartBlock.ERROR_NON_NUMERIC_VALUES,
+                        cm.exception.block_errors["table"].code,
+                    )
+                else:
+                    try:
+                        self.block.clean(value)
+                    except ValidationError as e:
+                        self.fail(f"ValidationError raised: {e}")
