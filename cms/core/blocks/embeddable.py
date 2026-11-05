@@ -15,6 +15,7 @@ from wagtail.documents.blocks import DocumentChooserBlock
 from wagtail.images.blocks import ImageChooserBlock
 
 from cms.core.analytics_utils import get_gtm_attributes_file_download
+from cms.core.url_utils import add_query_params
 from cms.core.utils import format_file_size_kb
 
 if TYPE_CHECKING:
@@ -120,7 +121,16 @@ class ImageBlock(blocks.StructBlock):
 
         return {
             "title": _("Download this image"),
-            "itemsList": [{"text": link_text, "url": large_image.url, "download": "file", "attributes": attributes}],
+            "itemsList": [
+                {
+                    "text": link_text,
+                    # Public images resolve to the media URL and private ones to the serve view.
+                    # Both honour force_download, so the response is always an attachment.
+                    "url": add_query_params(large_image.url, {"force_download": "true"}),
+                    "download": "file",
+                    "attributes": attributes,
+                }
+            ],
         }
 
     class Meta:
