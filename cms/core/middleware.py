@@ -127,13 +127,15 @@ class UnauthorizedAccessLoggingMiddleware(MiddlewareMixin):
                 "status_code": response.status_code,
             },
         }
-        with suppress(TypeError, ValueError):
+        try:
             extra["http"]["port"] = int(request.get_port())
+        except TypeError, ValueError:
+            pass
         if not settings.IS_EXTERNAL_ENV:
             if user is not None and user.is_authenticated:
-                extra["auth"] = {"identity": str(user.pk), "identity_type": "user"}
-                if external_user_id := getattr(user, "external_user_id", None):
-                    extra["auth"]["external_user_id"] = external_user_id
+                external_user_id = getattr(user, "external_user_id", None)
+                extra["auth"] = {"identity": str(external_user_id or user.pk), "identity_type": "user"}
+                data["internal_user_id"] = user.pk
                 data["email"] = user.email
             data["ip_address"] = request.META.get("REMOTE_ADDR")
 

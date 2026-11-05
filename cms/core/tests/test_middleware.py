@@ -235,6 +235,7 @@ class TestUnauthorizedAccessLoggingMiddleware(TestCase):
         self.assertEqual(record.getMessage(), "unauthorized access attempt")
         self.assertEqual(record.classification, "PROTECTIVE_MONITORING")
         self.assertEqual(record.auth, {"identity": str(user.pk), "identity_type": "user"})
+        self.assertEqual(record.internal_user_id, user.pk)
         self.assertEqual(record.email, user.email)
         self.assertEqual(record.user_agent, "TestAgent")
         self.assertEqual(record.ip_address, "10.0.0.1")
@@ -257,9 +258,8 @@ class TestUnauthorizedAccessLoggingMiddleware(TestCase):
         record = self.process(request, HttpResponse(status=403))
 
         self.assertTrue(hasattr(record, "auth"))
-        self.assertIn("external_user_id", record.auth)
-
-        self.assertEqual(record.auth["external_user_id"], external_user_id)
+        self.assertEqual(record.auth["identity"], str(external_user_id))
+        self.assertEqual(record.internal_user_id, user.pk)
 
     def test_logs_401_for_anonymous_user_without_auth(self):
         request = self.factory.get("/api/thing")
