@@ -123,7 +123,7 @@ class DownloadBlock(blocks.StructBlock):
             errors |= {"url": ValidationError("A download URL is required when link text is provided.")}
 
         if url:
-            errors |= _validate_visualisation_url((value.get("url") or "").strip(), field_name="url")
+            errors |= _validate_visualisation_url(url, field_name="url")
 
         if errors:
             raise blocks.StructBlockValidationError(errors)
