@@ -161,6 +161,8 @@ class FeaturedIframeBlock(IframeBlock):
     subtitle = None
     caption = None
     footnotes = None
+    image_download = None
+    data_download = None
 
     class Meta:
         form_layout = [  # noqa
