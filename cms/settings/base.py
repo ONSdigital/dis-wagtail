@@ -176,6 +176,11 @@ if not IS_EXTERNAL_ENV:
     MIDDLEWARE.insert(common_middleware_index, "cms.auth.middleware.ONSAuthMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
+    # Must come after the auth middleware so that request.user is available.
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index("django.contrib.messages.middleware.MessageMiddleware"),
+        "cms.core.middleware.UnauthorizedAccessLoggingMiddleware",
+    )
 
 CSP_ENABLED = env.get("CMS_CSP_ENABLED", "true").lower().strip() == "true"
 

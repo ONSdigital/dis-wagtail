@@ -1,7 +1,7 @@
 import json
 import logging
 import traceback
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import json_log_formatter
@@ -30,13 +30,20 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
         if isinstance(extra.get("request"), HttpRequest):
             extra.pop("request", None)
 
+        top_level_fields: dict[str, Any] = {
+            key: extra.pop(key) for key in ("auth", "classification", "http") if key in extra
+        }
+
+        created_at = datetime.fromtimestamp(record.created, tz=UTC)
         record_data = {
-            "created_at": datetime.fromtimestamp(record.created),
+            "created_at": created_at.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
             "namespace": record.name,
             "severity": SEVERITY_MAPPING.get(record.levelno, 3),  # Default to INFO
             "event": message,
             "data": extra,
         }
+
+        record_data.update(top_level_fields)
 
         if record.exc_info:
             record_data["errors"] = [
