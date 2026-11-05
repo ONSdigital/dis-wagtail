@@ -401,6 +401,24 @@ class TestUnauthorizedAccessLoggingMiddleware(TestCase):
         request.user = AnonymousUser()
         self.assert_not_logged(request, HttpResponseRedirect("/admin/login/"))
 
+    @override_settings(WAGTAILADMIN_HOME_PATH="wagtail-admin", WAGTAILADMIN_LOGIN_URL="/wagtail-admin/login/")
+    def test_logs_redirect_on_admin_root_without_trailing_slash(self):
+        request = self.factory.get("/wagtail-admin")
+        request.user = AnonymousUser()
+
+        record = self.process(request, HttpResponseRedirect("/wagtail-admin/login/?next=/wagtail-admin"))
+
+        self.assertEqual(record.http["path"], "/wagtail-admin")
+
+    @override_settings(LOGIN_URL="/accounts/login/")
+    def test_logs_admin_redirect_to_django_login_url(self):
+        request = self.factory.get("/admin/extend-session/")
+        request.user = AnonymousUser()
+
+        record = self.process(request, HttpResponseRedirect("/accounts/login/?next=/admin/extend-session/"))
+
+        self.assertEqual(record.http["path"], "/admin/extend-session/")
+
     def test_ignores_login_page_redirect(self):
         for path in ("/admin/login/", "/admin/password_reset/"):
             with self.subTest(path=path):
@@ -439,6 +457,14 @@ class TestUnauthorizedAccessLoggingMiddleware(TestCase):
         self.assertEqual(response.status_code, 302)
         record = logs.records[0]
         self.assertEqual(record.getMessage(), "unauthenticated access attempt")
+
+    def test_end_to_end_anonymous_session_extension(self):
+        with self.assertLogs("cms.security", level="WARNING") as logs:
+            response = self.client.post(reverse("extend_session"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(logs.records[0].getMessage(), "unauthenticated access attempt")
+        self.assertEqual(logs.records[0].http["path"], reverse("extend_session"))
 
     def test_end_to_end_user_without_admin_access(self):
         user = UserFactory()

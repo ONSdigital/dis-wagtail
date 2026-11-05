@@ -8,6 +8,7 @@ from urllib.parse import urlsplit
 from django.conf import settings
 from django.contrib.messages import constants as message_constants
 from django.http import HttpRequest, HttpResponse, HttpResponsePermanentRedirect
+from django.shortcuts import resolve_url
 from django.urls import NoReverseMatch, Resolver404, resolve, reverse
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
@@ -158,12 +159,17 @@ class UnauthorizedAccessLoggingMiddleware(MiddlewareMixin):
         if response.status_code != HTTPStatus.FOUND:
             return False
 
-        admin_path = f"/{settings.WAGTAILADMIN_HOME_PATH.strip('/')}/"
-        if not request.path.startswith(admin_path):
+        admin_root = f"/{settings.WAGTAILADMIN_HOME_PATH.strip('/')}"
+        if request.path != admin_root and not request.path.startswith(f"{admin_root}/"):
             return False
 
         location_path = urlsplit(response.get("Location", "")).path
-        if location_path == urlsplit(settings.WAGTAILADMIN_LOGIN_URL).path:
+        # Views using Django's @login_required redirect to LOGIN_URL rather than Wagtail's login
+        login_paths = {
+            urlsplit(settings.WAGTAILADMIN_LOGIN_URL).path,
+            urlsplit(resolve_url(settings.LOGIN_URL)).path,
+        }
+        if location_path in login_paths:
             # Wagtail redirects to login both anonymous users and users without admin access.
             # The login and password reset URLs redirect to the external login when core login is disabled.
             with suppress(Resolver404):
