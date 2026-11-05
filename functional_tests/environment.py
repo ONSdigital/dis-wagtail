@@ -1,6 +1,7 @@
 import os
 import re
 from pathlib import Path
+from unittest import mock
 
 import django
 from behave import use_fixture
@@ -194,6 +195,10 @@ def before_tag(context: Context, tag: str) -> None:
     elif tag == "autosave_enabled":
         context.autosave_override = override_settings(WAGTAIL_AUTOSAVE_INTERVAL=500)
         context.autosave_override.enable()
+    elif tag == "short_inactivity":
+        # Just above the test SESSION_RENEWAL_OFFSET_SECONDS (5), so the scenario doesn't wait 15 minutes
+        context.inactivity_patch = mock.patch("cms.auth.utils.INACTIVITY_THRESHOLD_SECONDS", 7)
+        context.inactivity_patch.start()
 
 
 def after_tag(context: Context, tag: str) -> None:
@@ -209,6 +214,8 @@ def after_tag(context: Context, tag: str) -> None:
         context.bundle_api_cm.__exit__(None, None, None)
     elif tag == "autosave_enabled":
         context.autosave_override.disable()
+    elif tag == "short_inactivity":
+        context.inactivity_patch.stop()
 
 
 def get_scenario_trace_name(scenario: Scenario) -> str:

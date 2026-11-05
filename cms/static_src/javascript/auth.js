@@ -23,6 +23,7 @@ const {
   wagtailAdminHomePath,
   wagtailAdminLoginUrl,
   sessionRenewalOffsetSeconds,
+  inactivityThresholdSeconds,
   authTokenRefreshUrl,
   idTokenCookieName,
   csrfHeaderName,
@@ -100,7 +101,7 @@ const logout = async () => {
 const sessionConfig = {
   timeOffsets: {
     passiveRenewal: parseInt(sessionRenewalOffsetSeconds, 10) * 1000, // milliseconds
-    inactivityThreshold: 15 * 60 * 1000, // log out after 15 minutes without interaction
+    inactivityThreshold: parseInt(inactivityThresholdSeconds, 10) * 1000, // milliseconds
   },
   apiEndpoints: {
     renewSession: authTokenRefreshUrl,

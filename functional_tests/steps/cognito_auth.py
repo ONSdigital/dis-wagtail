@@ -1,10 +1,9 @@
 # pylint: disable=not-callable
-from datetime import UTC, datetime, timedelta
-
 from behave import given, then, when
 from behave.runner import Context
 from django.conf import settings
 
+from cms.auth import utils
 from cms.auth.utils import get_auth_config
 from functional_tests.step_helpers.auth_utils import CognitoAuthenticationTestHelper
 from functional_tests.step_helpers.utils import require_request
@@ -81,19 +80,10 @@ def step_wait_for_expiry(context: Context) -> None:
     context.page.wait_for_timeout(5000)
 
 
-@when("the user has been inactive for more than 15 minutes")
-def step_backdate_last_interaction(context: Context) -> None:
-    """Set the auth client's last interaction time to 16 minutes ago, so the test doesn't have to wait."""
-    context.page.wait_for_load_state("networkidle")
-    sixteen_minutes_ago = (datetime.now(tz=UTC) - timedelta(minutes=16)).isoformat()
-    context.page.evaluate(
-        """(lastInteraction) => {
-            const state = JSON.parse(window.localStorage.getItem('dis_auth_client_state') || '{}');
-            state.last_interaction_time = lastInteraction;
-            window.localStorage.setItem('dis_auth_client_state', JSON.stringify(state));
-        }""",
-        sixteen_minutes_ago,
-    )
+@when("the user remains inactive past the inactivity threshold")
+def step_wait_past_inactivity_threshold(context: Context) -> None:
+    """Wait one second longer than the inactivity threshold, which the @short_inactivity tag lowers."""
+    context.page.wait_for_timeout((utils.INACTIVITY_THRESHOLD_SECONDS + 1) * 1000)
 
 
 @given("the user refreshes the page")
