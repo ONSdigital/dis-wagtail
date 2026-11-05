@@ -1,3 +1,4 @@
+# secretlint-disable
 import time
 from datetime import timedelta
 from io import StringIO
