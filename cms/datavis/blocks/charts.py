@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from django.forms import widgets
@@ -63,10 +63,6 @@ def _validate_bar_chart_x_axis(
 class LineChartBlock(BaseChartBlock):
     highcharts_chart_type = HighChartsChartType.LINE
     x_axis_type = AxisType.CATEGORICAL
-
-    extra_series_attributes: ClassVar = {
-        "connectNulls": True,
-    }
 
     # Remove unsupported features
     select_chart_type = None
@@ -650,7 +646,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
                 # box extents.
                 "data": [
                     (row[2], row[2], row[1], row[3], row[3])
-                    if row[2] and row[3]
+                    if row[2] not in ("", None) and row[3] not in ("", None)
                     else (row[1], row[1], row[1], row[1], row[1])
                     for row in value["table"].rows
                 ],
