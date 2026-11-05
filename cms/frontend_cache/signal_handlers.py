@@ -110,6 +110,7 @@ def register_signal_handlers() -> None:
         PostPublishActionType.CACHE_PURGE,
         purge_published_page_from_frontend_cache,
         priority=PostPublishActionPriority.MEDIUM,
+        critical=True,
     )
 
     for model in _get_tracked_page_models():

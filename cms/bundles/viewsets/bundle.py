@@ -358,12 +358,13 @@ class BundleEditView(EditView):
                 "Manually publishing bundle", extra={"bundle_id": self.object.pk, "event": "manual_bundle_publish"}
             )
             start_date = timezone.now()
-
-            publish_succeeded = publish_bundle(self.object, update_status=False)
-
-            run_in_support_executor(
-                post_publish_notify_slack, start_date, self.object, publish_failed=not publish_succeeded
-            )
+            publish_succeeded = False
+            try:
+                publish_succeeded = publish_bundle(self.object, update_status=False)
+            finally:
+                run_in_support_executor(
+                    post_publish_notify_slack, start_date, self.object, publish_failed=not publish_succeeded
+                )
 
     def get_action(self, request: HttpRequest) -> str:
         """Determine the POST action."""
