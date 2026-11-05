@@ -130,43 +130,45 @@
 
 {% block postHero %}
 
-    <section>
-        {% if has_corrections or has_notices %}
-            {% set openText = _("Show detail") %}
-            {% set closeText = _("Hide detail") %}
-            {% if has_corrections and has_notices %}
-                {% set corrections_and_notices_title = _("Corrections and notices") %}
-            {% elif has_notices %}
-                {% set corrections_and_notices_title = _("Notices") %}
-            {% else %}
-                {% set corrections_and_notices_title = _("Corrections") %}
+    {% if has_corrections or has_notices or page.headline_figures %}
+        <section id="post-hero-content">
+            {% if has_corrections or has_notices %}
+                {% set openText = _("Show detail") %}
+                {% set closeText = _("Hide detail") %}
+                {% if has_corrections and has_notices %}
+                    {% set corrections_and_notices_title = _("Corrections and notices") %}
+                {% elif has_notices %}
+                    {% set corrections_and_notices_title = _("Notices") %}
+                {% else %}
+                    {% set corrections_and_notices_title = _("Corrections") %}
+                {% endif %}
+
+                {# fmt:off #}
+                {{
+                    onsDetailsPanel({
+                        "title": corrections_and_notices_title,
+                        "openText": openText,
+                        "closeText": closeText,
+                        "detailsItems": corrections_and_notices
+                    })
+                }}
+                {# fmt:on #}
             {% endif %}
 
-            {# fmt:off #}
-            {{
-                onsDetailsPanel({
-                    "title": corrections_and_notices_title,
-                    "openText": openText,
-                    "closeText": closeText,
-                    "detailsItems": corrections_and_notices
-                })
-            }}
-            {# fmt:on #}
-        {% endif %}
-
-        {% if page.headline_figures %}
-            <div class="ons-container ons-u-pt-l ons-u-pb-2xl">
-                <h2 class="ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
-                <div class="ons-grid ons-grid-flex-gap" id="headline-figures">
-                    {% for figure in page.headline_figures %}
-                        <div class="ons-grid__col ons-grid__col--flex-col">
-                            {% include_block figure %}
-                        </div>
-                    {% endfor %}
+            {% if page.headline_figures %}
+                <div class="ons-container ons-u-pt-l ons-u-pb-2xl">
+                    <h2 class="ons-u-fs-m">{{ _("Headline facts and figures") }}</h2>
+                    <div class="ons-grid ons-grid-flex-gap" id="headline-figures">
+                        {% for figure in page.headline_figures %}
+                            <div class="ons-grid__col ons-grid__col--flex-col">
+                                {% include_block figure %}
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
-            </div>
-        {% endif %}
-    </section>
+            {% endif %}
+        </section>
+    {% endif %}
 {% endblock %}
 
 {% block mainContent %}

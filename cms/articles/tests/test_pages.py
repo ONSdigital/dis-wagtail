@@ -980,6 +980,60 @@ class StatisticalArticlePageTests(TranslationResetMixin, WagtailPageTestCase):
         self.assertContains(response, "ons-js-table-of-contents-container")
         self.assertNotContains(response, "ons-js-toc-container")
 
+    def test_article_page_post_hero_markup(self):
+        """The post-hero section is rendered when there are headline figures,
+        corrections or notices, but omitted when there are none.
+        """
+        with self.subTest("only headline figures"):
+            self.page.corrections = []
+            self.page.notices = []
+            self.page.save_revision().publish()
+            original_revision_id = self.page.get_latest_revision().id
+            response = self.client.get(self.page.url)
+            self.assertContains(response, '<section id="post-hero-content">')
+
+        with self.subTest("only corrections"):
+            self.page.headline_figures = []
+            self.page.corrections = [
+                (
+                    "correction",
+                    {
+                        "version_id": 1,
+                        "previous_version": original_revision_id,
+                        "when": "2025-01-11",
+                        "frozen": True,
+                        "text": "First correction text",
+                    },
+                )
+            ]
+            self.page.save_revision().publish()
+            response = self.client.get(self.page.url)
+            self.assertContains(response, '<section id="post-hero-content">')
+
+        with self.subTest("only notices"):
+            self.page.headline_figures = []
+            self.page.corrections = []
+            self.page.notices = [
+                (
+                    "notice",
+                    {
+                        "when": "2025-01-11",
+                        "text": "This is a notice",
+                    },
+                )
+            ]
+            self.page.save_revision().publish()
+            response = self.client.get(self.page.url)
+            self.assertContains(response, '<section id="post-hero-content">')
+
+        with self.subTest("no headline figures, corrections or notices"):
+            self.page.headline_figures = []
+            self.page.corrections = []
+            self.page.notices = []
+            self.page.save_revision().publish()
+            response = self.client.get(self.page.url)
+            self.assertNotContains(response, '<section id="post-hero-content"></section>', html=True)
+
 
 class GeneralPageTests(WagtailPageTestCase):
     @classmethod
