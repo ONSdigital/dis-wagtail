@@ -1,4 +1,5 @@
 import json
+import math
 from collections.abc import Sequence
 from typing import Any
 
@@ -36,7 +37,15 @@ class SimpleTableStructValue(StructValue):
             for row in data[1:]:
                 for i, val in enumerate(row):
                     if isinstance(val, str):
-                        row[i] = numberfy(val)
+                        value = numberfy(val)
+                        # Use original string values if conversion results in
+                        # non-finite float
+                        if isinstance(value, float) and not math.isfinite(value):
+                            value = val
+                        row[i] = value
+                    # Catch numeric representations of non-finite floats
+                    elif isinstance(val, float) and not math.isfinite(val):
+                        row[i] = str(val)
         return data
 
     @cached_property
