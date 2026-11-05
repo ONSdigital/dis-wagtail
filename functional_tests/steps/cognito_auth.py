@@ -3,6 +3,7 @@ from behave import given, then, when
 from behave.runner import Context
 from django.conf import settings
 
+from cms.auth import utils
 from cms.auth.utils import get_auth_config
 from functional_tests.step_helpers.auth_utils import CognitoAuthenticationTestHelper
 from functional_tests.step_helpers.utils import require_request
@@ -77,6 +78,12 @@ def step_not_redirected_to_signin(context: Context) -> None:
 def step_wait_for_expiry(context: Context) -> None:
     """Sleep past the token TTL so it expires."""
     context.page.wait_for_timeout(5000)
+
+
+@when("the user remains inactive past the inactivity threshold")
+def step_wait_past_inactivity_threshold(context: Context) -> None:
+    """Wait one second longer than the inactivity threshold, which the @short_inactivity tag lowers."""
+    context.page.wait_for_timeout((utils.INACTIVITY_THRESHOLD_SECONDS + 1) * 1000)
 
 
 @given("the user refreshes the page")

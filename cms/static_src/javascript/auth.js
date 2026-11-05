@@ -21,7 +21,9 @@ if (configEl) {
 
 const {
   wagtailAdminHomePath,
+  wagtailAdminLoginUrl,
   sessionRenewalOffsetSeconds,
+  inactivityThresholdSeconds,
   authTokenRefreshUrl,
   idTokenCookieName,
   csrfHeaderName,
@@ -97,10 +99,15 @@ const logout = async () => {
 
 // Session configuration
 const sessionConfig = {
-  timeOffsets: { passiveRenewal: parseInt(sessionRenewalOffsetSeconds, 10) * 1000 }, // milliseconds
+  timeOffsets: {
+    passiveRenewal: parseInt(sessionRenewalOffsetSeconds, 10) * 1000, // milliseconds
+    inactivityThreshold: parseInt(inactivityThresholdSeconds, 10) * 1000, // milliseconds
+  },
   apiEndpoints: {
     renewSession: authTokenRefreshUrl,
+    expireSession: authTokenRefreshUrl,
   },
+  loginUrl: wagtailAdminLoginUrl, // where the library redirects after it logs the user out
   onRenewSuccess: async (sessionExpiryTime, refreshExpiryTime) => {
     console.debug(
       `[WAGTAIL] Session renewed! (Session: ${sessionExpiryTime}, Refresh: ${refreshExpiryTime})`,

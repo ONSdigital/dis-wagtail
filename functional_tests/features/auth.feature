@@ -39,6 +39,15 @@ Feature: Wagtail Admin Cognito Authentication and Session Management
         Then their session is extended
         And the user is not asked to login
 
+    @short_inactivity
+    Scenario: User is logged out after a period of inactivity
+        Given the user is authenticated
+        When the user navigates to the admin page
+        And the user is active in the admin interface
+        And the user remains inactive past the inactivity threshold
+        And the user becomes active again
+        Then the user is redirected to the login page
+
     Scenario: Logging out clears the session
         Given the user is authenticated
         When the user navigates to the admin page

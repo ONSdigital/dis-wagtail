@@ -299,6 +299,7 @@ class ValidateJWTTests(SimpleTestCase):
 @override_settings(
     AUTH_TOKEN_REFRESH_URL="/refresh/",
     WAGTAILADMIN_HOME_PATH="/admin/",
+    WAGTAILADMIN_LOGIN_URL="/admin/login/",
     SESSION_RENEWAL_OFFSET_SECONDS=30,
     ID_TOKEN_COOKIE_NAME="id",
 )
@@ -309,7 +310,9 @@ class GetAuthConfigTests(SimpleTestCase):
             {
                 "authTokenRefreshUrl": "/refresh/",
                 "wagtailAdminHomePath": "/admin/",
+                "wagtailAdminLoginUrl": "/admin/login/",
                 "sessionRenewalOffsetSeconds": 30,
+                "inactivityThresholdSeconds": 900,
                 "idTokenCookieName": "id",
                 "csrfHeaderName": "X-CSRFTOKEN",
             },
