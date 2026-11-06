@@ -1,4 +1,5 @@
 import logging
+import uuid
 from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Any
@@ -58,9 +59,17 @@ class ChartExporterClient:
         self.session.headers.update({"Content-Type": "application/json", "Accept": "application/json"})
 
     def create_chart(
-        self, chart_config: dict[str, Any], *, language: str = "en", device: str = "desktop"
+        self,
+        chart_config: dict[str, Any],
+        *,
+        language: str = "en",
+        device: str = "desktop",
+        request_id: str | None = None,
     ) -> ChartObjectResponse | None:
         """POST /charts. Returns None without calling out when the integration is disabled.
+
+        ``request_id`` is sent as the ``X-Request-Id`` header for cross-service tracing.
+        One is generated if not given, and it is reused across retries.
 
         Raises:
             ChartExporterMalformedRequest: for 400/413/415 responses.
@@ -71,7 +80,7 @@ class ChartExporterClient:
             return None
 
         payload = {"language": language, "device": device, "chart_config": chart_config}
-        data = self._request_with_retries("POST", "/charts", payload)
+        data = self._request_with_retries("POST", "/charts", payload, request_id=request_id or str(uuid.uuid4()))
         return ChartObjectResponse(
             id=data["id"],
             created_at=data["created_at"],
@@ -83,44 +92,50 @@ class ChartExporterClient:
             height=data["height"],
         )
 
-    def _request_with_retries(self, method: str, path: str, json_payload: dict[str, Any]) -> dict[str, Any]:  # type: ignore[return-value]
+    def _request_with_retries(  # type: ignore[return-value]
+        self, method: str, path: str, json_payload: dict[str, Any], *, request_id: str
+    ) -> dict[str, Any]:
         """Retry with exponential backoff, but only for retryable (unavailable) failures."""
         for attempt in stamina.retry_context(on=ChartExporterUnavailable, attempts=1 + self.max_retries):
             with attempt:
-                return self._make_request(method, path, json_payload)
+                return self._make_request(method, path, json_payload, request_id=request_id)
 
-    def _make_request(self, method: str, path: str, json_payload: dict[str, Any]) -> dict[str, Any]:
+    def _make_request(self, method: str, path: str, json_payload: dict[str, Any], *, request_id: str) -> dict[str, Any]:
         url = f"{self.base_url}/{path.lstrip('/')}"
+        log_extra = {"request_id": request_id}
         try:
-            response = self.session.request(method, url, json=json_payload, timeout=self.timeout)
+            response = self.session.request(
+                method, url, json=json_payload, headers={"X-Request-Id": request_id}, timeout=self.timeout
+            )
             response.raise_for_status()
         except requests.exceptions.HTTPError as exc:
-            raise self._translate_http_error(exc) from exc
+            raise self._translate_http_error(exc, request_id) from exc
         except requests.exceptions.Timeout as exc:
-            logger.warning("Timeout calling chart exporter API %s %s: %s", method, url, exc)
+            logger.warning("Timeout calling chart exporter API %s %s: %s", method, url, exc, extra=log_extra)
             raise ChartExporterUnavailable(f"Timeout calling chart exporter API: {exc}") from exc
         except requests.exceptions.RequestException as exc:
-            logger.warning("Connection error calling chart exporter API %s %s: %s", method, url, exc)
+            logger.warning("Connection error calling chart exporter API %s %s: %s", method, url, exc, extra=log_extra)
             raise ChartExporterUnavailable(f"Connection error calling chart exporter API: {exc}") from exc
 
         json_response: dict[str, Any] = response.json()
         return json_response
 
-    def _translate_http_error(self, exc: requests.exceptions.HTTPError) -> ChartExporterError:
+    def _translate_http_error(self, exc: requests.exceptions.HTTPError, request_id: str) -> ChartExporterError:
         status_code = exc.response.status_code
         errors = self._parse_errors(exc.response)
         message = f"HTTP {status_code} error from chart exporter API"
+        log_extra = {"status_code": status_code, "request_id": request_id}
 
         if status_code in self._MALFORMED_REQUEST_STATUSES:
             # A bug in the CMS or the exporter's contract: developers need to see this.
-            logger.exception("Malformed request to chart exporter API", extra={"status_code": status_code})
+            logger.exception("Malformed request to chart exporter API", extra=log_extra)
             return ChartExporterMalformedRequest(message, errors)
 
         if status_code in self._RETRYABLE_STATUSES:
-            logger.warning("Chart exporter API unavailable: %s", message, extra={"status_code": status_code})
+            logger.warning("Chart exporter API unavailable: %s", message, extra=log_extra)
             return ChartExporterUnavailable(message, errors)
 
-        logger.exception("Unexpected error from chart exporter API", extra={"status_code": status_code})
+        logger.exception("Unexpected error from chart exporter API", extra=log_extra)
         return ChartExporterError(message, errors)
 
     @staticmethod

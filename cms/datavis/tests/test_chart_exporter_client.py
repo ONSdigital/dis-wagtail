@@ -68,6 +68,26 @@ class ChartExporterClientTests(TestCase):
         self.assertIn('"language": "en"', request_body if isinstance(request_body, str) else request_body.decode())
 
     @responses.activate
+    def test_create_chart_sends_given_request_id(self):
+        responses.post(f"{BASE_URL}/charts", json=self.mock_response_data, status=HTTPStatus.CREATED)
+
+        self.client.create_chart(self.chart_config, request_id="trace-123")
+
+        self.assertEqual(responses.calls[0].request.headers["X-Request-Id"], "trace-123")
+
+    @responses.activate
+    def test_create_chart_generates_request_id_reused_across_retries(self):
+        responses.post(f"{BASE_URL}/charts", status=HTTPStatus.SERVICE_UNAVAILABLE)
+        responses.post(f"{BASE_URL}/charts", json=self.mock_response_data, status=HTTPStatus.CREATED)
+
+        self.client.create_chart(self.chart_config)
+
+        request_ids = {call.request.headers["X-Request-Id"] for call in responses.calls}
+        self.assertEqual(len(responses.calls), 2)
+        self.assertEqual(len(request_ids), 1)
+        self.assertTrue(request_ids.pop())
+
+    @responses.activate
     def test_create_chart_malformed_request_not_retried(self):
         error_body = {"errors": [{"code": "invalid_config", "description": "chart_config must be an object"}]}
         responses.post(f"{BASE_URL}/charts", json=error_body, status=HTTPStatus.BAD_REQUEST)
