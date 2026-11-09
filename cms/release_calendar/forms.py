@@ -9,6 +9,7 @@ from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.blocks.stream_block import StreamValue
 from wagtail.models import Locale
 
+from cms.bundles.models import Bundle
 from cms.bundles.permissions import user_can_manage_bundles
 from cms.core.widgets import ReadOnlyRichTextWidget
 from cms.release_calendar.permissions import user_can_modify_notice
@@ -233,8 +234,16 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
             )
 
     def _validate_not_in_active_bundle(self) -> None:
-        """Prevent cancellation when the page is part of any active bundle."""
-        bundle = self.instance.active_bundle
+        """Don't allow cancelling a page that an active bundle is linked to for scheduling.
+
+        A page that's just one of the bundle's pages can still be cancelled.
+        """
+        if not self.instance.pk:
+            return
+
+        # Not self.instance.active_bundle, which also includes bundles that only have this page in their
+        # bundled pages. Those don't depend on its release date, so cancelling is fine.
+        bundle = Bundle.objects.filter(release_calendar_page=self.instance).active().first()
         if not bundle:
             return
 
