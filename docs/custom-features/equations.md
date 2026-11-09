@@ -6,6 +6,9 @@ to render maths with [MathJax 4](https://docs.mathjax.org/en/latest/), in the Wa
 Editors can enter TeX (`$$...$$` for display, `\(...\)` for inline) or AsciiMath (`` `...` ``).
 On save, the equation is also rendered to SVG with matplotlib, which is shown when JavaScript is disabled.
 
+MathJax typesets the whole page. Once a page has an equation block, TeX typed into any other block, such as
+`$$a + b$$` in a paragraph, renders as maths too. This is unlikely to come up in real content.
+
 ## Where MathJax comes from
 
 MathJax is served from the ONS CDN, not a third-party CDN, so our CSP only needs to allow `cdn.ons.gov.uk`.

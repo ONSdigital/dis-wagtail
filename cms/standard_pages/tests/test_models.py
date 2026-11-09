@@ -194,7 +194,7 @@ class InformationPageTestCase(WagtailTestUtils, TestCase):
         srcs = [script["src"] for script in soup.find_all("script", src=True)]
         polymath_config_index = next(i for i, src in enumerate(srcs) if "wagtail_polymath/js/mathjax_init" in src)
         ons_config_index = next(i for i, src in enumerate(srcs) if "js/mathjax-config" in src)
-        self.assertLess(polymath_config_index, ons_config_index)
+        self.assertLess(polymath_config_index, ons_config_index, "ONS MathJax config must load after polymath's config")
 
         ons_config = soup.find("script", src=srcs[ons_config_index])
         self.assertFalse(ons_config.has_attr("defer") or ons_config.has_attr("async"))
