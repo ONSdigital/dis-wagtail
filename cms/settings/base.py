@@ -176,6 +176,11 @@ if not IS_EXTERNAL_ENV:
     MIDDLEWARE.insert(common_middleware_index, "cms.auth.middleware.ONSAuthMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "django.contrib.sessions.middleware.SessionMiddleware")
     MIDDLEWARE.insert(common_middleware_index, "xff.middleware.XForwardedForMiddleware")
+    # Must come after the auth middleware so that request.user is available.
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index("django.contrib.messages.middleware.MessageMiddleware"),
+        "cms.core.middleware.UnauthorizedAccessLoggingMiddleware",
+    )
 
 CSP_ENABLED = env.get("CMS_CSP_ENABLED", "true").lower().strip() == "true"
 
@@ -453,8 +458,6 @@ WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
 _valid_language_codes = {code for code, _ in LANGUAGES}
 
 LOCALE_PATHS = [PROJECT_DIR / "locale"]
-
-LANGUAGE_COOKIE_NAME = "ons_language"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/stable/howto/static-files/

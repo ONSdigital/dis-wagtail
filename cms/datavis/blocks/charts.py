@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from django.forms import widgets
@@ -63,10 +63,6 @@ def _validate_bar_chart_x_axis(
 class LineChartBlock(BaseChartBlock):
     highcharts_chart_type = HighChartsChartType.LINE
     x_axis_type = AxisType.CATEGORICAL
-
-    extra_series_attributes: ClassVar = {
-        "connectNulls": True,
-    }
 
     # Remove unsupported features
     select_chart_type = None
@@ -470,12 +466,12 @@ class BarColumnChartBlock(BaseChartBlock):
 
 class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
     x_axis_type = AxisType.CATEGORICAL
+    numeric_columns = slice(1, 4)
 
     # Error codes
     ERROR_BAR_CHART_NO_ASPECT_RATIO = "bar_chart_no_aspect_ratio"
     ERROR_UNMATCHED_RANGE = "unmatched_range"
     ERROR_INSUFFICIENT_COLUMNS = "insufficient_columns"
-    ERROR_NON_NUMERIC_VALUE = "non_numeric_value"
     ERROR_HORIZONTAL_BAR_NO_CATEGORY_TITLE = "horizontal_bar_no_category_title"
     ERROR_HORIZONTAL_BAR_NO_CATEGORY_TICK_INTERVAL = "horizontal_bar_no_category_tick_interval"
 
@@ -650,7 +646,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
                 # box extents.
                 "data": [
                     (row[2], row[2], row[1], row[3], row[3])
-                    if row[2] and row[3]
+                    if row[2] not in ("", None) and row[3] not in ("", None)
                     else (row[1], row[1], row[1], row[1], row[1])
                     for row in value["table"].rows
                 ],
@@ -694,12 +690,6 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
         else:  # Only perform row-level validation if we have the expected number of columns.
             # Validate that range values are either both present or both absent.
             for row in value["table"].rows:
-                if any((isinstance(cell, str) and cell.strip()) for cell in row[1:4]):
-                    errors["table"] = ValidationError(
-                        f'Non-numeric values in category "{row[0]}"',
-                        code=self.ERROR_NON_NUMERIC_VALUE,
-                    )
-
                 if (row[2] == "") != (row[3] == ""):
                     errors["table"] = ValidationError(
                         f'Unmatched range for category "{row[0]}". Enter both '
@@ -724,6 +714,7 @@ class BarColumnConfidenceIntervalChartBlock(BaseChartBlock):
 class ScatterPlotBlock(BaseChartBlock):
     highcharts_chart_type = HighChartsChartType.SCATTER
     x_axis_type = AxisType.LINEAR
+    numeric_columns = slice(0, 2)
 
     # Remove unsupported features
     select_chart_type = None

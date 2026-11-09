@@ -1,9 +1,10 @@
 from datetime import timedelta
 
+from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from wagtail.test.utils import WagtailTestUtils
-from wagtail.test.utils.form_data import nested_form_data
+from wagtail.test.utils.form_data import nested_form_data, streamfield
 
 from cms.articles.tests.factories import ArticleSeriesPageFactory, StatisticalArticlePageFactory
 from cms.topics.tests.factories import TopicPageFactory
@@ -177,3 +178,44 @@ class ArticleHeadlineFiguresHooksTestCase(WagtailTestUtils, TestCase):
         # Verify the page is still live, unpublish was prevented
         self.series_page.refresh_from_db()
         self.assertTrue(self.series_page.live)
+
+
+class ArticleBeforeCreatePageHookTestCase(WagtailTestUtils, TestCase):
+    prepopulated_message = "This page has been prepopulated with the content from the latest page in the series."
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.series_page = ArticleSeriesPageFactory()
+        cls.article_page = StatisticalArticlePageFactory(parent=cls.series_page)
+        cls.add_url = reverse("wagtailadmin_pages:add", args=["articles", "statisticalarticlepage", cls.series_page.id])
+        cls.user = cls.create_superuser("admin")
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def queued_messages(self, response):
+        return [str(message) for message in get_messages(response.wsgi_request)]
+
+    def test_message_added_on_get(self):
+        response = self.client.get(self.add_url, follow=True)
+
+        self.assertContains(response, self.prepopulated_message, count=1)
+
+    def test_message_not_added_on_autosave_post(self):
+        data = nested_form_data(
+            {
+                "title": "New article",
+                "headline_figures": streamfield([]),
+                "content": streamfield([]),
+                "corrections": streamfield([]),
+                "notices": streamfield([]),
+                "datasets": streamfield([]),
+                "featured_chart": streamfield([]),
+            }
+        )
+        response = self.client.post(self.add_url, data, headers={"accept": "application/json"})
+
+        self.assertFalse(
+            any(self.prepopulated_message in message for message in self.queued_messages(response)),
+            "Prepopulated message should not be queued when POST used",
+        )

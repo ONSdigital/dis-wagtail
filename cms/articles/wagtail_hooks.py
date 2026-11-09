@@ -17,7 +17,8 @@ def before_create_page(
     parent_page: Page,
     page_class: type[Page],
 ) -> None:
-    if page_class == StatisticalArticlePage and parent_page.get_latest():
+    # Only GET, as autosave and form POSTs also run this hook and would queue duplicate messages
+    if request.method == "GET" and page_class == StatisticalArticlePage and parent_page.get_latest():
         # Display message - the actual prepopulation is done in the signal handler
         messages.info(
             request,

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-15 10:23+0100\n"
+"POT-Creation-Date: 2026-09-24 14:05+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,7 +23,7 @@ msgstr "Erthygl"
 
 #: cms/articles/models.py:493
 #: cms/jinja2/templates/pages/methodology_page.html:103
-#: cms/jinja2/templates/pages/statistical_article_page.html:226
+#: cms/jinja2/templates/pages/statistical_article_page.html:228
 #: cms/methodology/models.py:205
 msgid "Cite this page"
 msgstr "Dyfynnwch y dudalen hon"
@@ -74,27 +74,24 @@ msgid "Hide all"
 msgstr "Cuddio popeth"
 
 #: cms/core/blocks/embeddable.py:86 cms/core/blocks/markup.py:230
-#: cms/datavis/blocks/base.py:153 cms/datavis/blocks/iframe.py:156
+#: cms/datavis/blocks/base.py:153 cms/datavis/blocks/iframe.py:264
 msgid "Source"
 msgstr "Ffynhonnell"
 
 #: cms/core/blocks/embeddable.py:90 cms/core/blocks/markup.py:235
-#: cms/datavis/blocks/base.py:170 cms/datavis/blocks/iframe.py:163
+#: cms/datavis/blocks/base.py:170 cms/datavis/blocks/iframe.py:274
 msgid "Footnotes"
 msgstr "Troednodiadau"
 
-#: cms/core/blocks/embeddable.py:122
-msgid "Download this image"
-msgstr "Lawrlwythwch y ddelwedd hon"
+#: cms/core/blocks/embeddable.py:122 cms/core/blocks/markup.py:290
+#: cms/datavis/blocks/base.py:398 cms/datavis/blocks/iframe.py:254
+msgid "Downloads"
+msgstr "Lawrlwythiadau"
 
 #: cms/core/blocks/markup.py:273 cms/datavis/blocks/base.py:358
 #, python-format
 msgid "Download CSV %(size)s"
 msgstr "Lawrlwythwch CSV %(size)s"
-
-#: cms/core/blocks/markup.py:290
-msgid "Download this table"
-msgstr "Lawrlwythwch y tabl hwn"
 
 #: cms/core/blocks/related.py:60
 msgid "Related links"
@@ -144,43 +141,47 @@ msgstr "Thema"
 msgid "Released"
 msgstr "Rhyddhawyd"
 
+#: cms/core/middleware.py:27
+msgid "Sorry, you do not have permission to access this area."
+msgstr ""
+
 #: cms/core/models/base.py:226
 msgid "Home"
 msgstr "Hafan"
 
-#: cms/core/templatetags/page_config_tags.py:225
+#: cms/core/templatetags/page_config_tags.py:226
 msgid "Beta"
 msgstr "Beta"
 
-#: cms/core/templatetags/page_config_tags.py:225
+#: cms/core/templatetags/page_config_tags.py:226
 msgid "This is a new service."
 msgstr "Mae hwn yn wasanaeth newydd."
 
-#: cms/core/templatetags/page_config_tags.py:229
+#: cms/core/templatetags/page_config_tags.py:230
 msgid "Menu links navigation"
 msgstr "Llywio dolenni dewislen"
 
-#: cms/core/templatetags/page_config_tags.py:230
+#: cms/core/templatetags/page_config_tags.py:231
 msgid "Menu links"
 msgstr "Dolenni dewislen"
 
-#: cms/core/templatetags/page_config_tags.py:231
+#: cms/core/templatetags/page_config_tags.py:232
 msgid "Menu"
 msgstr "Dewislen"
 
-#: cms/core/templatetags/page_config_tags.py:231
+#: cms/core/templatetags/page_config_tags.py:232
 msgid "Toggle menu"
 msgstr "Togl dewislen"
 
-#: cms/core/templatetags/page_config_tags.py:237
+#: cms/core/templatetags/page_config_tags.py:238
 msgid "Toggle search"
 msgstr "Toglo'r chwiliad"
 
-#: cms/core/templatetags/page_config_tags.py:247
+#: cms/core/templatetags/page_config_tags.py:248
 msgid "All content is available under the"
 msgstr "Mae’r holl gynnwys ar gael o dan y"
 
-#: cms/core/templatetags/page_config_tags.py:250
+#: cms/core/templatetags/page_config_tags.py:251
 msgid ", except where otherwise stated"
 msgstr ", ac eithrio lle y nodir fel arall"
 
@@ -207,7 +208,7 @@ msgstr "yn Saesneg"
 msgid "in Welsh"
 msgstr "yn y Gymraeg"
 
-#: cms/jinja2/templates/base_page.html:72
+#: cms/jinja2/templates/base_page.html:73
 #, python-format
 msgid ""
 "This page is currently not available %(in_language)s. It is displayed in its "
@@ -833,11 +834,11 @@ msgstr "I’w gadarnhau"
 msgid "Release calendar page"
 msgstr "Tudalen amserlen datganiadau"
 
-#: cms/settings/base.py:449
+#: cms/settings/base.py:454
 msgid "English"
 msgstr "Saesneg"
 
-#: cms/settings/base.py:450
+#: cms/settings/base.py:455
 msgid "Welsh"
 msgstr "Cymraeg"
 

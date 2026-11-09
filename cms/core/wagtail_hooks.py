@@ -203,7 +203,8 @@ def prevent_bulk_delete_of_previously_published_pages(
 
 @hooks.register("after_edit_page")
 def after_edit_page(request: HttpRequest, page: Page) -> None:
-    if page.locale.language_code != settings.LANGUAGE_CODE:
+    # Skip autosave (JSON) requests, as their messages are never rendered and would pile up
+    if page.locale.language_code != settings.LANGUAGE_CODE or not request.accepts("text/html"):
         return
 
     # Check if proper translations of the page exist, which are not simple aliases

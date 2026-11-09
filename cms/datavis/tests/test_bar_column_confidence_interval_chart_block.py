@@ -120,6 +120,22 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
             config["series"][0]["data"],
         )
 
+    def test_column_chart_with_zero_bounds(self):
+        """Zero as a range min or max should still render a proper box, not collapse to the value."""
+        self.raw_data["select_chart_type"] = BarColumnConfidenceIntervalChartTypeChoices.COLUMN
+        self.raw_data["table"] = TableDataFactory(
+            table_data=[
+                ["Category", "Value", "Range min", "Range max"],
+                ["2005", "5", "0", "10"],
+                ["2006", "-5", "-10", "0"],
+            ]
+        )
+        config = self.get_component_config()
+        self.assertEqual(
+            [(0, 0, 5, 10, 10), (-10, -10, -5, 0, 0)],
+            config["series"][0]["data"],
+        )
+
     def test_custom_legend_labels(self):
         """Test that custom legend labels are used when provided."""
         self.raw_data["estimate_line_label"] = "Custom Estimate"
@@ -210,7 +226,7 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
                 with self.assertRaises(blocks.StructBlockValidationError) as cm:
                     self.block.clean(value)
                 self.assertEqual(
-                    BarColumnConfidenceIntervalChartBlock.ERROR_NON_NUMERIC_VALUE,
+                    BarColumnConfidenceIntervalChartBlock.ERROR_NON_NUMERIC_VALUES,
                     cm.exception.block_errors["table"].code,
                 )
 
@@ -411,3 +427,31 @@ class BarColumnConfidenceIntervalChartBlockTestCase(BaseChartBlockTestCase):
         self.assertNotIn("max", x_axis_config)
         self.assertNotIn("startOnTick", x_axis_config)
         self.assertNotIn("endOnTick", x_axis_config)
+
+    def test_special_floating_point_values(self):
+        """Test that NaN is rejected in used numeric columns but ignored elsewhere."""
+        cases = [
+            ("category", ["NaN", "100", "90", "110"], False),
+            ("value", ["2005", "NaN", "90", "110"], True),
+            ("range_min", ["2005", "100", "inf", "110"], True),
+            ("range_max", ["2005", "100", "90", "-inf"], True),
+            ("ignored", ["2005", "100", "90", "110", "NaN"], False),
+        ]
+        for name, row, is_invalid in cases:
+            with self.subTest(column=name):
+                data = self.raw_data.copy()
+                data["table"] = TableDataFactory(table_data=[["Category", "Value", "Range min", "Range max"], row])
+                value = self.get_value(data)
+
+                if is_invalid:
+                    with self.assertRaises(blocks.StructBlockValidationError) as cm:
+                        self.block.clean(value)
+                    self.assertEqual(
+                        BarColumnConfidenceIntervalChartBlock.ERROR_NON_NUMERIC_VALUES,
+                        cm.exception.block_errors["table"].code,
+                    )
+                else:
+                    try:
+                        self.block.clean(value)
+                    except ValidationError as e:
+                        self.fail(f"ValidationError raised: {e}")
