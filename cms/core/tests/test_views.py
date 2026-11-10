@@ -6,11 +6,13 @@ from unittest import mock
 
 import time_machine
 from django.conf import settings
+from django.db import DEFAULT_DB_ALIAS, DatabaseError, connections
 from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from fakeredis import FakeConnection
 from wagtail.test.utils import WagtailTestUtils
 
+from cms.core.db_router import READ_REPLICA_DB_ALIAS
 from cms.home.models import HomePage
 from cms.standard_pages.tests.factories import IndexPageFactory
 
@@ -119,13 +121,42 @@ class ReadinessProbeTestCase(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 500)
-        self.assertEqual(response.content, b"Database default returned unexpected result")
+        self.assertEqual(response.content, f"Database {DEFAULT_DB_ALIAS} returned unexpected result".encode())
 
     @mock.patch("cms.core.views.DB_HEALTHCHECK_QUERY", "INVALID QUERY")
     def test_unexpected_database_error(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 500)
-        self.assertEqual(response.content, b"Database default reported an error")
+        self.assertEqual(response.content, f"Database {DEFAULT_DB_ALIAS} reported an error".encode())
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_external_writer_unavailable(self):
+        with (
+            mock.patch.object(connections[DEFAULT_DB_ALIAS], "cursor", side_effect=DatabaseError) as writer_cursor,
+            mock.patch.object(
+                connections[READ_REPLICA_DB_ALIAS], "cursor", wraps=connections[READ_REPLICA_DB_ALIAS].cursor
+            ) as reader_cursor,
+        ):
+            response = self.client.get(self.url)
+
+        writer_cursor.assert_not_called()
+        reader_cursor.assert_called_once()
+        self.assertEqual(response.status_code, 200)
+
+    @override_settings(IS_EXTERNAL_ENV=True)
+    def test_external_reader_unavailable(self):
+        with mock.patch.object(connections[READ_REPLICA_DB_ALIAS], "cursor", side_effect=DatabaseError):
+            response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.content, f"Database {READ_REPLICA_DB_ALIAS} reported an error".encode())
+
+    def test_internal_reader_unavailable(self):
+        with mock.patch.object(connections[READ_REPLICA_DB_ALIAS], "cursor", side_effect=DatabaseError):
+            response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.content, f"Database {READ_REPLICA_DB_ALIAS} reported an error".encode())
 
     @override_settings(XFF_STRICT=True)
     def test_xff_exempt(self):
