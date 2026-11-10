@@ -3,6 +3,7 @@ import re
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
+from django.utils.translation import gettext as _
 from wagtail.blocks import StreamValue
 
 from cms.core.formatting_utils import format_as_document_list_item
@@ -43,14 +44,14 @@ def format_datasets_as_document_list(datasets: StreamValue) -> list[dict[str, An
             dataset_document = format_as_document_list_item(
                 title=block_value["title"],
                 url=block_value["url"],
-                content_type="Dataset",
+                content_type=_("Dataset"),
                 description=block_value["description"],
             )
         else:
             dataset_document = format_as_document_list_item(
                 title=block_value.title,
                 url=block_value.get_url_path(link_to_latest_version=link_to_latest_version),
-                content_type="Dataset",
+                content_type=_("Dataset"),
                 description=dataset.value.description,
             )
 
