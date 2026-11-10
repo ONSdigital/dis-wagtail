@@ -9,7 +9,7 @@ import redis
 import redis.exceptions
 from django.conf import settings
 from django.core.cache import caches
-from django.db import DatabaseError, connections
+from django.db import DEFAULT_DB_ALIAS, DatabaseError, connections
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -21,6 +21,7 @@ from django_redis import get_redis_connection
 from django_redis.cache import RedisCache
 
 from cms.core.cache import get_cdn_cache_control_header_value, get_publishing_rule_cache_control_kwargs
+from cms.core.db_router import READ_REPLICA_DB_ALIAS
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -80,12 +81,21 @@ def ready(request: HttpRequest) -> HttpResponse:
 
     If this fails, requests will not be routed to the container.
 
-    Readiness should reflect whether this instance can currently serve traffic,
-    including access to required dependencies.
+    Readiness should reflect whether this instance can currently serve traffic.
+    In the external environment, the write database is not checked here: if it is unavailable,
+    generating new image renditions (the only writes allowed there) will fail, but the rest of
+    the site keeps serving.
 
     The cache is intentionally absent as an unavailable cache just results in cache misses.
     """
     for connection in connections.all():
+        if (
+            settings.IS_EXTERNAL_ENV
+            and connection.alias == DEFAULT_DB_ALIAS
+            and READ_REPLICA_DB_ALIAS in connections.settings
+        ):
+            continue
+
         try:
             with connection.cursor() as cursor:
                 cursor.execute(DB_HEALTHCHECK_QUERY)

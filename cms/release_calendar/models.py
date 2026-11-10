@@ -7,6 +7,7 @@ from django.db.models import Q, QuerySet
 from django.http import HttpRequest
 from django.utils.functional import cached_property
 from django.utils.text import slugify
+from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, MultiFieldPanel
 from wagtail.fields import RichTextField
@@ -242,6 +243,9 @@ class ReleaseCalendarPage(BundledPageMixin, BasePage):  # type: ignore[django-ma
         if self.next_release_date:
             return ons_date_format(self.next_release_date, "DATETIME_FORMAT")
         if self.next_release_date_text:
+            # Translate the "To be confirmed" text if necessary (alias).
+            if self.next_release_date_text == "To be confirmed":
+                return gettext("To be confirmed")
             return self.next_release_date_text
         return None
 
