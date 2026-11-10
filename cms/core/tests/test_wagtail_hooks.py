@@ -5,8 +5,9 @@ from http import HTTPStatus
 
 from django.conf import settings
 from django.contrib.auth.models import Group
+from django.contrib.messages.storage.cookie import CookieStorage
 from django.core.cache import cache
-from django.test import TestCase, override_settings
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from wagtail.models import Locale, ModelLogEntry, PageLogEntry
@@ -16,6 +17,7 @@ from cms.articles.tests.factories import StatisticalArticlePageFactory
 from cms.core.models import ContactDetails
 from cms.core.models.snippets import Definition
 from cms.core.tests.factories import ContactDetailsFactory, DefinitionFactory
+from cms.core.wagtail_hooks import after_edit_page
 from cms.standard_pages.models import InformationPage
 from cms.standard_pages.tests.factories import IndexPageFactory, InformationPageFactory
 from cms.users.tests.factories import UserFactory
@@ -487,3 +489,36 @@ class BulkActionDeleteHookTests(WagtailTestUtils, TestCase):
         self.assertTrue(any("published previously" in msg for msg in messages))
         self.assertTrue(InformationPage.objects.filter(pk=parent.pk).exists())
         self.assertTrue(InformationPage.objects.filter(pk=sibling.pk).exists())
+
+
+class AfterEditPageTranslationWarningHookTests(WagtailTestUtils, TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.index_page = IndexPageFactory()
+        cls.page = InformationPageFactory(parent=cls.index_page)
+        welsh_locale = Locale.objects.get(language_code="cy")
+        cls.index_page.copy_for_translation(welsh_locale, alias=True)
+        cls.page.copy_for_translation(welsh_locale)
+
+    def run_hook(self, accept):
+        request = RequestFactory().post("/", headers={"accept": accept})
+
+        # Setup a fake messages storage for the request
+        storage = CookieStorage(request)
+        request._messages = storage  # pylint: disable=protected-access
+
+        after_edit_page(request, self.page)
+        return [message.message for message in storage]
+
+    def test_warning_added_on_html_request(self):
+        messages = self.run_hook("text/html")
+
+        self.assertEqual(len(messages), 1)
+        self.assertIn("A translated version of this page exists", messages[0])
+
+    def test_warning_not_added_on_autosave_request(self):
+        self.assertEqual(
+            self.run_hook("application/json"),
+            [],
+            "No warning should be added for autosave requests",
+        )

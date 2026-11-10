@@ -757,7 +757,7 @@ def the_page_has_a_csv_download_link_for_the_chart(context: Context) -> None:
     # Wait for this class as it signifies the design system js has loaded, initialised and updated
     # element roles and styles
     expect(download_details).to_contain_class("ons-details--initialised")
-    download_details.get_by_text("Download: line chart").click()
+    download_details.get_by_text("Downloads").click()
     csv_download_link = context.page.get_by_role("link", name="Download CSV")
     expect(csv_download_link).to_be_visible()
 

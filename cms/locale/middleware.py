@@ -7,7 +7,7 @@ from django.utils.regex_helper import _lazy_re_compile
 from django.utils.translation import get_supported_language_variant
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponseBase
+    from django.http import HttpRequest
 
 language_subdomain_prefix_re = _lazy_re_compile(r"^(\w+([@-]\w+){0,2})\.")
 
@@ -17,7 +17,7 @@ class SubdomainLocaleMiddleware(LocaleMiddleware):
     with fallback to Django's normal locale handling.
 
     It checks the request host against a mapping or extracts a language code from the subdomain,
-    then activates that language for the request and sets the appropriate cookie.
+    then activates that language for the request.
 
     This allows URLs like `cy.example.com` or `en.example.com` to automatically serve content in the correct language,
     and supports explicit host-to-language mapping.
@@ -31,34 +31,9 @@ class SubdomainLocaleMiddleware(LocaleMiddleware):
         if self.use_locale_subdomain and (lang_code := self._get_language_from_host(request)):
             translation.activate(lang_code)
             request.LANGUAGE_CODE = translation.get_language()
-            # set the cookie name in the request, so any logic that depends on the cookie activates properly
-            if settings.LANGUAGE_COOKIE_NAME not in request.COOKIES:
-                request.COOKIES[settings.LANGUAGE_COOKIE_NAME] = lang_code
-                request.SHOULD_SET_LANGUAGE_COOKIE = True  # type: ignore[attr-defined]
+            return
 
         super().process_request(request)
-
-    def process_response(self, request: HttpRequest, response: HttpResponseBase) -> HttpResponseBase:
-        if (
-            self.use_locale_subdomain
-            and (lang_code := self._get_language_from_host(request))
-            and (
-                request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME, "") != lang_code
-                or getattr(request, "SHOULD_SET_LANGUAGE_COOKIE", False)
-            )
-        ):
-            response.set_cookie(
-                settings.LANGUAGE_COOKIE_NAME,
-                lang_code,
-                max_age=settings.LANGUAGE_COOKIE_AGE,
-                path=settings.LANGUAGE_COOKIE_PATH,
-                domain=settings.LANGUAGE_COOKIE_DOMAIN,
-                secure=settings.LANGUAGE_COOKIE_SECURE,
-                httponly=settings.LANGUAGE_COOKIE_HTTPONLY,
-                samesite=settings.LANGUAGE_COOKIE_SAMESITE,
-            )
-
-        return super().process_response(request, response)
 
     def _get_language_from_language_code(self, lang_code: str) -> str | None:
         try:
