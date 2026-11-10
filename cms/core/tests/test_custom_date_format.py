@@ -1,6 +1,7 @@
 from datetime import UTC, date, datetime
 
 from django.test import SimpleTestCase
+from django.utils import translation
 
 from cms.core.custom_date_format import ons_date_format
 
@@ -39,6 +40,15 @@ class CustomDateFormatTests(SimpleTestCase):
         self.assertNotIn("pm", rendered.lower())
 
     def test_date_localized(self):
+        """Test that ons_date_format correctly formats a datetime with tzinfo."""
         dt = datetime(2025, 7, 8, 11, 21, 48, tzinfo=UTC)
         rendered = ons_date_format(dt, "DATETIME_FORMAT")
         self.assertEqual(rendered, "8 July 2025 12:21pm")
+
+    def test_date_localized_welsh(self):
+        """Test that ons_date_format correctly formats a datetime with tzinfo in Welsh."""
+        dt = datetime(2025, 7, 8, 11, 21, 48, tzinfo=UTC)
+        with translation.override("cy"):
+            rendered = ons_date_format(dt, "DATETIME_FORMAT")
+
+        self.assertEqual(rendered, "8 Gorffennaf 2025 12:21pm")

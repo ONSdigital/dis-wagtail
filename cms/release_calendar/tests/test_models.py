@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 from wagtail.locks import BasicLock
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 from wagtail.test.utils.wagtail_tests import WagtailTestUtils
@@ -649,6 +649,25 @@ class ReleaseCalendarPageRenderTestCase(TestCase):
                 self.page.next_release_date_text = "November 2024"
 
                 self.assertEqual(self.page.next_release_date_value, "November 2024")
+
+    def test_next_release_date_value_translates_to_be_confirmed(self):
+        """Check that the "To be confirmed" text is translated, as it is stored in English on aliases."""
+        self.page.next_release_date = None
+        self.page.next_release_date_text = "To be confirmed"
+
+        with self.subTest("English"):
+            self.assertEqual(str(self.page.next_release_date_value), "To be confirmed")
+
+        with self.subTest("Welsh"), translation.override("cy"):
+            self.assertEqual(str(self.page.next_release_date_value), "I’w gadarnhau")
+
+    def test_next_release_date_value_does_not_translate_other_text(self):
+        """Check that any other next release date text is returned as is, even in Welsh."""
+        self.page.next_release_date = None
+        self.page.next_release_date_text = "November 2024"
+
+        with translation.override("cy"):
+            self.assertEqual(self.page.next_release_date_value, "November 2024")
 
     def test_rendered__contact_details(self):
         """Check rendered content for contact details."""
