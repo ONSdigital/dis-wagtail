@@ -7,7 +7,7 @@ from django.apps import apps
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ImproperlyConfigured
-from django.db import DEFAULT_DB_ALIAS, transaction
+from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.models import Manager, Model, QuerySet
 
 from cms.images.models import Rendition
@@ -83,7 +83,16 @@ class ReadReplicaRouter:  # pylint: disable=unused-argument,protected-access
         # a subsequent SELECT (or other read query) may return inconsistent data.
         # In this case, use the write connection for reads, with the aim of
         # improved consistency.
-        if not transaction.get_autocommit(using=DEFAULT_DB_ALIAS):
+        #
+        # Check the connection's cached state directly rather than calling
+        # transaction.get_autocommit(), which calls ensure_connection() as a
+        # side effect and would force a write-DB connection to be opened even
+        # for requests that never otherwise need one (e.g. in the external
+        # env, where a down writer should never affect a read-only request).
+        # If no connection has been opened yet, there can't be a transaction
+        # in progress on it.
+        default_connection = connections[DEFAULT_DB_ALIAS]
+        if default_connection.connection is not None and not default_connection.autocommit:
             # In a transaction, use the write database
             return DEFAULT_DB_ALIAS
 
