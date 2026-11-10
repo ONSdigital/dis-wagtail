@@ -1,6 +1,8 @@
+from unittest import mock
+
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
-from django.db import DEFAULT_DB_ALIAS, router, transaction
+from django.db import DEFAULT_DB_ALIAS, connections, router, transaction
 from django.db.models.signals import post_save
 from django.test import TestCase, override_settings
 from django.utils.connection import ConnectionDoesNotExist
@@ -138,6 +140,21 @@ class DBRouterTestCase(TransactionTestCase):
         # In the external env, no writes will be done, so the replica is safe.
         with override_settings(IS_EXTERNAL_ENV=True):
             self.assertEqual(router.db_for_read(Revision), READ_REPLICA_DB_ALIAS)
+
+    def test_db_for_read_does_not_force_a_write_connection(self):
+        """Check that evaluating db_for_read doesn't force-open a write connection.
+
+        Regression test: the previous implementation called
+        transaction.get_autocommit(using=DEFAULT_DB_ALIAS), which forces a
+        connection open as a side effect, even when nothing else needs one.
+        """
+        connections[DEFAULT_DB_ALIAS].close()
+        self.assertIsNone(connections[DEFAULT_DB_ALIAS].connection)
+
+        with mock.patch.object(connections[DEFAULT_DB_ALIAS], "connect") as mock_connect:
+            self.assertEqual(router.db_for_read(Page), READ_REPLICA_DB_ALIAS)
+
+        mock_connect.assert_not_called()
 
     def test_force_write_db_for_queryset(self):
         """Check that the force_write_db_for util works as expected."""
