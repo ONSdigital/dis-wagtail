@@ -14,9 +14,6 @@ from jwt.exceptions import ExpiredSignatureError
 
 from cms.core.cache import memory_cache
 
-# Log users out after this long without interacting with the page
-INACTIVITY_THRESHOLD_SECONDS = 15 * 60
-
 if TYPE_CHECKING:
     from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 
@@ -138,7 +135,7 @@ def get_auth_config() -> dict[str, Any]:
         "wagtailAdminHomePath": settings.WAGTAILADMIN_HOME_PATH,
         "wagtailAdminLoginUrl": settings.WAGTAILADMIN_LOGIN_URL,
         "sessionRenewalOffsetSeconds": settings.SESSION_RENEWAL_OFFSET_SECONDS,
-        "inactivityThresholdSeconds": INACTIVITY_THRESHOLD_SECONDS,
+        "inactivityThresholdSeconds": settings.INACTIVITY_THRESHOLD_SECONDS,
         "idTokenCookieName": settings.ID_TOKEN_COOKIE_NAME,
         "csrfHeaderName": csrf_header_name,
     }
