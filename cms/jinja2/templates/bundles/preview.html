@@ -8,5 +8,9 @@
 {% block header %}{% endblock %}
 
 {% block pageContent %}
-    <iframe src="{{ iframe_url }}" class="preview-iframe"></iframe>
+    <iframe
+        src="{{ iframe_url }}"
+        class="preview-iframe"
+        title="Preview of bundled dataset"
+    ></iframe>
 {% endblock %}
