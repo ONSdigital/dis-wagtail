@@ -1,4 +1,5 @@
 from django.test import SimpleTestCase, TestCase
+from django.utils import translation
 from wagtail.blocks import StreamValue
 
 from cms.datasets.blocks import DatasetStoryBlock
@@ -85,6 +86,26 @@ class TestUtils(TestCase):
         self.assertEqual(formatted_datasets[0]["title"]["url"], "/datasets/LOOKUP/editions/lookup_edition/versions")
         # Manually entered URLs are used as given, whatever the page context
         self.assertEqual(formatted_datasets[1]["title"]["url"], manual_dataset["url"])
+
+    def test_format_datasets_as_document_list_uses_welsh_translation(self):
+        lookup_dataset = Dataset.objects.create(
+            namespace="LOOKUP",
+            edition="lookup_edition",
+            version=1,
+            title="test lookup",
+            description="lookup description",
+        )
+        datasets = StreamValue(
+            DatasetStoryBlock(link_to_latest_version=False),
+            stream_data=[
+                ("dataset_lookup", lookup_dataset),
+            ],
+        )
+
+        with translation.override("cy"):
+            formatted_datasets = format_datasets_as_document_list(datasets)
+
+        self.assertEqual(formatted_datasets[0]["metadata"]["object"]["text"], "Set ddata")
 
     def test_extract_edition_from_dataset_url(self):
         url = "/datasets/wellbeing-quarterly/editions/september/versions/9"
