@@ -19,8 +19,7 @@ accesslog = "-"
 # Time out after 25 seconds
 timeout = int(os.environ.get("GUNICORN_TIMEOUT", "25"))
 
-# Default 25 seconds
-# Overridden to 120s in internal envs to allow bundle post publish jobs to complete before the worker times out.
+# Graceful timeout after 25 seconds
 graceful_timeout = int(os.environ.get("GUNICORN_GRACEFUL_TIMEOUT", "25"))
 
 # Load app pre-fork to save memory and worker startup time
