@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 audit_logger = logging.getLogger("cms.audit")
 
 # Actions that are additionally tagged for protective monitoring
-PROTECTIVE_MONITORING_ACTIONS = {SITE_HISTORY_VIEW_ACTION}
+PROTECTIVE_MONITORING_ACTIONS = frozenset({SITE_HISTORY_VIEW_ACTION})
 
 
 @receiver(post_save, sender="wagtailcore.PageLogEntry")

@@ -31,10 +31,12 @@ PROTECTIVE_MONITORING_CLASSIFICATION = "PROTECTIVE_MONITORING"
 WAGTAIL_PERMISSION_DENIED_MESSAGE = _("Sorry, you do not have permission to access this area.")
 
 SITE_HISTORY_VIEW_ACTION = "reports.site_history_view"
-SITE_HISTORY_URL_NAMES = {
-    "wagtailadmin_reports:site_history",
-    "wagtailadmin_reports:site_history_results",
-}
+SITE_HISTORY_URL_NAMES = frozenset(
+    {
+        "wagtailadmin_reports:site_history",
+        "wagtailadmin_reports:site_history_results",
+    }
+)
 
 
 ALLOWED_REQUEST_PATHS = {
