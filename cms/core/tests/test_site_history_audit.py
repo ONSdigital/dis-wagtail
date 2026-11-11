@@ -1,5 +1,6 @@
 from django.contrib.auth.models import Permission
-from django.test import TestCase
+from django.core.cache import cache
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from wagtail.log_actions import log
 from wagtail.models import ModelLogEntry
@@ -56,12 +57,49 @@ class SiteHistoryReadAuditTestCase(WagtailTestUtils, TestCase):
         self.assertIsNone(entry.data["export"])
         self.assertEqual(entry.message, "Viewed site history")
 
-    def test_each_read_is_logged(self):
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_cooldown_prevents_duplicate_view_entries(self):
+        cache.clear()
+
         self.client.get(self.url)
-        self.client.get(self.results_url)
+        self.client.get(self.results_url, {"action": "wagtail.edit"})
+        self.client.get(self.url)
+
+        self.assertEqual(self.get_read_entries().count(), 1)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_cooldown_allows_new_entry_after_expiry(self):
+        cache.clear()
+
+        self.client.get(self.url)
+        # Simulate cooldown expiry
+        cache.clear()
+        self.client.get(self.url)
+
+        self.assertEqual(self.get_read_entries().count(), 2)
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_different_users_get_separate_cooldowns(self):
+        cache.clear()
+        other_user = self.create_superuser(username="other_admin")
+
+        self.client.get(self.url)
+        self.client.force_login(other_user)
+        self.client.get(self.url)
+
+        users = set(self.get_read_entries().values_list("user_id", flat=True))
+        self.assertEqual(users, {self.superuser.pk, other_user.pk})
+
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_exports_bypass_cooldown(self):
+        cache.clear()
+
+        self.client.get(self.url)
+        self.client.get(self.url, {"export": "csv"})
         self.client.get(self.url, {"export": "csv"})
 
         self.assertEqual(self.get_read_entries().count(), 3)
+        self.assertEqual(self.get_read_entries().filter(data__export="csv").count(), 2)
 
     def test_read_event_is_shown_in_site_history(self):
         self.client.get(self.url)

@@ -7,6 +7,7 @@ from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.contrib.messages import constants as message_constants
+from django.core.cache import cache
 from django.http import HttpRequest, HttpResponse, HttpResponsePermanentRedirect
 from django.shortcuts import resolve_url
 from django.urls import NoReverseMatch, Resolver404, resolve, reverse
@@ -128,6 +129,13 @@ class SiteHistoryReadAuditMiddleware(MiddlewareMixin):
         export_format = request.GET.get("export")
         if export_format not in SpreadsheetExportMixin.FORMATS:
             export_format = None
+
+        # Exports are always logged; views and result refreshes have a cooldown to prevent duplicate entries
+        cache_key = f"site_history_view_log:{user.pk}"
+        if export_format is None:
+            if cache.get(cache_key):
+                return response
+            cache.set(cache_key, True, timeout=settings.CMS_AUDIT_LOG_COOLDOWN_SECONDS)
 
         # The report isn't tied to a single object, so the entry is logged against the reader.
         log(
