@@ -243,7 +243,7 @@ class ReleaseCalendarPageAdminForm(WagtailAdminPageForm):
 
         # Not self.instance.active_bundle, which also includes bundles that only have this page in their
         # bundled pages. Those don't depend on its release date, so cancelling is fine.
-        bundle = Bundle.objects.filter(release_calendar_page=self.instance).active().first()
+        bundle = Bundle.objects.filter(release_calendar_page=self.instance).active().only("name").first()
         if not bundle:
             return
 
