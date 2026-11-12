@@ -9,7 +9,7 @@ from wagtail.models import Locale
 from wagtail.test.utils import WagtailTestUtils
 from wagtail.test.utils.form_data import nested_form_data, rich_text, streamfield
 
-from cms.bundles.tests.factories import BundleFactory
+from cms.bundles.tests.factories import BundleFactory, BundlePageFactory
 from cms.release_calendar.enums import LOCKED_STATUS_STATUSES, NON_PROVISIONAL_STATUS_CHOICES, ReleaseStatus
 from cms.release_calendar.models import ReleaseCalendarPage
 from cms.release_calendar.tests.factories import ReleaseCalendarPageFactory
@@ -617,6 +617,17 @@ class ReleaseCalendarPageAdminFormTestCase(WagtailTestUtils, TestCase):
 
         # Published bundles are not active, so cancellation should be allowed
         self.assertTrue(form.is_valid())
+
+    def test_form_clean__allows_cancellation_if_page_is_bundled_content(self):
+        """Checks that cancellation is allowed when the page is in a bundle's pages but doesn't schedule it."""
+        BundlePageFactory(parent=BundleFactory(in_review=True), page=self.page)
+
+        data = self.form_data
+        data["status"] = ReleaseStatus.CANCELLED
+        data["notice"] = rich_text("Cancellation notice")
+        form = self.form_class(instance=self.page, data=data, for_user=self.superuser)
+
+        self.assertTrue(form.is_valid(), form.errors)
 
     def test_form_clean__allows_other_status_changes_when_in_active_bundle(self):
         """Checks that non-cancelled status changes are allowed when in an active bundle."""
