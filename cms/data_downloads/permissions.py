@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from wagtail.admin.auth import user_has_any_page_permission
 from wagtail.models import Page, Revision
 
+from cms.bundles.enums import BundleStatus
 from cms.bundles.mixins import BundledPageMixin
 from cms.bundles.permissions import get_bundle_permission, user_can_preview_bundle
 from cms.workflows.utils import is_page_ready_to_preview
@@ -54,8 +55,13 @@ def get_revision_page_for_request(request: HttpRequest, page_id: int, revision_i
 
     # Check bundle preview permissions (only if page is bundled)
     has_bundle_preview = False
-    if not has_page_perms and isinstance(page, BundledPageMixin) and is_page_ready_to_preview(page):
-        has_bundle_preview = any(user_can_preview_bundle(request.user, bundle) for bundle in page.bundles.all())
+    if not has_page_perms and isinstance(page, BundledPageMixin):
+        page_ready_to_preview = is_page_ready_to_preview(page)
+        has_bundle_preview = any(
+            (page_ready_to_preview or bundle.status == BundleStatus.IN_REVIEW)
+            and user_can_preview_bundle(request.user, bundle)
+            for bundle in page.bundles.all()
+        )
 
     if not (has_page_perms or has_bundle_preview):
         raise PermissionDenied

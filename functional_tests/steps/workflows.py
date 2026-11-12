@@ -111,18 +111,18 @@ def the_given_text_is_present(
 
 @then("the user can unlock the page for editing")
 def the_user_can_unlock_the_workflow(context: Context):
-    context.page.get_by_role("link", name="Unlock editing", exact=True).click()
-    context.page.get_by_role("button", name="Yes, unlock it", exact=True).click()
+    # The page action opens Wagtail's reject-action modal; its submit button performs the action.
+    context.page.get_by_role("button", name="Unlock editing", exact=True).click()
+    context.page.get_by_role("dialog").get_by_role("button", name="Unlock editing", exact=True).click()
 
-    context.page.get_by_role("button", name="Toggle status").click()
-    expect(context.page.get_by_role("complementary", name="status")).to_contain_text("Sent to In Preview now")
+    expect(context.page.get_by_role("status").get_by_text("editing has been unlocked.")).to_be_visible()
     expect(context.page.get_by_role("link", name="Page locked", exact=True)).to_have_count(0)
 
 
 @step("the {page_str} page goes through the publishing steps with {user} as user and {approver} as reviewer")
 def the_page_goes_through_the_publishing_steps(context: Context, page_str: str, user: str, approver: str) -> None:
     user_clicks_action_menu_toggle(context)
-    click_the_given_button(context, "Submit to Release review")
+    click_the_given_button(context, "Submit to Review")
     a_user_is_logged_in(context, approver)
     the_user_edits_a_page(context, page_str)
     user_clicks_action_menu_toggle(context)
