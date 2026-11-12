@@ -133,7 +133,9 @@ def get_auth_config() -> dict[str, Any]:
     return {
         "authTokenRefreshUrl": settings.AUTH_TOKEN_REFRESH_URL,
         "wagtailAdminHomePath": settings.WAGTAILADMIN_HOME_PATH,
+        "wagtailAdminLoginUrl": settings.WAGTAILADMIN_LOGIN_URL,
         "sessionRenewalOffsetSeconds": settings.SESSION_RENEWAL_OFFSET_SECONDS,
+        "inactivityThresholdSeconds": settings.INACTIVITY_THRESHOLD_SECONDS,
         "idTokenCookieName": settings.ID_TOKEN_COOKIE_NAME,
         "csrfHeaderName": csrf_header_name,
     }

@@ -1153,6 +1153,8 @@ REFRESH_TOKEN_COOKIE_NAME = "refresh_token"  # noqa: S105
 ID_TOKEN_COOKIE_NAME = "id_token"  # noqa: S105
 
 SESSION_RENEWAL_OFFSET_SECONDS = env.get("SESSION_RENEWAL_OFFSET_SECONDS", 60 * 5)  # 5 minutes
+# Log users out after this long without interacting with the page
+INACTIVITY_THRESHOLD_SECONDS = int(env.get("INACTIVITY_THRESHOLD_SECONDS", 60 * 15))  # 15 minutes
 
 # note: 30 seconds is a fairly arbitrary value. Long enough to allow for a slow preview generation,
 # but short enough that we don't have stale session data.

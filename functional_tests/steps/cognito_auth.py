@@ -79,6 +79,12 @@ def step_wait_for_expiry(context: Context) -> None:
     context.page.wait_for_timeout(5000)
 
 
+@when("the user remains inactive past the inactivity threshold")
+def step_wait_past_inactivity_threshold(context: Context) -> None:
+    """Wait one second longer than the inactivity threshold, which the @short_inactivity tag lowers."""
+    context.page.wait_for_timeout((settings.INACTIVITY_THRESHOLD_SECONDS + 1) * 1000)
+
+
 @given("the user refreshes the page")
 def step_refresh_page(context: Context) -> None:
     """Reload the current page."""
