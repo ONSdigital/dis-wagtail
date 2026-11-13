@@ -1,5 +1,4 @@
 # pylint: disable=invalid-name
-import math
 import os
 
 import gunicorn
@@ -20,9 +19,8 @@ accesslog = "-"
 # Time out after 25 seconds
 timeout = int(os.environ.get("GUNICORN_TIMEOUT", "25"))
 
-# Allow the bundle publishing timeout to expire before considering a terminate "ungraceful".
-# gunicorn expects an int, but the timeout is parsed as a float elsewhere so convert to preserve behavior
-graceful_timeout = math.ceil(float(os.environ.get("BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS", "110")))
+# Graceful timeout after 25 seconds
+graceful_timeout = int(os.environ.get("GUNICORN_GRACEFUL_TIMEOUT", "25"))
 
 # Load app pre-fork to save memory and worker startup time
 preload_app = True

@@ -184,7 +184,7 @@ The 110-second default is chosen to fit comfortably within a 2-minute cron inter
 
 ### Gunicorn timeout
 
-`gunicorn.conf.py` sets `graceful_timeout` to `BUNDLE_POST_PUBLISH_TIMEOUT_SECONDS`, allowing in-flight post-publish threads to complete before Gunicorn forcefully kills the worker during deployments or restarts.
+`gunicorn.conf.py` configures `graceful_timeout` via the `GUNICORN_GRACEFUL_TIMEOUT` environment variable. This determines how long the worker waits for in-flight requests, including post-publish threads, to complete before Gunicorn terminates the worker during deployments or restarts.
 
 ### Shutdown procedure
 
