@@ -7,6 +7,7 @@ from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.contrib.messages import constants as message_constants
+from django.core.cache import cache
 from django.http import HttpRequest, HttpResponse, HttpResponsePermanentRedirect
 from django.shortcuts import resolve_url
 from django.urls import NoReverseMatch, Resolver404, resolve, reverse
@@ -14,6 +15,8 @@ from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
+from wagtail.admin.views.mixins import SpreadsheetExportMixin
+from wagtail.log_actions import log
 
 from cms.core.utils import redirect
 
@@ -26,6 +29,14 @@ UNAUTHENTICATED_ACCESS_EVENT = "unauthenticated access attempt"
 PROTECTIVE_MONITORING_CLASSIFICATION = "PROTECTIVE_MONITORING"
 # Must match the message in wagtail.admin.auth.permission_denied
 WAGTAIL_PERMISSION_DENIED_MESSAGE = _("Sorry, you do not have permission to access this area.")
+
+SITE_HISTORY_VIEW_ACTION = "reports.site_history_view"
+SITE_HISTORY_URL_NAMES = frozenset(
+    {
+        "wagtailadmin_reports:site_history",
+        "wagtailadmin_reports:site_history_results",
+    }
+)
 
 
 ALLOWED_REQUEST_PATHS = {
@@ -94,6 +105,51 @@ class CloudflareWagtailCacheTagMiddleware(MiddlewareMixin):
             updated_tags = [*existing_tags, cache_tag]
             response[CLOUDFLARE_CACHE_TAG_HEADER] = ",".join(updated_tags)
 
+        return response
+
+
+class SiteHistoryReadAuditMiddleware(MiddlewareMixin):
+    """Records successful reads of the Site history report in the audit log,
+    so that access to the audit log is itself auditable.
+    """
+
+    def process_response(self, request: HttpRequest, response: HttpResponse) -> HttpResponse:
+        resolver_match = getattr(request, "resolver_match", None)
+        if (
+            request.method != "GET"
+            or response.status_code != HTTPStatus.OK
+            or resolver_match is None
+            or resolver_match.view_name not in SITE_HISTORY_URL_NAMES
+        ):
+            return response
+
+        user = getattr(request, "user", None)
+        if user is None or not user.is_authenticated:
+            return response
+
+        # Mirrors how Wagtail decides whether to return a spreadsheet
+        export_format = request.GET.get("export")
+        if export_format not in SpreadsheetExportMixin.FORMATS:
+            export_format = None
+
+        # Exports are always logged; views and result refreshes have a cooldown to prevent duplicate entries
+        cache_key = f"site_history_view_log:{user.pk}"
+        if export_format is None:
+            if cache.get(cache_key):
+                return response
+            cache.set(cache_key, True, timeout=settings.CMS_AUDIT_LOG_COOLDOWN_SECONDS)
+
+        # The report isn't tied to a single object, so the entry is logged against the reader.
+        log(
+            instance=user,
+            action=SITE_HISTORY_VIEW_ACTION,
+            user=user,
+            data={
+                "export": export_format,
+                "results_only": resolver_match.view_name == "wagtailadmin_reports:site_history_results",
+                "query": request.META.get("QUERY_STRING", ""),
+            },
+        )
         return response
 
 

@@ -286,6 +286,18 @@ def register_core_log_actions(actions: LogActionRegistry) -> None:
             except AttributeError:
                 return msg
 
+    @actions.register_action("reports.site_history_view")
+    class SiteHistoryView(LogFormatter):  # pylint: disable=unused-variable
+        """LogFormatter class for viewing the Site history report."""
+
+        label = "View site history"
+
+        def format_message(self, log_entry: ModelLogEntry) -> Any:
+            """Returns the formatted log message."""
+            if export_format := log_entry.data.get("export"):
+                return f"Exported site history ({export_format.upper()})"
+            return "Viewed site history"
+
     @actions.register_action("pages.preview_mode_used")
     class PreviewModeUse(LogFormatter):  # pylint: disable=unused-variable
         """LogFormatter class for viewing the page edit view."""

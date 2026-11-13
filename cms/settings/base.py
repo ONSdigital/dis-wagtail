@@ -181,6 +181,7 @@ if not IS_EXTERNAL_ENV:
         MIDDLEWARE.index("django.contrib.messages.middleware.MessageMiddleware"),
         "cms.core.middleware.UnauthorizedAccessLoggingMiddleware",
     )
+    MIDDLEWARE.append("cms.core.middleware.SiteHistoryReadAuditMiddleware")
 
 CSP_ENABLED = env.get("CMS_CSP_ENABLED", "true").lower().strip() == "true"
 

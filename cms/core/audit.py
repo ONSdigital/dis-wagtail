@@ -10,10 +10,15 @@ from typing import TYPE_CHECKING, Any
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from cms.core.middleware import PROTECTIVE_MONITORING_CLASSIFICATION, SITE_HISTORY_VIEW_ACTION
+
 if TYPE_CHECKING:
     from wagtail.models import ModelLogEntry, PageLogEntry
 
 audit_logger = logging.getLogger("cms.audit")
+
+# Actions that are additionally tagged for protective monitoring
+PROTECTIVE_MONITORING_ACTIONS = frozenset({SITE_HISTORY_VIEW_ACTION})
 
 
 @receiver(post_save, sender="wagtailcore.PageLogEntry")
@@ -38,10 +43,15 @@ def mirror_log_entry_to_stdout(
     if not created:
         return
 
+    extra: dict[str, Any] = {}
+    if instance.action in PROTECTIVE_MONITORING_ACTIONS:
+        extra["classification"] = PROTECTIVE_MONITORING_CLASSIFICATION
+
     audit_logger.info(
         "Audit event: %s",
         instance.action,
         extra={
+            **extra,
             "event": instance.action,
             "object_type": instance.content_type.name if instance.content_type else None,
             "object_id": instance.object_id,
